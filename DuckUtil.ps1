@@ -32,93 +32,93 @@ Add-Type -AssemblyName System.Windows.Forms
 # ═══════════════════════════════════════════════════════════════════════════════
 $AppCatalog = @(
     # ── 🌐 TRÌNH DUYỆT WEB ──
-    @{ Name="Google Chrome";       ID="Google.Chrome";                    Category="Trình Duyệt Web";    Domain="google.com";            Desc="Trình duyệt phổ biến nhất thế giới" }
-    @{ Name="Mozilla Firefox";     ID="Mozilla.Firefox";                  Category="Trình Duyệt Web";    Domain="mozilla.org";           Desc="Mã nguồn mở, tôn trọng riêng tư" }
-    @{ Name="Brave Browser";       ID="Brave.Brave";                      Category="Trình Duyệt Web";    Domain="brave.com";             Desc="Chặn quảng cáo tích hợp sẵn" }
-    @{ Name="LibreWolf";           ID="LibreWolf.LibreWolf";              Category="Trình Duyệt Web";    Domain="librewolf.net";         Desc="Firefox không telemetry, siêu sạch" }
-    @{ Name="Vivaldi";             ID="VivaldiTechnologies.Vivaldi";      Category="Trình Duyệt Web";    Domain="vivaldi.com";           Desc="Tùy biến không giới hạn" }
-    @{ Name="Tor Browser";         ID="TorProject.TorBrowser";            Category="Trình Duyệt Web";    Domain="torproject.org";        Desc="Duyệt web ẩn danh qua Onion" }
-    @{ Name="Opera GX";            ID="Opera.OperaGX";                    Category="Trình Duyệt Web";    Domain="opera.com";             Desc="Trình duyệt tối ưu tài nguyên" }
+    @{ Name="Google Chrome";       ID="Google.Chrome";                    Category="Trình Duyệt Web";    Domain="google.com";            Aliases=@("Google Chrome", "Google.Chrome");                           Desc="Trình duyệt phổ biến nhất thế giới" }
+    @{ Name="Mozilla Firefox";     ID="Mozilla.Firefox";                  Category="Trình Duyệt Web";    Domain="mozilla.org";           Aliases=@("Mozilla Firefox", "Firefox");                               Desc="Mã nguồn mở, tôn trọng riêng tư" }
+    @{ Name="Brave Browser";       ID="Brave.Brave";                      Category="Trình Duyệt Web";    Domain="brave.com";             Aliases=@("Brave", "BraveSoftware", "Brave.Brave");                     Desc="Chặn quảng cáo tích hợp sẵn" }
+    @{ Name="LibreWolf";           ID="LibreWolf.LibreWolf";              Category="Trình Duyệt Web";    Domain="librewolf.net";         Aliases=@("LibreWolf");                                                Desc="Firefox không telemetry, siêu sạch" }
+    @{ Name="Vivaldi";             ID="VivaldiTechnologies.Vivaldi";      Category="Trình Duyệt Web";    Domain="vivaldi.com";           Aliases=@("Vivaldi");                                                  Desc="Tùy biến không giới hạn" }
+    @{ Name="Tor Browser";         ID="TorProject.TorBrowser";            Category="Trình Duyệt Web";    Domain="torproject.org";        Aliases=@("Tor Browser", "TorProject");                                Desc="Duyệt web ẩn danh qua Onion" }
+    @{ Name="Opera GX";            ID="Opera.OperaGX";                    Category="Trình Duyệt Web";    Domain="opera.com";             Aliases=@("Opera GX", "Opera");                                        Desc="Trình duyệt tối ưu tài nguyên" }
 
     # ── 💬 LIÊN LẠC & CHAT ──
-    @{ Name="Discord";             ID="Discord.Discord";                  Category="Liên Lạc & Chat";   Domain="discord.com";           Desc="Voice/chat cộng đồng số 1" }
-    @{ Name="Telegram";            ID="Telegram.TelegramDesktop";         Category="Liên Lạc & Chat";   Domain="telegram.org";          Desc="Nhắn tin nhanh, cloud-sync mượt" }
-    @{ Name="Signal";              ID="OpenWhisperSystems.Signal";        Category="Liên Lạc & Chat";   Domain="signal.org";            Desc="Mã hóa đầu-cuối an toàn tuyệt đối" }
-    @{ Name="Zalo";                ID="VNG.Zalo";                         Category="Liên Lạc & Chat";   Domain="zalo.me";               Desc="Nhắn tin phổ biến nhất VN" }
-    @{ Name="Zoom";                ID="Zoom.Zoom";                        Category="Liên Lạc & Chat";   Domain="zoom.us";               Desc="Họp trực tuyến trực tiếp" }
-    @{ Name="Slack";               ID="SlackTechnologies.Slack";          Category="Liên Lạc & Chat";   Domain="slack.com";             Desc="Trao đổi công việc doanh nghiệp" }
-    @{ Name="WhatsApp";            ID="WhatsApp.WhatsApp";                Category="Liên Lạc & Chat";   Domain="whatsapp.com";          Desc="Gọi & nhắn tin toàn cầu" }
-    @{ Name="Microsoft Teams";     ID="Microsoft.Teams";                  Category="Liên Lạc & Chat";   Domain="microsoft.com";         Desc="Nền tảng làm việc Microsoft" }
+    @{ Name="Discord";             ID="Discord.Discord";                  Category="Liên Lạc & Chat";   Domain="discord.com";           Aliases=@("Discord");                                                  Desc="Voice/chat cộng đồng số 1" }
+    @{ Name="Telegram";            ID="Telegram.TelegramDesktop";         Category="Liên Lạc & Chat";   Domain="telegram.org";          Aliases=@("Telegram Desktop", "Telegram", "TelegramDesktop");           Desc="Nhắn tin nhanh, cloud-sync mượt" }
+    @{ Name="Signal";              ID="OpenWhisperSystems.Signal";        Category="Liên Lạc & Chat";   Domain="signal.org";            Aliases=@("Signal");                                                   Desc="Mã hóa đầu-cuối an toàn tuyệt đối" }
+    @{ Name="Zalo";                ID="VNG.Zalo";                         Category="Liên Lạc & Chat";   Domain="zalo.me";               Aliases=@("Zalo", "VNGCorp.Zalo", "VNG.Zalo");                         Desc="Nhắn tin phổ biến nhất VN" }
+    @{ Name="Zoom";                ID="Zoom.Zoom";                        Category="Liên Lạc & Chat";   Domain="zoom.us";               Aliases=@("Zoom", "Zoom Workplace");                                   Desc="Họp trực tuyến trực tiếp" }
+    @{ Name="Slack";               ID="SlackTechnologies.Slack";          Category="Liên Lạc & Chat";   Domain="slack.com";             Aliases=@("Slack");                                                    Desc="Trao đổi công việc doanh nghiệp" }
+    @{ Name="WhatsApp";            ID="WhatsApp.WhatsApp";                Category="Liên Lạc & Chat";   Domain="whatsapp.com";          Aliases=@("WhatsApp");                                                 Desc="Gọi & nhắn tin toàn cầu" }
+    @{ Name="Microsoft Teams";     ID="Microsoft.Teams";                  Category="Liên Lạc & Chat";   Domain="microsoft.com";         Aliases=@("Microsoft Teams", "MSTeams");                               Desc="Nền tảng làm việc Microsoft" }
 
     # ── 💻 PHÁT TRIỂN & DEV ──
-    @{ Name="VS Code";             ID="Microsoft.VisualStudioCode";       Category="Phát Triển & Dev";   Domain="code.visualstudio.com"; Desc="Code editor chuẩn của lập trình viên" }
-    @{ Name="Git";                 ID="Git.Git";                          Category="Phát Triển & Dev";   Domain="git-scm.com";           Desc="Hệ thống quản lý phiên bản mã nguồn" }
-    @{ Name="Windows Terminal";    ID="Microsoft.WindowsTerminal";        Category="Phát Triển & Dev";   Domain="microsoft.com";         Desc="Terminal hiện đại đa tab" }
-    @{ Name="Python 3.12";         ID="Python.Python.3.12";              Category="Phát Triển & Dev";   Domain="python.org";            Desc="Ngôn ngữ AI & tự động hóa" }
-    @{ Name="Node.js LTS";         ID="OpenJS.NodeJS.LTS";               Category="Phát Triển & Dev";   Domain="nodejs.org";            Desc="Môi trường chạy JS server-side" }
-    @{ Name="Docker Desktop";      ID="Docker.DockerDesktop";             Category="Phát Triển & Dev";   Domain="docker.com";            Desc="Nền tảng container ảo hóa" }
-    @{ Name="Notepad++";           ID="Notepad++.Notepad++";              Category="Phát Triển & Dev";   Domain="notepad-plus-plus.org"; Desc="Trình soạn thảo text siêu nhẹ" }
-    @{ Name="Postman";             ID="Postman.Postman";                  Category="Phát Triển & Dev";   Domain="postman.com";           Desc="Test & phát triển API" }
-    @{ Name="DBeaver CE";          ID="dbeaver.dbeaver";                  Category="Phát Triển & Dev";   Domain="dbeaver.io";            Desc="Quản trị database đa năng" }
-    @{ Name="Go Lang";             ID="GoLang.Go";                        Category="Phát Triển & Dev";   Domain="golang.org";            Desc="Ngôn ngữ backend hiệu năng cao" }
-    @{ Name="Rust (rustup)";       ID="Rustlang.Rustup";                  Category="Phát Triển & Dev";   Domain="rust-lang.org";         Desc="Bộ công cụ ngôn ngữ Rust" }
+    @{ Name="VS Code";             ID="Microsoft.VisualStudioCode";       Category="Phát Triển & Dev";   Domain="code.visualstudio.com"; Aliases=@("Microsoft Visual Studio Code", "Visual Studio Code");      Desc="Code editor chuẩn của lập trình viên" }
+    @{ Name="Git";                 ID="Git.Git";                          Category="Phát Triển & Dev";   Domain="git-scm.com";           Aliases=@("Git");                                                      Desc="Hệ thống quản lý phiên bản mã nguồn" }
+    @{ Name="Windows Terminal";    ID="Microsoft.WindowsTerminal";        Category="Phát Triển & Dev";   Domain="microsoft.com";         Aliases=@("Windows Terminal", "WindowsTerminal", "Bảng điều khiển Windows"); Desc="Terminal hiện đại đa tab" }
+    @{ Name="Python 3.12";         ID="Python.Python.3.12";              Category="Phát Triển & Dev";   Domain="python.org";            Aliases=@("Python 3.12", "Python 3.13", "Python");                     Desc="Ngôn ngữ AI & tự động hóa" }
+    @{ Name="Node.js LTS";         ID="OpenJS.NodeJS.LTS";               Category="Phát Triển & Dev";   Domain="nodejs.org";            Aliases=@("Node.js", "OpenJS.NodeJS");                                 Desc="Môi trường chạy JS server-side" }
+    @{ Name="Docker Desktop";      ID="Docker.DockerDesktop";             Category="Phát Triển & Dev";   Domain="docker.com";            Aliases=@("Docker Desktop");                                           Desc="Nền tảng container ảo hóa" }
+    @{ Name="Notepad++";           ID="Notepad++.Notepad++";              Category="Phát Triển & Dev";   Domain="notepad-plus-plus.org"; Aliases=@("Notepad++");                                                Desc="Trình soạn thảo text siêu nhẹ" }
+    @{ Name="Postman";             ID="Postman.Postman";                  Category="Phát Triển & Dev";   Domain="postman.com";           Aliases=@("Postman");                                                  Desc="Test & phát triển API" }
+    @{ Name="DBeaver CE";          ID="dbeaver.dbeaver";                  Category="Phát Triển & Dev";   Domain="dbeaver.io";            Aliases=@("DBeaver");                                                  Desc="Quản trị database đa năng" }
+    @{ Name="Go Lang";             ID="GoLang.Go";                        Category="Phát Triển & Dev";   Domain="golang.org";            Aliases=@("Go Programming Language", "GoLang");                        Desc="Ngôn ngữ backend hiệu năng cao" }
+    @{ Name="Rust (rustup)";       ID="Rustlang.Rustup";                  Category="Phát Triển & Dev";   Domain="rust-lang.org";         Aliases=@("Rustup", "Rust");                                           Desc="Bộ công cụ ngôn ngữ Rust" }
 
     # ── 🛠️ TIỆN ÍCH HỆ THỐNG ──
-    @{ Name="7-Zip";               ID="7zip.7zip";                        Category="Tiện Ích Hệ Thống";  Domain="7-zip.org";             Desc="Giải nén mọi định dạng tệp" }
-    @{ Name="WinRAR";              ID="RARLab.WinRAR";                    Category="Tiện Ích Hệ Thống";  Domain="rarlab.com";            Desc="Nén/giải nén chuẩn RAR" }
-    @{ Name="Everything";          ID="voidtools.Everything";             Category="Tiện Ích Hệ Thống";  Domain="voidtools.com";         Desc="Tìm kiếm file tức thì 1 giây" }
-    @{ Name="PowerToys";           ID="Microsoft.PowerToys";              Category="Tiện Ích Hệ Thống";  Domain="github.com";            Desc="Bộ tiện ích chính chủ Microsoft" }
-    @{ Name="Flow Launcher";       ID="Flow-Launcher.Flow-Launcher";      Category="Tiện Ích Hệ Thống";  Domain="flowlauncher.com";      Desc="Thanh tìm kiếm & chạy app Alt+Space" }
-    @{ Name="Revo Uninstaller";    ID="VSRevoGroup.RevoUninstaller";      Category="Tiện Ích Hệ Thống";  Domain="revouninstaller.com";   Desc="Gỡ phần mềm sạch tận gốc" }
-    @{ Name="TreeSize Free";       ID="JAMSoftware.TreeSize.Free";        Category="Tiện Ích Hệ Thống";  Domain="jam-software.com";      Desc="Phân tích dung lượng ổ đĩa" }
-    @{ Name="ShareX";              ID="ShareX.ShareX";                    Category="Tiện Ích Hệ Thống";  Domain="getsharex.com";         Desc="Chụp/quay màn hình & OCR đỉnh cao" }
-    @{ Name="BleachBit";           ID="BleachBit.BleachBit";              Category="Tiện Ích Hệ Thống";  Domain="bleachbit.org";         Desc="Dọn rác & privacy thay CCleaner" }
-    @{ Name="FanControl";          ID="Rem0o.FanControl";                 Category="Tiện Ích Hệ Thống";  Domain="github.com";            Desc="Tùy chỉnh quạt tản nhiệt êm ái" }
+    @{ Name="7-Zip";               ID="7zip.7zip";                        Category="Tiện Ích Hệ Thống";  Domain="7-zip.org";             Aliases=@("7-Zip", "7zip");                                            Desc="Giải nén mọi định dạng tệp" }
+    @{ Name="WinRAR";              ID="RARLab.WinRAR";                    Category="Tiện Ích Hệ Thống";  Domain="rarlab.com";            Aliases=@("WinRAR");                                                   Desc="Nén/giải nén chuẩn RAR" }
+    @{ Name="Everything";          ID="voidtools.Everything";             Category="Tiện Ích Hệ Thống";  Domain="voidtools.com";         Aliases=@("Everything");                                               Desc="Tìm kiếm file tức thì 1 giây" }
+    @{ Name="PowerToys";           ID="Microsoft.PowerToys";              Category="Tiện Ích Hệ Thống";  Domain="github.com";            Aliases=@("PowerToys");                                                Desc="Bộ tiện ích chính chủ Microsoft" }
+    @{ Name="Flow Launcher";       ID="Flow-Launcher.Flow-Launcher";      Category="Tiện Ích Hệ Thống";  Domain="flowlauncher.com";      Aliases=@("Flow Launcher", "Flow-Launcher");                           Desc="Thanh tìm kiếm & chạy app Alt+Space" }
+    @{ Name="Revo Uninstaller";    ID="VSRevoGroup.RevoUninstaller";      Category="Tiện Ích Hệ Thống";  Domain="revouninstaller.com";   Aliases=@("Revo Uninstaller");                                         Desc="Gỡ phần mềm sạch tận gốc" }
+    @{ Name="TreeSize Free";       ID="JAMSoftware.TreeSize.Free";        Category="Tiện Ích Hệ Thống";  Domain="jam-software.com";      Aliases=@("TreeSize");                                                 Desc="Phân tích dung lượng ổ đĩa" }
+    @{ Name="ShareX";              ID="ShareX.ShareX";                    Category="Tiện Ích Hệ Thống";  Domain="getsharex.com";         Aliases=@("ShareX");                                                   Desc="Chụp/quay màn hình & OCR đỉnh cao" }
+    @{ Name="BleachBit";           ID="BleachBit.BleachBit";              Category="Tiện Ích Hệ Thống";  Domain="bleachbit.org";         Aliases=@("BleachBit");                                                Desc="Dọn rác & privacy thay CCleaner" }
+    @{ Name="FanControl";          ID="Rem0o.FanControl";                 Category="Tiện Ích Hệ Thống";  Domain="github.com";            Aliases=@("FanControl");                                               Desc="Tùy chỉnh quạt tản nhiệt êm ái" }
 
     # ── 🎬 ĐA PHƯƠNG TIỆN ──
-    @{ Name="VLC Media Player";    ID="VideoLAN.VLC";                     Category="Đa Phương Tiện";     Domain="videolan.org";          Desc="Xem mọi định dạng video/nhạc" }
-    @{ Name="OBS Studio";          ID="OBSProject.OBSStudio";             Category="Đa Phương Tiện";     Domain="obsproject.com";        Desc="Ghi hình & livestream chuyên nghiệp" }
-    @{ Name="Spotify";             ID="Spotify.Spotify";                  Category="Đa Phương Tiện";     Domain="spotify.com";           Desc="Nghe nhạc bản quyền chất lượng cao" }
-    @{ Name="GIMP";                ID="GIMP.GIMP";                        Category="Đa Phương Tiện";     Domain="gimp.org";              Desc="Chỉnh sửa ảnh chuyên nghiệp thay PTS" }
-    @{ Name="Audacity";            ID="Audacity.Audacity";                Category="Đa Phương Tiện";     Domain="audacityteam.org";      Desc="Thu âm & biên tập audio" }
-    @{ Name="HandBrake";           ID="HandBrake.HandBrake";              Category="Đa Phương Tiện";     Domain="handbrake.fr";          Desc="Nén & đổi đuôi video dung lượng nhẹ" }
-    @{ Name="Krita";               ID="KDE.Krita";                        Category="Đa Phương Tiện";     Domain="krita.org";             Desc="Vẽ đồ họa số & concept art" }
-    @{ Name="K-Lite Codec Mega";   ID="CodecGuide.K-LiteCodecPack.Mega";  Category="Đa Phương Tiện";     Domain="codecguide.com";        Desc="Gói giải mã video/audio đầy đủ" }
+    @{ Name="VLC Media Player";    ID="VideoLAN.VLC";                     Category="Đa Phương Tiện";     Domain="videolan.org";          Aliases=@("VLC media player", "VLC");                                  Desc="Xem mọi định dạng video/nhạc" }
+    @{ Name="OBS Studio";          ID="OBSProject.OBSStudio";             Category="Đa Phương Tiện";     Domain="obsproject.com";        Aliases=@("OBS Studio");                                               Desc="Ghi hình & livestream chuyên nghiệp" }
+    @{ Name="Spotify";             ID="Spotify.Spotify";                  Category="Đa Phương Tiện";     Domain="spotify.com";           Aliases=@("Spotify");                                                  Desc="Nghe nhạc bản quyền chất lượng cao" }
+    @{ Name="GIMP";                ID="GIMP.GIMP";                        Category="Đa Phương Tiện";     Domain="gimp.org";              Aliases=@("GIMP");                                                     Desc="Chỉnh sửa ảnh chuyên nghiệp thay PTS" }
+    @{ Name="Audacity";            ID="Audacity.Audacity";                Category="Đa Phương Tiện";     Domain="audacityteam.org";      Aliases=@("Audacity");                                                 Desc="Thu âm & biên tập audio" }
+    @{ Name="HandBrake";           ID="HandBrake.HandBrake";              Category="Đa Phương Tiện";     Domain="handbrake.fr";          Aliases=@("HandBrake");                                                Desc="Nén & đổi đuôi video dung lượng nhẹ" }
+    @{ Name="Krita";               ID="KDE.Krita";                        Category="Đa Phương Tiện";     Domain="krita.org";             Aliases=@("Krita");                                                    Desc="Vẽ đồ họa số & concept art" }
+    @{ Name="K-Lite Codec Mega";   ID="CodecGuide.K-LiteCodecPack.Mega";  Category="Đa Phương Tiện";     Domain="codecguide.com";        Aliases=@("K-Lite Codec Pack", "K-Lite");                              Desc="Gói giải mã video/audio đầy đủ" }
 
     # ── 📝 VĂN PHÒNG & TÀI LIỆU ──
-    @{ Name="LibreOffice";         ID="TheDocumentFoundation.LibreOffice"; Category="Văn Phòng & Tài Liệu"; Domain="libreoffice.org";     Desc="Bộ Office mã nguồn mở miễn phí" }
-    @{ Name="Obsidian";            ID="Obsidian.Obsidian";                Category="Văn Phòng & Tài Liệu"; Domain="obsidian.md";          Desc="Ghi chú Markdown & mạng lưới tư duy" }
-    @{ Name="Notion";              ID="Notion.Notion";                    Category="Văn Phòng & Tài Liệu"; Domain="notion.so";            Desc="Không gian quản lý ghi chú chung" }
-    @{ Name="SumatraPDF";          ID="SumatraPDF.SumatraPDF";            Category="Văn Phòng & Tài Liệu"; Domain="sumatrapdfreader.org";  Desc="Đọc PDF siêu nhẹ bật tức thì" }
-    @{ Name="Foxit PDF Reader";    ID="Foxit.FoxitReader";                Category="Văn Phòng & Tài Liệu"; Domain="foxit.com";            Desc="Xem & ký tài liệu PDF chuyên nghiệp" }
+    @{ Name="LibreOffice";         ID="TheDocumentFoundation.LibreOffice"; Category="Văn Phòng & Tài Liệu"; Domain="libreoffice.org";     Aliases=@("LibreOffice");                                              Desc="Bộ Office mã nguồn mở miễn phí" }
+    @{ Name="Obsidian";            ID="Obsidian.Obsidian";                Category="Văn Phòng & Tài Liệu"; Domain="obsidian.md";          Aliases=@("Obsidian");                                                 Desc="Ghi chú Markdown & mạng lưới tư duy" }
+    @{ Name="Notion";              ID="Notion.Notion";                    Category="Văn Phòng & Tài Liệu"; Domain="notion.so";            Aliases=@("Notion");                                                   Desc="Không gian quản lý ghi chú chung" }
+    @{ Name="SumatraPDF";          ID="SumatraPDF.SumatraPDF";            Category="Văn Phòng & Tài Liệu"; Domain="sumatrapdfreader.org";  Aliases=@("SumatraPDF");                                               Desc="Đọc PDF siêu nhẹ bật tức thì" }
+    @{ Name="Foxit PDF Reader";    ID="Foxit.FoxitReader";                Category="Văn Phòng & Tài Liệu"; Domain="foxit.com";            Aliases=@("Foxit PDF Reader", "Foxit Reader");                         Desc="Xem & ký tài liệu PDF chuyên nghiệp" }
 
     # ── 🎮 NỀN TẢNG TRÒ CHƠI ──
-    @{ Name="Steam";               ID="Valve.Steam";                      Category="Nền Tảng Trò Chơi";  Domain="steampowered.com";      Desc="Kho game PC số 1 thế giới" }
-    @{ Name="Epic Games Launcher"; ID="EpicGames.EpicGamesLauncher";      Category="Nền Tảng Trò Chơi";  Domain="epicgames.com";         Desc="Cửa hàng game & phát game miễn phí" }
-    @{ Name="GOG Galaxy";          ID="GOG.Galaxy";                       Category="Nền Tảng Trò Chơi";  Domain="gog.com";               Desc="Quản lý thư viện game không DRM" }
-    @{ Name="MSI Afterburner";     ID="Guru3D.Afterburner";               Category="Nền Tảng Trò Chơi";  Domain="msi.com";               Desc="Đo nhiệt độ, FPS & ép xung" }
-    @{ Name="Playnite";            ID="Playnite.Playnite";                Category="Nền Tảng Trò Chơi";  Domain="playnite.link";         Desc="Gom mọi thư viện game về một nơi" }
+    @{ Name="Steam";               ID="Valve.Steam";                      Category="Nền Tảng Trò Chơi";  Domain="steampowered.com";      Aliases=@("Steam");                                                    Desc="Kho game PC số 1 thế giới" }
+    @{ Name="Epic Games Launcher"; ID="EpicGames.EpicGamesLauncher";      Category="Nền Tảng Trò Chơi";  Domain="epicgames.com";         Aliases=@("Epic Games Launcher");                                      Desc="Cửa hàng game & phát game miễn phí" }
+    @{ Name="GOG Galaxy";          ID="GOG.Galaxy";                       Category="Nền Tảng Trò Chơi";  Domain="gog.com";               Aliases=@("GOG GALAXY", "GOG Galaxy");                                 Desc="Quản lý thư viện game không DRM" }
+    @{ Name="MSI Afterburner";     ID="Guru3D.Afterburner";               Category="Nền Tảng Trò Chơi";  Domain="msi.com";               Aliases=@("MSI Afterburner");                                          Desc="Đo nhiệt độ, FPS & ép xung" }
+    @{ Name="Playnite";            ID="Playnite.Playnite";                Category="Nền Tảng Trò Chơi";  Domain="playnite.link";         Aliases=@("Playnite");                                                 Desc="Gom mọi thư viện game về một nơi" }
 
     # ── 📁 LƯU TRỮ & TRUYỀN TỆP ──
-    @{ Name="qBittorrent";         ID="qBittorrent.qBittorrent";          Category="Lưu Trữ & Truyền Tệp"; Domain="qbittorrent.org";      Desc="Tải torrent sạch, không quảng cáo" }
-    @{ Name="LocalSend";           ID="LocalSend.LocalSend";              Category="Lưu Trữ & Truyền Tệp"; Domain="localsend.org";        Desc="Bắn file qua Wi-Fi như AirDrop" }
-    @{ Name="WinSCP";              ID="WinSCP.WinSCP";                    Category="Lưu Trữ & Truyền Tệp"; Domain="winscp.net";           Desc="Truyền tệp qua SFTP/FTP bảo mật" }
-    @{ Name="FileZilla";           ID="TimKosse.FileZilla.Client";        Category="Lưu Trữ & Truyền Tệp"; Domain="filezilla-project.org"; Desc="Client truyền tệp FTP phổ biến" }
-    @{ Name="Rclone";              ID="Rclone.Rclone";                    Category="Lưu Trữ & Truyền Tệp"; Domain="rclone.org";           Desc="Mount & đồng bộ 70+ dịch vụ đám mây" }
+    @{ Name="qBittorrent";         ID="qBittorrent.qBittorrent";          Category="Lưu Trữ & Truyền Tệp"; Domain="qbittorrent.org";      Aliases=@("qBittorrent");                                              Desc="Tải torrent sạch, không quảng cáo" }
+    @{ Name="LocalSend";           ID="LocalSend.LocalSend";              Category="Lưu Trữ & Truyền Tệp"; Domain="localsend.org";        Aliases=@("LocalSend");                                                Desc="Bắn file qua Wi-Fi như AirDrop" }
+    @{ Name="WinSCP";              ID="WinSCP.WinSCP";                    Category="Lưu Trữ & Truyền Tệp"; Domain="winscp.net";           Aliases=@("WinSCP", "winscp3_is1");                                    Desc="Truyền tệp qua SFTP/FTP bảo mật" }
+    @{ Name="FileZilla";           ID="TimKosse.FileZilla.Client";        Category="Lưu Trữ & Truyền Tệp"; Domain="filezilla-project.org"; Aliases=@("FileZilla Client", "FileZilla");                           Desc="Client truyền tệp FTP phổ biến" }
+    @{ Name="Rclone";              ID="Rclone.Rclone";                    Category="Lưu Trữ & Truyền Tệp"; Domain="rclone.org";           Aliases=@("Rclone");                                                   Desc="Mount & đồng bộ 70+ dịch vụ đám mây" }
 
     # ── 🔒 BẢO MẬT & MẠNG ──
-    @{ Name="Bitwarden";           ID="Bitwarden.Bitwarden";              Category="Bảo Mật & Mạng";     Domain="bitwarden.com";         Desc="Két mật khẩu mã hóa an toàn" }
-    @{ Name="KeePassXC";           ID="KeePassXCTeam.KeePassXC";          Category="Bảo Mật & Mạng";     Domain="keepassxc.org";         Desc="Quản lý mật khẩu offline độc lập" }
-    @{ Name="Cryptomator";         ID="Cryptomator.Cryptomator";          Category="Bảo Mật & Mạng";     Domain="cryptomator.org";       Desc="Mã hóa dữ liệu trước khi lên mây" }
-    @{ Name="ProtonVPN";           ID="ProtonTechnologies.ProtonVPN";     Category="Bảo Mật & Mạng";     Domain="protonvpn.com";         Desc="VPN bảo mật cao từ Thụy Sĩ" }
-    @{ Name="RustDesk";            ID="RustDesk.RustDesk";                Category="Bảo Mật & Mạng";     Domain="rustdesk.com";          Desc="Điều khiển máy tính từ xa tự host" }
-    @{ Name="Wireshark";           ID="WiresharkFoundation.Wireshark";    Category="Bảo Mật & Mạng";     Domain="wireshark.org";         Desc="Phân tích gói tin mạng chuyên sâu" }
+    @{ Name="Bitwarden";           ID="Bitwarden.Bitwarden";              Category="Bảo Mật & Mạng";     Domain="bitwarden.com";         Aliases=@("Bitwarden");                                                Desc="Két mật khẩu mã hóa an toàn" }
+    @{ Name="KeePassXC";           ID="KeePassXCTeam.KeePassXC";          Category="Bảo Mật & Mạng";     Domain="keepassxc.org";         Aliases=@("KeePassXC");                                                Desc="Quản lý mật khẩu offline độc lập" }
+    @{ Name="Cryptomator";         ID="Cryptomator.Cryptomator";          Category="Bảo Mật & Mạng";     Domain="cryptomator.org";       Aliases=@("Cryptomator");                                              Desc="Mã hóa dữ liệu trước khi lên mây" }
+    @{ Name="ProtonVPN";           ID="ProtonTechnologies.ProtonVPN";     Category="Bảo Mật & Mạng";     Domain="protonvpn.com";         Aliases=@("Proton VPN", "ProtonVPN", "Proton.ProtonVPN");               Desc="VPN bảo mật cao từ Thụy Sĩ" }
+    @{ Name="RustDesk";            ID="RustDesk.RustDesk";                Category="Bảo Mật & Mạng";     Domain="rustdesk.com";          Aliases=@("RustDesk");                                                 Desc="Điều khiển máy tính từ xa tự host" }
+    @{ Name="Wireshark";           ID="WiresharkFoundation.Wireshark";    Category="Bảo Mật & Mạng";     Domain="wireshark.org";         Aliases=@("Wireshark");                                                Desc="Phân tích gói tin mạng chuyên sâu" }
 
     # ── 🔧 THƯ VIỆN CỐT LÕI ──
-    @{ Name="VC++ Redist 2015-2022"; ID="Microsoft.VCRedist.2015+.x64";  Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Desc="Cần thiết cho hầu hết game & app" }
-    @{ Name=".NET Desktop Runtime 8"; ID="Microsoft.DotNet.DesktopRuntime.8"; Category="Thư Viện Cốt Lõi"; Domain="microsoft.com";      Desc="Nền tảng chạy ứng dụng .NET 8 mới" }
-    @{ Name="DirectX End-User";    ID="Microsoft.DirectX";                Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Desc="Thư viện đồ họa DirectX chuẩn" }
-    @{ Name="Java OpenJDK 21";     ID="EclipseAdoptium.Temurin.21.JDK";   Category="Thư Viện Cốt Lõi";   Domain="adoptium.net";          Desc="Môi trường chạy Java LTS tiêu chuẩn" }
+    @{ Name="VC++ Redist 2015-2022"; ID="Microsoft.VCRedist.2015+.x64";  Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Aliases=@("Visual C++", "Microsoft Visual C++");                       Desc="Cần thiết cho hầu hết game & app" }
+    @{ Name=".NET Desktop Runtime 8"; ID="Microsoft.DotNet.DesktopRuntime.8"; Category="Thư Viện Cốt Lõi"; Domain="microsoft.com";      Aliases=@("Microsoft Windows Desktop Runtime - 8", "DesktopRuntime.8"); Desc="Nền tảng chạy ứng dụng .NET 8 mới" }
+    @{ Name="DirectX End-User";    ID="Microsoft.DirectX";                Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Aliases=@("DirectX");                                                  Desc="Thư viện đồ họa DirectX chuẩn" }
+    @{ Name="Java OpenJDK 21";     ID="EclipseAdoptium.Temurin.21.JDK";   Category="Thư Viện Cốt Lõi";   Domain="adoptium.net";          Aliases=@("Eclipse Temurin", "Temurin", "Amazon Corretto");             Desc="Môi trường chạy Java LTS tiêu chuẩn" }
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -622,7 +622,7 @@ foreach ($cat in $categories) {
         $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
         $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
-        $rowBorder.Tag = $app
+        $rowBorder.Tag = @{ App = $app; Status = "NONE" }
 
         $rowGrid = New-Object System.Windows.Controls.Grid
         $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
@@ -674,16 +674,19 @@ foreach ($cat in $categories) {
             $cb.IsChecked = -not $cb.IsChecked
         })
 
-        # Hover phát sáng
+        # Hover phát sáng & giữ màu trạng thái khi rời chuột
         $rowBorder.Add_MouseEnter({
-            if ($rowBorder.Background -eq [System.Windows.Media.Brushes]::Transparent) {
+            if ($rowBorder.Tag.Status -eq "NONE") {
                 $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
             }
         })
         $rowBorder.Add_MouseLeave({
-            $currTag = $rowBorder.Tag
-            if ($rowBorder.FindName("isSpecialBg") -ne $true) {
-                # Giữ nguyên màu nền nếu đã được scan
+            if ($rowBorder.Tag.Status -eq "LATEST") {
+                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
+            } elseif ($rowBorder.Tag.Status -eq "OUTDATED") {
+                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
+            } else {
+                $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
             }
         })
 
@@ -738,7 +741,7 @@ function Run-CliStream {
 $txtSearch.Add_TextChanged({
     $keyword = $txtSearch.Text.Trim().ToLower()
     foreach ($row in $allItemBorders) {
-        $app = $row.Tag
+        $app = $row.Tag.App
         $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
         $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
@@ -746,9 +749,10 @@ $txtSearch.Add_TextChanged({
 
 # ── HÀM QUÉT VÀ PHÂN MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
 function Scan-And-ColorizeApps {
-    Log-Text "[🔍] Đang chạy 'winget list' để phân tích phiên bản của từng ứng dụng..."
+    Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     $txtStatus.Text = "Đang kiểm tra phiên bản app..."
     $progressBar.IsIndeterminate = $true
+    [System.Windows.Forms.Application]::DoEvents()
 
     $pinfo = New-Object System.Diagnostics.ProcessStartInfo
     $pinfo.FileName = "winget"
@@ -760,28 +764,63 @@ function Scan-And-ColorizeApps {
     $rawList = $p.StandardOutput.ReadToEnd()
     $p.WaitForExit()
 
-    # Phân tích danh sách đã cài đặt
+    # Phân tích danh sách đã cài đặt từ winget
     $lines = $rawList -split "`r?`n"
     $start = $false
-    $installedMap = @{}
+    $installedItems = @()
 
     foreach ($line in $lines) {
         if ($line -like "---*") { $start = $true; continue }
         if ($start -and -not [string]::IsNullOrWhiteSpace($line)) {
             $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), "\s{2,}")
             if ($cols.Count -ge 2) {
-                $id = $cols[1].ToLower()
-                $ver = if ($cols.Count -ge 3) { $cols[2] } else { "" }
-                $avail = if ($cols.Count -ge 4) { $cols[3] } else { "" }
-                $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore"))
-
-                $installedMap[$id] = @{
-                    Version   = $ver
-                    Available = $avail
-                    HasUpdate = $hasUpdate
+                $installedItems += [PSCustomObject]@{
+                    Name      = $cols[0].Trim()
+                    ID        = $cols[1].Trim()
+                    Version   = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
+                    Available = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                    HasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $cols[3].Trim() -ne "winget" -and $cols[3].Trim() -ne "msstore" -and $cols[3].Trim() -ne ""))
                 }
             }
         }
+    }
+
+    # Hàm khớp thông minh (Exact ID -> Aliases -> Clean Name)
+    function Find-InstalledAppInfo {
+        param($targetApp, $items)
+        
+        # 1. Exact ID
+        $match = $items | Where-Object { $_.ID -eq $targetApp.ID } | Select-Object -First 1
+        if ($match) { return $match }
+
+        # 2. Check Aliases (Brave, Zalo, Telegram, WinSCP, ProtonVPN...)
+        if ($targetApp.ContainsKey("Aliases") -and $targetApp.Aliases) {
+            foreach ($alias in $targetApp.Aliases) {
+                $al = $alias.ToLower()
+                $match = $items | Where-Object {
+                    $_.ID.ToLower() -eq $al -or
+                    $_.Name.ToLower() -eq $al -or
+                    $_.ID.ToLower().Contains($al) -or
+                    $_.Name.ToLower().StartsWith($al)
+                } | Select-Object -First 1
+                if ($match) { return $match }
+            }
+        }
+
+        # 3. Clean Name match
+        $clean = ($targetApp.Name -replace '\(.*?\)', '').Trim().ToLower()
+        foreach ($term in @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")) {
+            $clean = $clean.Replace($term, "")
+        }
+        if ($clean.Length -ge 3) {
+            $match = $items | Where-Object {
+                $n = ($_.Name -replace '\(.*?\)', '').Trim().ToLower()
+                $n -eq $clean -or $n.StartsWith("$clean ") -or $n.StartsWith($clean)
+            } | Select-Object -First 1
+            if ($match) { return $match }
+        }
+
+        return $null
     }
 
     $progressBar.IsIndeterminate = $false
@@ -790,32 +829,36 @@ function Scan-And-ColorizeApps {
     $countOutdated = 0
 
     foreach ($row in $allItemBorders) {
-        $app = $row.Tag
-        $appIdLower = $app.ID.ToLower()
+        $app = $row.Tag.App
         $grid = $row.Child
         $tb = $grid.Children[2]
 
-        if ($installedMap.ContainsKey($appIdLower)) {
-            $info = $installedMap[$appIdLower]
+        $info = Find-InstalledAppInfo $app $installedItems
+
+        if ($info) {
             $countInstalled++
 
             if ($info.HasUpdate -eq $true) {
                 # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
                 $countOutdated++
+                $row.Tag.Status = "OUTDATED"
                 $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
                 $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
-                $tb.Text = "$($app.Name)  ⚠️ (Có bản mới: $($info.Available))"
-                $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID: $($app.ID)"
+                $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
+                $tb.Text = "$($app.Name)  ⚠️$updateBadge"
+                $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
             } else {
                 # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm ──
                 $countLatest++
+                $row.Tag.Status = "LATEST"
                 $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
                 $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
                 $tb.Text = "$($app.Name)  ✓ (Mới nhất)"
-                $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID: $($app.ID)"
+                $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
+            $row.Tag.Status = "NONE"
             $row.Background = [System.Windows.Media.Brushes]::Transparent
             $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
             $tb.Text = $app.Name
@@ -1140,6 +1183,15 @@ $btnOpenBackupFolder.Add_Click({
 })
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 12. KHỞI CHẠY GIAO DIỆN
+# 12. TỰ ĐỘNG QUÉT KHI MỞ CỬA SỔ & KHỞI CHẠY GIAO DIỆN
 # ═══════════════════════════════════════════════════════════════════════════════
+$script:autoScannedOnStartup = $false
+$window.Add_ContentRendered({
+    if (-not $script:autoScannedOnStartup) {
+        $script:autoScannedOnStartup = $true
+        [System.Windows.Forms.Application]::DoEvents()
+        Scan-And-ColorizeApps
+    }
+})
+
 $window.ShowDialog() | Out-Null
