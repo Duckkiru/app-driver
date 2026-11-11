@@ -1,8 +1,9 @@
 ﻿<#
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🦆 DUCK UTIL - CYBER OBSIDIAN EDITION                    ║
-║         Giao diện Ultra-Dark hiện đại + Tích hợp App Logo Icon thật          ║
-║         Hiệu ứng Hover viền phát sáng + Chạm chọn tiện lợi như Raycast       ║
+║         • Bố cục chuẩn 4 CỘT rộng rãi, không bị chật chội                     ║
+║         • Nhận diện phiên bản: TRẮNG (Chưa cài) - XANH (Bản mới) - ĐỎ (Bản cũ)║
+║         • Tích hợp App Logo Icon thật + Chạm chọn toàn dòng                   ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 #>
 
@@ -118,21 +119,21 @@ $AppCatalog = @(
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 4. GIAO DIỆN XAML: CYBER OBSIDIAN THEME (ULTRA-DARK HIỆN ĐẠI)
+# 4. GIAO DIỆN XAML: BỐ CỤC 4 CỘT RỘNG RÃI + STATUS LEGEND
 # ═══════════════════════════════════════════════════════════════════════════════
 [xml]$XAML = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="DuckUtil - Cyber Obsidian Suite"
-    Width="1290" Height="890"
+    Width="1280" Height="890"
     WindowStartupLocation="CenterScreen"
     Background="#090B10"
     Foreground="#F8FAFC"
     FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif">
 
     <Window.Resources>
-        <!-- Nút bấm hành động phong cách Glass / Glow -->
+        <!-- Nút bấm phong cách Action -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
@@ -161,16 +162,16 @@ $AppCatalog = @(
             </Setter>
         </Style>
 
-        <!-- Nút phụ (Secondary) -->
+        <!-- Nút phụ -->
         <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#171C28"/>
+            <Setter Property="Background" Value="#151A26"/>
             <Setter Property="Foreground" Value="#94A3B8"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="14,8"/>
             <Setter Property="Margin" Value="4,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#252D40"/>
+            <Setter Property="BorderBrush" Value="#222C3E"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -183,7 +184,7 @@ $AppCatalog = @(
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#202738"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="#1E2738"/>
                                 <Setter Property="Foreground" Value="#FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -234,7 +235,7 @@ $AppCatalog = @(
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. TOP APP HEADER ═══ -->
-        <Border Grid.Row="0" Background="#0C0E14" Padding="20,14" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#0C0E14" Padding="20,12" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -257,7 +258,7 @@ $AppCatalog = @(
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Modern Glow Search Box -->
+                <!-- Modern Search Box -->
                 <Border Grid.Column="2" Background="#121620" CornerRadius="8" BorderBrush="#263147" BorderThickness="1" Padding="10,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -292,7 +293,7 @@ $AppCatalog = @(
                 </Style>
             </TabControl.ItemContainerStyle>
 
-            <!-- ── TAB 1: ỨNG DỤNG (CARD GRID CÓ LOGO) ── -->
+            <!-- ── TAB 1: ỨNG DỤNG (BỐ CỤC 4 CỘT) ── -->
             <TabItem>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -300,36 +301,58 @@ $AppCatalog = @(
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Thanh nút bấm ứng dụng Glassy -->
-                    <Border Grid.Row="0" Background="#0F121A" Padding="18,10" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+                    <!-- Thanh nút bấm ứng dụng + Chú giải phân màu -->
+                    <Border Grid.Row="0" Background="#0F121A" Padding="18,8" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Button Name="btnInstall" Content="🚀 Install Selected" Style="{StaticResource ActionButton}"
-                                        Background="#10B981" Padding="18,9"/>
-                                <Button Name="btnUpgradeAll" Content="⚡ Upgrade All" Style="{StaticResource ActionButton}"
-                                        Background="#F59E0B" Padding="16,9"/>
-                                <Button Name="btnUninstall" Content="🗑️ Uninstall Selected" Style="{StaticResource ActionButton}"
-                                        Background="#EF4444" Padding="16,9"/>
-                                <Button Name="btnScanInstalled" Content="🔍 Get Installed" Style="{StaticResource ActionButton}"
-                                        Background="#0EA5E9" Padding="16,9"/>
-                            </StackPanel>
+                            <!-- Hàng 1: Nút bấm hành động -->
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}"/>
-                                <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}"/>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Button Name="btnInstall" Content="🚀 Install Selected" Style="{StaticResource ActionButton}"
+                                            Background="#10B981" Padding="18,9"/>
+                                    <Button Name="btnUpgradeAll" Content="⚡ Upgrade All" Style="{StaticResource ActionButton}"
+                                            Background="#F59E0B" Padding="16,9"/>
+                                    <Button Name="btnUninstall" Content="🗑️ Uninstall Selected" Style="{StaticResource ActionButton}"
+                                            Background="#EF4444" Padding="16,9"/>
+                                    <Button Name="btnScanInstalled" Content="🔍 Get Installed" Style="{StaticResource ActionButton}"
+                                            Background="#0EA5E9" Padding="16,9"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                    <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}"/>
+                                    <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Hàng 2: Chú thích màu sắc chuẩn -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,8,0,0">
+                                <TextBlock Text="Trạng thái màu tên App:" FontSize="11.5" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
+                                <Border Background="#1E293B" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
+                                    <TextBlock Text="⚪ Trắng: Chưa cài đặt" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                                </Border>
+                                <Border Background="#0C2417" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
+                                    <TextBlock Text="🟢 Xanh lá: Đã cài (Bản mới nhất)" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
+                                </Border>
+                                <Border Background="#271013" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
+                                    <TextBlock Text="🔴 Đỏ: Đã cài (Bản cũ - Có cập nhật)" FontSize="11" Foreground="#F87171" FontWeight="SemiBold"/>
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </Border>
 
-                    <!-- Lưới Card chứa ứng dụng -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,12">
-                        <WrapPanel Name="CardsContainer" ItemWidth="244" Orientation="Horizontal"/>
+                    <!-- Lưới Card 4 CỘT RỘNG RÃI (ItemWidth = 296) -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,10">
+                        <WrapPanel Name="CardsContainer" ItemWidth="296" Orientation="Horizontal"/>
                     </ScrollViewer>
                 </Grid>
             </TabItem>
@@ -467,7 +490,7 @@ $AppCatalog = @(
                          FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0"
-                         Text="[DuckUtil Cyber Suite] Khởi tạo thành công với giao diện Ultra-Dark và App Icons.&#x0d;&#x0a;"/>
+                         Text="[DuckUtil Cyber Suite] Khởi tạo thành công với bố cục 4 cột và phân màu phiên bản.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
     </Grid>
@@ -545,7 +568,7 @@ $navBtnRepair.Add_Click({ Set-ActiveTab 1 $navBtnRepair })
 $navBtnDrivers.Add_Click({ Set-ActiveTab 2 $navBtnDrivers })
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 7. SINH CÁC CARD ỨNG DỤNG (KÈM ICON LOGO & CHẠM CHỌN TOÀN DÒNG)
+# 7. SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT RỘNG RÃI
 # ═══════════════════════════════════════════════════════════════════════════════
 $allCheckBoxes = @()
 $allItemBorders = @()
@@ -557,25 +580,25 @@ function Update-SelectionCount {
 }
 
 foreach ($cat in $categories) {
-    # ── Khung Card viền hiện đại bo tròn ──
+    # ── Khung Card viền hiện đại bo tròn (ItemWidth = 296 cho 4 cột rộng rãi) ──
     $cardBorder = New-Object System.Windows.Controls.Border
     $cardBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10131B")
     $cardBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
     $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
     $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(10)
     $cardBorder.Margin = New-Object System.Windows.Thickness(5)
-    $cardBorder.Padding = New-Object System.Windows.Thickness(10, 8, 10, 10)
+    $cardBorder.Padding = New-Object System.Windows.Thickness(12, 10, 12, 12)
 
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
 
-    # Header Card có badge số lượng
+    # Header Card
     $headerGrid = New-Object System.Windows.Controls.Grid
-    $headerGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+    $headerGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
 
     $headerText = New-Object System.Windows.Controls.TextBlock
     $headerText.Text = "$cat ($($appsInCat.Count))"
-    $headerText.FontSize = 12
+    $headerText.FontSize = 12.5
     $headerText.FontWeight = [System.Windows.FontWeights]::Bold
     $headerText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
     $headerGrid.Children.Add($headerText) | Out-Null
@@ -588,11 +611,11 @@ foreach ($cat in $categories) {
     $cardStack.Children.Add($headerGrid) | Out-Null
     $cardStack.Children.Add($separator) | Out-Null
 
-    # ── Danh sách App: Từng dòng có Logo + CheckBox + Hover đổi màu ──
+    # ── Từng dòng App: Logo + Tên màu trắng mặc định (Chưa cài) ──
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
         $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
-        $rowBorder.Padding = New-Object System.Windows.Thickness(5, 3, 5, 3)
+        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 4, 6, 4)
         $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
         $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
@@ -616,10 +639,10 @@ foreach ($cat in $categories) {
         $rowGrid.Children.Add($cb) | Out-Null
         $allCheckBoxes += $cb
 
-        # 2. Logo Icon chính hãng (tải tự động từ domain)
+        # 2. Logo Icon chính hãng
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
-        $img.Margin = New-Object System.Windows.Thickness(6, 0, 7, 0)
+        $img.Margin = New-Object System.Windows.Thickness(7, 0, 8, 0)
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         try {
             $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
@@ -632,27 +655,33 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($img, 1)
         $rowGrid.Children.Add($img) | Out-Null
 
-        # 3. Tên ứng dụng
+        # 3. Tên ứng dụng (Mặc định: TRẮNG = Chưa cài đặt)
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
-        $nameText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+        $nameText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
         $nameText.FontSize = 12
+        $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
-        # Chạm chọn toàn dòng (Click vào bất kỳ đâu trên dòng đều bật/tắt checkbox)
+        # Chạm chọn toàn dòng
         $rowBorder.Add_MouseDown({
             $cb.IsChecked = -not $cb.IsChecked
         })
 
-        # Hiệu ứng hover phát sáng dòng
+        # Hover phát sáng
         $rowBorder.Add_MouseEnter({
-            $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
+            if ($rowBorder.Background -eq [System.Windows.Media.Brushes]::Transparent) {
+                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
+            }
         })
         $rowBorder.Add_MouseLeave({
-            $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+            $currTag = $rowBorder.Tag
+            if ($rowBorder.FindName("isSpecialBg") -ne $true) {
+                # Giữ nguyên màu nền nếu đã được scan
+            }
         })
 
         $rowBorder.Child = $rowGrid
@@ -701,7 +730,7 @@ function Run-CliStream {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 9. MODULE 1: LOGIC ỨNG DỤNG
+# 9. MODULE 1: LOGIC ỨNG DỤNG (PHÂN BIỆT MÀU PHIÊN BẢN CHUẨN XÁC)
 # ═══════════════════════════════════════════════════════════════════════════════
 $txtSearch.Add_TextChanged({
     $keyword = $txtSearch.Text.Trim().ToLower()
@@ -712,9 +741,10 @@ $txtSearch.Add_TextChanged({
     }
 })
 
-$btnScanInstalled.Add_Click({
-    Log-Text "[🔍] Đang chạy 'winget list' để quét toàn bộ phần mềm hiện có trên máy..."
-    $txtStatus.Text = "Đang quét danh sách phần mềm..."
+# ── HÀM QUÉT VÀ PHÂN MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
+function Scan-And-ColorizeApps {
+    Log-Text "[🔍] Đang chạy 'winget list' để phân tích phiên bản của từng ứng dụng..."
+    $txtStatus.Text = "Đang kiểm tra phiên bản app..."
     $progressBar.IsIndeterminate = $true
 
     $pinfo = New-Object System.Diagnostics.ProcessStartInfo
@@ -724,26 +754,78 @@ $btnScanInstalled.Add_Click({
     $pinfo.UseShellExecute = $false
     $pinfo.CreateNoWindow = $true
     $p = [System.Diagnostics.Process]::Start($pinfo)
-    $installed = $p.StandardOutput.ReadToEnd()
+    $rawList = $p.StandardOutput.ReadToEnd()
     $p.WaitForExit()
 
+    # Phân tích danh sách đã cài đặt
+    $lines = $rawList -split "`r?`n"
+    $start = $false
+    $installedMap = @{}
+
+    foreach ($line in $lines) {
+        if ($line -like "---*") { $start = $true; continue }
+        if ($start -and -not [string]::IsNullOrWhiteSpace($line)) {
+            $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), "\s{2,}")
+            if ($cols.Count -ge 2) {
+                $id = $cols[1].ToLower()
+                $ver = if ($cols.Count -ge 3) { $cols[2] } else { "" }
+                $avail = if ($cols.Count -ge 4) { $cols[3] } else { "" }
+                $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore"))
+
+                $installedMap[$id] = @{
+                    Version   = $ver
+                    Available = $avail
+                    HasUpdate = $hasUpdate
+                }
+            }
+        }
+    }
+
     $progressBar.IsIndeterminate = $false
-    $found = 0
+    $countInstalled = 0
+    $countLatest = 0
+    $countOutdated = 0
 
     foreach ($row in $allItemBorders) {
         $app = $row.Tag
-        if ($installed.Contains($app.ID) -or $installed.Contains($app.Name)) {
-            $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0F291E")
-            $grid = $row.Child
-            $tb = $grid.Children[2]
-            $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
-            $tb.Text = "$($app.Name) [✓]"
-            $found++
+        $appIdLower = $app.ID.ToLower()
+        $grid = $row.Child
+        $tb = $grid.Children[2]
+
+        if ($installedMap.ContainsKey($appIdLower)) {
+            $info = $installedMap[$appIdLower]
+            $countInstalled++
+
+            if ($info.HasUpdate -eq $true) {
+                # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
+                $countOutdated++
+                $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
+                $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+                $tb.Text = "$($app.Name)  ⚠️ (Có bản mới: $($info.Available))"
+                $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID: $($app.ID)"
+            } else {
+                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm ──
+                $countLatest++
+                $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
+                $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
+                $tb.Text = "$($app.Name)  ✓ (Mới nhất)"
+                $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID: $($app.ID)"
+            }
+        } else {
+            # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
+            $row.Background = [System.Windows.Media.Brushes]::Transparent
+            $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
+            $tb.Text = $app.Name
+            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
         }
     }
-    Log-Text "[✓] Quét hoàn tất! Phát hiện $found ứng dụng trong danh mục đã có mặt trên máy bạn."
-    $txtStatus.Text = "Phát hiện $found ứng dụng đã cài"
-})
+
+    $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])"
+    Log-Text "[✓] $summary"
+    $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+}
+
+$btnScanInstalled.Add_Click({ Scan-And-ColorizeApps })
 
 $btnInstall.Add_Click({
     $selected = @($allCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
@@ -773,6 +855,9 @@ $btnInstall.Add_Click({
     }
     $txtStatus.Text = "Cài đặt hoàn tất!"
     $progressBar.Value = 100
+
+    # Quét lại để cập nhật màu sắc mới ngay lập tức
+    Scan-And-ColorizeApps
 })
 
 $btnUninstall.Add_Click({
@@ -809,6 +894,9 @@ $btnUninstall.Add_Click({
     }
     $txtStatus.Text = "Gỡ cài đặt hoàn tất"
     $progressBar.Value = 100
+
+    # Quét lại để cập nhật màu sắc mới
+    Scan-And-ColorizeApps
 })
 
 $btnUpgradeAll.Add_Click({
@@ -821,6 +909,9 @@ $btnUpgradeAll.Add_Click({
     $progressBar.IsIndeterminate = $false
     $progressBar.Value = 100
     $txtStatus.Text = "Nâng cấp hoàn tất"
+
+    # Quét lại để chuyển tất cả app thành màu xanh
+    Scan-And-ColorizeApps
 })
 
 $btnSelectAll.Add_Click({
