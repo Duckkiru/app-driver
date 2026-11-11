@@ -3,13 +3,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="DuckUtil - Cyber Obsidian Suite"
     Width="1280" Height="890"
+    MinWidth="1200" MinHeight="820"
     WindowStartupLocation="CenterScreen"
     Background="#090B10"
     Foreground="#F8FAFC"
-    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif">
+    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    TextOptions.TextFormattingMode="Display"
+    TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
-        <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER ═══ -->
+        <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER (8PX) ═══ -->
         <!-- Style cho Thumb thanh cuộn (Dọc) -->
         <Style x:Key="ModernScrollThumb" TargetType="{x:Type Thumb}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -116,59 +119,37 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Nút bấm phong cách Action -->
+        <!-- Nút bấm phong cách Action (Primary Accent Buttons) -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="16,8"/>
             <Setter Property="Margin" Value="4,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Name="btnBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.85"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.65"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Nút phụ -->
-        <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#151A26"/>
-            <Setter Property="Foreground" Value="#94A3B8"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="Margin" Value="4,0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#222C3E"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#25FFFFFF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#1E2738"/>
-                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.88"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#60FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.70"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.45"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -176,13 +157,55 @@
             </Setter>
         </Style>
 
-        <!-- Nút điều hướng Tab chính -->
+        <!-- Nút phụ (Secondary Buttons - Dark Slate Accent) -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#121724"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#1F2A3D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="btnBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#1C2538"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#161E2E"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#0EA5E9"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Nút điều hướng Tab chính (NavTabButton) -->
         <Style x:Key="NavTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#64748B"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="Padding" Value="22,12"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0,0,0,2"/>
@@ -193,13 +216,14 @@
                         <Border Name="navBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Foreground" Value="#E2E8F0"/>
-                                <Setter TargetName="navBorder" Property="Background" Value="#11141E"/>
+                                <Setter TargetName="navBorder" Property="Background" Value="#141824"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -214,35 +238,39 @@
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="145"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="150"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. TOP APP HEADER ═══ -->
-        <Border Grid.Row="0" Background="#0C0E14" Padding="20,12" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#0B0E15" Padding="22,13" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="360"/>
+                    <ColumnDefinition Width="380"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Brand & Logo -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#1E293B" CornerRadius="8" Width="36" Height="36" Margin="0,0,12,0">
-                        <TextBlock Text="🦆" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border Background="#131A2B" BorderBrush="#202D47" BorderThickness="1"
+                            CornerRadius="10" Width="42" Height="42" Margin="0,0,14,0">
+                        <TextBlock Text="🦆" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="DUCK UTIL" FontSize="19" FontWeight="Black" Foreground="#F8FAFC"/>
-                            <Border Background="#0EA5E9" CornerRadius="4" Margin="10,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                                <TextBlock Text="PRO SUITE" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="DUCK UTIL" FontSize="20" FontWeight="Black" Foreground="#F8FAFC"/>
+                            <Border Background="#0284C7" BorderBrush="#38BDF8" BorderThickness="1"
+                                    CornerRadius="5" Margin="10,0,0,0" Padding="7,2" VerticalAlignment="Center">
+                                <TextBlock Text="PRO SUITE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#FFFFFF"/>
                             </Border>
                         </StackPanel>
-                        <TextBlock Text="Windows Package Manager &amp; System Maintenance Suite" FontSize="11" Foreground="#64748B"/>
+                        <TextBlock Text="Windows Package Manager &amp; System Maintenance Suite"
+                                   FontSize="11.5" Foreground="#64748B" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
 
                 <!-- Modern Search Box -->
-                <Border Grid.Column="2" Background="#121620" CornerRadius="8" BorderBrush="#263147" BorderThickness="1" Padding="10,6">
+                <Border Grid.Column="2" Background="#111622" CornerRadius="8" BorderBrush="#243044" BorderThickness="1" Padding="12,7" VerticalAlignment="Center">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -252,14 +280,14 @@
                         <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#F8FAFC"
                                  BorderThickness="0" FontSize="12.5" VerticalAlignment="Center"
                                  CaretBrush="#38BDF8"
-                                 ToolTip="Gõ để lọc ứng dụng ngay lập tức..."/>
+                                 ToolTip="Gõ để lọc ứng dụng ngay lập tức theo tên hoặc ID..."/>
                     </Grid>
                 </Border>
             </Grid>
         </Border>
 
         <!-- ═══ 2. MAIN NAV TAB BAR ═══ -->
-        <Border Grid.Row="1" Background="#0E1118" Padding="16,0" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
                 <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
                         BorderBrush="#0EA5E9" Foreground="#F8FAFC"/>
@@ -285,7 +313,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- Thanh nút bấm ứng dụng + Chú giải phân màu -->
-                    <Border Grid.Row="0" Background="#0F121A" Padding="18,8" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Background="#0E121B" Padding="18,10" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -317,24 +345,37 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Hàng 2: Chú thích màu sắc chuẩn -->
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,8,0,0">
-                                <TextBlock Text="Trạng thái màu tên App:" FontSize="11.5" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
-                                <Border Background="#1E293B" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
-                                    <TextBlock Text="⚪ Trắng: Chưa cài đặt" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                            <!-- Hàng 2: Chú thích màu sắc chuẩn dạng Cyber Pill Badge -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,10,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Trạng thái màu tên App:" FontSize="11.5" Foreground="#64748B" Margin="0,0,12,0"
+                                           FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <Border Background="#161D2C" BorderBrush="#253249" BorderThickness="1"
+                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#FFFFFF" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Trắng: Chưa cài đặt" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Border>
-                                <Border Background="#0C2417" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
-                                    <TextBlock Text="🟢 Xanh lá: Đã cài (Bản mới nhất)" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
+                                <Border Background="#0C2518" BorderBrush="#14532D" BorderThickness="1"
+                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#34D399" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Xanh lá: Đã cài (Bản mới nhất)" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Border>
-                                <Border Background="#271013" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
-                                    <TextBlock Text="🔴 Đỏ: Đã cài (Bản cũ - Có cập nhật)" FontSize="11" Foreground="#F87171" FontWeight="SemiBold"/>
+                                <Border Background="#2A1216" BorderBrush="#5B1621" BorderThickness="1"
+                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#F87171" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Đỏ: Đã cài (Bản cũ - Có cập nhật)" FontSize="11" Foreground="#F87171" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Lưới Card 4 CỘT RỘNG RÃI (ItemWidth = 296) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,10">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,12">
                         <WrapPanel Name="CardsContainer" ItemWidth="296" Orientation="Horizontal"/>
                     </ScrollViewer>
                 </Grid>
@@ -343,46 +384,70 @@
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
-                    <WrapPanel ItemWidth="388" Orientation="Horizontal">
+                    <WrapPanel ItemWidth="590" Orientation="Horizontal">
                         <!-- Card 1: File Hệ Thống -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="13.5" Foreground="#38BDF8" Margin="0,0,0,8"/>
-                                <TextBlock Text="Quét và tự động sửa các file Windows bị hỏng hoặc mất." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#0C283F" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="ExtraBold" Foreground="#38BDF8"/>
+                                    </Border>
+                                    <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Quét và tự động sửa các file hệ thống Windows bị hỏng hoặc mất qua SFC và DISM."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Windows Update -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="13.5" Foreground="#F59E0B" Margin="0,0,0,8"/>
-                                <TextBlock Text="Khắc phục lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#311F0D" BorderBrush="#B45309" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F59E0B"/>
+                                    </Border>
+                                    <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="14" Foreground="#F59E0B" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Khắc phục triệt để lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Mạng & DNS -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="13.5" Foreground="#10B981" Margin="0,0,0,8"/>
-                                <TextBlock Text="Khắc phục sự cố không vào được web, mạng chập chờn, lỗi DNS." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#09281C" BorderBrush="#059669" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="ExtraBold" Foreground="#10B981"/>
+                                    </Border>
+                                    <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="14" Foreground="#10B981" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Khắc phục sự cố mất kết nối mạng, gián đoạn truy cập web, lỗi DNS và sự cố bộ giao thức."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 4: Dọn Rác & Khôi Phục UI -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="13.5" Foreground="#A78BFA" Margin="0,0,0,8"/>
-                                <TextBlock Text="Dọn sạch rác ổ C và khởi động lại Taskbar khi bị đơ treo." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#22173B" BorderBrush="#7C3AED" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="ExtraBold" Foreground="#A78BFA"/>
+                                    </Border>
+                                    <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#A78BFA" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Giải phóng dung lượng ổ C bị chiếm dụng bởi tệp tạm và nạp lại thanh Taskbar khi bị treo."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -392,36 +457,54 @@
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
-                    <WrapPanel ItemWidth="388" Orientation="Horizontal">
+                    <WrapPanel ItemWidth="390" Orientation="Horizontal">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG &amp; DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#F43F5E" Margin="0,0,0,8"/>
-                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị crash." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#E11D48" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#310D18" BorderBrush="#BE123C" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F43F5E"/>
+                                    </Border>
+                                    <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG" FontWeight="Bold" FontSize="14" Foreground="#F43F5E" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị xung đột crash."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#E11D48" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Gỡ Lỗi Update Driver -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#F59E0B" Margin="0,0,0,8"/>
-                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#311F0D" BorderBrush="#B45309" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F59E0B"/>
+                                    </Border>
+                                    <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="14" Foreground="#F59E0B" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Sao Lưu Driver -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#10B981" Margin="0,0,0,8"/>
-                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#09281C" BorderBrush="#059669" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="ExtraBold" Foreground="#10B981"/>
+                                    </Border>
+                                    <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="14" Foreground="#10B981" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -430,7 +513,7 @@
         </TabControl>
 
         <!-- ═══ 4. STATUS & PROGRESS BAR ═══ -->
-        <Border Grid.Row="3" Background="#0C0E14" Padding="18,6" BorderBrush="#1A1F2C" BorderThickness="0,1,0,0">
+        <Border Grid.Row="3" Background="#0A0D14" Padding="20,7" BorderBrush="#181E2C" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -441,38 +524,43 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Column="0" Grid.Row="0" Name="txtStatus" Text="Sẵn sàng"
-                           Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold"/>
+                <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#10B981" Width="7" Height="7" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Name="txtStatus" Text="Sẵn sàng"
+                               Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold"/>
+                </StackPanel>
+
                 <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app được chọn"
-                           Foreground="#64748B" FontSize="11"/>
+                           Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
 
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                              Name="progressBar" Height="3" Margin="0,6,0,2"
-                             Background="#1A1F2C" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
+                             Background="#161C2A" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
             </Grid>
         </Border>
 
         <!-- ═══ 5. CYBER TERMINAL LOG ═══ -->
-        <Border Grid.Row="4" Background="#05060A" Padding="14,8">
+        <Border Grid.Row="4" Background="#05070B" Padding="16,8" BorderBrush="#141924" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0,0,0,4">
+                <Grid Grid.Row="0" Margin="0,0,0,5">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Background="#EF4444" Width="9" Height="9" CornerRadius="5" Margin="0,0,5,0"/>
-                        <Border Background="#F59E0B" Width="9" Height="9" CornerRadius="5" Margin="0,0,5,0"/>
-                        <Border Background="#10B981" Width="9" Height="9" CornerRadius="5" Margin="0,0,10,0"/>
-                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569" VerticalAlignment="Center"/>
+                        <Border Background="#EF4444" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
+                        <Border Background="#F59E0B" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
+                        <Border Background="#10B981" Width="8" Height="8" CornerRadius="4" Margin="0,0,8,0"/>
+                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569"
+                                   FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Name="btnClearLog" Content="Xóa Log" HorizontalAlignment="Right"
-                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11"/>
+                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11" Padding="6,2"/>
                 </Grid>
                 <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
-                         FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11"
+                         FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
-                         BorderThickness="0"
+                         BorderThickness="0" CaretBrush="#38BDF8"
                          Text="[DuckUtil Cyber Suite] Khởi tạo thành công với bố cục 4 cột và phân màu phiên bản.&#x0d;&#x0a;"/>
             </Grid>
         </Border>

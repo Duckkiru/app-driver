@@ -6,9 +6,10 @@
     "Domain": "google.com",
     "Aliases": [
       "Google Chrome",
-      "Google.Chrome"
+      "Google.Chrome",
+      "Chrome"
     ],
-    "Desc": "Trình duyệt phổ biến nhất thế giới"
+    "Desc": "Trình duyệt web chuẩn công nghiệp từ Google"
   },
   {
     "Name": "Mozilla Firefox",
@@ -17,9 +18,10 @@
     "Domain": "mozilla.org",
     "Aliases": [
       "Mozilla Firefox",
-      "Firefox"
+      "Firefox",
+      "Mozilla.Firefox"
     ],
-    "Desc": "Mã nguồn mở, tôn trọng riêng tư"
+    "Desc": "Trình duyệt web mã nguồn mở chú trọng quyền riêng tư"
   },
   {
     "Name": "Brave Browser",
@@ -29,9 +31,10 @@
     "Aliases": [
       "Brave",
       "BraveSoftware",
-      "Brave.Brave"
+      "Brave.Brave",
+      "Brave Browser"
     ],
-    "Desc": "Chặn quảng cáo tích hợp sẵn"
+    "Desc": "Trình duyệt bảo mật tích hợp công cụ chặn quảng cáo"
   },
   {
     "Name": "LibreWolf",
@@ -39,9 +42,10 @@
     "Category": "Trình Duyệt Web",
     "Domain": "librewolf.net",
     "Aliases": [
-      "LibreWolf"
+      "LibreWolf",
+      "LibreWolf.LibreWolf"
     ],
-    "Desc": "Firefox không telemetry, siêu sạch"
+    "Desc": "Bản phân phối Firefox bảo mật cao, loại bỏ hoàn toàn đo lường từ xa (telemetry)"
   },
   {
     "Name": "Vivaldi",
@@ -49,9 +53,10 @@
     "Category": "Trình Duyệt Web",
     "Domain": "vivaldi.com",
     "Aliases": [
-      "Vivaldi"
+      "Vivaldi",
+      "VivaldiTechnologies.Vivaldi"
     ],
-    "Desc": "Tùy biến không giới hạn"
+    "Desc": "Trình duyệt hiệu năng cao với khả năng tùy biến giao diện linh hoạt"
   },
   {
     "Name": "Tor Browser",
@@ -60,9 +65,10 @@
     "Domain": "torproject.org",
     "Aliases": [
       "Tor Browser",
-      "TorProject"
+      "TorProject",
+      "TorProject.TorBrowser"
     ],
-    "Desc": "Duyệt web ẩn danh qua Onion"
+    "Desc": "Trình duyệt bảo mật ẩn danh qua mạng định tuyến củ hành (Onion Network)"
   },
   {
     "Name": "Opera GX",
@@ -71,9 +77,10 @@
     "Domain": "opera.com",
     "Aliases": [
       "Opera GX",
-      "Opera"
+      "Opera",
+      "Opera.OperaGX"
     ],
-    "Desc": "Trình duyệt tối ưu tài nguyên"
+    "Desc": "Trình duyệt tùy chỉnh tài nguyên phần cứng và kiểm soát băng thông mạng"
   },
   {
     "Name": "Discord",
@@ -81,9 +88,10 @@
     "Category": "Liên Lạc & Chat",
     "Domain": "discord.com",
     "Aliases": [
-      "Discord"
+      "Discord",
+      "Discord.Discord"
     ],
-    "Desc": "Voice/chat cộng đồng số 1"
+    "Desc": "Nền tảng giao tiếp bằng giọng nói, video và văn bản thời gian thực"
   },
   {
     "Name": "Telegram",
@@ -93,9 +101,10 @@
     "Aliases": [
       "Telegram Desktop",
       "Telegram",
-      "TelegramDesktop"
+      "TelegramDesktop",
+      "Telegram.TelegramDesktop"
     ],
-    "Desc": "Nhắn tin nhanh, cloud-sync mượt"
+    "Desc": "Ứng dụng nhắn tin bảo mật cao và đồng bộ đám mây tức thì"
   },
   {
     "Name": "Signal",
@@ -103,9 +112,10 @@
     "Category": "Liên Lạc & Chat",
     "Domain": "signal.org",
     "Aliases": [
-      "Signal"
+      "Signal",
+      "OpenWhisperSystems.Signal"
     ],
-    "Desc": "Mã hóa đầu-cuối an toàn tuyệt đối"
+    "Desc": "Nền tảng liên lạc bảo mật với công nghệ mã hóa đầu cuối (E2EE)"
   },
   {
     "Name": "Zalo",
@@ -117,7 +127,7 @@
       "VNGCorp.Zalo",
       "VNG.Zalo"
     ],
-    "Desc": "Nhắn tin phổ biến nhất VN"
+    "Desc": "Ứng dụng nhắn tin và gọi thoại phổ biến tại Việt Nam"
   },
   {
     "Name": "Zoom",
@@ -126,9 +136,10 @@
     "Domain": "zoom.us",
     "Aliases": [
       "Zoom",
-      "Zoom Workplace"
+      "Zoom Workplace",
+      "Zoom.Zoom"
     ],
-    "Desc": "Họp trực tuyến trực tiếp"
+    "Desc": "Nền tảng hội nghị truyền hình và họp trực tuyến doanh nghiệp"
   },
   {
     "Name": "Slack",
@@ -136,9 +147,10 @@
     "Category": "Liên Lạc & Chat",
     "Domain": "slack.com",
     "Aliases": [
-      "Slack"
+      "Slack",
+      "SlackTechnologies.Slack"
     ],
-    "Desc": "Trao đổi công việc doanh nghiệp"
+    "Desc": "Nền tảng cộng tác và giao tiếp chuyên nghiệp cho doanh nghiệp"
   },
   {
     "Name": "WhatsApp",
@@ -146,9 +158,11 @@
     "Category": "Liên Lạc & Chat",
     "Domain": "whatsapp.com",
     "Aliases": [
-      "WhatsApp"
+      "WhatsApp",
+      "WhatsApp.WhatsApp",
+      "WhatsApp Desktop"
     ],
-    "Desc": "Gọi & nhắn tin toàn cầu"
+    "Desc": "Ứng dụng nhắn tin và gọi thoại quốc tế bảo mật cao"
   },
   {
     "Name": "Microsoft Teams",
@@ -157,9 +171,10 @@
     "Domain": "microsoft.com",
     "Aliases": [
       "Microsoft Teams",
-      "MSTeams"
+      "MSTeams",
+      "Microsoft.Teams"
     ],
-    "Desc": "Nền tảng làm việc Microsoft"
+    "Desc": "Giải pháp cộng tác và hội họp tích hợp Microsoft 365"
   },
   {
     "Name": "VS Code",
@@ -168,9 +183,11 @@
     "Domain": "code.visualstudio.com",
     "Aliases": [
       "Microsoft Visual Studio Code",
-      "Visual Studio Code"
+      "Visual Studio Code",
+      "VS Code",
+      "Microsoft.VisualStudioCode"
     ],
-    "Desc": "Code editor chuẩn của lập trình viên"
+    "Desc": "Trình soạn thảo mã nguồn mở mạnh mẽ và mở rộng phong phú từ Microsoft"
   },
   {
     "Name": "Git",
@@ -178,9 +195,10 @@
     "Category": "Phát Triển & Dev",
     "Domain": "git-scm.com",
     "Aliases": [
-      "Git"
+      "Git",
+      "Git.Git"
     ],
-    "Desc": "Hệ thống quản lý phiên bản mã nguồn"
+    "Desc": "Hệ thống quản lý phiên bản phân tán (Distributed Version Control)"
   },
   {
     "Name": "Windows Terminal",
@@ -190,9 +208,30 @@
     "Aliases": [
       "Windows Terminal",
       "WindowsTerminal",
-      "Bảng điều khiển Windows"
+      "Microsoft.WindowsTerminal",
+      "9N0DX20HK701",
+      "Bảng điều khiển Windows",
+      "wt",
+      "wt.exe"
     ],
-    "Desc": "Terminal hiện đại đa tab"
+    "Desc": "Trình giả lập dòng lệnh đa tab hiện đại cho Windows"
+  },
+  {
+    "Name": "Windows Terminal Preview",
+    "ID": "Microsoft.WindowsTerminal.Preview",
+    "Category": "Phát Triển & Dev",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Windows Terminal Preview",
+      "WindowsTerminalPreview",
+      "Microsoft.WindowsTerminal.Preview",
+      "9N8G5RFZ9XK3",
+      "Bảng điều khiển Windows (Bản xem trước)",
+      "Bản xem trước của Bảng điều khiển Windows",
+      "wt preview",
+      "wt.exe preview"
+    ],
+    "Desc": "Phiên bản thử nghiệm sớm các tính năng mới của Windows Terminal"
   },
   {
     "Name": "Python 3.12",
@@ -202,9 +241,10 @@
     "Aliases": [
       "Python 3.12",
       "Python 3.13",
-      "Python"
+      "Python",
+      "Python.Python.3.12"
     ],
-    "Desc": "Ngôn ngữ AI & tự động hóa"
+    "Desc": "Ngôn ngữ lập trình thông dịch phổ biến cho AI, dữ liệu và tự động hóa"
   },
   {
     "Name": "Node.js LTS",
@@ -213,9 +253,11 @@
     "Domain": "nodejs.org",
     "Aliases": [
       "Node.js",
-      "OpenJS.NodeJS"
+      "OpenJS.NodeJS",
+      "OpenJS.NodeJS.LTS",
+      "NodeJS"
     ],
-    "Desc": "Môi trường chạy JS server-side"
+    "Desc": "Môi trường thực thi JavaScript phía máy chủ phiên bản hỗ trợ dài hạn (LTS)"
   },
   {
     "Name": "Docker Desktop",
@@ -223,9 +265,10 @@
     "Category": "Phát Triển & Dev",
     "Domain": "docker.com",
     "Aliases": [
-      "Docker Desktop"
+      "Docker Desktop",
+      "Docker.DockerDesktop"
     ],
-    "Desc": "Nền tảng container ảo hóa"
+    "Desc": "Nền tảng ảo hóa container và công cụ quản trị Docker cho máy trạm"
   },
   {
     "Name": "Notepad++",
@@ -233,9 +276,10 @@
     "Category": "Phát Triển & Dev",
     "Domain": "notepad-plus-plus.org",
     "Aliases": [
-      "Notepad++"
+      "Notepad++",
+      "Notepad++.Notepad++"
     ],
-    "Desc": "Trình soạn thảo text siêu nhẹ"
+    "Desc": "Trình soạn thảo văn bản và mã nguồn gọn nhẹ, hiệu năng cao"
   },
   {
     "Name": "Postman",
@@ -243,9 +287,10 @@
     "Category": "Phát Triển & Dev",
     "Domain": "postman.com",
     "Aliases": [
-      "Postman"
+      "Postman",
+      "Postman.Postman"
     ],
-    "Desc": "Test & phát triển API"
+    "Desc": "Nền tảng phát triển, kiểm thử và quản lý vòng đời API"
   },
   {
     "Name": "DBeaver CE",
@@ -253,9 +298,11 @@
     "Category": "Phát Triển & Dev",
     "Domain": "dbeaver.io",
     "Aliases": [
-      "DBeaver"
+      "DBeaver",
+      "DBeaver CE",
+      "dbeaver.dbeaver"
     ],
-    "Desc": "Quản trị database đa năng"
+    "Desc": "Công cụ quản trị cơ sở dữ liệu đa nền tảng cho nhà phát triển và DBA"
   },
   {
     "Name": "Go Lang",
@@ -264,9 +311,10 @@
     "Domain": "golang.org",
     "Aliases": [
       "Go Programming Language",
-      "GoLang"
+      "GoLang",
+      "GoLang.Go"
     ],
-    "Desc": "Ngôn ngữ backend hiệu năng cao"
+    "Desc": "Ngôn ngữ lập trình mã nguồn mở hiệu năng cao từ Google"
   },
   {
     "Name": "Rust (rustup)",
@@ -275,9 +323,10 @@
     "Domain": "rust-lang.org",
     "Aliases": [
       "Rustup",
-      "Rust"
+      "Rust",
+      "Rustlang.Rustup"
     ],
-    "Desc": "Bộ công cụ ngôn ngữ Rust"
+    "Desc": "Trình cài đặt và quản lý chuỗi công cụ ngôn ngữ lập trình Rust"
   },
   {
     "Name": "7-Zip",
@@ -286,9 +335,10 @@
     "Domain": "7-zip.org",
     "Aliases": [
       "7-Zip",
-      "7zip"
+      "7zip",
+      "7zip.7zip"
     ],
-    "Desc": "Giải nén mọi định dạng tệp"
+    "Desc": "Công cụ nén và giải nén tệp mã nguồn mở với tỷ lệ nén cao"
   },
   {
     "Name": "WinRAR",
@@ -296,9 +346,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "rarlab.com",
     "Aliases": [
-      "WinRAR"
+      "WinRAR",
+      "RARLab.WinRAR"
     ],
-    "Desc": "Nén/giải nén chuẩn RAR"
+    "Desc": "Phần mềm nén và giải nén lưu trữ dữ liệu định dạng RAR và ZIP"
   },
   {
     "Name": "Everything",
@@ -306,9 +357,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "voidtools.com",
     "Aliases": [
-      "Everything"
+      "Everything",
+      "voidtools.Everything"
     ],
-    "Desc": "Tìm kiếm file tức thì 1 giây"
+    "Desc": "Công cụ chỉ mục và định vị tập tin tức thì trên phân vùng NTFS"
   },
   {
     "Name": "PowerToys",
@@ -316,9 +368,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "github.com",
     "Aliases": [
-      "PowerToys"
+      "PowerToys",
+      "Microsoft.PowerToys"
     ],
-    "Desc": "Bộ tiện ích chính chủ Microsoft"
+    "Desc": "Bộ tiện ích mở rộng nâng cao năng suất hệ thống từ Microsoft"
   },
   {
     "Name": "Flow Launcher",
@@ -327,9 +380,10 @@
     "Domain": "flowlauncher.com",
     "Aliases": [
       "Flow Launcher",
-      "Flow-Launcher"
+      "Flow-Launcher",
+      "Flow-Launcher.Flow-Launcher"
     ],
-    "Desc": "Thanh tìm kiếm & chạy app Alt+Space"
+    "Desc": "Thanh tìm kiếm và khởi chạy tệp tin, ứng dụng nhanh qua phím tắt"
   },
   {
     "Name": "Revo Uninstaller",
@@ -337,9 +391,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "revouninstaller.com",
     "Aliases": [
-      "Revo Uninstaller"
+      "Revo Uninstaller",
+      "VSRevoGroup.RevoUninstaller"
     ],
-    "Desc": "Gỡ phần mềm sạch tận gốc"
+    "Desc": "Công cụ gỡ cài đặt phần mềm chuyên sâu và dọn dẹp khóa Registry tồn đọng"
   },
   {
     "Name": "TreeSize Free",
@@ -347,9 +402,11 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "jam-software.com",
     "Aliases": [
-      "TreeSize"
+      "TreeSize",
+      "TreeSize Free",
+      "JAMSoftware.TreeSize.Free"
     ],
-    "Desc": "Phân tích dung lượng ổ đĩa"
+    "Desc": "Công cụ phân tích và trực quan hóa dung lượng sử dụng ổ đĩa"
   },
   {
     "Name": "ShareX",
@@ -357,9 +414,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "getsharex.com",
     "Aliases": [
-      "ShareX"
+      "ShareX",
+      "ShareX.ShareX"
     ],
-    "Desc": "Chụp/quay màn hình & OCR đỉnh cao"
+    "Desc": "Công cụ chụp ảnh, quay video màn hình, nhận diện OCR và chia sẻ tệp"
   },
   {
     "Name": "BleachBit",
@@ -367,9 +425,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "bleachbit.org",
     "Aliases": [
-      "BleachBit"
+      "BleachBit",
+      "BleachBit.BleachBit"
     ],
-    "Desc": "Dọn rác & privacy thay CCleaner"
+    "Desc": "Tiện ích dọn dẹp tập tin rác và bảo vệ quyền riêng tư mã nguồn mở"
   },
   {
     "Name": "FanControl",
@@ -377,9 +436,10 @@
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "github.com",
     "Aliases": [
-      "FanControl"
+      "FanControl",
+      "Rem0o.FanControl"
     ],
-    "Desc": "Tùy chỉnh quạt tản nhiệt êm ái"
+    "Desc": "Phần mềm tinh chỉnh và điều khiển tốc độ quạt làm mát phần cứng máy tính"
   },
   {
     "Name": "VLC Media Player",
@@ -388,9 +448,10 @@
     "Domain": "videolan.org",
     "Aliases": [
       "VLC media player",
-      "VLC"
+      "VLC",
+      "VideoLAN.VLC"
     ],
-    "Desc": "Xem mọi định dạng video/nhạc"
+    "Desc": "Trình phát đa phương tiện mã nguồn mở tương thích hầu hết định dạng"
   },
   {
     "Name": "OBS Studio",
@@ -398,9 +459,10 @@
     "Category": "Đa Phương Tiện",
     "Domain": "obsproject.com",
     "Aliases": [
-      "OBS Studio"
+      "OBS Studio",
+      "OBSProject.OBSStudio"
     ],
-    "Desc": "Ghi hình & livestream chuyên nghiệp"
+    "Desc": "Phần mềm ghi hình màn hình và truyền phát trực tiếp chuyên nghiệp"
   },
   {
     "Name": "Spotify",
@@ -408,9 +470,10 @@
     "Category": "Đa Phương Tiện",
     "Domain": "spotify.com",
     "Aliases": [
-      "Spotify"
+      "Spotify",
+      "Spotify.Spotify"
     ],
-    "Desc": "Nghe nhạc bản quyền chất lượng cao"
+    "Desc": "Dịch vụ truyền phát âm nhạc và podcast kỹ thuật số toàn cầu"
   },
   {
     "Name": "GIMP",
@@ -418,9 +481,10 @@
     "Category": "Đa Phương Tiện",
     "Domain": "gimp.org",
     "Aliases": [
-      "GIMP"
+      "GIMP",
+      "GIMP.GIMP"
     ],
-    "Desc": "Chỉnh sửa ảnh chuyên nghiệp thay PTS"
+    "Desc": "Phần mềm xử lý đồ họa và chỉnh sửa hình ảnh mã nguồn mở nâng cao"
   },
   {
     "Name": "Audacity",
@@ -428,9 +492,10 @@
     "Category": "Đa Phương Tiện",
     "Domain": "audacityteam.org",
     "Aliases": [
-      "Audacity"
+      "Audacity",
+      "Audacity.Audacity"
     ],
-    "Desc": "Thu âm & biên tập audio"
+    "Desc": "Phần mềm thu âm và biên tập âm thanh đa kênh mã nguồn mở"
   },
   {
     "Name": "HandBrake",
@@ -438,9 +503,10 @@
     "Category": "Đa Phương Tiện",
     "Domain": "handbrake.fr",
     "Aliases": [
-      "HandBrake"
+      "HandBrake",
+      "HandBrake.HandBrake"
     ],
-    "Desc": "Nén & đổi đuôi video dung lượng nhẹ"
+    "Desc": "Công cụ chuyển mã video mã nguồn mở hỗ trợ tối ưu dung lượng tệp"
   },
   {
     "Name": "Krita",
@@ -448,9 +514,10 @@
     "Category": "Đa Phương Tiện",
     "Domain": "krita.org",
     "Aliases": [
-      "Krita"
+      "Krita",
+      "KDE.Krita"
     ],
-    "Desc": "Vẽ đồ họa số & concept art"
+    "Desc": "Phần mềm vẽ đồ họa số, minh họa và diễn hoạt chuyên nghiệp"
   },
   {
     "Name": "K-Lite Codec Mega",
@@ -459,9 +526,10 @@
     "Domain": "codecguide.com",
     "Aliases": [
       "K-Lite Codec Pack",
-      "K-Lite"
+      "K-Lite",
+      "CodecGuide.K-LiteCodecPack.Mega"
     ],
-    "Desc": "Gói giải mã video/audio đầy đủ"
+    "Desc": "Gói bộ giải mã codec âm thanh và video toàn diện cho hệ điều hành Windows"
   },
   {
     "Name": "LibreOffice",
@@ -469,9 +537,10 @@
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "libreoffice.org",
     "Aliases": [
-      "LibreOffice"
+      "LibreOffice",
+      "TheDocumentFoundation.LibreOffice"
     ],
-    "Desc": "Bộ Office mã nguồn mở miễn phí"
+    "Desc": "Bộ ứng dụng văn phòng mã nguồn mở toàn diện tương thích chuẩn tài liệu mở"
   },
   {
     "Name": "Obsidian",
@@ -479,9 +548,10 @@
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "obsidian.md",
     "Aliases": [
-      "Obsidian"
+      "Obsidian",
+      "Obsidian.Obsidian"
     ],
-    "Desc": "Ghi chú Markdown & mạng lưới tư duy"
+    "Desc": "Ứng dụng ghi chú và xây dựng cơ sở tri thức cá nhân trên nền tảng Markdown"
   },
   {
     "Name": "Notion",
@@ -489,9 +559,10 @@
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "notion.so",
     "Aliases": [
-      "Notion"
+      "Notion",
+      "Notion.Notion"
     ],
-    "Desc": "Không gian quản lý ghi chú chung"
+    "Desc": "Không gian làm việc tích hợp ghi chú, quản lý tác vụ và dữ liệu cộng tác"
   },
   {
     "Name": "SumatraPDF",
@@ -499,9 +570,10 @@
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "sumatrapdfreader.org",
     "Aliases": [
-      "SumatraPDF"
+      "SumatraPDF",
+      "SumatraPDF.SumatraPDF"
     ],
-    "Desc": "Đọc PDF siêu nhẹ bật tức thì"
+    "Desc": "Trình đọc tài liệu PDF, ePub, Mobi gọn nhẹ với tốc độ phản hồi cao"
   },
   {
     "Name": "Foxit PDF Reader",
@@ -510,9 +582,10 @@
     "Domain": "foxit.com",
     "Aliases": [
       "Foxit PDF Reader",
-      "Foxit Reader"
+      "Foxit Reader",
+      "Foxit.FoxitReader"
     ],
-    "Desc": "Xem & ký tài liệu PDF chuyên nghiệp"
+    "Desc": "Giải pháp xem, ghi chú, biểu mẫu và ký số tài liệu PDF chuẩn doanh nghiệp"
   },
   {
     "Name": "Steam",
@@ -520,9 +593,10 @@
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "steampowered.com",
     "Aliases": [
-      "Steam"
+      "Steam",
+      "Valve.Steam"
     ],
-    "Desc": "Kho game PC số 1 thế giới"
+    "Desc": "Nền tảng phân phối kỹ thuật số và cộng đồng trò chơi điện tử từ Valve"
   },
   {
     "Name": "Epic Games Launcher",
@@ -530,9 +604,10 @@
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "epicgames.com",
     "Aliases": [
-      "Epic Games Launcher"
+      "Epic Games Launcher",
+      "EpicGames.EpicGamesLauncher"
     ],
-    "Desc": "Cửa hàng game & phát game miễn phí"
+    "Desc": "Cửa hàng phân phối trò chơi điện tử và công cụ phát triển Unreal Engine"
   },
   {
     "Name": "GOG Galaxy",
@@ -541,9 +616,10 @@
     "Domain": "gog.com",
     "Aliases": [
       "GOG GALAXY",
-      "GOG Galaxy"
+      "GOG Galaxy",
+      "GOG.Galaxy"
     ],
-    "Desc": "Quản lý thư viện game không DRM"
+    "Desc": "Nền tảng phân phối và quản lý trò chơi bản quyền không ràng buộc DRM"
   },
   {
     "Name": "MSI Afterburner",
@@ -551,9 +627,10 @@
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "msi.com",
     "Aliases": [
-      "MSI Afterburner"
+      "MSI Afterburner",
+      "Guru3D.Afterburner"
     ],
-    "Desc": "Đo nhiệt độ, FPS & ép xung"
+    "Desc": "Tiện ích giám sát phần cứng, hiển thị OSD và tinh chỉnh tham số card đồ họa"
   },
   {
     "Name": "Playnite",
@@ -561,9 +638,10 @@
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "playnite.link",
     "Aliases": [
-      "Playnite"
+      "Playnite",
+      "Playnite.Playnite"
     ],
-    "Desc": "Gom mọi thư viện game về một nơi"
+    "Desc": "Trình quản lý và hợp nhất thư viện trò chơi đa nền tảng mã nguồn mở"
   },
   {
     "Name": "qBittorrent",
@@ -571,9 +649,10 @@
     "Category": "Lưu Trữ & Truyền Tệp",
     "Domain": "qbittorrent.org",
     "Aliases": [
-      "qBittorrent"
+      "qBittorrent",
+      "qBittorrent.qBittorrent"
     ],
-    "Desc": "Tải torrent sạch, không quảng cáo"
+    "Desc": "Trình khách BitTorrent mã nguồn mở không quảng cáo với giao diện trực quan"
   },
   {
     "Name": "LocalSend",
@@ -581,9 +660,10 @@
     "Category": "Lưu Trữ & Truyền Tệp",
     "Domain": "localsend.org",
     "Aliases": [
-      "LocalSend"
+      "LocalSend",
+      "LocalSend.LocalSend"
     ],
-    "Desc": "Bắn file qua Wi-Fi như AirDrop"
+    "Desc": "Giải pháp truyền tập tin ngang hàng an toàn qua mạng cục bộ không cần Internet"
   },
   {
     "Name": "WinSCP",
@@ -592,9 +672,10 @@
     "Domain": "winscp.net",
     "Aliases": [
       "WinSCP",
-      "winscp3_is1"
+      "winscp3_is1",
+      "WinSCP.WinSCP"
     ],
-    "Desc": "Truyền tệp qua SFTP/FTP bảo mật"
+    "Desc": "Trình khách truyền tập tin đồ họa hỗ trợ giao thức SFTP, SCP, FTPS và WebDAV"
   },
   {
     "Name": "FileZilla",
@@ -603,9 +684,10 @@
     "Domain": "filezilla-project.org",
     "Aliases": [
       "FileZilla Client",
-      "FileZilla"
+      "FileZilla",
+      "TimKosse.FileZilla.Client"
     ],
-    "Desc": "Client truyền tệp FTP phổ biến"
+    "Desc": "Giải pháp truyền tập tin mã nguồn mở hỗ trợ giao thức FTP, FTPS và SFTP"
   },
   {
     "Name": "Rclone",
@@ -613,9 +695,10 @@
     "Category": "Lưu Trữ & Truyền Tệp",
     "Domain": "rclone.org",
     "Aliases": [
-      "Rclone"
+      "Rclone",
+      "Rclone.Rclone"
     ],
-    "Desc": "Mount & đồng bộ 70+ dịch vụ đám mây"
+    "Desc": "Công cụ dòng lệnh đồng bộ, sao lưu và gắn kết dịch vụ lưu trữ đám mây"
   },
   {
     "Name": "Bitwarden",
@@ -623,9 +706,10 @@
     "Category": "Bảo Mật & Mạng",
     "Domain": "bitwarden.com",
     "Aliases": [
-      "Bitwarden"
+      "Bitwarden",
+      "Bitwarden.Bitwarden"
     ],
-    "Desc": "Két mật khẩu mã hóa an toàn"
+    "Desc": "Trình quản lý mật khẩu mã nguồn mở với chuẩn mã hóa đầu cuối zero-knowledge"
   },
   {
     "Name": "KeePassXC",
@@ -633,9 +717,10 @@
     "Category": "Bảo Mật & Mạng",
     "Domain": "keepassxc.org",
     "Aliases": [
-      "KeePassXC"
+      "KeePassXC",
+      "KeePassXCTeam.KeePassXC"
     ],
-    "Desc": "Quản lý mật khẩu offline độc lập"
+    "Desc": "Trình quản lý cơ sở dữ liệu mật khẩu ngoại tuyến an toàn mã nguồn mở"
   },
   {
     "Name": "Cryptomator",
@@ -643,9 +728,10 @@
     "Category": "Bảo Mật & Mạng",
     "Domain": "cryptomator.org",
     "Aliases": [
-      "Cryptomator"
+      "Cryptomator",
+      "Cryptomator.Cryptomator"
     ],
-    "Desc": "Mã hóa dữ liệu trước khi lên mây"
+    "Desc": "Giải pháp mã hóa dữ liệu phía máy khách độc lập cho lưu trữ đám mây"
   },
   {
     "Name": "ProtonVPN",
@@ -655,9 +741,10 @@
     "Aliases": [
       "Proton VPN",
       "ProtonVPN",
-      "Proton.ProtonVPN"
+      "Proton.ProtonVPN",
+      "ProtonTechnologies.ProtonVPN"
     ],
-    "Desc": "VPN bảo mật cao từ Thụy Sĩ"
+    "Desc": "Dịch vụ mạng riêng ảo (VPN) bảo mật cao với chính sách không lưu nhật ký (no-logs)"
   },
   {
     "Name": "RustDesk",
@@ -665,9 +752,10 @@
     "Category": "Bảo Mật & Mạng",
     "Domain": "rustdesk.com",
     "Aliases": [
-      "RustDesk"
+      "RustDesk",
+      "RustDesk.RustDesk"
     ],
-    "Desc": "Điều khiển máy tính từ xa tự host"
+    "Desc": "Phần mềm điều khiển máy tính từ xa mã nguồn mở hỗ trợ tự triển khai máy chủ"
   },
   {
     "Name": "Wireshark",
@@ -675,9 +763,10 @@
     "Category": "Bảo Mật & Mạng",
     "Domain": "wireshark.org",
     "Aliases": [
-      "Wireshark"
+      "Wireshark",
+      "WiresharkFoundation.Wireshark"
     ],
-    "Desc": "Phân tích gói tin mạng chuyên sâu"
+    "Desc": "Công cụ phân tích giao thức và bắt gói tin mạng hàng đầu cho chuyên gia CNTT"
   },
   {
     "Name": "VC++ Redist 2015-2022",
@@ -686,9 +775,11 @@
     "Domain": "microsoft.com",
     "Aliases": [
       "Visual C++",
-      "Microsoft Visual C++"
+      "Microsoft Visual C++",
+      "Microsoft Visual C++ 2015-2022 Redistributable",
+      "Microsoft.VCRedist.2015+.x64"
     ],
-    "Desc": "Cần thiết cho hầu hết game & app"
+    "Desc": "Gói thư viện thời gian chạy Microsoft Visual C++ cần thiết cho các ứng dụng Windows"
   },
   {
     "Name": ".NET Desktop Runtime 8",
@@ -697,9 +788,11 @@
     "Domain": "microsoft.com",
     "Aliases": [
       "Microsoft Windows Desktop Runtime - 8",
-      "DesktopRuntime.8"
+      "DesktopRuntime.8",
+      "Microsoft .NET Desktop Runtime 8",
+      "Microsoft.DotNet.DesktopRuntime.8"
     ],
-    "Desc": "Nền tảng chạy ứng dụng .NET 8 mới"
+    "Desc": "Môi trường thực thi cho các ứng dụng máy tính Windows xây dựng trên nền .NET 8"
   },
   {
     "Name": "DirectX End-User",
@@ -707,9 +800,12 @@
     "Category": "Thư Viện Cốt Lõi",
     "Domain": "microsoft.com",
     "Aliases": [
-      "DirectX"
+      "DirectX",
+      "Microsoft DirectX",
+      "DirectX End-User Runtimes",
+      "Microsoft.DirectX"
     ],
-    "Desc": "Thư viện đồ họa DirectX chuẩn"
+    "Desc": "Bộ thư viện thời gian chạy công nghệ đa phương tiện và đồ họa DirectX"
   },
   {
     "Name": "Java OpenJDK 21",
@@ -719,8 +815,10 @@
     "Aliases": [
       "Eclipse Temurin",
       "Temurin",
-      "Amazon Corretto"
+      "Amazon Corretto",
+      "Eclipse Temurin JDK with Hotspot 21",
+      "EclipseAdoptium.Temurin.21.JDK"
     ],
-    "Desc": "Môi trường chạy Java LTS tiêu chuẩn"
+    "Desc": "Môi trường phát triển và thực thi Java chuẩn doanh nghiệp phiên bản hỗ trợ dài hạn (LTS)"
   }
 ]

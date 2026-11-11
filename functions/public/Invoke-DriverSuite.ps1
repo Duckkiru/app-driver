@@ -5,7 +5,12 @@ function Find-FaultyPnpDevices {
     .SYNOPSIS
         Quét và liệt kê tất cả các thiết bị phần cứng bị lỗi, thiếu driver hoặc chấm than vàng.
     #>
-    return @(Get-PnpDevice | Where-Object { $_.Present -eq $true -and $_.Status -ne 'OK' })
+    try {
+        return @(Get-PnpDevice -ErrorAction Stop | Where-Object { $_.Present -eq $true -and $_.Status -ne 'OK' })
+    } catch {
+        Log-Text "[!] Lỗi khi quét danh sách PnpDevice: $($_.Exception.Message)"
+        return @()
+    }
 }
 
 function Invoke-PnpDeviceRescan {
@@ -31,15 +36,21 @@ function Export-SystemDriversBackup {
     #>
     param([string]$Destination = "C:\Backup_Drivers")
 
-    if (-not (Test-Path $Destination)) {
-        New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $Destination)) {
+        try {
+            New-Item -ItemType Directory -Path $Destination -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Log-Text "[!] Không thể tạo thư mục sao lưu '$Destination': $($_.Exception.Message)"
+            return $false
+        }
     }
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
         return $true
     } catch {
-        Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
-        return $true
+        Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
+        $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
+        return ($exitCode -eq 0)
     }
 }

@@ -1,8 +1,34 @@
-# ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
+﻿# ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
+
+# Bộ nhớ đệm tĩnh lưu trữ Brush của WPF giúp tối ưu render và triệt tiêu Garbage Collection
+$script:brushOutdatedBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x12, 0x15))
+$script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
+$script:brushLatestBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0D, 0x28, 0x18))
+$script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
+$script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
+$script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF))
+
+$script:brushOutdatedBg.Freeze()
+$script:brushOutdatedFg.Freeze()
+$script:brushLatestBg.Freeze()
+$script:brushLatestFg.Freeze()
+$script:brushNoneFg.Freeze()
+
+function Get-CleanAppName {
+    param([string]$RawName)
+    if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
+    $clean = ($RawName -replace '\(.*?\)', '').Trim().ToLowerInvariant()
+    $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")
+    foreach ($term in $terms) {
+        $clean = $clean.Replace($term, "")
+    }
+    return $clean.Trim()
+}
+
 function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
-    $txtStatus.Text = "Đang kiểm tra phiên bản app..."
-    $progressBar.IsIndeterminate = $true
+    if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
     [System.Windows.Forms.Application]::DoEvents()
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
@@ -17,12 +43,26 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list"
+        $pinfo.Arguments = "list --disable-interactivity"
         $pinfo.RedirectStandardOutput = $true
+        $pinfo.RedirectStandardError = $true
+        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $true
+
         $p = [System.Diagnostics.Process]::Start($pinfo)
-        $rawList = $p.StandardOutput.ReadToEnd()
+        if ($null -eq $p) {
+            throw "Không thể khởi động tiến trình winget."
+        }
+
+        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động
+        $readTask = $p.StandardOutput.ReadToEndAsync()
+        while (-not $readTask.IsCompleted) {
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 30
+        }
+        $rawList = $readTask.Result
         $p.WaitForExit()
     } catch {
         Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
@@ -30,66 +70,193 @@ function Scan-And-ColorizeApps {
         return
     }
 
-    # Phân tích danh sách đã cài đặt từ winget
+    # Phân tích danh sách đã cài đặt từ winget với bộ tách cột theo tọa độ Header chuẩn xác
     $lines = $rawList -split "`r?`n"
-    $start = $false
-    $installedItems = @()
+    $separatorIndex = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^---\s*---') {
+            $separatorIndex = $i
+            break
+        }
+    }
 
-    foreach ($line in $lines) {
-        if ($line -like "---*") { $start = $true; continue }
-        if ($start -and -not [string]::IsNullOrWhiteSpace($line)) {
-            $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), "\s{2,}")
-            if ($cols.Count -ge 2) {
-                $installedItems += [PSCustomObject]@{
-                    Name      = $cols[0].Trim()
-                    ID        = $cols[1].Trim()
-                    Version   = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
-                    Available = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
-                    HasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $cols[3].Trim() -ne "winget" -and $cols[3].Trim() -ne "msstore" -and $cols[3].Trim() -ne ""))
+    $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $installedList = [System.Collections.Generic.List[object]]::new()
+
+    if ($separatorIndex -gt 0) {
+        $headerLine = $lines[$separatorIndex - 1]
+        $idIdx    = $headerLine.IndexOf("Id")
+        if ($idIdx -lt 0) { $idIdx = $headerLine.IndexOf("ID") }
+        $verIdx   = $headerLine.IndexOf("Version")
+        $availIdx = $headerLine.IndexOf("Available")
+        $srcIdx   = $headerLine.IndexOf("Source")
+
+        for ($j = $separatorIndex + 1; $j -lt $lines.Count; $j++) {
+            $line = $lines[$j]
+            if ([string]::IsNullOrWhiteSpace($line)) { continue }
+
+            $appName  = ""
+            $appId    = ""
+            $version  = ""
+            $avail    = ""
+
+            if ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
+                $appName = $line.Substring(0, $idIdx).Trim()
+                if ($verIdx -gt $idIdx -and $line.Length -gt $verIdx) {
+                    $appId = $line.Substring($idIdx, $verIdx - $idIdx).Trim()
+                    if ($availIdx -gt $verIdx -and $line.Length -gt $availIdx) {
+                        $version = $line.Substring($verIdx, $availIdx - $verIdx).Trim()
+                        if ($srcIdx -gt $availIdx -and $line.Length -gt $srcIdx) {
+                            $avail = $line.Substring($availIdx, $srcIdx - $availIdx).Trim()
+                        } else {
+                            $avail = $line.Substring($availIdx).Trim()
+                        }
+                    } else {
+                        $version = $line.Substring($verIdx).Trim()
+                    }
+                } else {
+                    $appId = $line.Substring($idIdx).Trim()
+                }
+            } else {
+                # Fallback tách cột bằng khoảng trắng nếu độ dài chuỗi không khớp
+                $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
+                if ($cols.Count -ge 2) {
+                    $appName = $cols[0].Trim()
+                    $appId   = $cols[1].Trim()
+                    $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
+                    $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                }
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($appId)) {
+                $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
+                $itemObj = [PSCustomObject]@{
+                    Name      = $appName
+                    ID        = $appId
+                    Version   = $version
+                    Available = $avail
+                    HasUpdate = $hasUpdate
+                }
+
+                $installedList.Add($itemObj)
+                if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
+                if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
+                $clean = Get-CleanAppName $appName
+                if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
+            }
+        }
+    } else {
+        # Fallback hoàn toàn cho phiên bản winget không in header tiêu chuẩn
+        foreach ($line in $lines) {
+            if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
+                $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
+                if ($cols.Count -ge 2) {
+                    $appName = $cols[0].Trim()
+                    $appId   = $cols[1].Trim()
+                    $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
+                    $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                    $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
+
+                    $itemObj = [PSCustomObject]@{
+                        Name      = $appName
+                        ID        = $appId
+                        Version   = $version
+                        Available = $avail
+                        HasUpdate = $hasUpdate
+                    }
+
+                    $installedList.Add($itemObj)
+                    if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
+                    if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
+                    $clean = Get-CleanAppName $appName
+                    if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
                 }
             }
         }
     }
 
-    # Hàm khớp thông minh (Exact ID -> Aliases -> Clean Name)
-    function Find-InstalledAppInfo {
-        param($targetApp, $items)
-        
-        # 1. Exact ID
-        $match = $items | Where-Object { $_.ID -eq $targetApp.ID } | Select-Object -First 1
-        if ($match) { return $match }
+    # Bộ nhớ đệm tra cứu đa bí danh (Multi-Alias Lookup Cache)
+    $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-        # 2. Check Aliases (Brave, Zalo, Telegram, WinSCP, ProtonVPN...)
+    function Find-InstalledAppFast {
+        param($targetApp)
+
+        $targetId = $targetApp.ID
+        $cachedMatch = $null
+        if ($lookupCache.TryGetValue($targetId, [ref]$cachedMatch)) {
+            return $cachedMatch
+        }
+
+        # 1. Exact ID
+        $match = $null
+        if ($idMap.TryGetValue($targetId, [ref]$match)) {
+            $lookupCache[$targetId] = $match
+            return $match
+        }
+
+        # 2. Exact Name
+        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match)) {
+            $lookupCache[$targetId] = $match
+            return $match
+        }
+
+        # 3. Tra cứu danh sách Aliases trong O(1)
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
-                $al = $alias.ToLower()
-                $match = $items | Where-Object {
-                    $_.ID.ToLower() -eq $al -or
-                    $_.Name.ToLower() -eq $al -or
-                    $_.ID.ToLower().Contains($al) -or
-                    $_.Name.ToLower().StartsWith($al)
-                } | Select-Object -First 1
-                if ($match) { return $match }
+                if ([string]::IsNullOrWhiteSpace($alias)) { continue }
+                if ($idMap.TryGetValue($alias, [ref]$match)) {
+                    $lookupCache[$targetId] = $match
+                    return $match
+                }
+                if ($nameMap.TryGetValue($alias, [ref]$match)) {
+                    $lookupCache[$targetId] = $match
+                    return $match
+                }
+                $cleanAlias = Get-CleanAppName $alias
+                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match)) {
+                    $lookupCache[$targetId] = $match
+                    return $match
+                }
             }
         }
 
-        # 3. Clean Name match
-        $clean = ($targetApp.Name -replace '\(.*?\)', '').Trim().ToLower()
-        foreach ($term in @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")) {
-            $clean = $clean.Replace($term, "")
-        }
-        if ($clean.Length -ge 3) {
-            $match = $items | Where-Object {
-                $n = ($_.Name -replace '\(.*?\)', '').Trim().ToLower()
-                $n -eq $clean -or $n.StartsWith("$clean ") -or $n.StartsWith($clean)
-            } | Select-Object -First 1
-            if ($match) { return $match }
+        # 4. Clean Name match
+        $cleanTarget = Get-CleanAppName $targetApp.Name
+        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match)) {
+            $lookupCache[$targetId] = $match
+            return $match
         }
 
+        # 5. Fuzzy / Substring fallback quét nhanh trên danh sách
+        if ($targetApp.Aliases) {
+            foreach ($alias in $targetApp.Aliases) {
+                $al = $alias.ToLowerInvariant()
+                foreach ($item in $installedList) {
+                    if ($item.ID.ToLowerInvariant().Contains($al) -or $item.Name.ToLowerInvariant().StartsWith($al)) {
+                        $lookupCache[$targetId] = $item
+                        return $item
+                    }
+                }
+            }
+        }
+
+        if ($cleanTarget.Length -ge 3) {
+            foreach ($item in $installedList) {
+                $cleanItem = Get-CleanAppName $item.Name
+                if ($cleanItem -eq $cleanTarget -or $cleanItem.StartsWith("$cleanTarget ") -or $cleanItem.StartsWith($cleanTarget)) {
+                    $lookupCache[$targetId] = $item
+                    return $item
+                }
+            }
+        }
+
+        $lookupCache[$targetId] = $null
         return $null
     }
 
-    $progressBar.IsIndeterminate = $false
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
     $countInstalled = 0
     $countLatest = 0
     $countOutdated = 0
@@ -99,7 +266,7 @@ function Scan-And-ColorizeApps {
         $grid = $row.Child
         $tb = $grid.Children[2]
 
-        $info = Find-InstalledAppInfo $app $installedItems
+        $info = Find-InstalledAppFast $app
 
         if ($info) {
             $countInstalled++
@@ -108,8 +275,8 @@ function Scan-And-ColorizeApps {
                 # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
-                $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
-                $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+                $row.Background = $script:brushOutdatedBg
+                $tb.Foreground = $script:brushOutdatedFg
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
                 $tb.Text = "$($app.Name)  ⚠️$updateBadge"
                 $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
@@ -117,16 +284,16 @@ function Scan-And-ColorizeApps {
                 # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
-                $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
-                $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
+                $row.Background = $script:brushLatestBg
+                $tb.Foreground = $script:brushLatestFg
                 $tb.Text = "$($app.Name)  ✓ (Mới nhất)"
                 $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
             $row.Tag.Status = "NONE"
-            $row.Background = [System.Windows.Media.Brushes]::Transparent
-            $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
+            $row.Background = $script:brushNoneBg
+            $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
         }
@@ -134,5 +301,7 @@ function Scan-And-ColorizeApps {
 
     $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])"
     Log-Text "[✓] $summary"
-    $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+    if ($txtStatus) {
+        $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+    }
 }

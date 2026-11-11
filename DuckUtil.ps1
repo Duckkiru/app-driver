@@ -3,24 +3,190 @@
 #       Modular Windows Package Manager & System Maintenance Architecture
 # ==============================================================================
 
-# 1. TỰ ĐỘNG CHUYỂN SANG QUYỀN ADMINISTRATOR (SELF-ELEVATION)
-if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-    [Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh.exe" } else { "powershell.exe" }
-    try {
-        if ([string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)) {
-            Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://is.gd/duckutil' | Invoke-Expression`"" -Verb RunAs -ErrorAction Stop
-        } else {
-            Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -ErrorAction Stop
+# 1. TỰ ĐỘNG CHUYỂN SANG QUYỀN ADMINISTRATOR (SELF-ELEVATION & WINDOWS TERMINAL SUPPORT)
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+    [Security.Principal.WindowsBuiltInRole]::Administrator
+)
+
+# Nhận diện phiên bản và môi trường Windows Terminal
+$isInsideWT = -not [string]::IsNullOrWhiteSpace($env:WT_SESSION)
+$script:IsInsideWindowsTerminal = $isInsideWT
+
+if (-not $isAdmin) {
+    # Chọn runtime PowerShell phù hợp nhất (PowerShell 7 Core nếu có, fallback Windows PowerShell 5.1)
+    $psExe = if ($PSVersionTable.PSEdition -eq 'Core' -or (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)) {
+        "pwsh.exe"
+    } else {
+        "powershell.exe"
+    }
+
+    # Xác định thư mục làm việc và đường dẫn script
+    $isWebSource = [string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)
+    $workDir = if (-not $isWebSource) {
+        Split-Path -Parent (Resolve-Path -LiteralPath $PSCommandPath).Path
+    } else {
+        if ($PWD -and $PWD.Path -and (Test-Path -LiteralPath $PWD.Path)) { $PWD.Path } else { [Environment]::GetFolderPath('UserProfile') }
+    }
+
+    # Xây dựng đối số thực thi cho PowerShell
+    if ($isWebSource) {
+        $psArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://is.gd/duckutil' | Invoke-Expression`""
+    } else {
+        $scriptTarget = (Resolve-Path -LiteralPath $PSCommandPath).Path
+        $psArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptTarget`""
+        if ($args -and $args.Count -gt 0) {
+            $forwarded = foreach ($arg in $args) {
+                $argStr = "$arg"
+                if ($argStr -match '[\s"]') {
+                    '`"' + ($argStr -replace '"', '\"') + '`"'
+                } else {
+                    $argStr
+                }
+            }
+            $psArgs += " " + ($forwarded -join " ")
         }
-    } catch {
-        Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-        Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+    }
+
+    # Hàm tìm kiếm thực thi Windows Terminal (Hỗ trợ WT Stable, WT Preview, WT Canary)
+    function Get-WindowsTerminalPath {
+        # 1. Tìm trong PATH hệ thống (wt.exe hoặc wtd.exe)
+        foreach ($bin in @('wt.exe', 'wtd.exe', 'wt')) {
+            $cmd = Get-Command -Name $bin -CommandType Application -ErrorAction SilentlyContinue
+            if ($cmd -and $cmd.Source -and (Test-Path -LiteralPath $cmd.Source)) {
+                return $cmd.Source
+            }
+        }
+
+        # 2. Tìm trong AppExecutionAliases (Canary, Preview, Stable)
+        $aliasCandidates = @(
+            (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\Microsoft.WindowsTerminalCanary_8wekyb3d8bbwe\wt.exe"),
+            (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\wt.exe"),
+            (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\Microsoft.WindowsTerminal_8wekyb3d8bbwe\wt.exe"),
+            (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\wt.exe"),
+            (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\wtd.exe")
+        )
+        foreach ($candidate in $aliasCandidates) {
+            if (-not [string]::IsNullOrWhiteSpace($candidate) -and (Test-Path -LiteralPath $candidate)) {
+                return $candidate
+            }
+        }
+
+        # 3. Nếu đang chạy trong session của Windows Terminal nhưng không tìm thấy alias
+        if (-not [string]::IsNullOrWhiteSpace($env:WT_SESSION)) {
+            return "wt.exe"
+        }
+
+        return $null
+    }
+
+    # Hàm kiểm tra xem người dùng có chủ động từ chối UAC hay không
+    function Test-UacCancelled ($errorRecord) {
+        if (-not $errorRecord) { return $false }
+        $currEx = $errorRecord.Exception
+        while ($currEx) {
+            if ($currEx -is [System.ComponentModel.Win32Exception] -and $currEx.NativeErrorCode -eq 1223) {
+                return $true
+            }
+            if ($currEx.Message -match "canceled by the user|cancelled by the user") {
+                return $true
+            }
+            $currEx = $currEx.InnerException
+        }
+        return $false
+    }
+
+    $wtExe = Get-WindowsTerminalPath
+    $elevationSuccess = $false
+
+    # Tầng 1: Tự nâng quyền qua Windows Terminal (nếu đang ở trong WT hoặc tìm thấy wt.exe)
+    if ($isInsideWT -or $wtExe) {
+        $targetWt = if ($wtExe) { $wtExe } else { "wt.exe" }
+        $wtArgs = "-d `"$workDir`" $psExe $psArgs"
+        try {
+            Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
+            $elevationSuccess = $true
+            exit
+        } catch {
+            if (Test-UacCancelled $_) {
+                Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
+                Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                exit
+            }
+            # Nếu thất bại vì lỗi khởi chạy wt.exe (không phải từ chối UAC), tiếp tục fallback xuống tầng dưới
+        }
+    }
+
+    # Tầng 2: Fallback nâng quyền trực tiếp bằng PowerShell runtime đã chọn ($psExe)
+    if (-not $elevationSuccess) {
+        try {
+            $startParams = @{
+                FilePath     = $psExe
+                ArgumentList = $psArgs
+                Verb         = "RunAs"
+                ErrorAction  = "Stop"
+            }
+            if (Test-Path -LiteralPath $workDir) {
+                $startParams["WorkingDirectory"] = $workDir
+            }
+            Start-Process @startParams
+            $elevationSuccess = $true
+            exit
+        } catch {
+            if (Test-UacCancelled $_) {
+                Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
+                Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                exit
+            }
+
+            # Tầng 3: Fallback khẩn cấp sang powershell.exe mặc định nếu pwsh.exe gặp sự cố
+            if ($psExe -ne "powershell.exe" -and (Get-Command powershell.exe -CommandType Application -ErrorAction SilentlyContinue)) {
+                try {
+                    $fallbackParams = @{
+                        FilePath     = "powershell.exe"
+                        ArgumentList = $psArgs
+                        Verb         = "RunAs"
+                        ErrorAction  = "Stop"
+                    }
+                    if (Test-Path -LiteralPath $workDir) {
+                        $fallbackParams["WorkingDirectory"] = $workDir
+                    }
+                    Start-Process @fallbackParams
+                    $elevationSuccess = $true
+                    exit
+                } catch {
+                    if (Test-UacCancelled $_) {
+                        Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
+                        Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                        exit
+                    }
+                    Write-Host "`n[x] Lỗi khởi chạy quyền Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                    exit
+                }
+            } else {
+                Write-Host "`n[x] Lỗi khởi chạy quyền Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                exit
+            }
+        }
     }
     exit
 }
 
-# 2. NẠP THƯ VIỆN WPF & WINFORMS
+# 2. CẤU HÌNH MÔI TRƯỜNG & NẠP THƯ VIỆN WPF & WINFORMS
+try {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+} catch {
+    # Không làm gián đoạn nếu host không hỗ trợ thay đổi console encoding
+}
+
+if ($Host -and $Host.UI -and $Host.UI.RawUI) {
+    try {
+        $Host.UI.RawUI.WindowTitle = "DuckUtil - Cyber Obsidian Suite"
+    } catch {
+        # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
+    }
+}
+
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
@@ -36,9 +202,10 @@ $appsRawJson = @'
     "Domain": "google.com",
     "Aliases": [
       "Google Chrome",
-      "Google.Chrome"
+      "Google.Chrome",
+      "Chrome"
     ],
-    "Desc": "Trình duyệt phổ biến nhất thế giới"
+    "Desc": "Trình duyệt web chuẩn công nghiệp từ Google"
   },
   {
     "Name": "Mozilla Firefox",
@@ -47,9 +214,10 @@ $appsRawJson = @'
     "Domain": "mozilla.org",
     "Aliases": [
       "Mozilla Firefox",
-      "Firefox"
+      "Firefox",
+      "Mozilla.Firefox"
     ],
-    "Desc": "Mã nguồn mở, tôn trọng riêng tư"
+    "Desc": "Trình duyệt web mã nguồn mở chú trọng quyền riêng tư"
   },
   {
     "Name": "Brave Browser",
@@ -59,9 +227,10 @@ $appsRawJson = @'
     "Aliases": [
       "Brave",
       "BraveSoftware",
-      "Brave.Brave"
+      "Brave.Brave",
+      "Brave Browser"
     ],
-    "Desc": "Chặn quảng cáo tích hợp sẵn"
+    "Desc": "Trình duyệt bảo mật tích hợp công cụ chặn quảng cáo"
   },
   {
     "Name": "LibreWolf",
@@ -69,9 +238,10 @@ $appsRawJson = @'
     "Category": "Trình Duyệt Web",
     "Domain": "librewolf.net",
     "Aliases": [
-      "LibreWolf"
+      "LibreWolf",
+      "LibreWolf.LibreWolf"
     ],
-    "Desc": "Firefox không telemetry, siêu sạch"
+    "Desc": "Bản phân phối Firefox bảo mật cao, loại bỏ hoàn toàn đo lường từ xa (telemetry)"
   },
   {
     "Name": "Vivaldi",
@@ -79,9 +249,10 @@ $appsRawJson = @'
     "Category": "Trình Duyệt Web",
     "Domain": "vivaldi.com",
     "Aliases": [
-      "Vivaldi"
+      "Vivaldi",
+      "VivaldiTechnologies.Vivaldi"
     ],
-    "Desc": "Tùy biến không giới hạn"
+    "Desc": "Trình duyệt hiệu năng cao với khả năng tùy biến giao diện linh hoạt"
   },
   {
     "Name": "Tor Browser",
@@ -90,9 +261,10 @@ $appsRawJson = @'
     "Domain": "torproject.org",
     "Aliases": [
       "Tor Browser",
-      "TorProject"
+      "TorProject",
+      "TorProject.TorBrowser"
     ],
-    "Desc": "Duyệt web ẩn danh qua Onion"
+    "Desc": "Trình duyệt bảo mật ẩn danh qua mạng định tuyến củ hành (Onion Network)"
   },
   {
     "Name": "Opera GX",
@@ -101,9 +273,10 @@ $appsRawJson = @'
     "Domain": "opera.com",
     "Aliases": [
       "Opera GX",
-      "Opera"
+      "Opera",
+      "Opera.OperaGX"
     ],
-    "Desc": "Trình duyệt tối ưu tài nguyên"
+    "Desc": "Trình duyệt tùy chỉnh tài nguyên phần cứng và kiểm soát băng thông mạng"
   },
   {
     "Name": "Discord",
@@ -111,9 +284,10 @@ $appsRawJson = @'
     "Category": "Liên Lạc & Chat",
     "Domain": "discord.com",
     "Aliases": [
-      "Discord"
+      "Discord",
+      "Discord.Discord"
     ],
-    "Desc": "Voice/chat cộng đồng số 1"
+    "Desc": "Nền tảng giao tiếp bằng giọng nói, video và văn bản thời gian thực"
   },
   {
     "Name": "Telegram",
@@ -123,9 +297,10 @@ $appsRawJson = @'
     "Aliases": [
       "Telegram Desktop",
       "Telegram",
-      "TelegramDesktop"
+      "TelegramDesktop",
+      "Telegram.TelegramDesktop"
     ],
-    "Desc": "Nhắn tin nhanh, cloud-sync mượt"
+    "Desc": "Ứng dụng nhắn tin bảo mật cao và đồng bộ đám mây tức thì"
   },
   {
     "Name": "Signal",
@@ -133,9 +308,10 @@ $appsRawJson = @'
     "Category": "Liên Lạc & Chat",
     "Domain": "signal.org",
     "Aliases": [
-      "Signal"
+      "Signal",
+      "OpenWhisperSystems.Signal"
     ],
-    "Desc": "Mã hóa đầu-cuối an toàn tuyệt đối"
+    "Desc": "Nền tảng liên lạc bảo mật với công nghệ mã hóa đầu cuối (E2EE)"
   },
   {
     "Name": "Zalo",
@@ -147,7 +323,7 @@ $appsRawJson = @'
       "VNGCorp.Zalo",
       "VNG.Zalo"
     ],
-    "Desc": "Nhắn tin phổ biến nhất VN"
+    "Desc": "Ứng dụng nhắn tin và gọi thoại phổ biến tại Việt Nam"
   },
   {
     "Name": "Zoom",
@@ -156,9 +332,10 @@ $appsRawJson = @'
     "Domain": "zoom.us",
     "Aliases": [
       "Zoom",
-      "Zoom Workplace"
+      "Zoom Workplace",
+      "Zoom.Zoom"
     ],
-    "Desc": "Họp trực tuyến trực tiếp"
+    "Desc": "Nền tảng hội nghị truyền hình và họp trực tuyến doanh nghiệp"
   },
   {
     "Name": "Slack",
@@ -166,9 +343,10 @@ $appsRawJson = @'
     "Category": "Liên Lạc & Chat",
     "Domain": "slack.com",
     "Aliases": [
-      "Slack"
+      "Slack",
+      "SlackTechnologies.Slack"
     ],
-    "Desc": "Trao đổi công việc doanh nghiệp"
+    "Desc": "Nền tảng cộng tác và giao tiếp chuyên nghiệp cho doanh nghiệp"
   },
   {
     "Name": "WhatsApp",
@@ -176,9 +354,11 @@ $appsRawJson = @'
     "Category": "Liên Lạc & Chat",
     "Domain": "whatsapp.com",
     "Aliases": [
-      "WhatsApp"
+      "WhatsApp",
+      "WhatsApp.WhatsApp",
+      "WhatsApp Desktop"
     ],
-    "Desc": "Gọi & nhắn tin toàn cầu"
+    "Desc": "Ứng dụng nhắn tin và gọi thoại quốc tế bảo mật cao"
   },
   {
     "Name": "Microsoft Teams",
@@ -187,9 +367,10 @@ $appsRawJson = @'
     "Domain": "microsoft.com",
     "Aliases": [
       "Microsoft Teams",
-      "MSTeams"
+      "MSTeams",
+      "Microsoft.Teams"
     ],
-    "Desc": "Nền tảng làm việc Microsoft"
+    "Desc": "Giải pháp cộng tác và hội họp tích hợp Microsoft 365"
   },
   {
     "Name": "VS Code",
@@ -198,9 +379,11 @@ $appsRawJson = @'
     "Domain": "code.visualstudio.com",
     "Aliases": [
       "Microsoft Visual Studio Code",
-      "Visual Studio Code"
+      "Visual Studio Code",
+      "VS Code",
+      "Microsoft.VisualStudioCode"
     ],
-    "Desc": "Code editor chuẩn của lập trình viên"
+    "Desc": "Trình soạn thảo mã nguồn mở mạnh mẽ và mở rộng phong phú từ Microsoft"
   },
   {
     "Name": "Git",
@@ -208,9 +391,10 @@ $appsRawJson = @'
     "Category": "Phát Triển & Dev",
     "Domain": "git-scm.com",
     "Aliases": [
-      "Git"
+      "Git",
+      "Git.Git"
     ],
-    "Desc": "Hệ thống quản lý phiên bản mã nguồn"
+    "Desc": "Hệ thống quản lý phiên bản phân tán (Distributed Version Control)"
   },
   {
     "Name": "Windows Terminal",
@@ -220,9 +404,30 @@ $appsRawJson = @'
     "Aliases": [
       "Windows Terminal",
       "WindowsTerminal",
-      "Bảng điều khiển Windows"
+      "Microsoft.WindowsTerminal",
+      "9N0DX20HK701",
+      "Bảng điều khiển Windows",
+      "wt",
+      "wt.exe"
     ],
-    "Desc": "Terminal hiện đại đa tab"
+    "Desc": "Trình giả lập dòng lệnh đa tab hiện đại cho Windows"
+  },
+  {
+    "Name": "Windows Terminal Preview",
+    "ID": "Microsoft.WindowsTerminal.Preview",
+    "Category": "Phát Triển & Dev",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Windows Terminal Preview",
+      "WindowsTerminalPreview",
+      "Microsoft.WindowsTerminal.Preview",
+      "9N8G5RFZ9XK3",
+      "Bảng điều khiển Windows (Bản xem trước)",
+      "Bản xem trước của Bảng điều khiển Windows",
+      "wt preview",
+      "wt.exe preview"
+    ],
+    "Desc": "Phiên bản thử nghiệm sớm các tính năng mới của Windows Terminal"
   },
   {
     "Name": "Python 3.12",
@@ -232,9 +437,10 @@ $appsRawJson = @'
     "Aliases": [
       "Python 3.12",
       "Python 3.13",
-      "Python"
+      "Python",
+      "Python.Python.3.12"
     ],
-    "Desc": "Ngôn ngữ AI & tự động hóa"
+    "Desc": "Ngôn ngữ lập trình thông dịch phổ biến cho AI, dữ liệu và tự động hóa"
   },
   {
     "Name": "Node.js LTS",
@@ -243,9 +449,11 @@ $appsRawJson = @'
     "Domain": "nodejs.org",
     "Aliases": [
       "Node.js",
-      "OpenJS.NodeJS"
+      "OpenJS.NodeJS",
+      "OpenJS.NodeJS.LTS",
+      "NodeJS"
     ],
-    "Desc": "Môi trường chạy JS server-side"
+    "Desc": "Môi trường thực thi JavaScript phía máy chủ phiên bản hỗ trợ dài hạn (LTS)"
   },
   {
     "Name": "Docker Desktop",
@@ -253,9 +461,10 @@ $appsRawJson = @'
     "Category": "Phát Triển & Dev",
     "Domain": "docker.com",
     "Aliases": [
-      "Docker Desktop"
+      "Docker Desktop",
+      "Docker.DockerDesktop"
     ],
-    "Desc": "Nền tảng container ảo hóa"
+    "Desc": "Nền tảng ảo hóa container và công cụ quản trị Docker cho máy trạm"
   },
   {
     "Name": "Notepad++",
@@ -263,9 +472,10 @@ $appsRawJson = @'
     "Category": "Phát Triển & Dev",
     "Domain": "notepad-plus-plus.org",
     "Aliases": [
-      "Notepad++"
+      "Notepad++",
+      "Notepad++.Notepad++"
     ],
-    "Desc": "Trình soạn thảo text siêu nhẹ"
+    "Desc": "Trình soạn thảo văn bản và mã nguồn gọn nhẹ, hiệu năng cao"
   },
   {
     "Name": "Postman",
@@ -273,9 +483,10 @@ $appsRawJson = @'
     "Category": "Phát Triển & Dev",
     "Domain": "postman.com",
     "Aliases": [
-      "Postman"
+      "Postman",
+      "Postman.Postman"
     ],
-    "Desc": "Test & phát triển API"
+    "Desc": "Nền tảng phát triển, kiểm thử và quản lý vòng đời API"
   },
   {
     "Name": "DBeaver CE",
@@ -283,9 +494,11 @@ $appsRawJson = @'
     "Category": "Phát Triển & Dev",
     "Domain": "dbeaver.io",
     "Aliases": [
-      "DBeaver"
+      "DBeaver",
+      "DBeaver CE",
+      "dbeaver.dbeaver"
     ],
-    "Desc": "Quản trị database đa năng"
+    "Desc": "Công cụ quản trị cơ sở dữ liệu đa nền tảng cho nhà phát triển và DBA"
   },
   {
     "Name": "Go Lang",
@@ -294,9 +507,10 @@ $appsRawJson = @'
     "Domain": "golang.org",
     "Aliases": [
       "Go Programming Language",
-      "GoLang"
+      "GoLang",
+      "GoLang.Go"
     ],
-    "Desc": "Ngôn ngữ backend hiệu năng cao"
+    "Desc": "Ngôn ngữ lập trình mã nguồn mở hiệu năng cao từ Google"
   },
   {
     "Name": "Rust (rustup)",
@@ -305,9 +519,10 @@ $appsRawJson = @'
     "Domain": "rust-lang.org",
     "Aliases": [
       "Rustup",
-      "Rust"
+      "Rust",
+      "Rustlang.Rustup"
     ],
-    "Desc": "Bộ công cụ ngôn ngữ Rust"
+    "Desc": "Trình cài đặt và quản lý chuỗi công cụ ngôn ngữ lập trình Rust"
   },
   {
     "Name": "7-Zip",
@@ -316,9 +531,10 @@ $appsRawJson = @'
     "Domain": "7-zip.org",
     "Aliases": [
       "7-Zip",
-      "7zip"
+      "7zip",
+      "7zip.7zip"
     ],
-    "Desc": "Giải nén mọi định dạng tệp"
+    "Desc": "Công cụ nén và giải nén tệp mã nguồn mở với tỷ lệ nén cao"
   },
   {
     "Name": "WinRAR",
@@ -326,9 +542,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "rarlab.com",
     "Aliases": [
-      "WinRAR"
+      "WinRAR",
+      "RARLab.WinRAR"
     ],
-    "Desc": "Nén/giải nén chuẩn RAR"
+    "Desc": "Phần mềm nén và giải nén lưu trữ dữ liệu định dạng RAR và ZIP"
   },
   {
     "Name": "Everything",
@@ -336,9 +553,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "voidtools.com",
     "Aliases": [
-      "Everything"
+      "Everything",
+      "voidtools.Everything"
     ],
-    "Desc": "Tìm kiếm file tức thì 1 giây"
+    "Desc": "Công cụ chỉ mục và định vị tập tin tức thì trên phân vùng NTFS"
   },
   {
     "Name": "PowerToys",
@@ -346,9 +564,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "github.com",
     "Aliases": [
-      "PowerToys"
+      "PowerToys",
+      "Microsoft.PowerToys"
     ],
-    "Desc": "Bộ tiện ích chính chủ Microsoft"
+    "Desc": "Bộ tiện ích mở rộng nâng cao năng suất hệ thống từ Microsoft"
   },
   {
     "Name": "Flow Launcher",
@@ -357,9 +576,10 @@ $appsRawJson = @'
     "Domain": "flowlauncher.com",
     "Aliases": [
       "Flow Launcher",
-      "Flow-Launcher"
+      "Flow-Launcher",
+      "Flow-Launcher.Flow-Launcher"
     ],
-    "Desc": "Thanh tìm kiếm & chạy app Alt+Space"
+    "Desc": "Thanh tìm kiếm và khởi chạy tệp tin, ứng dụng nhanh qua phím tắt"
   },
   {
     "Name": "Revo Uninstaller",
@@ -367,9 +587,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "revouninstaller.com",
     "Aliases": [
-      "Revo Uninstaller"
+      "Revo Uninstaller",
+      "VSRevoGroup.RevoUninstaller"
     ],
-    "Desc": "Gỡ phần mềm sạch tận gốc"
+    "Desc": "Công cụ gỡ cài đặt phần mềm chuyên sâu và dọn dẹp khóa Registry tồn đọng"
   },
   {
     "Name": "TreeSize Free",
@@ -377,9 +598,11 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "jam-software.com",
     "Aliases": [
-      "TreeSize"
+      "TreeSize",
+      "TreeSize Free",
+      "JAMSoftware.TreeSize.Free"
     ],
-    "Desc": "Phân tích dung lượng ổ đĩa"
+    "Desc": "Công cụ phân tích và trực quan hóa dung lượng sử dụng ổ đĩa"
   },
   {
     "Name": "ShareX",
@@ -387,9 +610,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "getsharex.com",
     "Aliases": [
-      "ShareX"
+      "ShareX",
+      "ShareX.ShareX"
     ],
-    "Desc": "Chụp/quay màn hình & OCR đỉnh cao"
+    "Desc": "Công cụ chụp ảnh, quay video màn hình, nhận diện OCR và chia sẻ tệp"
   },
   {
     "Name": "BleachBit",
@@ -397,9 +621,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "bleachbit.org",
     "Aliases": [
-      "BleachBit"
+      "BleachBit",
+      "BleachBit.BleachBit"
     ],
-    "Desc": "Dọn rác & privacy thay CCleaner"
+    "Desc": "Tiện ích dọn dẹp tập tin rác và bảo vệ quyền riêng tư mã nguồn mở"
   },
   {
     "Name": "FanControl",
@@ -407,9 +632,10 @@ $appsRawJson = @'
     "Category": "Tiện Ích Hệ Thống",
     "Domain": "github.com",
     "Aliases": [
-      "FanControl"
+      "FanControl",
+      "Rem0o.FanControl"
     ],
-    "Desc": "Tùy chỉnh quạt tản nhiệt êm ái"
+    "Desc": "Phần mềm tinh chỉnh và điều khiển tốc độ quạt làm mát phần cứng máy tính"
   },
   {
     "Name": "VLC Media Player",
@@ -418,9 +644,10 @@ $appsRawJson = @'
     "Domain": "videolan.org",
     "Aliases": [
       "VLC media player",
-      "VLC"
+      "VLC",
+      "VideoLAN.VLC"
     ],
-    "Desc": "Xem mọi định dạng video/nhạc"
+    "Desc": "Trình phát đa phương tiện mã nguồn mở tương thích hầu hết định dạng"
   },
   {
     "Name": "OBS Studio",
@@ -428,9 +655,10 @@ $appsRawJson = @'
     "Category": "Đa Phương Tiện",
     "Domain": "obsproject.com",
     "Aliases": [
-      "OBS Studio"
+      "OBS Studio",
+      "OBSProject.OBSStudio"
     ],
-    "Desc": "Ghi hình & livestream chuyên nghiệp"
+    "Desc": "Phần mềm ghi hình màn hình và truyền phát trực tiếp chuyên nghiệp"
   },
   {
     "Name": "Spotify",
@@ -438,9 +666,10 @@ $appsRawJson = @'
     "Category": "Đa Phương Tiện",
     "Domain": "spotify.com",
     "Aliases": [
-      "Spotify"
+      "Spotify",
+      "Spotify.Spotify"
     ],
-    "Desc": "Nghe nhạc bản quyền chất lượng cao"
+    "Desc": "Dịch vụ truyền phát âm nhạc và podcast kỹ thuật số toàn cầu"
   },
   {
     "Name": "GIMP",
@@ -448,9 +677,10 @@ $appsRawJson = @'
     "Category": "Đa Phương Tiện",
     "Domain": "gimp.org",
     "Aliases": [
-      "GIMP"
+      "GIMP",
+      "GIMP.GIMP"
     ],
-    "Desc": "Chỉnh sửa ảnh chuyên nghiệp thay PTS"
+    "Desc": "Phần mềm xử lý đồ họa và chỉnh sửa hình ảnh mã nguồn mở nâng cao"
   },
   {
     "Name": "Audacity",
@@ -458,9 +688,10 @@ $appsRawJson = @'
     "Category": "Đa Phương Tiện",
     "Domain": "audacityteam.org",
     "Aliases": [
-      "Audacity"
+      "Audacity",
+      "Audacity.Audacity"
     ],
-    "Desc": "Thu âm & biên tập audio"
+    "Desc": "Phần mềm thu âm và biên tập âm thanh đa kênh mã nguồn mở"
   },
   {
     "Name": "HandBrake",
@@ -468,9 +699,10 @@ $appsRawJson = @'
     "Category": "Đa Phương Tiện",
     "Domain": "handbrake.fr",
     "Aliases": [
-      "HandBrake"
+      "HandBrake",
+      "HandBrake.HandBrake"
     ],
-    "Desc": "Nén & đổi đuôi video dung lượng nhẹ"
+    "Desc": "Công cụ chuyển mã video mã nguồn mở hỗ trợ tối ưu dung lượng tệp"
   },
   {
     "Name": "Krita",
@@ -478,9 +710,10 @@ $appsRawJson = @'
     "Category": "Đa Phương Tiện",
     "Domain": "krita.org",
     "Aliases": [
-      "Krita"
+      "Krita",
+      "KDE.Krita"
     ],
-    "Desc": "Vẽ đồ họa số & concept art"
+    "Desc": "Phần mềm vẽ đồ họa số, minh họa và diễn hoạt chuyên nghiệp"
   },
   {
     "Name": "K-Lite Codec Mega",
@@ -489,9 +722,10 @@ $appsRawJson = @'
     "Domain": "codecguide.com",
     "Aliases": [
       "K-Lite Codec Pack",
-      "K-Lite"
+      "K-Lite",
+      "CodecGuide.K-LiteCodecPack.Mega"
     ],
-    "Desc": "Gói giải mã video/audio đầy đủ"
+    "Desc": "Gói bộ giải mã codec âm thanh và video toàn diện cho hệ điều hành Windows"
   },
   {
     "Name": "LibreOffice",
@@ -499,9 +733,10 @@ $appsRawJson = @'
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "libreoffice.org",
     "Aliases": [
-      "LibreOffice"
+      "LibreOffice",
+      "TheDocumentFoundation.LibreOffice"
     ],
-    "Desc": "Bộ Office mã nguồn mở miễn phí"
+    "Desc": "Bộ ứng dụng văn phòng mã nguồn mở toàn diện tương thích chuẩn tài liệu mở"
   },
   {
     "Name": "Obsidian",
@@ -509,9 +744,10 @@ $appsRawJson = @'
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "obsidian.md",
     "Aliases": [
-      "Obsidian"
+      "Obsidian",
+      "Obsidian.Obsidian"
     ],
-    "Desc": "Ghi chú Markdown & mạng lưới tư duy"
+    "Desc": "Ứng dụng ghi chú và xây dựng cơ sở tri thức cá nhân trên nền tảng Markdown"
   },
   {
     "Name": "Notion",
@@ -519,9 +755,10 @@ $appsRawJson = @'
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "notion.so",
     "Aliases": [
-      "Notion"
+      "Notion",
+      "Notion.Notion"
     ],
-    "Desc": "Không gian quản lý ghi chú chung"
+    "Desc": "Không gian làm việc tích hợp ghi chú, quản lý tác vụ và dữ liệu cộng tác"
   },
   {
     "Name": "SumatraPDF",
@@ -529,9 +766,10 @@ $appsRawJson = @'
     "Category": "Văn Phòng & Tài Liệu",
     "Domain": "sumatrapdfreader.org",
     "Aliases": [
-      "SumatraPDF"
+      "SumatraPDF",
+      "SumatraPDF.SumatraPDF"
     ],
-    "Desc": "Đọc PDF siêu nhẹ bật tức thì"
+    "Desc": "Trình đọc tài liệu PDF, ePub, Mobi gọn nhẹ với tốc độ phản hồi cao"
   },
   {
     "Name": "Foxit PDF Reader",
@@ -540,9 +778,10 @@ $appsRawJson = @'
     "Domain": "foxit.com",
     "Aliases": [
       "Foxit PDF Reader",
-      "Foxit Reader"
+      "Foxit Reader",
+      "Foxit.FoxitReader"
     ],
-    "Desc": "Xem & ký tài liệu PDF chuyên nghiệp"
+    "Desc": "Giải pháp xem, ghi chú, biểu mẫu và ký số tài liệu PDF chuẩn doanh nghiệp"
   },
   {
     "Name": "Steam",
@@ -550,9 +789,10 @@ $appsRawJson = @'
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "steampowered.com",
     "Aliases": [
-      "Steam"
+      "Steam",
+      "Valve.Steam"
     ],
-    "Desc": "Kho game PC số 1 thế giới"
+    "Desc": "Nền tảng phân phối kỹ thuật số và cộng đồng trò chơi điện tử từ Valve"
   },
   {
     "Name": "Epic Games Launcher",
@@ -560,9 +800,10 @@ $appsRawJson = @'
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "epicgames.com",
     "Aliases": [
-      "Epic Games Launcher"
+      "Epic Games Launcher",
+      "EpicGames.EpicGamesLauncher"
     ],
-    "Desc": "Cửa hàng game & phát game miễn phí"
+    "Desc": "Cửa hàng phân phối trò chơi điện tử và công cụ phát triển Unreal Engine"
   },
   {
     "Name": "GOG Galaxy",
@@ -571,9 +812,10 @@ $appsRawJson = @'
     "Domain": "gog.com",
     "Aliases": [
       "GOG GALAXY",
-      "GOG Galaxy"
+      "GOG Galaxy",
+      "GOG.Galaxy"
     ],
-    "Desc": "Quản lý thư viện game không DRM"
+    "Desc": "Nền tảng phân phối và quản lý trò chơi bản quyền không ràng buộc DRM"
   },
   {
     "Name": "MSI Afterburner",
@@ -581,9 +823,10 @@ $appsRawJson = @'
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "msi.com",
     "Aliases": [
-      "MSI Afterburner"
+      "MSI Afterburner",
+      "Guru3D.Afterburner"
     ],
-    "Desc": "Đo nhiệt độ, FPS & ép xung"
+    "Desc": "Tiện ích giám sát phần cứng, hiển thị OSD và tinh chỉnh tham số card đồ họa"
   },
   {
     "Name": "Playnite",
@@ -591,9 +834,10 @@ $appsRawJson = @'
     "Category": "Nền Tảng Trò Chơi",
     "Domain": "playnite.link",
     "Aliases": [
-      "Playnite"
+      "Playnite",
+      "Playnite.Playnite"
     ],
-    "Desc": "Gom mọi thư viện game về một nơi"
+    "Desc": "Trình quản lý và hợp nhất thư viện trò chơi đa nền tảng mã nguồn mở"
   },
   {
     "Name": "qBittorrent",
@@ -601,9 +845,10 @@ $appsRawJson = @'
     "Category": "Lưu Trữ & Truyền Tệp",
     "Domain": "qbittorrent.org",
     "Aliases": [
-      "qBittorrent"
+      "qBittorrent",
+      "qBittorrent.qBittorrent"
     ],
-    "Desc": "Tải torrent sạch, không quảng cáo"
+    "Desc": "Trình khách BitTorrent mã nguồn mở không quảng cáo với giao diện trực quan"
   },
   {
     "Name": "LocalSend",
@@ -611,9 +856,10 @@ $appsRawJson = @'
     "Category": "Lưu Trữ & Truyền Tệp",
     "Domain": "localsend.org",
     "Aliases": [
-      "LocalSend"
+      "LocalSend",
+      "LocalSend.LocalSend"
     ],
-    "Desc": "Bắn file qua Wi-Fi như AirDrop"
+    "Desc": "Giải pháp truyền tập tin ngang hàng an toàn qua mạng cục bộ không cần Internet"
   },
   {
     "Name": "WinSCP",
@@ -622,9 +868,10 @@ $appsRawJson = @'
     "Domain": "winscp.net",
     "Aliases": [
       "WinSCP",
-      "winscp3_is1"
+      "winscp3_is1",
+      "WinSCP.WinSCP"
     ],
-    "Desc": "Truyền tệp qua SFTP/FTP bảo mật"
+    "Desc": "Trình khách truyền tập tin đồ họa hỗ trợ giao thức SFTP, SCP, FTPS và WebDAV"
   },
   {
     "Name": "FileZilla",
@@ -633,9 +880,10 @@ $appsRawJson = @'
     "Domain": "filezilla-project.org",
     "Aliases": [
       "FileZilla Client",
-      "FileZilla"
+      "FileZilla",
+      "TimKosse.FileZilla.Client"
     ],
-    "Desc": "Client truyền tệp FTP phổ biến"
+    "Desc": "Giải pháp truyền tập tin mã nguồn mở hỗ trợ giao thức FTP, FTPS và SFTP"
   },
   {
     "Name": "Rclone",
@@ -643,9 +891,10 @@ $appsRawJson = @'
     "Category": "Lưu Trữ & Truyền Tệp",
     "Domain": "rclone.org",
     "Aliases": [
-      "Rclone"
+      "Rclone",
+      "Rclone.Rclone"
     ],
-    "Desc": "Mount & đồng bộ 70+ dịch vụ đám mây"
+    "Desc": "Công cụ dòng lệnh đồng bộ, sao lưu và gắn kết dịch vụ lưu trữ đám mây"
   },
   {
     "Name": "Bitwarden",
@@ -653,9 +902,10 @@ $appsRawJson = @'
     "Category": "Bảo Mật & Mạng",
     "Domain": "bitwarden.com",
     "Aliases": [
-      "Bitwarden"
+      "Bitwarden",
+      "Bitwarden.Bitwarden"
     ],
-    "Desc": "Két mật khẩu mã hóa an toàn"
+    "Desc": "Trình quản lý mật khẩu mã nguồn mở với chuẩn mã hóa đầu cuối zero-knowledge"
   },
   {
     "Name": "KeePassXC",
@@ -663,9 +913,10 @@ $appsRawJson = @'
     "Category": "Bảo Mật & Mạng",
     "Domain": "keepassxc.org",
     "Aliases": [
-      "KeePassXC"
+      "KeePassXC",
+      "KeePassXCTeam.KeePassXC"
     ],
-    "Desc": "Quản lý mật khẩu offline độc lập"
+    "Desc": "Trình quản lý cơ sở dữ liệu mật khẩu ngoại tuyến an toàn mã nguồn mở"
   },
   {
     "Name": "Cryptomator",
@@ -673,9 +924,10 @@ $appsRawJson = @'
     "Category": "Bảo Mật & Mạng",
     "Domain": "cryptomator.org",
     "Aliases": [
-      "Cryptomator"
+      "Cryptomator",
+      "Cryptomator.Cryptomator"
     ],
-    "Desc": "Mã hóa dữ liệu trước khi lên mây"
+    "Desc": "Giải pháp mã hóa dữ liệu phía máy khách độc lập cho lưu trữ đám mây"
   },
   {
     "Name": "ProtonVPN",
@@ -685,9 +937,10 @@ $appsRawJson = @'
     "Aliases": [
       "Proton VPN",
       "ProtonVPN",
-      "Proton.ProtonVPN"
+      "Proton.ProtonVPN",
+      "ProtonTechnologies.ProtonVPN"
     ],
-    "Desc": "VPN bảo mật cao từ Thụy Sĩ"
+    "Desc": "Dịch vụ mạng riêng ảo (VPN) bảo mật cao với chính sách không lưu nhật ký (no-logs)"
   },
   {
     "Name": "RustDesk",
@@ -695,9 +948,10 @@ $appsRawJson = @'
     "Category": "Bảo Mật & Mạng",
     "Domain": "rustdesk.com",
     "Aliases": [
-      "RustDesk"
+      "RustDesk",
+      "RustDesk.RustDesk"
     ],
-    "Desc": "Điều khiển máy tính từ xa tự host"
+    "Desc": "Phần mềm điều khiển máy tính từ xa mã nguồn mở hỗ trợ tự triển khai máy chủ"
   },
   {
     "Name": "Wireshark",
@@ -705,9 +959,10 @@ $appsRawJson = @'
     "Category": "Bảo Mật & Mạng",
     "Domain": "wireshark.org",
     "Aliases": [
-      "Wireshark"
+      "Wireshark",
+      "WiresharkFoundation.Wireshark"
     ],
-    "Desc": "Phân tích gói tin mạng chuyên sâu"
+    "Desc": "Công cụ phân tích giao thức và bắt gói tin mạng hàng đầu cho chuyên gia CNTT"
   },
   {
     "Name": "VC++ Redist 2015-2022",
@@ -716,9 +971,11 @@ $appsRawJson = @'
     "Domain": "microsoft.com",
     "Aliases": [
       "Visual C++",
-      "Microsoft Visual C++"
+      "Microsoft Visual C++",
+      "Microsoft Visual C++ 2015-2022 Redistributable",
+      "Microsoft.VCRedist.2015+.x64"
     ],
-    "Desc": "Cần thiết cho hầu hết game & app"
+    "Desc": "Gói thư viện thời gian chạy Microsoft Visual C++ cần thiết cho các ứng dụng Windows"
   },
   {
     "Name": ".NET Desktop Runtime 8",
@@ -727,9 +984,11 @@ $appsRawJson = @'
     "Domain": "microsoft.com",
     "Aliases": [
       "Microsoft Windows Desktop Runtime - 8",
-      "DesktopRuntime.8"
+      "DesktopRuntime.8",
+      "Microsoft .NET Desktop Runtime 8",
+      "Microsoft.DotNet.DesktopRuntime.8"
     ],
-    "Desc": "Nền tảng chạy ứng dụng .NET 8 mới"
+    "Desc": "Môi trường thực thi cho các ứng dụng máy tính Windows xây dựng trên nền .NET 8"
   },
   {
     "Name": "DirectX End-User",
@@ -737,9 +996,12 @@ $appsRawJson = @'
     "Category": "Thư Viện Cốt Lõi",
     "Domain": "microsoft.com",
     "Aliases": [
-      "DirectX"
+      "DirectX",
+      "Microsoft DirectX",
+      "DirectX End-User Runtimes",
+      "Microsoft.DirectX"
     ],
-    "Desc": "Thư viện đồ họa DirectX chuẩn"
+    "Desc": "Bộ thư viện thời gian chạy công nghệ đa phương tiện và đồ họa DirectX"
   },
   {
     "Name": "Java OpenJDK 21",
@@ -749,9 +1011,11 @@ $appsRawJson = @'
     "Aliases": [
       "Eclipse Temurin",
       "Temurin",
-      "Amazon Corretto"
+      "Amazon Corretto",
+      "Eclipse Temurin JDK with Hotspot 21",
+      "EclipseAdoptium.Temurin.21.JDK"
     ],
-    "Desc": "Môi trường chạy Java LTS tiêu chuẩn"
+    "Desc": "Môi trường phát triển và thực thi Java chuẩn doanh nghiệp phiên bản hỗ trợ dài hạn (LTS)"
   }
 ]
 '@
@@ -764,13 +1028,16 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="DuckUtil - Cyber Obsidian Suite"
     Width="1280" Height="890"
+    MinWidth="1200" MinHeight="820"
     WindowStartupLocation="CenterScreen"
     Background="#090B10"
     Foreground="#F8FAFC"
-    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif">
+    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    TextOptions.TextFormattingMode="Display"
+    TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
-        <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER ═══ -->
+        <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER (8PX) ═══ -->
         <!-- Style cho Thumb thanh cuộn (Dọc) -->
         <Style x:Key="ModernScrollThumb" TargetType="{x:Type Thumb}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -877,59 +1144,37 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Style.Triggers>
         </Style>
 
-        <!-- Nút bấm phong cách Action -->
+        <!-- Nút bấm phong cách Action (Primary Accent Buttons) -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="16,8"/>
             <Setter Property="Margin" Value="4,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Name="btnBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.85"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.65"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Nút phụ -->
-        <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#151A26"/>
-            <Setter Property="Foreground" Value="#94A3B8"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="Margin" Value="4,0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#222C3E"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#25FFFFFF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#1E2738"/>
-                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.88"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#60FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.70"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.45"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -937,13 +1182,55 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Setter>
         </Style>
 
-        <!-- Nút điều hướng Tab chính -->
+        <!-- Nút phụ (Secondary Buttons - Dark Slate Accent) -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#121724"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#1F2A3D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="btnBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#1C2538"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#161E2E"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#0EA5E9"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Nút điều hướng Tab chính (NavTabButton) -->
         <Style x:Key="NavTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#64748B"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="Padding" Value="22,12"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0,0,0,2"/>
@@ -954,13 +1241,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <Border Name="navBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Foreground" Value="#E2E8F0"/>
-                                <Setter TargetName="navBorder" Property="Background" Value="#11141E"/>
+                                <Setter TargetName="navBorder" Property="Background" Value="#141824"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -975,35 +1263,39 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="145"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="150"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. TOP APP HEADER ═══ -->
-        <Border Grid.Row="0" Background="#0C0E14" Padding="20,12" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#0B0E15" Padding="22,13" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="360"/>
+                    <ColumnDefinition Width="380"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Brand & Logo -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#1E293B" CornerRadius="8" Width="36" Height="36" Margin="0,0,12,0">
-                        <TextBlock Text="🦆" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border Background="#131A2B" BorderBrush="#202D47" BorderThickness="1"
+                            CornerRadius="10" Width="42" Height="42" Margin="0,0,14,0">
+                        <TextBlock Text="🦆" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="DUCK UTIL" FontSize="19" FontWeight="Black" Foreground="#F8FAFC"/>
-                            <Border Background="#0EA5E9" CornerRadius="4" Margin="10,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                                <TextBlock Text="PRO SUITE" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="DUCK UTIL" FontSize="20" FontWeight="Black" Foreground="#F8FAFC"/>
+                            <Border Background="#0284C7" BorderBrush="#38BDF8" BorderThickness="1"
+                                    CornerRadius="5" Margin="10,0,0,0" Padding="7,2" VerticalAlignment="Center">
+                                <TextBlock Text="PRO SUITE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#FFFFFF"/>
                             </Border>
                         </StackPanel>
-                        <TextBlock Text="Windows Package Manager &amp; System Maintenance Suite" FontSize="11" Foreground="#64748B"/>
+                        <TextBlock Text="Windows Package Manager &amp; System Maintenance Suite"
+                                   FontSize="11.5" Foreground="#64748B" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
 
                 <!-- Modern Search Box -->
-                <Border Grid.Column="2" Background="#121620" CornerRadius="8" BorderBrush="#263147" BorderThickness="1" Padding="10,6">
+                <Border Grid.Column="2" Background="#111622" CornerRadius="8" BorderBrush="#243044" BorderThickness="1" Padding="12,7" VerticalAlignment="Center">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -1013,14 +1305,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#F8FAFC"
                                  BorderThickness="0" FontSize="12.5" VerticalAlignment="Center"
                                  CaretBrush="#38BDF8"
-                                 ToolTip="Gõ để lọc ứng dụng ngay lập tức..."/>
+                                 ToolTip="Gõ để lọc ứng dụng ngay lập tức theo tên hoặc ID..."/>
                     </Grid>
                 </Border>
             </Grid>
         </Border>
 
         <!-- ═══ 2. MAIN NAV TAB BAR ═══ -->
-        <Border Grid.Row="1" Background="#0E1118" Padding="16,0" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
                 <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
                         BorderBrush="#0EA5E9" Foreground="#F8FAFC"/>
@@ -1046,7 +1338,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     </Grid.RowDefinitions>
 
                     <!-- Thanh nút bấm ứng dụng + Chú giải phân màu -->
-                    <Border Grid.Row="0" Background="#0F121A" Padding="18,8" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Background="#0E121B" Padding="18,10" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1078,24 +1370,37 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Hàng 2: Chú thích màu sắc chuẩn -->
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,8,0,0">
-                                <TextBlock Text="Trạng thái màu tên App:" FontSize="11.5" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
-                                <Border Background="#1E293B" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
-                                    <TextBlock Text="⚪ Trắng: Chưa cài đặt" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                            <!-- Hàng 2: Chú thích màu sắc chuẩn dạng Cyber Pill Badge -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,10,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Trạng thái màu tên App:" FontSize="11.5" Foreground="#64748B" Margin="0,0,12,0"
+                                           FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <Border Background="#161D2C" BorderBrush="#253249" BorderThickness="1"
+                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#FFFFFF" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Trắng: Chưa cài đặt" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Border>
-                                <Border Background="#0C2417" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
-                                    <TextBlock Text="🟢 Xanh lá: Đã cài (Bản mới nhất)" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
+                                <Border Background="#0C2518" BorderBrush="#14532D" BorderThickness="1"
+                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#34D399" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Xanh lá: Đã cài (Bản mới nhất)" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Border>
-                                <Border Background="#271013" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
-                                    <TextBlock Text="🔴 Đỏ: Đã cài (Bản cũ - Có cập nhật)" FontSize="11" Foreground="#F87171" FontWeight="SemiBold"/>
+                                <Border Background="#2A1216" BorderBrush="#5B1621" BorderThickness="1"
+                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#F87171" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Đỏ: Đã cài (Bản cũ - Có cập nhật)" FontSize="11" Foreground="#F87171" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Lưới Card 4 CỘT RỘNG RÃI (ItemWidth = 296) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,10">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,12">
                         <WrapPanel Name="CardsContainer" ItemWidth="296" Orientation="Horizontal"/>
                     </ScrollViewer>
                 </Grid>
@@ -1104,46 +1409,70 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
-                    <WrapPanel ItemWidth="388" Orientation="Horizontal">
+                    <WrapPanel ItemWidth="590" Orientation="Horizontal">
                         <!-- Card 1: File Hệ Thống -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="13.5" Foreground="#38BDF8" Margin="0,0,0,8"/>
-                                <TextBlock Text="Quét và tự động sửa các file Windows bị hỏng hoặc mất." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#0C283F" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="ExtraBold" Foreground="#38BDF8"/>
+                                    </Border>
+                                    <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Quét và tự động sửa các file hệ thống Windows bị hỏng hoặc mất qua SFC và DISM."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Windows Update -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="13.5" Foreground="#F59E0B" Margin="0,0,0,8"/>
-                                <TextBlock Text="Khắc phục lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#311F0D" BorderBrush="#B45309" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F59E0B"/>
+                                    </Border>
+                                    <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="14" Foreground="#F59E0B" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Khắc phục triệt để lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Mạng & DNS -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="13.5" Foreground="#10B981" Margin="0,0,0,8"/>
-                                <TextBlock Text="Khắc phục sự cố không vào được web, mạng chập chờn, lỗi DNS." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#09281C" BorderBrush="#059669" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="ExtraBold" Foreground="#10B981"/>
+                                    </Border>
+                                    <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="14" Foreground="#10B981" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Khắc phục sự cố mất kết nối mạng, gián đoạn truy cập web, lỗi DNS và sự cố bộ giao thức."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 4: Dọn Rác & Khôi Phục UI -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="13.5" Foreground="#A78BFA" Margin="0,0,0,8"/>
-                                <TextBlock Text="Dọn sạch rác ổ C và khởi động lại Taskbar khi bị đơ treo." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#22173B" BorderBrush="#7C3AED" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="ExtraBold" Foreground="#A78BFA"/>
+                                    </Border>
+                                    <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#A78BFA" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Giải phóng dung lượng ổ C bị chiếm dụng bởi tệp tạm và nạp lại thanh Taskbar khi bị treo."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -1153,36 +1482,54 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
-                    <WrapPanel ItemWidth="388" Orientation="Horizontal">
+                    <WrapPanel ItemWidth="390" Orientation="Horizontal">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG &amp; DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#F43F5E" Margin="0,0,0,8"/>
-                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị crash." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#E11D48" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#310D18" BorderBrush="#BE123C" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F43F5E"/>
+                                    </Border>
+                                    <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG" FontWeight="Bold" FontSize="14" Foreground="#F43F5E" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị xung đột crash."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#E11D48" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Gỡ Lỗi Update Driver -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#F59E0B" Margin="0,0,0,8"/>
-                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#311F0D" BorderBrush="#B45309" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F59E0B"/>
+                                    </Border>
+                                    <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="14" Foreground="#F59E0B" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Sao Lưu Driver -->
-                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
+                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
-                                <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#10B981" Margin="0,0,0,8"/>
-                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
-                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Border Background="#09281C" BorderBrush="#059669" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="ExtraBold" Foreground="#10B981"/>
+                                    </Border>
+                                    <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="14" Foreground="#10B981" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi."
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -1191,7 +1538,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
         </TabControl>
 
         <!-- ═══ 4. STATUS & PROGRESS BAR ═══ -->
-        <Border Grid.Row="3" Background="#0C0E14" Padding="18,6" BorderBrush="#1A1F2C" BorderThickness="0,1,0,0">
+        <Border Grid.Row="3" Background="#0A0D14" Padding="20,7" BorderBrush="#181E2C" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -1202,38 +1549,43 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Column="0" Grid.Row="0" Name="txtStatus" Text="Sẵn sàng"
-                           Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold"/>
+                <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#10B981" Width="7" Height="7" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Name="txtStatus" Text="Sẵn sàng"
+                               Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold"/>
+                </StackPanel>
+
                 <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app được chọn"
-                           Foreground="#64748B" FontSize="11"/>
+                           Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
 
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                              Name="progressBar" Height="3" Margin="0,6,0,2"
-                             Background="#1A1F2C" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
+                             Background="#161C2A" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
             </Grid>
         </Border>
 
         <!-- ═══ 5. CYBER TERMINAL LOG ═══ -->
-        <Border Grid.Row="4" Background="#05060A" Padding="14,8">
+        <Border Grid.Row="4" Background="#05070B" Padding="16,8" BorderBrush="#141924" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0,0,0,4">
+                <Grid Grid.Row="0" Margin="0,0,0,5">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Background="#EF4444" Width="9" Height="9" CornerRadius="5" Margin="0,0,5,0"/>
-                        <Border Background="#F59E0B" Width="9" Height="9" CornerRadius="5" Margin="0,0,5,0"/>
-                        <Border Background="#10B981" Width="9" Height="9" CornerRadius="5" Margin="0,0,10,0"/>
-                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569" VerticalAlignment="Center"/>
+                        <Border Background="#EF4444" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
+                        <Border Background="#F59E0B" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
+                        <Border Background="#10B981" Width="8" Height="8" CornerRadius="4" Margin="0,0,8,0"/>
+                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569"
+                                   FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Name="btnClearLog" Content="Xóa Log" HorizontalAlignment="Right"
-                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11"/>
+                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11" Padding="6,2"/>
                 </Grid>
                 <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
-                         FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11"
+                         FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
-                         BorderThickness="0"
+                         BorderThickness="0" CaretBrush="#38BDF8"
                          Text="[DuckUtil Cyber Suite] Khởi tạo thành công với bố cục 4 cột và phân màu phiên bản.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
@@ -1243,50 +1595,125 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
 # 5. MODULES & FUNCTIONS
 # ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG VÀO TERMINAL ──
+
 function Log-Text {
     param([string]$text)
+    if ([string]::IsNullOrWhiteSpace($text)) { return }
     $logBox = if ($txtLog) { $txtLog } elseif ($txtTerminal) { $txtTerminal } else { $null }
     if ($logBox) {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
-        $logBox.AppendText("[$timestamp] $text`r`n")
+        $trimmed = $text.TrimEnd("`r", "`n")
+        $logBox.AppendText("[$timestamp] $trimmed`r`n")
         $logBox.ScrollToEnd()
     }
 }
 
 function Run-CliStream {
-    param([string]$FileName, [string]$Args)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FileName,
+        [Parameter(Mandatory = $false)]
+        [string]$Args = ""
+    )
+
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = $FileName
         $pinfo.Arguments = $Args
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
+        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $true
 
         $p = [System.Diagnostics.Process]::Start($pinfo)
-        while (-not $p.HasExited) {
-            $line = $p.StandardOutput.ReadLine()
-            if ($line) { Log-Text $line }
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 40
+        if ($null -eq $p) {
+            Log-Text "[!] Không thể khởi động tiến trình: $FileName"
+            return -1
         }
-        $remOut = $p.StandardOutput.ReadToEnd()
-        if ($remOut) { Log-Text $remOut }
-        $remErr = $p.StandardError.ReadToEnd()
-        if ($remErr) { Log-Text $remErr }
+
+        # Đọc bất đồng bộ hai luồng stdout và stderr để chống nghẽn (deadlock) và không khóa giao diện
+        $outTask = $p.StandardOutput.ReadLineAsync()
+        $errTask = $p.StandardError.ReadLineAsync()
+
+        while ($true) {
+            $hasData = $false
+
+            if ($outTask -ne $null -and $outTask.IsCompleted) {
+                $line = $outTask.Result
+                if ($line -ne $null) {
+                    Log-Text $line
+                    $outTask = $p.StandardOutput.ReadLineAsync()
+                    $hasData = $true
+                } else {
+                    $outTask = $null
+                }
+            }
+
+            if ($errTask -ne $null -and $errTask.IsCompleted) {
+                $errLine = $errTask.Result
+                if ($errLine -ne $null) {
+                    Log-Text $errLine
+                    $errTask = $p.StandardError.ReadLineAsync()
+                    $hasData = $true
+                } else {
+                    $errTask = $null
+                }
+            }
+
+            if ($p.HasExited -and $outTask -eq $null -and $errTask -eq $null) {
+                break
+            }
+
+            # Duy trì thông điệp giao diện WPF/WinForms luôn phản hồi tức thì
+            [System.Windows.Forms.Application]::DoEvents()
+
+            if (-not $hasData) {
+                Start-Sleep -Milliseconds 25
+            }
+        }
+
+        $p.WaitForExit()
+        [System.Windows.Forms.Application]::DoEvents()
         return $p.ExitCode
     } catch {
-        Log-Text "[!] Lỗi khi thực thi lệnh: $($_.Exception.Message)"
+        Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Args]: $($_.Exception.Message)"
         return -1
     }
 }
 
 # ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
+
+# Bộ nhớ đệm tĩnh lưu trữ Brush của WPF giúp tối ưu render và triệt tiêu Garbage Collection
+$script:brushOutdatedBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x12, 0x15))
+$script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
+$script:brushLatestBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0D, 0x28, 0x18))
+$script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
+$script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
+$script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF))
+
+$script:brushOutdatedBg.Freeze()
+$script:brushOutdatedFg.Freeze()
+$script:brushLatestBg.Freeze()
+$script:brushLatestFg.Freeze()
+$script:brushNoneFg.Freeze()
+
+function Get-CleanAppName {
+    param([string]$RawName)
+    if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
+    $clean = ($RawName -replace '\(.*?\)', '').Trim().ToLowerInvariant()
+    $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")
+    foreach ($term in $terms) {
+        $clean = $clean.Replace($term, "")
+    }
+    return $clean.Trim()
+}
+
 function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
-    $txtStatus.Text = "Đang kiểm tra phiên bản app..."
-    $progressBar.IsIndeterminate = $true
+    if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
     [System.Windows.Forms.Application]::DoEvents()
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
@@ -1301,12 +1728,26 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list"
+        $pinfo.Arguments = "list --disable-interactivity"
         $pinfo.RedirectStandardOutput = $true
+        $pinfo.RedirectStandardError = $true
+        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $true
+
         $p = [System.Diagnostics.Process]::Start($pinfo)
-        $rawList = $p.StandardOutput.ReadToEnd()
+        if ($null -eq $p) {
+            throw "Không thể khởi động tiến trình winget."
+        }
+
+        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động
+        $readTask = $p.StandardOutput.ReadToEndAsync()
+        while (-not $readTask.IsCompleted) {
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 30
+        }
+        $rawList = $readTask.Result
         $p.WaitForExit()
     } catch {
         Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
@@ -1314,66 +1755,193 @@ function Scan-And-ColorizeApps {
         return
     }
 
-    # Phân tích danh sách đã cài đặt từ winget
+    # Phân tích danh sách đã cài đặt từ winget với bộ tách cột theo tọa độ Header chuẩn xác
     $lines = $rawList -split "`r?`n"
-    $start = $false
-    $installedItems = @()
+    $separatorIndex = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^---\s*---') {
+            $separatorIndex = $i
+            break
+        }
+    }
 
-    foreach ($line in $lines) {
-        if ($line -like "---*") { $start = $true; continue }
-        if ($start -and -not [string]::IsNullOrWhiteSpace($line)) {
-            $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), "\s{2,}")
-            if ($cols.Count -ge 2) {
-                $installedItems += [PSCustomObject]@{
-                    Name      = $cols[0].Trim()
-                    ID        = $cols[1].Trim()
-                    Version   = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
-                    Available = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
-                    HasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $cols[3].Trim() -ne "winget" -and $cols[3].Trim() -ne "msstore" -and $cols[3].Trim() -ne ""))
+    $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $installedList = [System.Collections.Generic.List[object]]::new()
+
+    if ($separatorIndex -gt 0) {
+        $headerLine = $lines[$separatorIndex - 1]
+        $idIdx    = $headerLine.IndexOf("Id")
+        if ($idIdx -lt 0) { $idIdx = $headerLine.IndexOf("ID") }
+        $verIdx   = $headerLine.IndexOf("Version")
+        $availIdx = $headerLine.IndexOf("Available")
+        $srcIdx   = $headerLine.IndexOf("Source")
+
+        for ($j = $separatorIndex + 1; $j -lt $lines.Count; $j++) {
+            $line = $lines[$j]
+            if ([string]::IsNullOrWhiteSpace($line)) { continue }
+
+            $appName  = ""
+            $appId    = ""
+            $version  = ""
+            $avail    = ""
+
+            if ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
+                $appName = $line.Substring(0, $idIdx).Trim()
+                if ($verIdx -gt $idIdx -and $line.Length -gt $verIdx) {
+                    $appId = $line.Substring($idIdx, $verIdx - $idIdx).Trim()
+                    if ($availIdx -gt $verIdx -and $line.Length -gt $availIdx) {
+                        $version = $line.Substring($verIdx, $availIdx - $verIdx).Trim()
+                        if ($srcIdx -gt $availIdx -and $line.Length -gt $srcIdx) {
+                            $avail = $line.Substring($availIdx, $srcIdx - $availIdx).Trim()
+                        } else {
+                            $avail = $line.Substring($availIdx).Trim()
+                        }
+                    } else {
+                        $version = $line.Substring($verIdx).Trim()
+                    }
+                } else {
+                    $appId = $line.Substring($idIdx).Trim()
+                }
+            } else {
+                # Fallback tách cột bằng khoảng trắng nếu độ dài chuỗi không khớp
+                $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
+                if ($cols.Count -ge 2) {
+                    $appName = $cols[0].Trim()
+                    $appId   = $cols[1].Trim()
+                    $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
+                    $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                }
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($appId)) {
+                $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
+                $itemObj = [PSCustomObject]@{
+                    Name      = $appName
+                    ID        = $appId
+                    Version   = $version
+                    Available = $avail
+                    HasUpdate = $hasUpdate
+                }
+
+                $installedList.Add($itemObj)
+                if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
+                if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
+                $clean = Get-CleanAppName $appName
+                if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
+            }
+        }
+    } else {
+        # Fallback hoàn toàn cho phiên bản winget không in header tiêu chuẩn
+        foreach ($line in $lines) {
+            if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
+                $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
+                if ($cols.Count -ge 2) {
+                    $appName = $cols[0].Trim()
+                    $appId   = $cols[1].Trim()
+                    $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
+                    $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                    $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
+
+                    $itemObj = [PSCustomObject]@{
+                        Name      = $appName
+                        ID        = $appId
+                        Version   = $version
+                        Available = $avail
+                        HasUpdate = $hasUpdate
+                    }
+
+                    $installedList.Add($itemObj)
+                    if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
+                    if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
+                    $clean = Get-CleanAppName $appName
+                    if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
                 }
             }
         }
     }
 
-    # Hàm khớp thông minh (Exact ID -> Aliases -> Clean Name)
-    function Find-InstalledAppInfo {
-        param($targetApp, $items)
-        
-        # 1. Exact ID
-        $match = $items | Where-Object { $_.ID -eq $targetApp.ID } | Select-Object -First 1
-        if ($match) { return $match }
+    # Bộ nhớ đệm tra cứu đa bí danh (Multi-Alias Lookup Cache)
+    $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-        # 2. Check Aliases (Brave, Zalo, Telegram, WinSCP, ProtonVPN...)
+    function Find-InstalledAppFast {
+        param($targetApp)
+
+        $targetId = $targetApp.ID
+        $cachedMatch = $null
+        if ($lookupCache.TryGetValue($targetId, [ref]$cachedMatch)) {
+            return $cachedMatch
+        }
+
+        # 1. Exact ID
+        $match = $null
+        if ($idMap.TryGetValue($targetId, [ref]$match)) {
+            $lookupCache[$targetId] = $match
+            return $match
+        }
+
+        # 2. Exact Name
+        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match)) {
+            $lookupCache[$targetId] = $match
+            return $match
+        }
+
+        # 3. Tra cứu danh sách Aliases trong O(1)
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
-                $al = $alias.ToLower()
-                $match = $items | Where-Object {
-                    $_.ID.ToLower() -eq $al -or
-                    $_.Name.ToLower() -eq $al -or
-                    $_.ID.ToLower().Contains($al) -or
-                    $_.Name.ToLower().StartsWith($al)
-                } | Select-Object -First 1
-                if ($match) { return $match }
+                if ([string]::IsNullOrWhiteSpace($alias)) { continue }
+                if ($idMap.TryGetValue($alias, [ref]$match)) {
+                    $lookupCache[$targetId] = $match
+                    return $match
+                }
+                if ($nameMap.TryGetValue($alias, [ref]$match)) {
+                    $lookupCache[$targetId] = $match
+                    return $match
+                }
+                $cleanAlias = Get-CleanAppName $alias
+                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match)) {
+                    $lookupCache[$targetId] = $match
+                    return $match
+                }
             }
         }
 
-        # 3. Clean Name match
-        $clean = ($targetApp.Name -replace '\(.*?\)', '').Trim().ToLower()
-        foreach ($term in @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")) {
-            $clean = $clean.Replace($term, "")
-        }
-        if ($clean.Length -ge 3) {
-            $match = $items | Where-Object {
-                $n = ($_.Name -replace '\(.*?\)', '').Trim().ToLower()
-                $n -eq $clean -or $n.StartsWith("$clean ") -or $n.StartsWith($clean)
-            } | Select-Object -First 1
-            if ($match) { return $match }
+        # 4. Clean Name match
+        $cleanTarget = Get-CleanAppName $targetApp.Name
+        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match)) {
+            $lookupCache[$targetId] = $match
+            return $match
         }
 
+        # 5. Fuzzy / Substring fallback quét nhanh trên danh sách
+        if ($targetApp.Aliases) {
+            foreach ($alias in $targetApp.Aliases) {
+                $al = $alias.ToLowerInvariant()
+                foreach ($item in $installedList) {
+                    if ($item.ID.ToLowerInvariant().Contains($al) -or $item.Name.ToLowerInvariant().StartsWith($al)) {
+                        $lookupCache[$targetId] = $item
+                        return $item
+                    }
+                }
+            }
+        }
+
+        if ($cleanTarget.Length -ge 3) {
+            foreach ($item in $installedList) {
+                $cleanItem = Get-CleanAppName $item.Name
+                if ($cleanItem -eq $cleanTarget -or $cleanItem.StartsWith("$cleanTarget ") -or $cleanItem.StartsWith($cleanTarget)) {
+                    $lookupCache[$targetId] = $item
+                    return $item
+                }
+            }
+        }
+
+        $lookupCache[$targetId] = $null
         return $null
     }
 
-    $progressBar.IsIndeterminate = $false
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
     $countInstalled = 0
     $countLatest = 0
     $countOutdated = 0
@@ -1383,7 +1951,7 @@ function Scan-And-ColorizeApps {
         $grid = $row.Child
         $tb = $grid.Children[2]
 
-        $info = Find-InstalledAppInfo $app $installedItems
+        $info = Find-InstalledAppFast $app
 
         if ($info) {
             $countInstalled++
@@ -1392,8 +1960,8 @@ function Scan-And-ColorizeApps {
                 # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
-                $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
-                $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+                $row.Background = $script:brushOutdatedBg
+                $tb.Foreground = $script:brushOutdatedFg
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
                 $tb.Text = "$($app.Name)  ⚠️$updateBadge"
                 $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
@@ -1401,16 +1969,16 @@ function Scan-And-ColorizeApps {
                 # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
-                $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
-                $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
+                $row.Background = $script:brushLatestBg
+                $tb.Foreground = $script:brushLatestFg
                 $tb.Text = "$($app.Name)  ✓ (Mới nhất)"
                 $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
             $row.Tag.Status = "NONE"
-            $row.Background = [System.Windows.Media.Brushes]::Transparent
-            $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
+            $row.Background = $script:brushNoneBg
+            $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
         }
@@ -1418,7 +1986,9 @@ function Scan-And-ColorizeApps {
 
     $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])"
     Log-Text "[✓] $summary"
-    $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+    if ($txtStatus) {
+        $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+    }
 }
 
 # ── FUNCTION: CÁC TIỆN ÍCH QUẢN LÝ & GỠ LỖI DRIVER ──
@@ -1428,7 +1998,12 @@ function Find-FaultyPnpDevices {
     .SYNOPSIS
         Quét và liệt kê tất cả các thiết bị phần cứng bị lỗi, thiếu driver hoặc chấm than vàng.
     #>
-    return @(Get-PnpDevice | Where-Object { $_.Present -eq $true -and $_.Status -ne 'OK' })
+    try {
+        return @(Get-PnpDevice -ErrorAction Stop | Where-Object { $_.Present -eq $true -and $_.Status -ne 'OK' })
+    } catch {
+        Log-Text "[!] Lỗi khi quét danh sách PnpDevice: $($_.Exception.Message)"
+        return @()
+    }
 }
 
 function Invoke-PnpDeviceRescan {
@@ -1454,16 +2029,22 @@ function Export-SystemDriversBackup {
     #>
     param([string]$Destination = "C:\Backup_Drivers")
 
-    if (-not (Test-Path $Destination)) {
-        New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $Destination)) {
+        try {
+            New-Item -ItemType Directory -Path $Destination -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Log-Text "[!] Không thể tạo thư mục sao lưu '$Destination': $($_.Exception.Message)"
+            return $false
+        }
     }
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
         return $true
     } catch {
-        Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
-        return $true
+        Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
+        $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
+        return ($exitCode -eq 0)
     }
 }
 
@@ -1480,8 +2061,14 @@ function Reset-WindowsUpdateEngine {
     Stop-Service -Name "cryptsvc" -Force -ErrorAction SilentlyContinue
 
     Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
-    Rename-Item -Path "C:\Windows\SoftwareDistribution" -NewName "SoftwareDistribution.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
-    Rename-Item -Path "C:\Windows\System32\catroot2" -NewName "catroot2.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    $sdPath = "C:\Windows\SoftwareDistribution"
+    if (Test-Path -LiteralPath $sdPath) {
+        Rename-Item -LiteralPath $sdPath -NewName "SoftwareDistribution.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    }
+    $crPath = "C:\Windows\System32\catroot2"
+    if (Test-Path -LiteralPath $crPath) {
+        Rename-Item -LiteralPath $crPath -NewName "catroot2.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    }
 
     Log-Text "[*] Khởi động lại các dịch vụ hệ thống..."
     Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
@@ -1530,9 +2117,10 @@ function Clear-SystemTempFiles {
     #>
     $tempPaths = @($env:TEMP, "C:\Windows\Temp")
     foreach ($p in $tempPaths) {
-        if (Test-Path $p) {
-            Get-ChildItem -Path $p -Recurse -Force -ErrorAction SilentlyContinue |
-                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $p) {
+            Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
@@ -1543,7 +2131,9 @@ function Clear-SystemEventLogs {
         Xóa sạch nhật ký sự kiện Windows Event Logs.
     #>
     Get-WinEvent -ListLog * -ErrorAction SilentlyContinue | ForEach-Object {
-        try { [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName) } catch {}
+        try {
+            [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName)
+        } catch {}
     }
 }
 
@@ -1553,13 +2143,58 @@ $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 # Các Control chính
-$MainTabControl   = $window.FindName("MainTabControl")
-$txtStatus        = $window.FindName("txtStatus")
-$progressBar      = $window.FindName("progressBar")
-$txtLog           = $window.FindName("txtLog")
-$txtSearch        = $window.FindName("txtSearch")
+$MainTabControl    = $window.FindName("MainTabControl")
+$txtStatus         = $window.FindName("txtStatus")
+$progressBar       = $window.FindName("progressBar")
+$txtLog            = $window.FindName("txtLog")
+$txtSearch         = $window.FindName("txtSearch")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
-$cardsContainer   = $window.FindName("CardsContainer")
+$cardsContainer    = $window.FindName("CardsContainer")
+
+# Bảng màu Frozen Brush tĩnh tái sử dụng tối đa, loại trừ cấp phát bộ nhớ rác (GC)
+$script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
+$script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushNavInactive.Freeze()
+$script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
+
+$script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0F, 0x14, 0x20)); $script:brushCardBg.Freeze()
+$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x28, 0x3C)); $script:brushCardBorder.Freeze()
+$script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushHeaderFg.Freeze()
+$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x26, 0x38)); $script:brushSeparator.Freeze()
+
+$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x3B)); $script:brushRowHover.Freeze()
+$script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushTextWhite.Freeze()
+
+# Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
+$marginCardBorder = New-Object System.Windows.Thickness(5)
+$paddingCard      = New-Object System.Windows.Thickness(12, 10, 12, 12)
+$marginHeaderGrid = New-Object System.Windows.Thickness(0, 0, 0, 8)
+$marginSeparator  = New-Object System.Windows.Thickness(0, 2, 0, 6)
+$marginRowBorder  = New-Object System.Windows.Thickness(0, 1, 0, 1)
+$paddingRow       = New-Object System.Windows.Thickness(6, 4, 6, 4)
+$marginIcon       = New-Object System.Windows.Thickness(7, 0, 8, 0)
+$cornerCard       = New-Object System.Windows.CornerRadius(10)
+$cornerRow        = New-Object System.Windows.CornerRadius(6)
+$thicknessOne     = New-Object System.Windows.Thickness(1)
+
+# Trình khóa thực thi đơn nhất (Re-entrancy Guard) chống xung đột tiến trình
+$script:isActionRunning = $false
+
+function Invoke-GuardedAction {
+    param([string]$ActionName, [scriptblock]$Action)
+    if ($script:isActionRunning) {
+        Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
+        return
+    }
+    $script:isActionRunning = $true
+    try {
+        & $Action
+    } catch {
+        Log-Text "[!] Lỗi khi thực hiện '$ActionName': $($_.Exception.Message)"
+    } finally {
+        $script:isActionRunning = $false
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+}
 
 # Hàm an toàn gắn sự kiện Click cho nút
 function Register-Click {
@@ -1586,14 +2221,14 @@ function Set-ActiveTab {
     $buttons = @($navBtnApps, $navBtnRepair, $navBtnDrivers)
     foreach ($btn in $buttons) {
         if ($btn) {
-            $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
-            $btn.BorderBrush = [System.Windows.Media.Brushes]::Transparent
+            $btn.Foreground  = $script:brushNavInactive
+            $btn.BorderBrush = $script:brushTransparent
         }
     }
 
     if ($activeBtn) {
-        $activeBtn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
-        $activeBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+        $activeBtn.Foreground  = $script:brushNavActive
+        $activeBtn.BorderBrush = $script:brushNavActive
     }
 }
 
@@ -1601,13 +2236,23 @@ Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnRepair"  { Set-ActiveTab 1 $navBtnRepair }
 Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 
-# ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT RỘNG RÃI ──
-$allCheckBoxes = @()
-$allItemBorders = @()
+# ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
+$allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
+$allItemBorders  = [System.Collections.Generic.List[object]]::new()
+$categoryCardMap = [System.Collections.Generic.Dictionary[object, System.Collections.Generic.List[object]]]::new()
+
 $categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
 
+$script:suppressSelectionCount = $false
+
 function Update-SelectionCount {
-    $selectedCount = @($allCheckBoxes | Where-Object { $_.IsChecked }).Count
+    if ($script:suppressSelectionCount) { return }
+    $selectedCount = 0
+    foreach ($cb in $allCheckBoxes) {
+        if ($cb.IsChecked -eq $true) {
+            $selectedCount++
+        }
+    }
     if ($txtSelectionCount) {
         $txtSelectionCount.Text = "$selectedCount app được chọn"
     }
@@ -1615,31 +2260,32 @@ function Update-SelectionCount {
 
 foreach ($cat in $categories) {
     $cardBorder = New-Object System.Windows.Controls.Border
-    $cardBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10131B")
-    $cardBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
-    $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-    $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(10)
-    $cardBorder.Margin = New-Object System.Windows.Thickness(5)
-    $cardBorder.Padding = New-Object System.Windows.Thickness(12, 10, 12, 12)
+    $cardBorder.Background = $script:brushCardBg
+    $cardBorder.BorderBrush = $script:brushCardBorder
+    $cardBorder.BorderThickness = $thicknessOne
+    $cardBorder.CornerRadius = $cornerCard
+    $cardBorder.Margin = $marginCardBorder
+    $cardBorder.Padding = $paddingCard
 
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
+    $rowsInCard = [System.Collections.Generic.List[object]]::new()
 
     # Header Card
     $headerGrid = New-Object System.Windows.Controls.Grid
-    $headerGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $headerGrid.Margin = $marginHeaderGrid
 
     $headerText = New-Object System.Windows.Controls.TextBlock
     $headerText.Text = "$cat ($($appsInCat.Count))"
     $headerText.FontSize = 12.5
     $headerText.FontWeight = [System.Windows.FontWeights]::Bold
-    $headerText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    $headerText.Foreground = $script:brushHeaderFg
     $headerGrid.Children.Add($headerText) | Out-Null
 
     $separator = New-Object System.Windows.Controls.Border
     $separator.Height = 1
-    $separator.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E2638")
-    $separator.Margin = New-Object System.Windows.Thickness(0, 2, 0, 6)
+    $separator.Background = $script:brushSeparator
+    $separator.Margin = $marginSeparator
 
     $cardStack.Children.Add($headerGrid) | Out-Null
     $cardStack.Children.Add($separator) | Out-Null
@@ -1647,12 +2293,22 @@ foreach ($cat in $categories) {
     # Từng dòng App: Logo + CheckBox + Tên
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
-        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 4, 6, 4)
-        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
-        $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+        $rowBorder.CornerRadius = $cornerRow
+        $rowBorder.Padding = $paddingRow
+        $rowBorder.Margin = $marginRowBorder
+        $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
-        $rowBorder.Tag = @{ App = $app; Status = "NONE" }
+
+        # Tiền tính toán chuỗi tìm kiếm để bộ lọc TextChanged chạy tức thì
+        $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
+        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText $($app.Desc)".ToLowerInvariant()
+
+        $rowBorder.Tag = @{
+            App         = $app
+            Status      = "NONE"
+            CardBorder  = $cardBorder
+            SearchIndex = $searchIndex
+        }
 
         $rowGrid = New-Object System.Windows.Controls.Grid
         $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
@@ -1670,29 +2326,31 @@ foreach ($cat in $categories) {
         $cb.Add_Unchecked({ Update-SelectionCount })
         [System.Windows.Controls.Grid]::SetColumn($cb, 0)
         $rowGrid.Children.Add($cb) | Out-Null
-        $allCheckBoxes += $cb
+        $allCheckBoxes.Add($cb)
 
-        # 2. Logo Icon chính hãng
+        # 2. Logo Icon chính hãng (Nạp bất đồng bộ, an toàn không chặn render)
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
-        $img.Margin = New-Object System.Windows.Thickness(7, 0, 8, 0)
+        $img.Margin = $marginIcon
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        try {
-            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-            $bmp.BeginInit()
-            $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32")
-            $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
-            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
-            $bmp.EndInit()
-            $img.Source = $bmp
-        } catch {}
+        if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            try {
+                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                $bmp.BeginInit()
+                $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
+                $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
+                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
+                $bmp.EndInit()
+                $img.Source = $bmp
+            } catch {}
+        }
         [System.Windows.Controls.Grid]::SetColumn($img, 1)
         $rowGrid.Children.Add($img) | Out-Null
 
         # 3. Tên ứng dụng
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
-        $nameText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
+        $nameText.Foreground = $script:brushTextWhite
         $nameText.FontSize = 12
         $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -1701,145 +2359,223 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
-        # Chạm chọn toàn dòng
-        $rowBorder.Add_MouseDown({
-            $cb.IsChecked = -not $cb.IsChecked
+        # Tối ưu nhấp chọn toàn dòng mượt mà, phân lập rõ click CheckBox và click nền để chống giật/lặp sự kiện
+        $rowBorder.Add_MouseLeftButtonUp({
+            param($sender, $e)
+            $src = $e.OriginalSource
+            $isCb = $false
+            while ($src -ne $null -and $src -ne $sender) {
+                if ($src -is [System.Windows.Controls.CheckBox]) {
+                    $isCb = $true
+                    break
+                }
+                if ($src -is [System.Windows.Media.Visual]) {
+                    $src = [System.Windows.Media.VisualTreeHelper]::GetParent($src)
+                } else {
+                    break
+                }
+            }
+            if (-not $isCb) {
+                $cb.IsChecked = -not $cb.IsChecked
+            }
         })
 
-        # Hover phát sáng & giữ màu trạng thái khi rời chuột
+        # Hover phát sáng & phục hồi màu trạng thái cực nhanh nhờ Frozen Brushes
         $rowBorder.Add_MouseEnter({
             if ($rowBorder.Tag.Status -eq "NONE") {
-                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
+                $rowBorder.Background = $script:brushRowHover
             }
         })
         $rowBorder.Add_MouseLeave({
-            if ($rowBorder.Tag.Status -eq "LATEST") {
-                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
-            } elseif ($rowBorder.Tag.Status -eq "OUTDATED") {
-                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
+            $status = $rowBorder.Tag.Status
+            if ($status -eq "LATEST") {
+                $rowBorder.Background = $script:brushLatestBg
+            } elseif ($status -eq "OUTDATED") {
+                $rowBorder.Background = $script:brushOutdatedBg
             } else {
-                $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+                $rowBorder.Background = $script:brushTransparent
             }
         })
 
         $rowBorder.Child = $rowGrid
         $cardStack.Children.Add($rowBorder) | Out-Null
-        $allItemBorders += $rowBorder
+        $allItemBorders.Add($rowBorder)
+        $rowsInCard.Add($rowBorder)
     }
 
     $cardBorder.Child = $cardStack
+    $categoryCardMap[$cardBorder] = $rowsInCard
     if ($cardsContainer) {
         $cardsContainer.Children.Add($cardBorder) | Out-Null
     }
 }
 
-# ── LOGIC TÌM KIẾM & BỘ LỌC ──
+# ── LOGIC TÌM KIẾM & BỘ LỌC TỐC ĐỘ CAO (INDEXED SEARCH) ──
 if ($txtSearch) {
     $txtSearch.Add_TextChanged({
-        $keyword = $txtSearch.Text.Trim().ToLower()
-        foreach ($row in $allItemBorders) {
-            $app = $row.Tag.App
-            $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
-            $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $keyword = $txtSearch.Text.Trim().ToLowerInvariant()
+        $isEmpty = [string]::IsNullOrEmpty($keyword)
+
+        foreach ($entry in $categoryCardMap.GetEnumerator()) {
+            $card = $entry.Key
+            $rows = $entry.Value
+            $visibleRowsCount = 0
+
+            foreach ($row in $rows) {
+                $matched = $isEmpty -or ($row.Tag.SearchIndex.Contains($keyword))
+                if ($matched) {
+                    $row.Visibility = [System.Windows.Visibility]::Visible
+                    $visibleRowsCount++
+                } else {
+                    $row.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
+
+            # Ẩn cả khung Card Category nếu không có ứng dụng nào khớp từ khóa
+            if ($isEmpty -or $visibleRowsCount -gt 0) {
+                $card.Visibility = [System.Windows.Visibility]::Visible
+            } else {
+                $card.Visibility = [System.Windows.Visibility]::Collapsed
+            }
         }
     })
 }
 
 # ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──
-Register-Click "btnScanInstalled" { Scan-And-ColorizeApps }
+Register-Click "btnScanInstalled" {
+    Invoke-GuardedAction "Quét ứng dụng" {
+        Scan-And-ColorizeApps
+    }
+}
 
 Register-Click "btnInstall" {
-    $selected = @($allCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
-    if ($selected.Count -eq 0) {
-        Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
-        return
-    }
-
-    $total = $selected.Count
-    $idx = 0
-    Log-Text "=========================================================="
-    Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
-    Log-Text "=========================================================="
-
-    foreach ($app in $selected) {
-        $idx++
-        if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-        if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
-        Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
-
-        $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-        if ($code -eq 0) {
-            Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
-        } else {
-            Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+    Invoke-GuardedAction "Cài đặt ứng dụng" {
+        $selected = [System.Collections.Generic.List[object]]::new()
+        foreach ($cb in $allCheckBoxes) {
+            if ($cb.IsChecked -eq $true) {
+                $selected.Add($cb.Tag)
+            }
         }
+
+        if ($selected.Count -eq 0) {
+            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
+            return
+        }
+
+        $total = $selected.Count
+        $idx = 0
+        Log-Text "=========================================================="
+        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "=========================================================="
+
+        foreach ($app in $selected) {
+            $idx++
+            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+
+            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+            if ($code -eq 0) {
+                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+            } else {
+                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+            }
+        }
+        if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
+        if ($progressBar) { $progressBar.Value = 100 }
+        Scan-And-ColorizeApps
     }
-    if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
-    if ($progressBar) { $progressBar.Value = 100 }
-    Scan-And-ColorizeApps
 }
 
 Register-Click "btnUninstall" {
-    $selected = @($allCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
-    if ($selected.Count -eq 0) {
-        Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
-        return
-    }
-
-    $confirm = [System.Windows.Forms.MessageBox]::Show(
-        "Bạn có chắc chắn muốn gỡ bỏ $($selected.Count) ứng dụng đã chọn?",
-        "Xác nhận gỡ cài đặt",
-        [System.Windows.Forms.MessageBoxButtons]::YesNo,
-        [System.Windows.Forms.MessageBoxIcon]::Warning
-    )
-    if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
-
-    $total = $selected.Count
-    $idx = 0
-    Log-Text "=========================================================="
-    Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
-    Log-Text "=========================================================="
-
-    foreach ($app in $selected) {
-        $idx++
-        if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-        if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
-        Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
-
-        $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --silent"
-        if ($code -eq 0) {
-            Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
-        } else {
-            Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
+    Invoke-GuardedAction "Gỡ cài đặt" {
+        $selected = [System.Collections.Generic.List[object]]::new()
+        foreach ($cb in $allCheckBoxes) {
+            if ($cb.IsChecked -eq $true) {
+                $selected.Add($cb.Tag)
+            }
         }
+
+        if ($selected.Count -eq 0) {
+            Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
+            return
+        }
+
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Bạn có chắc chắn muốn gỡ bỏ $($selected.Count) ứng dụng đã chọn?",
+            "Xác nhận gỡ cài đặt",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+        $total = $selected.Count
+        $idx = 0
+        Log-Text "=========================================================="
+        Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
+        Log-Text "=========================================================="
+
+        foreach ($app in $selected) {
+            $idx++
+            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
+            Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
+
+            $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --silent"
+            if ($code -eq 0) {
+                Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
+            } else {
+                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
+            }
+        }
+        if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
+        if ($progressBar) { $progressBar.Value = 100 }
+        Scan-And-ColorizeApps
     }
-    if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
-    if ($progressBar) { $progressBar.Value = 100 }
-    Scan-And-ColorizeApps
 }
 
 Register-Click "btnUpgradeAll" {
-    Log-Text "=========================================================="
-    Log-Text "⚡ BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
-    Log-Text "=========================================================="
-    if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-GuardedAction "Nâng cấp toàn bộ" {
+        Log-Text "=========================================================="
+        Log-Text "⚡ BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
+        Log-Text "=========================================================="
+        if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-    Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+        Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
 
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-    Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
-    Scan-And-ColorizeApps
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
+        Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
+        Scan-And-ColorizeApps
+    }
 }
 
 Register-Click "btnSelectAll" {
-    foreach ($cb in $allCheckBoxes) { $cb.IsChecked = $true }
+    $script:suppressSelectionCount = $true
+    try {
+        foreach ($cb in $allCheckBoxes) {
+            if ($cb.IsChecked -ne $true) {
+                $cb.IsChecked = $true
+            }
+        }
+    } finally {
+        $script:suppressSelectionCount = $false
+    }
     Update-SelectionCount
 }
 
 Register-Click "btnDeselectAll" {
-    foreach ($cb in $allCheckBoxes) { $cb.IsChecked = $false }
+    $script:suppressSelectionCount = $true
+    try {
+        foreach ($cb in $allCheckBoxes) {
+            if ($cb.IsChecked -ne $false) {
+                $cb.IsChecked = $false
+            }
+        }
+    } finally {
+        $script:suppressSelectionCount = $false
+    }
     Update-SelectionCount
 }
 
@@ -1849,118 +2585,142 @@ Register-Click "btnClearLog" {
 
 # ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
 Register-Click "btnSfcScan" {
-    Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
-    if ($txtStatus) { $txtStatus.Text = "Đang chạy SFC Scan..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Invoke-SystemFileCheck
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
-    Log-Text "[✓] Quá trình SFC đã kết thúc."
+    Invoke-GuardedAction "SFC Scan" {
+        Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
+        if ($txtStatus) { $txtStatus.Text = "Đang chạy SFC Scan..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Invoke-SystemFileCheck
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
+        Log-Text "[✓] Quá trình SFC đã kết thúc."
+    }
 }
 
 Register-Click "btnDismRestore" {
-    Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
-    if ($txtStatus) { $txtStatus.Text = "Đang chạy DISM RestoreHealth..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Invoke-DismRestoreHealth
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
-    Log-Text "[✓] DISM RestoreHealth hoàn thành xuất sắc."
+    Invoke-GuardedAction "DISM RestoreHealth" {
+        Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
+        if ($txtStatus) { $txtStatus.Text = "Đang chạy DISM RestoreHealth..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Invoke-DismRestoreHealth
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
+        Log-Text "[✓] DISM RestoreHealth hoàn thành xuất sắc."
+    }
 }
 
 Register-Click "btnDismCleanup" {
-    Log-Text "[*] Đang dọn dẹp kho linh kiện hệ thống (DISM Component Cleanup)..."
-    if ($txtStatus) { $txtStatus.Text = "Đang dọn kho linh kiện..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Invoke-DriverStoreCleanup
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
-    Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
+    Invoke-GuardedAction "DISM Component Cleanup" {
+        Log-Text "[*] Đang dọn dẹp kho linh kiện hệ thống (DISM Component Cleanup)..."
+        if ($txtStatus) { $txtStatus.Text = "Đang dọn kho linh kiện..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Invoke-DriverStoreCleanup
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
+        Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
+    }
 }
 
 Register-Click "btnFixWindowsUpdate" {
-    Log-Text "[*] Bắt đầu khởi tạo và xóa sạch cache lỗi Windows Update..."
-    if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi Windows Update..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Reset-WindowsUpdateEngine
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Đã đặt lại Windows Update" }
+    Invoke-GuardedAction "Khởi tạo lại Windows Update" {
+        Log-Text "[*] Bắt đầu khởi tạo và xóa sạch cache lỗi Windows Update..."
+        if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi Windows Update..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Reset-WindowsUpdateEngine
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Đã đặt lại Windows Update" }
+    }
 }
 
 Register-Click "btnRestartUpdateServices" {
-    Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
-    Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
-    Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
-    Log-Text "[✓] Đã khởi động lại dịch vụ cập nhật."
+    Invoke-GuardedAction "Khởi động lại Update Services" {
+        Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
+        Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
+        Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
+        Log-Text "[✓] Đã khởi động lại dịch vụ cập nhật."
+    }
 }
 
 Register-Click "btnTriggerScanUpdate" {
-    Log-Text "[*] Đang gửi tín hiệu yêu cầu Windows tìm kiếm bản cập nhật mới..."
-    Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
-    Log-Text "[✓] Đã kích hoạt USOClient quét cập nhật."
+    Invoke-GuardedAction "Kích hoạt quét cập nhật" {
+        Log-Text "[*] Đang gửi tín hiệu yêu cầu Windows tìm kiếm bản cập nhật mới..."
+        Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
+        Log-Text "[✓] Đã kích hoạt USOClient quét cập nhật."
+    }
 }
 
 Register-Click "btnFlushDnsWinsock" {
-    Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
-    Clear-DnsResolverCache
-    Run-CliStream "netsh.exe" "winsock reset"
-    Log-Text "[✓] Đã làm mới mạng và DNS cache."
+    Invoke-GuardedAction "Flush DNS & Reset Winsock" {
+        Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
+        Clear-DnsResolverCache
+        Run-CliStream "netsh.exe" "winsock reset"
+        Log-Text "[✓] Đã làm mới mạng và DNS cache."
+    }
 }
 
 Register-Click "btnResetTcpIp" {
-    Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
-    Reset-NetworkInterfaceStack
-    Log-Text "[✓] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+    Invoke-GuardedAction "Reset TCP/IP Stack" {
+        Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
+        Reset-NetworkInterfaceStack
+        Log-Text "[✓] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+    }
 }
 
 Register-Click "btnClearTemp" {
-    Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
-    if ($txtStatus) { $txtStatus.Text = "Đang dọn tệp rác Temp..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Clear-SystemTempFiles
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
-    Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
+    Invoke-GuardedAction "Dọn dẹp Temp" {
+        Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
+        if ($txtStatus) { $txtStatus.Text = "Đang dọn tệp rác Temp..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Clear-SystemTempFiles
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
+        Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
+    }
 }
 
 Register-Click "btnRestartExplorer" {
-    Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
-    Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 800
-    if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
-        Start-Process "explorer.exe"
+    Invoke-GuardedAction "Khởi động lại Windows Explorer" {
+        Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
+        Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 800
+        if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
+            Start-Process "explorer.exe"
+        }
+        Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
     }
-    Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
 }
 
 # ── LOGIC MODULE QUẢN LÝ & GỠ LỖI DRIVER ──
 Register-Click "btnScanFaultyDrivers" {
-    Log-Text "=========================================================="
-    Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
-    Log-Text "=========================================================="
-    if ($txtStatus) { $txtStatus.Text = "Đang quét thiết bị lỗi..." }
+    Invoke-GuardedAction "Quét Driver lỗi" {
+        Log-Text "=========================================================="
+        Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
+        Log-Text "=========================================================="
+        if ($txtStatus) { $txtStatus.Text = "Đang quét thiết bị lỗi..." }
 
-    $faulty = Find-FaultyPnpDevices
+        $faulty = Find-FaultyPnpDevices
 
-    if ($faulty.Count -eq 0) {
-        Log-Text "[✓] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
-        if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
-    } else {
-        Log-Text "[⚠️] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
-        foreach ($d in $faulty) {
-            Log-Text "   • Tên thiết bị: $($d.FriendlyName)"
-            Log-Text "     Mã phần cứng: $($d.InstanceId)"
-            Log-Text "     Trạng thái: $($d.Status) | Vấn đề: $($d.Problem)"
-            Log-Text "   ────────────────────────────────────────────────"
+        if ($faulty.Count -eq 0) {
+            Log-Text "[✓] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
+            if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
+        } else {
+            Log-Text "[⚠️] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
+            foreach ($d in $faulty) {
+                Log-Text "   • Tên thiết bị: $($d.FriendlyName)"
+                Log-Text "     Mã phần cứng: $($d.InstanceId)"
+                Log-Text "     Trạng thái: $($d.Status) | Vấn đề: $($d.Problem)"
+                Log-Text "   ────────────────────────────────────────────────"
+            }
+            if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
         }
-        if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
     }
 }
 
 Register-Click "btnPnpRescan" {
-    Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
-    Invoke-PnpDeviceRescan
-    Log-Text "[✓] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
+    Invoke-GuardedAction "Quét lại thiết bị PnP" {
+        Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
+        Invoke-PnpDeviceRescan
+        Log-Text "[✓] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
+    }
 }
 
 Register-Click "btnOpenDeviceManager" {
@@ -1969,55 +2729,68 @@ Register-Click "btnOpenDeviceManager" {
 }
 
 Register-Click "btnFixDriverUpdate" {
-    Log-Text "[*] Đang giải phóng hàng đợi tải driver bị kẹt trong Windows Update..."
-    if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-GuardedAction "Gỡ lỗi kẹt driver update" {
+        Log-Text "[*] Đang giải phóng hàng đợi tải driver bị kẹt trong Windows Update..."
+        if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-    Reset-WindowsUpdateEngine
+        Reset-WindowsUpdateEngine
 
-    Log-Text "   - Đang buộc nhận diện lại các thiết bị phần cứng..."
-    Invoke-PnpDeviceRescan
+        Log-Text "   - Đang buộc nhận diện lại các thiết bị phần cứng..."
+        Invoke-PnpDeviceRescan
 
-    Log-Text "   - Yêu cầu Windows Update quét tìm driver thay thế mới..."
-    Start-Process "usoclient" -ArgumentList "StartScan" -NoNewWindow
+        Log-Text "   - Yêu cầu Windows Update quét tìm driver thay thế mới..."
+        Start-Process "usoclient" -ArgumentList "StartScan" -NoNewWindow
 
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
-    Log-Text "[✓] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
+        Log-Text "[✓] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
+    }
 }
 
 Register-Click "btnScanWindowsUpdateDrivers" {
-    Log-Text "[*] Đang kích hoạt quét driver từ Microsoft Windows Update..."
-    Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
-    Log-Text "[✓] Đã gửi lệnh tìm kiếm Driver mới qua Windows Update."
+    Invoke-GuardedAction "Quét driver từ Windows Update" {
+        Log-Text "[*] Đang kích hoạt quét driver từ Microsoft Windows Update..."
+        Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
+        Log-Text "[✓] Đã gửi lệnh tìm kiếm Driver mới qua Windows Update."
+    }
 }
 
 Register-Click "btnCleanDriverStore" {
-    Log-Text "[*] Đang quét và dọn dẹp các phiên bản driver cũ trong DriverStore..."
-    if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Invoke-DriverStoreCleanup
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Dọn dẹp DriverStore hoàn tất" }
-    Log-Text "[✓] Đã dọn dẹp sạch sẽ các bản driver cũ."
+    Invoke-GuardedAction "Dọn dẹp DriverStore" {
+        Log-Text "[*] Đang quét và dọn dẹp các phiên bản driver cũ trong DriverStore..."
+        if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Invoke-DriverStoreCleanup
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Dọn dẹp DriverStore hoàn tất" }
+        Log-Text "[✓] Đã dọn dẹp sạch sẽ các bản driver cũ."
+    }
 }
 
 Register-Click "btnBackupDrivers" {
-    $dest = "C:\Backup_Drivers"
-    Log-Text "[*] Đang sao lưu toàn bộ Driver của máy ra thư mục: '$dest'..."
-    if ($txtStatus) { $txtStatus.Text = "Đang sao lưu driver..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-GuardedAction "Sao lưu Driver" {
+        $dest = "C:\Backup_Drivers"
+        Log-Text "[*] Đang sao lưu toàn bộ Driver của máy ra thư mục: '$dest'..."
+        if ($txtStatus) { $txtStatus.Text = "Đang sao lưu driver..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-    Export-SystemDriversBackup -Destination $dest
+        $res = Export-SystemDriversBackup -Destination $dest
 
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-    if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
-    Log-Text "[✓] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($res) {
+            if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
+            Log-Text "[✓] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+        } else {
+            if ($txtStatus) { $txtStatus.Text = "Sao lưu driver thất bại" }
+            Log-Text "[❌] Lỗi trong quá trình sao lưu driver."
+        }
+    }
 }
 
 Register-Click "btnOpenBackupFolder" {
     $dest = "C:\Backup_Drivers"
-    if (Test-Path $dest) {
+    if (Test-Path -LiteralPath $dest) {
         Start-Process explorer.exe "`"$dest`""
     } else {
         Log-Text "[!] Thư mục $dest chưa tồn tại. Hãy bấm nút 'Sao Lưu Toàn Bộ Driver' trước."

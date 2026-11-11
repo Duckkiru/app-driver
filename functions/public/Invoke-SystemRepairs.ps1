@@ -11,8 +11,14 @@ function Reset-WindowsUpdateEngine {
     Stop-Service -Name "cryptsvc" -Force -ErrorAction SilentlyContinue
 
     Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
-    Rename-Item -Path "C:\Windows\SoftwareDistribution" -NewName "SoftwareDistribution.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
-    Rename-Item -Path "C:\Windows\System32\catroot2" -NewName "catroot2.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    $sdPath = "C:\Windows\SoftwareDistribution"
+    if (Test-Path -LiteralPath $sdPath) {
+        Rename-Item -LiteralPath $sdPath -NewName "SoftwareDistribution.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    }
+    $crPath = "C:\Windows\System32\catroot2"
+    if (Test-Path -LiteralPath $crPath) {
+        Rename-Item -LiteralPath $crPath -NewName "catroot2.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    }
 
     Log-Text "[*] Khởi động lại các dịch vụ hệ thống..."
     Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
@@ -61,9 +67,10 @@ function Clear-SystemTempFiles {
     #>
     $tempPaths = @($env:TEMP, "C:\Windows\Temp")
     foreach ($p in $tempPaths) {
-        if (Test-Path $p) {
-            Get-ChildItem -Path $p -Recurse -Force -ErrorAction SilentlyContinue |
-                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $p) {
+            Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 }
@@ -74,6 +81,8 @@ function Clear-SystemEventLogs {
         Xóa sạch nhật ký sự kiện Windows Event Logs.
     #>
     Get-WinEvent -ListLog * -ErrorAction SilentlyContinue | ForEach-Object {
-        try { [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName) } catch {}
+        try {
+            [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName)
+        } catch {}
     }
 }
