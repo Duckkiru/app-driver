@@ -1240,35 +1240,41 @@ $AppCatalog = ConvertFrom-Json $appsRawJson -AsHashtable
 # ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG VÀO TERMINAL ──
 function Log-Text {
     param([string]$text)
-    if ($txtTerminal) {
+    $logBox = if ($txtLog) { $txtLog } elseif ($txtTerminal) { $txtTerminal } else { $null }
+    if ($logBox) {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
-        $txtTerminal.AppendText("[$timestamp] $text`r`n")
-        $txtTerminal.ScrollToEnd()
+        $logBox.AppendText("[$timestamp] $text`r`n")
+        $logBox.ScrollToEnd()
     }
 }
 
 function Run-CliStream {
     param([string]$FileName, [string]$Args)
-    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-    $pinfo.FileName = $FileName
-    $pinfo.Arguments = $Args
-    $pinfo.RedirectStandardOutput = $true
-    $pinfo.RedirectStandardError = $true
-    $pinfo.UseShellExecute = $false
-    $pinfo.CreateNoWindow = $true
+    try {
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = $FileName
+        $pinfo.Arguments = $Args
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.RedirectStandardError = $true
+        $pinfo.UseShellExecute = $false
+        $pinfo.CreateNoWindow = $true
 
-    $p = [System.Diagnostics.Process]::Start($pinfo)
-    while (-not $p.HasExited) {
-        $line = $p.StandardOutput.ReadLine()
-        if ($line) { Log-Text $line }
-        [System.Windows.Forms.Application]::DoEvents()
-        Start-Sleep -Milliseconds 40
+        $p = [System.Diagnostics.Process]::Start($pinfo)
+        while (-not $p.HasExited) {
+            $line = $p.StandardOutput.ReadLine()
+            if ($line) { Log-Text $line }
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 40
+        }
+        $remOut = $p.StandardOutput.ReadToEnd()
+        if ($remOut) { Log-Text $remOut }
+        $remErr = $p.StandardError.ReadToEnd()
+        if ($remErr) { Log-Text $remErr }
+        return $p.ExitCode
+    } catch {
+        Log-Text "[!] Lỗi khi thực thi lệnh: $($_.Exception.Message)"
+        return -1
     }
-    $remOut = $p.StandardOutput.ReadToEnd()
-    if ($remOut) { Log-Text $remOut }
-    $remErr = $p.StandardError.ReadToEnd()
-    if ($remErr) { Log-Text $remErr }
-    return $p.ExitCode
 }
 
 # ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
@@ -1527,66 +1533,53 @@ $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 # Các Control chính
-$tabMain = $window.FindName("tabMain")
-$txtStatus = $window.FindName("txtStatus")
-$progressBar = $window.FindName("progressBar")
-$txtTerminal = $window.FindName("txtTerminal")
-$txtSearch = $window.FindName("txtSearch")
+$MainTabControl   = $window.FindName("MainTabControl")
+$txtStatus        = $window.FindName("txtStatus")
+$progressBar      = $window.FindName("progressBar")
+$txtLog           = $window.FindName("txtLog")
+$txtSearch        = $window.FindName("txtSearch")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
-$cardsContainer = $window.FindName("CardsContainer")
+$cardsContainer   = $window.FindName("CardsContainer")
 
-# Tab Navigation Buttons
-$navBtnApps = $window.FindName("navBtnApps")
-$navBtnRepair = $window.FindName("navBtnRepair")
-$navBtnDrivers = $window.FindName("navBtnDrivers")
-
-# App Action Buttons
-$btnInstall = $window.FindName("btnInstall")
-$btnUpgrade = $window.FindName("btnUpgrade")
-$btnUninstall = $window.FindName("btnUninstall")
-$btnScanInstalled = $window.FindName("btnScanInstalled")
-$btnSelectAll = $window.FindName("btnSelectAll")
-$btnClear = $window.FindName("btnClear")
-$btnClearLog = $window.FindName("btnClearLog")
-
-# System Repair Buttons
-$btnSfc = $window.FindName("btnSfc")
-$btnDism = $window.FindName("btnDism")
-$btnResetWu = $window.FindName("btnResetWu")
-$btnWuTroubleshoot = $window.FindName("btnWuTroubleshoot")
-$btnFlushDns = $window.FindName("btnFlushDns")
-$btnResetWinsock = $window.FindName("btnResetWinsock")
-$btnCleanTemp = $window.FindName("btnCleanTemp")
-$btnCleanLogs = $window.FindName("btnCleanLogs")
-
-# Driver Suite Buttons
-$btnScanFaultyDrivers = $window.FindName("btnScanFaultyDrivers")
-$btnPnpRescan = $window.FindName("btnPnpRescan")
-$btnOpenDeviceManager = $window.FindName("btnOpenDeviceManager")
-$btnFixDriverUpdate = $window.FindName("btnFixDriverUpdate")
-$btnScanWindowsUpdateDrivers = $window.FindName("btnScanWindowsUpdateDrivers")
-$btnCleanDriverStore = $window.FindName("btnCleanDriverStore")
-$btnBackupDrivers = $window.FindName("btnBackupDrivers")
-$btnOpenBackupFolder = $window.FindName("btnOpenBackupFolder")
+# Hàm an toàn gắn sự kiện Click cho nút
+function Register-Click {
+    param([string]$ButtonName, [scriptblock]$Action)
+    $btn = $window.FindName($ButtonName)
+    if ($btn) {
+        $btn.Add_Click($Action)
+    } else {
+        Write-Warning "Không tìm thấy nút trong XAML: $ButtonName"
+    }
+}
 
 # ── LOGIC ĐIỀU HƯỚNG TAB CHÍNH ──
+$navBtnApps    = $window.FindName("navBtnApps")
+$navBtnRepair  = $window.FindName("navBtnRepair")
+$navBtnDrivers = $window.FindName("navBtnDrivers")
+
 function Set-ActiveTab {
     param([int]$index, $activeBtn)
-    $tabMain.SelectedIndex = $index
+    if ($MainTabControl) {
+        $MainTabControl.SelectedIndex = $index
+    }
 
     $buttons = @($navBtnApps, $navBtnRepair, $navBtnDrivers)
     foreach ($btn in $buttons) {
-        $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
-        $btn.BorderBrush = [System.Windows.Media.Brushes]::Transparent
+        if ($btn) {
+            $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+            $btn.BorderBrush = [System.Windows.Media.Brushes]::Transparent
+        }
     }
 
-    $activeBtn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
-    $activeBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    if ($activeBtn) {
+        $activeBtn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+        $activeBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    }
 }
 
-$navBtnApps.Add_Click({ Set-ActiveTab 0 $navBtnApps })
-$navBtnRepair.Add_Click({ Set-ActiveTab 1 $navBtnRepair })
-$navBtnDrivers.Add_Click({ Set-ActiveTab 2 $navBtnDrivers })
+Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
+Register-Click "navBtnRepair"  { Set-ActiveTab 1 $navBtnRepair }
+Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT RỘNG RÃI ──
 $allCheckBoxes = @()
@@ -1595,7 +1588,9 @@ $categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
 
 function Update-SelectionCount {
     $selectedCount = @($allCheckBoxes | Where-Object { $_.IsChecked }).Count
-    $txtSelectionCount.Text = "$selectedCount app được chọn"
+    if ($txtSelectionCount) {
+        $txtSelectionCount.Text = "$selectedCount app được chọn"
+    }
 }
 
 foreach ($cat in $categories) {
@@ -1712,23 +1707,27 @@ foreach ($cat in $categories) {
     }
 
     $cardBorder.Child = $cardStack
-    $cardsContainer.Children.Add($cardBorder) | Out-Null
+    if ($cardsContainer) {
+        $cardsContainer.Children.Add($cardBorder) | Out-Null
+    }
 }
 
 # ── LOGIC TÌM KIẾM & BỘ LỌC ──
-$txtSearch.Add_TextChanged({
-    $keyword = $txtSearch.Text.Trim().ToLower()
-    foreach ($row in $allItemBorders) {
-        $app = $row.Tag.App
-        $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
-        $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-})
+if ($txtSearch) {
+    $txtSearch.Add_TextChanged({
+        $keyword = $txtSearch.Text.Trim().ToLower()
+        foreach ($row in $allItemBorders) {
+            $app = $row.Tag.App
+            $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
+            $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        }
+    })
+}
 
-$btnScanInstalled.Add_Click({ Scan-And-ColorizeApps })
+# ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──
+Register-Click "btnScanInstalled" { Scan-And-ColorizeApps }
 
-# ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP ──
-$btnInstall.Add_Click({
+Register-Click "btnInstall" {
     $selected = @($allCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
     if ($selected.Count -eq 0) {
         Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
@@ -1743,8 +1742,8 @@ $btnInstall.Add_Click({
 
     foreach ($app in $selected) {
         $idx++
-        $progressBar.Value = [math]::Round(($idx / $total) * 100)
-        $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..."
+        if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+        if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
         Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
         $code = Run-CliStream "winget" "install --id $($app.ID) --exact --silent --accept-package-agreements --accept-source-agreements"
@@ -1754,12 +1753,12 @@ $btnInstall.Add_Click({
             Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
         }
     }
-    $txtStatus.Text = "Cài đặt hoàn tất!"
-    $progressBar.Value = 100
+    if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
+    if ($progressBar) { $progressBar.Value = 100 }
     Scan-And-ColorizeApps
-})
+}
 
-$btnUninstall.Add_Click({
+Register-Click "btnUninstall" {
     $selected = @($allCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
     if ($selected.Count -eq 0) {
         Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
@@ -1782,8 +1781,8 @@ $btnUninstall.Add_Click({
 
     foreach ($app in $selected) {
         $idx++
-        $progressBar.Value = [math]::Round(($idx / $total) * 100)
-        $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..."
+        if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+        if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
         Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
 
         $code = Run-CliStream "winget" "uninstall --id $($app.ID) --silent"
@@ -1793,132 +1792,136 @@ $btnUninstall.Add_Click({
             Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
         }
     }
-    $txtStatus.Text = "Gỡ cài đặt hoàn tất!"
-    $progressBar.Value = 100
+    if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
+    if ($progressBar) { $progressBar.Value = 100 }
     Scan-And-ColorizeApps
-})
+}
 
-$btnUpgrade.Add_Click({
+Register-Click "btnUpgradeAll" {
     Log-Text "=========================================================="
     Log-Text "⚡ BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
     Log-Text "=========================================================="
-    $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..."
-    $progressBar.IsIndeterminate = $true
+    if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
     Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
 
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Nâng cấp hoàn tất!"
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
     Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
     Scan-And-ColorizeApps
-})
+}
 
-$btnSelectAll.Add_Click({
+Register-Click "btnSelectAll" {
     foreach ($cb in $allCheckBoxes) { $cb.IsChecked = $true }
     Update-SelectionCount
-})
+}
 
-$btnClear.Add_Click({
+Register-Click "btnDeselectAll" {
     foreach ($cb in $allCheckBoxes) { $cb.IsChecked = $false }
     Update-SelectionCount
-})
+}
 
-$btnClearLog.Add_Click({
-    $txtTerminal.Clear()
-})
+Register-Click "btnClearLog" {
+    if ($txtLog) { $txtLog.Clear() }
+}
 
 # ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
-$btnSfc.Add_Click({
+Register-Click "btnSfcScan" {
     Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
-    $txtStatus.Text = "Đang chạy SFC Scan..."
-    $progressBar.IsIndeterminate = $true
-    Run-CliStream "sfc.exe" "/scannow"
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Quét SFC hoàn tất"
+    if ($txtStatus) { $txtStatus.Text = "Đang chạy SFC Scan..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-SystemFileCheck
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
     Log-Text "[✓] Quá trình SFC đã kết thúc."
-})
+}
 
-$btnDism.Add_Click({
+Register-Click "btnDismRestore" {
     Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
-    $txtStatus.Text = "Đang chạy DISM RestoreHealth..."
-    $progressBar.IsIndeterminate = $true
-    Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "DISM hoàn tất"
+    if ($txtStatus) { $txtStatus.Text = "Đang chạy DISM RestoreHealth..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-DismRestoreHealth
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
     Log-Text "[✓] DISM RestoreHealth hoàn thành xuất sắc."
-})
+}
 
-$btnResetWu.Add_Click({
-    Log-Text "[*] Bắt đầu khởi động lại hoàn toàn dịch vụ Windows Update..."
-    $txtStatus.Text = "Đang sửa lỗi Windows Update..."
-    $progressBar.IsIndeterminate = $true
+Register-Click "btnDismCleanup" {
+    Log-Text "[*] Đang dọn dẹp kho linh kiện hệ thống (DISM Component Cleanup)..."
+    if ($txtStatus) { $txtStatus.Text = "Đang dọn kho linh kiện..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-DriverStoreCleanup
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
+    Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
+}
+
+Register-Click "btnFixWindowsUpdate" {
+    Log-Text "[*] Bắt đầu khởi tạo và xóa sạch cache lỗi Windows Update..."
+    if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi Windows Update..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
     Reset-WindowsUpdateEngine
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Đã đặt lại Windows Update"
-})
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Đã đặt lại Windows Update" }
+}
 
-$btnWuTroubleshoot.Add_Click({
-    Log-Text "[*] Đang khởi chạy Trình khắc phục sự cố Windows Update chính chủ Microsoft..."
-    Start-Process "ms-settings:troubleshoot"
-})
+Register-Click "btnRestartUpdateServices" {
+    Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
+    Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
+    Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
+    Log-Text "[✓] Đã khởi động lại dịch vụ cập nhật."
+}
 
-$btnFlushDns.Add_Click({
-    Log-Text "[*] Đang xóa sạch bộ nhớ đệm phân giải DNS (ipconfig /flushdns)..."
-    Run-CliStream "ipconfig.exe" "/flushdns"
-    Log-Text "[✓] Đã làm mới DNS resolver cache."
-})
+Register-Click "btnTriggerScanUpdate" {
+    Log-Text "[*] Đang gửi tín hiệu yêu cầu Windows tìm kiếm bản cập nhật mới..."
+    Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
+    Log-Text "[✓] Đã kích hoạt USOClient quét cập nhật."
+}
 
-$btnResetWinsock.Add_Click({
-    Log-Text "[*] Đang đặt lại danh mục Winsock Catalog và TCP/IP Stack..."
+Register-Click "btnFlushDnsWinsock" {
+    Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
+    Clear-DnsResolverCache
     Run-CliStream "netsh.exe" "winsock reset"
-    Run-CliStream "netsh.exe" "int ip reset"
-    Log-Text "[✓] Đã khôi phục cài đặt mạng mặc định. Khuyên bạn nên khởi động lại máy."
-})
+    Log-Text "[✓] Đã làm mới mạng và DNS cache."
+}
 
-$btnCleanTemp.Add_Click({
+Register-Click "btnResetTcpIp" {
+    Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
+    Reset-NetworkInterfaceStack
+    Log-Text "[✓] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+}
+
+Register-Click "btnClearTemp" {
     Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
-    $txtStatus.Text = "Đang dọn tệp rác Temp..."
-    $progressBar.IsIndeterminate = $true
-
-    $tempPaths = @($env:TEMP, "C:\Windows\Temp")
-    foreach ($p in $tempPaths) {
-        if (Test-Path $p) {
-            Get-ChildItem -Path $p -Recurse -Force -ErrorAction SilentlyContinue |
-                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    }
-
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Dọn tệp tạm hoàn tất"
+    if ($txtStatus) { $txtStatus.Text = "Đang dọn tệp rác Temp..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Clear-SystemTempFiles
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
     Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
-})
+}
 
-$btnCleanLogs.Add_Click({
-    Log-Text "[*] Đang xóa sạch các nhật ký sự kiện Windows Event Logs cũ..."
-    $txtStatus.Text = "Đang xóa Event Logs..."
-    $progressBar.IsIndeterminate = $true
-
-    Get-WinEvent -ListLog * -ErrorAction SilentlyContinue | ForEach-Object {
-        try { [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName) } catch {}
-    }
-
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Xóa Event Logs hoàn tất"
-    Log-Text "[✓] Nhật ký sự kiện đã được giải phóng sạch sẽ."
-})
+Register-Click "btnRestartExplorer" {
+    Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
+    Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 500
+    Start-Process "explorer.exe"
+    Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
+}
 
 # ── LOGIC MODULE QUẢN LÝ & GỠ LỖI DRIVER ──
-$btnScanFaultyDrivers.Add_Click({
+Register-Click "btnScanFaultyDrivers" {
     Log-Text "=========================================================="
     Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
     Log-Text "=========================================================="
-    $txtStatus.Text = "Đang quét thiết bị lỗi..."
+    if ($txtStatus) { $txtStatus.Text = "Đang quét thiết bị lỗi..." }
 
-    $faulty = @(Get-PnpDevice | Where-Object { $_.Present -eq $true -and $_.Status -ne 'OK' })
+    $faulty = Find-FaultyPnpDevices
 
     if ($faulty.Count -eq 0) {
         Log-Text "[✓] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
-        $txtStatus.Text = "Tất cả Driver đều hoạt động tốt"
+        if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
     } else {
         Log-Text "[⚠️] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
         foreach ($d in $faulty) {
@@ -1927,88 +1930,76 @@ $btnScanFaultyDrivers.Add_Click({
             Log-Text "     Trạng thái: $($d.Status) | Vấn đề: $($d.Problem)"
             Log-Text "   ────────────────────────────────────────────────"
         }
-        $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi"
+        if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
     }
-})
+}
 
-$btnPnpRescan.Add_Click({
+Register-Click "btnPnpRescan" {
     Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
-    Run-CliStream "pnputil.exe" "/scan-devices"
+    Invoke-PnpDeviceRescan
     Log-Text "[✓] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
-})
+}
 
-$btnOpenDeviceManager.Add_Click({
+Register-Click "btnOpenDeviceManager" {
     Log-Text "[*] Đang mở Trình quản lý thiết bị (devmgmt.msc)..."
     Start-Process "devmgmt.msc"
-})
+}
 
-$btnFixDriverUpdate.Add_Click({
+Register-Click "btnFixDriverUpdate" {
     Log-Text "[*] Đang giải phóng hàng đợi tải driver bị kẹt trong Windows Update..."
-    $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..."
-    $progressBar.IsIndeterminate = $true
+    if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
     Reset-WindowsUpdateEngine
 
     Log-Text "   - Đang buộc nhận diện lại các thiết bị phần cứng..."
-    Run-CliStream "pnputil.exe" "/scan-devices"
+    Invoke-PnpDeviceRescan
 
     Log-Text "   - Yêu cầu Windows Update quét tìm driver thay thế mới..."
     Start-Process "usoclient" -ArgumentList "StartScan" -NoNewWindow
 
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Đã gỡ lỗi kẹt driver update"
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
     Log-Text "[✓] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
-})
+}
 
-$btnScanWindowsUpdateDrivers.Add_Click({
+Register-Click "btnScanWindowsUpdateDrivers" {
     Log-Text "[*] Đang kích hoạt quét driver từ Microsoft Windows Update..."
     Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
     Log-Text "[✓] Đã gửi lệnh tìm kiếm Driver mới qua Windows Update."
-})
+}
 
-$btnCleanDriverStore.Add_Click({
-    Log-Text "[*] Đang quét và dọn dẹp các phiên bản driver cũ không còn sử dụng trong DriverStore..."
-    $txtStatus.Text = "Đang dọn dẹp DriverStore..."
-    $progressBar.IsIndeterminate = $true
-
-    Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
-
-    $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Dọn dẹp DriverStore hoàn tất"
+Register-Click "btnCleanDriverStore" {
+    Log-Text "[*] Đang quét và dọn dẹp các phiên bản driver cũ trong DriverStore..."
+    if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Invoke-DriverStoreCleanup
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Dọn dẹp DriverStore hoàn tất" }
     Log-Text "[✓] Đã dọn dẹp sạch sẽ các bản driver cũ."
-})
+}
 
-$btnBackupDrivers.Add_Click({
+Register-Click "btnBackupDrivers" {
     $dest = "C:\Backup_Drivers"
     Log-Text "[*] Đang sao lưu toàn bộ Driver của máy ra thư mục: '$dest'..."
-    $txtStatus.Text = "Đang sao lưu driver..."
-    $progressBar.IsIndeterminate = $true
+    if ($txtStatus) { $txtStatus.Text = "Đang sao lưu driver..." }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-    if (-not (Test-Path $dest)) {
-        New-Item -ItemType Directory -Path $dest -Force | Out-Null
-    }
+    Export-SystemDriversBackup -Destination $dest
 
-    try {
-        Export-WindowsDriver -Online -Destination $dest -ErrorAction Stop | Out-Null
-        Log-Text "[✓] THÀNH CÔNG! Đã sao lưu toàn bộ driver bên thứ ba vào: $dest"
-        $txtStatus.Text = "Sao lưu driver hoàn tất"
-    } catch {
-        Log-Text "[!] Lỗi khi xuất bằng Export-WindowsDriver. Đang thử lại bằng pnputil..."
-        Run-CliStream "pnputil.exe" "/export-driver * `"$dest`""
-        Log-Text "[✓] Đã sao lưu driver qua pnputil vào: $dest"
-    }
+    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+    if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
+    Log-Text "[✓] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+}
 
-    $progressBar.IsIndeterminate = $false
-})
-
-$btnOpenBackupFolder.Add_Click({
+Register-Click "btnOpenBackupFolder" {
     $dest = "C:\Backup_Drivers"
     if (Test-Path $dest) {
         Start-Process explorer.exe $dest
     } else {
         Log-Text "[!] Thư mục $dest chưa tồn tại. Hãy bấm nút 'Sao Lưu Toàn Bộ Driver' trước."
     }
-})
+}
 
 # ── TỰ ĐỘNG QUÉT KHI MỞ CỬA SỔ & KHỞI CHẠY GIAO DIỆN ──
 $script:autoScannedOnStartup = $false
