@@ -15,9 +15,6 @@ Write-Host "==========================================================" -Foregro
 $startCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1")
 $appsJson = Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json")
 $xamlCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml")
-$processRunner = Get-Content -Raw -Encoding utf8 (Join-Path $root "functions\private\ProcessRunner.ps1")
-$smartMatcher = Get-Content -Raw -Encoding utf8 (Join-Path $root "functions\private\SmartMatcher.ps1")
-$systemRepairs = Get-Content -Raw -Encoding utf8 (Join-Path $root "functions\public\Invoke-SystemRepairs.ps1")
 $mainCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1")
 
 # 2. Xây dựng cấu trúc phân phối
@@ -44,14 +41,19 @@ $sb.AppendLine($xamlCode.Trim()) | Out-Null
 $sb.AppendLine(($dq + '@')) | Out-Null
 $sb.AppendLine() | Out-Null
 
-# Functions
+# Functions (Private & Public)
 $sb.AppendLine("# 5. MODULES & FUNCTIONS") | Out-Null
-$sb.AppendLine($processRunner.Trim()) | Out-Null
-$sb.AppendLine() | Out-Null
-$sb.AppendLine($smartMatcher.Trim()) | Out-Null
-$sb.AppendLine() | Out-Null
-$sb.AppendLine($systemRepairs.Trim()) | Out-Null
-$sb.AppendLine() | Out-Null
+$fnDirs = @("functions\private", "functions\public")
+foreach ($d in $fnDirs) {
+    $fullDir = Join-Path $root $d
+    if (Test-Path $fullDir) {
+        Get-ChildItem -Path $fullDir -Filter "*.ps1" | Sort-Object Name | ForEach-Object {
+            $fnContent = (Get-Content -Raw -Encoding utf8 $_.FullName).Trim()
+            $sb.AppendLine($fnContent) | Out-Null
+            $sb.AppendLine() | Out-Null
+        }
+    }
+}
 
 # Main Script & Event Bindings
 $sb.AppendLine("# 6. ENTRYPOINT & CONTROLLER") | Out-Null
