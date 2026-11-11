@@ -198,6 +198,7 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($cb, 0)
         $rowGrid.Children.Add($cb) | Out-Null
         $allCheckBoxes.Add($cb)
+        $rowBorder.Tag["CheckBox"] = $cb
 
         # 2. Logo Icon chính hãng (Cache tệp theo ID ứng dụng và sử dụng GetNewClosure() chống xung đột biến - Section 3.1)
         $img = New-Object System.Windows.Controls.Image
@@ -274,25 +275,28 @@ foreach ($cat in $categories) {
                     break
                 }
             }
-            if (-not $isCb) {
-                $cb.IsChecked = -not $cb.IsChecked
+            if (-not $isCb -and $sender.Tag -and $sender.Tag.CheckBox) {
+                $targetCb = $sender.Tag.CheckBox
+                $targetCb.IsChecked = -not $targetCb.IsChecked
             }
         })
 
         # Hover phát sáng & phục hồi màu trạng thái cực nhanh nhờ Frozen Brushes
         $rowBorder.Add_MouseEnter({
-            if ($rowBorder.Tag.Status -eq "NONE") {
-                $rowBorder.Background = $script:brushRowHover
+            param($sender, $e)
+            if ($sender.Tag -and $sender.Tag.Status -eq "NONE") {
+                $sender.Background = $script:brushRowHover
             }
         })
         $rowBorder.Add_MouseLeave({
-            $status = $rowBorder.Tag.Status
+            param($sender, $e)
+            $status = if ($sender.Tag) { $sender.Tag.Status } else { "NONE" }
             if ($status -eq "LATEST") {
-                $rowBorder.Background = $script:brushLatestBg
+                $sender.Background = $script:brushLatestBg
             } elseif ($status -eq "OUTDATED") {
-                $rowBorder.Background = $script:brushOutdatedBg
+                $sender.Background = $script:brushOutdatedBg
             } else {
-                $rowBorder.Background = $script:brushTransparent
+                $sender.Background = $script:brushTransparent
             }
         })
 
