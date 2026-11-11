@@ -7,10 +7,15 @@
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh.exe" } else { "powershell.exe" }
-    if ([string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)) {
-        Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://is.gd/duckutil' | Invoke-Expression`"" -Verb RunAs
-    } else {
-        Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    try {
+        if ([string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)) {
+            Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://is.gd/duckutil' | Invoke-Expression`"" -Verb RunAs -ErrorAction Stop
+        } else {
+            Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -ErrorAction Stop
+        }
+    } catch {
+        Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
+        Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
     }
     exit
 }
@@ -750,7 +755,7 @@ $appsRawJson = @'
   }
 ]
 '@
-$AppCatalog = ConvertFrom-Json $appsRawJson -AsHashtable
+$AppCatalog = ConvertFrom-Json $appsRawJson
 
 # 4. GIAO DIỆN XAML WPF
 [xml]$XAML = @"
@@ -1284,15 +1289,30 @@ function Scan-And-ColorizeApps {
     $progressBar.IsIndeterminate = $true
     [System.Windows.Forms.Application]::DoEvents()
 
-    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-    $pinfo.FileName = "winget"
-    $pinfo.Arguments = "list"
-    $pinfo.RedirectStandardOutput = $true
-    $pinfo.UseShellExecute = $false
-    $pinfo.CreateNoWindow = $true
-    $p = [System.Diagnostics.Process]::Start($pinfo)
-    $rawList = $p.StandardOutput.ReadToEnd()
-    $p.WaitForExit()
+    if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+        Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
+        Log-Text "[*] Vui lòng cài/cập nhật gói 'App Installer' từ Microsoft Store để kích hoạt tính năng App."
+        if ($txtStatus) { $txtStatus.Text = "Thiếu WinGet | Cần cài App Installer" }
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        return
+    }
+
+    $rawList = ""
+    try {
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = "winget"
+        $pinfo.Arguments = "list"
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.UseShellExecute = $false
+        $pinfo.CreateNoWindow = $true
+        $p = [System.Diagnostics.Process]::Start($pinfo)
+        $rawList = $p.StandardOutput.ReadToEnd()
+        $p.WaitForExit()
+    } catch {
+        Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        return
+    }
 
     # Phân tích danh sách đã cài đặt từ winget
     $lines = $rawList -split "`r?`n"
@@ -1324,7 +1344,7 @@ function Scan-And-ColorizeApps {
         if ($match) { return $match }
 
         # 2. Check Aliases (Brave, Zalo, Telegram, WinSCP, ProtonVPN...)
-        if ($targetApp.ContainsKey("Aliases") -and $targetApp.Aliases) {
+        if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 $al = $alias.ToLower()
                 $match = $items | Where-Object {
@@ -1661,7 +1681,8 @@ foreach ($cat in $categories) {
             $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
             $bmp.BeginInit()
             $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32")
-            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
+            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
             $bmp.EndInit()
             $img.Source = $bmp
         } catch {}
@@ -1746,7 +1767,7 @@ Register-Click "btnInstall" {
         if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
         Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
-        $code = Run-CliStream "winget" "install --id $($app.ID) --exact --silent --accept-package-agreements --accept-source-agreements"
+        $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
         if ($code -eq 0) {
             Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
         } else {
@@ -1785,7 +1806,7 @@ Register-Click "btnUninstall" {
         if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
         Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
 
-        $code = Run-CliStream "winget" "uninstall --id $($app.ID) --silent"
+        $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --silent"
         if ($code -eq 0) {
             Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
         } else {
@@ -1905,8 +1926,10 @@ Register-Click "btnClearTemp" {
 Register-Click "btnRestartExplorer" {
     Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
     Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 500
-    Start-Process "explorer.exe"
+    Start-Sleep -Milliseconds 800
+    if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
+        Start-Process "explorer.exe"
+    }
     Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
 }
 
@@ -1995,7 +2018,7 @@ Register-Click "btnBackupDrivers" {
 Register-Click "btnOpenBackupFolder" {
     $dest = "C:\Backup_Drivers"
     if (Test-Path $dest) {
-        Start-Process explorer.exe $dest
+        Start-Process explorer.exe "`"$dest`""
     } else {
         Log-Text "[!] Thư mục $dest chưa tồn tại. Hãy bấm nút 'Sao Lưu Toàn Bộ Driver' trước."
     }

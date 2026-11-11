@@ -5,15 +5,30 @@ function Scan-And-ColorizeApps {
     $progressBar.IsIndeterminate = $true
     [System.Windows.Forms.Application]::DoEvents()
 
-    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-    $pinfo.FileName = "winget"
-    $pinfo.Arguments = "list"
-    $pinfo.RedirectStandardOutput = $true
-    $pinfo.UseShellExecute = $false
-    $pinfo.CreateNoWindow = $true
-    $p = [System.Diagnostics.Process]::Start($pinfo)
-    $rawList = $p.StandardOutput.ReadToEnd()
-    $p.WaitForExit()
+    if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+        Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
+        Log-Text "[*] Vui lòng cài/cập nhật gói 'App Installer' từ Microsoft Store để kích hoạt tính năng App."
+        if ($txtStatus) { $txtStatus.Text = "Thiếu WinGet | Cần cài App Installer" }
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        return
+    }
+
+    $rawList = ""
+    try {
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = "winget"
+        $pinfo.Arguments = "list"
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.UseShellExecute = $false
+        $pinfo.CreateNoWindow = $true
+        $p = [System.Diagnostics.Process]::Start($pinfo)
+        $rawList = $p.StandardOutput.ReadToEnd()
+        $p.WaitForExit()
+    } catch {
+        Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        return
+    }
 
     # Phân tích danh sách đã cài đặt từ winget
     $lines = $rawList -split "`r?`n"
@@ -45,7 +60,7 @@ function Scan-And-ColorizeApps {
         if ($match) { return $match }
 
         # 2. Check Aliases (Brave, Zalo, Telegram, WinSCP, ProtonVPN...)
-        if ($targetApp.ContainsKey("Aliases") -and $targetApp.Aliases) {
+        if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 $al = $alias.ToLower()
                 $match = $items | Where-Object {

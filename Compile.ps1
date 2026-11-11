@@ -30,7 +30,7 @@ $sb.AppendLine("# 3. KHO DỮ LIỆU ỨNG DỤNG (NHẬN TỪ CONFIG/APPS.JSON)
 $sb.AppendLine(('$appsRawJson = @' + $q)) | Out-Null
 $sb.AppendLine($appsJson.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('$AppCatalog = ConvertFrom-Json $appsRawJson -AsHashtable') | Out-Null
+$sb.AppendLine('$AppCatalog = ConvertFrom-Json $appsRawJson') | Out-Null
 $sb.AppendLine() | Out-Null
 
 # Giao diện XAML

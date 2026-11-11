@@ -131,7 +131,8 @@ foreach ($cat in $categories) {
             $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
             $bmp.BeginInit()
             $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32")
-            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
+            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
             $bmp.EndInit()
             $img.Source = $bmp
         } catch {}
@@ -216,7 +217,7 @@ Register-Click "btnInstall" {
         if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
         Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
-        $code = Run-CliStream "winget" "install --id $($app.ID) --exact --silent --accept-package-agreements --accept-source-agreements"
+        $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
         if ($code -eq 0) {
             Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
         } else {
@@ -255,7 +256,7 @@ Register-Click "btnUninstall" {
         if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
         Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
 
-        $code = Run-CliStream "winget" "uninstall --id $($app.ID) --silent"
+        $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --silent"
         if ($code -eq 0) {
             Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
         } else {
@@ -375,8 +376,10 @@ Register-Click "btnClearTemp" {
 Register-Click "btnRestartExplorer" {
     Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
     Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 500
-    Start-Process "explorer.exe"
+    Start-Sleep -Milliseconds 800
+    if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
+        Start-Process "explorer.exe"
+    }
     Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
 }
 
@@ -465,7 +468,7 @@ Register-Click "btnBackupDrivers" {
 Register-Click "btnOpenBackupFolder" {
     $dest = "C:\Backup_Drivers"
     if (Test-Path $dest) {
-        Start-Process explorer.exe $dest
+        Start-Process explorer.exe "`"$dest`""
     } else {
         Log-Text "[!] Thư mục $dest chưa tồn tại. Hãy bấm nút 'Sao Lưu Toàn Bộ Driver' trước."
     }
