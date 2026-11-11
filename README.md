@@ -10,10 +10,10 @@ Lấy cảm hứng từ Chris Titus WinUtil, xây dựng 100% bằng PowerShell 
 Mở **PowerShell (Run as Administrator)** và dán dòng lệnh sau:
 
 ```powershell
-irm https://raw.githubusercontent.com/Duckkiru/app-driver/main/DuckUtil.ps1 | iex
+irm is.gd/duckutil | iex
 ```
 
-*(Hoặc link rút gọn nếu có)*
+*(Hoặc link gốc: `irm https://raw.githubusercontent.com/Duckkiru/app-driver/main/DuckUtil.ps1 | iex`)*
 
 ---
 
