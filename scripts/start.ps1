@@ -28,12 +28,12 @@ if (-not $isAdmin) {
         if ($PWD -and $PWD.Path -and (Test-Path -LiteralPath $PWD.Path)) { $PWD.Path } else { [Environment]::GetFolderPath('UserProfile') }
     }
 
-    # Xây dựng đối số thực thi cho PowerShell
+    # Xây dựng đối số thực thi cho PowerShell (Bao gồm cờ -Sta để đảm bảo môi trường STA cho WPF)
     if ($isWebSource) {
-        $psArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://is.gd/duckutil' | Invoke-Expression`""
+        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/DuckUtil.ps1' | Invoke-Expression`""
     } else {
         $scriptTarget = (Resolve-Path -LiteralPath $PSCommandPath).Path
-        $psArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptTarget`""
+        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -File `"$scriptTarget`""
         if ($args -and $args.Count -gt 0) {
             $forwarded = foreach ($arg in $args) {
                 $argStr = "$arg"
@@ -101,7 +101,18 @@ if (-not $isAdmin) {
     # Tầng 1: Tự nâng quyền qua Windows Terminal (nếu đang ở trong WT hoặc tìm thấy wt.exe)
     if ($isInsideWT -or $wtExe) {
         $targetWt = if ($wtExe) { $wtExe } else { "wt.exe" }
-        $wtArgs = "-d `"$workDir`" $psExe $psArgs"
+
+        # Chuẩn hóa đường dẫn: Tránh ký tự '\' cuối làm escape dấu nháy kép trong Win32 CommandLineToArgvW
+        $safeWorkDir = $workDir.TrimEnd('\')
+        if ($safeWorkDir -match '^[a-zA-Z]:$') {
+            $safeWorkDir += '\\'
+        }
+
+        # Trong cú pháp dòng lệnh của wt.exe, dấu chấm phẩy ';' là ký tự phân tách sub-command (tab/pane mới)
+        # Cần escape các dấu ';' thành '\;' để không bị chia nhỏ dòng lệnh của PowerShell
+        $wtPsArgs = $psArgs -replace '(?<!\\);', '\;'
+        $wtArgs = "-d `"$safeWorkDir`" $psExe $wtPsArgs"
+
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
             $elevationSuccess = $true

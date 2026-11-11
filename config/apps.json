@@ -6,8 +6,7 @@
     "Domain": "google.com",
     "Aliases": [
       "Google Chrome",
-      "Google.Chrome",
-      "Chrome"
+      "Google.Chrome"
     ],
     "Desc": "Trình duyệt web chuẩn công nghiệp từ Google"
   },
@@ -65,7 +64,6 @@
     "Domain": "torproject.org",
     "Aliases": [
       "Tor Browser",
-      "TorProject",
       "TorProject.TorBrowser"
     ],
     "Desc": "Trình duyệt bảo mật ẩn danh qua mạng định tuyến củ hành (Onion Network)"
@@ -77,7 +75,7 @@
     "Domain": "opera.com",
     "Aliases": [
       "Opera GX",
-      "Opera",
+      "OperaGX",
       "Opera.OperaGX"
     ],
     "Desc": "Trình duyệt tùy chỉnh tài nguyên phần cứng và kiểm soát băng thông mạng"
@@ -195,7 +193,7 @@
     "Category": "Phát Triển & Dev",
     "Domain": "git-scm.com",
     "Aliases": [
-      "Git",
+      "Git for Windows",
       "Git.Git"
     ],
     "Desc": "Hệ thống quản lý phiên bản phân tán (Distributed Version Control)"
@@ -207,12 +205,11 @@
     "Domain": "microsoft.com",
     "Aliases": [
       "Windows Terminal",
-      "WindowsTerminal",
       "Microsoft.WindowsTerminal",
+      "Terminal",
+      "WindowsTerminal",
       "9N0DX20HK701",
-      "Bảng điều khiển Windows",
-      "wt",
-      "wt.exe"
+      "Bảng điều khiển Windows"
     ],
     "Desc": "Trình giả lập dòng lệnh đa tab hiện đại cho Windows"
   },
@@ -223,13 +220,12 @@
     "Domain": "microsoft.com",
     "Aliases": [
       "Windows Terminal Preview",
-      "WindowsTerminalPreview",
       "Microsoft.WindowsTerminal.Preview",
+      "Terminal Preview",
+      "WindowsTerminalPreview",
       "9N8G5RFZ9XK3",
       "Bảng điều khiển Windows (Bản xem trước)",
-      "Bản xem trước của Bảng điều khiển Windows",
-      "wt preview",
-      "wt.exe preview"
+      "Bản xem trước của Bảng điều khiển Windows"
     ],
     "Desc": "Phiên bản thử nghiệm sớm các tính năng mới của Windows Terminal"
   },
@@ -240,8 +236,7 @@
     "Domain": "python.org",
     "Aliases": [
       "Python 3.12",
-      "Python 3.13",
-      "Python",
+      "Python 3.12.x",
       "Python.Python.3.12"
     ],
     "Desc": "Ngôn ngữ lập trình thông dịch phổ biến cho AI, dữ liệu và tự động hóa"
@@ -323,7 +318,7 @@
     "Domain": "rust-lang.org",
     "Aliases": [
       "Rustup",
-      "Rust",
+      "rustup",
       "Rustlang.Rustup"
     ],
     "Desc": "Trình cài đặt và quản lý chuỗi công cụ ngôn ngữ lập trình Rust"
@@ -813,10 +808,10 @@
     "Category": "Thư Viện Cốt Lõi",
     "Domain": "adoptium.net",
     "Aliases": [
-      "Eclipse Temurin",
-      "Temurin",
-      "Amazon Corretto",
-      "Eclipse Temurin JDK with Hotspot 21",
+      "Eclipse Adoptium",
+      "Temurin 21",
+      "OpenJDK 21",
+      "Eclipse Temurin 21",
       "EclipseAdoptium.Temurin.21.JDK"
     ],
     "Desc": "Môi trường phát triển và thực thi Java chuẩn doanh nghiệp phiên bản hỗ trợ dài hạn (LTS)"

@@ -36,6 +36,12 @@ $cornerCard       = New-Object System.Windows.CornerRadius(10)
 $cornerRow        = New-Object System.Windows.CornerRadius(6)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
+# Thư mục lưu cache biểu tượng ứng dụng cục bộ
+$iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
+if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
+    try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
+}
+
 # Trình khóa thực thi đơn nhất (Re-entrancy Guard) chống xung đột tiến trình
 $script:isActionRunning = $false
 
@@ -52,7 +58,7 @@ function Invoke-GuardedAction {
         Log-Text "[!] Lỗi khi thực hiện '$ActionName': $($_.Exception.Message)"
     } finally {
         $script:isActionRunning = $false
-        Update-WpfUi
+        [System.Windows.Forms.Application]::DoEvents()
     }
 }
 
@@ -96,64 +102,8 @@ Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnRepair"  { Set-ActiveTab 1 $navBtnRepair }
 Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 
-# Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
-function Get-AppFallbackGlyph {
-    param([string]$AppName, [string]$Category)
-    
-    $nameLower = if ($AppName) { $AppName.ToLowerInvariant() } else { "" }
-    if ($nameLower -match 'chrome') { return [char]::ConvertFromUtf32(0x1F310) }
-    if ($nameLower -match 'firefox') { return [char]::ConvertFromUtf32(0x1F98A) }
-    if ($nameLower -match 'brave') { return [char]::ConvertFromUtf32(0x1F981) }
-    if ($nameLower -match 'tor') { return [char]::ConvertFromUtf32(0x1F9C5) }
-    if ($nameLower -match 'opera') { return [char]::ConvertFromUtf32(0x1F534) }
-    if ($nameLower -match 'vivaldi') { return [char]::ConvertFromUtf32(0x1F3AD) }
-    if ($nameLower -match 'librewolf') { return [char]::ConvertFromUtf32(0x1F43A) }
-    if ($nameLower -match 'discord') { return [char]::ConvertFromUtf32(0x1F4AC) }
-    if ($nameLower -match 'telegram') { return [char]::ConvertFromUtf32(0x2708) }
-    if ($nameLower -match 'zalo') { return [char]::ConvertFromUtf32(0x1F4AC) }
-    if ($nameLower -match 'slack') { return [char]::ConvertFromUtf32(0x1F4BC) }
-    if ($nameLower -match 'teams') { return [char]::ConvertFromUtf32(0x1F465) }
-    if ($nameLower -match 'whatsapp') { return [char]::ConvertFromUtf32(0x1F4F1) }
-    if ($nameLower -match 'zoom') { return [char]::ConvertFromUtf32(0x1F4F9) }
-    if ($nameLower -match 'vs code|visual studio') { return [char]::ConvertFromUtf32(0x1F4BB) }
-    if ($nameLower -match 'git') { return [char]::ConvertFromUtf32(0x1F419) }
-    if ($nameLower -match 'terminal') { return [char]::ConvertFromUtf32(0x1F4DF) }
-    if ($nameLower -match 'python') { return [char]::ConvertFromUtf32(0x1F40D) }
-    if ($nameLower -match 'node') { return [char]::ConvertFromUtf32(0x1F7E2) }
-    if ($nameLower -match 'docker') { return [char]::ConvertFromUtf32(0x1F433) }
-    if ($nameLower -match 'notepad\+\+') { return [char]::ConvertFromUtf32(0x1F4DD) }
-    if ($nameLower -match 'postman') { return [char]::ConvertFromUtf32(0x1F680) }
-    if ($nameLower -match 'dbeaver') { return [char]::ConvertFromUtf32(0x1F9AB) }
-    if ($nameLower -match 'rust') { return [char]::ConvertFromUtf32(0x1F980) }
-    if ($nameLower -match 'go lang|golang') { return [char]::ConvertFromUtf32(0x1F439) }
-    if ($nameLower -match '7-zip') { return [char]::ConvertFromUtf32(0x1F5DC) }
-    if ($nameLower -match 'winrar') { return [char]::ConvertFromUtf32(0x1F4E6) }
-    if ($nameLower -match 'everything') { return [char]::ConvertFromUtf32(0x1F50D) }
-    if ($nameLower -match 'powertoys') { return [char]::ConvertFromUtf32(0x26A1) }
-    if ($nameLower -match 'flow launcher') { return [char]::ConvertFromUtf32(0x1F680) }
-    if ($nameLower -match 'revo') { return [char]::ConvertFromUtf32(0x1F9F9) }
-    if ($nameLower -match 'treesize') { return [char]::ConvertFromUtf32(0x1F4CA) }
-    if ($nameLower -match 'sharex') { return [char]::ConvertFromUtf32(0x1F4F8) }
-    if ($nameLower -match 'bleachbit') { return [char]::ConvertFromUtf32(0x1F9FC) }
-    if ($nameLower -match 'fancontrol') { return [char]::ConvertFromUtf32(0x1F300) }
-    if ($nameLower -match 'spotify') { return [char]::ConvertFromUtf32(0x1F3B5) }
-    if ($nameLower -match 'vlc') { return [char]::ConvertFromUtf32(0x1F538) }
-    if ($nameLower -match 'obs') { return [char]::ConvertFromUtf32(0x1F3AC) }
-    if ($nameLower -match 'steam') { return [char]::ConvertFromUtf32(0x1F579) }
-    if ($nameLower -match 'epic') { return [char]::ConvertFromUtf32(0x1F3AE) }
-    if ($nameLower -match 'onedrive|gdrive|drive|dropbox') { return [char]::ConvertFromUtf32(0x2601) }
-
-    if ($Category -match 'Web') { return [char]::ConvertFromUtf32(0x1F310) }
-    if ($Category -match 'Chat|Liên') { return [char]::ConvertFromUtf32(0x1F4AC) }
-    if ($Category -match 'Dev|Triển') { return [char]::ConvertFromUtf32(0x1F4BB) }
-    if ($Category -match 'Tiện|Thống') { return [char]::ConvertFromUtf32(0x1F6E0) }
-    if ($Category -match 'Phương|Tiện') { return [char]::ConvertFromUtf32(0x1F3AC) }
-    if ($Category -match 'Phòng|Liệu') { return [char]::ConvertFromUtf32(0x1F4C4) }
-    if ($Category -match 'Chơi|Game') { return [char]::ConvertFromUtf32(0x1F3AE) }
-    if ($Category -match 'Trữ|Tệp') { return [char]::ConvertFromUtf32(0x2601) }
-
-    return [char]::ConvertFromUtf32(0x1F4E6)
-}
+# Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
+Set-ActiveTab 0 $navBtnApps
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
@@ -223,10 +173,12 @@ foreach ($cat in $categories) {
         $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText $($app.Desc)".ToLowerInvariant()
 
         $rowBorder.Tag = @{
-            App         = $app
-            Status      = "NONE"
-            CardBorder  = $cardBorder
-            SearchIndex = $searchIndex
+            App              = $app
+            Status           = "NONE"
+            DetectedId       = $null
+            InstalledVersion = $null
+            CardBorder       = $cardBorder
+            SearchIndex      = $searchIndex
         }
 
         $rowGrid = New-Object System.Windows.Controls.Grid
@@ -240,80 +192,59 @@ foreach ($cat in $categories) {
         # 1. CheckBox
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $cb.Tag = $app
+        $cb.Tag = $rowBorder.Tag
         $cb.Add_Checked({ Update-SelectionCount })
         $cb.Add_Unchecked({ Update-SelectionCount })
         [System.Windows.Controls.Grid]::SetColumn($cb, 0)
         $rowGrid.Children.Add($cb) | Out-Null
         $allCheckBoxes.Add($cb)
 
-        # 2. Container Icon (Chống giật, luôn có Glyph đặc trưng và nạp Logo chính hãng mượt mà không bao giờ khuyết)
-        $iconContainer = New-Object System.Windows.Controls.Grid
-        $iconContainer.Width = 18; $iconContainer.Height = 18
-        $iconContainer.Margin = $marginIcon
-        $iconContainer.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-        # A. Fallback Glyph Icon (Hiển thị tức thì 0ms, không bao giờ để trống lỗ)
-        $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
-        $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
-        $fallbackGlyph.FontSize = 12
-        $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $iconContainer.Children.Add($fallbackGlyph) | Out-Null
-
-        # B. Authentic Favicon Image
+        # 2. Logo Icon chính hãng (Cache tệp theo ID ứng dụng và sử dụng GetNewClosure() chống xung đột biến - Section 3.1)
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
-        $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $img.Margin = $marginIcon
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $img.Visibility = [System.Windows.Visibility]::Collapsed
-        $iconContainer.Children.Add($img) | Out-Null
 
-        if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+        $localIconPath = Join-Path $iconsCacheDir "$($app.ID).png"
+        if (Test-Path -LiteralPath $localIconPath) {
             try {
-                $cacheDir = Join-Path $env:TEMP "DuckUtil_Favicons"
-                $cacheFile = Join-Path $cacheDir "$($app.Domain).png"
+                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                $bmp.BeginInit()
+                $bmp.UriSource = New-Object System.Uri($localIconPath, [System.UriKind]::Absolute)
+                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                $bmp.EndInit()
+                $img.Source = $bmp
+            } catch {}
+        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            try {
+                $remoteUri = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
+                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                $bmp.BeginInit()
+                $bmp.UriSource = $remoteUri
+                $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
+                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
+                $bmp.EndInit()
 
-                if (Test-Path -LiteralPath $cacheFile) {
-                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                    $bmp.BeginInit()
-                    $bmp.UriSource = New-Object System.Uri($cacheFile, [System.UriKind]::Absolute)
-                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                    $bmp.EndInit()
-                    $img.Source = $bmp
-                    $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                    $img.Visibility = [System.Windows.Visibility]::Visible
-                } else {
-                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                    $bmp.BeginInit()
-                    $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
-                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                    $bmp.EndInit()
-
-                    $bmp.Add_DownloadCompleted({
-                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                        $img.Visibility = [System.Windows.Visibility]::Visible
-                        try {
-                            if (-not (Test-Path -LiteralPath $cacheDir)) {
-                                New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
-                            }
+                # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
+                $cacheClosure = {
+                    param($sender, $e)
+                    try {
+                        if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
                             $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                            $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
-                            $fs = [System.IO.File]::OpenWrite($cacheFile)
+                            $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
+                            $fs = [System.IO.File]::OpenWrite($localIconPath)
                             $encoder.Save($fs)
                             $fs.Close()
-                        } catch {}
-                    })
-                    $bmp.Add_DownloadFailed({
-                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Visible
-                        $img.Visibility = [System.Windows.Visibility]::Collapsed
-                    })
-                    $img.Source = $bmp
-                }
+                        }
+                    } catch {}
+                }.GetNewClosure()
+
+                $bmp.Add_DownloadCompleted($cacheClosure)
+                $img.Source = $bmp
             } catch {}
         }
-        [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
-        $rowGrid.Children.Add($iconContainer) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($img, 1)
+        $rowGrid.Children.Add($img) | Out-Null
 
         # 3. Tên ứng dụng
         $nameText = New-Object System.Windows.Controls.TextBlock
@@ -421,7 +352,7 @@ Register-Click "btnInstall" {
         $selected = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
-                $selected.Add($cb.Tag)
+                $selected.Add($cb.Tag.App)
             }
         }
 
@@ -442,15 +373,11 @@ Register-Click "btnInstall" {
             if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
             Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
-            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
-            if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
+            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+            if ($code -eq 0) {
                 Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
-            } elseif ($code -eq -1978335189 -or $code -eq 0x8A15002B) {
-                Log-Text "   [✓ ĐÃ CÓ SẴN] $($app.Name) (Đã cài đặt bản mới nhất)"
-            } elseif ($code -eq -1978335212 -or $code -eq 0x8A150014) {
-                Log-Text "   [✓ BẢN MỚI NHẤT] $($app.Name) (Không có bản cập nhật mới hơn)"
             } else {
-                Log-Text "   [❌ LỖI] $($app.Name) (Mã lỗi: $code)"
+                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
             }
         }
         if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
@@ -461,43 +388,47 @@ Register-Click "btnInstall" {
 
 Register-Click "btnUninstall" {
     Invoke-GuardedAction "Gỡ cài đặt" {
-        $selected = [System.Collections.Generic.List[object]]::new()
+        $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
-                $selected.Add($cb.Tag)
+                $selectedTags.Add($cb.Tag)
             }
         }
 
-        if ($selected.Count -eq 0) {
+        if ($selectedTags.Count -eq 0) {
             Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
             return
         }
 
         $confirm = [System.Windows.Forms.MessageBox]::Show(
-            "Bạn có chắc chắn muốn gỡ bỏ $($selected.Count) ứng dụng đã chọn?",
+            "Bạn có chắc chắn muốn gỡ bỏ $($selectedTags.Count) ứng dụng đã chọn?",
             "Xác nhận gỡ cài đặt",
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Warning
         )
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
-        $total = $selected.Count
+        $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
         Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
         Log-Text "=========================================================="
 
-        foreach ($app in $selected) {
+        foreach ($tag in $selectedTags) {
             $idx++
+            $app = $tag.App
+            # Ưu tiên sử dụng DetectedId thực tế phát hiện được qua SmartMatcher (Section 3.2)
+            $uninstallId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
+
             if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
             if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
-            Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
+            Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (Mã gỡ: $uninstallId)..."
 
-            $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --exact --silent --accept-source-agreements --disable-interactivity"
-            if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
+            $code = Run-CliStream "winget" "uninstall --id `"$uninstallId`" --silent"
+            if ($code -eq 0) {
                 Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
             } else {
-                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Mã lỗi: $code)"
+                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
             }
         }
         if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
@@ -514,27 +445,26 @@ Register-Click "btnUpgradeAll" {
         if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-        $code = Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --include-unknown"
-        if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
-            Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
-        } elseif ($code -eq -1978335212 -or $code -eq -1978335189 -or $code -eq 0x8A150014) {
-            Log-Text "[✓] Tất cả ứng dụng trên máy của bạn đã ở phiên bản mới nhất."
-        } else {
-            Log-Text "[!] Quá trình nâng cấp hoàn tất với mã trạng thái: $code"
-        }
+        Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
+        Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
         Scan-And-ColorizeApps
     }
 }
 
+# Chọn tất cả: chỉ chọn các dòng đang hiển thị theo bộ lọc tìm kiếm (Section 3.3)
 Register-Click "btnSelectAll" {
     $script:suppressSelectionCount = $true
     try {
-        foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -ne $true) {
-                $cb.IsChecked = $true
+        foreach ($row in $allItemBorders) {
+            if ($row.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $grid = $row.Child
+                $cb = $grid.Children[0]
+                if ($cb.IsChecked -ne $true) {
+                    $cb.IsChecked = $true
+                }
             }
         }
     } finally {
@@ -620,9 +550,7 @@ Register-Click "btnRestartUpdateServices" {
 
 Register-Click "btnTriggerScanUpdate" {
     Invoke-GuardedAction "Kích hoạt quét cập nhật" {
-        Log-Text "[*] Đang gửi tín hiệu yêu cầu Windows tìm kiếm bản cập nhật mới..."
-        Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
-        Log-Text "[✓] Đã kích hoạt USOClient quét cập nhật."
+        Invoke-WindowsUpdateScan
     }
 }
 
@@ -652,6 +580,16 @@ Register-Click "btnClearTemp" {
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
         Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
+    }
+}
+
+Register-Click "btnCleanEventLogs" {
+    Invoke-GuardedAction "Dọn dẹp Windows Event Logs" {
+        if ($txtStatus) { $txtStatus.Text = "Đang dọn Event Logs..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        Clear-SystemEventLogs
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if ($txtStatus) { $txtStatus.Text = "Dọn Event Logs hoàn tất" }
     }
 }
 
@@ -685,7 +623,7 @@ Register-Click "btnScanFaultyDrivers" {
             foreach ($d in $faulty) {
                 Log-Text "   • Tên thiết bị: $($d.FriendlyName)"
                 Log-Text "     Mã phần cứng: $($d.InstanceId)"
-                Log-Text "     Trạng thái: $($d.Status) | Vấn đề: $($d.Problem)"
+                Log-Text "     Trạng thái: $($d.Status) | ErrorCode: $($d.ConfigManagerErrorCode)"
                 Log-Text "   ────────────────────────────────────────────────"
             }
             if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
@@ -718,7 +656,7 @@ Register-Click "btnFixDriverUpdate" {
         Invoke-PnpDeviceRescan
 
         Log-Text "   - Yêu cầu Windows Update quét tìm driver thay thế mới..."
-        Start-Process "usoclient" -ArgumentList "StartScan" -NoNewWindow
+        Invoke-WindowsUpdateScan
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
@@ -728,21 +666,17 @@ Register-Click "btnFixDriverUpdate" {
 
 Register-Click "btnScanWindowsUpdateDrivers" {
     Invoke-GuardedAction "Quét driver từ Windows Update" {
-        Log-Text "[*] Đang kích hoạt quét driver từ Microsoft Windows Update..."
-        Start-Process "usoclient" -ArgumentList "StartInteractiveScan" -NoNewWindow
-        Log-Text "[✓] Đã gửi lệnh tìm kiếm Driver mới qua Windows Update."
+        Invoke-WindowsUpdateScan
     }
 }
 
 Register-Click "btnCleanDriverStore" {
     Invoke-GuardedAction "Dọn dẹp DriverStore" {
-        Log-Text "[*] Đang quét và dọn dẹp các phiên bản driver cũ trong DriverStore..."
         if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        Invoke-DriverStoreCleanup
+        Invoke-PnpDriverStoreCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn dẹp DriverStore hoàn tất" }
-        Log-Text "[✓] Đã dọn dẹp sạch sẽ các bản driver cũ."
     }
 }
 
@@ -780,7 +714,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
-        Update-WpfUi
+        [System.Windows.Forms.Application]::DoEvents()
         Scan-And-ColorizeApps
     }
 })

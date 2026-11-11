@@ -290,7 +290,7 @@
         <Border Grid.Row="1" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
                 <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
-                        BorderBrush="#0EA5E9" Foreground="#F8FAFC"/>
+                        BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                 <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
                 <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
             </StackPanel>
@@ -444,9 +444,10 @@
                                     </Border>
                                     <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#A78BFA" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Giải phóng dung lượng ổ C bị chiếm dụng bởi tệp tạm và nạp lại thanh Taskbar khi bị treo."
+                                <TextBlock Text="Giải phóng dung lượng ổ C bị chiếm dụng bởi tệp tạm, nhật ký sự kiện và nạp lại thanh Taskbar khi bị treo."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
                                 <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                <Button Name="btnCleanEventLogs" Content="Dọn Dẹp Windows Event Logs" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                                 <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>

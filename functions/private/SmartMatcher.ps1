@@ -29,7 +29,7 @@ function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
     if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    Update-WpfUi
+    [System.Windows.Forms.Application]::DoEvents()
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
         Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
@@ -43,7 +43,7 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
+        $pinfo.Arguments = "list --disable-interactivity"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -56,11 +56,11 @@ function Scan-And-ColorizeApps {
             throw "Không thể khởi động tiến trình winget."
         }
 
-        # Đọc dữ liệu bất đồng bộ kèm bơm Update-WpfUi để thanh tiến trình & UI luôn mượt mà
+        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động mượt mà
         $readTask = $p.StandardOutput.ReadToEndAsync()
         while (-not $readTask.IsCompleted) {
-            Update-WpfUi
-            Start-Sleep -Milliseconds 25
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 30
         }
         $rawList = $readTask.Result
         $p.WaitForExit()
@@ -70,11 +70,11 @@ function Scan-And-ColorizeApps {
         return
     }
 
-    # Phân tích danh sách đã cài đặt từ winget với bộ tách cột theo tọa độ Header chuẩn xác
+    # Phân tích danh sách đã cài đặt từ winget
     $lines = $rawList -split "`r?`n"
     $separatorIndex = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match '^---\s*---') {
+        if ($lines[$i] -match '^---\s*---' -or $lines[$i] -match '^---+$') {
             $separatorIndex = $i
             break
         }
@@ -86,12 +86,24 @@ function Scan-And-ColorizeApps {
     $installedList = [System.Collections.Generic.List[object]]::new()
 
     if ($separatorIndex -gt 0) {
-        $headerLine = $lines[$separatorIndex - 1]
-        $idIdx    = $headerLine.IndexOf("Id")
-        if ($idIdx -lt 0) { $idIdx = $headerLine.IndexOf("ID") }
-        $verIdx   = $headerLine.IndexOf("Version")
-        $availIdx = $headerLine.IndexOf("Available")
-        $srcIdx   = $headerLine.IndexOf("Source")
+        $separatorLine = $lines[$separatorIndex]
+        $headerLine    = $lines[$separatorIndex - 1]
+
+        # Xác định tọa độ bắt đầu của từng cột theo dấu gạch ngang (---) hoặc khoảng trắng kép giữa các tiêu đề cột
+        # Đảm bảo 100% tương thích trên mọi ngôn ngữ Windows (Việt, Anh, Nhật, Trung...) mà không phụ thuộc chuỗi "Version"/"Available"
+        $colOffsets = @()
+        if ($separatorLine -match '---+\s+---+') {
+            $dashMatches = [System.Text.RegularExpressions.Regex]::Matches($separatorLine, '-+')
+            foreach ($dm in $dashMatches) { $colOffsets += $dm.Index }
+        } elseif ($headerLine) {
+            $headerMatches = [System.Text.RegularExpressions.Regex]::Matches($headerLine, '[^\s]+(?:\s[^\s]+)*(?=\s{2,}|\s*$)')
+            foreach ($hm in $headerMatches) { $colOffsets += $hm.Index }
+        }
+
+        $idIdx    = if ($colOffsets.Count -ge 2) { $colOffsets[1] } else { -1 }
+        $verIdx   = if ($colOffsets.Count -ge 3) { $colOffsets[2] } else { -1 }
+        $availIdx = if ($colOffsets.Count -ge 4) { $colOffsets[3] } else { -1 }
+        $srcIdx   = if ($colOffsets.Count -ge 5) { $colOffsets[4] } else { -1 }
 
         for ($j = $separatorIndex + 1; $j -lt $lines.Count; $j++) {
             $line = $lines[$j]
@@ -120,7 +132,7 @@ function Scan-And-ColorizeApps {
                     $appId = $line.Substring($idIdx).Trim()
                 }
             } else {
-                # Fallback tách cột bằng khoảng trắng nếu độ dài chuỗi không khớp
+                # Fallback tách cột bằng khoảng trắng kép
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
                 if ($cols.Count -ge 2) {
                     $appName = $cols[0].Trim()
@@ -148,7 +160,7 @@ function Scan-And-ColorizeApps {
             }
         }
     } else {
-        # Fallback hoàn toàn cho phiên bản winget không in header tiêu chuẩn
+        # Fallback hoàn toàn cho winget không in header tiêu chuẩn
         foreach ($line in $lines) {
             if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
@@ -177,7 +189,7 @@ function Scan-And-ColorizeApps {
         }
     }
 
-    # Bộ nhớ đệm tra cứu đa bí danh (Multi-Alias Lookup Cache)
+    # Bộ nhớ đệm tra cứu đa bí danh tốc độ cao (Multi-Alias Lookup Cache)
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     function Find-InstalledAppFast {
@@ -189,14 +201,14 @@ function Scan-And-ColorizeApps {
             return $cachedMatch
         }
 
-        # 1. Exact ID
+        # 1. Exact ID match (O(1))
         $match = $null
         if ($idMap.TryGetValue($targetId, [ref]$match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 2. Exact Name
+        # 2. Exact Name match (O(1))
         if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match)) {
             $lookupCache[$targetId] = $match
             return $match
@@ -222,19 +234,20 @@ function Scan-And-ColorizeApps {
             }
         }
 
-        # 4. Clean Name match
+        # 4. Clean Name match (O(1))
         $cleanTarget = Get-CleanAppName $targetApp.Name
         if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 5. Fuzzy / Substring fallback quét nhanh trên danh sách
+        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4 và dùng ranh giới từ (\b) để chống bắt nhầm (false-positive)
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
-                $al = $alias.ToLowerInvariant()
+                if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
+                $pattern = "\b" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "\b"
                 foreach ($item in $installedList) {
-                    if ($item.ID.ToLowerInvariant().Contains($al) -or $item.Name.ToLowerInvariant().StartsWith($al)) {
+                    if ($item.ID -match $pattern -or $item.Name -match $pattern) {
                         $lookupCache[$targetId] = $item
                         return $item
                     }
@@ -242,10 +255,11 @@ function Scan-And-ColorizeApps {
             }
         }
 
-        if ($cleanTarget.Length -ge 3) {
+        if ($cleanTarget.Length -ge 4) {
+            $patternClean = "\b" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "\b"
             foreach ($item in $installedList) {
                 $cleanItem = Get-CleanAppName $item.Name
-                if ($cleanItem -eq $cleanTarget -or $cleanItem.StartsWith("$cleanTarget ") -or $cleanItem.StartsWith($cleanTarget)) {
+                if ($cleanItem -match $patternClean) {
                     $lookupCache[$targetId] = $item
                     return $item
                 }
@@ -270,6 +284,9 @@ function Scan-And-ColorizeApps {
 
         if ($info) {
             $countInstalled++
+            # Lưu lại ID phát hiện thực tế để phục vụ lệnh gỡ cài đặt chính xác
+            $row.Tag.DetectedId = $info.ID
+            $row.Tag.InstalledVersion = $info.Version
 
             if ($info.HasUpdate -eq $true) {
                 # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
@@ -292,6 +309,8 @@ function Scan-And-ColorizeApps {
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
             $row.Tag.Status = "NONE"
+            $row.Tag.DetectedId = $null
+            $row.Tag.InstalledVersion = $null
             $row.Background = $script:brushNoneBg
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
