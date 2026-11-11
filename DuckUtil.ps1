@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 #                     DUCK UTIL - CYBER OBSIDIAN EDITION
 #          • Bo cuc chuan 4 COT rong rai, khong bi chat choi
 #          • Nhan dien phien ban: TRANG (Chua cai) - XANH (Ban moi) - DO (Ban cu)
@@ -10,7 +10,12 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh.exe" } else { "powershell.exe" }
+    if ([string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)) {
+        Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://is.gd/duckutil' | Invoke-Expression`"" -Verb RunAs
+    } else {
+        Start-Process $psExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    }
     exit
 }
 
