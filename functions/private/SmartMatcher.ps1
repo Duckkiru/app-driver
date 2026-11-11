@@ -29,7 +29,7 @@ function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
     if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    [System.Windows.Forms.Application]::DoEvents()
+    Update-WpfUi
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
         Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
@@ -43,7 +43,7 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity"
+        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -56,11 +56,11 @@ function Scan-And-ColorizeApps {
             throw "Không thể khởi động tiến trình winget."
         }
 
-        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động
+        # Đọc dữ liệu bất đồng bộ kèm bơm Update-WpfUi để thanh tiến trình & UI luôn mượt mà
         $readTask = $p.StandardOutput.ReadToEndAsync()
         while (-not $readTask.IsCompleted) {
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 30
+            Update-WpfUi
+            Start-Sleep -Milliseconds 25
         }
         $rawList = $readTask.Result
         $p.WaitForExit()

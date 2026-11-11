@@ -1596,6 +1596,18 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 # 5. MODULES & FUNCTIONS
 # ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG VÀO TERMINAL ──
 
+function Update-WpfUi {
+    <#
+    .SYNOPSIS
+        Bơm thông điệp WPF Dispatcher để giao diện mượt mà 60fps, không bao giờ giật lag hay treo đơ.
+    #>
+    if ([System.Windows.Threading.Dispatcher]::CurrentDispatcher -ne $null) {
+        try {
+            [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+        } catch {}
+    }
+}
+
 function Log-Text {
     param([string]$text)
     if ([string]::IsNullOrWhiteSpace($text)) { return }
@@ -1606,6 +1618,7 @@ function Log-Text {
         $logBox.AppendText("[$timestamp] $trimmed`r`n")
         $logBox.ScrollToEnd()
     }
+    Update-WpfUi
 }
 
 function Run-CliStream {
@@ -1617,11 +1630,18 @@ function Run-CliStream {
     )
 
     try {
+        $targetCmd = if (Get-Command $FileName -ErrorAction SilentlyContinue) {
+            (Get-Command $FileName -ErrorAction SilentlyContinue).Source
+        } else {
+            $FileName
+        }
+
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-        $pinfo.FileName = $FileName
+        $pinfo.FileName = $targetCmd
         $pinfo.Arguments = $Args
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
+        $pinfo.RedirectStandardInput = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
         $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
         $pinfo.UseShellExecute = $false
@@ -1633,32 +1653,87 @@ function Run-CliStream {
             return -1
         }
 
-        # Đọc bất đồng bộ hai luồng stdout và stderr để chống nghẽn (deadlock) và không khóa giao diện
-        $outTask = $p.StandardOutput.ReadLineAsync()
-        $errTask = $p.StandardError.ReadLineAsync()
+        # Đóng ngay stdin để chống mọi tiến trình chờ nhập dữ liệu dòng lệnh (chống treo chết)
+        try { $p.StandardInput.Close() } catch {}
+
+        $outBuf = New-Object char[] 2048
+        $errBuf = New-Object char[] 2048
+        $outTask = $p.StandardOutput.ReadAsync($outBuf, 0, $outBuf.Length)
+        $errTask = $p.StandardError.ReadAsync($errBuf, 0, $errBuf.Length)
+
+        $outAcc = New-Object System.Text.StringBuilder
+        $errAcc = New-Object System.Text.StringBuilder
+        $flushTimer = [System.Diagnostics.Stopwatch]::StartNew()
 
         while ($true) {
             $hasData = $false
 
             if ($outTask -ne $null -and $outTask.IsCompleted) {
-                $line = $outTask.Result
-                if ($line -ne $null) {
-                    Log-Text $line
-                    $outTask = $p.StandardOutput.ReadLineAsync()
-                    $hasData = $true
-                } else {
+                try {
+                    $count = $outTask.Result
+                    if ($count -gt 0) {
+                        $hasData = $true
+                        [void]$outAcc.Append($outBuf, 0, $count)
+                        $outTask = $p.StandardOutput.ReadAsync($outBuf, 0, $outBuf.Length)
+                    } else {
+                        $outTask = $null
+                    }
+                } catch {
                     $outTask = $null
                 }
             }
 
             if ($errTask -ne $null -and $errTask.IsCompleted) {
-                $errLine = $errTask.Result
-                if ($errLine -ne $null) {
-                    Log-Text $errLine
-                    $errTask = $p.StandardError.ReadLineAsync()
-                    $hasData = $true
-                } else {
+                try {
+                    $count = $errTask.Result
+                    if ($count -gt 0) {
+                        $hasData = $true
+                        [void]$errAcc.Append($errBuf, 0, $count)
+                        $errTask = $p.StandardError.ReadAsync($errBuf, 0, $errBuf.Length)
+                    } else {
+                        $errTask = $null
+                    }
+                } catch {
                     $errTask = $null
+                }
+            }
+
+            # Xử lý stdout: bắt và phân tách cả \n lẫn \r (tiến trình tải winget/sfc/dism)
+            if ($outAcc.Length -gt 0) {
+                $content = $outAcc.ToString()
+                $parts = $content -split "[\r\n]+"
+                if ($parts.Count -gt 1) {
+                    for ($k = 0; $k -lt ($parts.Count - 1); $k++) {
+                        $line = $parts[$k].Trim()
+                        if (-not [string]::IsNullOrWhiteSpace($line)) {
+                            Log-Text $line
+                        }
+                    }
+                    [void]$outAcc.Clear()
+                    [void]$outAcc.Append($parts[$parts.Count - 1])
+                } elseif ($flushTimer.ElapsedMilliseconds -gt 350) {
+                    $line = $content.Trim()
+                    if (-not [string]::IsNullOrWhiteSpace($line)) {
+                        Log-Text $line
+                    }
+                    [void]$outAcc.Clear()
+                    $flushTimer.Restart()
+                }
+            }
+
+            # Xử lý stderr
+            if ($errAcc.Length -gt 0) {
+                $errContent = $errAcc.ToString()
+                $errParts = $errContent -split "[\r\n]+"
+                if ($errParts.Count -gt 1) {
+                    for ($k = 0; $k -lt ($errParts.Count - 1); $k++) {
+                        $line = $errParts[$k].Trim()
+                        if (-not [string]::IsNullOrWhiteSpace($line)) {
+                            Log-Text "[stderr] $line"
+                        }
+                    }
+                    [void]$errAcc.Clear()
+                    [void]$errAcc.Append($errParts[$errParts.Count - 1])
                 }
             }
 
@@ -1666,16 +1741,25 @@ function Run-CliStream {
                 break
             }
 
-            # Duy trì thông điệp giao diện WPF/WinForms luôn phản hồi tức thì
-            [System.Windows.Forms.Application]::DoEvents()
+            Update-WpfUi
 
             if (-not $hasData) {
-                Start-Sleep -Milliseconds 25
+                Start-Sleep -Milliseconds 20
             }
         }
 
+        # Flush buffer còn lại
+        if ($outAcc.Length -gt 0) {
+            $rem = $outAcc.ToString().Trim()
+            if (-not [string]::IsNullOrWhiteSpace($rem)) { Log-Text $rem }
+        }
+        if ($errAcc.Length -gt 0) {
+            $rem = $errAcc.ToString().Trim()
+            if (-not [string]::IsNullOrWhiteSpace($rem)) { Log-Text "[stderr] $rem" }
+        }
+
         $p.WaitForExit()
-        [System.Windows.Forms.Application]::DoEvents()
+        Update-WpfUi
         return $p.ExitCode
     } catch {
         Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Args]: $($_.Exception.Message)"
@@ -1714,7 +1798,7 @@ function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
     if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    [System.Windows.Forms.Application]::DoEvents()
+    Update-WpfUi
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
         Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
@@ -1728,7 +1812,7 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity"
+        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -1741,11 +1825,11 @@ function Scan-And-ColorizeApps {
             throw "Không thể khởi động tiến trình winget."
         }
 
-        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động
+        # Đọc dữ liệu bất đồng bộ kèm bơm Update-WpfUi để thanh tiến trình & UI luôn mượt mà
         $readTask = $p.StandardOutput.ReadToEndAsync()
         while (-not $readTask.IsCompleted) {
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 30
+            Update-WpfUi
+            Start-Sleep -Milliseconds 25
         }
         $rawList = $readTask.Result
         $p.WaitForExit()
@@ -2192,7 +2276,7 @@ function Invoke-GuardedAction {
         Log-Text "[!] Lỗi khi thực hiện '$ActionName': $($_.Exception.Message)"
     } finally {
         $script:isActionRunning = $false
-        [System.Windows.Forms.Application]::DoEvents()
+        Update-WpfUi
     }
 }
 
@@ -2235,6 +2319,65 @@ function Set-ActiveTab {
 Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnRepair"  { Set-ActiveTab 1 $navBtnRepair }
 Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
+
+# Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
+function Get-AppFallbackGlyph {
+    param([string]$AppName, [string]$Category)
+    
+    $nameLower = if ($AppName) { $AppName.ToLowerInvariant() } else { "" }
+    if ($nameLower -match 'chrome') { return [char]::ConvertFromUtf32(0x1F310) }
+    if ($nameLower -match 'firefox') { return [char]::ConvertFromUtf32(0x1F98A) }
+    if ($nameLower -match 'brave') { return [char]::ConvertFromUtf32(0x1F981) }
+    if ($nameLower -match 'tor') { return [char]::ConvertFromUtf32(0x1F9C5) }
+    if ($nameLower -match 'opera') { return [char]::ConvertFromUtf32(0x1F534) }
+    if ($nameLower -match 'vivaldi') { return [char]::ConvertFromUtf32(0x1F3AD) }
+    if ($nameLower -match 'librewolf') { return [char]::ConvertFromUtf32(0x1F43A) }
+    if ($nameLower -match 'discord') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($nameLower -match 'telegram') { return [char]::ConvertFromUtf32(0x2708) }
+    if ($nameLower -match 'zalo') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($nameLower -match 'slack') { return [char]::ConvertFromUtf32(0x1F4BC) }
+    if ($nameLower -match 'teams') { return [char]::ConvertFromUtf32(0x1F465) }
+    if ($nameLower -match 'whatsapp') { return [char]::ConvertFromUtf32(0x1F4F1) }
+    if ($nameLower -match 'zoom') { return [char]::ConvertFromUtf32(0x1F4F9) }
+    if ($nameLower -match 'vs code|visual studio') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($nameLower -match 'git') { return [char]::ConvertFromUtf32(0x1F419) }
+    if ($nameLower -match 'terminal') { return [char]::ConvertFromUtf32(0x1F4DF) }
+    if ($nameLower -match 'python') { return [char]::ConvertFromUtf32(0x1F40D) }
+    if ($nameLower -match 'node') { return [char]::ConvertFromUtf32(0x1F7E2) }
+    if ($nameLower -match 'docker') { return [char]::ConvertFromUtf32(0x1F433) }
+    if ($nameLower -match 'notepad\+\+') { return [char]::ConvertFromUtf32(0x1F4DD) }
+    if ($nameLower -match 'postman') { return [char]::ConvertFromUtf32(0x1F680) }
+    if ($nameLower -match 'dbeaver') { return [char]::ConvertFromUtf32(0x1F9AB) }
+    if ($nameLower -match 'rust') { return [char]::ConvertFromUtf32(0x1F980) }
+    if ($nameLower -match 'go lang|golang') { return [char]::ConvertFromUtf32(0x1F439) }
+    if ($nameLower -match '7-zip') { return [char]::ConvertFromUtf32(0x1F5DC) }
+    if ($nameLower -match 'winrar') { return [char]::ConvertFromUtf32(0x1F4E6) }
+    if ($nameLower -match 'everything') { return [char]::ConvertFromUtf32(0x1F50D) }
+    if ($nameLower -match 'powertoys') { return [char]::ConvertFromUtf32(0x26A1) }
+    if ($nameLower -match 'flow launcher') { return [char]::ConvertFromUtf32(0x1F680) }
+    if ($nameLower -match 'revo') { return [char]::ConvertFromUtf32(0x1F9F9) }
+    if ($nameLower -match 'treesize') { return [char]::ConvertFromUtf32(0x1F4CA) }
+    if ($nameLower -match 'sharex') { return [char]::ConvertFromUtf32(0x1F4F8) }
+    if ($nameLower -match 'bleachbit') { return [char]::ConvertFromUtf32(0x1F9FC) }
+    if ($nameLower -match 'fancontrol') { return [char]::ConvertFromUtf32(0x1F300) }
+    if ($nameLower -match 'spotify') { return [char]::ConvertFromUtf32(0x1F3B5) }
+    if ($nameLower -match 'vlc') { return [char]::ConvertFromUtf32(0x1F538) }
+    if ($nameLower -match 'obs') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($nameLower -match 'steam') { return [char]::ConvertFromUtf32(0x1F579) }
+    if ($nameLower -match 'epic') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($nameLower -match 'onedrive|gdrive|drive|dropbox') { return [char]::ConvertFromUtf32(0x2601) }
+
+    if ($Category -match 'Web') { return [char]::ConvertFromUtf32(0x1F310) }
+    if ($Category -match 'Chat|Liên') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($Category -match 'Dev|Triển') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($Category -match 'Tiện|Thống') { return [char]::ConvertFromUtf32(0x1F6E0) }
+    if ($Category -match 'Phương|Tiện') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($Category -match 'Phòng|Liệu') { return [char]::ConvertFromUtf32(0x1F4C4) }
+    if ($Category -match 'Chơi|Game') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($Category -match 'Trữ|Tệp') { return [char]::ConvertFromUtf32(0x2601) }
+
+    return [char]::ConvertFromUtf32(0x1F4E6)
+}
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
@@ -2328,24 +2471,73 @@ foreach ($cat in $categories) {
         $rowGrid.Children.Add($cb) | Out-Null
         $allCheckBoxes.Add($cb)
 
-        # 2. Logo Icon chính hãng (Nạp bất đồng bộ, an toàn không chặn render)
+        # 2. Container Icon (Chống giật, luôn có Glyph đặc trưng và nạp Logo chính hãng mượt mà không bao giờ khuyết)
+        $iconContainer = New-Object System.Windows.Controls.Grid
+        $iconContainer.Width = 18; $iconContainer.Height = 18
+        $iconContainer.Margin = $marginIcon
+        $iconContainer.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        # A. Fallback Glyph Icon (Hiển thị tức thì 0ms, không bao giờ để trống lỗ)
+        $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
+        $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
+        $fallbackGlyph.FontSize = 12
+        $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $iconContainer.Children.Add($fallbackGlyph) | Out-Null
+
+        # B. Authentic Favicon Image
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
-        $img.Margin = $marginIcon
+        $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $img.Visibility = [System.Windows.Visibility]::Collapsed
+        $iconContainer.Children.Add($img) | Out-Null
+
         if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
             try {
-                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                $bmp.BeginInit()
-                $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
-                $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
-                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
-                $bmp.EndInit()
-                $img.Source = $bmp
+                $cacheDir = Join-Path $env:TEMP "DuckUtil_Favicons"
+                $cacheFile = Join-Path $cacheDir "$($app.Domain).png"
+
+                if (Test-Path -LiteralPath $cacheFile) {
+                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                    $bmp.BeginInit()
+                    $bmp.UriSource = New-Object System.Uri($cacheFile, [System.UriKind]::Absolute)
+                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                    $bmp.EndInit()
+                    $img.Source = $bmp
+                    $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                    $img.Visibility = [System.Windows.Visibility]::Visible
+                } else {
+                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                    $bmp.BeginInit()
+                    $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
+                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                    $bmp.EndInit()
+
+                    $bmp.Add_DownloadCompleted({
+                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                        $img.Visibility = [System.Windows.Visibility]::Visible
+                        try {
+                            if (-not (Test-Path -LiteralPath $cacheDir)) {
+                                New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+                            }
+                            $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+                            $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                            $fs = [System.IO.File]::OpenWrite($cacheFile)
+                            $encoder.Save($fs)
+                            $fs.Close()
+                        } catch {}
+                    })
+                    $bmp.Add_DownloadFailed({
+                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Visible
+                        $img.Visibility = [System.Windows.Visibility]::Collapsed
+                    })
+                    $img.Source = $bmp
+                }
             } catch {}
         }
-        [System.Windows.Controls.Grid]::SetColumn($img, 1)
-        $rowGrid.Children.Add($img) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
+        $rowGrid.Children.Add($iconContainer) | Out-Null
 
         # 3. Tên ứng dụng
         $nameText = New-Object System.Windows.Controls.TextBlock
@@ -2474,11 +2666,15 @@ Register-Click "btnInstall" {
             if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
             Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
-            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-            if ($code -eq 0) {
+            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity"
+            if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
                 Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+            } elseif ($code -eq -1978335189 -or $code -eq 0x8A15002B) {
+                Log-Text "   [✓ ĐÃ CÓ SẴN] $($app.Name) (Đã cài đặt bản mới nhất)"
+            } elseif ($code -eq -1978335212 -or $code -eq 0x8A150014) {
+                Log-Text "   [✓ BẢN MỚI NHẤT] $($app.Name) (Không có bản cập nhật mới hơn)"
             } else {
-                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                Log-Text "   [❌ LỖI] $($app.Name) (Mã lỗi: $code)"
             }
         }
         if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
@@ -2521,11 +2717,11 @@ Register-Click "btnUninstall" {
             if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
             Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
 
-            $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --silent"
-            if ($code -eq 0) {
+            $code = Run-CliStream "winget" "uninstall --id `"$($app.ID)`" --exact --silent --accept-source-agreements --disable-interactivity"
+            if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
                 Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
             } else {
-                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
+                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Mã lỗi: $code)"
             }
         }
         if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
@@ -2542,11 +2738,17 @@ Register-Click "btnUpgradeAll" {
         if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-        Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+        $code = Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements --disable-interactivity --include-unknown"
+        if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
+            Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
+        } elseif ($code -eq -1978335212 -or $code -eq -1978335189 -or $code -eq 0x8A150014) {
+            Log-Text "[✓] Tất cả ứng dụng trên máy của bạn đã ở phiên bản mới nhất."
+        } else {
+            Log-Text "[!] Quá trình nâng cấp hoàn tất với mã trạng thái: $code"
+        }
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-        Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
         Scan-And-ColorizeApps
     }
 }
@@ -2802,7 +3004,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
-        [System.Windows.Forms.Application]::DoEvents()
+        Update-WpfUi
         Scan-And-ColorizeApps
     }
 })
