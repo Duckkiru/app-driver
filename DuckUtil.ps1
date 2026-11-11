@@ -1,9 +1,8 @@
-<#
+﻿<#
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                       🦆 DUCK UTIL - PRO SUITE                               ║
-║       1. Ứng Dụng (Package Manager) - Lưới Card Grid chuẩn WinUtil           ║
-║       2. Gỡ Lỗi Hệ Thống (Troubleshoot & System Repairs)                     ║
-║       3. Quản Lý & Gỡ Lỗi Driver (Driver & Windows Update Troubleshooting)    ║
+║                    🦆 DUCK UTIL - CYBER OBSIDIAN EDITION                    ║
+║         Giao diện Ultra-Dark hiện đại + Tích hợp App Logo Icon thật          ║
+║         Hiệu ứng Hover viền phát sáng + Chạm chọn tiện lợi như Raycast       ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 #>
 
@@ -25,140 +24,136 @@ Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 3. KHO DỮ LIỆU ỨNG DỤNG (PHÂN THEO DANH MỤC)
+# 3. KHO DỮ LIỆU ỨNG DỤNG (KÈM DOMAIN ĐỂ TỰ TẢI LOGO CHÍNH HÃNG)
 # ═══════════════════════════════════════════════════════════════════════════════
 $AppCatalog = @(
     # ── 🌐 TRÌNH DUYỆT WEB ──
-    @{ Name="Google Chrome";       ID="Google.Chrome";                    Category="Trình Duyệt Web";    Desc="Trình duyệt phổ biến nhất" }
-    @{ Name="Mozilla Firefox";     ID="Mozilla.Firefox";                  Category="Trình Duyệt Web";    Desc="Mã nguồn mở, bảo mật" }
-    @{ Name="Brave Browser";       ID="Brave.Brave";                      Category="Trình Duyệt Web";    Desc="Tự động chặn quảng cáo" }
-    @{ Name="LibreWolf";           ID="LibreWolf.LibreWolf";              Category="Trình Duyệt Web";    Desc="Firefox không telemetry" }
-    @{ Name="Vivaldi";             ID="VivaldiTechnologies.Vivaldi";      Category="Trình Duyệt Web";    Desc="Tùy biến cao, đa nhiệm" }
-    @{ Name="Tor Browser";         ID="TorProject.TorBrowser";            Category="Trình Duyệt Web";    Desc="Ẩn danh qua mạng Onion" }
-    @{ Name="Opera GX";            ID="Opera.OperaGX";                    Category="Trình Duyệt Web";    Desc="Trình duyệt tối ưu tài nguyên" }
+    @{ Name="Google Chrome";       ID="Google.Chrome";                    Category="Trình Duyệt Web";    Domain="google.com";            Desc="Trình duyệt phổ biến nhất thế giới" }
+    @{ Name="Mozilla Firefox";     ID="Mozilla.Firefox";                  Category="Trình Duyệt Web";    Domain="mozilla.org";           Desc="Mã nguồn mở, tôn trọng riêng tư" }
+    @{ Name="Brave Browser";       ID="Brave.Brave";                      Category="Trình Duyệt Web";    Domain="brave.com";             Desc="Chặn quảng cáo tích hợp sẵn" }
+    @{ Name="LibreWolf";           ID="LibreWolf.LibreWolf";              Category="Trình Duyệt Web";    Domain="librewolf.net";         Desc="Firefox không telemetry, siêu sạch" }
+    @{ Name="Vivaldi";             ID="VivaldiTechnologies.Vivaldi";      Category="Trình Duyệt Web";    Domain="vivaldi.com";           Desc="Tùy biến không giới hạn" }
+    @{ Name="Tor Browser";         ID="TorProject.TorBrowser";            Category="Trình Duyệt Web";    Domain="torproject.org";        Desc="Duyệt web ẩn danh qua Onion" }
+    @{ Name="Opera GX";            ID="Opera.OperaGX";                    Category="Trình Duyệt Web";    Domain="opera.com";             Desc="Trình duyệt tối ưu tài nguyên" }
 
     # ── 💬 LIÊN LẠC & CHAT ──
-    @{ Name="Discord";             ID="Discord.Discord";                  Category="Liên Lạc & Chat";   Desc="Voice & chat cộng đồng" }
-    @{ Name="Telegram";            ID="Telegram.TelegramDesktop";         Category="Liên Lạc & Chat";   Desc="Nhắn tin nhanh, cloud-sync" }
-    @{ Name="Signal";              ID="OpenWhisperSystems.Signal";        Category="Liên Lạc & Chat";   Desc="Mã hóa đầu cuối tuyệt đối" }
-    @{ Name="Zalo";                ID="VNG.Zalo";                         Category="Liên Lạc & Chat";   Desc="Nhắn tin phổ biến VN" }
-    @{ Name="Zoom";                ID="Zoom.Zoom";                        Category="Liên Lạc & Chat";   Desc="Họp trực tuyến video" }
-    @{ Name="Slack";               ID="SlackTechnologies.Slack";          Category="Liên Lạc & Chat";   Desc="Trao đổi công việc nhóm" }
-    @{ Name="WhatsApp";            ID="WhatsApp.WhatsApp";                Category="Liên Lạc & Chat";   Desc="Gọi & nhắn tin đa nền tảng" }
-    @{ Name="Microsoft Teams";     ID="Microsoft.Teams";                  Category="Liên Lạc & Chat";   Desc="Nền tảng họp & làm việc" }
+    @{ Name="Discord";             ID="Discord.Discord";                  Category="Liên Lạc & Chat";   Domain="discord.com";           Desc="Voice/chat cộng đồng số 1" }
+    @{ Name="Telegram";            ID="Telegram.TelegramDesktop";         Category="Liên Lạc & Chat";   Domain="telegram.org";          Desc="Nhắn tin nhanh, cloud-sync mượt" }
+    @{ Name="Signal";              ID="OpenWhisperSystems.Signal";        Category="Liên Lạc & Chat";   Domain="signal.org";            Desc="Mã hóa đầu-cuối an toàn tuyệt đối" }
+    @{ Name="Zalo";                ID="VNG.Zalo";                         Category="Liên Lạc & Chat";   Domain="zalo.me";               Desc="Nhắn tin phổ biến nhất VN" }
+    @{ Name="Zoom";                ID="Zoom.Zoom";                        Category="Liên Lạc & Chat";   Domain="zoom.us";               Desc="Họp trực tuyến trực tiếp" }
+    @{ Name="Slack";               ID="SlackTechnologies.Slack";          Category="Liên Lạc & Chat";   Domain="slack.com";             Desc="Trao đổi công việc doanh nghiệp" }
+    @{ Name="WhatsApp";            ID="WhatsApp.WhatsApp";                Category="Liên Lạc & Chat";   Domain="whatsapp.com";          Desc="Gọi & nhắn tin toàn cầu" }
+    @{ Name="Microsoft Teams";     ID="Microsoft.Teams";                  Category="Liên Lạc & Chat";   Domain="microsoft.com";         Desc="Nền tảng làm việc Microsoft" }
 
     # ── 💻 PHÁT TRIỂN & DEV ──
-    @{ Name="VS Code";             ID="Microsoft.VisualStudioCode";       Category="Phát Triển & Dev";   Desc="Code editor đa năng" }
-    @{ Name="Git";                 ID="Git.Git";                          Category="Phát Triển & Dev";   Desc="Quản lý mã nguồn phân tán" }
-    @{ Name="Windows Terminal";    ID="Microsoft.WindowsTerminal";        Category="Phát Triển & Dev";   Desc="Terminal tab hiện đại" }
-    @{ Name="Python 3.12";         ID="Python.Python.3.12";              Category="Phát Triển & Dev";   Desc="Ngôn ngữ lập trình đa năng" }
-    @{ Name="Node.js LTS";         ID="OpenJS.NodeJS.LTS";               Category="Phát Triển & Dev";   Desc="Runtime JavaScript server" }
-    @{ Name="Docker Desktop";      ID="Docker.DockerDesktop";             Category="Phát Triển & Dev";   Desc="Chạy container ảo hóa" }
-    @{ Name="Notepad++";           ID="Notepad++.Notepad++";              Category="Phát Triển & Dev";   Desc="Soạn thảo text siêu nhẹ" }
-    @{ Name="Postman";             ID="Postman.Postman";                  Category="Phát Triển & Dev";   Desc="Test & xây dựng API" }
-    @{ Name="DBeaver CE";          ID="dbeaver.dbeaver";                  Category="Phát Triển & Dev";   Desc="Quản lý database toàn diện" }
-    @{ Name="Go Lang";             ID="GoLang.Go";                        Category="Phát Triển & Dev";   Desc="Ngôn ngữ backend hiệu năng cao" }
-    @{ Name="Rust (rustup)";       ID="Rustlang.Rustup";                  Category="Phát Triển & Dev";   Desc="Bộ công cụ ngôn ngữ Rust" }
+    @{ Name="VS Code";             ID="Microsoft.VisualStudioCode";       Category="Phát Triển & Dev";   Domain="code.visualstudio.com"; Desc="Code editor chuẩn của lập trình viên" }
+    @{ Name="Git";                 ID="Git.Git";                          Category="Phát Triển & Dev";   Domain="git-scm.com";           Desc="Hệ thống quản lý phiên bản mã nguồn" }
+    @{ Name="Windows Terminal";    ID="Microsoft.WindowsTerminal";        Category="Phát Triển & Dev";   Domain="microsoft.com";         Desc="Terminal hiện đại đa tab" }
+    @{ Name="Python 3.12";         ID="Python.Python.3.12";              Category="Phát Triển & Dev";   Domain="python.org";            Desc="Ngôn ngữ AI & tự động hóa" }
+    @{ Name="Node.js LTS";         ID="OpenJS.NodeJS.LTS";               Category="Phát Triển & Dev";   Domain="nodejs.org";            Desc="Môi trường chạy JS server-side" }
+    @{ Name="Docker Desktop";      ID="Docker.DockerDesktop";             Category="Phát Triển & Dev";   Domain="docker.com";            Desc="Nền tảng container ảo hóa" }
+    @{ Name="Notepad++";           ID="Notepad++.Notepad++";              Category="Phát Triển & Dev";   Domain="notepad-plus-plus.org"; Desc="Trình soạn thảo text siêu nhẹ" }
+    @{ Name="Postman";             ID="Postman.Postman";                  Category="Phát Triển & Dev";   Domain="postman.com";           Desc="Test & phát triển API" }
+    @{ Name="DBeaver CE";          ID="dbeaver.dbeaver";                  Category="Phát Triển & Dev";   Domain="dbeaver.io";            Desc="Quản trị database đa năng" }
+    @{ Name="Go Lang";             ID="GoLang.Go";                        Category="Phát Triển & Dev";   Domain="golang.org";            Desc="Ngôn ngữ backend hiệu năng cao" }
+    @{ Name="Rust (rustup)";       ID="Rustlang.Rustup";                  Category="Phát Triển & Dev";   Domain="rust-lang.org";         Desc="Bộ công cụ ngôn ngữ Rust" }
 
     # ── 🛠️ TIỆN ÍCH HỆ THỐNG ──
-    @{ Name="7-Zip";               ID="7zip.7zip";                        Category="Tiện Ích Hệ Thống";  Desc="Giải nén mọi định dạng" }
-    @{ Name="WinRAR";              ID="RARLab.WinRAR";                    Category="Tiện Ích Hệ Thống";  Desc="Trình nén tệp tiêu chuẩn" }
-    @{ Name="Everything";          ID="voidtools.Everything";             Category="Tiện Ích Hệ Thống";  Desc="Tìm kiếm file tức thì 1s" }
-    @{ Name="PowerToys";           ID="Microsoft.PowerToys";              Category="Tiện Ích Hệ Thống";  Desc="Bộ tiện ích chính chủ MS" }
-    @{ Name="Flow Launcher";       ID="Flow-Launcher.Flow-Launcher";      Category="Tiện Ích Hệ Thống";  Desc="Thanh tìm kiếm Alt+Space" }
-    @{ Name="Revo Uninstaller";    ID="VSRevoGroup.RevoUninstaller";      Category="Tiện Ích Hệ Thống";  Desc="Gỡ phần mềm sạch tận gốc" }
-    @{ Name="TreeSize Free";       ID="JAMSoftware.TreeSize.Free";        Category="Tiện Ích Hệ Thống";  Desc="Phân tích dung lượng ổ đĩa" }
-    @{ Name="ShareX";              ID="ShareX.ShareX";                    Category="Tiện Ích Hệ Thống";  Desc="Chụp/quay màn hình & OCR" }
-    @{ Name="BleachBit";           ID="BleachBit.BleachBit";              Category="Tiện Ích Hệ Thống";  Desc="Dọn dẹp rác & privacy" }
-    @{ Name="FanControl";          ID="Rem0o.FanControl";                 Category="Tiện Ích Hệ Thống";  Desc="Tùy chỉnh quạt tản nhiệt" }
+    @{ Name="7-Zip";               ID="7zip.7zip";                        Category="Tiện Ích Hệ Thống";  Domain="7-zip.org";             Desc="Giải nén mọi định dạng tệp" }
+    @{ Name="WinRAR";              ID="RARLab.WinRAR";                    Category="Tiện Ích Hệ Thống";  Domain="rarlab.com";            Desc="Nén/giải nén chuẩn RAR" }
+    @{ Name="Everything";          ID="voidtools.Everything";             Category="Tiện Ích Hệ Thống";  Domain="voidtools.com";         Desc="Tìm kiếm file tức thì 1 giây" }
+    @{ Name="PowerToys";           ID="Microsoft.PowerToys";              Category="Tiện Ích Hệ Thống";  Domain="github.com";            Desc="Bộ tiện ích chính chủ Microsoft" }
+    @{ Name="Flow Launcher";       ID="Flow-Launcher.Flow-Launcher";      Category="Tiện Ích Hệ Thống";  Domain="flowlauncher.com";      Desc="Thanh tìm kiếm & chạy app Alt+Space" }
+    @{ Name="Revo Uninstaller";    ID="VSRevoGroup.RevoUninstaller";      Category="Tiện Ích Hệ Thống";  Domain="revouninstaller.com";   Desc="Gỡ phần mềm sạch tận gốc" }
+    @{ Name="TreeSize Free";       ID="JAMSoftware.TreeSize.Free";        Category="Tiện Ích Hệ Thống";  Domain="jam-software.com";      Desc="Phân tích dung lượng ổ đĩa" }
+    @{ Name="ShareX";              ID="ShareX.ShareX";                    Category="Tiện Ích Hệ Thống";  Domain="getsharex.com";         Desc="Chụp/quay màn hình & OCR đỉnh cao" }
+    @{ Name="BleachBit";           ID="BleachBit.BleachBit";              Category="Tiện Ích Hệ Thống";  Domain="bleachbit.org";         Desc="Dọn rác & privacy thay CCleaner" }
+    @{ Name="FanControl";          ID="Rem0o.FanControl";                 Category="Tiện Ích Hệ Thống";  Domain="github.com";            Desc="Tùy chỉnh quạt tản nhiệt êm ái" }
 
     # ── 🎬 ĐA PHƯƠNG TIỆN ──
-    @{ Name="VLC Media Player";    ID="VideoLAN.VLC";                     Category="Đa Phương Tiện";     Desc="Xem mọi định dạng video" }
-    @{ Name="OBS Studio";          ID="OBSProject.OBSStudio";             Category="Đa Phương Tiện";     Desc="Ghi hình & livestream" }
-    @{ Name="Spotify";             ID="Spotify.Spotify";                  Category="Đa Phương Tiện";     Desc="Nghe nhạc bản quyền" }
-    @{ Name="GIMP";                ID="GIMP.GIMP";                        Category="Đa Phương Tiện";     Desc="Chỉnh sửa ảnh chuyên nghiệp" }
-    @{ Name="Audacity";            ID="Audacity.Audacity";                Category="Đa Phương Tiện";     Desc="Thu âm & biên tập audio" }
-    @{ Name="HandBrake";           ID="HandBrake.HandBrake";              Category="Đa Phương Tiện";     Desc="Nén & đổi đuôi video" }
-    @{ Name="Krita";               ID="KDE.Krita";                        Category="Đa Phương Tiện";     Desc="Vẽ đồ họa & sketch 2D" }
-    @{ Name="K-Lite Codec Mega";   ID="CodecGuide.K-LiteCodecPack.Mega";  Category="Đa Phương Tiện";     Desc="Gói giải mã video/audio" }
+    @{ Name="VLC Media Player";    ID="VideoLAN.VLC";                     Category="Đa Phương Tiện";     Domain="videolan.org";          Desc="Xem mọi định dạng video/nhạc" }
+    @{ Name="OBS Studio";          ID="OBSProject.OBSStudio";             Category="Đa Phương Tiện";     Domain="obsproject.com";        Desc="Ghi hình & livestream chuyên nghiệp" }
+    @{ Name="Spotify";             ID="Spotify.Spotify";                  Category="Đa Phương Tiện";     Domain="spotify.com";           Desc="Nghe nhạc bản quyền chất lượng cao" }
+    @{ Name="GIMP";                ID="GIMP.GIMP";                        Category="Đa Phương Tiện";     Domain="gimp.org";              Desc="Chỉnh sửa ảnh chuyên nghiệp thay PTS" }
+    @{ Name="Audacity";            ID="Audacity.Audacity";                Category="Đa Phương Tiện";     Domain="audacityteam.org";      Desc="Thu âm & biên tập audio" }
+    @{ Name="HandBrake";           ID="HandBrake.HandBrake";              Category="Đa Phương Tiện";     Domain="handbrake.fr";          Desc="Nén & đổi đuôi video dung lượng nhẹ" }
+    @{ Name="Krita";               ID="KDE.Krita";                        Category="Đa Phương Tiện";     Domain="krita.org";             Desc="Vẽ đồ họa số & concept art" }
+    @{ Name="K-Lite Codec Mega";   ID="CodecGuide.K-LiteCodecPack.Mega";  Category="Đa Phương Tiện";     Domain="codecguide.com";        Desc="Gói giải mã video/audio đầy đủ" }
 
     # ── 📝 VĂN PHÒNG & TÀI LIỆU ──
-    @{ Name="LibreOffice";         ID="TheDocumentFoundation.LibreOffice"; Category="Văn Phòng & Tài Liệu"; Desc="Bộ Office mã nguồn mở" }
-    @{ Name="Obsidian";            ID="Obsidian.Obsidian";                Category="Văn Phòng & Tài Liệu"; Desc="Ghi chú Markdown liên kết" }
-    @{ Name="Notion";              ID="Notion.Notion";                    Category="Văn Phòng & Tài Liệu"; Desc="Không gian quản lý ghi chú" }
-    @{ Name="SumatraPDF";          ID="SumatraPDF.SumatraPDF";            Category="Văn Phòng & Tài Liệu"; Desc="Đọc PDF siêu nhẹ tức thì" }
-    @{ Name="Foxit PDF Reader";    ID="Foxit.FoxitReader";                Category="Văn Phòng & Tài Liệu"; Desc="Xem & ký tài liệu PDF" }
+    @{ Name="LibreOffice";         ID="TheDocumentFoundation.LibreOffice"; Category="Văn Phòng & Tài Liệu"; Domain="libreoffice.org";     Desc="Bộ Office mã nguồn mở miễn phí" }
+    @{ Name="Obsidian";            ID="Obsidian.Obsidian";                Category="Văn Phòng & Tài Liệu"; Domain="obsidian.md";          Desc="Ghi chú Markdown & mạng lưới tư duy" }
+    @{ Name="Notion";              ID="Notion.Notion";                    Category="Văn Phòng & Tài Liệu"; Domain="notion.so";            Desc="Không gian quản lý ghi chú chung" }
+    @{ Name="SumatraPDF";          ID="SumatraPDF.SumatraPDF";            Category="Văn Phòng & Tài Liệu"; Domain="sumatrapdfreader.org";  Desc="Đọc PDF siêu nhẹ bật tức thì" }
+    @{ Name="Foxit PDF Reader";    ID="Foxit.FoxitReader";                Category="Văn Phòng & Tài Liệu"; Domain="foxit.com";            Desc="Xem & ký tài liệu PDF chuyên nghiệp" }
 
     # ── 🎮 NỀN TẢNG TRÒ CHƠI ──
-    @{ Name="Steam";               ID="Valve.Steam";                      Category="Nền Tảng Trò Chơi";  Desc="Kho game PC số 1 thế giới" }
-    @{ Name="Epic Games Launcher"; ID="EpicGames.EpicGamesLauncher";      Category="Nền Tảng Trò Chơi";  Desc="Cửa hàng game & phát quà" }
-    @{ Name="GOG Galaxy";          ID="GOG.Galaxy";                       Category="Nền Tảng Trò Chơi";  Desc="Quản lý thư viện không DRM" }
-    @{ Name="MSI Afterburner";     ID="Guru3D.Afterburner";               Category="Nền Tảng Trò Chơi";  Desc="Đo nhiệt độ, FPS & ép xung" }
-    @{ Name="Playnite";            ID="Playnite.Playnite";                Category="Nền Tảng Trò Chơi";  Desc="Gom mọi thư viện game về một" }
+    @{ Name="Steam";               ID="Valve.Steam";                      Category="Nền Tảng Trò Chơi";  Domain="steampowered.com";      Desc="Kho game PC số 1 thế giới" }
+    @{ Name="Epic Games Launcher"; ID="EpicGames.EpicGamesLauncher";      Category="Nền Tảng Trò Chơi";  Domain="epicgames.com";         Desc="Cửa hàng game & phát game miễn phí" }
+    @{ Name="GOG Galaxy";          ID="GOG.Galaxy";                       Category="Nền Tảng Trò Chơi";  Domain="gog.com";               Desc="Quản lý thư viện game không DRM" }
+    @{ Name="MSI Afterburner";     ID="Guru3D.Afterburner";               Category="Nền Tảng Trò Chơi";  Domain="msi.com";               Desc="Đo nhiệt độ, FPS & ép xung" }
+    @{ Name="Playnite";            ID="Playnite.Playnite";                Category="Nền Tảng Trò Chơi";  Domain="playnite.link";         Desc="Gom mọi thư viện game về một nơi" }
 
     # ── 📁 LƯU TRỮ & TRUYỀN TỆP ──
-    @{ Name="qBittorrent";         ID="qBittorrent.qBittorrent";          Category="Lưu Trữ & Truyền Tệp"; Desc="Tải torrent sạch, không QC" }
-    @{ Name="LocalSend";           ID="LocalSend.LocalSend";              Category="Lưu Trữ & Truyền Tệp"; Desc="Bắn file qua Wi-Fi nội bộ" }
-    @{ Name="WinSCP";              ID="WinSCP.WinSCP";                    Category="Lưu Trữ & Truyền Tệp"; Desc="Truyền tệp qua SFTP/FTP" }
-    @{ Name="FileZilla";           ID="TimKosse.FileZilla.Client";        Category="Lưu Trữ & Truyền Tệp"; Desc="Client truyền tệp FTP" }
-    @{ Name="Rclone";              ID="Rclone.Rclone";                    Category="Lưu Trữ & Truyền Tệp"; Desc="Mount & đồng bộ đám mây" }
+    @{ Name="qBittorrent";         ID="qBittorrent.qBittorrent";          Category="Lưu Trữ & Truyền Tệp"; Domain="qbittorrent.org";      Desc="Tải torrent sạch, không quảng cáo" }
+    @{ Name="LocalSend";           ID="LocalSend.LocalSend";              Category="Lưu Trữ & Truyền Tệp"; Domain="localsend.org";        Desc="Bắn file qua Wi-Fi như AirDrop" }
+    @{ Name="WinSCP";              ID="WinSCP.WinSCP";                    Category="Lưu Trữ & Truyền Tệp"; Domain="winscp.net";           Desc="Truyền tệp qua SFTP/FTP bảo mật" }
+    @{ Name="FileZilla";           ID="TimKosse.FileZilla.Client";        Category="Lưu Trữ & Truyền Tệp"; Domain="filezilla-project.org"; Desc="Client truyền tệp FTP phổ biến" }
+    @{ Name="Rclone";              ID="Rclone.Rclone";                    Category="Lưu Trữ & Truyền Tệp"; Domain="rclone.org";           Desc="Mount & đồng bộ 70+ dịch vụ đám mây" }
 
     # ── 🔒 BẢO MẬT & MẠNG ──
-    @{ Name="Bitwarden";           ID="Bitwarden.Bitwarden";              Category="Bảo Mật & Mạng";     Desc="Két mật khẩu mã hóa" }
-    @{ Name="KeePassXC";           ID="KeePassXCTeam.KeePassXC";          Category="Bảo Mật & Mạng";     Desc="Quản lý mật khẩu offline" }
-    @{ Name="Cryptomator";         ID="Cryptomator.Cryptomator";          Category="Bảo Mật & Mạng";     Desc="Mã hóa dữ liệu trước cloud" }
-    @{ Name="ProtonVPN";           ID="ProtonTechnologies.ProtonVPN";     Category="Bảo Mật & Mạng";     Desc="Mạng riêng ảo bảo mật cao" }
-    @{ Name="RustDesk";            ID="RustDesk.RustDesk";                Category="Bảo Mật & Mạng";     Desc="Điều khiển từ xa tự host" }
-    @{ Name="Wireshark";           ID="WiresharkFoundation.Wireshark";    Category="Bảo Mật & Mạng";     Desc="Phân tích gói tin mạng" }
+    @{ Name="Bitwarden";           ID="Bitwarden.Bitwarden";              Category="Bảo Mật & Mạng";     Domain="bitwarden.com";         Desc="Két mật khẩu mã hóa an toàn" }
+    @{ Name="KeePassXC";           ID="KeePassXCTeam.KeePassXC";          Category="Bảo Mật & Mạng";     Domain="keepassxc.org";         Desc="Quản lý mật khẩu offline độc lập" }
+    @{ Name="Cryptomator";         ID="Cryptomator.Cryptomator";          Category="Bảo Mật & Mạng";     Domain="cryptomator.org";       Desc="Mã hóa dữ liệu trước khi lên mây" }
+    @{ Name="ProtonVPN";           ID="ProtonTechnologies.ProtonVPN";     Category="Bảo Mật & Mạng";     Domain="protonvpn.com";         Desc="VPN bảo mật cao từ Thụy Sĩ" }
+    @{ Name="RustDesk";            ID="RustDesk.RustDesk";                Category="Bảo Mật & Mạng";     Domain="rustdesk.com";          Desc="Điều khiển máy tính từ xa tự host" }
+    @{ Name="Wireshark";           ID="WiresharkFoundation.Wireshark";    Category="Bảo Mật & Mạng";     Domain="wireshark.org";         Desc="Phân tích gói tin mạng chuyên sâu" }
 
     # ── 🔧 THƯ VIỆN CỐT LÕI ──
-    @{ Name="VC++ Redist 2015-2022"; ID="Microsoft.VCRedist.2015+.x64";  Category="Thư Viện Cốt Lõi";   Desc="Cần thiết cho hầu hết app/game" }
-    @{ Name=".NET Desktop Runtime 8"; ID="Microsoft.DotNet.DesktopRuntime.8"; Category="Thư Viện Cốt Lõi"; Desc="Nền tảng chạy ứng dụng .NET 8" }
-    @{ Name="DirectX End-User";    ID="Microsoft.DirectX";                Category="Thư Viện Cốt Lõi";   Desc="Thư viện đồ họa DirectX" }
-    @{ Name="Java OpenJDK 21";     ID="EclipseAdoptium.Temurin.21.JDK";   Category="Thư Viện Cốt Lõi";   Desc="Môi trường chạy Java LTS" }
+    @{ Name="VC++ Redist 2015-2022"; ID="Microsoft.VCRedist.2015+.x64";  Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Desc="Cần thiết cho hầu hết game & app" }
+    @{ Name=".NET Desktop Runtime 8"; ID="Microsoft.DotNet.DesktopRuntime.8"; Category="Thư Viện Cốt Lõi"; Domain="microsoft.com";      Desc="Nền tảng chạy ứng dụng .NET 8 mới" }
+    @{ Name="DirectX End-User";    ID="Microsoft.DirectX";                Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Desc="Thư viện đồ họa DirectX chuẩn" }
+    @{ Name="Java OpenJDK 21";     ID="EclipseAdoptium.Temurin.21.JDK";   Category="Thư Viện Cốt Lõi";   Domain="adoptium.net";          Desc="Môi trường chạy Java LTS tiêu chuẩn" }
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 4. GIAO DIỆN XAML: FLUENT DARK MODE + THANH ĐIỀU HƯỚNG 3 MỤC
+# 4. GIAO DIỆN XAML: CYBER OBSIDIAN THEME (ULTRA-DARK HIỆN ĐẠI)
 # ═══════════════════════════════════════════════════════════════════════════════
 [xml]$XAML = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="DuckUtil - Windows Package Manager &amp; System Maintenance Suite"
-    Width="1280" Height="880"
+    Title="DuckUtil - Cyber Obsidian Suite"
+    Width="1290" Height="890"
     WindowStartupLocation="CenterScreen"
-    Background="#1F1F1F"
-    Foreground="#F3F3F3"
-    FontFamily="Segoe UI Variable Text, Segoe UI">
+    Background="#090B10"
+    Foreground="#F8FAFC"
+    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif">
 
     <Window.Resources>
-        <!-- Nút bấm chức năng chuẩn Fluent -->
-        <Style x:Key="FluentButton" TargetType="Button">
-            <Setter Property="Background" Value="#2D2D2D"/>
+        <!-- Nút bấm hành động phong cách Glass / Glow -->
+        <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="16,8"/>
             <Setter Property="Margin" Value="4,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#3D3D3D"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#383838"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.85"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#181818"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.65"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -166,13 +161,44 @@ $AppCatalog = @(
             </Setter>
         </Style>
 
-        <!-- Nút điều hướng Top Bar -->
-        <Style x:Key="NavButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#A0A0A0"/>
-            <Setter Property="FontSize" Value="13"/>
+        <!-- Nút phụ (Secondary) -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#171C28"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#252D40"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="btnBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#202738"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Nút điều hướng Tab chính -->
+        <Style x:Key="NavTabButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="20,12"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0,0,0,2"/>
@@ -188,86 +214,85 @@ $AppCatalog = @(
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#FFFFFF"/>
-                                <Setter TargetName="navBorder" Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#E2E8F0"/>
+                                <Setter TargetName="navBorder" Property="Background" Value="#11141E"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <!-- Checkbox Fluent -->
-        <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#D4D4D4"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Margin" Value="0,3"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Top Brand & Search -->
-            <RowDefinition Height="Auto"/> <!-- Main Navigation Bar -->
-            <RowDefinition Height="*"/>    <!-- Content Container (Tabs) -->
-            <RowDefinition Height="Auto"/> <!-- Status & Progress -->
-            <RowDefinition Height="150"/>  <!-- Console Drawer -->
+            <RowDefinition Height="Auto"/> <!-- Top App Header -->
+            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
+            <RowDefinition Height="*"/>    <!-- Main Viewport -->
+            <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
+            <RowDefinition Height="145"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
-        <!-- ═══ 1. HEADER BAR ═══ -->
-        <Border Grid.Row="0" Background="#181818" Padding="18,12" BorderBrush="#2B2B2B" BorderThickness="0,0,0,1">
+        <!-- ═══ 1. TOP APP HEADER ═══ -->
+        <Border Grid.Row="0" Background="#0C0E14" Padding="20,14" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="340"/>
+                    <ColumnDefinition Width="360"/>
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="🦆" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="DUCK UTIL" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
-                    <Border Background="#2D2D2D" CornerRadius="4" Margin="10,0,0,0" Padding="6,2" VerticalAlignment="Center">
-                        <TextBlock Text="PRO SUITE" FontSize="10" FontWeight="Bold" Foreground="#60CDFF"/>
+                    <Border Background="#1E293B" CornerRadius="8" Width="36" Height="36" Margin="0,0,12,0">
+                        <TextBlock Text="🦆" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="DUCK UTIL" FontSize="19" FontWeight="Black" Foreground="#F8FAFC" LetterSpacing="0.5"/>
+                            <Border Background="#0EA5E9" CornerRadius="4" Margin="10,0,0,0" Padding="6,2" VerticalAlignment="Center">
+                                <TextBlock Text="PRO SUITE" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Windows Package Manager &amp; System Maintenance Suite" FontSize="11" Foreground="#64748B"/>
+                    </StackPanel>
                 </StackPanel>
 
-                <!-- Search Box -->
-                <Border Grid.Column="2" Background="#202020" CornerRadius="4" BorderBrush="#3D3D3D" BorderThickness="1" Padding="8,4">
+                <!-- Modern Glow Search Box -->
+                <Border Grid.Column="2" Background="#121620" CornerRadius="8" BorderBrush="#263147" BorderThickness="1" Padding="10,6">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="🔍" Foreground="#888888" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#FFFFFF"
-                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center"
+                        <TextBlock Text="🔍" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                        <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#F8FAFC"
+                                 BorderThickness="0" FontSize="12.5" VerticalAlignment="Center"
+                                 CaretBrush="#38BDF8"
                                  ToolTip="Gõ để lọc ứng dụng ngay lập tức..."/>
                     </Grid>
                 </Border>
             </Grid>
         </Border>
 
-        <!-- ═══ 2. MAIN NAVIGATION TABS BAR ═══ -->
-        <Border Grid.Row="1" Background="#202020" Padding="12,0" BorderBrush="#2B2B2B" BorderThickness="0,0,0,1">
+        <!-- ═══ 2. MAIN NAV TAB BAR ═══ -->
+        <Border Grid.Row="1" Background="#0E1118" Padding="16,0" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
-                <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavButton}"
-                        BorderBrush="#60CDFF" Foreground="#FFFFFF"/>
-                <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavButton}"/>
-                <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavButton}"/>
+                <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
+                        BorderBrush="#0EA5E9" Foreground="#F8FAFC"/>
+                <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
+                <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
             </StackPanel>
         </Border>
 
-        <!-- ═══ 3. MAIN CONTENT (TAB CONTROL KHÔNG VIỀN) ═══ -->
+        <!-- ═══ 3. MAIN VIEWPORT (TAB CONTROL) ═══ -->
         <TabControl Grid.Row="2" Name="MainTabControl" Background="Transparent" BorderThickness="0">
-            <!-- Ẩn header mặc định của TabControl vì ta dùng navBtn điều khiển -->
             <TabControl.ItemContainerStyle>
                 <Style TargetType="TabItem">
                     <Setter Property="Visibility" Value="Collapsed"/>
                 </Style>
             </TabControl.ItemContainerStyle>
 
-            <!-- ── TAB 1: ỨNG DỤNG (CARD GRID) ── -->
+            <!-- ── TAB 1: ỨNG DỤNG (CARD GRID CÓ LOGO) ── -->
             <TabItem>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -275,8 +300,8 @@ $AppCatalog = @(
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Thanh nút bấm ứng dụng -->
-                    <Border Grid.Row="0" Background="#222222" Padding="16,8" BorderBrush="#2B2B2B" BorderThickness="0,0,0,1">
+                    <!-- Thanh nút bấm ứng dụng Glassy -->
+                    <Border Grid.Row="0" Background="#0F121A" Padding="18,10" BorderBrush="#1A1F2C" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -285,73 +310,73 @@ $AppCatalog = @(
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Button Name="btnInstall" Content="🚀 Install Selected" Style="{StaticResource FluentButton}"
-                                        Background="#107C41" BorderBrush="#107C41" Padding="18,8"/>
-                                <Button Name="btnUpgradeAll" Content="⚡ Upgrade All" Style="{StaticResource FluentButton}"
-                                        Background="#D83B01" BorderBrush="#D83B01"/>
-                                <Button Name="btnUninstall" Content="🗑️ Uninstall Selected" Style="{StaticResource FluentButton}"
-                                        Background="#A80000" BorderBrush="#A80000"/>
-                                <Button Name="btnScanInstalled" Content="🔍 Get Installed" Style="{StaticResource FluentButton}"
-                                        Background="#0078D4" BorderBrush="#0078D4"/>
+                                <Button Name="btnInstall" Content="🚀 Install Selected" Style="{StaticResource ActionButton}"
+                                        Background="#10B981" Padding="18,9"/>
+                                <Button Name="btnUpgradeAll" Content="⚡ Upgrade All" Style="{StaticResource ActionButton}"
+                                        Background="#F59E0B" Padding="16,9"/>
+                                <Button Name="btnUninstall" Content="🗑️ Uninstall Selected" Style="{StaticResource ActionButton}"
+                                        Background="#EF4444" Padding="16,9"/>
+                                <Button Name="btnScanInstalled" Content="🔍 Get Installed" Style="{StaticResource ActionButton}"
+                                        Background="#0EA5E9" Padding="16,9"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource FluentButton}"/>
-                                <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource FluentButton}"/>
+                                <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}"/>
+                                <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}"/>
                             </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Lưới Card chứa ứng dụng -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,10">
-                        <WrapPanel Name="CardsContainer" ItemWidth="236" Orientation="Horizontal"/>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,12">
+                        <WrapPanel Name="CardsContainer" ItemWidth="244" Orientation="Horizontal"/>
                     </ScrollViewer>
                 </Grid>
             </TabItem>
 
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14">
-                    <WrapPanel ItemWidth="380" Orientation="Horizontal">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
+                    <WrapPanel ItemWidth="388" Orientation="Horizontal">
                         <!-- Card 1: File Hệ Thống -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="13" Foreground="#60CDFF" Margin="0,0,0,10"/>
-                                <TextBlock Text="Quét và tự động sửa các file Windows bị hỏng hoặc mất." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="13.5" Foreground="#38BDF8" Margin="0,0,0,8"/>
+                                <TextBlock Text="Quét và tự động sửa các file Windows bị hỏng hoặc mất." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Windows Update -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="13" Foreground="#F59E0B" Margin="0,0,0,10"/>
-                                <TextBlock Text="Khắc phục lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource FluentButton}" Background="#D83B01" BorderBrush="#D83B01" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="13.5" Foreground="#F59E0B" Margin="0,0,0,8"/>
+                                <TextBlock Text="Khắc phục lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Mạng & DNS -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="13" Foreground="#10B981" Margin="0,0,0,10"/>
-                                <TextBlock Text="Khắc phục sự cố không vào được web, mạng chập chờn, lỗi DNS." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="13.5" Foreground="#10B981" Margin="0,0,0,8"/>
+                                <TextBlock Text="Khắc phục sự cố không vào được web, mạng chập chờn, lỗi DNS." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 4: Dọn Rác & Khôi Phục UI -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="13" Foreground="#A78BFA" Margin="0,0,0,10"/>
-                                <TextBlock Text="Dọn sạch rác ổ C và khởi động lại Taskbar khi bị đơ treo." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="13.5" Foreground="#A78BFA" Margin="0,0,0,8"/>
+                                <TextBlock Text="Dọn sạch rác ổ C và khởi động lại Taskbar khi bị đơ treo." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -360,37 +385,37 @@ $AppCatalog = @(
 
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14">
-                    <WrapPanel ItemWidth="380" Orientation="Horizontal">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
+                    <WrapPanel ItemWidth="388" Orientation="Horizontal">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG &amp; DRIVER" FontWeight="Bold" FontSize="13" Foreground="#F43F5E" Margin="0,0,0,10"/>
-                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị crash." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource FluentButton}" Background="#BE123C" BorderBrush="#BE123C" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG &amp; DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#F43F5E" Margin="0,0,0,8"/>
+                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị crash." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#E11D48" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Gỡ Lỗi Update Driver -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="13" Foreground="#F59E0B" Margin="0,0,0,10"/>
-                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource FluentButton}" Background="#D83B01" BorderBrush="#D83B01" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#F59E0B" Margin="0,0,0,8"/>
+                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Sao Lưu Driver -->
-                        <Border Background="#252526" BorderBrush="#333333" BorderThickness="1" CornerRadius="6" Margin="6" Padding="14">
+                        <Border Background="#10141D" BorderBrush="#1E2638" BorderThickness="1" CornerRadius="10" Margin="6" Padding="18">
                             <StackPanel>
-                                <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="13" Foreground="#10B981" Margin="0,0,0,10"/>
-                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi." FontSize="11" Foreground="#999999" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource FluentButton}" Background="#047857" BorderBrush="#047857" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
-                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource FluentButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="12,10"/>
+                                <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="13.5" Foreground="#10B981" Margin="0,0,0,8"/>
+                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi." FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
+                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="14,10"/>
                             </StackPanel>
                         </Border>
                     </WrapPanel>
@@ -398,8 +423,8 @@ $AppCatalog = @(
             </TabItem>
         </TabControl>
 
-        <!-- ═══ 4. STATUS & PROGRESS ═══ -->
-        <Border Grid.Row="3" Background="#181818" Padding="16,6" BorderBrush="#2B2B2B" BorderThickness="0,1,0,0">
+        <!-- ═══ 4. STATUS & PROGRESS BAR ═══ -->
+        <Border Grid.Row="3" Background="#0C0E14" Padding="18,6" BorderBrush="#1A1F2C" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -411,33 +436,38 @@ $AppCatalog = @(
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Column="0" Grid.Row="0" Name="txtStatus" Text="Sẵn sàng"
-                           Foreground="#60CDFF" FontSize="12" FontWeight="SemiBold"/>
+                           Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold"/>
                 <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app được chọn"
-                           Foreground="#888888" FontSize="11"/>
+                           Foreground="#64748B" FontSize="11"/>
 
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
-                             Name="progressBar" Height="4" Margin="0,6,0,2"
-                             Background="#2B2B2B" Foreground="#0078D4" BorderThickness="0" Value="0"/>
+                             Name="progressBar" Height="3" Margin="0,6,0,2"
+                             Background="#1A1F2C" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
             </Grid>
         </Border>
 
-        <!-- ═══ 5. CONSOLE LOG DRAWER ═══ -->
-        <Border Grid.Row="4" Background="#111111" Padding="12,8">
+        <!-- ═══ 5. CYBER TERMINAL LOG ═══ -->
+        <Border Grid.Row="4" Background="#05060A" Padding="14,8">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="0,0,0,4">
-                    <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#666666"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="#EF4444" Width="9" Height="9" CornerRadius="5" Margin="0,0,5,0"/>
+                        <Border Background="#F59E0B" Width="9" Height="9" CornerRadius="5" Margin="0,0,5,0"/>
+                        <Border Background="#10B981" Width="9" Height="9" CornerRadius="5" Margin="0,0,10,0"/>
+                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <Button Name="btnClearLog" Content="Xóa Log" HorizontalAlignment="Right"
-                            Background="Transparent" Foreground="#888888" BorderThickness="0" Cursor="Hand" FontSize="11"/>
+                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11"/>
                 </Grid>
-                <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#4EC9B0"
+                <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
                          FontFamily="Cascadia Mono, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0"
-                         Text="[DuckUtil Suite] Khởi tạo thành công với đầy đủ module App, Repair &amp; Drivers.&#x0d;&#x0a;"/>
+                         Text="[DuckUtil Cyber Suite] Khởi tạo thành công với giao diện Ultra-Dark và App Icons.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
     </Grid>
@@ -445,18 +475,18 @@ $AppCatalog = @(
 "@
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 5. KHỞI TẠO CỬA SỔ & ÁNH XẠ BIẾN ĐIỀU KHIỂN
+# 5. KHỞI TẠO CỬA SỔ & ÁNH XẠ ĐIỀU KHIỂN
 # ═══════════════════════════════════════════════════════════════════════════════
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
-# Điều hướng chính
+# Điều hướng
 $mainTabControl     = $window.FindName("MainTabControl")
 $navBtnApps         = $window.FindName("navBtnApps")
 $navBtnRepair       = $window.FindName("navBtnRepair")
 $navBtnDrivers      = $window.FindName("navBtnDrivers")
 
-# Trạng thái & log
+# Trạng thái
 $txtSearch          = $window.FindName("txtSearch")
 $txtLog             = $window.FindName("txtLog")
 $txtStatus          = $window.FindName("txtStatus")
@@ -496,18 +526,18 @@ $btnBackupDrivers           = $window.FindName("btnBackupDrivers")
 $btnOpenBackupFolder        = $window.FindName("btnOpenBackupFolder")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 6. HỆ THỐNG ĐIỀU HƯỚNG TAB CHÍNH (TOP NAV)
+# 6. ĐIỀU HƯỚNG TAB CHÍNH
 # ═══════════════════════════════════════════════════════════════════════════════
 function Set-ActiveTab {
     param([int]$Index, [System.Windows.Controls.Button]$ActiveBtn)
     $mainTabControl.SelectedIndex = $Index
     $navButtons = @($navBtnApps, $navBtnRepair, $navBtnDrivers)
     foreach ($btn in $navButtons) {
-        $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#A0A0A0")
+        $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
         $btn.BorderBrush = [System.Windows.Media.Brushes]::Transparent
     }
     $ActiveBtn.Foreground = [System.Windows.Media.Brushes]::White
-    $ActiveBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#60CDFF")
+    $ActiveBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0EA5E9")
 }
 
 $navBtnApps.Add_Click({ Set-ActiveTab 0 $navBtnApps })
@@ -515,9 +545,10 @@ $navBtnRepair.Add_Click({ Set-ActiveTab 1 $navBtnRepair })
 $navBtnDrivers.Add_Click({ Set-ActiveTab 2 $navBtnDrivers })
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 7. SINH TỰ ĐỘNG CÁC CARD ỨNG DỤNG
+# 7. SINH CÁC CARD ỨNG DỤNG (KÈM ICON LOGO & CHẠM CHỌN TOÀN DÒNG)
 # ═══════════════════════════════════════════════════════════════════════════════
 $allCheckBoxes = @()
+$allItemBorders = @()
 $categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
 
 function Update-SelectionCount {
@@ -526,42 +557,107 @@ function Update-SelectionCount {
 }
 
 foreach ($cat in $categories) {
+    # ── Khung Card viền hiện đại bo tròn ──
     $cardBorder = New-Object System.Windows.Controls.Border
-    $cardBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526")
-    $cardBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333")
+    $cardBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10131B")
+    $cardBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
     $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-    $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+    $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(10)
     $cardBorder.Margin = New-Object System.Windows.Thickness(5)
     $cardBorder.Padding = New-Object System.Windows.Thickness(10, 8, 10, 10)
 
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
 
+    # Header Card có badge số lượng
+    $headerGrid = New-Object System.Windows.Controls.Grid
+    $headerGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+
     $headerText = New-Object System.Windows.Controls.TextBlock
     $headerText.Text = "$cat ($($appsInCat.Count))"
     $headerText.FontSize = 12
     $headerText.FontWeight = [System.Windows.FontWeights]::Bold
-    $headerText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#60CDFF")
-    $cardStack.Children.Add($headerText) | Out-Null
+    $headerText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    $headerGrid.Children.Add($headerText) | Out-Null
 
     $separator = New-Object System.Windows.Controls.Border
     $separator.Height = 1
-    $separator.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#383838")
-    $separator.Margin = New-Object System.Windows.Thickness(0, 4, 0, 6)
+    $separator.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E2638")
+    $separator.Margin = New-Object System.Windows.Thickness(0, 2, 0, 6)
+
+    $cardStack.Children.Add($headerGrid) | Out-Null
     $cardStack.Children.Add($separator) | Out-Null
 
+    # ── Danh sách App: Từng dòng có Logo + CheckBox + Hover đổi màu ──
     foreach ($app in $appsInCat) {
-        $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.Content = $app.Name
-        $cb.Tag = $app
-        $cb.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
-        $cb.Margin = New-Object System.Windows.Thickness(2, 3, 2, 3)
+        $rowBorder = New-Object System.Windows.Controls.Border
+        $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $rowBorder.Padding = New-Object System.Windows.Thickness(5, 3, 5, 3)
+        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+        $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+        $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
+        $rowBorder.Tag = $app
 
+        $rowGrid = New-Object System.Windows.Controls.Grid
+        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
+        $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = [System.Windows.GridLength]::Auto
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($col3) | Out-Null
+
+        # 1. CheckBox
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.Tag = $app
         $cb.Add_Checked({ Update-SelectionCount })
         $cb.Add_Unchecked({ Update-SelectionCount })
-
-        $cardStack.Children.Add($cb) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($cb, 0)
+        $rowGrid.Children.Add($cb) | Out-Null
         $allCheckBoxes += $cb
+
+        # 2. Logo Icon chính hãng (tải tự động từ domain)
+        $img = New-Object System.Windows.Controls.Image
+        $img.Width = 16; $img.Height = 16
+        $img.Margin = New-Object System.Windows.Thickness(6, 0, 7, 0)
+        $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        try {
+            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+            $bmp.BeginInit()
+            $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32")
+            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.EndInit()
+            $img.Source = $bmp
+        } catch {}
+        [System.Windows.Controls.Grid]::SetColumn($img, 1)
+        $rowGrid.Children.Add($img) | Out-Null
+
+        # 3. Tên ứng dụng
+        $nameText = New-Object System.Windows.Controls.TextBlock
+        $nameText.Text = $app.Name
+        $nameText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+        $nameText.FontSize = 12
+        $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
+        [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
+        $rowGrid.Children.Add($nameText) | Out-Null
+
+        # Chạm chọn toàn dòng (Click vào bất kỳ đâu trên dòng đều bật/tắt checkbox)
+        $rowBorder.Add_MouseDown({
+            $cb.IsChecked = -not $cb.IsChecked
+        })
+
+        # Hiệu ứng hover phát sáng dòng
+        $rowBorder.Add_MouseEnter({
+            $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
+        })
+        $rowBorder.Add_MouseLeave({
+            $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+        })
+
+        $rowBorder.Child = $rowGrid
+        $cardStack.Children.Add($rowBorder) | Out-Null
+        $allItemBorders += $rowBorder
     }
 
     $cardBorder.Child = $cardStack
@@ -569,7 +665,7 @@ foreach ($cat in $categories) {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 8. HÀM THỰC THI TIẾN TRÌNH & STREAMING OUTPUT MƯỢT MÀ
+# 8. THỰC THI TIẾN TRÌNH & TERMINAL LOG MƯỢT MÀ
 # ═══════════════════════════════════════════════════════════════════════════════
 function Log-Text {
     param([string]$Msg)
@@ -609,10 +705,10 @@ function Run-CliStream {
 # ═══════════════════════════════════════════════════════════════════════════════
 $txtSearch.Add_TextChanged({
     $keyword = $txtSearch.Text.Trim().ToLower()
-    foreach ($cb in $allCheckBoxes) {
-        $app = $cb.Tag
+    foreach ($row in $allItemBorders) {
+        $app = $row.Tag
         $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
-        $cb.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
 })
 
@@ -634,11 +730,14 @@ $btnScanInstalled.Add_Click({
     $progressBar.IsIndeterminate = $false
     $found = 0
 
-    foreach ($cb in $allCheckBoxes) {
-        $app = $cb.Tag
+    foreach ($row in $allItemBorders) {
+        $app = $row.Tag
         if ($installed.Contains($app.ID) -or $installed.Contains($app.Name)) {
-            $cb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#60CDFF")
-            $cb.Content = "$($app.Name) [✓]"
+            $row.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0F291E")
+            $grid = $row.Child
+            $tb = $grid.Children[2]
+            $tb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
+            $tb.Text = "$($app.Name) [✓]"
             $found++
         }
     }
@@ -735,15 +834,13 @@ $btnDeselectAll.Add_Click({
 })
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 10. MODULE 2: GỠ LỖI & SỬA HỆ THỐNG (SYSTEM REPAIR)
+# 10. MODULE 2: GỠ LỖI & SỬA HỆ THỐNG
 # ═══════════════════════════════════════════════════════════════════════════════
 $btnSfcScan.Add_Click({
     Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)... Quá trình có thể mất vài phút."
     $txtStatus.Text = "Đang chạy SFC Scan..."
     $progressBar.IsIndeterminate = $true
-
     Run-CliStream "sfc.exe" "/scannow"
-
     $progressBar.IsIndeterminate = $false
     $txtStatus.Text = "SFC Scan hoàn tất"
 })
@@ -752,9 +849,7 @@ $btnDismRestore.Add_Click({
     Log-Text "[*] Đang khởi chạy DISM RestoreHealth... Khắc phục kho linh kiện Windows từ bản chuẩn."
     $txtStatus.Text = "Đang chạy DISM RestoreHealth..."
     $progressBar.IsIndeterminate = $true
-
     Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
-
     $progressBar.IsIndeterminate = $false
     $txtStatus.Text = "DISM Restore hoàn tất"
 })
@@ -763,9 +858,7 @@ $btnDismCleanup.Add_Click({
     Log-Text "[*] Đang dọn dẹp các bản backup cũ trong kho linh kiện (DISM Component Cleanup)..."
     $txtStatus.Text = "Đang dọn Component Store..."
     $progressBar.IsIndeterminate = $true
-
     Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup"
-
     $progressBar.IsIndeterminate = $false
     $txtStatus.Text = "Component Cleanup hoàn tất"
 })
@@ -889,14 +982,11 @@ $btnFixDriverUpdate.Add_Click({
     $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..."
     $progressBar.IsIndeterminate = $true
 
-    # Reset update cache
     Reset-WindowsUpdateEngine
 
-    # Kích hoạt quét lại phần cứng
     Log-Text "   - Đang buộc nhận diện lại các thiết bị phần cứng..."
     Run-CliStream "pnputil.exe" "/scan-devices"
 
-    # Gửi lệnh tìm kiếm driver mới
     Log-Text "   - Yêu cầu Windows Update quét tìm driver thay thế mới..."
     Start-Process "usoclient" -ArgumentList "StartScan" -NoNewWindow
 
