@@ -1,13 +1,9 @@
 # ==============================================================================
-#                     DUCK UTIL - CYBER OBSIDIAN EDITION
-#          • Bo cuc chuan 4 COT rong rai, khong bi chat choi
-#          • Nhan dien phien ban: TRANG (Chua cai) - XANH (Ban moi) - DO (Ban cu)
-#          • Tich hop App Logo Icon that + Cham chon toan dong
+#                     DUCK UTIL - CYBER OBSIDIAN SUITE
+#       Modular Windows Package Manager & System Maintenance Architecture
 # ==============================================================================
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 1. TỰ ĐỘNG CHUYỂN SANG QUYỀN ADMINISTRATOR
-# ═══════════════════════════════════════════════════════════════════════════════
+# 1. TỰ ĐỘNG CHUYỂN SANG QUYỀN ADMINISTRATOR (SELF-ELEVATION)
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh.exe" } else { "powershell.exe" }
@@ -19,111 +15,744 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # 2. NẠP THƯ VIỆN WPF & WINFORMS
-# ═══════════════════════════════════════════════════════════════════════════════
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 3. KHO DỮ LIỆU ỨNG DỤNG (KÈM DOMAIN ĐỂ TỰ TẢI LOGO CHÍNH HÃNG)
-# ═══════════════════════════════════════════════════════════════════════════════
-$AppCatalog = @(
-    # ── 🌐 TRÌNH DUYỆT WEB ──
-    @{ Name="Google Chrome";       ID="Google.Chrome";                    Category="Trình Duyệt Web";    Domain="google.com";            Aliases=@("Google Chrome", "Google.Chrome");                           Desc="Trình duyệt phổ biến nhất thế giới" }
-    @{ Name="Mozilla Firefox";     ID="Mozilla.Firefox";                  Category="Trình Duyệt Web";    Domain="mozilla.org";           Aliases=@("Mozilla Firefox", "Firefox");                               Desc="Mã nguồn mở, tôn trọng riêng tư" }
-    @{ Name="Brave Browser";       ID="Brave.Brave";                      Category="Trình Duyệt Web";    Domain="brave.com";             Aliases=@("Brave", "BraveSoftware", "Brave.Brave");                     Desc="Chặn quảng cáo tích hợp sẵn" }
-    @{ Name="LibreWolf";           ID="LibreWolf.LibreWolf";              Category="Trình Duyệt Web";    Domain="librewolf.net";         Aliases=@("LibreWolf");                                                Desc="Firefox không telemetry, siêu sạch" }
-    @{ Name="Vivaldi";             ID="VivaldiTechnologies.Vivaldi";      Category="Trình Duyệt Web";    Domain="vivaldi.com";           Aliases=@("Vivaldi");                                                  Desc="Tùy biến không giới hạn" }
-    @{ Name="Tor Browser";         ID="TorProject.TorBrowser";            Category="Trình Duyệt Web";    Domain="torproject.org";        Aliases=@("Tor Browser", "TorProject");                                Desc="Duyệt web ẩn danh qua Onion" }
-    @{ Name="Opera GX";            ID="Opera.OperaGX";                    Category="Trình Duyệt Web";    Domain="opera.com";             Aliases=@("Opera GX", "Opera");                                        Desc="Trình duyệt tối ưu tài nguyên" }
+# 3. KHO DỮ LIỆU ỨNG DỤNG (NHẬN TỪ CONFIG/APPS.JSON)
+$appsRawJson = @'
+[
+  {
+    "Name": "Google Chrome",
+    "ID": "Google.Chrome",
+    "Category": "Trình Duyệt Web",
+    "Domain": "google.com",
+    "Aliases": [
+      "Google Chrome",
+      "Google.Chrome"
+    ],
+    "Desc": "Trình duyệt phổ biến nhất thế giới"
+  },
+  {
+    "Name": "Mozilla Firefox",
+    "ID": "Mozilla.Firefox",
+    "Category": "Trình Duyệt Web",
+    "Domain": "mozilla.org",
+    "Aliases": [
+      "Mozilla Firefox",
+      "Firefox"
+    ],
+    "Desc": "Mã nguồn mở, tôn trọng riêng tư"
+  },
+  {
+    "Name": "Brave Browser",
+    "ID": "Brave.Brave",
+    "Category": "Trình Duyệt Web",
+    "Domain": "brave.com",
+    "Aliases": [
+      "Brave",
+      "BraveSoftware",
+      "Brave.Brave"
+    ],
+    "Desc": "Chặn quảng cáo tích hợp sẵn"
+  },
+  {
+    "Name": "LibreWolf",
+    "ID": "LibreWolf.LibreWolf",
+    "Category": "Trình Duyệt Web",
+    "Domain": "librewolf.net",
+    "Aliases": [
+      "LibreWolf"
+    ],
+    "Desc": "Firefox không telemetry, siêu sạch"
+  },
+  {
+    "Name": "Vivaldi",
+    "ID": "VivaldiTechnologies.Vivaldi",
+    "Category": "Trình Duyệt Web",
+    "Domain": "vivaldi.com",
+    "Aliases": [
+      "Vivaldi"
+    ],
+    "Desc": "Tùy biến không giới hạn"
+  },
+  {
+    "Name": "Tor Browser",
+    "ID": "TorProject.TorBrowser",
+    "Category": "Trình Duyệt Web",
+    "Domain": "torproject.org",
+    "Aliases": [
+      "Tor Browser",
+      "TorProject"
+    ],
+    "Desc": "Duyệt web ẩn danh qua Onion"
+  },
+  {
+    "Name": "Opera GX",
+    "ID": "Opera.OperaGX",
+    "Category": "Trình Duyệt Web",
+    "Domain": "opera.com",
+    "Aliases": [
+      "Opera GX",
+      "Opera"
+    ],
+    "Desc": "Trình duyệt tối ưu tài nguyên"
+  },
+  {
+    "Name": "Discord",
+    "ID": "Discord.Discord",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "discord.com",
+    "Aliases": [
+      "Discord"
+    ],
+    "Desc": "Voice/chat cộng đồng số 1"
+  },
+  {
+    "Name": "Telegram",
+    "ID": "Telegram.TelegramDesktop",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "telegram.org",
+    "Aliases": [
+      "Telegram Desktop",
+      "Telegram",
+      "TelegramDesktop"
+    ],
+    "Desc": "Nhắn tin nhanh, cloud-sync mượt"
+  },
+  {
+    "Name": "Signal",
+    "ID": "OpenWhisperSystems.Signal",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "signal.org",
+    "Aliases": [
+      "Signal"
+    ],
+    "Desc": "Mã hóa đầu-cuối an toàn tuyệt đối"
+  },
+  {
+    "Name": "Zalo",
+    "ID": "VNG.Zalo",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "zalo.me",
+    "Aliases": [
+      "Zalo",
+      "VNGCorp.Zalo",
+      "VNG.Zalo"
+    ],
+    "Desc": "Nhắn tin phổ biến nhất VN"
+  },
+  {
+    "Name": "Zoom",
+    "ID": "Zoom.Zoom",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "zoom.us",
+    "Aliases": [
+      "Zoom",
+      "Zoom Workplace"
+    ],
+    "Desc": "Họp trực tuyến trực tiếp"
+  },
+  {
+    "Name": "Slack",
+    "ID": "SlackTechnologies.Slack",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "slack.com",
+    "Aliases": [
+      "Slack"
+    ],
+    "Desc": "Trao đổi công việc doanh nghiệp"
+  },
+  {
+    "Name": "WhatsApp",
+    "ID": "WhatsApp.WhatsApp",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "whatsapp.com",
+    "Aliases": [
+      "WhatsApp"
+    ],
+    "Desc": "Gọi & nhắn tin toàn cầu"
+  },
+  {
+    "Name": "Microsoft Teams",
+    "ID": "Microsoft.Teams",
+    "Category": "Liên Lạc & Chat",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Microsoft Teams",
+      "MSTeams"
+    ],
+    "Desc": "Nền tảng làm việc Microsoft"
+  },
+  {
+    "Name": "VS Code",
+    "ID": "Microsoft.VisualStudioCode",
+    "Category": "Phát Triển & Dev",
+    "Domain": "code.visualstudio.com",
+    "Aliases": [
+      "Microsoft Visual Studio Code",
+      "Visual Studio Code"
+    ],
+    "Desc": "Code editor chuẩn của lập trình viên"
+  },
+  {
+    "Name": "Git",
+    "ID": "Git.Git",
+    "Category": "Phát Triển & Dev",
+    "Domain": "git-scm.com",
+    "Aliases": [
+      "Git"
+    ],
+    "Desc": "Hệ thống quản lý phiên bản mã nguồn"
+  },
+  {
+    "Name": "Windows Terminal",
+    "ID": "Microsoft.WindowsTerminal",
+    "Category": "Phát Triển & Dev",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Windows Terminal",
+      "WindowsTerminal",
+      "Bảng điều khiển Windows"
+    ],
+    "Desc": "Terminal hiện đại đa tab"
+  },
+  {
+    "Name": "Python 3.12",
+    "ID": "Python.Python.3.12",
+    "Category": "Phát Triển & Dev",
+    "Domain": "python.org",
+    "Aliases": [
+      "Python 3.12",
+      "Python 3.13",
+      "Python"
+    ],
+    "Desc": "Ngôn ngữ AI & tự động hóa"
+  },
+  {
+    "Name": "Node.js LTS",
+    "ID": "OpenJS.NodeJS.LTS",
+    "Category": "Phát Triển & Dev",
+    "Domain": "nodejs.org",
+    "Aliases": [
+      "Node.js",
+      "OpenJS.NodeJS"
+    ],
+    "Desc": "Môi trường chạy JS server-side"
+  },
+  {
+    "Name": "Docker Desktop",
+    "ID": "Docker.DockerDesktop",
+    "Category": "Phát Triển & Dev",
+    "Domain": "docker.com",
+    "Aliases": [
+      "Docker Desktop"
+    ],
+    "Desc": "Nền tảng container ảo hóa"
+  },
+  {
+    "Name": "Notepad++",
+    "ID": "Notepad++.Notepad++",
+    "Category": "Phát Triển & Dev",
+    "Domain": "notepad-plus-plus.org",
+    "Aliases": [
+      "Notepad++"
+    ],
+    "Desc": "Trình soạn thảo text siêu nhẹ"
+  },
+  {
+    "Name": "Postman",
+    "ID": "Postman.Postman",
+    "Category": "Phát Triển & Dev",
+    "Domain": "postman.com",
+    "Aliases": [
+      "Postman"
+    ],
+    "Desc": "Test & phát triển API"
+  },
+  {
+    "Name": "DBeaver CE",
+    "ID": "dbeaver.dbeaver",
+    "Category": "Phát Triển & Dev",
+    "Domain": "dbeaver.io",
+    "Aliases": [
+      "DBeaver"
+    ],
+    "Desc": "Quản trị database đa năng"
+  },
+  {
+    "Name": "Go Lang",
+    "ID": "GoLang.Go",
+    "Category": "Phát Triển & Dev",
+    "Domain": "golang.org",
+    "Aliases": [
+      "Go Programming Language",
+      "GoLang"
+    ],
+    "Desc": "Ngôn ngữ backend hiệu năng cao"
+  },
+  {
+    "Name": "Rust (rustup)",
+    "ID": "Rustlang.Rustup",
+    "Category": "Phát Triển & Dev",
+    "Domain": "rust-lang.org",
+    "Aliases": [
+      "Rustup",
+      "Rust"
+    ],
+    "Desc": "Bộ công cụ ngôn ngữ Rust"
+  },
+  {
+    "Name": "7-Zip",
+    "ID": "7zip.7zip",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "7-zip.org",
+    "Aliases": [
+      "7-Zip",
+      "7zip"
+    ],
+    "Desc": "Giải nén mọi định dạng tệp"
+  },
+  {
+    "Name": "WinRAR",
+    "ID": "RARLab.WinRAR",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "rarlab.com",
+    "Aliases": [
+      "WinRAR"
+    ],
+    "Desc": "Nén/giải nén chuẩn RAR"
+  },
+  {
+    "Name": "Everything",
+    "ID": "voidtools.Everything",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "voidtools.com",
+    "Aliases": [
+      "Everything"
+    ],
+    "Desc": "Tìm kiếm file tức thì 1 giây"
+  },
+  {
+    "Name": "PowerToys",
+    "ID": "Microsoft.PowerToys",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "github.com",
+    "Aliases": [
+      "PowerToys"
+    ],
+    "Desc": "Bộ tiện ích chính chủ Microsoft"
+  },
+  {
+    "Name": "Flow Launcher",
+    "ID": "Flow-Launcher.Flow-Launcher",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "flowlauncher.com",
+    "Aliases": [
+      "Flow Launcher",
+      "Flow-Launcher"
+    ],
+    "Desc": "Thanh tìm kiếm & chạy app Alt+Space"
+  },
+  {
+    "Name": "Revo Uninstaller",
+    "ID": "VSRevoGroup.RevoUninstaller",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "revouninstaller.com",
+    "Aliases": [
+      "Revo Uninstaller"
+    ],
+    "Desc": "Gỡ phần mềm sạch tận gốc"
+  },
+  {
+    "Name": "TreeSize Free",
+    "ID": "JAMSoftware.TreeSize.Free",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "jam-software.com",
+    "Aliases": [
+      "TreeSize"
+    ],
+    "Desc": "Phân tích dung lượng ổ đĩa"
+  },
+  {
+    "Name": "ShareX",
+    "ID": "ShareX.ShareX",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "getsharex.com",
+    "Aliases": [
+      "ShareX"
+    ],
+    "Desc": "Chụp/quay màn hình & OCR đỉnh cao"
+  },
+  {
+    "Name": "BleachBit",
+    "ID": "BleachBit.BleachBit",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "bleachbit.org",
+    "Aliases": [
+      "BleachBit"
+    ],
+    "Desc": "Dọn rác & privacy thay CCleaner"
+  },
+  {
+    "Name": "FanControl",
+    "ID": "Rem0o.FanControl",
+    "Category": "Tiện Ích Hệ Thống",
+    "Domain": "github.com",
+    "Aliases": [
+      "FanControl"
+    ],
+    "Desc": "Tùy chỉnh quạt tản nhiệt êm ái"
+  },
+  {
+    "Name": "VLC Media Player",
+    "ID": "VideoLAN.VLC",
+    "Category": "Đa Phương Tiện",
+    "Domain": "videolan.org",
+    "Aliases": [
+      "VLC media player",
+      "VLC"
+    ],
+    "Desc": "Xem mọi định dạng video/nhạc"
+  },
+  {
+    "Name": "OBS Studio",
+    "ID": "OBSProject.OBSStudio",
+    "Category": "Đa Phương Tiện",
+    "Domain": "obsproject.com",
+    "Aliases": [
+      "OBS Studio"
+    ],
+    "Desc": "Ghi hình & livestream chuyên nghiệp"
+  },
+  {
+    "Name": "Spotify",
+    "ID": "Spotify.Spotify",
+    "Category": "Đa Phương Tiện",
+    "Domain": "spotify.com",
+    "Aliases": [
+      "Spotify"
+    ],
+    "Desc": "Nghe nhạc bản quyền chất lượng cao"
+  },
+  {
+    "Name": "GIMP",
+    "ID": "GIMP.GIMP",
+    "Category": "Đa Phương Tiện",
+    "Domain": "gimp.org",
+    "Aliases": [
+      "GIMP"
+    ],
+    "Desc": "Chỉnh sửa ảnh chuyên nghiệp thay PTS"
+  },
+  {
+    "Name": "Audacity",
+    "ID": "Audacity.Audacity",
+    "Category": "Đa Phương Tiện",
+    "Domain": "audacityteam.org",
+    "Aliases": [
+      "Audacity"
+    ],
+    "Desc": "Thu âm & biên tập audio"
+  },
+  {
+    "Name": "HandBrake",
+    "ID": "HandBrake.HandBrake",
+    "Category": "Đa Phương Tiện",
+    "Domain": "handbrake.fr",
+    "Aliases": [
+      "HandBrake"
+    ],
+    "Desc": "Nén & đổi đuôi video dung lượng nhẹ"
+  },
+  {
+    "Name": "Krita",
+    "ID": "KDE.Krita",
+    "Category": "Đa Phương Tiện",
+    "Domain": "krita.org",
+    "Aliases": [
+      "Krita"
+    ],
+    "Desc": "Vẽ đồ họa số & concept art"
+  },
+  {
+    "Name": "K-Lite Codec Mega",
+    "ID": "CodecGuide.K-LiteCodecPack.Mega",
+    "Category": "Đa Phương Tiện",
+    "Domain": "codecguide.com",
+    "Aliases": [
+      "K-Lite Codec Pack",
+      "K-Lite"
+    ],
+    "Desc": "Gói giải mã video/audio đầy đủ"
+  },
+  {
+    "Name": "LibreOffice",
+    "ID": "TheDocumentFoundation.LibreOffice",
+    "Category": "Văn Phòng & Tài Liệu",
+    "Domain": "libreoffice.org",
+    "Aliases": [
+      "LibreOffice"
+    ],
+    "Desc": "Bộ Office mã nguồn mở miễn phí"
+  },
+  {
+    "Name": "Obsidian",
+    "ID": "Obsidian.Obsidian",
+    "Category": "Văn Phòng & Tài Liệu",
+    "Domain": "obsidian.md",
+    "Aliases": [
+      "Obsidian"
+    ],
+    "Desc": "Ghi chú Markdown & mạng lưới tư duy"
+  },
+  {
+    "Name": "Notion",
+    "ID": "Notion.Notion",
+    "Category": "Văn Phòng & Tài Liệu",
+    "Domain": "notion.so",
+    "Aliases": [
+      "Notion"
+    ],
+    "Desc": "Không gian quản lý ghi chú chung"
+  },
+  {
+    "Name": "SumatraPDF",
+    "ID": "SumatraPDF.SumatraPDF",
+    "Category": "Văn Phòng & Tài Liệu",
+    "Domain": "sumatrapdfreader.org",
+    "Aliases": [
+      "SumatraPDF"
+    ],
+    "Desc": "Đọc PDF siêu nhẹ bật tức thì"
+  },
+  {
+    "Name": "Foxit PDF Reader",
+    "ID": "Foxit.FoxitReader",
+    "Category": "Văn Phòng & Tài Liệu",
+    "Domain": "foxit.com",
+    "Aliases": [
+      "Foxit PDF Reader",
+      "Foxit Reader"
+    ],
+    "Desc": "Xem & ký tài liệu PDF chuyên nghiệp"
+  },
+  {
+    "Name": "Steam",
+    "ID": "Valve.Steam",
+    "Category": "Nền Tảng Trò Chơi",
+    "Domain": "steampowered.com",
+    "Aliases": [
+      "Steam"
+    ],
+    "Desc": "Kho game PC số 1 thế giới"
+  },
+  {
+    "Name": "Epic Games Launcher",
+    "ID": "EpicGames.EpicGamesLauncher",
+    "Category": "Nền Tảng Trò Chơi",
+    "Domain": "epicgames.com",
+    "Aliases": [
+      "Epic Games Launcher"
+    ],
+    "Desc": "Cửa hàng game & phát game miễn phí"
+  },
+  {
+    "Name": "GOG Galaxy",
+    "ID": "GOG.Galaxy",
+    "Category": "Nền Tảng Trò Chơi",
+    "Domain": "gog.com",
+    "Aliases": [
+      "GOG GALAXY",
+      "GOG Galaxy"
+    ],
+    "Desc": "Quản lý thư viện game không DRM"
+  },
+  {
+    "Name": "MSI Afterburner",
+    "ID": "Guru3D.Afterburner",
+    "Category": "Nền Tảng Trò Chơi",
+    "Domain": "msi.com",
+    "Aliases": [
+      "MSI Afterburner"
+    ],
+    "Desc": "Đo nhiệt độ, FPS & ép xung"
+  },
+  {
+    "Name": "Playnite",
+    "ID": "Playnite.Playnite",
+    "Category": "Nền Tảng Trò Chơi",
+    "Domain": "playnite.link",
+    "Aliases": [
+      "Playnite"
+    ],
+    "Desc": "Gom mọi thư viện game về một nơi"
+  },
+  {
+    "Name": "qBittorrent",
+    "ID": "qBittorrent.qBittorrent",
+    "Category": "Lưu Trữ & Truyền Tệp",
+    "Domain": "qbittorrent.org",
+    "Aliases": [
+      "qBittorrent"
+    ],
+    "Desc": "Tải torrent sạch, không quảng cáo"
+  },
+  {
+    "Name": "LocalSend",
+    "ID": "LocalSend.LocalSend",
+    "Category": "Lưu Trữ & Truyền Tệp",
+    "Domain": "localsend.org",
+    "Aliases": [
+      "LocalSend"
+    ],
+    "Desc": "Bắn file qua Wi-Fi như AirDrop"
+  },
+  {
+    "Name": "WinSCP",
+    "ID": "WinSCP.WinSCP",
+    "Category": "Lưu Trữ & Truyền Tệp",
+    "Domain": "winscp.net",
+    "Aliases": [
+      "WinSCP",
+      "winscp3_is1"
+    ],
+    "Desc": "Truyền tệp qua SFTP/FTP bảo mật"
+  },
+  {
+    "Name": "FileZilla",
+    "ID": "TimKosse.FileZilla.Client",
+    "Category": "Lưu Trữ & Truyền Tệp",
+    "Domain": "filezilla-project.org",
+    "Aliases": [
+      "FileZilla Client",
+      "FileZilla"
+    ],
+    "Desc": "Client truyền tệp FTP phổ biến"
+  },
+  {
+    "Name": "Rclone",
+    "ID": "Rclone.Rclone",
+    "Category": "Lưu Trữ & Truyền Tệp",
+    "Domain": "rclone.org",
+    "Aliases": [
+      "Rclone"
+    ],
+    "Desc": "Mount & đồng bộ 70+ dịch vụ đám mây"
+  },
+  {
+    "Name": "Bitwarden",
+    "ID": "Bitwarden.Bitwarden",
+    "Category": "Bảo Mật & Mạng",
+    "Domain": "bitwarden.com",
+    "Aliases": [
+      "Bitwarden"
+    ],
+    "Desc": "Két mật khẩu mã hóa an toàn"
+  },
+  {
+    "Name": "KeePassXC",
+    "ID": "KeePassXCTeam.KeePassXC",
+    "Category": "Bảo Mật & Mạng",
+    "Domain": "keepassxc.org",
+    "Aliases": [
+      "KeePassXC"
+    ],
+    "Desc": "Quản lý mật khẩu offline độc lập"
+  },
+  {
+    "Name": "Cryptomator",
+    "ID": "Cryptomator.Cryptomator",
+    "Category": "Bảo Mật & Mạng",
+    "Domain": "cryptomator.org",
+    "Aliases": [
+      "Cryptomator"
+    ],
+    "Desc": "Mã hóa dữ liệu trước khi lên mây"
+  },
+  {
+    "Name": "ProtonVPN",
+    "ID": "ProtonTechnologies.ProtonVPN",
+    "Category": "Bảo Mật & Mạng",
+    "Domain": "protonvpn.com",
+    "Aliases": [
+      "Proton VPN",
+      "ProtonVPN",
+      "Proton.ProtonVPN"
+    ],
+    "Desc": "VPN bảo mật cao từ Thụy Sĩ"
+  },
+  {
+    "Name": "RustDesk",
+    "ID": "RustDesk.RustDesk",
+    "Category": "Bảo Mật & Mạng",
+    "Domain": "rustdesk.com",
+    "Aliases": [
+      "RustDesk"
+    ],
+    "Desc": "Điều khiển máy tính từ xa tự host"
+  },
+  {
+    "Name": "Wireshark",
+    "ID": "WiresharkFoundation.Wireshark",
+    "Category": "Bảo Mật & Mạng",
+    "Domain": "wireshark.org",
+    "Aliases": [
+      "Wireshark"
+    ],
+    "Desc": "Phân tích gói tin mạng chuyên sâu"
+  },
+  {
+    "Name": "VC++ Redist 2015-2022",
+    "ID": "Microsoft.VCRedist.2015+.x64",
+    "Category": "Thư Viện Cốt Lõi",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Visual C++",
+      "Microsoft Visual C++"
+    ],
+    "Desc": "Cần thiết cho hầu hết game & app"
+  },
+  {
+    "Name": ".NET Desktop Runtime 8",
+    "ID": "Microsoft.DotNet.DesktopRuntime.8",
+    "Category": "Thư Viện Cốt Lõi",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Microsoft Windows Desktop Runtime - 8",
+      "DesktopRuntime.8"
+    ],
+    "Desc": "Nền tảng chạy ứng dụng .NET 8 mới"
+  },
+  {
+    "Name": "DirectX End-User",
+    "ID": "Microsoft.DirectX",
+    "Category": "Thư Viện Cốt Lõi",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "DirectX"
+    ],
+    "Desc": "Thư viện đồ họa DirectX chuẩn"
+  },
+  {
+    "Name": "Java OpenJDK 21",
+    "ID": "EclipseAdoptium.Temurin.21.JDK",
+    "Category": "Thư Viện Cốt Lõi",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin",
+      "Temurin",
+      "Amazon Corretto"
+    ],
+    "Desc": "Môi trường chạy Java LTS tiêu chuẩn"
+  }
+]
+'@
+$AppCatalog = ConvertFrom-Json $appsRawJson -AsHashtable
 
-    # ── 💬 LIÊN LẠC & CHAT ──
-    @{ Name="Discord";             ID="Discord.Discord";                  Category="Liên Lạc & Chat";   Domain="discord.com";           Aliases=@("Discord");                                                  Desc="Voice/chat cộng đồng số 1" }
-    @{ Name="Telegram";            ID="Telegram.TelegramDesktop";         Category="Liên Lạc & Chat";   Domain="telegram.org";          Aliases=@("Telegram Desktop", "Telegram", "TelegramDesktop");           Desc="Nhắn tin nhanh, cloud-sync mượt" }
-    @{ Name="Signal";              ID="OpenWhisperSystems.Signal";        Category="Liên Lạc & Chat";   Domain="signal.org";            Aliases=@("Signal");                                                   Desc="Mã hóa đầu-cuối an toàn tuyệt đối" }
-    @{ Name="Zalo";                ID="VNG.Zalo";                         Category="Liên Lạc & Chat";   Domain="zalo.me";               Aliases=@("Zalo", "VNGCorp.Zalo", "VNG.Zalo");                         Desc="Nhắn tin phổ biến nhất VN" }
-    @{ Name="Zoom";                ID="Zoom.Zoom";                        Category="Liên Lạc & Chat";   Domain="zoom.us";               Aliases=@("Zoom", "Zoom Workplace");                                   Desc="Họp trực tuyến trực tiếp" }
-    @{ Name="Slack";               ID="SlackTechnologies.Slack";          Category="Liên Lạc & Chat";   Domain="slack.com";             Aliases=@("Slack");                                                    Desc="Trao đổi công việc doanh nghiệp" }
-    @{ Name="WhatsApp";            ID="WhatsApp.WhatsApp";                Category="Liên Lạc & Chat";   Domain="whatsapp.com";          Aliases=@("WhatsApp");                                                 Desc="Gọi & nhắn tin toàn cầu" }
-    @{ Name="Microsoft Teams";     ID="Microsoft.Teams";                  Category="Liên Lạc & Chat";   Domain="microsoft.com";         Aliases=@("Microsoft Teams", "MSTeams");                               Desc="Nền tảng làm việc Microsoft" }
-
-    # ── 💻 PHÁT TRIỂN & DEV ──
-    @{ Name="VS Code";             ID="Microsoft.VisualStudioCode";       Category="Phát Triển & Dev";   Domain="code.visualstudio.com"; Aliases=@("Microsoft Visual Studio Code", "Visual Studio Code");      Desc="Code editor chuẩn của lập trình viên" }
-    @{ Name="Git";                 ID="Git.Git";                          Category="Phát Triển & Dev";   Domain="git-scm.com";           Aliases=@("Git");                                                      Desc="Hệ thống quản lý phiên bản mã nguồn" }
-    @{ Name="Windows Terminal";    ID="Microsoft.WindowsTerminal";        Category="Phát Triển & Dev";   Domain="microsoft.com";         Aliases=@("Windows Terminal", "WindowsTerminal", "Bảng điều khiển Windows"); Desc="Terminal hiện đại đa tab" }
-    @{ Name="Python 3.12";         ID="Python.Python.3.12";              Category="Phát Triển & Dev";   Domain="python.org";            Aliases=@("Python 3.12", "Python 3.13", "Python");                     Desc="Ngôn ngữ AI & tự động hóa" }
-    @{ Name="Node.js LTS";         ID="OpenJS.NodeJS.LTS";               Category="Phát Triển & Dev";   Domain="nodejs.org";            Aliases=@("Node.js", "OpenJS.NodeJS");                                 Desc="Môi trường chạy JS server-side" }
-    @{ Name="Docker Desktop";      ID="Docker.DockerDesktop";             Category="Phát Triển & Dev";   Domain="docker.com";            Aliases=@("Docker Desktop");                                           Desc="Nền tảng container ảo hóa" }
-    @{ Name="Notepad++";           ID="Notepad++.Notepad++";              Category="Phát Triển & Dev";   Domain="notepad-plus-plus.org"; Aliases=@("Notepad++");                                                Desc="Trình soạn thảo text siêu nhẹ" }
-    @{ Name="Postman";             ID="Postman.Postman";                  Category="Phát Triển & Dev";   Domain="postman.com";           Aliases=@("Postman");                                                  Desc="Test & phát triển API" }
-    @{ Name="DBeaver CE";          ID="dbeaver.dbeaver";                  Category="Phát Triển & Dev";   Domain="dbeaver.io";            Aliases=@("DBeaver");                                                  Desc="Quản trị database đa năng" }
-    @{ Name="Go Lang";             ID="GoLang.Go";                        Category="Phát Triển & Dev";   Domain="golang.org";            Aliases=@("Go Programming Language", "GoLang");                        Desc="Ngôn ngữ backend hiệu năng cao" }
-    @{ Name="Rust (rustup)";       ID="Rustlang.Rustup";                  Category="Phát Triển & Dev";   Domain="rust-lang.org";         Aliases=@("Rustup", "Rust");                                           Desc="Bộ công cụ ngôn ngữ Rust" }
-
-    # ── 🛠️ TIỆN ÍCH HỆ THỐNG ──
-    @{ Name="7-Zip";               ID="7zip.7zip";                        Category="Tiện Ích Hệ Thống";  Domain="7-zip.org";             Aliases=@("7-Zip", "7zip");                                            Desc="Giải nén mọi định dạng tệp" }
-    @{ Name="WinRAR";              ID="RARLab.WinRAR";                    Category="Tiện Ích Hệ Thống";  Domain="rarlab.com";            Aliases=@("WinRAR");                                                   Desc="Nén/giải nén chuẩn RAR" }
-    @{ Name="Everything";          ID="voidtools.Everything";             Category="Tiện Ích Hệ Thống";  Domain="voidtools.com";         Aliases=@("Everything");                                               Desc="Tìm kiếm file tức thì 1 giây" }
-    @{ Name="PowerToys";           ID="Microsoft.PowerToys";              Category="Tiện Ích Hệ Thống";  Domain="github.com";            Aliases=@("PowerToys");                                                Desc="Bộ tiện ích chính chủ Microsoft" }
-    @{ Name="Flow Launcher";       ID="Flow-Launcher.Flow-Launcher";      Category="Tiện Ích Hệ Thống";  Domain="flowlauncher.com";      Aliases=@("Flow Launcher", "Flow-Launcher");                           Desc="Thanh tìm kiếm & chạy app Alt+Space" }
-    @{ Name="Revo Uninstaller";    ID="VSRevoGroup.RevoUninstaller";      Category="Tiện Ích Hệ Thống";  Domain="revouninstaller.com";   Aliases=@("Revo Uninstaller");                                         Desc="Gỡ phần mềm sạch tận gốc" }
-    @{ Name="TreeSize Free";       ID="JAMSoftware.TreeSize.Free";        Category="Tiện Ích Hệ Thống";  Domain="jam-software.com";      Aliases=@("TreeSize");                                                 Desc="Phân tích dung lượng ổ đĩa" }
-    @{ Name="ShareX";              ID="ShareX.ShareX";                    Category="Tiện Ích Hệ Thống";  Domain="getsharex.com";         Aliases=@("ShareX");                                                   Desc="Chụp/quay màn hình & OCR đỉnh cao" }
-    @{ Name="BleachBit";           ID="BleachBit.BleachBit";              Category="Tiện Ích Hệ Thống";  Domain="bleachbit.org";         Aliases=@("BleachBit");                                                Desc="Dọn rác & privacy thay CCleaner" }
-    @{ Name="FanControl";          ID="Rem0o.FanControl";                 Category="Tiện Ích Hệ Thống";  Domain="github.com";            Aliases=@("FanControl");                                               Desc="Tùy chỉnh quạt tản nhiệt êm ái" }
-
-    # ── 🎬 ĐA PHƯƠNG TIỆN ──
-    @{ Name="VLC Media Player";    ID="VideoLAN.VLC";                     Category="Đa Phương Tiện";     Domain="videolan.org";          Aliases=@("VLC media player", "VLC");                                  Desc="Xem mọi định dạng video/nhạc" }
-    @{ Name="OBS Studio";          ID="OBSProject.OBSStudio";             Category="Đa Phương Tiện";     Domain="obsproject.com";        Aliases=@("OBS Studio");                                               Desc="Ghi hình & livestream chuyên nghiệp" }
-    @{ Name="Spotify";             ID="Spotify.Spotify";                  Category="Đa Phương Tiện";     Domain="spotify.com";           Aliases=@("Spotify");                                                  Desc="Nghe nhạc bản quyền chất lượng cao" }
-    @{ Name="GIMP";                ID="GIMP.GIMP";                        Category="Đa Phương Tiện";     Domain="gimp.org";              Aliases=@("GIMP");                                                     Desc="Chỉnh sửa ảnh chuyên nghiệp thay PTS" }
-    @{ Name="Audacity";            ID="Audacity.Audacity";                Category="Đa Phương Tiện";     Domain="audacityteam.org";      Aliases=@("Audacity");                                                 Desc="Thu âm & biên tập audio" }
-    @{ Name="HandBrake";           ID="HandBrake.HandBrake";              Category="Đa Phương Tiện";     Domain="handbrake.fr";          Aliases=@("HandBrake");                                                Desc="Nén & đổi đuôi video dung lượng nhẹ" }
-    @{ Name="Krita";               ID="KDE.Krita";                        Category="Đa Phương Tiện";     Domain="krita.org";             Aliases=@("Krita");                                                    Desc="Vẽ đồ họa số & concept art" }
-    @{ Name="K-Lite Codec Mega";   ID="CodecGuide.K-LiteCodecPack.Mega";  Category="Đa Phương Tiện";     Domain="codecguide.com";        Aliases=@("K-Lite Codec Pack", "K-Lite");                              Desc="Gói giải mã video/audio đầy đủ" }
-
-    # ── 📝 VĂN PHÒNG & TÀI LIỆU ──
-    @{ Name="LibreOffice";         ID="TheDocumentFoundation.LibreOffice"; Category="Văn Phòng & Tài Liệu"; Domain="libreoffice.org";     Aliases=@("LibreOffice");                                              Desc="Bộ Office mã nguồn mở miễn phí" }
-    @{ Name="Obsidian";            ID="Obsidian.Obsidian";                Category="Văn Phòng & Tài Liệu"; Domain="obsidian.md";          Aliases=@("Obsidian");                                                 Desc="Ghi chú Markdown & mạng lưới tư duy" }
-    @{ Name="Notion";              ID="Notion.Notion";                    Category="Văn Phòng & Tài Liệu"; Domain="notion.so";            Aliases=@("Notion");                                                   Desc="Không gian quản lý ghi chú chung" }
-    @{ Name="SumatraPDF";          ID="SumatraPDF.SumatraPDF";            Category="Văn Phòng & Tài Liệu"; Domain="sumatrapdfreader.org";  Aliases=@("SumatraPDF");                                               Desc="Đọc PDF siêu nhẹ bật tức thì" }
-    @{ Name="Foxit PDF Reader";    ID="Foxit.FoxitReader";                Category="Văn Phòng & Tài Liệu"; Domain="foxit.com";            Aliases=@("Foxit PDF Reader", "Foxit Reader");                         Desc="Xem & ký tài liệu PDF chuyên nghiệp" }
-
-    # ── 🎮 NỀN TẢNG TRÒ CHƠI ──
-    @{ Name="Steam";               ID="Valve.Steam";                      Category="Nền Tảng Trò Chơi";  Domain="steampowered.com";      Aliases=@("Steam");                                                    Desc="Kho game PC số 1 thế giới" }
-    @{ Name="Epic Games Launcher"; ID="EpicGames.EpicGamesLauncher";      Category="Nền Tảng Trò Chơi";  Domain="epicgames.com";         Aliases=@("Epic Games Launcher");                                      Desc="Cửa hàng game & phát game miễn phí" }
-    @{ Name="GOG Galaxy";          ID="GOG.Galaxy";                       Category="Nền Tảng Trò Chơi";  Domain="gog.com";               Aliases=@("GOG GALAXY", "GOG Galaxy");                                 Desc="Quản lý thư viện game không DRM" }
-    @{ Name="MSI Afterburner";     ID="Guru3D.Afterburner";               Category="Nền Tảng Trò Chơi";  Domain="msi.com";               Aliases=@("MSI Afterburner");                                          Desc="Đo nhiệt độ, FPS & ép xung" }
-    @{ Name="Playnite";            ID="Playnite.Playnite";                Category="Nền Tảng Trò Chơi";  Domain="playnite.link";         Aliases=@("Playnite");                                                 Desc="Gom mọi thư viện game về một nơi" }
-
-    # ── 📁 LƯU TRỮ & TRUYỀN TỆP ──
-    @{ Name="qBittorrent";         ID="qBittorrent.qBittorrent";          Category="Lưu Trữ & Truyền Tệp"; Domain="qbittorrent.org";      Aliases=@("qBittorrent");                                              Desc="Tải torrent sạch, không quảng cáo" }
-    @{ Name="LocalSend";           ID="LocalSend.LocalSend";              Category="Lưu Trữ & Truyền Tệp"; Domain="localsend.org";        Aliases=@("LocalSend");                                                Desc="Bắn file qua Wi-Fi như AirDrop" }
-    @{ Name="WinSCP";              ID="WinSCP.WinSCP";                    Category="Lưu Trữ & Truyền Tệp"; Domain="winscp.net";           Aliases=@("WinSCP", "winscp3_is1");                                    Desc="Truyền tệp qua SFTP/FTP bảo mật" }
-    @{ Name="FileZilla";           ID="TimKosse.FileZilla.Client";        Category="Lưu Trữ & Truyền Tệp"; Domain="filezilla-project.org"; Aliases=@("FileZilla Client", "FileZilla");                           Desc="Client truyền tệp FTP phổ biến" }
-    @{ Name="Rclone";              ID="Rclone.Rclone";                    Category="Lưu Trữ & Truyền Tệp"; Domain="rclone.org";           Aliases=@("Rclone");                                                   Desc="Mount & đồng bộ 70+ dịch vụ đám mây" }
-
-    # ── 🔒 BẢO MẬT & MẠNG ──
-    @{ Name="Bitwarden";           ID="Bitwarden.Bitwarden";              Category="Bảo Mật & Mạng";     Domain="bitwarden.com";         Aliases=@("Bitwarden");                                                Desc="Két mật khẩu mã hóa an toàn" }
-    @{ Name="KeePassXC";           ID="KeePassXCTeam.KeePassXC";          Category="Bảo Mật & Mạng";     Domain="keepassxc.org";         Aliases=@("KeePassXC");                                                Desc="Quản lý mật khẩu offline độc lập" }
-    @{ Name="Cryptomator";         ID="Cryptomator.Cryptomator";          Category="Bảo Mật & Mạng";     Domain="cryptomator.org";       Aliases=@("Cryptomator");                                              Desc="Mã hóa dữ liệu trước khi lên mây" }
-    @{ Name="ProtonVPN";           ID="ProtonTechnologies.ProtonVPN";     Category="Bảo Mật & Mạng";     Domain="protonvpn.com";         Aliases=@("Proton VPN", "ProtonVPN", "Proton.ProtonVPN");               Desc="VPN bảo mật cao từ Thụy Sĩ" }
-    @{ Name="RustDesk";            ID="RustDesk.RustDesk";                Category="Bảo Mật & Mạng";     Domain="rustdesk.com";          Aliases=@("RustDesk");                                                 Desc="Điều khiển máy tính từ xa tự host" }
-    @{ Name="Wireshark";           ID="WiresharkFoundation.Wireshark";    Category="Bảo Mật & Mạng";     Domain="wireshark.org";         Aliases=@("Wireshark");                                                Desc="Phân tích gói tin mạng chuyên sâu" }
-
-    # ── 🔧 THƯ VIỆN CỐT LÕI ──
-    @{ Name="VC++ Redist 2015-2022"; ID="Microsoft.VCRedist.2015+.x64";  Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Aliases=@("Visual C++", "Microsoft Visual C++");                       Desc="Cần thiết cho hầu hết game & app" }
-    @{ Name=".NET Desktop Runtime 8"; ID="Microsoft.DotNet.DesktopRuntime.8"; Category="Thư Viện Cốt Lõi"; Domain="microsoft.com";      Aliases=@("Microsoft Windows Desktop Runtime - 8", "DesktopRuntime.8"); Desc="Nền tảng chạy ứng dụng .NET 8 mới" }
-    @{ Name="DirectX End-User";    ID="Microsoft.DirectX";                Category="Thư Viện Cốt Lõi";   Domain="microsoft.com";         Aliases=@("DirectX");                                                  Desc="Thư viện đồ họa DirectX chuẩn" }
-    @{ Name="Java OpenJDK 21";     ID="EclipseAdoptium.Temurin.21.JDK";   Category="Thư Viện Cốt Lõi";   Domain="adoptium.net";          Aliases=@("Eclipse Temurin", "Temurin", "Amazon Corretto");             Desc="Môi trường chạy Java LTS tiêu chuẩn" }
-)
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 4. GIAO DIỆN XAML: BỐ CỤC 4 CỘT RỘNG RÃI + STATUS LEGEND
-# ═══════════════════════════════════════════════════════════════════════════════
+# 4. GIAO DIỆN XAML WPF
 [xml]$XAML = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -607,216 +1236,16 @@ $AppCatalog = @(
 </Window>
 "@
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 5. KHỞI TẠO CỬA SỔ & ÁNH XẠ ĐIỀU KHIỂN
-# ═══════════════════════════════════════════════════════════════════════════════
-$reader = New-Object System.Xml.XmlNodeReader $XAML
-$window = [Windows.Markup.XamlReader]::Load($reader)
-
-# Điều hướng
-$mainTabControl     = $window.FindName("MainTabControl")
-$navBtnApps         = $window.FindName("navBtnApps")
-$navBtnRepair       = $window.FindName("navBtnRepair")
-$navBtnDrivers      = $window.FindName("navBtnDrivers")
-
-# Trạng thái
-$txtSearch          = $window.FindName("txtSearch")
-$txtLog             = $window.FindName("txtLog")
-$txtStatus          = $window.FindName("txtStatus")
-$txtSelectionCount  = $window.FindName("txtSelectionCount")
-$progressBar        = $window.FindName("progressBar")
-$btnClearLog        = $window.FindName("btnClearLog")
-
-# Nút App
-$cardsContainer     = $window.FindName("CardsContainer")
-$btnInstall         = $window.FindName("btnInstall")
-$btnUninstall       = $window.FindName("btnUninstall")
-$btnUpgradeAll      = $window.FindName("btnUpgradeAll")
-$btnSelectAll       = $window.FindName("btnSelectAll")
-$btnDeselectAll     = $window.FindName("btnDeselectAll")
-$btnScanInstalled   = $window.FindName("btnScanInstalled")
-
-# Nút Sửa Hệ Thống
-$btnSfcScan                 = $window.FindName("btnSfcScan")
-$btnDismRestore             = $window.FindName("btnDismRestore")
-$btnDismCleanup             = $window.FindName("btnDismCleanup")
-$btnFixWindowsUpdate        = $window.FindName("btnFixWindowsUpdate")
-$btnRestartUpdateServices   = $window.FindName("btnRestartUpdateServices")
-$btnTriggerScanUpdate       = $window.FindName("btnTriggerScanUpdate")
-$btnFlushDnsWinsock         = $window.FindName("btnFlushDnsWinsock")
-$btnResetTcpIp              = $window.FindName("btnResetTcpIp")
-$btnClearTemp               = $window.FindName("btnClearTemp")
-$btnRestartExplorer         = $window.FindName("btnRestartExplorer")
-
-# Nút Driver
-$btnScanFaultyDrivers       = $window.FindName("btnScanFaultyDrivers")
-$btnPnpRescan               = $window.FindName("btnPnpRescan")
-$btnOpenDeviceManager       = $window.FindName("btnOpenDeviceManager")
-$btnFixDriverUpdate         = $window.FindName("btnFixDriverUpdate")
-$btnScanWindowsUpdateDrivers= $window.FindName("btnScanWindowsUpdateDrivers")
-$btnCleanDriverStore        = $window.FindName("btnCleanDriverStore")
-$btnBackupDrivers           = $window.FindName("btnBackupDrivers")
-$btnOpenBackupFolder        = $window.FindName("btnOpenBackupFolder")
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 6. ĐIỀU HƯỚNG TAB CHÍNH
-# ═══════════════════════════════════════════════════════════════════════════════
-function Set-ActiveTab {
-    param([int]$Index, [System.Windows.Controls.Button]$ActiveBtn)
-    $mainTabControl.SelectedIndex = $Index
-    $navButtons = @($navBtnApps, $navBtnRepair, $navBtnDrivers)
-    foreach ($btn in $navButtons) {
-        $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
-        $btn.BorderBrush = [System.Windows.Media.Brushes]::Transparent
-    }
-    $ActiveBtn.Foreground = [System.Windows.Media.Brushes]::White
-    $ActiveBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0EA5E9")
-}
-
-$navBtnApps.Add_Click({ Set-ActiveTab 0 $navBtnApps })
-$navBtnRepair.Add_Click({ Set-ActiveTab 1 $navBtnRepair })
-$navBtnDrivers.Add_Click({ Set-ActiveTab 2 $navBtnDrivers })
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 7. SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT RỘNG RÃI
-# ═══════════════════════════════════════════════════════════════════════════════
-$allCheckBoxes = @()
-$allItemBorders = @()
-$categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
-
-function Update-SelectionCount {
-    $selectedCount = @($allCheckBoxes | Where-Object { $_.IsChecked }).Count
-    $txtSelectionCount.Text = "$selectedCount app được chọn"
-}
-
-foreach ($cat in $categories) {
-    # ── Khung Card viền hiện đại bo tròn (ItemWidth = 296 cho 4 cột rộng rãi) ──
-    $cardBorder = New-Object System.Windows.Controls.Border
-    $cardBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10131B")
-    $cardBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
-    $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-    $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(10)
-    $cardBorder.Margin = New-Object System.Windows.Thickness(5)
-    $cardBorder.Padding = New-Object System.Windows.Thickness(12, 10, 12, 12)
-
-    $cardStack = New-Object System.Windows.Controls.StackPanel
-    $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
-
-    # Header Card
-    $headerGrid = New-Object System.Windows.Controls.Grid
-    $headerGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-
-    $headerText = New-Object System.Windows.Controls.TextBlock
-    $headerText.Text = "$cat ($($appsInCat.Count))"
-    $headerText.FontSize = 12.5
-    $headerText.FontWeight = [System.Windows.FontWeights]::Bold
-    $headerText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
-    $headerGrid.Children.Add($headerText) | Out-Null
-
-    $separator = New-Object System.Windows.Controls.Border
-    $separator.Height = 1
-    $separator.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E2638")
-    $separator.Margin = New-Object System.Windows.Thickness(0, 2, 0, 6)
-
-    $cardStack.Children.Add($headerGrid) | Out-Null
-    $cardStack.Children.Add($separator) | Out-Null
-
-    # ── Từng dòng App: Logo + Tên màu trắng mặc định (Chưa cài) ──
-    foreach ($app in $appsInCat) {
-        $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
-        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 4, 6, 4)
-        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
-        $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
-        $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
-        $rowBorder.Tag = @{ App = $app; Status = "NONE" }
-
-        $rowGrid = New-Object System.Windows.Controls.Grid
-        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
-        $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = [System.Windows.GridLength]::Auto
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
-        $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
-        $rowGrid.ColumnDefinitions.Add($col3) | Out-Null
-
-        # 1. CheckBox
-        $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $cb.Tag = $app
-        $cb.Add_Checked({ Update-SelectionCount })
-        $cb.Add_Unchecked({ Update-SelectionCount })
-        [System.Windows.Controls.Grid]::SetColumn($cb, 0)
-        $rowGrid.Children.Add($cb) | Out-Null
-        $allCheckBoxes += $cb
-
-        # 2. Logo Icon chính hãng
-        $img = New-Object System.Windows.Controls.Image
-        $img.Width = 16; $img.Height = 16
-        $img.Margin = New-Object System.Windows.Thickness(7, 0, 8, 0)
-        $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        try {
-            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-            $bmp.BeginInit()
-            $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32")
-            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-            $bmp.EndInit()
-            $img.Source = $bmp
-        } catch {}
-        [System.Windows.Controls.Grid]::SetColumn($img, 1)
-        $rowGrid.Children.Add($img) | Out-Null
-
-        # 3. Tên ứng dụng (Mặc định: TRẮNG = Chưa cài đặt)
-        $nameText = New-Object System.Windows.Controls.TextBlock
-        $nameText.Text = $app.Name
-        $nameText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
-        $nameText.FontSize = 12
-        $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
-        [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
-        $rowGrid.Children.Add($nameText) | Out-Null
-
-        # Chạm chọn toàn dòng
-        $rowBorder.Add_MouseDown({
-            $cb.IsChecked = -not $cb.IsChecked
-        })
-
-        # Hover phát sáng & giữ màu trạng thái khi rời chuột
-        $rowBorder.Add_MouseEnter({
-            if ($rowBorder.Tag.Status -eq "NONE") {
-                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
-            }
-        })
-        $rowBorder.Add_MouseLeave({
-            if ($rowBorder.Tag.Status -eq "LATEST") {
-                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
-            } elseif ($rowBorder.Tag.Status -eq "OUTDATED") {
-                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
-            } else {
-                $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
-            }
-        })
-
-        $rowBorder.Child = $rowGrid
-        $cardStack.Children.Add($rowBorder) | Out-Null
-        $allItemBorders += $rowBorder
-    }
-
-    $cardBorder.Child = $cardStack
-    $cardsContainer.Children.Add($cardBorder) | Out-Null
-}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 8. THỰC THI TIẾN TRÌNH & TERMINAL LOG MƯỢT MÀ
-# ═══════════════════════════════════════════════════════════════════════════════
+# 5. MODULES & FUNCTIONS
+# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG VÀO TERMINAL ──
 function Log-Text {
-    param([string]$Msg)
-    $txtLog.AppendText($Msg + "`r`n")
-    $txtLog.ScrollToEnd()
-    [System.Windows.Forms.Application]::DoEvents()
+    param([string]$text)
+    if ($txtTerminal) {
+        $timestamp = (Get-Date).ToString("HH:mm:ss")
+        $txtTerminal.AppendText("[$timestamp] $text`r`n")
+        $txtTerminal.ScrollToEnd()
+    }
 }
-
-$btnClearLog.Add_Click({ $txtLog.Text = "" })
 
 function Run-CliStream {
     param([string]$FileName, [string]$Args)
@@ -842,19 +1271,7 @@ function Run-CliStream {
     return $p.ExitCode
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 9. MODULE 1: LOGIC ỨNG DỤNG (PHÂN BIỆT MÀU PHIÊN BẢN CHUẨN XÁC)
-# ═══════════════════════════════════════════════════════════════════════════════
-$txtSearch.Add_TextChanged({
-    $keyword = $txtSearch.Text.Trim().ToLower()
-    foreach ($row in $allItemBorders) {
-        $app = $row.Tag.App
-        $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
-        $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-    }
-})
-
-# ── HÀM QUÉT VÀ PHÂN MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
+# ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
 function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     $txtStatus.Text = "Đang kiểm tra phiên bản app..."
@@ -978,8 +1395,231 @@ function Scan-And-ColorizeApps {
     $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
 }
 
+# ── FUNCTION: CÁC TIỆN ÍCH SỬA LỖI HỆ THỐNG ──
+function Reset-WindowsUpdateEngine {
+    Log-Text "[*] Đang dừng các dịch vụ Windows Update & BITS..."
+    Stop-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
+    Stop-Service -Name "bits" -Force -ErrorAction SilentlyContinue
+    Stop-Service -Name "cryptsvc" -Force -ErrorAction SilentlyContinue
+
+    Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
+    Rename-Item -Path "C:\Windows\SoftwareDistribution" -NewName "SoftwareDistribution.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+    Rename-Item -Path "C:\Windows\System32\catroot2" -NewName "catroot2.bak_$(Get-Random)" -Force -ErrorAction SilentlyContinue
+
+    Log-Text "[*] Khởi động lại các dịch vụ hệ thống..."
+    Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+    Start-Service -Name "bits" -ErrorAction SilentlyContinue
+    Start-Service -Name "cryptsvc" -ErrorAction SilentlyContinue
+    Log-Text "[✓] Đã khởi tạo lại dịch vụ Windows Update thành công!"
+}
+
+# 6. ENTRYPOINT & CONTROLLER
+# ── KHỞI TẠO CÁC CONTROL TỪ XAML ──
+$reader = New-Object System.Xml.XmlNodeReader $XAML
+$window = [Windows.Markup.XamlReader]::Load($reader)
+
+# Các Control chính
+$tabMain = $window.FindName("tabMain")
+$txtStatus = $window.FindName("txtStatus")
+$progressBar = $window.FindName("progressBar")
+$txtTerminal = $window.FindName("txtTerminal")
+$txtSearch = $window.FindName("txtSearch")
+$txtSelectionCount = $window.FindName("txtSelectionCount")
+$cardsContainer = $window.FindName("CardsContainer")
+
+# Tab Navigation Buttons
+$navBtnApps = $window.FindName("navBtnApps")
+$navBtnRepair = $window.FindName("navBtnRepair")
+$navBtnDrivers = $window.FindName("navBtnDrivers")
+
+# App Action Buttons
+$btnInstall = $window.FindName("btnInstall")
+$btnUpgrade = $window.FindName("btnUpgrade")
+$btnUninstall = $window.FindName("btnUninstall")
+$btnScanInstalled = $window.FindName("btnScanInstalled")
+$btnSelectAll = $window.FindName("btnSelectAll")
+$btnClear = $window.FindName("btnClear")
+$btnClearLog = $window.FindName("btnClearLog")
+
+# System Repair Buttons
+$btnSfc = $window.FindName("btnSfc")
+$btnDism = $window.FindName("btnDism")
+$btnResetWu = $window.FindName("btnResetWu")
+$btnWuTroubleshoot = $window.FindName("btnWuTroubleshoot")
+$btnFlushDns = $window.FindName("btnFlushDns")
+$btnResetWinsock = $window.FindName("btnResetWinsock")
+$btnCleanTemp = $window.FindName("btnCleanTemp")
+$btnCleanLogs = $window.FindName("btnCleanLogs")
+
+# Driver Suite Buttons
+$btnScanFaultyDrivers = $window.FindName("btnScanFaultyDrivers")
+$btnPnpRescan = $window.FindName("btnPnpRescan")
+$btnOpenDeviceManager = $window.FindName("btnOpenDeviceManager")
+$btnFixDriverUpdate = $window.FindName("btnFixDriverUpdate")
+$btnScanWindowsUpdateDrivers = $window.FindName("btnScanWindowsUpdateDrivers")
+$btnCleanDriverStore = $window.FindName("btnCleanDriverStore")
+$btnBackupDrivers = $window.FindName("btnBackupDrivers")
+$btnOpenBackupFolder = $window.FindName("btnOpenBackupFolder")
+
+# ── LOGIC ĐIỀU HƯỚNG TAB CHÍNH ──
+function Set-ActiveTab {
+    param([int]$index, $activeBtn)
+    $tabMain.SelectedIndex = $index
+
+    $buttons = @($navBtnApps, $navBtnRepair, $navBtnDrivers)
+    foreach ($btn in $buttons) {
+        $btn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $btn.BorderBrush = [System.Windows.Media.Brushes]::Transparent
+    }
+
+    $activeBtn.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    $activeBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+}
+
+$navBtnApps.Add_Click({ Set-ActiveTab 0 $navBtnApps })
+$navBtnRepair.Add_Click({ Set-ActiveTab 1 $navBtnRepair })
+$navBtnDrivers.Add_Click({ Set-ActiveTab 2 $navBtnDrivers })
+
+# ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT RỘNG RÃI ──
+$allCheckBoxes = @()
+$allItemBorders = @()
+$categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
+
+function Update-SelectionCount {
+    $selectedCount = @($allCheckBoxes | Where-Object { $_.IsChecked }).Count
+    $txtSelectionCount.Text = "$selectedCount app được chọn"
+}
+
+foreach ($cat in $categories) {
+    $cardBorder = New-Object System.Windows.Controls.Border
+    $cardBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10131B")
+    $cardBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
+    $cardBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+    $cardBorder.CornerRadius = New-Object System.Windows.CornerRadius(10)
+    $cardBorder.Margin = New-Object System.Windows.Thickness(5)
+    $cardBorder.Padding = New-Object System.Windows.Thickness(12, 10, 12, 12)
+
+    $cardStack = New-Object System.Windows.Controls.StackPanel
+    $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
+
+    # Header Card
+    $headerGrid = New-Object System.Windows.Controls.Grid
+    $headerGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+
+    $headerText = New-Object System.Windows.Controls.TextBlock
+    $headerText.Text = "$cat ($($appsInCat.Count))"
+    $headerText.FontSize = 12.5
+    $headerText.FontWeight = [System.Windows.FontWeights]::Bold
+    $headerText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    $headerGrid.Children.Add($headerText) | Out-Null
+
+    $separator = New-Object System.Windows.Controls.Border
+    $separator.Height = 1
+    $separator.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E2638")
+    $separator.Margin = New-Object System.Windows.Thickness(0, 2, 0, 6)
+
+    $cardStack.Children.Add($headerGrid) | Out-Null
+    $cardStack.Children.Add($separator) | Out-Null
+
+    # Từng dòng App: Logo + CheckBox + Tên
+    foreach ($app in $appsInCat) {
+        $rowBorder = New-Object System.Windows.Controls.Border
+        $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 4, 6, 4)
+        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+        $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+        $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
+        $rowBorder.Tag = @{ App = $app; Status = "NONE" }
+
+        $rowGrid = New-Object System.Windows.Controls.Grid
+        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
+        $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = [System.Windows.GridLength]::Auto
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($col3) | Out-Null
+
+        # 1. CheckBox
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.Tag = $app
+        $cb.Add_Checked({ Update-SelectionCount })
+        $cb.Add_Unchecked({ Update-SelectionCount })
+        [System.Windows.Controls.Grid]::SetColumn($cb, 0)
+        $rowGrid.Children.Add($cb) | Out-Null
+        $allCheckBoxes += $cb
+
+        # 2. Logo Icon chính hãng
+        $img = New-Object System.Windows.Controls.Image
+        $img.Width = 16; $img.Height = 16
+        $img.Margin = New-Object System.Windows.Thickness(7, 0, 8, 0)
+        $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        try {
+            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+            $bmp.BeginInit()
+            $bmp.UriSource = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32")
+            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.EndInit()
+            $img.Source = $bmp
+        } catch {}
+        [System.Windows.Controls.Grid]::SetColumn($img, 1)
+        $rowGrid.Children.Add($img) | Out-Null
+
+        # 3. Tên ứng dụng
+        $nameText = New-Object System.Windows.Controls.TextBlock
+        $nameText.Text = $app.Name
+        $nameText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
+        $nameText.FontSize = 12
+        $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
+        [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
+        $rowGrid.Children.Add($nameText) | Out-Null
+
+        # Chạm chọn toàn dòng
+        $rowBorder.Add_MouseDown({
+            $cb.IsChecked = -not $cb.IsChecked
+        })
+
+        # Hover phát sáng & giữ màu trạng thái khi rời chuột
+        $rowBorder.Add_MouseEnter({
+            if ($rowBorder.Tag.Status -eq "NONE") {
+                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1C2333")
+            }
+        })
+        $rowBorder.Add_MouseLeave({
+            if ($rowBorder.Tag.Status -eq "LATEST") {
+                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D2818")
+            } elseif ($rowBorder.Tag.Status -eq "OUTDATED") {
+                $rowBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2A1215")
+            } else {
+                $rowBorder.Background = [System.Windows.Media.Brushes]::Transparent
+            }
+        })
+
+        $rowBorder.Child = $rowGrid
+        $cardStack.Children.Add($rowBorder) | Out-Null
+        $allItemBorders += $rowBorder
+    }
+
+    $cardBorder.Child = $cardStack
+    $cardsContainer.Children.Add($cardBorder) | Out-Null
+}
+
+# ── LOGIC TÌM KIẾM & BỘ LỌC ──
+$txtSearch.Add_TextChanged({
+    $keyword = $txtSearch.Text.Trim().ToLower()
+    foreach ($row in $allItemBorders) {
+        $app = $row.Tag.App
+        $matched = [string]::IsNullOrEmpty($keyword) -or ($app.Name.ToLower().Contains($keyword)) -or ($app.ID.ToLower().Contains($keyword))
+        $row.Visibility = if ($matched) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+    }
+})
+
 $btnScanInstalled.Add_Click({ Scan-And-ColorizeApps })
 
+# ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP ──
 $btnInstall.Add_Click({
     $selected = @($allCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
     if ($selected.Count -eq 0) {
@@ -1008,8 +1648,6 @@ $btnInstall.Add_Click({
     }
     $txtStatus.Text = "Cài đặt hoàn tất!"
     $progressBar.Value = 100
-
-    # Quét lại để cập nhật màu sắc mới ngay lập tức
     Scan-And-ColorizeApps
 })
 
@@ -1021,8 +1659,8 @@ $btnUninstall.Add_Click({
     }
 
     $confirm = [System.Windows.Forms.MessageBox]::Show(
-        "Bạn có chắc chắn muốn gỡ cài đặt $($selected.Count) ứng dụng đã chọn?",
-        "Xác nhận gỡ bỏ",
+        "Bạn có chắc chắn muốn gỡ bỏ $($selected.Count) ứng dụng đã chọn?",
+        "Xác nhận gỡ cài đặt",
         [System.Windows.Forms.MessageBoxButtons]::YesNo,
         [System.Windows.Forms.MessageBoxIcon]::Warning
     )
@@ -1030,40 +1668,40 @@ $btnUninstall.Add_Click({
 
     $total = $selected.Count
     $idx = 0
-    Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG..."
+    Log-Text "=========================================================="
+    Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
+    Log-Text "=========================================================="
 
     foreach ($app in $selected) {
         $idx++
         $progressBar.Value = [math]::Round(($idx / $total) * 100)
         $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..."
-        Log-Text "[$idx/$total] Đang gỡ: $($app.Name)..."
+        Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (ID: $($app.ID))..."
 
-        $code = Run-CliStream "winget" "uninstall --id $($app.ID) --exact --silent"
+        $code = Run-CliStream "winget" "uninstall --id $($app.ID) --silent"
         if ($code -eq 0) {
-            Log-Text "   [✓ ĐÃ GỠ BỎ] $($app.Name)"
+            Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
         } else {
-            Log-Text "   [❌ KHÔNG THỂ GỠ] $($app.Name) (Code: $code)"
+            Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
         }
     }
-    $txtStatus.Text = "Gỡ cài đặt hoàn tất"
+    $txtStatus.Text = "Gỡ cài đặt hoàn tất!"
     $progressBar.Value = 100
-
-    # Quét lại để cập nhật màu sắc mới
     Scan-And-ColorizeApps
 })
 
-$btnUpgradeAll.Add_Click({
-    Log-Text "⚡ Đang kiểm tra và cập nhật toàn bộ ứng dụng trên máy ('winget upgrade --all')..."
-    $txtStatus.Text = "Đang cập nhật toàn bộ hệ thống..."
+$btnUpgrade.Add_Click({
+    Log-Text "=========================================================="
+    Log-Text "⚡ BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
+    Log-Text "=========================================================="
+    $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..."
     $progressBar.IsIndeterminate = $true
 
-    Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements --include-unknown"
+    Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
 
     $progressBar.IsIndeterminate = $false
-    $progressBar.Value = 100
-    $txtStatus.Text = "Nâng cấp hoàn tất"
-
-    # Quét lại để chuyển tất cả app thành màu xanh
+    $txtStatus.Text = "Nâng cấp hoàn tất!"
+    Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
     Scan-And-ColorizeApps
 })
 
@@ -1072,124 +1710,99 @@ $btnSelectAll.Add_Click({
     Update-SelectionCount
 })
 
-$btnDeselectAll.Add_Click({
+$btnClear.Add_Click({
     foreach ($cb in $allCheckBoxes) { $cb.IsChecked = $false }
     Update-SelectionCount
 })
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 10. MODULE 2: GỠ LỖI & SỬA HỆ THỐNG
-# ═══════════════════════════════════════════════════════════════════════════════
-$btnSfcScan.Add_Click({
-    Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)... Quá trình có thể mất vài phút."
+$btnClearLog.Add_Click({
+    $txtTerminal.Clear()
+})
+
+# ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
+$btnSfc.Add_Click({
+    Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
     $txtStatus.Text = "Đang chạy SFC Scan..."
     $progressBar.IsIndeterminate = $true
     Run-CliStream "sfc.exe" "/scannow"
     $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "SFC Scan hoàn tất"
+    $txtStatus.Text = "Quét SFC hoàn tất"
+    Log-Text "[✓] Quá trình SFC đã kết thúc."
 })
 
-$btnDismRestore.Add_Click({
-    Log-Text "[*] Đang khởi chạy DISM RestoreHealth... Khắc phục kho linh kiện Windows từ bản chuẩn."
+$btnDism.Add_Click({
+    Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
     $txtStatus.Text = "Đang chạy DISM RestoreHealth..."
     $progressBar.IsIndeterminate = $true
     Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
     $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "DISM Restore hoàn tất"
+    $txtStatus.Text = "DISM hoàn tất"
+    Log-Text "[✓] DISM RestoreHealth hoàn thành xuất sắc."
 })
 
-$btnDismCleanup.Add_Click({
-    Log-Text "[*] Đang dọn dẹp các bản backup cũ trong kho linh kiện (DISM Component Cleanup)..."
-    $txtStatus.Text = "Đang dọn Component Store..."
+$btnResetWu.Add_Click({
+    Log-Text "[*] Bắt đầu khởi động lại hoàn toàn dịch vụ Windows Update..."
+    $txtStatus.Text = "Đang sửa lỗi Windows Update..."
     $progressBar.IsIndeterminate = $true
-    Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup"
+    Reset-WindowsUpdateEngine
     $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Component Cleanup hoàn tất"
+    $txtStatus.Text = "Đã đặt lại Windows Update"
 })
 
-function Reset-WindowsUpdateEngine {
-    Log-Text "[*] Bắt đầu quy trình làm sạch & gỡ lỗi Windows Update triệt để..."
-    $txtStatus.Text = "Đang reset Windows Update..."
+$btnWuTroubleshoot.Add_Click({
+    Log-Text "[*] Đang khởi chạy Trình khắc phục sự cố Windows Update chính chủ Microsoft..."
+    Start-Process "ms-settings:troubleshoot"
+})
+
+$btnFlushDns.Add_Click({
+    Log-Text "[*] Đang xóa sạch bộ nhớ đệm phân giải DNS (ipconfig /flushdns)..."
+    Run-CliStream "ipconfig.exe" "/flushdns"
+    Log-Text "[✓] Đã làm mới DNS resolver cache."
+})
+
+$btnResetWinsock.Add_Click({
+    Log-Text "[*] Đang đặt lại danh mục Winsock Catalog và TCP/IP Stack..."
+    Run-CliStream "netsh.exe" "winsock reset"
+    Run-CliStream "netsh.exe" "int ip reset"
+    Log-Text "[✓] Đã khôi phục cài đặt mạng mặc định. Khuyên bạn nên khởi động lại máy."
+})
+
+$btnCleanTemp.Add_Click({
+    Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
+    $txtStatus.Text = "Đang dọn tệp rác Temp..."
     $progressBar.IsIndeterminate = $true
 
-    $services = @("wuauserv", "bits", "cryptsvc", "trustedinstaller")
-    foreach ($s in $services) {
-        Log-Text "   - Đang dừng dịch vụ: $s"
-        Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
-    }
-
-    $sd = "C:\Windows\SoftwareDistribution"
-    if (Test-Path $sd) {
-        $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
-        Log-Text "   - Xóa bỏ bộ nhớ đệm cập nhật cũ trong SoftwareDistribution..."
-        Rename-Item -Path $sd -NewName "SoftwareDistribution.bak.$timestamp" -ErrorAction SilentlyContinue
-    }
-
-    $cr2 = "C:\Windows\System32\catroot2"
-    if (Test-Path $cr2) {
-        $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
-        Log-Text "   - Làm mới chữ ký danh mục catroot2..."
-        Rename-Item -Path $cr2 -NewName "catroot2.bak.$timestamp" -ErrorAction SilentlyContinue
-    }
-
-    foreach ($s in @("cryptsvc", "bits", "wuauserv")) {
-        Log-Text "   - Đang khởi động lại dịch vụ: $s"
-        Start-Service -Name $s -ErrorAction SilentlyContinue
+    $tempPaths = @($env:TEMP, "C:\Windows\Temp")
+    foreach ($p in $tempPaths) {
+        if (Test-Path $p) {
+            Get-ChildItem -Path $p -Recurse -Force -ErrorAction SilentlyContinue |
+                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 
     $progressBar.IsIndeterminate = $false
-    $txtStatus.Text = "Đã reset xong Windows Update"
-    Log-Text "[✓] Hoàn thành! Toàn bộ cache kẹt của Windows Update đã được xóa bỏ sạch sẽ."
-}
-
-$btnFixWindowsUpdate.Add_Click({ Reset-WindowsUpdateEngine })
-
-$btnRestartUpdateServices.Add_Click({
-    Log-Text "[*] Đang restart dịch vụ BITS và Windows Update..."
-    Restart-Service -Name bits -Force -ErrorAction SilentlyContinue
-    Restart-Service -Name wuauserv -Force -ErrorAction SilentlyContinue
-    Log-Text "[✓] Đã khởi động lại dịch vụ BITS & WUAUSERV."
+    $txtStatus.Text = "Dọn tệp tạm hoàn tất"
+    Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
 })
 
-$btnTriggerScanUpdate.Add_Click({
-    Log-Text "[*] Đang gửi tín hiệu kích hoạt quét bản cập nhật mới qua USOClient..."
-    Start-Process "usoclient" -ArgumentList "StartScan" -NoNewWindow
-    Log-Text "[✓] Đã kích hoạt quét cập nhật ngầm."
+$btnCleanLogs.Add_Click({
+    Log-Text "[*] Đang xóa sạch các nhật ký sự kiện Windows Event Logs cũ..."
+    $txtStatus.Text = "Đang xóa Event Logs..."
+    $progressBar.IsIndeterminate = $true
+
+    Get-WinEvent -ListLog * -ErrorAction SilentlyContinue | ForEach-Object {
+        try { [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName) } catch {}
+    }
+
+    $progressBar.IsIndeterminate = $false
+    $txtStatus.Text = "Xóa Event Logs hoàn tất"
+    Log-Text "[✓] Nhật ký sự kiện đã được giải phóng sạch sẽ."
 })
 
-$btnFlushDnsWinsock.Add_Click({
-    Log-Text "[*] Đang làm mới cấu hình DNS và đặt lại Winsock..."
-    ipconfig /flushdns | Out-Null
-    netsh winsock reset | Out-Null
-    Log-Text "[✓] Đã Flush DNS và Reset Winsock thành công."
-})
-
-$btnResetTcpIp.Add_Click({
-    Log-Text "[*] Đang reset ngăn xếp TCP/IP..."
-    netsh int ip reset | Out-Null
-    Log-Text "[✓] Đã reset giao thức TCP/IP Stack."
-})
-
-$btnClearTemp.Add_Click({
-    Log-Text "[*] Đang dọn dẹp các thư mục temp và file rác..."
-    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Log-Text "[✓] Đã giải phóng các file rác trong Temp."
-})
-
-$btnRestartExplorer.Add_Click({
-    Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer..."
-    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-    Start-Process explorer.exe
-    Log-Text "[✓] Đã khởi động lại Taskbar & Explorer."
-})
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 11. MODULE 3: QUẢN LÝ & GỠ LỖI DRIVER
-# ═══════════════════════════════════════════════════════════════════════════════
+# ── LOGIC MODULE QUẢN LÝ & GỠ LỖI DRIVER ──
 $btnScanFaultyDrivers.Add_Click({
     Log-Text "=========================================================="
-    Log-Text "🔍 ĐANG RÀ SOÁT TẤT CẢ THIẾT BỊ & TRÌNH ĐIỀU KHIỂN..."
+    Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
     Log-Text "=========================================================="
     $txtStatus.Text = "Đang quét thiết bị lỗi..."
 
@@ -1289,9 +1902,7 @@ $btnOpenBackupFolder.Add_Click({
     }
 })
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 12. TỰ ĐỘNG QUÉT KHI MỞ CỬA SỔ & KHỞI CHẠY GIAO DIỆN
-# ═══════════════════════════════════════════════════════════════════════════════
+# ── TỰ ĐỘNG QUÉT KHI MỞ CỬA SỔ & KHỞI CHẠY GIAO DIỆN ──
 $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
