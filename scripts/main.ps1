@@ -184,14 +184,16 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'epic') { return [char]::ConvertFromUtf32(0x1F3AE) }
     if ($nameLower -match 'onedrive|gdrive|drive|dropbox') { return [char]::ConvertFromUtf32(0x2601) }
 
-    if ($Category -match 'Web') { return [char]::ConvertFromUtf32(0x1F310) }
-    if ($Category -match 'Chat|Liên') { return [char]::ConvertFromUtf32(0x1F4AC) }
-    if ($Category -match 'Dev|Triển') { return [char]::ConvertFromUtf32(0x1F4BB) }
-    if ($Category -match 'Tiện|Thống') { return [char]::ConvertFromUtf32(0x1F6E0) }
-    if ($Category -match 'Phương|Tiện') { return [char]::ConvertFromUtf32(0x1F3AC) }
-    if ($Category -match 'Phòng|Liệu') { return [char]::ConvertFromUtf32(0x1F4C4) }
-    if ($Category -match 'Chơi|Game') { return [char]::ConvertFromUtf32(0x1F3AE) }
-    if ($Category -match 'Trữ|Tệp') { return [char]::ConvertFromUtf32(0x2601) }
+    if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
+    if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($Category -match 'Dev|Triển|Development') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($Category -match 'Tiện|Thống|Utilities|Utility') { return [char]::ConvertFromUtf32(0x1F6E0) }
+    if ($Category -match 'Phương|Tiện|Multimedia|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($Category -match 'Phòng|Liệu|Documents|Office') { return [char]::ConvertFromUtf32(0x1F4C4) }
+    if ($Category -match 'Chơi|Game|Gaming') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($Category -match 'Trữ|Tệp|Storage|File') { return [char]::ConvertFromUtf32(0x2601) }
+    if ($Category -match 'Security|Bảo Mật|Network|Mạng') { return [char]::ConvertFromUtf32(0x1F6E1) }
+    if ($Category -match 'Core|Runtimes|Thư Viện') { return [char]::ConvertFromUtf32(0x2699) }
 
     return [char]::ConvertFromUtf32(0x1F4E6)
 }
@@ -385,7 +387,8 @@ foreach ($cat in $categories) {
         $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $nameText.Margin = New-Object System.Windows.Thickness(5, 0, 4, 0)
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
+        $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
+        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
