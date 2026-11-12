@@ -51,6 +51,13 @@ $thicknessOne     = New-Object System.Windows.Thickness(1)
 $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
 if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
     try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
+} else {
+    # Tự động dọn dẹp các icon cache cũ bị sai/trùng lặp (230B Microsoft generic, 588B GitHub Octocat)
+    try {
+        Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
+            $_.Length -eq 230 -or $_.Length -eq 588
+        } | Remove-Item -Force -ErrorAction SilentlyContinue
+    } catch {}
 }
 
 # Trình khóa thực thi đơn nhất (Re-entrancy Guard) chống xung đột tiến trình
@@ -186,11 +193,22 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'rustdesk|anydesk|ultraviewer|teamviewer') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($nameLower -match 'afterburner') { return [char]::ConvertFromUtf32(0x26A1) }
     if ($nameLower -match 'gimp|krita') { return [char]::ConvertFromUtf32(0x1F3A8) }
+    if ($nameLower -match 'blender') { return [char]::ConvertFromUtf32(0x1F3A8) }
+    if ($nameLower -match 'inkscape') { return [char]::ConvertFromUtf32(0x2712) }
+    if ($nameLower -match 'java|openjdk|temurin') { return [char]::ConvertFromUtf32(0x2615) }
+    if ($nameLower -match '\.net|desktopruntime') { return [char]::ConvertFromUtf32(0x1F7E3) }
+    if ($nameLower -match 'vc\+\+|visual c\+\+') { return [char]::ConvertFromUtf32(0x2699) }
+    if ($nameLower -match 'directx') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($nameLower -match 'cpu-z|hwmonitor') { return [char]::ConvertFromUtf32(0x1F39B) }
 
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
     if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($Category -match 'Dev|Triển|Development') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($Category -match 'Java') { return [char]::ConvertFromUtf32(0x2615) }
+    if ($Category -match '\.NET') { return [char]::ConvertFromUtf32(0x1F7E3) }
+    if ($Category -match 'Hardware|Monitoring') { return [char]::ConvertFromUtf32(0x1F39B) }
+    if ($Category -match 'C\+\+|System Runtimes') { return [char]::ConvertFromUtf32(0x2699) }
     if ($Category -match 'Tiện|Thống|Utilities|Utility') { return [char]::ConvertFromUtf32(0x1F6E0) }
     if ($Category -match 'Graphic|Design') { return [char]::ConvertFromUtf32(0x1F3A8) }
     if ($Category -match 'Audio|Video|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
@@ -201,6 +219,28 @@ function Get-AppFallbackGlyph {
     if ($Category -match 'Core|Runtimes|Thư Viện') { return [char]::ConvertFromUtf32(0x2699) }
 
     return [char]::ConvertFromUtf32(0x1F4E6)
+}
+
+# ── BẢN ĐỒ PHÂN BỔ CỘT THEO CHỦ ĐỀ CHUYÊN BIỆT (4 CỘT CÂN BẰNG HOÀN HẢO) ──
+$categoryColumnMap = @{
+    "Web Browsers"           = 0
+    "Communication"          = 0
+    "Remote Desktop"         = 0
+
+    "Development"            = 1
+    ".NET Runtimes"          = 1
+    "Java Runtimes"          = 1
+
+    "System Utilities"       = 2
+    "Hardware & Monitoring"  = 2
+    "C++ & System Runtimes"  = 2
+    "Security & Network"     = 2
+
+    "Audio & Video"          = 3
+    "Graphics & Design"      = 3
+    "Documents & Office"     = 3
+    "Game Launchers"         = 3
+    "File Transfer & Cloud"  = 3
 }
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
@@ -351,34 +391,44 @@ foreach ($cat in $categories) {
                 $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
                 $img.Visibility = [System.Windows.Visibility]::Visible
             } catch {}
-        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-            try {
-                $remoteUri = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
-                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                $bmp.BeginInit()
-                $bmp.UriSource = $remoteUri
-                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                $bmp.EndInit()
+        } else {
+            $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
+                $app.IconUrl
+            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32"
+            } else {
+                $null
+            }
 
-                # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
-                $cacheClosure = {
-                    param($sender, $e)
-                    try {
-                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                        $img.Visibility = [System.Windows.Visibility]::Visible
-                        if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
-                            $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                            $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
-                            $fs = [System.IO.File]::OpenWrite($localIconPath)
-                            $encoder.Save($fs)
-                            $fs.Close()
-                        }
-                    } catch {}
-                }.GetNewClosure()
+            if ($remoteIconTarget) {
+                try {
+                    $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
+                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                    $bmp.BeginInit()
+                    $bmp.UriSource = $remoteUri
+                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                    $bmp.EndInit()
 
-                $bmp.Add_DownloadCompleted($cacheClosure)
-                $img.Source = $bmp
-            } catch {}
+                    # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
+                    $cacheClosure = {
+                        param($sender, $e)
+                        try {
+                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                            $img.Visibility = [System.Windows.Visibility]::Visible
+                            if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
+                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
+                                $fs = [System.IO.File]::OpenWrite($localIconPath)
+                                $encoder.Save($fs)
+                                $fs.Close()
+                            }
+                        } catch {}
+                    }.GetNewClosure()
+
+                    $bmp.Add_DownloadCompleted($cacheClosure)
+                    $img.Source = $bmp
+                } catch {}
+            }
         }
         [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
         $rowGrid.Children.Add($iconContainer) | Out-Null
@@ -495,12 +545,11 @@ foreach ($cat in $categories) {
     $cardBorder.Child = $cardStack
     $categoryCardMap[$cardBorder] = $rowsInCard
     
-    # Thêm card vào 1 trong 4 cột dọc tương ứng
-    $targetColPanel = if ($cardCols[0]) { $cardCols[$catIndex % 4] } else { $null }
+    # Thêm card vào cột dọc tương ứng theo bản đồ chủ đề (4 cột cân bằng hoàn hảo)
+    $targetColIndex = if ($categoryColumnMap.ContainsKey($cat)) { $categoryColumnMap[$cat] } else { $catIndex % 4 }
+    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
     if ($targetColPanel) {
         $targetColPanel.Children.Add($cardBorder) | Out-Null
-    } elseif ($cardsContainer) {
-        $cardsContainer.Children.Add($cardBorder) | Out-Null
     }
     $catIndex++
 }

@@ -206,858 +206,1007 @@ Add-Type -AssemblyName System.Windows.Forms
 # 3. KHO DỮ LIỆU ỨNG DỤNG (NHẬN TỪ CONFIG/APPS.JSON)
 $appsRawJson = @'
 [
-  {
-    "IDn": 1,
-    "Name": "Google Chrome",
-    "ID": "Google.Chrome",
-    "Category": "Web Browsers",
-    "Domain": "google.com",
-    "Aliases": [
-      "Google Chrome",
-      "Google.Chrome"
-    ]
-  },
-  {
-    "IDn": 2,
-    "Name": "Mozilla Firefox",
-    "ID": "Mozilla.Firefox",
-    "Category": "Web Browsers",
-    "Domain": "mozilla.org",
-    "Aliases": [
-      "Mozilla Firefox",
-      "Firefox",
-      "Mozilla.Firefox"
-    ]
-  },
-  {
-    "IDn": 3,
-    "Name": "Brave Browser",
-    "ID": "Brave.Brave",
-    "Category": "Web Browsers",
-    "Domain": "brave.com",
-    "Aliases": [
-      "Brave",
-      "BraveSoftware",
-      "Brave.Brave",
-      "Brave Browser"
-    ]
-  },
-  {
-    "IDn": 4,
-    "Name": "LibreWolf",
-    "ID": "LibreWolf.LibreWolf",
-    "Category": "Web Browsers",
-    "Domain": "librewolf.net",
-    "Aliases": [
-      "LibreWolf",
-      "LibreWolf.LibreWolf"
-    ]
-  },
-  {
-    "IDn": 5,
-    "Name": "Vivaldi",
-    "ID": "VivaldiTechnologies.Vivaldi",
-    "Category": "Web Browsers",
-    "Domain": "vivaldi.com",
-    "Aliases": [
-      "Vivaldi",
-      "VivaldiTechnologies.Vivaldi"
-    ]
-  },
-  {
-    "IDn": 6,
-    "Name": "Tor Browser",
-    "ID": "TorProject.TorBrowser",
-    "Category": "Web Browsers",
-    "Domain": "torproject.org",
-    "Aliases": [
-      "Tor Browser",
-      "TorProject.TorBrowser"
-    ]
-  },
-  {
-    "IDn": 7,
-    "Name": "Opera GX",
-    "ID": "Opera.OperaGX",
-    "Category": "Web Browsers",
-    "Domain": "opera.com",
-    "Aliases": [
-      "Opera GX",
-      "OperaGX",
-      "Opera.OperaGX"
-    ]
-  },
-  {
-    "IDn": 8,
-    "Name": "Discord",
-    "ID": "Discord.Discord",
-    "Category": "Communication",
-    "Domain": "discord.com",
-    "Aliases": [
-      "Discord",
-      "Discord.Discord"
-    ]
-  },
-  {
-    "IDn": 9,
-    "Name": "Telegram",
-    "ID": "Telegram.TelegramDesktop",
-    "Category": "Communication",
-    "Domain": "telegram.org",
-    "Aliases": [
-      "Telegram Desktop",
-      "Telegram",
-      "TelegramDesktop",
-      "Telegram.TelegramDesktop"
-    ]
-  },
-  {
-    "IDn": 10,
-    "Name": "Signal",
-    "ID": "OpenWhisperSystems.Signal",
-    "Category": "Communication",
-    "Domain": "signal.org",
-    "Aliases": [
-      "Signal",
-      "OpenWhisperSystems.Signal"
-    ]
-  },
-  {
-    "IDn": 11,
-    "Name": "Zalo",
-    "ID": "VNG.Zalo",
-    "Category": "Communication",
-    "Domain": "zalo.me",
-    "Aliases": [
-      "Zalo",
-      "VNGCorp.Zalo",
-      "VNG.Zalo"
-    ]
-  },
-  {
-    "IDn": 12,
-    "Name": "Zoom",
-    "ID": "Zoom.Zoom",
-    "Category": "Communication",
-    "Domain": "zoom.us",
-    "Aliases": [
-      "Zoom",
-      "Zoom Workplace",
-      "Zoom.Zoom"
-    ]
-  },
-  {
-    "IDn": 13,
-    "Name": "Slack",
-    "ID": "SlackTechnologies.Slack",
-    "Category": "Communication",
-    "Domain": "slack.com",
-    "Aliases": [
-      "Slack",
-      "SlackTechnologies.Slack"
-    ]
-  },
-  {
-    "IDn": 14,
-    "Name": "WhatsApp",
-    "ID": "WhatsApp.WhatsApp",
-    "Category": "Communication",
-    "Domain": "whatsapp.com",
-    "Aliases": [
-      "WhatsApp",
-      "WhatsApp.WhatsApp",
-      "WhatsApp Desktop"
-    ]
-  },
-  {
-    "IDn": 15,
-    "Name": "Microsoft Teams",
-    "ID": "Microsoft.Teams",
-    "Category": "Communication",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Microsoft Teams",
-      "MSTeams",
-      "Microsoft.Teams"
-    ]
-  },
-  {
-    "IDn": 16,
-    "Name": "RustDesk",
-    "ID": "RustDesk.RustDesk",
-    "Category": "Remote Desktop",
-    "Domain": "rustdesk.com",
-    "Aliases": [
-      "RustDesk",
-      "RustDesk.RustDesk"
-    ]
-  },
-  {
-    "IDn": 17,
-    "Name": "AnyDesk",
-    "ID": "AnyDesk.AnyDesk",
-    "Category": "Remote Desktop",
-    "Domain": "anydesk.com",
-    "Aliases": [
-      "AnyDesk",
-      "AnyDesk.AnyDesk"
-    ]
-  },
-  {
-    "IDn": 18,
-    "Name": "UltraViewer",
-    "ID": "DucFabulous.UltraViewer",
-    "Category": "Remote Desktop",
-    "Domain": "ultraviewer.net",
-    "Aliases": [
-      "UltraViewer",
-      "Ultra Viewer",
-      "DucFabulous.UltraViewer"
-    ]
-  },
-  {
-    "IDn": 19,
-    "Name": "TeamViewer",
-    "ID": "TeamViewer.TeamViewer",
-    "Category": "Remote Desktop",
-    "Domain": "teamviewer.com",
-    "Aliases": [
-      "TeamViewer",
-      "Team Viewer",
-      "TeamViewer.TeamViewer"
-    ]
-  },
-  {
-    "IDn": 20,
-    "Name": "VS Code",
-    "ID": "Microsoft.VisualStudioCode",
-    "Category": "Development",
-    "Domain": "code.visualstudio.com",
-    "Aliases": [
-      "Microsoft Visual Studio Code",
-      "Visual Studio Code",
-      "VS Code",
-      "Microsoft.VisualStudioCode"
-    ]
-  },
-  {
-    "IDn": 21,
-    "Name": "Git",
-    "ID": "Git.Git",
-    "Category": "Development",
-    "Domain": "git-scm.com",
-    "Aliases": [
-      "Git for Windows",
-      "Git.Git"
-    ]
-  },
-  {
-    "IDn": 22,
-    "Name": "Windows Terminal",
-    "ID": "Microsoft.WindowsTerminal",
-    "Category": "Development",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Windows Terminal",
-      "Microsoft.WindowsTerminal",
-      "Terminal",
-      "WindowsTerminal",
-      "9N0DX20HK701",
-      "Bảng điều khiển Windows"
-    ]
-  },
-  {
-    "IDn": 23,
-    "Name": "Windows Terminal Preview",
-    "ID": "Microsoft.WindowsTerminal.Preview",
-    "Category": "Development",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Windows Terminal Preview",
-      "Microsoft.WindowsTerminal.Preview",
-      "Terminal Preview",
-      "WindowsTerminalPreview",
-      "9N8G5RFZ9XK3",
-      "Bảng điều khiển Windows (Bản xem trước)",
-      "Bản xem trước của Bảng điều khiển Windows"
-    ]
-  },
-  {
-    "IDn": 24,
-    "Name": "Python 3.12",
-    "ID": "Python.Python.3.12",
-    "Category": "Development",
-    "Domain": "python.org",
-    "Aliases": [
-      "Python 3.12",
-      "Python 3.12.x",
-      "Python.Python.3.12"
-    ]
-  },
-  {
-    "IDn": 25,
-    "Name": "Node.js LTS",
-    "ID": "OpenJS.NodeJS.LTS",
-    "Category": "Development",
-    "Domain": "nodejs.org",
-    "Aliases": [
-      "Node.js",
-      "OpenJS.NodeJS",
-      "OpenJS.NodeJS.LTS",
-      "NodeJS"
-    ]
-  },
-  {
-    "IDn": 26,
-    "Name": "Docker Desktop",
-    "ID": "Docker.DockerDesktop",
-    "Category": "Development",
-    "Domain": "docker.com",
-    "Aliases": [
-      "Docker Desktop",
-      "Docker.DockerDesktop"
-    ]
-  },
-  {
-    "IDn": 27,
-    "Name": "Notepad++",
-    "ID": "Notepad++.Notepad++",
-    "Category": "Development",
-    "Domain": "notepad-plus-plus.org",
-    "Aliases": [
-      "Notepad++",
-      "Notepad++.Notepad++"
-    ]
-  },
-  {
-    "IDn": 28,
-    "Name": "Postman",
-    "ID": "Postman.Postman",
-    "Category": "Development",
-    "Domain": "postman.com",
-    "Aliases": [
-      "Postman",
-      "Postman.Postman"
-    ]
-  },
-  {
-    "IDn": 29,
-    "Name": "DBeaver CE",
-    "ID": "dbeaver.dbeaver",
-    "Category": "Development",
-    "Domain": "dbeaver.io",
-    "Aliases": [
-      "DBeaver",
-      "DBeaver CE",
-      "dbeaver.dbeaver"
-    ]
-  },
-  {
-    "IDn": 30,
-    "Name": "Go Lang",
-    "ID": "GoLang.Go",
-    "Category": "Development",
-    "Domain": "golang.org",
-    "Aliases": [
-      "Go Programming Language",
-      "GoLang",
-      "GoLang.Go"
-    ]
-  },
-  {
-    "IDn": 31,
-    "Name": "Rust (rustup)",
-    "ID": "Rustlang.Rustup",
-    "Category": "Development",
-    "Domain": "rust-lang.org",
-    "Aliases": [
-      "Rustup",
-      "rustup",
-      "Rustlang.Rustup"
-    ]
-  },
-  {
-    "IDn": 32,
-    "Name": "7-Zip",
-    "ID": "7zip.7zip",
-    "Category": "System Utilities",
-    "Domain": "7-zip.org",
-    "Aliases": [
-      "7-Zip",
-      "7zip",
-      "7zip.7zip"
-    ]
-  },
-  {
-    "IDn": 33,
-    "Name": "WinRAR",
-    "ID": "RARLab.WinRAR",
-    "Category": "System Utilities",
-    "Domain": "rarlab.com",
-    "Aliases": [
-      "WinRAR",
-      "RARLab.WinRAR"
-    ]
-  },
-  {
-    "IDn": 34,
-    "Name": "Everything",
-    "ID": "voidtools.Everything",
-    "Category": "System Utilities",
-    "Domain": "voidtools.com",
-    "Aliases": [
-      "Everything",
-      "voidtools.Everything"
-    ]
-  },
-  {
-    "IDn": 35,
-    "Name": "PowerToys",
-    "ID": "Microsoft.PowerToys",
-    "Category": "System Utilities",
-    "Domain": "github.com",
-    "Aliases": [
-      "PowerToys",
-      "Microsoft.PowerToys"
-    ]
-  },
-  {
-    "IDn": 36,
-    "Name": "Flow Launcher",
-    "ID": "Flow-Launcher.Flow-Launcher",
-    "Category": "System Utilities",
-    "Domain": "flowlauncher.com",
-    "Aliases": [
-      "Flow Launcher",
-      "Flow-Launcher",
-      "Flow-Launcher.Flow-Launcher"
-    ]
-  },
-  {
-    "IDn": 37,
-    "Name": "Revo Uninstaller",
-    "ID": "VSRevoGroup.RevoUninstaller",
-    "Category": "System Utilities",
-    "Domain": "revouninstaller.com",
-    "Aliases": [
-      "Revo Uninstaller",
-      "VSRevoGroup.RevoUninstaller"
-    ]
-  },
-  {
-    "IDn": 38,
-    "Name": "TreeSize Free",
-    "ID": "JAMSoftware.TreeSize.Free",
-    "Category": "System Utilities",
-    "Domain": "jam-software.com",
-    "Aliases": [
-      "TreeSize",
-      "TreeSize Free",
-      "JAMSoftware.TreeSize.Free"
-    ]
-  },
-  {
-    "IDn": 39,
-    "Name": "ShareX",
-    "ID": "ShareX.ShareX",
-    "Category": "System Utilities",
-    "Domain": "getsharex.com",
-    "Aliases": [
-      "ShareX",
-      "ShareX.ShareX"
-    ]
-  },
-  {
-    "IDn": 40,
-    "Name": "BleachBit",
-    "ID": "BleachBit.BleachBit",
-    "Category": "System Utilities",
-    "Domain": "bleachbit.org",
-    "Aliases": [
-      "BleachBit",
-      "BleachBit.BleachBit"
-    ]
-  },
-  {
-    "IDn": 41,
-    "Name": "FanControl",
-    "ID": "Rem0o.FanControl",
-    "Category": "System Utilities",
-    "Domain": "github.com",
-    "Aliases": [
-      "FanControl",
-      "Rem0o.FanControl"
-    ]
-  },
-  {
-    "IDn": 42,
-    "Name": "VLC Media Player",
-    "ID": "VideoLAN.VLC",
-    "Category": "Audio & Video",
-    "Domain": "videolan.org",
-    "Aliases": [
-      "VLC media player",
-      "VLC",
-      "VideoLAN.VLC"
-    ]
-  },
-  {
-    "IDn": 43,
-    "Name": "OBS Studio",
-    "ID": "OBSProject.OBSStudio",
-    "Category": "Audio & Video",
-    "Domain": "obsproject.com",
-    "Aliases": [
-      "OBS Studio",
-      "OBSProject.OBSStudio"
-    ]
-  },
-  {
-    "IDn": 44,
-    "Name": "Spotify",
-    "ID": "Spotify.Spotify",
-    "Category": "Audio & Video",
-    "Domain": "spotify.com",
-    "Aliases": [
-      "Spotify",
-      "Spotify.Spotify"
-    ]
-  },
-  {
-    "IDn": 45,
-    "Name": "GIMP",
-    "ID": "GIMP.GIMP",
-    "Category": "Graphics & Design",
-    "Domain": "gimp.org",
-    "Aliases": [
-      "GIMP",
-      "GIMP.GIMP"
-    ]
-  },
-  {
-    "IDn": 46,
-    "Name": "Audacity",
-    "ID": "Audacity.Audacity",
-    "Category": "Audio & Video",
-    "Domain": "audacityteam.org",
-    "Aliases": [
-      "Audacity",
-      "Audacity.Audacity"
-    ]
-  },
-  {
-    "IDn": 47,
-    "Name": "HandBrake",
-    "ID": "HandBrake.HandBrake",
-    "Category": "Audio & Video",
-    "Domain": "handbrake.fr",
-    "Aliases": [
-      "HandBrake",
-      "HandBrake.HandBrake"
-    ]
-  },
-  {
-    "IDn": 48,
-    "Name": "Krita",
-    "ID": "KDE.Krita",
-    "Category": "Graphics & Design",
-    "Domain": "krita.org",
-    "Aliases": [
-      "Krita",
-      "KDE.Krita"
-    ]
-  },
-  {
-    "IDn": 49,
-    "Name": "K-Lite Codec Mega",
-    "ID": "CodecGuide.K-LiteCodecPack.Mega",
-    "Category": "Audio & Video",
-    "Domain": "codecguide.com",
-    "Aliases": [
-      "K-Lite Codec Pack",
-      "K-Lite",
-      "CodecGuide.K-LiteCodecPack.Mega"
-    ]
-  },
-  {
-    "IDn": 50,
-    "Name": "LibreOffice",
-    "ID": "TheDocumentFoundation.LibreOffice",
-    "Category": "Documents & Office",
-    "Domain": "libreoffice.org",
-    "Aliases": [
-      "LibreOffice",
-      "TheDocumentFoundation.LibreOffice"
-    ]
-  },
-  {
-    "IDn": 51,
-    "Name": "Obsidian",
-    "ID": "Obsidian.Obsidian",
-    "Category": "Documents & Office",
-    "Domain": "obsidian.md",
-    "Aliases": [
-      "Obsidian",
-      "Obsidian.Obsidian"
-    ]
-  },
-  {
-    "IDn": 52,
-    "Name": "Notion",
-    "ID": "Notion.Notion",
-    "Category": "Documents & Office",
-    "Domain": "notion.so",
-    "Aliases": [
-      "Notion",
-      "Notion.Notion"
-    ]
-  },
-  {
-    "IDn": 53,
-    "Name": "SumatraPDF",
-    "ID": "SumatraPDF.SumatraPDF",
-    "Category": "Documents & Office",
-    "Domain": "sumatrapdfreader.org",
-    "Aliases": [
-      "SumatraPDF",
-      "SumatraPDF.SumatraPDF"
-    ]
-  },
-  {
-    "IDn": 54,
-    "Name": "Foxit PDF Reader",
-    "ID": "Foxit.FoxitReader",
-    "Category": "Documents & Office",
-    "Domain": "foxit.com",
-    "Aliases": [
-      "Foxit PDF Reader",
-      "Foxit Reader",
-      "Foxit.FoxitReader"
-    ]
-  },
-  {
-    "IDn": 55,
-    "Name": "Steam",
-    "ID": "Valve.Steam",
-    "Category": "Game Launchers",
-    "Domain": "steampowered.com",
-    "Aliases": [
-      "Steam",
-      "Valve.Steam"
-    ]
-  },
-  {
-    "IDn": 56,
-    "Name": "Epic Games Launcher",
-    "ID": "EpicGames.EpicGamesLauncher",
-    "Category": "Game Launchers",
-    "Domain": "epicgames.com",
-    "Aliases": [
-      "Epic Games Launcher",
-      "EpicGames.EpicGamesLauncher"
-    ]
-  },
-  {
-    "IDn": 57,
-    "Name": "GOG Galaxy",
-    "ID": "GOG.Galaxy",
-    "Category": "Game Launchers",
-    "Domain": "gog.com",
-    "Aliases": [
-      "GOG GALAXY",
-      "GOG Galaxy",
-      "GOG.Galaxy"
-    ]
-  },
-  {
-    "IDn": 58,
-    "Name": "MSI Afterburner",
-    "ID": "Guru3D.Afterburner",
-    "Category": "System Utilities",
-    "Domain": "msi.com",
-    "Aliases": [
-      "MSI Afterburner",
-      "Guru3D.Afterburner"
-    ]
-  },
-  {
-    "IDn": 59,
-    "Name": "Playnite",
-    "ID": "Playnite.Playnite",
-    "Category": "Game Launchers",
-    "Domain": "playnite.link",
-    "Aliases": [
-      "Playnite",
-      "Playnite.Playnite"
-    ]
-  },
-  {
-    "IDn": 60,
-    "Name": "qBittorrent",
-    "ID": "qBittorrent.qBittorrent",
-    "Category": "File Transfer & Cloud",
-    "Domain": "qbittorrent.org",
-    "Aliases": [
-      "qBittorrent",
-      "qBittorrent.qBittorrent"
-    ]
-  },
-  {
-    "IDn": 61,
-    "Name": "LocalSend",
-    "ID": "LocalSend.LocalSend",
-    "Category": "File Transfer & Cloud",
-    "Domain": "localsend.org",
-    "Aliases": [
-      "LocalSend",
-      "LocalSend.LocalSend"
-    ]
-  },
-  {
-    "IDn": 62,
-    "Name": "WinSCP",
-    "ID": "WinSCP.WinSCP",
-    "Category": "File Transfer & Cloud",
-    "Domain": "winscp.net",
-    "Aliases": [
-      "WinSCP",
-      "winscp3_is1",
-      "WinSCP.WinSCP"
-    ]
-  },
-  {
-    "IDn": 63,
-    "Name": "FileZilla",
-    "ID": "TimKosse.FileZilla.Client",
-    "Category": "File Transfer & Cloud",
-    "Domain": "filezilla-project.org",
-    "Aliases": [
-      "FileZilla Client",
-      "FileZilla",
-      "TimKosse.FileZilla.Client"
-    ]
-  },
-  {
-    "IDn": 64,
-    "Name": "Rclone",
-    "ID": "Rclone.Rclone",
-    "Category": "File Transfer & Cloud",
-    "Domain": "rclone.org",
-    "Aliases": [
-      "Rclone",
-      "Rclone.Rclone"
-    ]
-  },
-  {
-    "IDn": 65,
-    "Name": "Bitwarden",
-    "ID": "Bitwarden.Bitwarden",
-    "Category": "Security & Network",
-    "Domain": "bitwarden.com",
-    "Aliases": [
-      "Bitwarden",
-      "Bitwarden.Bitwarden"
-    ]
-  },
-  {
-    "IDn": 66,
-    "Name": "KeePassXC",
-    "ID": "KeePassXCTeam.KeePassXC",
-    "Category": "Security & Network",
-    "Domain": "keepassxc.org",
-    "Aliases": [
-      "KeePassXC",
-      "KeePassXCTeam.KeePassXC"
-    ]
-  },
-  {
-    "IDn": 67,
-    "Name": "Cryptomator",
-    "ID": "Cryptomator.Cryptomator",
-    "Category": "Security & Network",
-    "Domain": "cryptomator.org",
-    "Aliases": [
-      "Cryptomator",
-      "Cryptomator.Cryptomator"
-    ]
-  },
-  {
-    "IDn": 68,
-    "Name": "ProtonVPN",
-    "ID": "ProtonTechnologies.ProtonVPN",
-    "Category": "Security & Network",
-    "Domain": "protonvpn.com",
-    "Aliases": [
-      "Proton VPN",
-      "ProtonVPN",
-      "Proton.ProtonVPN",
-      "ProtonTechnologies.ProtonVPN"
-    ]
-  },
-  {
-    "IDn": 69,
-    "Name": "Wireshark",
-    "ID": "WiresharkFoundation.Wireshark",
-    "Category": "Security & Network",
-    "Domain": "wireshark.org",
-    "Aliases": [
-      "Wireshark",
-      "WiresharkFoundation.Wireshark"
-    ]
-  },
-  {
-    "IDn": 70,
-    "Name": "VC++ Redist 2015-2022",
-    "ID": "Microsoft.VCRedist.2015+.x64",
-    "Category": "Core Runtimes",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Visual C++",
-      "Microsoft Visual C++",
-      "Microsoft Visual C++ 2015-2022 Redistributable",
-      "Microsoft.VCRedist.2015+.x64"
-    ]
-  },
-  {
-    "IDn": 71,
-    "Name": ".NET Desktop Runtime 8",
-    "ID": "Microsoft.DotNet.DesktopRuntime.8",
-    "Category": "Core Runtimes",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Microsoft Windows Desktop Runtime - 8",
-      "DesktopRuntime.8",
-      "Microsoft .NET Desktop Runtime 8",
-      "Microsoft.DotNet.DesktopRuntime.8"
-    ]
-  },
-  {
-    "IDn": 72,
-    "Name": "DirectX End-User",
-    "ID": "Microsoft.DirectX",
-    "Category": "Core Runtimes",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "DirectX",
-      "Microsoft DirectX",
-      "DirectX End-User Runtimes",
-      "Microsoft.DirectX"
-    ]
-  },
-  {
-    "IDn": 73,
-    "Name": "Java OpenJDK 21",
-    "ID": "EclipseAdoptium.Temurin.21.JDK",
-    "Category": "Core Runtimes",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Adoptium",
-      "Temurin 21",
-      "OpenJDK 21",
-      "Eclipse Temurin 21",
-      "EclipseAdoptium.Temurin.21.JDK"
-    ]
-  }
+    {
+        "ID":  "Google.Chrome",
+        "Name":  "Google Chrome",
+        "Domain":  "google.com",
+        "Aliases":  [
+                        "Google Chrome",
+                        "Google.Chrome"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  1
+    },
+    {
+        "ID":  "Mozilla.Firefox",
+        "Name":  "Mozilla Firefox",
+        "Domain":  "mozilla.org",
+        "Aliases":  [
+                        "Mozilla Firefox",
+                        "Firefox",
+                        "Mozilla.Firefox"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  2
+    },
+    {
+        "ID":  "Brave.Brave",
+        "Name":  "Brave Browser",
+        "Domain":  "brave.com",
+        "Aliases":  [
+                        "Brave",
+                        "BraveSoftware",
+                        "Brave.Brave",
+                        "Brave Browser"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  3
+    },
+    {
+        "ID":  "LibreWolf.LibreWolf",
+        "Name":  "LibreWolf",
+        "Domain":  "librewolf.net",
+        "Aliases":  [
+                        "LibreWolf",
+                        "LibreWolf.LibreWolf"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  4
+    },
+    {
+        "ID":  "VivaldiTechnologies.Vivaldi",
+        "Name":  "Vivaldi",
+        "Domain":  "vivaldi.com",
+        "Aliases":  [
+                        "Vivaldi",
+                        "VivaldiTechnologies.Vivaldi"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  5
+    },
+    {
+        "ID":  "TorProject.TorBrowser",
+        "Name":  "Tor Browser",
+        "Domain":  "torproject.org",
+        "Aliases":  [
+                        "Tor Browser",
+                        "TorProject.TorBrowser"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  6
+    },
+    {
+        "ID":  "Opera.OperaGX",
+        "Name":  "Opera GX",
+        "Domain":  "opera.com",
+        "Aliases":  [
+                        "Opera GX",
+                        "OperaGX",
+                        "Opera.OperaGX"
+                    ],
+        "Category":  "Web Browsers",
+        "IDn":  7
+    },
+    {
+        "ID":  "Discord.Discord",
+        "Name":  "Discord",
+        "Domain":  "discord.com",
+        "Aliases":  [
+                        "Discord",
+                        "Discord.Discord"
+                    ],
+        "Category":  "Communication",
+        "IDn":  8
+    },
+    {
+        "ID":  "Telegram.TelegramDesktop",
+        "Name":  "Telegram",
+        "Domain":  "telegram.org",
+        "Aliases":  [
+                        "Telegram Desktop",
+                        "Telegram",
+                        "TelegramDesktop",
+                        "Telegram.TelegramDesktop"
+                    ],
+        "Category":  "Communication",
+        "IDn":  9
+    },
+    {
+        "ID":  "OpenWhisperSystems.Signal",
+        "Name":  "Signal",
+        "Domain":  "signal.org",
+        "Aliases":  [
+                        "Signal",
+                        "OpenWhisperSystems.Signal"
+                    ],
+        "Category":  "Communication",
+        "IDn":  10
+    },
+    {
+        "ID":  "VNG.Zalo",
+        "Name":  "Zalo",
+        "Domain":  "zalo.me",
+        "Aliases":  [
+                        "Zalo",
+                        "VNG.Zalo"
+                    ],
+        "Category":  "Communication",
+        "IDn":  11
+    },
+    {
+        "ID":  "Zoom.Zoom",
+        "Name":  "Zoom",
+        "Domain":  "zoom.us",
+        "Aliases":  [
+                        "Zoom",
+                        "Zoom.Zoom"
+                    ],
+        "Category":  "Communication",
+        "IDn":  12
+    },
+    {
+        "ID":  "SlackTechnologies.Slack",
+        "Name":  "Slack",
+        "Domain":  "slack.com",
+        "Aliases":  [
+                        "Slack",
+                        "SlackTechnologies.Slack"
+                    ],
+        "Category":  "Communication",
+        "IDn":  13
+    },
+    {
+        "ID":  "WhatsApp.WhatsApp",
+        "Name":  "WhatsApp",
+        "Domain":  "whatsapp.com",
+        "Aliases":  [
+                        "WhatsApp",
+                        "WhatsApp.WhatsApp"
+                    ],
+        "Category":  "Communication",
+        "IDn":  14
+    },
+    {
+        "ID":  "Microsoft.Teams",
+        "Name":  "Microsoft Teams",
+        "Domain":  "teams.microsoft.com",
+        "Aliases":  [
+                        "Microsoft Teams",
+                        "Teams",
+                        "Microsoft.Teams"
+                    ],
+        "Category":  "Communication",
+        "IDn":  15
+    },
+    {
+        "ID":  "RustDesk.RustDesk",
+        "Name":  "RustDesk",
+        "Domain":  "rustdesk.com",
+        "Aliases":  [
+                        "RustDesk",
+                        "RustDesk.RustDesk"
+                    ],
+        "Category":  "Remote Desktop",
+        "IDn":  16
+    },
+    {
+        "ID":  "AnyDesk.AnyDesk",
+        "Name":  "AnyDesk",
+        "Domain":  "anydesk.com",
+        "Aliases":  [
+                        "AnyDesk",
+                        "AnyDesk.AnyDesk"
+                    ],
+        "Category":  "Remote Desktop",
+        "IDn":  17
+    },
+    {
+        "ID":  "DucFabulous.UltraViewer",
+        "Name":  "UltraViewer",
+        "Domain":  "ultraviewer.net",
+        "Aliases":  [
+                        "UltraViewer",
+                        "DucFabulous.UltraViewer"
+                    ],
+        "Category":  "Remote Desktop",
+        "IDn":  18
+    },
+    {
+        "ID":  "TeamViewer.TeamViewer",
+        "Name":  "TeamViewer",
+        "Domain":  "teamviewer.com",
+        "Aliases":  [
+                        "TeamViewer",
+                        "TeamViewer.TeamViewer"
+                    ],
+        "Category":  "Remote Desktop",
+        "IDn":  19
+    },
+    {
+        "ID":  "Microsoft.VisualStudioCode",
+        "Name":  "VS Code",
+        "Domain":  "code.visualstudio.com",
+        "Aliases":  [
+                        "Visual Studio Code",
+                        "VS Code",
+                        "VSCode",
+                        "Microsoft.VisualStudioCode"
+                    ],
+        "Category":  "Development",
+        "IDn":  20
+    },
+    {
+        "ID":  "Git.Git",
+        "Name":  "Git",
+        "Domain":  "git-scm.com",
+        "Aliases":  [
+                        "Git",
+                        "Git.Git"
+                    ],
+        "Category":  "Development",
+        "IDn":  21
+    },
+    {
+        "ID":  "Microsoft.WindowsTerminal",
+        "Name":  "Windows Terminal",
+        "Domain":  "microsoft.com",
+        "Aliases":  [
+                        "Windows Terminal",
+                        "Microsoft.WindowsTerminal"
+                    ],
+        "IconUrl":  "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images/Square44x44Logo.targetsize-32.png",
+        "Category":  "Development",
+        "IDn":  22
+    },
+    {
+        "ID":  "Microsoft.WindowsTerminal.Preview",
+        "Name":  "Windows Terminal Preview",
+        "Domain":  "microsoft.com",
+        "Aliases":  [
+                        "Windows Terminal Preview",
+                        "Microsoft.WindowsTerminal.Preview"
+                    ],
+        "IconUrl":  "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images-Pre/Square44x44Logo.targetsize-32.png",
+        "Category":  "Development",
+        "IDn":  23
+    },
+    {
+        "ID":  "Python.Python.3.12",
+        "Name":  "Python 3.12",
+        "Domain":  "python.org",
+        "Aliases":  [
+                        "Python 3.12",
+                        "Python",
+                        "Python.Python.3.12"
+                    ],
+        "Category":  "Development",
+        "IDn":  24
+    },
+    {
+        "ID":  "OpenJS.NodeJS.LTS",
+        "Name":  "Node.js LTS",
+        "Domain":  "nodejs.org",
+        "Aliases":  [
+                        "Node.js",
+                        "NodeJS",
+                        "OpenJS.NodeJS.LTS"
+                    ],
+        "Category":  "Development",
+        "IDn":  25
+    },
+    {
+        "ID":  "Docker.DockerDesktop",
+        "Name":  "Docker Desktop",
+        "Domain":  "docker.com",
+        "Aliases":  [
+                        "Docker Desktop",
+                        "Docker",
+                        "Docker.DockerDesktop"
+                    ],
+        "Category":  "Development",
+        "IDn":  26
+    },
+    {
+        "ID":  "Notepad++.Notepad++",
+        "Name":  "Notepad++",
+        "Domain":  "notepad-plus-plus.org",
+        "Aliases":  [
+                        "Notepad++",
+                        "NotepadPlusPlus",
+                        "Notepad++.Notepad++"
+                    ],
+        "Category":  "Development",
+        "IDn":  27
+    },
+    {
+        "ID":  "Postman.Postman",
+        "Name":  "Postman",
+        "Domain":  "postman.com",
+        "Aliases":  [
+                        "Postman",
+                        "Postman.Postman"
+                    ],
+        "Category":  "Development",
+        "IDn":  28
+    },
+    {
+        "ID":  "dbeaver.dbeaver",
+        "Name":  "DBeaver CE",
+        "Domain":  "dbeaver.io",
+        "Aliases":  [
+                        "DBeaver",
+                        "DBeaver CE",
+                        "dbeaver.dbeaver"
+                    ],
+        "Category":  "Development",
+        "IDn":  29
+    },
+    {
+        "ID":  "GoLang.Go",
+        "Name":  "Go Lang",
+        "Domain":  "golang.org",
+        "Aliases":  [
+                        "Go",
+                        "Go Programming Language",
+                        "GoLang",
+                        "GoLang.Go"
+                    ],
+        "Category":  "Development",
+        "IDn":  30
+    },
+    {
+        "ID":  "Rustlang.Rustup",
+        "Name":  "Rust (rustup)",
+        "Domain":  "rust-lang.org",
+        "Aliases":  [
+                        "Rust",
+                        "rustup",
+                        "Rustlang.Rustup"
+                    ],
+        "Category":  "Development",
+        "IDn":  31
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.6",
+        "Name":  ".NET Desktop Runtime 6",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Desktop Runtime 6",
+                        "Microsoft Windows Desktop Runtime - 6",
+                        "DesktopRuntime.6",
+                        "Microsoft.DotNet.DesktopRuntime.6"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  32
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.7",
+        "Name":  ".NET Desktop Runtime 7",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Desktop Runtime 7",
+                        "Microsoft Windows Desktop Runtime - 7",
+                        "DesktopRuntime.7",
+                        "Microsoft.DotNet.DesktopRuntime.7"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  33
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.8",
+        "Name":  ".NET Desktop Runtime 8",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Desktop Runtime 8",
+                        "Microsoft Windows Desktop Runtime - 8",
+                        "DesktopRuntime.8",
+                        "Microsoft.DotNet.DesktopRuntime.8"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  34
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.9",
+        "Name":  ".NET Desktop Runtime 9",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Desktop Runtime 9",
+                        "Microsoft Windows Desktop Runtime - 9",
+                        "DesktopRuntime.9",
+                        "Microsoft.DotNet.DesktopRuntime.9"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  35
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.8.JDK",
+        "Name":  "Java OpenJDK 8",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 8",
+                        "Temurin 8",
+                        "OpenJDK 8",
+                        "EclipseAdoptium.Temurin.8.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  36
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.11.JDK",
+        "Name":  "Java OpenJDK 11",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 11",
+                        "Temurin 11",
+                        "OpenJDK 11",
+                        "EclipseAdoptium.Temurin.11.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  37
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.17.JDK",
+        "Name":  "Java OpenJDK 17",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 17",
+                        "Temurin 17",
+                        "OpenJDK 17",
+                        "EclipseAdoptium.Temurin.17.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  38
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.21.JDK",
+        "Name":  "Java OpenJDK 21",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 21",
+                        "Temurin 21",
+                        "OpenJDK 21",
+                        "EclipseAdoptium.Temurin.21.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  39
+    },
+    {
+        "ID":  "7zip.7zip",
+        "Name":  "7-Zip",
+        "Domain":  "7-zip.org",
+        "Aliases":  [
+                        "7-Zip",
+                        "7zip.7zip"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  40
+    },
+    {
+        "ID":  "RARLab.WinRAR",
+        "Name":  "WinRAR",
+        "Domain":  "rarlab.com",
+        "Aliases":  [
+                        "WinRAR",
+                        "RARLab.WinRAR"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  41
+    },
+    {
+        "ID":  "voidtools.Everything",
+        "Name":  "Everything",
+        "Domain":  "voidtools.com",
+        "Aliases":  [
+                        "Everything",
+                        "voidtools.Everything"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  42
+    },
+    {
+        "ID":  "Microsoft.PowerToys",
+        "Name":  "PowerToys",
+        "Domain":  "learn.microsoft.com",
+        "Aliases":  [
+                        "PowerToys",
+                        "Microsoft PowerToys",
+                        "Microsoft.PowerToys"
+                    ],
+        "IconUrl":  "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
+        "Category":  "System Utilities",
+        "IDn":  43
+    },
+    {
+        "ID":  "Flow-Launcher.Flow-Launcher",
+        "Name":  "Flow Launcher",
+        "Domain":  "flowlauncher.com",
+        "Aliases":  [
+                        "Flow Launcher",
+                        "Flow-Launcher.Flow-Launcher"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  44
+    },
+    {
+        "ID":  "VSRevoGroup.RevoUninstaller",
+        "Name":  "Revo Uninstaller",
+        "Domain":  "revouninstaller.com",
+        "Aliases":  [
+                        "Revo Uninstaller",
+                        "VSRevoGroup.RevoUninstaller"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  45
+    },
+    {
+        "ID":  "JAMSoftware.TreeSize.Free",
+        "Name":  "TreeSize Free",
+        "Domain":  "jam-software.com",
+        "Aliases":  [
+                        "TreeSize Free",
+                        "JAMSoftware.TreeSize.Free"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  46
+    },
+    {
+        "ID":  "BleachBit.BleachBit",
+        "Name":  "BleachBit",
+        "Domain":  "bleachbit.org",
+        "Aliases":  [
+                        "BleachBit",
+                        "BleachBit.BleachBit"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  47
+    },
+    {
+        "ID":  "Guru3D.Afterburner",
+        "Name":  "MSI Afterburner",
+        "Domain":  "msi.com",
+        "Aliases":  [
+                        "MSI Afterburner",
+                        "Afterburner",
+                        "Guru3D.Afterburner"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  48
+    },
+    {
+        "ID":  "Rem0o.FanControl",
+        "Name":  "FanControl",
+        "Domain":  "getfancontrol.com",
+        "Aliases":  [
+                        "FanControl",
+                        "Fan Control",
+                        "Rem0o.FanControl"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  49
+    },
+    {
+        "ID":  "CPUID.CPU-Z",
+        "Name":  "CPUID CPU-Z",
+        "Domain":  "cpuid.com",
+        "Aliases":  [
+                        "CPUID CPU-Z",
+                        "CPU-Z",
+                        "CPUID.CPU-Z"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  50
+    },
+    {
+        "ID":  "CPUID.HWMonitor",
+        "Name":  "CPUID HWMonitor",
+        "Domain":  "cpuid.com",
+        "Aliases":  [
+                        "CPUID HWMonitor",
+                        "HWMonitor",
+                        "CPUID.HWMonitor"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  51
+    },
+    {
+        "ID":  "Microsoft.VCRedist.2015+.x64",
+        "Name":  "VC++ 2015-2022 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
+        "Aliases":  [
+                        "Visual C++",
+                        "Microsoft Visual C++ 2015-2022 Redistributable (x64)",
+                        "Microsoft Visual C++ 2015-2022",
+                        "Microsoft.VCRedist.2015+.x64"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  52
+    },
+    {
+        "ID":  "Microsoft.VCRedist.2015+.x86",
+        "Name":  "VC++ 2015-2022 (x86)",
+        "Domain":  "visualstudio.microsoft.com",
+        "Aliases":  [
+                        "Microsoft Visual C++ 2015-2022 Redistributable (x86)",
+                        "Microsoft.VCRedist.2015+.x86"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  53
+    },
+    {
+        "ID":  "Microsoft.VCRedist.2013.x64",
+        "Name":  "VC++ 2013 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
+        "Aliases":  [
+                        "Microsoft Visual C++ 2013 Redistributable (x64)",
+                        "Microsoft.VCRedist.2013.x64"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  54
+    },
+    {
+        "ID":  "Microsoft.VCRedist.2012.x64",
+        "Name":  "VC++ 2012 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
+        "Aliases":  [
+                        "Microsoft Visual C++ 2012 Redistributable (x64)",
+                        "Microsoft.VCRedist.2012.x64"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  55
+    },
+    {
+        "ID":  "Microsoft.DirectX",
+        "Name":  "DirectX End-User",
+        "Domain":  "xbox.com",
+        "Aliases":  [
+                        "DirectX",
+                        "Microsoft DirectX",
+                        "DirectX End-User Runtimes",
+                        "Microsoft.DirectX"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  56
+    },
+    {
+        "ID":  "Bitwarden.Bitwarden",
+        "Name":  "Bitwarden",
+        "Domain":  "bitwarden.com",
+        "Aliases":  [
+                        "Bitwarden",
+                        "Bitwarden.Bitwarden"
+                    ],
+        "Category":  "Security \u0026 Network",
+        "IDn":  57
+    },
+    {
+        "ID":  "KeePassXCTeam.KeePassXC",
+        "Name":  "KeePassXC",
+        "Domain":  "keepassxc.org",
+        "Aliases":  [
+                        "KeePassXC",
+                        "KeePassXCTeam.KeePassXC"
+                    ],
+        "Category":  "Security \u0026 Network",
+        "IDn":  58
+    },
+    {
+        "ID":  "Cryptomator.Cryptomator",
+        "Name":  "Cryptomator",
+        "Domain":  "cryptomator.org",
+        "Aliases":  [
+                        "Cryptomator",
+                        "Cryptomator.Cryptomator"
+                    ],
+        "Category":  "Security \u0026 Network",
+        "IDn":  59
+    },
+    {
+        "ID":  "ProtonTechnologies.ProtonVPN",
+        "Name":  "ProtonVPN",
+        "Domain":  "protonvpn.com",
+        "Aliases":  [
+                        "Proton VPN",
+                        "ProtonVPN",
+                        "Proton.ProtonVPN",
+                        "ProtonTechnologies.ProtonVPN"
+                    ],
+        "Category":  "Security \u0026 Network",
+        "IDn":  60
+    },
+    {
+        "ID":  "WiresharkFoundation.Wireshark",
+        "Name":  "Wireshark",
+        "Domain":  "wireshark.org",
+        "Aliases":  [
+                        "Wireshark",
+                        "WiresharkFoundation.Wireshark"
+                    ],
+        "Category":  "Security \u0026 Network",
+        "IDn":  61
+    },
+    {
+        "ID":  "VideoLAN.VLC",
+        "Name":  "VLC Media Player",
+        "Domain":  "videolan.org",
+        "Aliases":  [
+                        "VLC media player",
+                        "VLC",
+                        "VideoLAN.VLC"
+                    ],
+        "Category":  "Audio \u0026 Video",
+        "IDn":  62
+    },
+    {
+        "ID":  "OBSProject.OBSStudio",
+        "Name":  "OBS Studio",
+        "Domain":  "obsproject.com",
+        "Aliases":  [
+                        "OBS Studio",
+                        "OBS",
+                        "OBSProject.OBSStudio"
+                    ],
+        "Category":  "Audio \u0026 Video",
+        "IDn":  63
+    },
+    {
+        "ID":  "Spotify.Spotify",
+        "Name":  "Spotify",
+        "Domain":  "spotify.com",
+        "Aliases":  [
+                        "Spotify",
+                        "Spotify.Spotify"
+                    ],
+        "Category":  "Audio \u0026 Video",
+        "IDn":  64
+    },
+    {
+        "ID":  "Audacity.Audacity",
+        "Name":  "Audacity",
+        "Domain":  "audacityteam.org",
+        "Aliases":  [
+                        "Audacity",
+                        "Audacity.Audacity"
+                    ],
+        "Category":  "Audio \u0026 Video",
+        "IDn":  65
+    },
+    {
+        "ID":  "HandBrake.HandBrake",
+        "Name":  "HandBrake",
+        "Domain":  "handbrake.fr",
+        "Aliases":  [
+                        "HandBrake",
+                        "HandBrake.HandBrake"
+                    ],
+        "Category":  "Audio \u0026 Video",
+        "IDn":  66
+    },
+    {
+        "ID":  "CodecGuide.K-LiteCodecPack.Mega",
+        "Name":  "K-Lite Codec Mega",
+        "Domain":  "codecguide.com",
+        "Aliases":  [
+                        "K-Lite Mega Codec Pack",
+                        "K-Lite Codec Pack",
+                        "CodecGuide.K-LiteCodecPack.Mega"
+                    ],
+        "Category":  "Audio \u0026 Video",
+        "IDn":  67
+    },
+    {
+        "ID":  "ShareX.ShareX",
+        "Name":  "ShareX",
+        "Domain":  "getsharex.com",
+        "Aliases":  [
+                        "ShareX",
+                        "ShareX.ShareX"
+                    ],
+        "Category":  "Graphics \u0026 Design",
+        "IDn":  68
+    },
+    {
+        "ID":  "GIMP.GIMP",
+        "Name":  "GIMP",
+        "Domain":  "gimp.org",
+        "Aliases":  [
+                        "GIMP",
+                        "GNU Image Manipulation Program",
+                        "GIMP.GIMP"
+                    ],
+        "Category":  "Graphics \u0026 Design",
+        "IDn":  69
+    },
+    {
+        "ID":  "KDE.Krita",
+        "Name":  "Krita",
+        "Domain":  "krita.org",
+        "Aliases":  [
+                        "Krita",
+                        "KDE.Krita"
+                    ],
+        "Category":  "Graphics \u0026 Design",
+        "IDn":  70
+    },
+    {
+        "ID":  "BlenderFoundation.Blender",
+        "Name":  "Blender",
+        "Domain":  "blender.org",
+        "Aliases":  [
+                        "Blender",
+                        "BlenderFoundation.Blender"
+                    ],
+        "Category":  "Graphics \u0026 Design",
+        "IDn":  71
+    },
+    {
+        "ID":  "Inkscape.Inkscape",
+        "Name":  "Inkscape",
+        "Domain":  "inkscape.org",
+        "Aliases":  [
+                        "Inkscape",
+                        "Inkscape.Inkscape"
+                    ],
+        "Category":  "Graphics \u0026 Design",
+        "IDn":  72
+    },
+    {
+        "ID":  "TheDocumentFoundation.LibreOffice",
+        "Name":  "LibreOffice",
+        "Domain":  "libreoffice.org",
+        "Aliases":  [
+                        "LibreOffice",
+                        "TheDocumentFoundation.LibreOffice"
+                    ],
+        "Category":  "Documents \u0026 Office",
+        "IDn":  73
+    },
+    {
+        "ID":  "Obsidian.Obsidian",
+        "Name":  "Obsidian",
+        "Domain":  "obsidian.md",
+        "Aliases":  [
+                        "Obsidian",
+                        "Obsidian.Obsidian"
+                    ],
+        "Category":  "Documents \u0026 Office",
+        "IDn":  74
+    },
+    {
+        "ID":  "Notion.Notion",
+        "Name":  "Notion",
+        "Domain":  "notion.so",
+        "Aliases":  [
+                        "Notion",
+                        "Notion.Notion"
+                    ],
+        "Category":  "Documents \u0026 Office",
+        "IDn":  75
+    },
+    {
+        "ID":  "SumatraPDF.SumatraPDF",
+        "Name":  "SumatraPDF",
+        "Domain":  "sumatrapdfreader.org",
+        "Aliases":  [
+                        "SumatraPDF",
+                        "SumatraPDF.SumatraPDF"
+                    ],
+        "Category":  "Documents \u0026 Office",
+        "IDn":  76
+    },
+    {
+        "ID":  "Foxit.FoxitReader",
+        "Name":  "Foxit PDF Reader",
+        "Domain":  "foxit.com",
+        "Aliases":  [
+                        "Foxit PDF Reader",
+                        "Foxit Reader",
+                        "Foxit.FoxitReader"
+                    ],
+        "Category":  "Documents \u0026 Office",
+        "IDn":  77
+    },
+    {
+        "ID":  "Valve.Steam",
+        "Name":  "Steam",
+        "Domain":  "steampowered.com",
+        "Aliases":  [
+                        "Steam",
+                        "Valve.Steam"
+                    ],
+        "Category":  "Game Launchers",
+        "IDn":  78
+    },
+    {
+        "ID":  "EpicGames.EpicGamesLauncher",
+        "Name":  "Epic Games Launcher",
+        "Domain":  "epicgames.com",
+        "Aliases":  [
+                        "Epic Games Launcher",
+                        "Epic Games",
+                        "EpicGames.EpicGamesLauncher"
+                    ],
+        "Category":  "Game Launchers",
+        "IDn":  79
+    },
+    {
+        "ID":  "GOG.Galaxy",
+        "Name":  "GOG Galaxy",
+        "Domain":  "gog.com",
+        "Aliases":  [
+                        "GOG Galaxy",
+                        "GOG GALAXY",
+                        "GOG.Galaxy"
+                    ],
+        "Category":  "Game Launchers",
+        "IDn":  80
+    },
+    {
+        "ID":  "Playnite.Playnite",
+        "Name":  "Playnite",
+        "Domain":  "playnite.link",
+        "Aliases":  [
+                        "Playnite",
+                        "Playnite.Playnite"
+                    ],
+        "Category":  "Game Launchers",
+        "IDn":  81
+    },
+    {
+        "ID":  "qBittorrent.qBittorrent",
+        "Name":  "qBittorrent",
+        "Domain":  "qbittorrent.org",
+        "Aliases":  [
+                        "qBittorrent",
+                        "qBittorrent.qBittorrent"
+                    ],
+        "Category":  "File Transfer \u0026 Cloud",
+        "IDn":  82
+    },
+    {
+        "ID":  "LocalSend.LocalSend",
+        "Name":  "LocalSend",
+        "Domain":  "localsend.org",
+        "Aliases":  [
+                        "LocalSend",
+                        "LocalSend.LocalSend"
+                    ],
+        "Category":  "File Transfer \u0026 Cloud",
+        "IDn":  83
+    },
+    {
+        "ID":  "WinSCP.WinSCP",
+        "Name":  "WinSCP",
+        "Domain":  "winscp.net",
+        "Aliases":  [
+                        "WinSCP",
+                        "WinSCP.WinSCP"
+                    ],
+        "Category":  "File Transfer \u0026 Cloud",
+        "IDn":  84
+    },
+    {
+        "ID":  "TimKosse.FileZilla.Client",
+        "Name":  "FileZilla",
+        "Domain":  "filezilla-project.org",
+        "Aliases":  [
+                        "FileZilla Client",
+                        "FileZilla",
+                        "TimKosse.FileZilla.Client"
+                    ],
+        "Category":  "File Transfer \u0026 Cloud",
+        "IDn":  85
+    },
+    {
+        "ID":  "Rclone.Rclone",
+        "Name":  "Rclone",
+        "Domain":  "rclone.org",
+        "Aliases":  [
+                        "Rclone",
+                        "Rclone.Rclone"
+                    ],
+        "Category":  "File Transfer \u0026 Cloud",
+        "IDn":  86
+    }
 ]
 '@
 $AppCatalog = ConvertFrom-Json $appsRawJson
@@ -2369,6 +2518,13 @@ $thicknessOne     = New-Object System.Windows.Thickness(1)
 $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
 if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
     try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
+} else {
+    # Tự động dọn dẹp các icon cache cũ bị sai/trùng lặp (230B Microsoft generic, 588B GitHub Octocat)
+    try {
+        Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
+            $_.Length -eq 230 -or $_.Length -eq 588
+        } | Remove-Item -Force -ErrorAction SilentlyContinue
+    } catch {}
 }
 
 # Trình khóa thực thi đơn nhất (Re-entrancy Guard) chống xung đột tiến trình
@@ -2504,11 +2660,22 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'rustdesk|anydesk|ultraviewer|teamviewer') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($nameLower -match 'afterburner') { return [char]::ConvertFromUtf32(0x26A1) }
     if ($nameLower -match 'gimp|krita') { return [char]::ConvertFromUtf32(0x1F3A8) }
+    if ($nameLower -match 'blender') { return [char]::ConvertFromUtf32(0x1F3A8) }
+    if ($nameLower -match 'inkscape') { return [char]::ConvertFromUtf32(0x2712) }
+    if ($nameLower -match 'java|openjdk|temurin') { return [char]::ConvertFromUtf32(0x2615) }
+    if ($nameLower -match '\.net|desktopruntime') { return [char]::ConvertFromUtf32(0x1F7E3) }
+    if ($nameLower -match 'vc\+\+|visual c\+\+') { return [char]::ConvertFromUtf32(0x2699) }
+    if ($nameLower -match 'directx') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($nameLower -match 'cpu-z|hwmonitor') { return [char]::ConvertFromUtf32(0x1F39B) }
 
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
     if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($Category -match 'Dev|Triển|Development') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($Category -match 'Java') { return [char]::ConvertFromUtf32(0x2615) }
+    if ($Category -match '\.NET') { return [char]::ConvertFromUtf32(0x1F7E3) }
+    if ($Category -match 'Hardware|Monitoring') { return [char]::ConvertFromUtf32(0x1F39B) }
+    if ($Category -match 'C\+\+|System Runtimes') { return [char]::ConvertFromUtf32(0x2699) }
     if ($Category -match 'Tiện|Thống|Utilities|Utility') { return [char]::ConvertFromUtf32(0x1F6E0) }
     if ($Category -match 'Graphic|Design') { return [char]::ConvertFromUtf32(0x1F3A8) }
     if ($Category -match 'Audio|Video|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
@@ -2519,6 +2686,28 @@ function Get-AppFallbackGlyph {
     if ($Category -match 'Core|Runtimes|Thư Viện') { return [char]::ConvertFromUtf32(0x2699) }
 
     return [char]::ConvertFromUtf32(0x1F4E6)
+}
+
+# ── BẢN ĐỒ PHÂN BỔ CỘT THEO CHỦ ĐỀ CHUYÊN BIỆT (4 CỘT CÂN BẰNG HOÀN HẢO) ──
+$categoryColumnMap = @{
+    "Web Browsers"           = 0
+    "Communication"          = 0
+    "Remote Desktop"         = 0
+
+    "Development"            = 1
+    ".NET Runtimes"          = 1
+    "Java Runtimes"          = 1
+
+    "System Utilities"       = 2
+    "Hardware & Monitoring"  = 2
+    "C++ & System Runtimes"  = 2
+    "Security & Network"     = 2
+
+    "Audio & Video"          = 3
+    "Graphics & Design"      = 3
+    "Documents & Office"     = 3
+    "Game Launchers"         = 3
+    "File Transfer & Cloud"  = 3
 }
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
@@ -2669,34 +2858,44 @@ foreach ($cat in $categories) {
                 $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
                 $img.Visibility = [System.Windows.Visibility]::Visible
             } catch {}
-        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-            try {
-                $remoteUri = New-Object System.Uri("https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32", [System.UriKind]::Absolute)
-                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                $bmp.BeginInit()
-                $bmp.UriSource = $remoteUri
-                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                $bmp.EndInit()
+        } else {
+            $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
+                $app.IconUrl
+            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32"
+            } else {
+                $null
+            }
 
-                # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
-                $cacheClosure = {
-                    param($sender, $e)
-                    try {
-                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                        $img.Visibility = [System.Windows.Visibility]::Visible
-                        if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
-                            $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                            $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
-                            $fs = [System.IO.File]::OpenWrite($localIconPath)
-                            $encoder.Save($fs)
-                            $fs.Close()
-                        }
-                    } catch {}
-                }.GetNewClosure()
+            if ($remoteIconTarget) {
+                try {
+                    $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
+                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                    $bmp.BeginInit()
+                    $bmp.UriSource = $remoteUri
+                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                    $bmp.EndInit()
 
-                $bmp.Add_DownloadCompleted($cacheClosure)
-                $img.Source = $bmp
-            } catch {}
+                    # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
+                    $cacheClosure = {
+                        param($sender, $e)
+                        try {
+                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                            $img.Visibility = [System.Windows.Visibility]::Visible
+                            if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
+                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
+                                $fs = [System.IO.File]::OpenWrite($localIconPath)
+                                $encoder.Save($fs)
+                                $fs.Close()
+                            }
+                        } catch {}
+                    }.GetNewClosure()
+
+                    $bmp.Add_DownloadCompleted($cacheClosure)
+                    $img.Source = $bmp
+                } catch {}
+            }
         }
         [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
         $rowGrid.Children.Add($iconContainer) | Out-Null
@@ -2813,12 +3012,11 @@ foreach ($cat in $categories) {
     $cardBorder.Child = $cardStack
     $categoryCardMap[$cardBorder] = $rowsInCard
     
-    # Thêm card vào 1 trong 4 cột dọc tương ứng
-    $targetColPanel = if ($cardCols[0]) { $cardCols[$catIndex % 4] } else { $null }
+    # Thêm card vào cột dọc tương ứng theo bản đồ chủ đề (4 cột cân bằng hoàn hảo)
+    $targetColIndex = if ($categoryColumnMap.ContainsKey($cat)) { $categoryColumnMap[$cat] } else { $catIndex % 4 }
+    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
     if ($targetColPanel) {
         $targetColPanel.Children.Add($cardBorder) | Out-Null
-    } elseif ($cardsContainer) {
-        $cardsContainer.Children.Add($cardBorder) | Out-Null
     }
     $catIndex++
 }
