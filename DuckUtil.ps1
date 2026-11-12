@@ -2030,21 +2030,23 @@ function Scan-And-ColorizeApps {
             $row.Tag.InstalledVersion = $info.Version
 
             if ($info.HasUpdate -eq $true) {
-                # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
+                # ── 🔴 BẢN CŨ: Tên ĐỎ + Gạch chân mỏng (Không tô nền đỏ) ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
-                $row.Background = $script:brushOutdatedBg
+                $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
                 $tb.Text = "$($app.Name)  $updateBadge"
+                $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
                 $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
             } else {
-                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm (Không dùng dấu tích theo yêu cầu) ──
+                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ (Không ghi 'Mới nhất', không tô nền xanh) ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
-                $row.Background = $script:brushLatestBg
+                $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushLatestFg
-                $tb.Text = "$($app.Name)  (Mới nhất)"
+                $tb.Text = $app.Name
+                $tb.TextDecorations = $null
                 $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
@@ -2055,6 +2057,7 @@ function Scan-And-ColorizeApps {
             $row.Background = $script:brushNoneBg
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
+            $tb.TextDecorations = $null
             $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
         }
     }
@@ -2343,6 +2346,15 @@ $script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x3B)); $script:brushRowHover.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushTextWhite.Freeze()
 $script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
+
+# Bảng màu cho Button Link Website ngoài cùng bên phải (Cyber Mini-Button)
+$script:brushLinkBtnBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushLinkBtnBg.Freeze()
+$script:brushLinkBtnBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x38, 0x4F)); $script:brushLinkBtnBorder.Freeze()
+$script:brushLinkBtnFg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushLinkBtnFg.Freeze()
+
+$script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushLinkBtnHoverBg.Freeze()
+$script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
+$script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushLinkBtnHoverFg.Freeze()
 
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
 $marginCardBorder = New-Object System.Windows.Thickness(5)
@@ -2669,36 +2681,41 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
-        # 4. Icon Link Website ngoài cùng bên phải (Chiếm 10% chiều rộng dòng, click mở trang chủ)
-        $linkBorder = New-Object System.Windows.Controls.Border
-        $linkBorder.Width = 20; $linkBorder.Height = 20
-        $linkBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $linkBorder.Background = $script:brushTransparent
-        $linkBorder.Cursor = [System.Windows.Input.Cursors]::Hand
-        $linkBorder.Margin = New-Object System.Windows.Thickness(4, 0, 2, 0)
-        $linkBorder.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
-        $linkBorder.Tag = $app.Domain
+        # 4. Button Link Website ngoài cùng bên phải (Tách riêng dạng nút bấm chuyên nghiệp)
+        $linkBtn = New-Object System.Windows.Controls.Border
+        $linkBtn.Width = 24
+        $linkBtn.Height = 20
+        $linkBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
+        $linkBtn.Background = $script:brushLinkBtnBg
+        $linkBtn.BorderBrush = $script:brushLinkBtnBorder
+        $linkBtn.BorderThickness = $thicknessOne
+        $linkBtn.Cursor = [System.Windows.Input.Cursors]::Hand
+        $linkBtn.Margin = New-Object System.Windows.Thickness(6, 0, 2, 0)
+        $linkBtn.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
+        $linkBtn.Tag = $app.Domain
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
         $linkIcon.Text = [char]0x2197 # ↗
-        $linkIcon.FontSize = 12
+        $linkIcon.FontSize = 11
         $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
-        $linkIcon.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B))
+        $linkIcon.Foreground = $script:brushLinkBtnFg
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $linkBorder.Child = $linkIcon
+        $linkBtn.Child = $linkIcon
 
-        $linkBorder.Add_MouseEnter({
+        $linkBtn.Add_MouseEnter({
             param($s, $e)
-            $s.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B))
-            if ($s.Child) { $s.Child.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)) }
+            $s.Background = $script:brushLinkBtnHoverBg
+            $s.BorderBrush = $script:brushLinkBtnHoverBdr
+            if ($s.Child) { $s.Child.Foreground = $script:brushLinkBtnHoverFg }
         })
-        $linkBorder.Add_MouseLeave({
+        $linkBtn.Add_MouseLeave({
             param($s, $e)
-            $s.Background = $script:brushTransparent
-            if ($s.Child) { $s.Child.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)) }
+            $s.Background = $script:brushLinkBtnBg
+            $s.BorderBrush = $script:brushLinkBtnBorder
+            if ($s.Child) { $s.Child.Foreground = $script:brushLinkBtnFg }
         })
-        $linkBorder.Add_MouseLeftButtonUp({
+        $linkBtn.Add_MouseLeftButtonUp({
             param($s, $e)
             $e.Handled = $true  # Chặn sự kiện nổi bọt để không làm toggle CheckBox
             $domain = $s.Tag
@@ -2711,8 +2728,8 @@ foreach ($cat in $categories) {
                 }
             }
         })
-        [System.Windows.Controls.Grid]::SetColumn($linkBorder, 3)
-        $rowGrid.Children.Add($linkBorder) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($linkBtn, 3)
+        $rowGrid.Children.Add($linkBtn) | Out-Null
 
         # Tối ưu nhấp chọn toàn dòng: Nhấp vào Tên ứng dụng hoặc khoảng trống dòng -> TỰ ĐỘNG TÍCH CHECKBOX
         $rowBorder.Add_MouseLeftButtonUp({
@@ -2741,23 +2758,14 @@ foreach ($cat in $categories) {
             }
         })
 
-        # Hover phát sáng & phục hồi màu trạng thái cực nhanh nhờ Frozen Brushes
+        # Hover phát sáng & phục hồi nền trong suốt thanh lịch (Không tô màu nền đỏ/xanh)
         $rowBorder.Add_MouseEnter({
             param($sender, $e)
-            if ($sender.Tag -and $sender.Tag.Status -eq "NONE") {
-                $sender.Background = $script:brushRowHover
-            }
+            $sender.Background = $script:brushRowHover
         })
         $rowBorder.Add_MouseLeave({
             param($sender, $e)
-            $status = if ($sender.Tag) { $sender.Tag.Status } else { "NONE" }
-            if ($status -eq "LATEST") {
-                $sender.Background = $script:brushLatestBg
-            } elseif ($status -eq "OUTDATED") {
-                $sender.Background = $script:brushOutdatedBg
-            } else {
-                $sender.Background = $script:brushTransparent
-            }
+            $sender.Background = $script:brushTransparent
         })
 
         $rowBorder.Child = $rowGrid

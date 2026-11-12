@@ -289,21 +289,23 @@ function Scan-And-ColorizeApps {
             $row.Tag.InstalledVersion = $info.Version
 
             if ($info.HasUpdate -eq $true) {
-                # ── 🔴 BẢN CŨ: Tên ĐỎ rực rỡ + Nền đỏ sẫm ──
+                # ── 🔴 BẢN CŨ: Tên ĐỎ + Gạch chân mỏng (Không tô nền đỏ) ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
-                $row.Background = $script:brushOutdatedBg
+                $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
                 $tb.Text = "$($app.Name)  $updateBadge"
+                $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
                 $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
             } else {
-                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm (Không dùng dấu tích theo yêu cầu) ──
+                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ (Không ghi 'Mới nhất', không tô nền xanh) ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
-                $row.Background = $script:brushLatestBg
+                $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushLatestFg
-                $tb.Text = "$($app.Name)  (Mới nhất)"
+                $tb.Text = $app.Name
+                $tb.TextDecorations = $null
                 $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
@@ -314,6 +316,7 @@ function Scan-And-ColorizeApps {
             $row.Background = $script:brushNoneBg
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
+            $tb.TextDecorations = $null
             $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
         }
     }
