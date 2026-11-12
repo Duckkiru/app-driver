@@ -383,6 +383,52 @@ $appsRawJson = @'
   },
   {
     "IDn": 16,
+    "Name": "RustDesk",
+    "ID": "RustDesk.RustDesk",
+    "Category": "Remote Desktop",
+    "Domain": "rustdesk.com",
+    "Aliases": [
+      "RustDesk",
+      "RustDesk.RustDesk"
+    ]
+  },
+  {
+    "IDn": 17,
+    "Name": "AnyDesk",
+    "ID": "AnyDesk.AnyDesk",
+    "Category": "Remote Desktop",
+    "Domain": "anydesk.com",
+    "Aliases": [
+      "AnyDesk",
+      "AnyDesk.AnyDesk"
+    ]
+  },
+  {
+    "IDn": 18,
+    "Name": "UltraViewer",
+    "ID": "DucFabulous.UltraViewer",
+    "Category": "Remote Desktop",
+    "Domain": "ultraviewer.net",
+    "Aliases": [
+      "UltraViewer",
+      "Ultra Viewer",
+      "DucFabulous.UltraViewer"
+    ]
+  },
+  {
+    "IDn": 19,
+    "Name": "TeamViewer",
+    "ID": "TeamViewer.TeamViewer",
+    "Category": "Remote Desktop",
+    "Domain": "teamviewer.com",
+    "Aliases": [
+      "TeamViewer",
+      "Team Viewer",
+      "TeamViewer.TeamViewer"
+    ]
+  },
+  {
+    "IDn": 20,
     "Name": "VS Code",
     "ID": "Microsoft.VisualStudioCode",
     "Category": "Development",
@@ -395,7 +441,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 17,
+    "IDn": 21,
     "Name": "Git",
     "ID": "Git.Git",
     "Category": "Development",
@@ -406,7 +452,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 18,
+    "IDn": 22,
     "Name": "Windows Terminal",
     "ID": "Microsoft.WindowsTerminal",
     "Category": "Development",
@@ -421,7 +467,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 19,
+    "IDn": 23,
     "Name": "Windows Terminal Preview",
     "ID": "Microsoft.WindowsTerminal.Preview",
     "Category": "Development",
@@ -437,7 +483,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 20,
+    "IDn": 24,
     "Name": "Python 3.12",
     "ID": "Python.Python.3.12",
     "Category": "Development",
@@ -449,7 +495,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 21,
+    "IDn": 25,
     "Name": "Node.js LTS",
     "ID": "OpenJS.NodeJS.LTS",
     "Category": "Development",
@@ -462,7 +508,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 22,
+    "IDn": 26,
     "Name": "Docker Desktop",
     "ID": "Docker.DockerDesktop",
     "Category": "Development",
@@ -473,7 +519,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 23,
+    "IDn": 27,
     "Name": "Notepad++",
     "ID": "Notepad++.Notepad++",
     "Category": "Development",
@@ -484,7 +530,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 24,
+    "IDn": 28,
     "Name": "Postman",
     "ID": "Postman.Postman",
     "Category": "Development",
@@ -495,7 +541,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 25,
+    "IDn": 29,
     "Name": "DBeaver CE",
     "ID": "dbeaver.dbeaver",
     "Category": "Development",
@@ -507,7 +553,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 26,
+    "IDn": 30,
     "Name": "Go Lang",
     "ID": "GoLang.Go",
     "Category": "Development",
@@ -519,7 +565,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 27,
+    "IDn": 31,
     "Name": "Rust (rustup)",
     "ID": "Rustlang.Rustup",
     "Category": "Development",
@@ -531,7 +577,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 28,
+    "IDn": 32,
     "Name": "7-Zip",
     "ID": "7zip.7zip",
     "Category": "System Utilities",
@@ -543,7 +589,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 29,
+    "IDn": 33,
     "Name": "WinRAR",
     "ID": "RARLab.WinRAR",
     "Category": "System Utilities",
@@ -554,7 +600,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 30,
+    "IDn": 34,
     "Name": "Everything",
     "ID": "voidtools.Everything",
     "Category": "System Utilities",
@@ -565,7 +611,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 31,
+    "IDn": 35,
     "Name": "PowerToys",
     "ID": "Microsoft.PowerToys",
     "Category": "System Utilities",
@@ -576,7 +622,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 32,
+    "IDn": 36,
     "Name": "Flow Launcher",
     "ID": "Flow-Launcher.Flow-Launcher",
     "Category": "System Utilities",
@@ -588,7 +634,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 33,
+    "IDn": 37,
     "Name": "Revo Uninstaller",
     "ID": "VSRevoGroup.RevoUninstaller",
     "Category": "System Utilities",
@@ -599,7 +645,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 34,
+    "IDn": 38,
     "Name": "TreeSize Free",
     "ID": "JAMSoftware.TreeSize.Free",
     "Category": "System Utilities",
@@ -611,7 +657,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 35,
+    "IDn": 39,
     "Name": "ShareX",
     "ID": "ShareX.ShareX",
     "Category": "System Utilities",
@@ -622,7 +668,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 36,
+    "IDn": 40,
     "Name": "BleachBit",
     "ID": "BleachBit.BleachBit",
     "Category": "System Utilities",
@@ -633,7 +679,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 37,
+    "IDn": 41,
     "Name": "FanControl",
     "ID": "Rem0o.FanControl",
     "Category": "System Utilities",
@@ -644,10 +690,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 38,
+    "IDn": 42,
     "Name": "VLC Media Player",
     "ID": "VideoLAN.VLC",
-    "Category": "Multimedia",
+    "Category": "Audio & Video",
     "Domain": "videolan.org",
     "Aliases": [
       "VLC media player",
@@ -656,10 +702,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 39,
+    "IDn": 43,
     "Name": "OBS Studio",
     "ID": "OBSProject.OBSStudio",
-    "Category": "Multimedia",
+    "Category": "Audio & Video",
     "Domain": "obsproject.com",
     "Aliases": [
       "OBS Studio",
@@ -667,10 +713,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 40,
+    "IDn": 44,
     "Name": "Spotify",
     "ID": "Spotify.Spotify",
-    "Category": "Multimedia",
+    "Category": "Audio & Video",
     "Domain": "spotify.com",
     "Aliases": [
       "Spotify",
@@ -678,10 +724,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 41,
+    "IDn": 45,
     "Name": "GIMP",
     "ID": "GIMP.GIMP",
-    "Category": "Multimedia",
+    "Category": "Graphics & Design",
     "Domain": "gimp.org",
     "Aliases": [
       "GIMP",
@@ -689,10 +735,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 42,
+    "IDn": 46,
     "Name": "Audacity",
     "ID": "Audacity.Audacity",
-    "Category": "Multimedia",
+    "Category": "Audio & Video",
     "Domain": "audacityteam.org",
     "Aliases": [
       "Audacity",
@@ -700,10 +746,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 43,
+    "IDn": 47,
     "Name": "HandBrake",
     "ID": "HandBrake.HandBrake",
-    "Category": "Multimedia",
+    "Category": "Audio & Video",
     "Domain": "handbrake.fr",
     "Aliases": [
       "HandBrake",
@@ -711,10 +757,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 44,
+    "IDn": 48,
     "Name": "Krita",
     "ID": "KDE.Krita",
-    "Category": "Multimedia",
+    "Category": "Graphics & Design",
     "Domain": "krita.org",
     "Aliases": [
       "Krita",
@@ -722,10 +768,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 45,
+    "IDn": 49,
     "Name": "K-Lite Codec Mega",
     "ID": "CodecGuide.K-LiteCodecPack.Mega",
-    "Category": "Multimedia",
+    "Category": "Audio & Video",
     "Domain": "codecguide.com",
     "Aliases": [
       "K-Lite Codec Pack",
@@ -734,7 +780,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 46,
+    "IDn": 50,
     "Name": "LibreOffice",
     "ID": "TheDocumentFoundation.LibreOffice",
     "Category": "Documents & Office",
@@ -745,7 +791,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 47,
+    "IDn": 51,
     "Name": "Obsidian",
     "ID": "Obsidian.Obsidian",
     "Category": "Documents & Office",
@@ -756,7 +802,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 48,
+    "IDn": 52,
     "Name": "Notion",
     "ID": "Notion.Notion",
     "Category": "Documents & Office",
@@ -767,7 +813,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 49,
+    "IDn": 53,
     "Name": "SumatraPDF",
     "ID": "SumatraPDF.SumatraPDF",
     "Category": "Documents & Office",
@@ -778,7 +824,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 50,
+    "IDn": 54,
     "Name": "Foxit PDF Reader",
     "ID": "Foxit.FoxitReader",
     "Category": "Documents & Office",
@@ -790,10 +836,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 51,
+    "IDn": 55,
     "Name": "Steam",
     "ID": "Valve.Steam",
-    "Category": "Gaming",
+    "Category": "Game Launchers",
     "Domain": "steampowered.com",
     "Aliases": [
       "Steam",
@@ -801,10 +847,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 52,
+    "IDn": 56,
     "Name": "Epic Games Launcher",
     "ID": "EpicGames.EpicGamesLauncher",
-    "Category": "Gaming",
+    "Category": "Game Launchers",
     "Domain": "epicgames.com",
     "Aliases": [
       "Epic Games Launcher",
@@ -812,10 +858,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 53,
+    "IDn": 57,
     "Name": "GOG Galaxy",
     "ID": "GOG.Galaxy",
-    "Category": "Gaming",
+    "Category": "Game Launchers",
     "Domain": "gog.com",
     "Aliases": [
       "GOG GALAXY",
@@ -824,10 +870,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 54,
+    "IDn": 58,
     "Name": "MSI Afterburner",
     "ID": "Guru3D.Afterburner",
-    "Category": "Gaming",
+    "Category": "System Utilities",
     "Domain": "msi.com",
     "Aliases": [
       "MSI Afterburner",
@@ -835,10 +881,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 55,
+    "IDn": 59,
     "Name": "Playnite",
     "ID": "Playnite.Playnite",
-    "Category": "Gaming",
+    "Category": "Game Launchers",
     "Domain": "playnite.link",
     "Aliases": [
       "Playnite",
@@ -846,10 +892,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 56,
+    "IDn": 60,
     "Name": "qBittorrent",
     "ID": "qBittorrent.qBittorrent",
-    "Category": "File Sharing & Storage",
+    "Category": "File Transfer & Cloud",
     "Domain": "qbittorrent.org",
     "Aliases": [
       "qBittorrent",
@@ -857,10 +903,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 57,
+    "IDn": 61,
     "Name": "LocalSend",
     "ID": "LocalSend.LocalSend",
-    "Category": "File Sharing & Storage",
+    "Category": "File Transfer & Cloud",
     "Domain": "localsend.org",
     "Aliases": [
       "LocalSend",
@@ -868,10 +914,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 58,
+    "IDn": 62,
     "Name": "WinSCP",
     "ID": "WinSCP.WinSCP",
-    "Category": "File Sharing & Storage",
+    "Category": "File Transfer & Cloud",
     "Domain": "winscp.net",
     "Aliases": [
       "WinSCP",
@@ -880,10 +926,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 59,
+    "IDn": 63,
     "Name": "FileZilla",
     "ID": "TimKosse.FileZilla.Client",
-    "Category": "File Sharing & Storage",
+    "Category": "File Transfer & Cloud",
     "Domain": "filezilla-project.org",
     "Aliases": [
       "FileZilla Client",
@@ -892,10 +938,10 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 60,
+    "IDn": 64,
     "Name": "Rclone",
     "ID": "Rclone.Rclone",
-    "Category": "File Sharing & Storage",
+    "Category": "File Transfer & Cloud",
     "Domain": "rclone.org",
     "Aliases": [
       "Rclone",
@@ -903,7 +949,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 61,
+    "IDn": 65,
     "Name": "Bitwarden",
     "ID": "Bitwarden.Bitwarden",
     "Category": "Security & Network",
@@ -914,7 +960,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 62,
+    "IDn": 66,
     "Name": "KeePassXC",
     "ID": "KeePassXCTeam.KeePassXC",
     "Category": "Security & Network",
@@ -925,7 +971,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 63,
+    "IDn": 67,
     "Name": "Cryptomator",
     "ID": "Cryptomator.Cryptomator",
     "Category": "Security & Network",
@@ -936,7 +982,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 64,
+    "IDn": 68,
     "Name": "ProtonVPN",
     "ID": "ProtonTechnologies.ProtonVPN",
     "Category": "Security & Network",
@@ -949,18 +995,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 65,
-    "Name": "RustDesk",
-    "ID": "RustDesk.RustDesk",
-    "Category": "Security & Network",
-    "Domain": "rustdesk.com",
-    "Aliases": [
-      "RustDesk",
-      "RustDesk.RustDesk"
-    ]
-  },
-  {
-    "IDn": 66,
+    "IDn": 69,
     "Name": "Wireshark",
     "ID": "WiresharkFoundation.Wireshark",
     "Category": "Security & Network",
@@ -971,7 +1006,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 67,
+    "IDn": 70,
     "Name": "VC++ Redist 2015-2022",
     "ID": "Microsoft.VCRedist.2015+.x64",
     "Category": "Core Runtimes",
@@ -984,7 +1019,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 68,
+    "IDn": 71,
     "Name": ".NET Desktop Runtime 8",
     "ID": "Microsoft.DotNet.DesktopRuntime.8",
     "Category": "Core Runtimes",
@@ -997,7 +1032,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 69,
+    "IDn": 72,
     "Name": "DirectX End-User",
     "ID": "Microsoft.DirectX",
     "Category": "Core Runtimes",
@@ -1010,7 +1045,7 @@ $appsRawJson = @'
     ]
   },
   {
-    "IDn": 70,
+    "IDn": 73,
     "Name": "Java OpenJDK 21",
     "ID": "EclipseAdoptium.Temurin.21.JDK",
     "Category": "Core Runtimes",
@@ -2466,15 +2501,20 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'steam') { return [char]::ConvertFromUtf32(0x1F579) }
     if ($nameLower -match 'epic') { return [char]::ConvertFromUtf32(0x1F3AE) }
     if ($nameLower -match 'onedrive|gdrive|drive|dropbox') { return [char]::ConvertFromUtf32(0x2601) }
+    if ($nameLower -match 'rustdesk|anydesk|ultraviewer|teamviewer') { return [char]::ConvertFromUtf32(0x1F5A5) }
+    if ($nameLower -match 'afterburner') { return [char]::ConvertFromUtf32(0x26A1) }
+    if ($nameLower -match 'gimp|krita') { return [char]::ConvertFromUtf32(0x1F3A8) }
 
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($Category -match 'Dev|Triển|Development') { return [char]::ConvertFromUtf32(0x1F4BB) }
     if ($Category -match 'Tiện|Thống|Utilities|Utility') { return [char]::ConvertFromUtf32(0x1F6E0) }
-    if ($Category -match 'Phương|Tiện|Multimedia|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($Category -match 'Graphic|Design') { return [char]::ConvertFromUtf32(0x1F3A8) }
+    if ($Category -match 'Audio|Video|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
     if ($Category -match 'Phòng|Liệu|Documents|Office') { return [char]::ConvertFromUtf32(0x1F4C4) }
-    if ($Category -match 'Chơi|Game|Gaming') { return [char]::ConvertFromUtf32(0x1F3AE) }
-    if ($Category -match 'Trữ|Tệp|Storage|File') { return [char]::ConvertFromUtf32(0x2601) }
+    if ($Category -match 'Chơi|Game|Launcher') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($Category -match 'Trữ|Tệp|Storage|File|Transfer') { return [char]::ConvertFromUtf32(0x2601) }
     if ($Category -match 'Security|Bảo Mật|Network|Mạng') { return [char]::ConvertFromUtf32(0x1F6E1) }
     if ($Category -match 'Core|Runtimes|Thư Viện') { return [char]::ConvertFromUtf32(0x2699) }
 
@@ -2694,6 +2734,7 @@ foreach ($cat in $categories) {
         $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
         $linkIcon.FontFamily = $script:fontSegoeEmoji
         $linkIcon.FontSize = 9.5
+        $linkIcon.Foreground = $script:brushLinkBtnFg
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Child = $linkIcon

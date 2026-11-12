@@ -183,15 +183,20 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'steam') { return [char]::ConvertFromUtf32(0x1F579) }
     if ($nameLower -match 'epic') { return [char]::ConvertFromUtf32(0x1F3AE) }
     if ($nameLower -match 'onedrive|gdrive|drive|dropbox') { return [char]::ConvertFromUtf32(0x2601) }
+    if ($nameLower -match 'rustdesk|anydesk|ultraviewer|teamviewer') { return [char]::ConvertFromUtf32(0x1F5A5) }
+    if ($nameLower -match 'afterburner') { return [char]::ConvertFromUtf32(0x26A1) }
+    if ($nameLower -match 'gimp|krita') { return [char]::ConvertFromUtf32(0x1F3A8) }
 
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($Category -match 'Dev|Triển|Development') { return [char]::ConvertFromUtf32(0x1F4BB) }
     if ($Category -match 'Tiện|Thống|Utilities|Utility') { return [char]::ConvertFromUtf32(0x1F6E0) }
-    if ($Category -match 'Phương|Tiện|Multimedia|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($Category -match 'Graphic|Design') { return [char]::ConvertFromUtf32(0x1F3A8) }
+    if ($Category -match 'Audio|Video|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
     if ($Category -match 'Phòng|Liệu|Documents|Office') { return [char]::ConvertFromUtf32(0x1F4C4) }
-    if ($Category -match 'Chơi|Game|Gaming') { return [char]::ConvertFromUtf32(0x1F3AE) }
-    if ($Category -match 'Trữ|Tệp|Storage|File') { return [char]::ConvertFromUtf32(0x2601) }
+    if ($Category -match 'Chơi|Game|Launcher') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($Category -match 'Trữ|Tệp|Storage|File|Transfer') { return [char]::ConvertFromUtf32(0x2601) }
     if ($Category -match 'Security|Bảo Mật|Network|Mạng') { return [char]::ConvertFromUtf32(0x1F6E1) }
     if ($Category -match 'Core|Runtimes|Thư Viện') { return [char]::ConvertFromUtf32(0x2699) }
 
@@ -411,6 +416,7 @@ foreach ($cat in $categories) {
         $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
         $linkIcon.FontFamily = $script:fontSegoeEmoji
         $linkIcon.FontSize = 9.5
+        $linkIcon.Foreground = $script:brushLinkBtnFg
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Child = $linkIcon
