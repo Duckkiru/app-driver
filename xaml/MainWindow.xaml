@@ -234,43 +234,30 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Top App Header -->
-            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
+            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar & Search -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
             <RowDefinition Height="150"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
-        <!-- ═══ 1. TOP APP HEADER ═══ -->
-        <Border Grid.Row="0" Background="#0B0E15" Padding="22,13" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
+        <!-- ═══ 1. MAIN NAV TAB BAR & SEARCH BOX ═══ -->
+        <Border Grid.Row="0" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="380"/>
+                    <ColumnDefinition Width="320"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Brand & Logo -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#131A2B" BorderBrush="#202D47" BorderThickness="1"
-                            CornerRadius="10" Width="42" Height="42" Margin="0,0,14,0">
-                        <TextBlock Text="🦆" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <StackPanel VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="DUCK UTIL" FontSize="20" FontWeight="Black" Foreground="#F8FAFC"/>
-                            <Border Background="#0284C7" BorderBrush="#38BDF8" BorderThickness="1"
-                                    CornerRadius="5" Margin="10,0,0,0" Padding="7,2" VerticalAlignment="Center">
-                                <TextBlock Text="PRO SUITE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#FFFFFF"/>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="Windows Package Manager &amp; System Maintenance Suite"
-                                   FontSize="11.5" Foreground="#64748B" Margin="0,2,0,0"/>
-                    </StackPanel>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
+                            BorderBrush="#38BDF8" Foreground="#38BDF8"/>
+                    <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
                 </StackPanel>
 
-                <!-- Modern Search Box -->
-                <Border Grid.Column="2" Background="#111622" CornerRadius="8" BorderBrush="#243044" BorderThickness="1" Padding="12,7" VerticalAlignment="Center">
+                <!-- Modern Search Box tích hợp gọn gàng bên phải thanh điều hướng -->
+                <Border Grid.Column="1" Background="#111622" CornerRadius="8" BorderBrush="#243044" BorderThickness="1" 
+                        Padding="12,6" Margin="0,0,4,0" VerticalAlignment="Center">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -278,7 +265,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="🔍" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
                         <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#F8FAFC"
-                                 BorderThickness="0" FontSize="12.5" VerticalAlignment="Center"
+                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center"
                                  CaretBrush="#38BDF8"
                                  ToolTip="Gõ để lọc ứng dụng ngay lập tức theo tên hoặc ID..."/>
                     </Grid>
@@ -286,18 +273,8 @@
             </Grid>
         </Border>
 
-        <!-- ═══ 2. MAIN NAV TAB BAR ═══ -->
-        <Border Grid.Row="1" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
-                        BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
-                <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ═══ 3. MAIN VIEWPORT (TAB CONTROL) ═══ -->
-        <TabControl Grid.Row="2" Name="MainTabControl" Background="Transparent" BorderThickness="0">
+        <!-- ═══ 2. MAIN VIEWPORT (TAB CONTROL) ═══ -->
+        <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderThickness="0">
             <TabControl.ItemContainerStyle>
                 <Style TargetType="TabItem">
                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -524,8 +501,8 @@
             </TabItem>
         </TabControl>
 
-        <!-- ═══ 4. STATUS & PROGRESS BAR ═══ -->
-        <Border Grid.Row="3" Background="#0A0D14" Padding="20,7" BorderBrush="#181E2C" BorderThickness="0,1,0,0">
+        <!-- ═══ 3. STATUS & PROGRESS BAR ═══ -->
+        <Border Grid.Row="2" Background="#0A0D14" Padding="20,7" BorderBrush="#181E2C" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -551,8 +528,8 @@
             </Grid>
         </Border>
 
-        <!-- ═══ 5. CYBER TERMINAL LOG ═══ -->
-        <Border Grid.Row="4" Background="#05070B" Padding="16,8" BorderBrush="#141924" BorderThickness="0,1,0,0">
+        <!-- ═══ 4. CYBER TERMINAL LOG ═══ -->
+        <Border Grid.Row="3" Background="#05070B" Padding="16,8" BorderBrush="#141924" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
