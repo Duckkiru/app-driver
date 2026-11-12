@@ -7,9 +7,10 @@ $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
 $progressBar       = $window.FindName("progressBar")
 $txtLog            = $window.FindName("txtLog")
-$txtSearch         = $window.FindName("txtSearch")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
+$rowDefTerminal    = $window.FindName("rowDefTerminal")
+$btnToggleTerminal = $window.FindName("btnToggleTerminal")
 
 # Bảng màu Frozen Brush tĩnh tái sử dụng tối đa, loại trừ cấp phát bộ nhớ rác (GC)
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
@@ -114,6 +115,28 @@ Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
+
+# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MŨI TÊN THU XUỐNG ĐỂ ẨN TERMINAL) ──
+$script:isTerminalCollapsed = $false
+if ($btnToggleTerminal -and $rowDefTerminal) {
+    $btnToggleTerminal.Add_Click({
+        if ($script:isTerminalCollapsed) {
+            # Mở rộng lại 150px
+            $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
+            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
+            $btnToggleTerminal.Content = "▼ Thu gọn"
+            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
+            $script:isTerminalCollapsed = $false
+        } else {
+            # Thu gọn (chỉ giữ thanh tiêu đề)
+            $rowDefTerminal.Height = [System.Windows.GridLength]::Auto
+            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Collapsed }
+            $btnToggleTerminal.Content = "▲ Mở rộng"
+            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
+            $script:isTerminalCollapsed = $true
+        }
+    })
+}
 
 # Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
 function Get-AppFallbackGlyph {
@@ -241,13 +264,14 @@ foreach ($cat in $categories) {
     # Từng dòng App: Logo + CheckBox + Tên (90%) + Icon Link Web (10%)
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
+        $rowBorder.Height = 28
         $rowBorder.CornerRadius = $cornerRow
-        $rowBorder.Padding = $paddingRow
-        $rowBorder.Margin = $marginRowBorder
+        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 0, 6, 0)
+        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
         $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
-        # Tiền tính toán chuỗi tìm kiếm để bộ lọc TextChanged chạy tức thì
+        # Tiền tính toán chuỗi tìm kiếm
         $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
         $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText $($app.Desc)".ToLowerInvariant()
 
@@ -260,12 +284,14 @@ foreach ($cat in $categories) {
             SearchIndex      = $searchIndex
         }
 
-        # Grid chia 4 cột: Col 0 (CheckBox), Col 1 (Icon), Col 2 (Tên 90%), Col 3 (Link Web 10%)
+        # Grid 4 cột cố định tỉ lệ, triệt tiêu hoàn toàn hiện tượng lệch dòng
         $rowGrid = New-Object System.Windows.Controls.Grid
-        $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = [System.Windows.GridLength]::Auto
-        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
+        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(20, [System.Windows.GridUnitType]::Pixel)
+        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
         $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = [System.Windows.GridLength]::Auto
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
         $rowGrid.ColumnDefinitions.Add($col0) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
@@ -274,6 +300,8 @@ foreach ($cat in $categories) {
         # 1. CheckBox
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $cb.Margin = New-Object System.Windows.Thickness(0)
         $cb.Tag = $rowBorder.Tag
         $cb.Add_Checked({ Update-SelectionCount })
         $cb.Add_Unchecked({ Update-SelectionCount })
@@ -284,14 +312,15 @@ foreach ($cat in $categories) {
 
         # 2. Container Icon (Chống giật, luôn có Glyph đặc trưng và nạp Logo chính hãng mượt mà)
         $iconContainer = New-Object System.Windows.Controls.Grid
-        $iconContainer.Width = 18; $iconContainer.Height = 18
-        $iconContainer.Margin = $marginIcon
+        $iconContainer.Width = 16; $iconContainer.Height = 16
+        $iconContainer.Margin = New-Object System.Windows.Thickness(0)
+        $iconContainer.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconContainer.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
         $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
         $fallbackGlyph.FontFamily = $script:fontSegoeEmoji
-        $fallbackGlyph.FontSize = 12
+        $fallbackGlyph.FontSize = 11
         $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $iconContainer.Children.Add($fallbackGlyph) | Out-Null
@@ -347,36 +376,38 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
         $rowGrid.Children.Add($iconContainer) | Out-Null
 
-        # 3. Tên ứng dụng (Chiếm 90% chiều rộng dòng, nhấp vào tên tự tick chọn CheckBox)
+        # 3. Tên ứng dụng (Căn chỉnh thẳng hàng tuyệt đối với lề trái đồng đều)
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
         $nameText.Foreground = $script:brushTextWhite
         $nameText.FontSize = 12
         $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameText.Margin = New-Object System.Windows.Thickness(5, 0, 4, 0)
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
-        # 4. Button Link Website ngoài cùng bên phải (Tách riêng dạng nút bấm chuyên nghiệp)
+        # 4. Button Link Website ngoài cùng bên phải (Icon Link 🔗 chuẩn, căn thẳng hàng)
         $linkBtn = New-Object System.Windows.Controls.Border
-        $linkBtn.Width = 24
-        $linkBtn.Height = 20
+        $linkBtn.Width = 22
+        $linkBtn.Height = 18
         $linkBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $linkBtn.Background = $script:brushLinkBtnBg
         $linkBtn.BorderBrush = $script:brushLinkBtnBorder
         $linkBtn.BorderThickness = $thicknessOne
         $linkBtn.Cursor = [System.Windows.Input.Cursors]::Hand
-        $linkBtn.Margin = New-Object System.Windows.Thickness(6, 0, 2, 0)
+        $linkBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $linkBtn.Margin = New-Object System.Windows.Thickness(0)
         $linkBtn.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
         $linkBtn.Tag = $app.Domain
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
-        $linkIcon.Text = [char]0x2197 # ↗
-        $linkIcon.FontSize = 11
-        $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
-        $linkIcon.Foreground = $script:brushLinkBtnFg
+        $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
+        $linkIcon.FontFamily = $script:fontSegoeEmoji
+        $linkIcon.FontSize = 9.5
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Child = $linkIcon
@@ -463,37 +494,6 @@ foreach ($cat in $categories) {
         $cardsContainer.Children.Add($cardBorder) | Out-Null
     }
     $catIndex++
-}
-
-# ── LOGIC TÌM KIẾM & BỘ LỌC TỐC ĐỘ CAO (INDEXED SEARCH) ──
-if ($txtSearch) {
-    $txtSearch.Add_TextChanged({
-        $keyword = $txtSearch.Text.Trim().ToLowerInvariant()
-        $isEmpty = [string]::IsNullOrEmpty($keyword)
-
-        foreach ($entry in $categoryCardMap.GetEnumerator()) {
-            $card = $entry.Key
-            $rows = $entry.Value
-            $visibleRowsCount = 0
-
-            foreach ($row in $rows) {
-                $matched = $isEmpty -or ($row.Tag.SearchIndex.Contains($keyword))
-                if ($matched) {
-                    $row.Visibility = [System.Windows.Visibility]::Visible
-                    $visibleRowsCount++
-                } else {
-                    $row.Visibility = [System.Windows.Visibility]::Collapsed
-                }
-            }
-
-            # Ẩn cả khung Card Category nếu không có ứng dụng nào khớp từ khóa
-            if ($isEmpty -or $visibleRowsCount -gt 0) {
-                $card.Visibility = [System.Windows.Visibility]::Visible
-            } else {
-                $card.Visibility = [System.Windows.Visibility]::Collapsed
-            }
-        }
-    })
 }
 
 # ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──

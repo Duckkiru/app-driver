@@ -234,43 +234,20 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar & Search -->
+            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="150"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="150" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
-        <!-- ═══ 1. MAIN NAV TAB BAR & SEARCH BOX ═══ -->
+        <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
         <Border Grid.Row="0" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="320"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
-                            BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                    <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
-                </StackPanel>
-
-                <!-- Modern Search Box tích hợp gọn gàng bên phải thanh điều hướng -->
-                <Border Grid.Column="1" Background="#111622" CornerRadius="8" BorderBrush="#243044" BorderThickness="1" 
-                        Padding="12,6" Margin="0,0,4,0" VerticalAlignment="Center">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="🔍" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
-                        <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#F8FAFC"
-                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center"
-                                 CaretBrush="#38BDF8"
-                                 ToolTip="Gõ để lọc ứng dụng ngay lập tức theo tên hoặc ID..."/>
-                    </Grid>
-                </Border>
-            </Grid>
+            <StackPanel Orientation="Horizontal">
+                <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
+                        BorderBrush="#38BDF8" Foreground="#38BDF8"/>
+                <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
+                <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
+            </StackPanel>
         </Border>
 
         <!-- ═══ 2. MAIN VIEWPORT (TAB CONTROL) ═══ -->
@@ -543,8 +520,15 @@
                         <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569"
                                    FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Button Name="btnClearLog" Content="Xóa Log" HorizontalAlignment="Right"
-                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11" Padding="6,2"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="btnToggleTerminal" Content="▼ Thu gọn"
+                                Background="#111622" BorderBrush="#243044" BorderThickness="1"
+                                Foreground="#38BDF8" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
+                                Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
+                        <Button Name="btnClearLog" Content="Xóa Log"
+                                Background="Transparent" Foreground="#64748B" BorderThickness="0"
+                                Cursor="Hand" FontSize="11" Padding="6,2"/>
+                    </StackPanel>
                 </Grid>
                 <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"

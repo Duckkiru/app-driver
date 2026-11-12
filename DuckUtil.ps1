@@ -1265,43 +1265,20 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar & Search -->
+            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="150"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="150" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
-        <!-- ═══ 1. MAIN NAV TAB BAR & SEARCH BOX ═══ -->
+        <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
         <Border Grid.Row="0" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="320"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
-                            BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                    <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
-                </StackPanel>
-
-                <!-- Modern Search Box tích hợp gọn gàng bên phải thanh điều hướng -->
-                <Border Grid.Column="1" Background="#111622" CornerRadius="8" BorderBrush="#243044" BorderThickness="1" 
-                        Padding="12,6" Margin="0,0,4,0" VerticalAlignment="Center">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="🔍" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
-                        <TextBox Grid.Column="1" Name="txtSearch" Background="Transparent" Foreground="#F8FAFC"
-                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center"
-                                 CaretBrush="#38BDF8"
-                                 ToolTip="Gõ để lọc ứng dụng ngay lập tức theo tên hoặc ID..."/>
-                    </Grid>
-                </Border>
-            </Grid>
+            <StackPanel Orientation="Horizontal">
+                <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
+                        BorderBrush="#38BDF8" Foreground="#38BDF8"/>
+                <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
+                <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
+            </StackPanel>
         </Border>
 
         <!-- ═══ 2. MAIN VIEWPORT (TAB CONTROL) ═══ -->
@@ -1574,8 +1551,15 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569"
                                    FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Button Name="btnClearLog" Content="Xóa Log" HorizontalAlignment="Right"
-                            Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" FontSize="11" Padding="6,2"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Name="btnToggleTerminal" Content="▼ Thu gọn"
+                                Background="#111622" BorderBrush="#243044" BorderThickness="1"
+                                Foreground="#38BDF8" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
+                                Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
+                        <Button Name="btnClearLog" Content="Xóa Log"
+                                Background="Transparent" Foreground="#64748B" BorderThickness="0"
+                                Cursor="Hand" FontSize="11" Padding="6,2"/>
+                    </StackPanel>
                 </Grid>
                 <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
@@ -2306,9 +2290,10 @@ $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
 $progressBar       = $window.FindName("progressBar")
 $txtLog            = $window.FindName("txtLog")
-$txtSearch         = $window.FindName("txtSearch")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
+$rowDefTerminal    = $window.FindName("rowDefTerminal")
+$btnToggleTerminal = $window.FindName("btnToggleTerminal")
 
 # Bảng màu Frozen Brush tĩnh tái sử dụng tối đa, loại trừ cấp phát bộ nhớ rác (GC)
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
@@ -2413,6 +2398,28 @@ Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
+
+# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MŨI TÊN THU XUỐNG ĐỂ ẨN TERMINAL) ──
+$script:isTerminalCollapsed = $false
+if ($btnToggleTerminal -and $rowDefTerminal) {
+    $btnToggleTerminal.Add_Click({
+        if ($script:isTerminalCollapsed) {
+            # Mở rộng lại 150px
+            $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
+            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
+            $btnToggleTerminal.Content = "▼ Thu gọn"
+            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
+            $script:isTerminalCollapsed = $false
+        } else {
+            # Thu gọn (chỉ giữ thanh tiêu đề)
+            $rowDefTerminal.Height = [System.Windows.GridLength]::Auto
+            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Collapsed }
+            $btnToggleTerminal.Content = "▲ Mở rộng"
+            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
+            $script:isTerminalCollapsed = $true
+        }
+    })
+}
 
 # Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
 function Get-AppFallbackGlyph {
@@ -2540,13 +2547,14 @@ foreach ($cat in $categories) {
     # Từng dòng App: Logo + CheckBox + Tên (90%) + Icon Link Web (10%)
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
+        $rowBorder.Height = 28
         $rowBorder.CornerRadius = $cornerRow
-        $rowBorder.Padding = $paddingRow
-        $rowBorder.Margin = $marginRowBorder
+        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 0, 6, 0)
+        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
         $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
-        # Tiền tính toán chuỗi tìm kiếm để bộ lọc TextChanged chạy tức thì
+        # Tiền tính toán chuỗi tìm kiếm
         $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
         $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText $($app.Desc)".ToLowerInvariant()
 
@@ -2559,12 +2567,14 @@ foreach ($cat in $categories) {
             SearchIndex      = $searchIndex
         }
 
-        # Grid chia 4 cột: Col 0 (CheckBox), Col 1 (Icon), Col 2 (Tên 90%), Col 3 (Link Web 10%)
+        # Grid 4 cột cố định tỉ lệ, triệt tiêu hoàn toàn hiện tượng lệch dòng
         $rowGrid = New-Object System.Windows.Controls.Grid
-        $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = [System.Windows.GridLength]::Auto
-        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
+        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(20, [System.Windows.GridUnitType]::Pixel)
+        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
         $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = [System.Windows.GridLength]::Auto
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
         $rowGrid.ColumnDefinitions.Add($col0) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
@@ -2573,6 +2583,8 @@ foreach ($cat in $categories) {
         # 1. CheckBox
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $cb.Margin = New-Object System.Windows.Thickness(0)
         $cb.Tag = $rowBorder.Tag
         $cb.Add_Checked({ Update-SelectionCount })
         $cb.Add_Unchecked({ Update-SelectionCount })
@@ -2583,14 +2595,15 @@ foreach ($cat in $categories) {
 
         # 2. Container Icon (Chống giật, luôn có Glyph đặc trưng và nạp Logo chính hãng mượt mà)
         $iconContainer = New-Object System.Windows.Controls.Grid
-        $iconContainer.Width = 18; $iconContainer.Height = 18
-        $iconContainer.Margin = $marginIcon
+        $iconContainer.Width = 16; $iconContainer.Height = 16
+        $iconContainer.Margin = New-Object System.Windows.Thickness(0)
+        $iconContainer.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconContainer.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
         $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
         $fallbackGlyph.FontFamily = $script:fontSegoeEmoji
-        $fallbackGlyph.FontSize = 12
+        $fallbackGlyph.FontSize = 11
         $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $iconContainer.Children.Add($fallbackGlyph) | Out-Null
@@ -2646,36 +2659,38 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
         $rowGrid.Children.Add($iconContainer) | Out-Null
 
-        # 3. Tên ứng dụng (Chiếm 90% chiều rộng dòng, nhấp vào tên tự tick chọn CheckBox)
+        # 3. Tên ứng dụng (Căn chỉnh thẳng hàng tuyệt đối với lề trái đồng đều)
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
         $nameText.Foreground = $script:brushTextWhite
         $nameText.FontSize = 12
         $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameText.Margin = New-Object System.Windows.Thickness(5, 0, 4, 0)
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $nameText.ToolTip = "$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
-        # 4. Button Link Website ngoài cùng bên phải (Tách riêng dạng nút bấm chuyên nghiệp)
+        # 4. Button Link Website ngoài cùng bên phải (Icon Link 🔗 chuẩn, căn thẳng hàng)
         $linkBtn = New-Object System.Windows.Controls.Border
-        $linkBtn.Width = 24
-        $linkBtn.Height = 20
+        $linkBtn.Width = 22
+        $linkBtn.Height = 18
         $linkBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $linkBtn.Background = $script:brushLinkBtnBg
         $linkBtn.BorderBrush = $script:brushLinkBtnBorder
         $linkBtn.BorderThickness = $thicknessOne
         $linkBtn.Cursor = [System.Windows.Input.Cursors]::Hand
-        $linkBtn.Margin = New-Object System.Windows.Thickness(6, 0, 2, 0)
+        $linkBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $linkBtn.Margin = New-Object System.Windows.Thickness(0)
         $linkBtn.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
         $linkBtn.Tag = $app.Domain
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
-        $linkIcon.Text = [char]0x2197 # ↗
-        $linkIcon.FontSize = 11
-        $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
-        $linkIcon.Foreground = $script:brushLinkBtnFg
+        $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
+        $linkIcon.FontFamily = $script:fontSegoeEmoji
+        $linkIcon.FontSize = 9.5
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Child = $linkIcon
@@ -2762,37 +2777,6 @@ foreach ($cat in $categories) {
         $cardsContainer.Children.Add($cardBorder) | Out-Null
     }
     $catIndex++
-}
-
-# ── LOGIC TÌM KIẾM & BỘ LỌC TỐC ĐỘ CAO (INDEXED SEARCH) ──
-if ($txtSearch) {
-    $txtSearch.Add_TextChanged({
-        $keyword = $txtSearch.Text.Trim().ToLowerInvariant()
-        $isEmpty = [string]::IsNullOrEmpty($keyword)
-
-        foreach ($entry in $categoryCardMap.GetEnumerator()) {
-            $card = $entry.Key
-            $rows = $entry.Value
-            $visibleRowsCount = 0
-
-            foreach ($row in $rows) {
-                $matched = $isEmpty -or ($row.Tag.SearchIndex.Contains($keyword))
-                if ($matched) {
-                    $row.Visibility = [System.Windows.Visibility]::Visible
-                    $visibleRowsCount++
-                } else {
-                    $row.Visibility = [System.Windows.Visibility]::Collapsed
-                }
-            }
-
-            # Ẩn cả khung Card Category nếu không có ứng dụng nào khớp từ khóa
-            if ($isEmpty -or $visibleRowsCount -gt 0) {
-                $card.Visibility = [System.Windows.Visibility]::Visible
-            } else {
-                $card.Visibility = [System.Windows.Visibility]::Collapsed
-            }
-        }
-    })
 }
 
 # ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──
