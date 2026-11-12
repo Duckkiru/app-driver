@@ -215,8 +215,7 @@ $appsRawJson = @'
     "Aliases": [
       "Google Chrome",
       "Google.Chrome"
-    ],
-    "Desc": "Trình duyệt web chuẩn công nghiệp từ Google"
+    ]
   },
   {
     "IDn": 2,
@@ -228,8 +227,7 @@ $appsRawJson = @'
       "Mozilla Firefox",
       "Firefox",
       "Mozilla.Firefox"
-    ],
-    "Desc": "Trình duyệt web mã nguồn mở chú trọng quyền riêng tư"
+    ]
   },
   {
     "IDn": 3,
@@ -242,8 +240,7 @@ $appsRawJson = @'
       "BraveSoftware",
       "Brave.Brave",
       "Brave Browser"
-    ],
-    "Desc": "Trình duyệt bảo mật tích hợp công cụ chặn quảng cáo"
+    ]
   },
   {
     "IDn": 4,
@@ -254,8 +251,7 @@ $appsRawJson = @'
     "Aliases": [
       "LibreWolf",
       "LibreWolf.LibreWolf"
-    ],
-    "Desc": "Bản phân phối Firefox bảo mật cao, loại bỏ hoàn toàn đo lường từ xa (telemetry)"
+    ]
   },
   {
     "IDn": 5,
@@ -266,8 +262,7 @@ $appsRawJson = @'
     "Aliases": [
       "Vivaldi",
       "VivaldiTechnologies.Vivaldi"
-    ],
-    "Desc": "Trình duyệt hiệu năng cao với khả năng tùy biến giao diện linh hoạt"
+    ]
   },
   {
     "IDn": 6,
@@ -278,8 +273,7 @@ $appsRawJson = @'
     "Aliases": [
       "Tor Browser",
       "TorProject.TorBrowser"
-    ],
-    "Desc": "Trình duyệt bảo mật ẩn danh qua mạng định tuyến củ hành (Onion Network)"
+    ]
   },
   {
     "IDn": 7,
@@ -291,8 +285,7 @@ $appsRawJson = @'
       "Opera GX",
       "OperaGX",
       "Opera.OperaGX"
-    ],
-    "Desc": "Trình duyệt tùy chỉnh tài nguyên phần cứng và kiểm soát băng thông mạng"
+    ]
   },
   {
     "IDn": 8,
@@ -303,8 +296,7 @@ $appsRawJson = @'
     "Aliases": [
       "Discord",
       "Discord.Discord"
-    ],
-    "Desc": "Nền tảng giao tiếp bằng giọng nói, video và văn bản thời gian thực"
+    ]
   },
   {
     "IDn": 9,
@@ -317,8 +309,7 @@ $appsRawJson = @'
       "Telegram",
       "TelegramDesktop",
       "Telegram.TelegramDesktop"
-    ],
-    "Desc": "Ứng dụng nhắn tin bảo mật cao và đồng bộ đám mây tức thì"
+    ]
   },
   {
     "IDn": 10,
@@ -329,8 +320,7 @@ $appsRawJson = @'
     "Aliases": [
       "Signal",
       "OpenWhisperSystems.Signal"
-    ],
-    "Desc": "Nền tảng liên lạc bảo mật với công nghệ mã hóa đầu cuối (E2EE)"
+    ]
   },
   {
     "IDn": 11,
@@ -342,8 +332,7 @@ $appsRawJson = @'
       "Zalo",
       "VNGCorp.Zalo",
       "VNG.Zalo"
-    ],
-    "Desc": "Ứng dụng nhắn tin và gọi thoại phổ biến tại Việt Nam"
+    ]
   },
   {
     "IDn": 12,
@@ -355,8 +344,7 @@ $appsRawJson = @'
       "Zoom",
       "Zoom Workplace",
       "Zoom.Zoom"
-    ],
-    "Desc": "Nền tảng hội nghị truyền hình và họp trực tuyến doanh nghiệp"
+    ]
   },
   {
     "IDn": 13,
@@ -367,8 +355,7 @@ $appsRawJson = @'
     "Aliases": [
       "Slack",
       "SlackTechnologies.Slack"
-    ],
-    "Desc": "Nền tảng cộng tác và giao tiếp chuyên nghiệp cho doanh nghiệp"
+    ]
   },
   {
     "IDn": 14,
@@ -380,8 +367,7 @@ $appsRawJson = @'
       "WhatsApp",
       "WhatsApp.WhatsApp",
       "WhatsApp Desktop"
-    ],
-    "Desc": "Ứng dụng nhắn tin và gọi thoại quốc tế bảo mật cao"
+    ]
   },
   {
     "IDn": 15,
@@ -393,8 +379,7 @@ $appsRawJson = @'
       "Microsoft Teams",
       "MSTeams",
       "Microsoft.Teams"
-    ],
-    "Desc": "Giải pháp cộng tác và hội họp tích hợp Microsoft 365"
+    ]
   },
   {
     "IDn": 16,
@@ -407,8 +392,7 @@ $appsRawJson = @'
       "Visual Studio Code",
       "VS Code",
       "Microsoft.VisualStudioCode"
-    ],
-    "Desc": "Trình soạn thảo mã nguồn mở mạnh mẽ và mở rộng phong phú từ Microsoft"
+    ]
   },
   {
     "IDn": 17,
@@ -419,8 +403,7 @@ $appsRawJson = @'
     "Aliases": [
       "Git for Windows",
       "Git.Git"
-    ],
-    "Desc": "Hệ thống quản lý phiên bản phân tán (Distributed Version Control)"
+    ]
   },
   {
     "IDn": 18,
@@ -435,8 +418,7 @@ $appsRawJson = @'
       "WindowsTerminal",
       "9N0DX20HK701",
       "Bảng điều khiển Windows"
-    ],
-    "Desc": "Trình giả lập dòng lệnh đa tab hiện đại cho Windows"
+    ]
   },
   {
     "IDn": 19,
@@ -452,8 +434,7 @@ $appsRawJson = @'
       "9N8G5RFZ9XK3",
       "Bảng điều khiển Windows (Bản xem trước)",
       "Bản xem trước của Bảng điều khiển Windows"
-    ],
-    "Desc": "Phiên bản thử nghiệm sớm các tính năng mới của Windows Terminal"
+    ]
   },
   {
     "IDn": 20,
@@ -465,8 +446,7 @@ $appsRawJson = @'
       "Python 3.12",
       "Python 3.12.x",
       "Python.Python.3.12"
-    ],
-    "Desc": "Ngôn ngữ lập trình thông dịch phổ biến cho AI, dữ liệu và tự động hóa"
+    ]
   },
   {
     "IDn": 21,
@@ -479,8 +459,7 @@ $appsRawJson = @'
       "OpenJS.NodeJS",
       "OpenJS.NodeJS.LTS",
       "NodeJS"
-    ],
-    "Desc": "Môi trường thực thi JavaScript phía máy chủ phiên bản hỗ trợ dài hạn (LTS)"
+    ]
   },
   {
     "IDn": 22,
@@ -491,8 +470,7 @@ $appsRawJson = @'
     "Aliases": [
       "Docker Desktop",
       "Docker.DockerDesktop"
-    ],
-    "Desc": "Nền tảng ảo hóa container và công cụ quản trị Docker cho máy trạm"
+    ]
   },
   {
     "IDn": 23,
@@ -503,8 +481,7 @@ $appsRawJson = @'
     "Aliases": [
       "Notepad++",
       "Notepad++.Notepad++"
-    ],
-    "Desc": "Trình soạn thảo văn bản và mã nguồn gọn nhẹ, hiệu năng cao"
+    ]
   },
   {
     "IDn": 24,
@@ -515,8 +492,7 @@ $appsRawJson = @'
     "Aliases": [
       "Postman",
       "Postman.Postman"
-    ],
-    "Desc": "Nền tảng phát triển, kiểm thử và quản lý vòng đời API"
+    ]
   },
   {
     "IDn": 25,
@@ -528,8 +504,7 @@ $appsRawJson = @'
       "DBeaver",
       "DBeaver CE",
       "dbeaver.dbeaver"
-    ],
-    "Desc": "Công cụ quản trị cơ sở dữ liệu đa nền tảng cho nhà phát triển và DBA"
+    ]
   },
   {
     "IDn": 26,
@@ -541,8 +516,7 @@ $appsRawJson = @'
       "Go Programming Language",
       "GoLang",
       "GoLang.Go"
-    ],
-    "Desc": "Ngôn ngữ lập trình mã nguồn mở hiệu năng cao từ Google"
+    ]
   },
   {
     "IDn": 27,
@@ -554,8 +528,7 @@ $appsRawJson = @'
       "Rustup",
       "rustup",
       "Rustlang.Rustup"
-    ],
-    "Desc": "Trình cài đặt và quản lý chuỗi công cụ ngôn ngữ lập trình Rust"
+    ]
   },
   {
     "IDn": 28,
@@ -567,8 +540,7 @@ $appsRawJson = @'
       "7-Zip",
       "7zip",
       "7zip.7zip"
-    ],
-    "Desc": "Công cụ nén và giải nén tệp mã nguồn mở với tỷ lệ nén cao"
+    ]
   },
   {
     "IDn": 29,
@@ -579,8 +551,7 @@ $appsRawJson = @'
     "Aliases": [
       "WinRAR",
       "RARLab.WinRAR"
-    ],
-    "Desc": "Phần mềm nén và giải nén lưu trữ dữ liệu định dạng RAR và ZIP"
+    ]
   },
   {
     "IDn": 30,
@@ -591,8 +562,7 @@ $appsRawJson = @'
     "Aliases": [
       "Everything",
       "voidtools.Everything"
-    ],
-    "Desc": "Công cụ chỉ mục và định vị tập tin tức thì trên phân vùng NTFS"
+    ]
   },
   {
     "IDn": 31,
@@ -603,8 +573,7 @@ $appsRawJson = @'
     "Aliases": [
       "PowerToys",
       "Microsoft.PowerToys"
-    ],
-    "Desc": "Bộ tiện ích mở rộng nâng cao năng suất hệ thống từ Microsoft"
+    ]
   },
   {
     "IDn": 32,
@@ -616,8 +585,7 @@ $appsRawJson = @'
       "Flow Launcher",
       "Flow-Launcher",
       "Flow-Launcher.Flow-Launcher"
-    ],
-    "Desc": "Thanh tìm kiếm và khởi chạy tệp tin, ứng dụng nhanh qua phím tắt"
+    ]
   },
   {
     "IDn": 33,
@@ -628,8 +596,7 @@ $appsRawJson = @'
     "Aliases": [
       "Revo Uninstaller",
       "VSRevoGroup.RevoUninstaller"
-    ],
-    "Desc": "Công cụ gỡ cài đặt phần mềm chuyên sâu và dọn dẹp khóa Registry tồn đọng"
+    ]
   },
   {
     "IDn": 34,
@@ -641,8 +608,7 @@ $appsRawJson = @'
       "TreeSize",
       "TreeSize Free",
       "JAMSoftware.TreeSize.Free"
-    ],
-    "Desc": "Công cụ phân tích và trực quan hóa dung lượng sử dụng ổ đĩa"
+    ]
   },
   {
     "IDn": 35,
@@ -653,8 +619,7 @@ $appsRawJson = @'
     "Aliases": [
       "ShareX",
       "ShareX.ShareX"
-    ],
-    "Desc": "Công cụ chụp ảnh, quay video màn hình, nhận diện OCR và chia sẻ tệp"
+    ]
   },
   {
     "IDn": 36,
@@ -665,8 +630,7 @@ $appsRawJson = @'
     "Aliases": [
       "BleachBit",
       "BleachBit.BleachBit"
-    ],
-    "Desc": "Tiện ích dọn dẹp tập tin rác và bảo vệ quyền riêng tư mã nguồn mở"
+    ]
   },
   {
     "IDn": 37,
@@ -677,8 +641,7 @@ $appsRawJson = @'
     "Aliases": [
       "FanControl",
       "Rem0o.FanControl"
-    ],
-    "Desc": "Phần mềm tinh chỉnh và điều khiển tốc độ quạt làm mát phần cứng máy tính"
+    ]
   },
   {
     "IDn": 38,
@@ -690,8 +653,7 @@ $appsRawJson = @'
       "VLC media player",
       "VLC",
       "VideoLAN.VLC"
-    ],
-    "Desc": "Trình phát đa phương tiện mã nguồn mở tương thích hầu hết định dạng"
+    ]
   },
   {
     "IDn": 39,
@@ -702,8 +664,7 @@ $appsRawJson = @'
     "Aliases": [
       "OBS Studio",
       "OBSProject.OBSStudio"
-    ],
-    "Desc": "Phần mềm ghi hình màn hình và truyền phát trực tiếp chuyên nghiệp"
+    ]
   },
   {
     "IDn": 40,
@@ -714,8 +675,7 @@ $appsRawJson = @'
     "Aliases": [
       "Spotify",
       "Spotify.Spotify"
-    ],
-    "Desc": "Dịch vụ truyền phát âm nhạc và podcast kỹ thuật số toàn cầu"
+    ]
   },
   {
     "IDn": 41,
@@ -726,8 +686,7 @@ $appsRawJson = @'
     "Aliases": [
       "GIMP",
       "GIMP.GIMP"
-    ],
-    "Desc": "Phần mềm xử lý đồ họa và chỉnh sửa hình ảnh mã nguồn mở nâng cao"
+    ]
   },
   {
     "IDn": 42,
@@ -738,8 +697,7 @@ $appsRawJson = @'
     "Aliases": [
       "Audacity",
       "Audacity.Audacity"
-    ],
-    "Desc": "Phần mềm thu âm và biên tập âm thanh đa kênh mã nguồn mở"
+    ]
   },
   {
     "IDn": 43,
@@ -750,8 +708,7 @@ $appsRawJson = @'
     "Aliases": [
       "HandBrake",
       "HandBrake.HandBrake"
-    ],
-    "Desc": "Công cụ chuyển mã video mã nguồn mở hỗ trợ tối ưu dung lượng tệp"
+    ]
   },
   {
     "IDn": 44,
@@ -762,8 +719,7 @@ $appsRawJson = @'
     "Aliases": [
       "Krita",
       "KDE.Krita"
-    ],
-    "Desc": "Phần mềm vẽ đồ họa số, minh họa và diễn hoạt chuyên nghiệp"
+    ]
   },
   {
     "IDn": 45,
@@ -775,8 +731,7 @@ $appsRawJson = @'
       "K-Lite Codec Pack",
       "K-Lite",
       "CodecGuide.K-LiteCodecPack.Mega"
-    ],
-    "Desc": "Gói bộ giải mã codec âm thanh và video toàn diện cho hệ điều hành Windows"
+    ]
   },
   {
     "IDn": 46,
@@ -787,8 +742,7 @@ $appsRawJson = @'
     "Aliases": [
       "LibreOffice",
       "TheDocumentFoundation.LibreOffice"
-    ],
-    "Desc": "Bộ ứng dụng văn phòng mã nguồn mở toàn diện tương thích chuẩn tài liệu mở"
+    ]
   },
   {
     "IDn": 47,
@@ -799,8 +753,7 @@ $appsRawJson = @'
     "Aliases": [
       "Obsidian",
       "Obsidian.Obsidian"
-    ],
-    "Desc": "Ứng dụng ghi chú và xây dựng cơ sở tri thức cá nhân trên nền tảng Markdown"
+    ]
   },
   {
     "IDn": 48,
@@ -811,8 +764,7 @@ $appsRawJson = @'
     "Aliases": [
       "Notion",
       "Notion.Notion"
-    ],
-    "Desc": "Không gian làm việc tích hợp ghi chú, quản lý tác vụ và dữ liệu cộng tác"
+    ]
   },
   {
     "IDn": 49,
@@ -823,8 +775,7 @@ $appsRawJson = @'
     "Aliases": [
       "SumatraPDF",
       "SumatraPDF.SumatraPDF"
-    ],
-    "Desc": "Trình đọc tài liệu PDF, ePub, Mobi gọn nhẹ với tốc độ phản hồi cao"
+    ]
   },
   {
     "IDn": 50,
@@ -836,8 +787,7 @@ $appsRawJson = @'
       "Foxit PDF Reader",
       "Foxit Reader",
       "Foxit.FoxitReader"
-    ],
-    "Desc": "Giải pháp xem, ghi chú, biểu mẫu và ký số tài liệu PDF chuẩn doanh nghiệp"
+    ]
   },
   {
     "IDn": 51,
@@ -848,8 +798,7 @@ $appsRawJson = @'
     "Aliases": [
       "Steam",
       "Valve.Steam"
-    ],
-    "Desc": "Nền tảng phân phối kỹ thuật số và cộng đồng trò chơi điện tử từ Valve"
+    ]
   },
   {
     "IDn": 52,
@@ -860,8 +809,7 @@ $appsRawJson = @'
     "Aliases": [
       "Epic Games Launcher",
       "EpicGames.EpicGamesLauncher"
-    ],
-    "Desc": "Cửa hàng phân phối trò chơi điện tử và công cụ phát triển Unreal Engine"
+    ]
   },
   {
     "IDn": 53,
@@ -873,8 +821,7 @@ $appsRawJson = @'
       "GOG GALAXY",
       "GOG Galaxy",
       "GOG.Galaxy"
-    ],
-    "Desc": "Nền tảng phân phối và quản lý trò chơi bản quyền không ràng buộc DRM"
+    ]
   },
   {
     "IDn": 54,
@@ -885,8 +832,7 @@ $appsRawJson = @'
     "Aliases": [
       "MSI Afterburner",
       "Guru3D.Afterburner"
-    ],
-    "Desc": "Tiện ích giám sát phần cứng, hiển thị OSD và tinh chỉnh tham số card đồ họa"
+    ]
   },
   {
     "IDn": 55,
@@ -897,8 +843,7 @@ $appsRawJson = @'
     "Aliases": [
       "Playnite",
       "Playnite.Playnite"
-    ],
-    "Desc": "Trình quản lý và hợp nhất thư viện trò chơi đa nền tảng mã nguồn mở"
+    ]
   },
   {
     "IDn": 56,
@@ -909,8 +854,7 @@ $appsRawJson = @'
     "Aliases": [
       "qBittorrent",
       "qBittorrent.qBittorrent"
-    ],
-    "Desc": "Trình khách BitTorrent mã nguồn mở không quảng cáo với giao diện trực quan"
+    ]
   },
   {
     "IDn": 57,
@@ -921,8 +865,7 @@ $appsRawJson = @'
     "Aliases": [
       "LocalSend",
       "LocalSend.LocalSend"
-    ],
-    "Desc": "Giải pháp truyền tập tin ngang hàng an toàn qua mạng cục bộ không cần Internet"
+    ]
   },
   {
     "IDn": 58,
@@ -934,8 +877,7 @@ $appsRawJson = @'
       "WinSCP",
       "winscp3_is1",
       "WinSCP.WinSCP"
-    ],
-    "Desc": "Trình khách truyền tập tin đồ họa hỗ trợ giao thức SFTP, SCP, FTPS và WebDAV"
+    ]
   },
   {
     "IDn": 59,
@@ -947,8 +889,7 @@ $appsRawJson = @'
       "FileZilla Client",
       "FileZilla",
       "TimKosse.FileZilla.Client"
-    ],
-    "Desc": "Giải pháp truyền tập tin mã nguồn mở hỗ trợ giao thức FTP, FTPS và SFTP"
+    ]
   },
   {
     "IDn": 60,
@@ -959,8 +900,7 @@ $appsRawJson = @'
     "Aliases": [
       "Rclone",
       "Rclone.Rclone"
-    ],
-    "Desc": "Công cụ dòng lệnh đồng bộ, sao lưu và gắn kết dịch vụ lưu trữ đám mây"
+    ]
   },
   {
     "IDn": 61,
@@ -971,8 +911,7 @@ $appsRawJson = @'
     "Aliases": [
       "Bitwarden",
       "Bitwarden.Bitwarden"
-    ],
-    "Desc": "Trình quản lý mật khẩu mã nguồn mở với chuẩn mã hóa đầu cuối zero-knowledge"
+    ]
   },
   {
     "IDn": 62,
@@ -983,8 +922,7 @@ $appsRawJson = @'
     "Aliases": [
       "KeePassXC",
       "KeePassXCTeam.KeePassXC"
-    ],
-    "Desc": "Trình quản lý cơ sở dữ liệu mật khẩu ngoại tuyến an toàn mã nguồn mở"
+    ]
   },
   {
     "IDn": 63,
@@ -995,8 +933,7 @@ $appsRawJson = @'
     "Aliases": [
       "Cryptomator",
       "Cryptomator.Cryptomator"
-    ],
-    "Desc": "Giải pháp mã hóa dữ liệu phía máy khách độc lập cho lưu trữ đám mây"
+    ]
   },
   {
     "IDn": 64,
@@ -1009,8 +946,7 @@ $appsRawJson = @'
       "ProtonVPN",
       "Proton.ProtonVPN",
       "ProtonTechnologies.ProtonVPN"
-    ],
-    "Desc": "Dịch vụ mạng riêng ảo (VPN) bảo mật cao với chính sách không lưu nhật ký (no-logs)"
+    ]
   },
   {
     "IDn": 65,
@@ -1021,8 +957,7 @@ $appsRawJson = @'
     "Aliases": [
       "RustDesk",
       "RustDesk.RustDesk"
-    ],
-    "Desc": "Phần mềm điều khiển máy tính từ xa mã nguồn mở hỗ trợ tự triển khai máy chủ"
+    ]
   },
   {
     "IDn": 66,
@@ -1033,8 +968,7 @@ $appsRawJson = @'
     "Aliases": [
       "Wireshark",
       "WiresharkFoundation.Wireshark"
-    ],
-    "Desc": "Công cụ phân tích giao thức và bắt gói tin mạng hàng đầu cho chuyên gia CNTT"
+    ]
   },
   {
     "IDn": 67,
@@ -1047,8 +981,7 @@ $appsRawJson = @'
       "Microsoft Visual C++",
       "Microsoft Visual C++ 2015-2022 Redistributable",
       "Microsoft.VCRedist.2015+.x64"
-    ],
-    "Desc": "Gói thư viện thời gian chạy Microsoft Visual C++ cần thiết cho các ứng dụng Windows"
+    ]
   },
   {
     "IDn": 68,
@@ -1061,8 +994,7 @@ $appsRawJson = @'
       "DesktopRuntime.8",
       "Microsoft .NET Desktop Runtime 8",
       "Microsoft.DotNet.DesktopRuntime.8"
-    ],
-    "Desc": "Môi trường thực thi cho các ứng dụng máy tính Windows xây dựng trên nền .NET 8"
+    ]
   },
   {
     "IDn": 69,
@@ -1075,8 +1007,7 @@ $appsRawJson = @'
       "Microsoft DirectX",
       "DirectX End-User Runtimes",
       "Microsoft.DirectX"
-    ],
-    "Desc": "Bộ thư viện thời gian chạy công nghệ đa phương tiện và đồ họa DirectX"
+    ]
   },
   {
     "IDn": 70,
@@ -1090,8 +1021,7 @@ $appsRawJson = @'
       "OpenJDK 21",
       "Eclipse Temurin 21",
       "EclipseAdoptium.Temurin.21.JDK"
-    ],
-    "Desc": "Môi trường phát triển và thực thi Java chuẩn doanh nghiệp phiên bản hỗ trợ dài hạn (LTS)"
+    ]
   }
 ]
 '@
@@ -2089,7 +2019,7 @@ function Scan-And-ColorizeApps {
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
-            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
+            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
         }
     }
 
@@ -2628,7 +2558,7 @@ foreach ($cat in $categories) {
 
         # Tiền tính toán chuỗi tìm kiếm
         $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
-        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText $($app.Desc)".ToLowerInvariant()
+        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText".ToLowerInvariant()
 
         $rowBorder.Tag = @{
             App              = $app
@@ -2741,7 +2671,7 @@ foreach ($cat in $categories) {
         $nameText.Margin = New-Object System.Windows.Thickness(5, 0, 4, 0)
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
-        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
+        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 

@@ -275,7 +275,7 @@ foreach ($cat in $categories) {
 
         # Tiền tính toán chuỗi tìm kiếm
         $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
-        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText $($app.Desc)".ToLowerInvariant()
+        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText".ToLowerInvariant()
 
         $rowBorder.Tag = @{
             App              = $app
@@ -388,7 +388,7 @@ foreach ($cat in $categories) {
         $nameText.Margin = New-Object System.Windows.Thickness(5, 0, 4, 0)
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
-        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)`n$($app.Desc)"
+        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 

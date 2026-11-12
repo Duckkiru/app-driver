@@ -317,7 +317,7 @@ function Scan-And-ColorizeApps {
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
-            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)`n$($app.Desc)"
+            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
         }
     }
 
