@@ -181,7 +181,7 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'notepad\+\+') { return [char]::ConvertFromUtf32(0x1F4DD) }
     if ($nameLower -match 'postman') { return [char]::ConvertFromUtf32(0x1F680) }
     if ($nameLower -match 'dbeaver') { return [char]::ConvertFromUtf32(0x1F9AB) }
-    if ($nameLower -match 'rust') { return [char]::ConvertFromUtf32(0x1F980) }
+    if ($nameLower -match 'rustup|\brust\b') { return [char]::ConvertFromUtf32(0x1F980) }
     if ($nameLower -match 'go lang|golang') { return [char]::ConvertFromUtf32(0x1F439) }
     if ($nameLower -match '7-zip') { return [char]::ConvertFromUtf32(0x1F5DC) }
     if ($nameLower -match 'winrar') { return [char]::ConvertFromUtf32(0x1F4E6) }
@@ -308,17 +308,12 @@ foreach ($cat in $categories) {
         $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
-        # Tiền tính toán chuỗi tìm kiếm
-        $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
-        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText".ToLowerInvariant()
-
         $rowBorder.Tag = @{
             App              = $app
             Status           = "NONE"
             DetectedId       = $null
             InstalledVersion = $null
             CardBorder       = $cardBorder
-            SearchIndex      = $searchIndex
         }
 
         # Grid 4 cột cố định tỉ lệ, triệt tiêu hoàn toàn hiện tượng lệch dòng
@@ -803,6 +798,14 @@ Register-Click "btnClearTemp" {
 
 Register-Click "btnCleanEventLogs" {
     Invoke-GuardedAction "Dọn dẹp Windows Event Logs" {
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?",
+            "Xác nhận dọn dẹp Event Logs",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
         if ($txtStatus) { $txtStatus.Text = "Đang dọn Event Logs..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Clear-SystemEventLogs

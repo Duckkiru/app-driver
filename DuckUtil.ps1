@@ -1454,7 +1454,6 @@ $appsRawJson = @'
         "Domain":  "gog.com",
         "Aliases":  [
                         "GOG Galaxy",
-                        "GOG GALAXY",
                         "GOG.Galaxy"
                     ],
         "Category":  "Game Launchers",
@@ -2153,6 +2152,7 @@ function Run-CliStream {
         $outTask = $p.StandardOutput.ReadLineAsync()
         $errTask = $p.StandardError.ReadLineAsync()
         $lastEventTime = [System.DateTime]::UtcNow
+        $exitWaitStart = $null
 
         while ($true) {
             $hasData = $false
@@ -2179,8 +2179,16 @@ function Run-CliStream {
                 }
             }
 
-            if ($p.HasExited -and $outTask -eq $null -and $errTask -eq $null) {
-                break
+            if ($p.HasExited) {
+                if ($outTask -eq $null -and $errTask -eq $null) {
+                    break
+                }
+                # Tránh deadlock vĩnh viễn nếu tiến trình con phân nhánh giữ handle pipe mở
+                if ($null -eq $exitWaitStart) {
+                    $exitWaitStart = [System.DateTime]::UtcNow
+                } elseif (([System.DateTime]::UtcNow - $exitWaitStart).TotalSeconds -ge 5) {
+                    break
+                }
             }
 
             # Bơm thông điệp giao diện WPF/WinForms có điều tiết (throttling) để tối ưu hiệu năng render
@@ -2207,23 +2215,20 @@ function Run-CliStream {
 # ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
 
 # Bộ nhớ đệm tĩnh lưu trữ Brush của WPF giúp tối ưu render và triệt tiêu Garbage Collection
-$script:brushOutdatedBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x12, 0x15))
 $script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
-$script:brushLatestBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0D, 0x28, 0x18))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
 $script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF))
 
-$script:brushOutdatedBg.Freeze()
 $script:brushOutdatedFg.Freeze()
-$script:brushLatestBg.Freeze()
 $script:brushLatestFg.Freeze()
 $script:brushNoneFg.Freeze()
 
 function Get-CleanAppName {
     param([string]$RawName)
     if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
-    $clean = ($RawName -replace '\(.*?\)', '').Trim().ToLowerInvariant()
+    # Loại bỏ thông tin đóng ngoặc nhưng KHÔNG xóa mất định danh kiến trúc (x64), (x86), (arm64)
+    $clean = ($RawName -replace '\((?!x64|x86|arm64).*?\)', '').Replace('(', '').Replace(')', '').Trim().ToLowerInvariant()
     $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")
     foreach ($term in $terms) {
         $clean = $clean.Replace($term, "")
@@ -2246,6 +2251,7 @@ function Scan-And-ColorizeApps {
     }
 
     $rawList = ""
+    $errList = ""
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
@@ -2262,14 +2268,30 @@ function Scan-And-ColorizeApps {
             throw "Không thể khởi động tiến trình winget."
         }
 
-        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động mượt mà
+        # Đọc dữ liệu bất đồng bộ đồng thời cả 2 luồng stdout và stderr để tránh tràn buffer gây deadlock
         $readTask = $p.StandardOutput.ReadToEndAsync()
-        while (-not $readTask.IsCompleted) {
+        $errTask  = $p.StandardError.ReadToEndAsync()
+        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
             [System.Windows.Forms.Application]::DoEvents()
             Start-Sleep -Milliseconds 30
         }
         $rawList = $readTask.Result
+        $errList = $errTask.Result
         $p.WaitForExit()
+
+        # Kiểm tra ExitCode của winget list
+        if ($p.ExitCode -ne 0) {
+            Log-Text "[⚠️] WinGet list kết thúc với mã $($p.ExitCode)."
+            if (-not [string]::IsNullOrWhiteSpace($errList)) {
+                Log-Text "[stderr] $errList"
+            }
+            if ([string]::IsNullOrWhiteSpace($rawList)) {
+                Log-Text "[!] Không nhận được dữ liệu từ WinGet. Giữ nguyên trạng thái quét hiện tại."
+                if ($progressBar) { $progressBar.IsIndeterminate = $false }
+                if ($txtStatus) { $txtStatus.Text = "Lỗi quét WinGet (Mã $($p.ExitCode))" }
+                return
+            }
+        }
     } catch {
         Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
@@ -2447,12 +2469,16 @@ function Scan-And-ColorizeApps {
             return $match
         }
 
-        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4 và dùng ranh giới từ (\b) để chống bắt nhầm (false-positive)
+        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4, dùng ranh giới từ (\b), và chặn khớp chéo Preview
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
                 $pattern = "\b" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "\b"
                 foreach ($item in $installedList) {
+                    # Chặn khớp chéo giữa bản thường và bản Preview
+                    if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
+                    if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
+
                     if ($item.ID -match $pattern -or $item.Name -match $pattern) {
                         $lookupCache[$targetId] = $item
                         return $item
@@ -2464,6 +2490,10 @@ function Scan-And-ColorizeApps {
         if ($cleanTarget.Length -ge 4) {
             $patternClean = "\b" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "\b"
             foreach ($item in $installedList) {
+                # Chặn khớp chéo giữa bản thường và bản Preview
+                if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
+                if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
+
                 $cleanItem = Get-CleanAppName $item.Name
                 if ($cleanItem -match $patternClean) {
                     $lookupCache[$targetId] = $item
@@ -2485,6 +2515,7 @@ function Scan-And-ColorizeApps {
         $app = $row.Tag.App
         $grid = $row.Child
         $tb = $grid.Children[2]
+        $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
 
         $info = Find-InstalledAppFast $app
 
@@ -2503,7 +2534,7 @@ function Scan-And-ColorizeApps {
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
                 $tb.Text = "$($app.Name)  $updateBadge"
                 $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
-                $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
             } else {
                 # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ (Không ghi 'Mới nhất', không tô nền xanh) ──
                 $countLatest++
@@ -2512,7 +2543,7 @@ function Scan-And-ColorizeApps {
                 $tb.Foreground = $script:brushLatestFg
                 $tb.Text = $app.Name
                 $tb.TextDecorations = $null
-                $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
@@ -2523,7 +2554,7 @@ function Scan-And-ColorizeApps {
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
-            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            $tb.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
         }
     }
 
@@ -2556,7 +2587,13 @@ function Invoke-PnpDeviceRescan {
     .SYNOPSIS
         Buộc Windows gửi tín hiệu quét lại toàn bộ phần cứng cắm trên máy.
     #>
-    Run-CliStream "pnputil.exe" "/scan-devices"
+    $code = Run-CliStream "pnputil.exe" "/scan-devices"
+    if ($code -eq 0) {
+        Log-Text "[✓] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
+    } else {
+        Log-Text "[!] Quét thiết bị phần cứng PnP thất bại hoặc gặp lỗi (ExitCode: $code)."
+    }
+    return $code
 }
 
 function Invoke-PnpDriverStoreCleanup {
@@ -2570,11 +2607,14 @@ function Invoke-PnpDriverStoreCleanup {
         $pinfo.FileName = "pnputil.exe"
         $pinfo.Arguments = "/enum-drivers"
         $pinfo.RedirectStandardOutput = $true
+        $pinfo.RedirectStandardError = $true
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $true
         $p = [System.Diagnostics.Process]::Start($pinfo)
-        $raw = $p.StandardOutput.ReadToEnd()
+        $outTask = $p.StandardOutput.ReadToEndAsync()
+        $errTask = $p.StandardError.ReadToEndAsync()
         $p.WaitForExit()
+        $raw = $outTask.Result
 
         # Tìm các Published Name: oemX.inf
         $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?i)(?:Published Name|Tên đã phát hành):\s*(oem\d+\.inf)')
@@ -2587,30 +2627,54 @@ function Invoke-PnpDriverStoreCleanup {
 
         Log-Text "[*] Tìm thấy $($oemList.Count) gói driver OEM. Bắt đầu dọn dẹp an toàn (không xóa driver đang sử dụng)..."
         $deletedCount = 0
+        $inUseCount = 0
+        $errorCount = 0
+
         foreach ($inf in $oemList) {
             # Chạy xóa an toàn không dùng /force để Windows tự bảo vệ các driver đang được phần cứng sử dụng
-            $delPinfo = New-Object System.Diagnostics.ProcessStartInfo
-            $delPinfo.FileName = "pnputil.exe"
-            $delPinfo.Arguments = "/delete-driver $inf"
-            $delPinfo.RedirectStandardOutput = $true
-            $delPinfo.RedirectStandardError = $true
-            $delPinfo.UseShellExecute = $false
-            $delPinfo.CreateNoWindow = $true
-            $delP = [System.Diagnostics.Process]::Start($delPinfo)
-            $delOut = $delP.StandardOutput.ReadToEnd()
-            $delP.WaitForExit()
+            try {
+                $delPinfo = New-Object System.Diagnostics.ProcessStartInfo
+                $delPinfo.FileName = "pnputil.exe"
+                $delPinfo.Arguments = "/delete-driver $inf"
+                $delPinfo.RedirectStandardOutput = $true
+                $delPinfo.RedirectStandardError = $true
+                $delPinfo.UseShellExecute = $false
+                $delPinfo.CreateNoWindow = $true
+                $delP = [System.Diagnostics.Process]::Start($delPinfo)
 
-            if ($delP.ExitCode -eq 0 -or $delOut -match 'deleted successfully|đã xóa thành công') {
-                $deletedCount++
-                Log-Text "   [✓ Đã dọn] $inf"
+                $delOutTask = $delP.StandardOutput.ReadToEndAsync()
+                $delErrTask = $delP.StandardError.ReadToEndAsync()
+                $delP.WaitForExit()
+
+                $delOut = $delOutTask.Result
+                $delErr = $delErrTask.Result
+                $combined = ($delOut + "`n" + $delErr).Trim()
+
+                if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
+                    $deletedCount++
+                    Log-Text "   [✓ Đã dọn] $inf"
+                } elseif ($combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối') {
+                    $inUseCount++
+                } else {
+                    $errorCount++
+                    $errDetail = ($combined -split "`r?`n" | Where-Object { $_ -match 'failed|lỗi|error' } | Select-Object -First 1)
+                    if (-not $errDetail) { $errDetail = "ExitCode $($delP.ExitCode)" }
+                    Log-Text "   [⚠️ Lỗi gói $inf] $errDetail"
+                }
+            } catch {
+                $errorCount++
+                Log-Text "   [!] Lỗi ngoại lệ khi xử lý ${inf}: $($_.Exception.Message)"
             }
             [System.Windows.Forms.Application]::DoEvents()
         }
 
         if ($deletedCount -gt 0) {
-            Log-Text "[✓] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng."
+            Log-Text "[✓] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
         } else {
             Log-Text "[✓] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
+        }
+        if ($errorCount -gt 0) {
+            Log-Text "[!] Có $errorCount gói driver gặp lỗi trong quá trình xử lý."
         }
     } catch {
         Log-Text "[!] Lỗi khi dọn dẹp DriverStore: $($_.Exception.Message)"
@@ -2622,7 +2686,16 @@ function Invoke-DriverStoreCleanup {
     .SYNOPSIS
         Dọn dẹp và giải phóng kho linh kiện Windows qua DISM Component Cleanup.
     #>
-    Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
+    Log-Text "[⚠️] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
+    Log-Text "[*] Sau khi hoàn tất thao tác này, bạn SẼ KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại."
+    Log-Text "[*] Đang tiến hành dọn dẹp và nén kho linh kiện WinSxS qua DISM..."
+    $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
+    if ($code -eq 0) {
+        Log-Text "[✓] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
+    } else {
+        Log-Text "[!] Dọn dẹp kho linh kiện WinSxS thất bại hoặc bị gián đoạn (ExitCode: $code)."
+    }
+    return $code
 }
 
 function Export-SystemDriversBackup {
@@ -2643,11 +2716,18 @@ function Export-SystemDriversBackup {
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
+        Log-Text "[✓] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
         return $true
     } catch {
         Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
         $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
-        return ($exitCode -eq 0)
+        if ($exitCode -eq 0) {
+            Log-Text "[✓] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
+            return $true
+        } else {
+            Log-Text "[!] Sao lưu driver qua pnputil.exe thất bại (ExitCode: $exitCode)."
+            return $false
+        }
     }
 }
 
@@ -2727,7 +2807,14 @@ function Invoke-SystemFileCheck {
     .SYNOPSIS
         Chạy SFC Scan kiểm tra toàn vẹn file hệ thống.
     #>
-    Run-CliStream "sfc.exe" "/scannow"
+    Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)..."
+    $code = Run-CliStream "sfc.exe" "/scannow"
+    if ($code -eq 0) {
+        Log-Text "[✓] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
+    } else {
+        Log-Text "[!] SFC Scan phát hiện lỗi hoặc không thể sửa chữa toàn bộ tệp hệ thống (ExitCode: $code)."
+    }
+    return $code
 }
 
 function Invoke-DismRestoreHealth {
@@ -2735,7 +2822,14 @@ function Invoke-DismRestoreHealth {
     .SYNOPSIS
         Khôi phục kho linh kiện Windows qua DISM RestoreHealth từ server Microsoft.
     #>
-    Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
+    Log-Text "[*] Đang khởi chạy DISM RestoreHealth khôi phục kho linh kiện hệ thống..."
+    $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
+    if ($code -eq 0) {
+        Log-Text "[✓] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
+    } else {
+        Log-Text "[!] DISM RestoreHealth thất bại hoặc gặp sự cố (ExitCode: $code). Hãy kiểm tra kết nối mạng hoặc nguồn tệp hệ thống."
+    }
+    return $code
 }
 
 function Clear-DnsResolverCache {
@@ -2743,7 +2837,13 @@ function Clear-DnsResolverCache {
     .SYNOPSIS
         Làm mới bộ nhớ đệm DNS.
     #>
-    Run-CliStream "ipconfig.exe" "/flushdns"
+    $code = Run-CliStream "ipconfig.exe" "/flushdns"
+    if ($code -eq 0) {
+        Log-Text "[✓] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
+    } else {
+        Log-Text "[!] Làm mới bộ nhớ đệm DNS thất bại (ExitCode: $code)."
+    }
+    return $code
 }
 
 function Reset-NetworkInterfaceStack {
@@ -2751,8 +2851,14 @@ function Reset-NetworkInterfaceStack {
     .SYNOPSIS
         Khôi phục danh mục Winsock Catalog và TCP/IP Stack.
     #>
-    Run-CliStream "netsh.exe" "winsock reset"
-    Run-CliStream "netsh.exe" "int ip reset"
+    $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
+    $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
+    if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
+        Log-Text "[✓] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
+    } else {
+        Log-Text "[!] Đặt lại mạng gặp lỗi (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
+    }
+    return ($codeWinsock -eq 0 -and $codeTcpIp -eq 0)
 }
 
 function Clear-SystemTempFiles {
@@ -2968,7 +3074,7 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'notepad\+\+') { return [char]::ConvertFromUtf32(0x1F4DD) }
     if ($nameLower -match 'postman') { return [char]::ConvertFromUtf32(0x1F680) }
     if ($nameLower -match 'dbeaver') { return [char]::ConvertFromUtf32(0x1F9AB) }
-    if ($nameLower -match 'rust') { return [char]::ConvertFromUtf32(0x1F980) }
+    if ($nameLower -match 'rustup|\brust\b') { return [char]::ConvertFromUtf32(0x1F980) }
     if ($nameLower -match 'go lang|golang') { return [char]::ConvertFromUtf32(0x1F439) }
     if ($nameLower -match '7-zip') { return [char]::ConvertFromUtf32(0x1F5DC) }
     if ($nameLower -match 'winrar') { return [char]::ConvertFromUtf32(0x1F4E6) }
@@ -3095,17 +3201,12 @@ foreach ($cat in $categories) {
         $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
-        # Tiền tính toán chuỗi tìm kiếm
-        $aliasText = if ($app.Aliases) { $app.Aliases -join " " } else { "" }
-        $searchIndex = "$($app.Name) $($app.ID) $($app.Category) $aliasText".ToLowerInvariant()
-
         $rowBorder.Tag = @{
             App              = $app
             Status           = "NONE"
             DetectedId       = $null
             InstalledVersion = $null
             CardBorder       = $cardBorder
-            SearchIndex      = $searchIndex
         }
 
         # Grid 4 cột cố định tỉ lệ, triệt tiêu hoàn toàn hiện tượng lệch dòng
@@ -3590,6 +3691,14 @@ Register-Click "btnClearTemp" {
 
 Register-Click "btnCleanEventLogs" {
     Invoke-GuardedAction "Dọn dẹp Windows Event Logs" {
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?",
+            "Xác nhận dọn dẹp Event Logs",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
         if ($txtStatus) { $txtStatus.Text = "Đang dọn Event Logs..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Clear-SystemEventLogs

@@ -1,23 +1,20 @@
 ﻿# ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
 
 # Bộ nhớ đệm tĩnh lưu trữ Brush của WPF giúp tối ưu render và triệt tiêu Garbage Collection
-$script:brushOutdatedBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x12, 0x15))
 $script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
-$script:brushLatestBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0D, 0x28, 0x18))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
 $script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF))
 
-$script:brushOutdatedBg.Freeze()
 $script:brushOutdatedFg.Freeze()
-$script:brushLatestBg.Freeze()
 $script:brushLatestFg.Freeze()
 $script:brushNoneFg.Freeze()
 
 function Get-CleanAppName {
     param([string]$RawName)
     if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
-    $clean = ($RawName -replace '\(.*?\)', '').Trim().ToLowerInvariant()
+    # Loại bỏ thông tin đóng ngoặc nhưng KHÔNG xóa mất định danh kiến trúc (x64), (x86), (arm64)
+    $clean = ($RawName -replace '\((?!x64|x86|arm64).*?\)', '').Replace('(', '').Replace(')', '').Trim().ToLowerInvariant()
     $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")
     foreach ($term in $terms) {
         $clean = $clean.Replace($term, "")
@@ -40,6 +37,7 @@ function Scan-And-ColorizeApps {
     }
 
     $rawList = ""
+    $errList = ""
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
@@ -56,14 +54,30 @@ function Scan-And-ColorizeApps {
             throw "Không thể khởi động tiến trình winget."
         }
 
-        # Đọc dữ liệu bất đồng bộ kèm bơm Application::DoEvents để thanh tiến trình & UI luôn hoạt động mượt mà
+        # Đọc dữ liệu bất đồng bộ đồng thời cả 2 luồng stdout và stderr để tránh tràn buffer gây deadlock
         $readTask = $p.StandardOutput.ReadToEndAsync()
-        while (-not $readTask.IsCompleted) {
+        $errTask  = $p.StandardError.ReadToEndAsync()
+        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
             [System.Windows.Forms.Application]::DoEvents()
             Start-Sleep -Milliseconds 30
         }
         $rawList = $readTask.Result
+        $errList = $errTask.Result
         $p.WaitForExit()
+
+        # Kiểm tra ExitCode của winget list
+        if ($p.ExitCode -ne 0) {
+            Log-Text "[⚠️] WinGet list kết thúc với mã $($p.ExitCode)."
+            if (-not [string]::IsNullOrWhiteSpace($errList)) {
+                Log-Text "[stderr] $errList"
+            }
+            if ([string]::IsNullOrWhiteSpace($rawList)) {
+                Log-Text "[!] Không nhận được dữ liệu từ WinGet. Giữ nguyên trạng thái quét hiện tại."
+                if ($progressBar) { $progressBar.IsIndeterminate = $false }
+                if ($txtStatus) { $txtStatus.Text = "Lỗi quét WinGet (Mã $($p.ExitCode))" }
+                return
+            }
+        }
     } catch {
         Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
@@ -241,12 +255,16 @@ function Scan-And-ColorizeApps {
             return $match
         }
 
-        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4 và dùng ranh giới từ (\b) để chống bắt nhầm (false-positive)
+        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4, dùng ranh giới từ (\b), và chặn khớp chéo Preview
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
                 $pattern = "\b" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "\b"
                 foreach ($item in $installedList) {
+                    # Chặn khớp chéo giữa bản thường và bản Preview
+                    if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
+                    if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
+
                     if ($item.ID -match $pattern -or $item.Name -match $pattern) {
                         $lookupCache[$targetId] = $item
                         return $item
@@ -258,6 +276,10 @@ function Scan-And-ColorizeApps {
         if ($cleanTarget.Length -ge 4) {
             $patternClean = "\b" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "\b"
             foreach ($item in $installedList) {
+                # Chặn khớp chéo giữa bản thường và bản Preview
+                if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
+                if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
+
                 $cleanItem = Get-CleanAppName $item.Name
                 if ($cleanItem -match $patternClean) {
                     $lookupCache[$targetId] = $item
@@ -279,6 +301,7 @@ function Scan-And-ColorizeApps {
         $app = $row.Tag.App
         $grid = $row.Child
         $tb = $grid.Children[2]
+        $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
 
         $info = Find-InstalledAppFast $app
 
@@ -297,7 +320,7 @@ function Scan-And-ColorizeApps {
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
                 $tb.Text = "$($app.Name)  $updateBadge"
                 $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
-                $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
             } else {
                 # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ (Không ghi 'Mới nhất', không tô nền xanh) ──
                 $countLatest++
@@ -306,7 +329,7 @@ function Scan-And-ColorizeApps {
                 $tb.Foreground = $script:brushLatestFg
                 $tb.Text = $app.Name
                 $tb.TextDecorations = $null
-                $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
@@ -317,7 +340,7 @@ function Scan-And-ColorizeApps {
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
-            $tb.ToolTip = "$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            $tb.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
         }
     }
 

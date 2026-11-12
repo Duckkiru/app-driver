@@ -1,4 +1,4 @@
-﻿# ── FUNCTION: CÁC TIỆN ÍCH SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
+# ── FUNCTION: CÁC TIỆN ÍCH SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
 
 function Reset-WindowsUpdateEngine {
     <#
@@ -74,7 +74,14 @@ function Invoke-SystemFileCheck {
     .SYNOPSIS
         Chạy SFC Scan kiểm tra toàn vẹn file hệ thống.
     #>
-    Run-CliStream "sfc.exe" "/scannow"
+    Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)..."
+    $code = Run-CliStream "sfc.exe" "/scannow"
+    if ($code -eq 0) {
+        Log-Text "[✓] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
+    } else {
+        Log-Text "[!] SFC Scan phát hiện lỗi hoặc không thể sửa chữa toàn bộ tệp hệ thống (ExitCode: $code)."
+    }
+    return $code
 }
 
 function Invoke-DismRestoreHealth {
@@ -82,7 +89,14 @@ function Invoke-DismRestoreHealth {
     .SYNOPSIS
         Khôi phục kho linh kiện Windows qua DISM RestoreHealth từ server Microsoft.
     #>
-    Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
+    Log-Text "[*] Đang khởi chạy DISM RestoreHealth khôi phục kho linh kiện hệ thống..."
+    $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
+    if ($code -eq 0) {
+        Log-Text "[✓] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
+    } else {
+        Log-Text "[!] DISM RestoreHealth thất bại hoặc gặp sự cố (ExitCode: $code). Hãy kiểm tra kết nối mạng hoặc nguồn tệp hệ thống."
+    }
+    return $code
 }
 
 function Clear-DnsResolverCache {
@@ -90,7 +104,13 @@ function Clear-DnsResolverCache {
     .SYNOPSIS
         Làm mới bộ nhớ đệm DNS.
     #>
-    Run-CliStream "ipconfig.exe" "/flushdns"
+    $code = Run-CliStream "ipconfig.exe" "/flushdns"
+    if ($code -eq 0) {
+        Log-Text "[✓] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
+    } else {
+        Log-Text "[!] Làm mới bộ nhớ đệm DNS thất bại (ExitCode: $code)."
+    }
+    return $code
 }
 
 function Reset-NetworkInterfaceStack {
@@ -98,8 +118,14 @@ function Reset-NetworkInterfaceStack {
     .SYNOPSIS
         Khôi phục danh mục Winsock Catalog và TCP/IP Stack.
     #>
-    Run-CliStream "netsh.exe" "winsock reset"
-    Run-CliStream "netsh.exe" "int ip reset"
+    $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
+    $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
+    if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
+        Log-Text "[✓] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
+    } else {
+        Log-Text "[!] Đặt lại mạng gặp lỗi (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
+    }
+    return ($codeWinsock -eq 0 -and $codeTcpIp -eq 0)
 }
 
 function Clear-SystemTempFiles {

@@ -74,6 +74,7 @@ function Run-CliStream {
         $outTask = $p.StandardOutput.ReadLineAsync()
         $errTask = $p.StandardError.ReadLineAsync()
         $lastEventTime = [System.DateTime]::UtcNow
+        $exitWaitStart = $null
 
         while ($true) {
             $hasData = $false
@@ -100,8 +101,16 @@ function Run-CliStream {
                 }
             }
 
-            if ($p.HasExited -and $outTask -eq $null -and $errTask -eq $null) {
-                break
+            if ($p.HasExited) {
+                if ($outTask -eq $null -and $errTask -eq $null) {
+                    break
+                }
+                # Tránh deadlock vĩnh viễn nếu tiến trình con phân nhánh giữ handle pipe mở
+                if ($null -eq $exitWaitStart) {
+                    $exitWaitStart = [System.DateTime]::UtcNow
+                } elseif (([System.DateTime]::UtcNow - $exitWaitStart).TotalSeconds -ge 5) {
+                    break
+                }
             }
 
             # Bơm thông điệp giao diện WPF/WinForms có điều tiết (throttling) để tối ưu hiệu năng render
