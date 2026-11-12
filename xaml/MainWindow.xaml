@@ -237,7 +237,7 @@
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="150" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="Auto" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
@@ -521,16 +521,16 @@
                                    FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="btnToggleTerminal" Content="▼ Thu gọn"
+                        <Button Name="btnToggleTerminal" Content="▲ Mở rộng"
                                 Background="#111622" BorderBrush="#243044" BorderThickness="1"
-                                Foreground="#38BDF8" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
+                                Foreground="#34D399" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
                                 Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
                         <Button Name="btnClearLog" Content="Xóa Log"
                                 Background="Transparent" Foreground="#64748B" BorderThickness="0"
                                 Cursor="Hand" FontSize="11" Padding="6,2"/>
                     </StackPanel>
                 </Grid>
-                <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
+                <TextBox Grid.Row="1" Name="txtLog" Visibility="Collapsed" Background="Transparent" Foreground="#34D399"
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0" CaretBrush="#38BDF8"

@@ -567,60 +567,160 @@ $appsRawJson = @'
         "IDn":  31
     },
     {
-        "ID":  "Microsoft.DotNet.DesktopRuntime.6",
-        "Name":  ".NET Desktop Runtime 6",
+        "ID":  "Microsoft.DotNet.Framework.Runtime",
+        "Name":  ".NET Framework 4.8.1",
         "Domain":  "dotnet.microsoft.com",
         "Aliases":  [
-                        "Microsoft .NET Desktop Runtime 6",
-                        "Microsoft Windows Desktop Runtime - 6",
+                        "Microsoft .NET Framework 4.8.1 Runtime",
+                        "Microsoft .NET Framework Runtime",
+                        "Microsoft.DotNet.Framework.Runtime"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  32
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.3_1",
+        "Name":  ".NET Desktop Runtime 3.1",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 3.1",
+                        "DesktopRuntime.3_1",
+                        "Microsoft.DotNet.DesktopRuntime.3_1"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  33
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.5",
+        "Name":  ".NET Desktop Runtime 5.0",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 5.0",
+                        "DesktopRuntime.5",
+                        "Microsoft.DotNet.DesktopRuntime.5"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  34
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.6",
+        "Name":  ".NET Desktop Runtime 6 (LTS)",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 6.0",
                         "DesktopRuntime.6",
                         "Microsoft.DotNet.DesktopRuntime.6"
                     ],
         "Category":  ".NET Runtimes",
-        "IDn":  32
+        "IDn":  35
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.6.x86",
+        "Name":  ".NET Desktop Runtime 6 (x86)",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 6.0 (x86)",
+                        "Microsoft.DotNet.DesktopRuntime.6.x86"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  36
     },
     {
         "ID":  "Microsoft.DotNet.DesktopRuntime.7",
         "Name":  ".NET Desktop Runtime 7",
         "Domain":  "dotnet.microsoft.com",
         "Aliases":  [
-                        "Microsoft .NET Desktop Runtime 7",
-                        "Microsoft Windows Desktop Runtime - 7",
+                        "Microsoft .NET Windows Desktop Runtime 7.0",
                         "DesktopRuntime.7",
                         "Microsoft.DotNet.DesktopRuntime.7"
                     ],
         "Category":  ".NET Runtimes",
-        "IDn":  33
+        "IDn":  37
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.7.x86",
+        "Name":  ".NET Desktop Runtime 7 (x86)",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 7.0 (x86)",
+                        "Microsoft.DotNet.DesktopRuntime.7.x86"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  38
     },
     {
         "ID":  "Microsoft.DotNet.DesktopRuntime.8",
-        "Name":  ".NET Desktop Runtime 8",
+        "Name":  ".NET Desktop Runtime 8 (LTS)",
         "Domain":  "dotnet.microsoft.com",
         "Aliases":  [
-                        "Microsoft .NET Desktop Runtime 8",
-                        "Microsoft Windows Desktop Runtime - 8",
+                        "Microsoft .NET Windows Desktop Runtime 8.0",
                         "DesktopRuntime.8",
                         "Microsoft.DotNet.DesktopRuntime.8"
                     ],
         "Category":  ".NET Runtimes",
-        "IDn":  34
+        "IDn":  39
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.8.x86",
+        "Name":  ".NET Desktop Runtime 8 (x86)",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 8.0 (x86)",
+                        "Microsoft.DotNet.DesktopRuntime.8.x86"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  40
     },
     {
         "ID":  "Microsoft.DotNet.DesktopRuntime.9",
         "Name":  ".NET Desktop Runtime 9",
         "Domain":  "dotnet.microsoft.com",
         "Aliases":  [
-                        "Microsoft .NET Desktop Runtime 9",
-                        "Microsoft Windows Desktop Runtime - 9",
+                        "Microsoft .NET Windows Desktop Runtime 9.0",
                         "DesktopRuntime.9",
                         "Microsoft.DotNet.DesktopRuntime.9"
                     ],
         "Category":  ".NET Runtimes",
-        "IDn":  35
+        "IDn":  41
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.10",
+        "Name":  ".NET Desktop Runtime 10",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 10.0",
+                        "DesktopRuntime.10",
+                        "Microsoft.DotNet.DesktopRuntime.10"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  42
+    },
+    {
+        "ID":  "Microsoft.DotNet.DesktopRuntime.Preview",
+        "Name":  ".NET Desktop Runtime 11 Preview",
+        "Domain":  "dotnet.microsoft.com",
+        "Aliases":  [
+                        "Microsoft .NET Windows Desktop Runtime 11.0 Preview",
+                        "Microsoft.DotNet.DesktopRuntime.Preview"
+                    ],
+        "Category":  ".NET Runtimes",
+        "IDn":  43
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.8.JRE",
+        "Name":  "Java 8 JRE (LTS)",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JRE with Hotspot 8",
+                        "Temurin 8 JRE",
+                        "EclipseAdoptium.Temurin.8.JRE"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  44
     },
     {
         "ID":  "EclipseAdoptium.Temurin.8.JDK",
-        "Name":  "Java OpenJDK 8",
+        "Name":  "Java 8 JDK (LTS)",
         "Domain":  "adoptium.net",
         "Aliases":  [
                         "Eclipse Temurin JDK with Hotspot 8",
@@ -629,11 +729,23 @@ $appsRawJson = @'
                         "EclipseAdoptium.Temurin.8.JDK"
                     ],
         "Category":  "Java Runtimes",
-        "IDn":  36
+        "IDn":  45
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.11.JRE",
+        "Name":  "Java 11 JRE (LTS)",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JRE with Hotspot 11",
+                        "Temurin 11 JRE",
+                        "EclipseAdoptium.Temurin.11.JRE"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  46
     },
     {
         "ID":  "EclipseAdoptium.Temurin.11.JDK",
-        "Name":  "Java OpenJDK 11",
+        "Name":  "Java 11 JDK (LTS)",
         "Domain":  "adoptium.net",
         "Aliases":  [
                         "Eclipse Temurin JDK with Hotspot 11",
@@ -642,11 +754,35 @@ $appsRawJson = @'
                         "EclipseAdoptium.Temurin.11.JDK"
                     ],
         "Category":  "Java Runtimes",
-        "IDn":  37
+        "IDn":  47
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.16.JDK",
+        "Name":  "Java 16 JDK",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 16",
+                        "Temurin 16",
+                        "EclipseAdoptium.Temurin.16.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  48
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.17.JRE",
+        "Name":  "Java 17 JRE (LTS)",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JRE with Hotspot 17",
+                        "Temurin 17 JRE",
+                        "EclipseAdoptium.Temurin.17.JRE"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  49
     },
     {
         "ID":  "EclipseAdoptium.Temurin.17.JDK",
-        "Name":  "Java OpenJDK 17",
+        "Name":  "Java 17 JDK (LTS)",
         "Domain":  "adoptium.net",
         "Aliases":  [
                         "Eclipse Temurin JDK with Hotspot 17",
@@ -655,11 +791,59 @@ $appsRawJson = @'
                         "EclipseAdoptium.Temurin.17.JDK"
                     ],
         "Category":  "Java Runtimes",
-        "IDn":  38
+        "IDn":  50
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.18.JDK",
+        "Name":  "Java 18 JDK",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 18",
+                        "Temurin 18",
+                        "EclipseAdoptium.Temurin.18.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  51
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.19.JDK",
+        "Name":  "Java 19 JDK",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 19",
+                        "Temurin 19",
+                        "EclipseAdoptium.Temurin.19.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  52
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.20.JDK",
+        "Name":  "Java 20 JDK",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JDK with Hotspot 20",
+                        "Temurin 20",
+                        "EclipseAdoptium.Temurin.20.JDK"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  53
+    },
+    {
+        "ID":  "EclipseAdoptium.Temurin.21.JRE",
+        "Name":  "Java 21 JRE (LTS)",
+        "Domain":  "adoptium.net",
+        "Aliases":  [
+                        "Eclipse Temurin JRE with Hotspot 21",
+                        "Temurin 21 JRE",
+                        "EclipseAdoptium.Temurin.21.JRE"
+                    ],
+        "Category":  "Java Runtimes",
+        "IDn":  54
     },
     {
         "ID":  "EclipseAdoptium.Temurin.21.JDK",
-        "Name":  "Java OpenJDK 21",
+        "Name":  "Java 21 JDK (LTS)",
         "Domain":  "adoptium.net",
         "Aliases":  [
                         "Eclipse Temurin JDK with Hotspot 21",
@@ -668,145 +852,165 @@ $appsRawJson = @'
                         "EclipseAdoptium.Temurin.21.JDK"
                     ],
         "Category":  "Java Runtimes",
-        "IDn":  39
+        "IDn":  55
     },
     {
-        "ID":  "7zip.7zip",
-        "Name":  "7-Zip",
-        "Domain":  "7-zip.org",
+        "ID":  "EclipseAdoptium.Temurin.22.JDK",
+        "Name":  "Java 22 JDK",
+        "Domain":  "adoptium.net",
         "Aliases":  [
-                        "7-Zip",
-                        "7zip.7zip"
+                        "Eclipse Temurin JDK with Hotspot 22",
+                        "Temurin 22",
+                        "EclipseAdoptium.Temurin.22.JDK"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  40
+        "Category":  "Java Runtimes",
+        "IDn":  56
     },
     {
-        "ID":  "RARLab.WinRAR",
-        "Name":  "WinRAR",
-        "Domain":  "rarlab.com",
+        "ID":  "EclipseAdoptium.Temurin.23.JDK",
+        "Name":  "Java 23 JDK",
+        "Domain":  "adoptium.net",
         "Aliases":  [
-                        "WinRAR",
-                        "RARLab.WinRAR"
+                        "Eclipse Temurin JDK with Hotspot 23",
+                        "Temurin 23",
+                        "EclipseAdoptium.Temurin.23.JDK"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  41
+        "Category":  "Java Runtimes",
+        "IDn":  57
     },
     {
-        "ID":  "voidtools.Everything",
-        "Name":  "Everything",
-        "Domain":  "voidtools.com",
+        "ID":  "EclipseAdoptium.Temurin.24.JDK",
+        "Name":  "Java 24 JDK",
+        "Domain":  "adoptium.net",
         "Aliases":  [
-                        "Everything",
-                        "voidtools.Everything"
+                        "Eclipse Temurin JDK with Hotspot 24",
+                        "Temurin 24",
+                        "EclipseAdoptium.Temurin.24.JDK"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  42
+        "Category":  "Java Runtimes",
+        "IDn":  58
     },
     {
-        "ID":  "Microsoft.PowerToys",
-        "Name":  "PowerToys",
-        "Domain":  "learn.microsoft.com",
+        "ID":  "EclipseAdoptium.Temurin.25.JDK",
+        "Name":  "Java 25 JDK",
+        "Domain":  "adoptium.net",
         "Aliases":  [
-                        "PowerToys",
-                        "Microsoft PowerToys",
-                        "Microsoft.PowerToys"
+                        "Eclipse Temurin JDK with Hotspot 25",
+                        "Temurin 25",
+                        "EclipseAdoptium.Temurin.25.JDK"
                     ],
-        "IconUrl":  "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
-        "Category":  "System Utilities",
-        "IDn":  43
+        "Category":  "Java Runtimes",
+        "IDn":  59
     },
     {
-        "ID":  "Flow-Launcher.Flow-Launcher",
-        "Name":  "Flow Launcher",
-        "Domain":  "flowlauncher.com",
+        "ID":  "Microsoft.VCRedist.2005.x64",
+        "Name":  "VC++ 2005 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "Flow Launcher",
-                        "Flow-Launcher.Flow-Launcher"
+                        "Microsoft Visual C++ 2005 Redistributable (x64)",
+                        "Microsoft.VCRedist.2005.x64"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  44
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  60
     },
     {
-        "ID":  "VSRevoGroup.RevoUninstaller",
-        "Name":  "Revo Uninstaller",
-        "Domain":  "revouninstaller.com",
+        "ID":  "Microsoft.VCRedist.2005.x86",
+        "Name":  "VC++ 2005 (x86)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "Revo Uninstaller",
-                        "VSRevoGroup.RevoUninstaller"
+                        "Microsoft Visual C++ 2005 Redistributable (x86)",
+                        "Microsoft.VCRedist.2005.x86"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  45
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  61
     },
     {
-        "ID":  "JAMSoftware.TreeSize.Free",
-        "Name":  "TreeSize Free",
-        "Domain":  "jam-software.com",
+        "ID":  "Microsoft.VCRedist.2008.x64",
+        "Name":  "VC++ 2008 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "TreeSize Free",
-                        "JAMSoftware.TreeSize.Free"
+                        "Microsoft Visual C++ 2008 Redistributable - x64",
+                        "Microsoft.VCRedist.2008.x64"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  46
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  62
     },
     {
-        "ID":  "BleachBit.BleachBit",
-        "Name":  "BleachBit",
-        "Domain":  "bleachbit.org",
+        "ID":  "Microsoft.VCRedist.2008.x86",
+        "Name":  "VC++ 2008 (x86)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "BleachBit",
-                        "BleachBit.BleachBit"
+                        "Microsoft Visual C++ 2008 Redistributable - x86",
+                        "Microsoft.VCRedist.2008.x86"
                     ],
-        "Category":  "System Utilities",
-        "IDn":  47
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  63
     },
     {
-        "ID":  "Guru3D.Afterburner",
-        "Name":  "MSI Afterburner",
-        "Domain":  "msi.com",
+        "ID":  "Microsoft.VCRedist.2010.x64",
+        "Name":  "VC++ 2010 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "MSI Afterburner",
-                        "Afterburner",
-                        "Guru3D.Afterburner"
+                        "Microsoft Visual C++ 2010 x64 Redistributable",
+                        "Microsoft.VCRedist.2010.x64"
                     ],
-        "Category":  "Hardware \u0026 Monitoring",
-        "IDn":  48
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  64
     },
     {
-        "ID":  "Rem0o.FanControl",
-        "Name":  "FanControl",
-        "Domain":  "getfancontrol.com",
+        "ID":  "Microsoft.VCRedist.2010.x86",
+        "Name":  "VC++ 2010 (x86)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "FanControl",
-                        "Fan Control",
-                        "Rem0o.FanControl"
+                        "Microsoft Visual C++ 2010 x86 Redistributable",
+                        "Microsoft.VCRedist.2010.x86"
                     ],
-        "Category":  "Hardware \u0026 Monitoring",
-        "IDn":  49
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  65
     },
     {
-        "ID":  "CPUID.CPU-Z",
-        "Name":  "CPUID CPU-Z",
-        "Domain":  "cpuid.com",
+        "ID":  "Microsoft.VCRedist.2012.x64",
+        "Name":  "VC++ 2012 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "CPUID CPU-Z",
-                        "CPU-Z",
-                        "CPUID.CPU-Z"
+                        "Microsoft Visual C++ 2012 Redistributable (x64)",
+                        "Microsoft.VCRedist.2012.x64"
                     ],
-        "Category":  "Hardware \u0026 Monitoring",
-        "IDn":  50
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  66
     },
     {
-        "ID":  "CPUID.HWMonitor",
-        "Name":  "CPUID HWMonitor",
-        "Domain":  "cpuid.com",
+        "ID":  "Microsoft.VCRedist.2012.x86",
+        "Name":  "VC++ 2012 (x86)",
+        "Domain":  "visualstudio.microsoft.com",
         "Aliases":  [
-                        "CPUID HWMonitor",
-                        "HWMonitor",
-                        "CPUID.HWMonitor"
+                        "Microsoft Visual C++ 2012 Redistributable (x86)",
+                        "Microsoft.VCRedist.2012.x86"
                     ],
-        "Category":  "Hardware \u0026 Monitoring",
-        "IDn":  51
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  67
+    },
+    {
+        "ID":  "Microsoft.VCRedist.2013.x64",
+        "Name":  "VC++ 2013 (x64)",
+        "Domain":  "visualstudio.microsoft.com",
+        "Aliases":  [
+                        "Microsoft Visual C++ 2013 Redistributable (x64)",
+                        "Microsoft.VCRedist.2013.x64"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  68
+    },
+    {
+        "ID":  "Microsoft.VCRedist.2013.x86",
+        "Name":  "VC++ 2013 (x86)",
+        "Domain":  "visualstudio.microsoft.com",
+        "Aliases":  [
+                        "Microsoft Visual C++ 2013 Redistributable (x86)",
+                        "Microsoft.VCRedist.2013.x86"
+                    ],
+        "Category":  "C++ \u0026 System Runtimes",
+        "IDn":  69
     },
     {
         "ID":  "Microsoft.VCRedist.2015+.x64",
@@ -819,7 +1023,7 @@ $appsRawJson = @'
                         "Microsoft.VCRedist.2015+.x64"
                     ],
         "Category":  "C++ \u0026 System Runtimes",
-        "IDn":  52
+        "IDn":  70
     },
     {
         "ID":  "Microsoft.VCRedist.2015+.x86",
@@ -830,29 +1034,7 @@ $appsRawJson = @'
                         "Microsoft.VCRedist.2015+.x86"
                     ],
         "Category":  "C++ \u0026 System Runtimes",
-        "IDn":  53
-    },
-    {
-        "ID":  "Microsoft.VCRedist.2013.x64",
-        "Name":  "VC++ 2013 (x64)",
-        "Domain":  "visualstudio.microsoft.com",
-        "Aliases":  [
-                        "Microsoft Visual C++ 2013 Redistributable (x64)",
-                        "Microsoft.VCRedist.2013.x64"
-                    ],
-        "Category":  "C++ \u0026 System Runtimes",
-        "IDn":  54
-    },
-    {
-        "ID":  "Microsoft.VCRedist.2012.x64",
-        "Name":  "VC++ 2012 (x64)",
-        "Domain":  "visualstudio.microsoft.com",
-        "Aliases":  [
-                        "Microsoft Visual C++ 2012 Redistributable (x64)",
-                        "Microsoft.VCRedist.2012.x64"
-                    ],
-        "Category":  "C++ \u0026 System Runtimes",
-        "IDn":  55
+        "IDn":  71
     },
     {
         "ID":  "Microsoft.DirectX",
@@ -865,7 +1047,145 @@ $appsRawJson = @'
                         "Microsoft.DirectX"
                     ],
         "Category":  "C++ \u0026 System Runtimes",
-        "IDn":  56
+        "IDn":  72
+    },
+    {
+        "ID":  "7zip.7zip",
+        "Name":  "7-Zip",
+        "Domain":  "7-zip.org",
+        "Aliases":  [
+                        "7-Zip",
+                        "7zip.7zip"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  73
+    },
+    {
+        "ID":  "RARLab.WinRAR",
+        "Name":  "WinRAR",
+        "Domain":  "rarlab.com",
+        "Aliases":  [
+                        "WinRAR",
+                        "RARLab.WinRAR"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  74
+    },
+    {
+        "ID":  "voidtools.Everything",
+        "Name":  "Everything",
+        "Domain":  "voidtools.com",
+        "Aliases":  [
+                        "Everything",
+                        "voidtools.Everything"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  75
+    },
+    {
+        "ID":  "Microsoft.PowerToys",
+        "Name":  "PowerToys",
+        "Domain":  "learn.microsoft.com",
+        "Aliases":  [
+                        "PowerToys",
+                        "Microsoft PowerToys",
+                        "Microsoft.PowerToys"
+                    ],
+        "IconUrl":  "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
+        "Category":  "System Utilities",
+        "IDn":  76
+    },
+    {
+        "ID":  "Flow-Launcher.Flow-Launcher",
+        "Name":  "Flow Launcher",
+        "Domain":  "flowlauncher.com",
+        "Aliases":  [
+                        "Flow Launcher",
+                        "Flow-Launcher.Flow-Launcher"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  77
+    },
+    {
+        "ID":  "VSRevoGroup.RevoUninstaller",
+        "Name":  "Revo Uninstaller",
+        "Domain":  "revouninstaller.com",
+        "Aliases":  [
+                        "Revo Uninstaller",
+                        "VSRevoGroup.RevoUninstaller"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  78
+    },
+    {
+        "ID":  "JAMSoftware.TreeSize.Free",
+        "Name":  "TreeSize Free",
+        "Domain":  "jam-software.com",
+        "Aliases":  [
+                        "TreeSize Free",
+                        "JAMSoftware.TreeSize.Free"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  79
+    },
+    {
+        "ID":  "BleachBit.BleachBit",
+        "Name":  "BleachBit",
+        "Domain":  "bleachbit.org",
+        "Aliases":  [
+                        "BleachBit",
+                        "BleachBit.BleachBit"
+                    ],
+        "Category":  "System Utilities",
+        "IDn":  80
+    },
+    {
+        "ID":  "Guru3D.Afterburner",
+        "Name":  "MSI Afterburner",
+        "Domain":  "msi.com",
+        "Aliases":  [
+                        "MSI Afterburner",
+                        "Afterburner",
+                        "Guru3D.Afterburner"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  81
+    },
+    {
+        "ID":  "Rem0o.FanControl",
+        "Name":  "FanControl",
+        "Domain":  "getfancontrol.com",
+        "Aliases":  [
+                        "FanControl",
+                        "Fan Control",
+                        "Rem0o.FanControl"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  82
+    },
+    {
+        "ID":  "CPUID.CPU-Z",
+        "Name":  "CPUID CPU-Z",
+        "Domain":  "cpuid.com",
+        "Aliases":  [
+                        "CPUID CPU-Z",
+                        "CPU-Z",
+                        "CPUID.CPU-Z"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  83
+    },
+    {
+        "ID":  "CPUID.HWMonitor",
+        "Name":  "CPUID HWMonitor",
+        "Domain":  "cpuid.com",
+        "Aliases":  [
+                        "CPUID HWMonitor",
+                        "HWMonitor",
+                        "CPUID.HWMonitor"
+                    ],
+        "Category":  "Hardware \u0026 Monitoring",
+        "IDn":  84
     },
     {
         "ID":  "Bitwarden.Bitwarden",
@@ -876,7 +1196,7 @@ $appsRawJson = @'
                         "Bitwarden.Bitwarden"
                     ],
         "Category":  "Security \u0026 Network",
-        "IDn":  57
+        "IDn":  85
     },
     {
         "ID":  "KeePassXCTeam.KeePassXC",
@@ -887,7 +1207,7 @@ $appsRawJson = @'
                         "KeePassXCTeam.KeePassXC"
                     ],
         "Category":  "Security \u0026 Network",
-        "IDn":  58
+        "IDn":  86
     },
     {
         "ID":  "Cryptomator.Cryptomator",
@@ -898,7 +1218,7 @@ $appsRawJson = @'
                         "Cryptomator.Cryptomator"
                     ],
         "Category":  "Security \u0026 Network",
-        "IDn":  59
+        "IDn":  87
     },
     {
         "ID":  "ProtonTechnologies.ProtonVPN",
@@ -911,7 +1231,7 @@ $appsRawJson = @'
                         "ProtonTechnologies.ProtonVPN"
                     ],
         "Category":  "Security \u0026 Network",
-        "IDn":  60
+        "IDn":  88
     },
     {
         "ID":  "WiresharkFoundation.Wireshark",
@@ -922,7 +1242,7 @@ $appsRawJson = @'
                         "WiresharkFoundation.Wireshark"
                     ],
         "Category":  "Security \u0026 Network",
-        "IDn":  61
+        "IDn":  89
     },
     {
         "ID":  "VideoLAN.VLC",
@@ -934,7 +1254,7 @@ $appsRawJson = @'
                         "VideoLAN.VLC"
                     ],
         "Category":  "Audio \u0026 Video",
-        "IDn":  62
+        "IDn":  90
     },
     {
         "ID":  "OBSProject.OBSStudio",
@@ -946,7 +1266,7 @@ $appsRawJson = @'
                         "OBSProject.OBSStudio"
                     ],
         "Category":  "Audio \u0026 Video",
-        "IDn":  63
+        "IDn":  91
     },
     {
         "ID":  "Spotify.Spotify",
@@ -957,7 +1277,7 @@ $appsRawJson = @'
                         "Spotify.Spotify"
                     ],
         "Category":  "Audio \u0026 Video",
-        "IDn":  64
+        "IDn":  92
     },
     {
         "ID":  "Audacity.Audacity",
@@ -968,7 +1288,7 @@ $appsRawJson = @'
                         "Audacity.Audacity"
                     ],
         "Category":  "Audio \u0026 Video",
-        "IDn":  65
+        "IDn":  93
     },
     {
         "ID":  "HandBrake.HandBrake",
@@ -979,7 +1299,7 @@ $appsRawJson = @'
                         "HandBrake.HandBrake"
                     ],
         "Category":  "Audio \u0026 Video",
-        "IDn":  66
+        "IDn":  94
     },
     {
         "ID":  "CodecGuide.K-LiteCodecPack.Mega",
@@ -991,7 +1311,7 @@ $appsRawJson = @'
                         "CodecGuide.K-LiteCodecPack.Mega"
                     ],
         "Category":  "Audio \u0026 Video",
-        "IDn":  67
+        "IDn":  95
     },
     {
         "ID":  "ShareX.ShareX",
@@ -1002,7 +1322,7 @@ $appsRawJson = @'
                         "ShareX.ShareX"
                     ],
         "Category":  "Graphics \u0026 Design",
-        "IDn":  68
+        "IDn":  96
     },
     {
         "ID":  "GIMP.GIMP",
@@ -1014,7 +1334,7 @@ $appsRawJson = @'
                         "GIMP.GIMP"
                     ],
         "Category":  "Graphics \u0026 Design",
-        "IDn":  69
+        "IDn":  97
     },
     {
         "ID":  "KDE.Krita",
@@ -1025,7 +1345,7 @@ $appsRawJson = @'
                         "KDE.Krita"
                     ],
         "Category":  "Graphics \u0026 Design",
-        "IDn":  70
+        "IDn":  98
     },
     {
         "ID":  "BlenderFoundation.Blender",
@@ -1036,7 +1356,7 @@ $appsRawJson = @'
                         "BlenderFoundation.Blender"
                     ],
         "Category":  "Graphics \u0026 Design",
-        "IDn":  71
+        "IDn":  99
     },
     {
         "ID":  "Inkscape.Inkscape",
@@ -1047,7 +1367,7 @@ $appsRawJson = @'
                         "Inkscape.Inkscape"
                     ],
         "Category":  "Graphics \u0026 Design",
-        "IDn":  72
+        "IDn":  100
     },
     {
         "ID":  "TheDocumentFoundation.LibreOffice",
@@ -1058,7 +1378,7 @@ $appsRawJson = @'
                         "TheDocumentFoundation.LibreOffice"
                     ],
         "Category":  "Documents \u0026 Office",
-        "IDn":  73
+        "IDn":  101
     },
     {
         "ID":  "Obsidian.Obsidian",
@@ -1069,7 +1389,7 @@ $appsRawJson = @'
                         "Obsidian.Obsidian"
                     ],
         "Category":  "Documents \u0026 Office",
-        "IDn":  74
+        "IDn":  102
     },
     {
         "ID":  "Notion.Notion",
@@ -1080,7 +1400,7 @@ $appsRawJson = @'
                         "Notion.Notion"
                     ],
         "Category":  "Documents \u0026 Office",
-        "IDn":  75
+        "IDn":  103
     },
     {
         "ID":  "SumatraPDF.SumatraPDF",
@@ -1091,7 +1411,7 @@ $appsRawJson = @'
                         "SumatraPDF.SumatraPDF"
                     ],
         "Category":  "Documents \u0026 Office",
-        "IDn":  76
+        "IDn":  104
     },
     {
         "ID":  "Foxit.FoxitReader",
@@ -1103,7 +1423,7 @@ $appsRawJson = @'
                         "Foxit.FoxitReader"
                     ],
         "Category":  "Documents \u0026 Office",
-        "IDn":  77
+        "IDn":  105
     },
     {
         "ID":  "Valve.Steam",
@@ -1114,7 +1434,7 @@ $appsRawJson = @'
                         "Valve.Steam"
                     ],
         "Category":  "Game Launchers",
-        "IDn":  78
+        "IDn":  106
     },
     {
         "ID":  "EpicGames.EpicGamesLauncher",
@@ -1126,7 +1446,7 @@ $appsRawJson = @'
                         "EpicGames.EpicGamesLauncher"
                     ],
         "Category":  "Game Launchers",
-        "IDn":  79
+        "IDn":  107
     },
     {
         "ID":  "GOG.Galaxy",
@@ -1138,7 +1458,7 @@ $appsRawJson = @'
                         "GOG.Galaxy"
                     ],
         "Category":  "Game Launchers",
-        "IDn":  80
+        "IDn":  108
     },
     {
         "ID":  "Playnite.Playnite",
@@ -1149,7 +1469,7 @@ $appsRawJson = @'
                         "Playnite.Playnite"
                     ],
         "Category":  "Game Launchers",
-        "IDn":  81
+        "IDn":  109
     },
     {
         "ID":  "qBittorrent.qBittorrent",
@@ -1160,7 +1480,7 @@ $appsRawJson = @'
                         "qBittorrent.qBittorrent"
                     ],
         "Category":  "File Transfer \u0026 Cloud",
-        "IDn":  82
+        "IDn":  110
     },
     {
         "ID":  "LocalSend.LocalSend",
@@ -1171,7 +1491,7 @@ $appsRawJson = @'
                         "LocalSend.LocalSend"
                     ],
         "Category":  "File Transfer \u0026 Cloud",
-        "IDn":  83
+        "IDn":  111
     },
     {
         "ID":  "WinSCP.WinSCP",
@@ -1182,7 +1502,7 @@ $appsRawJson = @'
                         "WinSCP.WinSCP"
                     ],
         "Category":  "File Transfer \u0026 Cloud",
-        "IDn":  84
+        "IDn":  112
     },
     {
         "ID":  "TimKosse.FileZilla.Client",
@@ -1194,7 +1514,7 @@ $appsRawJson = @'
                         "TimKosse.FileZilla.Client"
                     ],
         "Category":  "File Transfer \u0026 Cloud",
-        "IDn":  85
+        "IDn":  113
     },
     {
         "ID":  "Rclone.Rclone",
@@ -1205,7 +1525,7 @@ $appsRawJson = @'
                         "Rclone.Rclone"
                     ],
         "Category":  "File Transfer \u0026 Cloud",
-        "IDn":  86
+        "IDn":  114
     }
 ]
 '@
@@ -1452,7 +1772,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="150" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="Auto" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
@@ -1736,16 +2056,16 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                    FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="btnToggleTerminal" Content="▼ Thu gọn"
+                        <Button Name="btnToggleTerminal" Content="▲ Mở rộng"
                                 Background="#111622" BorderBrush="#243044" BorderThickness="1"
-                                Foreground="#38BDF8" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
+                                Foreground="#34D399" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
                                 Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
                         <Button Name="btnClearLog" Content="Xóa Log"
                                 Background="Transparent" Foreground="#64748B" BorderThickness="0"
                                 Cursor="Hand" FontSize="11" Padding="6,2"/>
                     </StackPanel>
                 </Grid>
-                <TextBox Grid.Row="1" Name="txtLog" Background="Transparent" Foreground="#34D399"
+                <TextBox Grid.Row="1" Name="txtLog" Visibility="Collapsed" Background="Transparent" Foreground="#34D399"
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0" CaretBrush="#38BDF8"
@@ -2536,6 +2856,8 @@ function Invoke-GuardedAction {
         Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
         return
     }
+    # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
+    Expand-TerminalLog
     $script:isActionRunning = $true
     try {
         & $Action
@@ -2590,17 +2912,24 @@ Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
 
-# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MŨI TÊN THU XUỐNG ĐỂ ẨN TERMINAL) ──
-$script:isTerminalCollapsed = $false
+# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MẶC ĐỊNH THU GỌN KHI KHỞI CHẠY) ──
+$script:isTerminalCollapsed = $true
+
+function Expand-TerminalLog {
+    if ($script:isTerminalCollapsed -and $btnToggleTerminal -and $rowDefTerminal) {
+        $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
+        if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
+        $btnToggleTerminal.Content = "▼ Thu gọn"
+        $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
+        $script:isTerminalCollapsed = $false
+    }
+}
+
 if ($btnToggleTerminal -and $rowDefTerminal) {
     $btnToggleTerminal.Add_Click({
         if ($script:isTerminalCollapsed) {
             # Mở rộng lại 150px
-            $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
-            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
-            $btnToggleTerminal.Content = "▼ Thu gọn"
-            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
-            $script:isTerminalCollapsed = $false
+            Expand-TerminalLog
         } else {
             # Thu gọn (chỉ giữ thanh tiêu đề)
             $rowDefTerminal.Height = [System.Windows.GridLength]::Auto
@@ -2688,27 +3017,8 @@ function Get-AppFallbackGlyph {
     return [char]::ConvertFromUtf32(0x1F4E6)
 }
 
-# ── BẢN ĐỒ PHÂN BỔ CỘT THEO CHỦ ĐỀ CHUYÊN BIỆT (4 CỘT CÂN BẰNG HOÀN HẢO) ──
-$categoryColumnMap = @{
-    "Web Browsers"           = 0
-    "Communication"          = 0
-    "Remote Desktop"         = 0
-
-    "Development"            = 1
-    ".NET Runtimes"          = 1
-    "Java Runtimes"          = 1
-
-    "System Utilities"       = 2
-    "Hardware & Monitoring"  = 2
-    "C++ & System Runtimes"  = 2
-    "Security & Network"     = 2
-
-    "Audio & Video"          = 3
-    "Graphics & Design"      = 3
-    "Documents & Office"     = 3
-    "Game Launchers"         = 3
-    "File Transfer & Cloud"  = 3
-}
+# ── MASONRY CÂN BẰNG CHIỀU CAO 4 CỘT TỰ ĐỘNG (LOẠI BỎ TRIỆT ĐỂ KHOẢNG TRỐNG) ──
+$script:colHeights = @(0, 0, 0, 0)
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
@@ -3012,12 +3322,26 @@ foreach ($cat in $categories) {
     $cardBorder.Child = $cardStack
     $categoryCardMap[$cardBorder] = $rowsInCard
     
-    # Thêm card vào cột dọc tương ứng theo bản đồ chủ đề (4 cột cân bằng hoàn hảo)
-    $targetColIndex = if ($categoryColumnMap.ContainsKey($cat)) { $categoryColumnMap[$cat] } else { $catIndex % 4 }
+    # Trọng số chiều cao ước tính: 48px (Header card + Separator) + (Số dòng app * 28px) + 10px (Margin)
+    $cardEstimatedHeight = 58 + ($appsInCat.Count * 28)
+
+    # Tìm cột hiện có tổng chiều cao thấp nhất để rót card vào (nguyên lý bình thông nhau, triệt tiêu khoảng trống)
+    $targetColIndex = 0
+    $minHeight = $script:colHeights[0]
+    for ($i = 1; $i -lt 4; $i++) {
+        if ($script:colHeights[$i] -lt $minHeight) {
+            $minHeight = $script:colHeights[$i]
+            $targetColIndex = $i
+        }
+    }
+
     $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
     if ($targetColPanel) {
         $targetColPanel.Children.Add($cardBorder) | Out-Null
     }
+
+    # Cập nhật chiều cao tích lũy của cột
+    $script:colHeights[$targetColIndex] += $cardEstimatedHeight
     $catIndex++
 }
 

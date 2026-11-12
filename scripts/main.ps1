@@ -69,6 +69,8 @@ function Invoke-GuardedAction {
         Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
         return
     }
+    # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
+    Expand-TerminalLog
     $script:isActionRunning = $true
     try {
         & $Action
@@ -123,17 +125,24 @@ Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
 
-# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MŨI TÊN THU XUỐNG ĐỂ ẨN TERMINAL) ──
-$script:isTerminalCollapsed = $false
+# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MẶC ĐỊNH THU GỌN KHI KHỞI CHẠY) ──
+$script:isTerminalCollapsed = $true
+
+function Expand-TerminalLog {
+    if ($script:isTerminalCollapsed -and $btnToggleTerminal -and $rowDefTerminal) {
+        $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
+        if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
+        $btnToggleTerminal.Content = "▼ Thu gọn"
+        $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
+        $script:isTerminalCollapsed = $false
+    }
+}
+
 if ($btnToggleTerminal -and $rowDefTerminal) {
     $btnToggleTerminal.Add_Click({
         if ($script:isTerminalCollapsed) {
             # Mở rộng lại 150px
-            $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
-            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
-            $btnToggleTerminal.Content = "▼ Thu gọn"
-            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
-            $script:isTerminalCollapsed = $false
+            Expand-TerminalLog
         } else {
             # Thu gọn (chỉ giữ thanh tiêu đề)
             $rowDefTerminal.Height = [System.Windows.GridLength]::Auto
@@ -221,27 +230,8 @@ function Get-AppFallbackGlyph {
     return [char]::ConvertFromUtf32(0x1F4E6)
 }
 
-# ── BẢN ĐỒ PHÂN BỔ CỘT THEO CHỦ ĐỀ CHUYÊN BIỆT (4 CỘT CÂN BẰNG HOÀN HẢO) ──
-$categoryColumnMap = @{
-    "Web Browsers"           = 0
-    "Communication"          = 0
-    "Remote Desktop"         = 0
-
-    "Development"            = 1
-    ".NET Runtimes"          = 1
-    "Java Runtimes"          = 1
-
-    "System Utilities"       = 2
-    "Hardware & Monitoring"  = 2
-    "C++ & System Runtimes"  = 2
-    "Security & Network"     = 2
-
-    "Audio & Video"          = 3
-    "Graphics & Design"      = 3
-    "Documents & Office"     = 3
-    "Game Launchers"         = 3
-    "File Transfer & Cloud"  = 3
-}
+# ── MASONRY CÂN BẰNG CHIỀU CAO 4 CỘT TỰ ĐỘNG (LOẠI BỎ TRIỆT ĐỂ KHOẢNG TRỐNG) ──
+$script:colHeights = @(0, 0, 0, 0)
 
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
@@ -545,12 +535,26 @@ foreach ($cat in $categories) {
     $cardBorder.Child = $cardStack
     $categoryCardMap[$cardBorder] = $rowsInCard
     
-    # Thêm card vào cột dọc tương ứng theo bản đồ chủ đề (4 cột cân bằng hoàn hảo)
-    $targetColIndex = if ($categoryColumnMap.ContainsKey($cat)) { $categoryColumnMap[$cat] } else { $catIndex % 4 }
+    # Trọng số chiều cao ước tính: 48px (Header card + Separator) + (Số dòng app * 28px) + 10px (Margin)
+    $cardEstimatedHeight = 58 + ($appsInCat.Count * 28)
+
+    # Tìm cột hiện có tổng chiều cao thấp nhất để rót card vào (nguyên lý bình thông nhau, triệt tiêu khoảng trống)
+    $targetColIndex = 0
+    $minHeight = $script:colHeights[0]
+    for ($i = 1; $i -lt 4; $i++) {
+        if ($script:colHeights[$i] -lt $minHeight) {
+            $minHeight = $script:colHeights[$i]
+            $targetColIndex = $i
+        }
+    }
+
     $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
     if ($targetColPanel) {
         $targetColPanel.Children.Add($cardBorder) | Out-Null
     }
+
+    # Cập nhật chiều cao tích lũy của cột
+    $script:colHeights[$targetColIndex] += $cardEstimatedHeight
     $catIndex++
 }
 
