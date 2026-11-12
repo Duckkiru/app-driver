@@ -374,9 +374,20 @@
                         </Grid>
                     </Border>
 
-                    <!-- Lưới Card 4 CỘT RỘNG RÃI (ItemWidth = 296) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14,12">
-                        <WrapPanel Name="CardsContainer" ItemWidth="296" Orientation="Horizontal"/>
+                    <!-- Lưới Card 4 CỘT DỌC TỰ NHIÊN (Masonry 4 Cột, Chiều cao Auto, Chiều rộng cân đối) -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10,12">
+                        <Grid Name="CardsContainer">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
+                            <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                            <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                            <StackPanel Grid.Column="3" Name="CardsCol3" Margin="4,0"/>
+                        </Grid>
                     </ScrollViewer>
                 </Grid>
             </TabItem>

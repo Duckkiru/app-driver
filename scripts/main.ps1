@@ -23,6 +23,7 @@ $script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.W
 
 $script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x3B)); $script:brushRowHover.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushTextWhite.Freeze()
+$script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
 
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
 $marginCardBorder = New-Object System.Windows.Thickness(5)
@@ -105,6 +106,64 @@ Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
 
+# Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
+function Get-AppFallbackGlyph {
+    param([string]$AppName, [string]$Category)
+    $nameLower = if ($AppName) { $AppName.ToLowerInvariant() } else { "" }
+    if ($nameLower -match 'chrome') { return [char]::ConvertFromUtf32(0x1F310) }
+    if ($nameLower -match 'firefox') { return [char]::ConvertFromUtf32(0x1F98A) }
+    if ($nameLower -match 'brave') { return [char]::ConvertFromUtf32(0x1F981) }
+    if ($nameLower -match 'tor') { return [char]::ConvertFromUtf32(0x1F9C5) }
+    if ($nameLower -match 'opera') { return [char]::ConvertFromUtf32(0x1F534) }
+    if ($nameLower -match 'vivaldi') { return [char]::ConvertFromUtf32(0x1F3AD) }
+    if ($nameLower -match 'librewolf') { return [char]::ConvertFromUtf32(0x1F43A) }
+    if ($nameLower -match 'discord') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($nameLower -match 'telegram') { return [char]::ConvertFromUtf32(0x2708) }
+    if ($nameLower -match 'zalo') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($nameLower -match 'slack') { return [char]::ConvertFromUtf32(0x1F4BC) }
+    if ($nameLower -match 'teams') { return [char]::ConvertFromUtf32(0x1F465) }
+    if ($nameLower -match 'whatsapp') { return [char]::ConvertFromUtf32(0x1F4F1) }
+    if ($nameLower -match 'zoom') { return [char]::ConvertFromUtf32(0x1F4F9) }
+    if ($nameLower -match 'vs code|visual studio') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($nameLower -match 'git') { return [char]::ConvertFromUtf32(0x1F419) }
+    if ($nameLower -match 'terminal') { return [char]::ConvertFromUtf32(0x1F4DF) }
+    if ($nameLower -match 'python') { return [char]::ConvertFromUtf32(0x1F40D) }
+    if ($nameLower -match 'node') { return [char]::ConvertFromUtf32(0x1F7E2) }
+    if ($nameLower -match 'docker') { return [char]::ConvertFromUtf32(0x1F433) }
+    if ($nameLower -match 'notepad\+\+') { return [char]::ConvertFromUtf32(0x1F4DD) }
+    if ($nameLower -match 'postman') { return [char]::ConvertFromUtf32(0x1F680) }
+    if ($nameLower -match 'dbeaver') { return [char]::ConvertFromUtf32(0x1F9AB) }
+    if ($nameLower -match 'rust') { return [char]::ConvertFromUtf32(0x1F980) }
+    if ($nameLower -match 'go lang|golang') { return [char]::ConvertFromUtf32(0x1F439) }
+    if ($nameLower -match '7-zip') { return [char]::ConvertFromUtf32(0x1F5DC) }
+    if ($nameLower -match 'winrar') { return [char]::ConvertFromUtf32(0x1F4E6) }
+    if ($nameLower -match 'everything') { return [char]::ConvertFromUtf32(0x1F50D) }
+    if ($nameLower -match 'powertoys') { return [char]::ConvertFromUtf32(0x26A1) }
+    if ($nameLower -match 'flow launcher') { return [char]::ConvertFromUtf32(0x1F680) }
+    if ($nameLower -match 'revo') { return [char]::ConvertFromUtf32(0x1F9F9) }
+    if ($nameLower -match 'treesize') { return [char]::ConvertFromUtf32(0x1F4CA) }
+    if ($nameLower -match 'sharex') { return [char]::ConvertFromUtf32(0x1F4F8) }
+    if ($nameLower -match 'bleachbit') { return [char]::ConvertFromUtf32(0x1F9FC) }
+    if ($nameLower -match 'fancontrol') { return [char]::ConvertFromUtf32(0x1F300) }
+    if ($nameLower -match 'spotify') { return [char]::ConvertFromUtf32(0x1F3B5) }
+    if ($nameLower -match 'vlc') { return [char]::ConvertFromUtf32(0x1F538) }
+    if ($nameLower -match 'obs') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($nameLower -match 'steam') { return [char]::ConvertFromUtf32(0x1F579) }
+    if ($nameLower -match 'epic') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($nameLower -match 'onedrive|gdrive|drive|dropbox') { return [char]::ConvertFromUtf32(0x2601) }
+
+    if ($Category -match 'Web') { return [char]::ConvertFromUtf32(0x1F310) }
+    if ($Category -match 'Chat|Liên') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($Category -match 'Dev|Triển') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($Category -match 'Tiện|Thống') { return [char]::ConvertFromUtf32(0x1F6E0) }
+    if ($Category -match 'Phương|Tiện') { return [char]::ConvertFromUtf32(0x1F3AC) }
+    if ($Category -match 'Phòng|Liệu') { return [char]::ConvertFromUtf32(0x1F4C4) }
+    if ($Category -match 'Chơi|Game') { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($Category -match 'Trữ|Tệp') { return [char]::ConvertFromUtf32(0x2601) }
+
+    return [char]::ConvertFromUtf32(0x1F4E6)
+}
+
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
 $allItemBorders  = [System.Collections.Generic.List[object]]::new()
@@ -127,14 +186,25 @@ function Update-SelectionCount {
     }
 }
 
+# 4 cột dọc phân bố đều các card danh mục (Chiều cao tự nhiên, không cố định, triệt tiêu khoảng trống thừa)
+$cardCols = @(
+    $window.FindName("CardsCol0"),
+    $window.FindName("CardsCol1"),
+    $window.FindName("CardsCol2"),
+    $window.FindName("CardsCol3")
+)
+
+$catIndex = 0
 foreach ($cat in $categories) {
     $cardBorder = New-Object System.Windows.Controls.Border
     $cardBorder.Background = $script:brushCardBg
     $cardBorder.BorderBrush = $script:brushCardBorder
     $cardBorder.BorderThickness = $thicknessOne
     $cardBorder.CornerRadius = $cornerCard
-    $cardBorder.Margin = $marginCardBorder
+    $cardBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 10)
     $cardBorder.Padding = $paddingCard
+    $cardBorder.Height = [double]::NaN
+    $cardBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
 
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
@@ -159,7 +229,7 @@ foreach ($cat in $categories) {
     $cardStack.Children.Add($headerGrid) | Out-Null
     $cardStack.Children.Add($separator) | Out-Null
 
-    # Từng dòng App: Logo + CheckBox + Tên
+    # Từng dòng App: Logo + CheckBox + Tên (90%) + Icon Link Web (10%)
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
         $rowBorder.CornerRadius = $cornerRow
@@ -181,10 +251,13 @@ foreach ($cat in $categories) {
             SearchIndex      = $searchIndex
         }
 
+        # Grid chia 4 cột: Col 0 (CheckBox), Col 1 (Icon), Col 2 (Tên 90%), Col 3 (Link Web 10%)
         $rowGrid = New-Object System.Windows.Controls.Grid
+        $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = [System.Windows.GridLength]::Auto
         $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = [System.Windows.GridLength]::Auto
-        $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = [System.Windows.GridLength]::Auto
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = [System.Windows.GridLength]::Auto
+        $rowGrid.ColumnDefinitions.Add($col0) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col3) | Out-Null
@@ -200,11 +273,26 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Logo Icon chính hãng (Cache tệp theo ID ứng dụng và sử dụng GetNewClosure() chống xung đột biến - Section 3.1)
+        # 2. Container Icon (Chống giật, luôn có Glyph đặc trưng và nạp Logo chính hãng mượt mà)
+        $iconContainer = New-Object System.Windows.Controls.Grid
+        $iconContainer.Width = 18; $iconContainer.Height = 18
+        $iconContainer.Margin = $marginIcon
+        $iconContainer.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
+        $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
+        $fallbackGlyph.FontFamily = $script:fontSegoeEmoji
+        $fallbackGlyph.FontSize = 12
+        $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $iconContainer.Children.Add($fallbackGlyph) | Out-Null
+
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
-        $img.Margin = $marginIcon
+        $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $img.Visibility = [System.Windows.Visibility]::Collapsed
+        $iconContainer.Children.Add($img) | Out-Null
 
         $localIconPath = Join-Path $iconsCacheDir "$($app.ID).png"
         if (Test-Path -LiteralPath $localIconPath) {
@@ -215,6 +303,8 @@ foreach ($cat in $categories) {
                 $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
                 $bmp.EndInit()
                 $img.Source = $bmp
+                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                $img.Visibility = [System.Windows.Visibility]::Visible
             } catch {}
         } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
             try {
@@ -222,14 +312,15 @@ foreach ($cat in $categories) {
                 $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
                 $bmp.BeginInit()
                 $bmp.UriSource = $remoteUri
-                $bmp.CreateOptions = [System.Windows.Media.Imaging.BitmapCreateOptions]::DelayCreation
-                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnDemand
+                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
                 $bmp.EndInit()
 
                 # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
                 $cacheClosure = {
                     param($sender, $e)
                     try {
+                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                        $img.Visibility = [System.Windows.Visibility]::Visible
                         if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
                             $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
                             $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
@@ -244,10 +335,10 @@ foreach ($cat in $categories) {
                 $img.Source = $bmp
             } catch {}
         }
-        [System.Windows.Controls.Grid]::SetColumn($img, 1)
-        $rowGrid.Children.Add($img) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
+        $rowGrid.Children.Add($iconContainer) | Out-Null
 
-        # 3. Tên ứng dụng
+        # 3. Tên ứng dụng (Chiếm 90% chiều rộng dòng, nhấp vào tên tự tick chọn CheckBox)
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
         $nameText.Foreground = $script:brushTextWhite
@@ -259,23 +350,73 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
         $rowGrid.Children.Add($nameText) | Out-Null
 
-        # Tối ưu nhấp chọn toàn dòng mượt mà, phân lập rõ click CheckBox và click nền để chống giật/lặp sự kiện
+        # 4. Icon Link Website ngoài cùng bên phải (Chiếm 10% chiều rộng dòng, click mở trang chủ)
+        $linkBorder = New-Object System.Windows.Controls.Border
+        $linkBorder.Width = 20; $linkBorder.Height = 20
+        $linkBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
+        $linkBorder.Background = $script:brushTransparent
+        $linkBorder.Cursor = [System.Windows.Input.Cursors]::Hand
+        $linkBorder.Margin = New-Object System.Windows.Thickness(4, 0, 2, 0)
+        $linkBorder.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
+        $linkBorder.Tag = $app.Domain
+
+        $linkIcon = New-Object System.Windows.Controls.TextBlock
+        $linkIcon.Text = [char]0x2197 # ↗
+        $linkIcon.FontSize = 12
+        $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
+        $linkIcon.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B))
+        $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $linkBorder.Child = $linkIcon
+
+        $linkBorder.Add_MouseEnter({
+            param($s, $e)
+            $s.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B))
+            if ($s.Child) { $s.Child.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)) }
+        })
+        $linkBorder.Add_MouseLeave({
+            param($s, $e)
+            $s.Background = $script:brushTransparent
+            if ($s.Child) { $s.Child.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)) }
+        })
+        $linkBorder.Add_MouseLeftButtonUp({
+            param($s, $e)
+            $e.Handled = $true  # Chặn sự kiện nổi bọt để không làm toggle CheckBox
+            $domain = $s.Tag
+            if (-not [string]::IsNullOrWhiteSpace($domain)) {
+                $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
+                try {
+                    Start-Process $targetUrl
+                } catch {
+                    Log-Text "[!] Không thể mở trang web: $targetUrl"
+                }
+            }
+        })
+        [System.Windows.Controls.Grid]::SetColumn($linkBorder, 3)
+        $rowGrid.Children.Add($linkBorder) | Out-Null
+
+        # Tối ưu nhấp chọn toàn dòng: Nhấp vào Tên ứng dụng hoặc khoảng trống dòng -> TỰ ĐỘNG TÍCH CHECKBOX
         $rowBorder.Add_MouseLeftButtonUp({
             param($sender, $e)
+            if ($e.Handled) { return }
+
             $src = $e.OriginalSource
             $isCb = $false
-            while ($src -ne $null -and $src -ne $sender) {
-                if ($src -is [System.Windows.Controls.CheckBox]) {
+            $node = $src
+            while ($node -ne $null -and $node -ne $sender) {
+                if ($node -is [System.Windows.Controls.CheckBox]) {
                     $isCb = $true
                     break
                 }
-                if ($src -is [System.Windows.Media.Visual]) {
-                    $src = [System.Windows.Media.VisualTreeHelper]::GetParent($src)
+                if ($node -is [System.Windows.Media.Visual]) {
+                    $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
                 } else {
                     break
                 }
             }
-            if (-not $isCb -and $sender.Tag -and $sender.Tag.CheckBox) {
+            if ($isCb) { return }
+
+            if ($sender.Tag -and $sender.Tag.CheckBox) {
                 $targetCb = $sender.Tag.CheckBox
                 $targetCb.IsChecked = -not $targetCb.IsChecked
             }
@@ -308,9 +449,15 @@ foreach ($cat in $categories) {
 
     $cardBorder.Child = $cardStack
     $categoryCardMap[$cardBorder] = $rowsInCard
-    if ($cardsContainer) {
+    
+    # Thêm card vào 1 trong 4 cột dọc tương ứng
+    $targetColPanel = if ($cardCols[0]) { $cardCols[$catIndex % 4] } else { $null }
+    if ($targetColPanel) {
+        $targetColPanel.Children.Add($cardBorder) | Out-Null
+    } elseif ($cardsContainer) {
         $cardsContainer.Children.Add($cardBorder) | Out-Null
     }
+    $catIndex++
 }
 
 # ── LOGIC TÌM KIẾM & BỘ LỌC TỐC ĐỘ CAO (INDEXED SEARCH) ──

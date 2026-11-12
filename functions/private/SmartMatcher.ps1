@@ -295,15 +295,15 @@ function Scan-And-ColorizeApps {
                 $row.Background = $script:brushOutdatedBg
                 $tb.Foreground = $script:brushOutdatedFg
                 $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
-                $tb.Text = "$($app.Name)  ⚠️$updateBadge"
+                $tb.Text = "$($app.Name)  $updateBadge"
                 $tb.ToolTip = "$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
             } else {
-                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm ──
+                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ + Nền xanh sẫm (Không dùng dấu tích theo yêu cầu) ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
                 $row.Background = $script:brushLatestBg
                 $tb.Foreground = $script:brushLatestFg
-                $tb.Text = "$($app.Name)  ✓ (Mới nhất)"
+                $tb.Text = "$($app.Name)  (Mới nhất)"
                 $tb.ToolTip = "$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
             }
         } else {
