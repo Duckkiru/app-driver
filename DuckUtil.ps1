@@ -1543,7 +1543,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
     Foreground="#F8FAFC"
     FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
     TextOptions.TextFormattingMode="Display"
-    TextOptions.TextRenderingMode="ClearType">
+    TextOptions.TextRenderingMode="ClearType"
+    UseLayoutRounding="True"
+    SnapsToDevicePixels="True">
 
     <Window.Resources>
         <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER (8PX) ═══ -->
@@ -1863,7 +1865,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     </Border>
 
                     <!-- Lưới Card 4 CỘT DỌC TỰ NHIÊN (Masonry 4 Cột, Chiều cao Auto, Chiều rộng cân đối) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10,12">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,12">
                         <Grid Name="CardsContainer">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -2255,7 +2258,7 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity"
+        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -2372,18 +2375,19 @@ function Scan-And-ColorizeApps {
 
             if (-not [string]::IsNullOrWhiteSpace($appId)) {
                 $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
+                $clean = Get-CleanAppName $appName
                 $itemObj = [PSCustomObject]@{
                     Name      = $appName
                     ID        = $appId
                     Version   = $version
                     Available = $avail
                     HasUpdate = $hasUpdate
+                    CleanName = $clean
                 }
 
                 $installedList.Add($itemObj)
                 if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
                 if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                $clean = Get-CleanAppName $appName
                 if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
             }
         }
@@ -2398,6 +2402,7 @@ function Scan-And-ColorizeApps {
                     $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
                     $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
                     $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
+                    $clean = Get-CleanAppName $appName
 
                     $itemObj = [PSCustomObject]@{
                         Name      = $appName
@@ -2405,12 +2410,12 @@ function Scan-And-ColorizeApps {
                         Version   = $version
                         Available = $avail
                         HasUpdate = $hasUpdate
+                        CleanName = $clean
                     }
 
                     $installedList.Add($itemObj)
                     if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
                     if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                    $clean = Get-CleanAppName $appName
                     if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
                 }
             }
@@ -2494,8 +2499,7 @@ function Scan-And-ColorizeApps {
                 if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
                 if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
 
-                $cleanItem = Get-CleanAppName $item.Name
-                if ($cleanItem -match $patternClean) {
+                if ($item.CleanName -match $patternClean) {
                     $lookupCache[$targetId] = $item
                     return $item
                 }
@@ -3156,6 +3160,9 @@ $cardCols = @(
     $window.FindName("CardsCol3")
 )
 
+# Cache BitmapImage từ xa theo URL trong RAM để cắt giảm triệt để request mạng trùng lặp
+$script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
 $catIndex = 0
 foreach ($cat in $categories) {
     $cardBorder = New-Object System.Windows.Controls.Border
@@ -3280,12 +3287,18 @@ foreach ($cat in $categories) {
 
             if ($remoteIconTarget) {
                 try {
-                    $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
-                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                    $bmp.BeginInit()
-                    $bmp.UriSource = $remoteUri
-                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                    $bmp.EndInit()
+                    $cachedBmp = $null
+                    if ($script:remoteBmpCache.TryGetValue($remoteIconTarget, [ref]$cachedBmp)) {
+                        $bmp = $cachedBmp
+                    } else {
+                        $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
+                        $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                        $bmp.BeginInit()
+                        $bmp.UriSource = $remoteUri
+                        $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                        $bmp.EndInit()
+                        $script:remoteBmpCache[$remoteIconTarget] = $bmp
+                    }
 
                     # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
                     $cacheClosure = {
@@ -3303,8 +3316,24 @@ foreach ($cat in $categories) {
                         } catch {}
                     }.GetNewClosure()
 
-                    $bmp.Add_DownloadCompleted($cacheClosure)
-                    $img.Source = $bmp
+                    if (-not $bmp.IsDownloading) {
+                        # Đã có sẵn trong RAM cache hoặc đã tải xong
+                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                        $img.Visibility = [System.Windows.Visibility]::Visible
+                        $img.Source = $bmp
+                        if (-not (Test-Path -LiteralPath $localIconPath)) {
+                            try {
+                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                                $fs = [System.IO.File]::OpenWrite($localIconPath)
+                                $encoder.Save($fs)
+                                $fs.Close()
+                            } catch {}
+                        }
+                    } else {
+                        $bmp.Add_DownloadCompleted($cacheClosure)
+                        $img.Source = $bmp
+                    }
                 } catch {}
             }
         }

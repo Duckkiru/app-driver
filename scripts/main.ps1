@@ -263,6 +263,9 @@ $cardCols = @(
     $window.FindName("CardsCol3")
 )
 
+# Cache BitmapImage từ xa theo URL trong RAM để cắt giảm triệt để request mạng trùng lặp
+$script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
 $catIndex = 0
 foreach ($cat in $categories) {
     $cardBorder = New-Object System.Windows.Controls.Border
@@ -387,12 +390,18 @@ foreach ($cat in $categories) {
 
             if ($remoteIconTarget) {
                 try {
-                    $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
-                    $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                    $bmp.BeginInit()
-                    $bmp.UriSource = $remoteUri
-                    $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                    $bmp.EndInit()
+                    $cachedBmp = $null
+                    if ($script:remoteBmpCache.TryGetValue($remoteIconTarget, [ref]$cachedBmp)) {
+                        $bmp = $cachedBmp
+                    } else {
+                        $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
+                        $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                        $bmp.BeginInit()
+                        $bmp.UriSource = $remoteUri
+                        $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                        $bmp.EndInit()
+                        $script:remoteBmpCache[$remoteIconTarget] = $bmp
+                    }
 
                     # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
                     $cacheClosure = {
@@ -410,8 +419,24 @@ foreach ($cat in $categories) {
                         } catch {}
                     }.GetNewClosure()
 
-                    $bmp.Add_DownloadCompleted($cacheClosure)
-                    $img.Source = $bmp
+                    if (-not $bmp.IsDownloading) {
+                        # Đã có sẵn trong RAM cache hoặc đã tải xong
+                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                        $img.Visibility = [System.Windows.Visibility]::Visible
+                        $img.Source = $bmp
+                        if (-not (Test-Path -LiteralPath $localIconPath)) {
+                            try {
+                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                                $fs = [System.IO.File]::OpenWrite($localIconPath)
+                                $encoder.Save($fs)
+                                $fs.Close()
+                            } catch {}
+                        }
+                    } else {
+                        $bmp.Add_DownloadCompleted($cacheClosure)
+                        $img.Source = $bmp
+                    }
                 } catch {}
             }
         }

@@ -9,7 +9,9 @@
     Foreground="#F8FAFC"
     FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
     TextOptions.TextFormattingMode="Display"
-    TextOptions.TextRenderingMode="ClearType">
+    TextOptions.TextRenderingMode="ClearType"
+    UseLayoutRounding="True"
+    SnapsToDevicePixels="True">
 
     <Window.Resources>
         <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER (8PX) ═══ -->
@@ -329,7 +331,8 @@
                     </Border>
 
                     <!-- Lưới Card 4 CỘT DỌC TỰ NHIÊN (Masonry 4 Cột, Chiều cao Auto, Chiều rộng cân đối) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="10,12">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,12">
                         <Grid Name="CardsContainer">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

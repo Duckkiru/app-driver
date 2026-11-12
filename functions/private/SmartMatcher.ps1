@@ -41,7 +41,7 @@ function Scan-And-ColorizeApps {
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity"
+        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -158,18 +158,19 @@ function Scan-And-ColorizeApps {
 
             if (-not [string]::IsNullOrWhiteSpace($appId)) {
                 $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
+                $clean = Get-CleanAppName $appName
                 $itemObj = [PSCustomObject]@{
                     Name      = $appName
                     ID        = $appId
                     Version   = $version
                     Available = $avail
                     HasUpdate = $hasUpdate
+                    CleanName = $clean
                 }
 
                 $installedList.Add($itemObj)
                 if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
                 if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                $clean = Get-CleanAppName $appName
                 if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
             }
         }
@@ -184,6 +185,7 @@ function Scan-And-ColorizeApps {
                     $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
                     $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
                     $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
+                    $clean = Get-CleanAppName $appName
 
                     $itemObj = [PSCustomObject]@{
                         Name      = $appName
@@ -191,12 +193,12 @@ function Scan-And-ColorizeApps {
                         Version   = $version
                         Available = $avail
                         HasUpdate = $hasUpdate
+                        CleanName = $clean
                     }
 
                     $installedList.Add($itemObj)
                     if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
                     if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                    $clean = Get-CleanAppName $appName
                     if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
                 }
             }
@@ -280,8 +282,7 @@ function Scan-And-ColorizeApps {
                 if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
                 if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
 
-                $cleanItem = Get-CleanAppName $item.Name
-                if ($cleanItem -match $patternClean) {
+                if ($item.CleanName -match $patternClean) {
                     $lookupCache[$targetId] = $item
                     return $item
                 }
