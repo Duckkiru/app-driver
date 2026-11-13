@@ -3,7 +3,7 @@
     App-Driver Project Compiler & Bundler (Inspired by Chris Titus WinUtil Compile.ps1)
 .DESCRIPTION
     Tập hợp toàn bộ các module config/apps.json, xaml/MainWindow.xaml,
-    functions/ (private & public) và scripts/ thành một file phân phối duy nhất DuckUtil.ps1.
+    functions/ (private & public) và scripts/ thành một file phân phối duy nhất App-Driver.ps1.
 #>
 
 $root = $PSScriptRoot
@@ -59,8 +59,8 @@ foreach ($d in $fnDirs) {
 $sb.AppendLine("# 6. ENTRYPOINT & CONTROLLER") | Out-Null
 $sb.AppendLine($mainCode.Trim()) | Out-Null
 
-# 3. Xuất ra DuckUtil.ps1 (Chuẩn UTF-8 KHÔNG CÓ BOM)
-$outPath = Join-Path $root "DuckUtil.ps1"
+# 3. Xuất ra App-Driver.ps1 (Chuẩn UTF-8 KHÔNG CÓ BOM)
+$outPath = Join-Path $root "App-Driver.ps1"
 [System.IO.File]::WriteAllText($outPath, $sb.ToString(), [System.Text.UTF8Encoding]::new($false))
 
 $fileInfo = Get-Item $outPath
@@ -68,5 +68,5 @@ Write-Host "==========================================================" -Foregro
 Write-Host "✓ COMPILATION SUCCESSFUL!" -ForegroundColor Green
 Write-Host "  File output : $outPath" -ForegroundColor Green
 Write-Host "  File size   : $($fileInfo.Length) bytes ($([math]::Round($fileInfo.Length / 1KB, 2)) KB)" -ForegroundColor Green
-Write-Host "  Ready for   : irm is.gd/duckutil | iex" -ForegroundColor Green
+Write-Host "  Ready for   : irm is.gd/appdriver | iex" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
