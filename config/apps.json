@@ -3526,6 +3526,152 @@
     "IDn": 261
   },
   {
+    "ID": "Tonec.InternetDownloadManager",
+    "Name": "Internet Download Manager (IDM)",
+    "Domain": "internetdownloadmanager.com",
+    "Aliases": [
+      "Internet Download Manager",
+      "Tonec.InternetDownloadManager"
+    ],
+    "Category": "Download Managers",
+    "Url": "https://www.internetdownloadmanager.com/",
+    "IconUrl": "https://img.icons8.com/fluency/96/download-from-cloud.png",
+    "IDn": 262
+  },
+  {
+    "ID": "SoftDeluxe.FreeDownloadManager",
+    "Name": "Free Download Manager (FDM)",
+    "Domain": "freedownloadmanager.org",
+    "Aliases": [
+      "Free Download Manager",
+      "SoftDeluxe.FreeDownloadManager"
+    ],
+    "Category": "Download Managers",
+    "Url": "https://www.freedownloadmanager.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=freedownloadmanager.org&sz=128",
+    "IDn": 263
+  },
+  {
+    "ID": "JavadMotallebi.NeatDownloadManager",
+    "Name": "Neat Download Manager (NDM)",
+    "Domain": "neatdownloadmanager.com",
+    "Aliases": [
+      "Neat Download Manager",
+      "JavadMotallebi.NeatDownloadManager"
+    ],
+    "Category": "Download Managers",
+    "Url": "https://www.neatdownloadmanager.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=neatdownloadmanager.com&sz=128",
+    "IDn": 264
+  },
+  {
+    "ID": "amir1376.ABDownloadManager",
+    "Name": "AB Download Manager",
+    "Domain": "abdownloadmanager.com",
+    "Aliases": [
+      "AB Download Manager",
+      "amir1376.ABDownloadManager"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "amir1376/ab-download-manager",
+    "AssetRegex": "windows_x64\\.exe$",
+    "Url": "https://abdownloadmanager.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=abdownloadmanager.com&sz=128",
+    "IDn": 265
+  },
+  {
+    "ID": "subhra74.XtremeDownloadManager",
+    "Name": "Xtreme Download Manager (XDM)",
+    "Domain": "xtremedownloadmanager.com",
+    "Aliases": [
+      "Xtreme Download Manager",
+      "XDM",
+      "subhra74.XtremeDownloadManager"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "subhra74/xdm",
+    "AssetRegex": "xdmsetup-[0-9.]+\\.msi$",
+    "Url": "https://xtremedownloadmanager.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=xtremedownloadmanager.com&sz=128",
+    "IDn": 266
+  },
+  {
+    "ID": "agalwood.Motrix",
+    "Name": "Motrix Downloader (MDM)",
+    "Domain": "motrix.app",
+    "Aliases": [
+      "Motrix",
+      "agalwood.Motrix"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "agalwood/Motrix",
+    "AssetRegex": "Setup-[0-9.]+\\.exe$",
+    "Url": "https://motrix.app/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=motrix.app&sz=128",
+    "IDn": 267
+  },
+  {
+    "ID": "aria2.aria2",
+    "Name": "aria2 (Multi-Protocol CLI)",
+    "Domain": "aria2.github.io",
+    "Aliases": [
+      "aria2",
+      "aria2.aria2"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "aria2/aria2",
+    "AssetRegex": "win-64bit-build1\\.zip$",
+    "Url": "https://aria2.github.io/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=aria2.github.io&sz=128",
+    "IDn": 268
+  },
+  {
+    "ID": "yt-dlp.yt-dlp",
+    "Name": "yt-dlp (Video Downloader)",
+    "Domain": "github.com/yt-dlp/yt-dlp",
+    "Aliases": [
+      "yt-dlp",
+      "yt-dlp.yt-dlp"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "yt-dlp/yt-dlp",
+    "AssetRegex": "^yt-dlp\\.exe$",
+    "Url": "https://github.com/yt-dlp/yt-dlp",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=youtube.com&sz=128",
+    "IDn": 269
+  },
+  {
+    "ID": "Nickvision.Parabolic",
+    "Name": "Parabolic (yt-dlp GUI)",
+    "Domain": "nickvision.org",
+    "Aliases": [
+      "Nickvision Parabolic",
+      "Parabolic",
+      "Nickvision.Parabolic"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "NickvisionApps/Parabolic",
+    "AssetRegex": "NickvisionParabolicSetup\\.exe$",
+    "Url": "https://github.com/NickvisionApps/Parabolic",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=github.com&sz=128",
+    "IDn": 270
+  },
+  {
+    "ID": "yt-dlg.yt-dlg",
+    "Name": "yt-dlg (YouTube-DL GUI)",
+    "Domain": "oleksis.github.io/youtube-dl-gui",
+    "Aliases": [
+      "yt-dlg",
+      "yt-dlg.yt-dlg"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "oleksis/youtube-dl-gui",
+    "AssetRegex": "yt-dlg-[0-9.]+\\.exe$",
+    "Url": "https://oleksis.github.io/youtube-dl-gui/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=youtube.com&sz=128",
+    "IDn": 271
+  },
+  {
     "ID": "qBittorrent.qBittorrent",
     "Name": "qBittorrent",
     "Domain": "qbittorrent.org",
@@ -3533,9 +3679,38 @@
       "qBittorrent",
       "qBittorrent.qBittorrent"
     ],
-    "Category": "File Transfer & Cloud",
+    "Category": "Download Managers",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/qbittorrent.png",
-    "IDn": 262
+    "IDn": 272
+  },
+  {
+    "ID": "Transmission.Transmission",
+    "Name": "Transmission (BitTorrent)",
+    "Domain": "transmissionbt.com",
+    "Aliases": [
+      "Transmission",
+      "Transmission.Transmission"
+    ],
+    "Category": "Download Managers",
+    "GitHubRepo": "transmission/transmission",
+    "AssetRegex": "x64\\.msi$",
+    "Url": "https://transmissionbt.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/transmission.png",
+    "IDn": 273
+  },
+  {
+    "ID": "DelugeTeam.Deluge",
+    "Name": "Deluge (BitTorrent)",
+    "Domain": "deluge-torrent.org",
+    "Aliases": [
+      "Deluge",
+      "Deluge BitTorrent Client",
+      "DelugeTeam.Deluge"
+    ],
+    "Category": "Download Managers",
+    "Url": "https://deluge-torrent.org/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/deluge.png",
+    "IDn": 274
   },
   {
     "ID": "LocalSend.LocalSend",
@@ -3547,7 +3722,7 @@
     ],
     "Category": "File Transfer & Cloud",
     "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
-    "IDn": 263
+    "IDn": 275
   },
   {
     "ID": "WinSCP.WinSCP",
@@ -3558,7 +3733,7 @@
       "WinSCP.WinSCP"
     ],
     "Category": "File Transfer & Cloud",
-    "IDn": 264
+    "IDn": 276
   },
   {
     "ID": "TimKosse.FileZilla.Client",
@@ -3573,7 +3748,7 @@
     "FallbackUrl": "https://filezilla-project.org/download.php?platform=win64",
     "Url": "https://filezilla-project.org/download.php?platform=win64",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/filezilla.png",
-    "IDn": 265
+    "IDn": 277
   },
   {
     "ID": "Rclone.Rclone",
@@ -3585,33 +3760,7 @@
     ],
     "Category": "File Transfer & Cloud",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rclone.png",
-    "IDn": 266
-  },
-  {
-    "ID": "Tonec.InternetDownloadManager",
-    "Name": "Internet Download Manager",
-    "Domain": "internetdownloadmanager.com",
-    "Aliases": [
-      "Internet Download Manager",
-      "Tonec.InternetDownloadManager"
-    ],
-    "Category": "File Transfer & Cloud",
-    "Url": "https://www.internetdownloadmanager.com/",
-    "IconUrl": "https://img.icons8.com/fluency/96/download-from-cloud.png",
-    "IDn": 267
-  },
-  {
-    "ID": "SoftDeluxe.FreeDownloadManager",
-    "Name": "Free Download Manager",
-    "Domain": "freedownloadmanager.org",
-    "Aliases": [
-      "Free Download Manager",
-      "SoftDeluxe.FreeDownloadManager"
-    ],
-    "Category": "File Transfer & Cloud",
-    "Url": "https://www.freedownloadmanager.org/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=freedownloadmanager.org&sz=128",
-    "IDn": 268
+    "IDn": 278
   },
   {
     "ID": "Google.GoogleDrive",
@@ -3624,52 +3773,7 @@
     "Category": "File Transfer & Cloud",
     "Url": "https://www.google.com/drive/download/",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-drive.png",
-    "IDn": 269
-  },
-  {
-    "ID": "amir1376.ABDownloadManager",
-    "Name": "AB Download Manager",
-    "Domain": "abdownloadmanager.com",
-    "Aliases": [
-      "AB Download Manager",
-      "amir1376.ABDownloadManager"
-    ],
-    "Category": "File Transfer & Cloud",
-    "GitHubRepo": "amir1376/ab-download-manager",
-    "AssetRegex": "windows_x64\\.exe$",
-    "Url": "https://abdownloadmanager.com/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=abdownloadmanager.com&sz=128",
-    "IDn": 270
-  },
-  {
-    "ID": "agalwood.Motrix",
-    "Name": "Motrix Downloader",
-    "Domain": "motrix.app",
-    "Aliases": [
-      "Motrix",
-      "agalwood.Motrix"
-    ],
-    "Category": "File Transfer & Cloud",
-    "GitHubRepo": "agalwood/Motrix",
-    "AssetRegex": "Setup-[0-9.]+\\.exe$",
-    "Url": "https://motrix.app/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=motrix.app&sz=128",
-    "IDn": 271
-  },
-  {
-    "ID": "yt-dlp.yt-dlp",
-    "Name": "yt-dlp (Video Downloader)",
-    "Domain": "github.com/yt-dlp/yt-dlp",
-    "Aliases": [
-      "yt-dlp",
-      "yt-dlp.yt-dlp"
-    ],
-    "Category": "File Transfer & Cloud",
-    "GitHubRepo": "yt-dlp/yt-dlp",
-    "AssetRegex": "^yt-dlp\\.exe$",
-    "Url": "https://github.com/yt-dlp/yt-dlp",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=youtube.com&sz=128",
-    "IDn": 272
+    "IDn": 279
   },
   {
     "ID": "Dropbox.Dropbox",
@@ -3682,7 +3786,7 @@
     "Category": "File Transfer & Cloud",
     "Url": "https://www.dropbox.com/install",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dropbox.png",
-    "IDn": 273
+    "IDn": 280
   },
   {
     "ID": "Mega.MEGASync",
@@ -3695,7 +3799,7 @@
     "Category": "File Transfer & Cloud",
     "Url": "https://mega.io/desktop",
     "IconUrl": "https://www.google.com/s2/favicons?domain=mega.io&sz=128",
-    "IDn": 274
+    "IDn": 281
   },
   {
     "ID": "Nextcloud.NextcloudDesktop",
@@ -3708,7 +3812,7 @@
     "Category": "File Transfer & Cloud",
     "Url": "https://nextcloud.com/install/#install-clients",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nextcloud.png",
-    "IDn": 275
+    "IDn": 282
   },
   {
     "ID": "SyncTrayzor.SyncTrayzor",
@@ -3724,6 +3828,6 @@
     "AssetRegex": "SyncTrayzorSetup-x64\\.exe$",
     "Url": "https://github.com/canton7/SyncTrayzor",
     "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/syncthing.png",
-    "IDn": 276
+    "IDn": 283
   }
 ]

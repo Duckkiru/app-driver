@@ -505,6 +505,7 @@ function Get-AppFallbackGlyph {
     if ($Category -match 'AI|Assistant') { return [char]::ConvertFromUtf32(0x1F916) }
     if ($Category -match 'Database|DevOps') { return [char]::ConvertFromUtf32(0x1F5C4) }
     if ($Category -match 'Minecraft|Modding') { return [char]::ConvertFromUtf32(0x26CF) }
+    if ($Category -match 'Download') { return [char]::ConvertFromUtf32(0x2B07) }
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
     if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
