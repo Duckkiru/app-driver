@@ -1056,7 +1056,7 @@ $appsRawJson = @'
     "GitHubRepo": "VSCodium/vscodium",
     "AssetRegex": "VSCodiumSetup-x64-[0-9.]+\\.exe$",
     "Url": "https://vscodium.com/",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vscodium.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=vscodium.com&sz=128",
     "IDn": 65
   },
   {
@@ -1069,7 +1069,7 @@ $appsRawJson = @'
     ],
     "Category": "Development",
     "Url": "https://visualstudio.microsoft.com/vs/community/",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/visualstudio/visualstudio-plain.svg",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=visualstudio.microsoft.com&sz=128",
     "IDn": 66
   },
   {
@@ -1095,7 +1095,7 @@ $appsRawJson = @'
     ],
     "Category": "Development",
     "Url": "https://developer.android.com/studio",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/android-studio.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=developer.android.com&sz=128",
     "IDn": 68
   },
   {
@@ -1322,7 +1322,7 @@ $appsRawJson = @'
     ],
     "Category": "Database & DevOps",
     "Url": "https://www.pgadmin.org/",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/pgadmin.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=pgadmin.org&sz=128",
     "IDn": 85
   },
   {
@@ -1350,7 +1350,7 @@ $appsRawJson = @'
     ],
     "Category": "Database & DevOps",
     "Url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=putty.org&sz=128",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=putty.org.ru&sz=128",
     "IDn": 87
   },
   {
@@ -2283,7 +2283,7 @@ $appsRawJson = @'
     ],
     "Category": "System Utilities",
     "Url": "https://eartrumpet.app/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=eartrumpet.app&sz=128",
+    "IconUrl": "https://avatars.githubusercontent.com/u/11562010?s=128&v=4",
     "IDn": 154
   },
   {
@@ -2385,7 +2385,7 @@ $appsRawJson = @'
     ],
     "Category": "System Utilities",
     "Url": "https://ditto-cp.sourceforge.io/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=ditto-cp.sourceforge.io&sz=128",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=sourceforge.net&sz=128",
     "IDn": 161
   },
   {
@@ -2533,7 +2533,7 @@ $appsRawJson = @'
     ],
     "Category": "Hardware & Monitoring",
     "Url": "https://openrgb.org/",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/openrgb.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=openrgb.org&sz=128",
     "IDn": 172
   },
   {
@@ -2601,7 +2601,7 @@ $appsRawJson = @'
     ],
     "Category": "Hardware & Monitoring",
     "Url": "https://www.intel.com/content/www/us/en/support/detect.html",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/intel.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=intel.com&sz=128",
     "IDn": 177
   },
   {
@@ -2754,7 +2754,7 @@ $appsRawJson = @'
     ],
     "Category": "Security & Network",
     "Url": "https://www.veracrypt.fr/",
-    "IconUrl": "https://www.google.com/s2/favicons?domain=veracrypt.fr&sz=128",
+    "IconUrl": "https://avatars.githubusercontent.com/u/8641615?s=128&v=4",
     "IDn": 189
   },
   {
@@ -3278,7 +3278,7 @@ $appsRawJson = @'
     ],
     "Category": "Graphics & Design",
     "Url": "https://godotengine.org/",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/godot-engine.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=godotengine.org&sz=128",
     "IDn": 228
   },
   {
@@ -3422,7 +3422,7 @@ $appsRawJson = @'
     "GitHubRepo": "logseq/logseq",
     "AssetRegex": "win-x64-[0-9.]+\\.exe$",
     "Url": "https://logseq.com/",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/logseq.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=logseq.com&sz=128",
     "IDn": 239
   },
   {
@@ -3503,7 +3503,7 @@ $appsRawJson = @'
     ],
     "Category": "Minecraft & Modding",
     "Url": "https://www.curseforge.com/download/app",
-    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/curseforge.png",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=curseforge.com&sz=128",
     "IDn": 245
   },
   {
