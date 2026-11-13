@@ -4606,7 +4606,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
         <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#192130" BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Orientation="Horizontal">
-                    <Button Name="navBtnApps" Content="Ứng dụng (Install)" Style="{StaticResource NavTabButton}"
+                    <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                     <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
                             IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
