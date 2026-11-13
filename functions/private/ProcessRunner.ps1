@@ -1,4 +1,4 @@
-﻿# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (CHUẨN WINUTIL) ──
+﻿# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (KHÔNG ICON/EMOJI) ──
 
 function Log-Text {
     param([string]$text)
@@ -13,18 +13,27 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
+    # Chuẩn hóa triệt để mọi ký hiệu icon/emoji sang nhãn ASCII thuần túy để chống vỡ font Terminal
+    $trimmed = $trimmed.Replace("[✓]", "[OK]").Replace("[✓ ", "[OK - ").Replace("✓", "OK")
+    $trimmed = $trimmed.Replace("[❌]", "[ERR]").Replace("[❌ ", "[ERR - ").Replace("❌", "ERR")
+    $trimmed = $trimmed.Replace("[⚠️]", "[WARN]").Replace("[⚠️ ", "[WARN - ").Replace("⚠️", "WARN")
+    $trimmed = $trimmed.Replace("[🔍]", "[SCAN]").Replace("🔍 ", "").Replace("🔍", "")
+    $trimmed = $trimmed.Replace("[↗]", "[WEB]").Replace("↗", "->")
+    $trimmed = $trimmed.Replace("🟢 ", "").Replace("🔴 ", "").Replace("🚀 ", "").Replace("⚡ ", "").Replace("🗑️ ", "")
+    $trimmed = $trimmed.Replace("•", "-").Replace("─", "-")
+
     $timestamp = (Get-Date).ToString("HH:mm:ss")
     $color = [System.ConsoleColor]::Gray
 
-    if ($trimmed -match '^={4,}|^─{4,}|^\s*─{4,}') {
+    if ($trimmed -match '^={4,}|^-{4,}|^\s*-{4,}') {
         $color = [System.ConsoleColor]::DarkCyan
-    } elseif ($trimmed -match '\[✓|HOÀN THÀNH|THÀNH CÔNG') {
+    } elseif ($trimmed -match '\[OK|HOÀN THÀNH|THÀNH CÔNG') {
         $color = [System.ConsoleColor]::Green
-    } elseif ($trimmed -match '\[❌|\[x\]|LỖI') {
+    } elseif ($trimmed -match '\[ERR|\[x\]|LỖI') {
         $color = [System.ConsoleColor]::Red
-    } elseif ($trimmed -match '\[!\]|\[⚠️\]|\[LOCK\]') {
+    } elseif ($trimmed -match '\[!\]|\[WARN|\[LOCK\]') {
         $color = [System.ConsoleColor]::Yellow
-    } elseif ($trimmed -match '🚀|⚡|🗑️|🔍|\[🔍\]') {
+    } elseif ($trimmed -match '\[SCAN\]|BẮT ĐẦU|ĐANG QUÉT') {
         $color = [System.ConsoleColor]::Cyan
     } elseif ($trimmed -match '\[CLEAN\]') {
         $color = [System.ConsoleColor]::Magenta
@@ -50,14 +59,12 @@ function Run-CliStream {
     try {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
         try {
-            Write-Host "[$timestamp] ❯ $FileName $Args" -ForegroundColor DarkGray
+            Write-Host "[$timestamp] > $FileName $Args" -ForegroundColor DarkGray
         } catch {}
 
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = $FileName
         $pinfo.Arguments = $Args
-        # Kế thừa trực tiếp Console Handle của cửa sổ Terminal chạy nền (như WinUtil)
-        # Giúp hiển thị 100% thanh tiến trình thực (progress bar) và màu sắc gốc của WinGet / DISM / SFC
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $false
         $pinfo.RedirectStandardOutput = $false

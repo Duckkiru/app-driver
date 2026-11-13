@@ -1,4 +1,4 @@
-﻿# ── KHỞI TẠO CÁC CONTROL TỪ XAML ──
+# ── KHỞI TẠO CÁC CONTROL TỪ XAML ──
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
@@ -443,7 +443,7 @@ function Invoke-GuardedAction {
         [switch]$DeferExpand
     )
     if ($script:isActionRunning) {
-        Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
+        Log-Text "[WARN] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
         return
     }
     if (-not $DeferExpand) {
@@ -1124,7 +1124,7 @@ Register-Click "btnInstall" {
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
-        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "[INSTALL] BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
 
         try {
@@ -1144,12 +1144,12 @@ Register-Click "btnInstall" {
                 }
 
                 if ($code -eq 0) {
-                    Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+                    Log-Text "   [OK - HOÀN THÀNH] $($app.Name)"
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                 } else {
-                    Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                    Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                        Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                        Log-Text "   [WEB] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
                     }
                 }
@@ -1191,7 +1191,7 @@ Register-Click "btnUninstall" {
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
-        Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
+        Log-Text "[UNINSTALL] BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
         Log-Text "=========================================================="
 
         foreach ($tag in $selectedTags) {
@@ -1210,10 +1210,10 @@ Register-Click "btnUninstall" {
             }
             $code = Run-CliStream "winget" $unArgs
             if ($code -eq 0) {
-                Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
+                Log-Text "   [OK - ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
                 if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
             } else {
-                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
+                Log-Text "   [ERR - LỖI GỠ] $($app.Name) (Exit Code: $code)"
             }
         }
         Update-SelectionCount
@@ -1226,7 +1226,7 @@ Register-Click "btnUninstall" {
 Register-Click "btnUpgradeAll" {
     Invoke-GuardedAction "Nâng cấp toàn bộ" {
         Log-Text "=========================================================="
-        Log-Text "⚡ BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
+        Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
         Log-Text "=========================================================="
         if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
@@ -1239,7 +1239,7 @@ Register-Click "btnUpgradeAll" {
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-        Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
+        Log-Text "[OK] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
         Scan-And-ColorizeApps
     }
 }
@@ -1275,7 +1275,7 @@ Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-SystemFileCheck
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
-        Log-Text "[✓] Quá trình SFC đã kết thúc."
+        Log-Text "[OK] Quá trình SFC đã kết thúc."
     }
 }
 
@@ -1287,7 +1287,7 @@ Register-Click "btnDismRestore" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-DismRestoreHealth
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
-        Log-Text "[✓] DISM RestoreHealth hoàn thành xuất sắc."
+        Log-Text "[OK] DISM RestoreHealth hoàn thành xuất sắc."
     }
 }
 
@@ -1308,7 +1308,7 @@ Register-Click "btnDismCleanup" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
-        Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
+        Log-Text "[OK] Đã giải phóng dung lượng kho linh kiện."
     }
 }
 
@@ -1328,7 +1328,7 @@ Register-Click "btnRestartUpdateServices" -LockGroup "Gỡ lỗi & Hệ thống"
         Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
         Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
-        Log-Text "[✓] Đã khởi động lại dịch vụ cập nhật."
+        Log-Text "[OK] Đã khởi động lại dịch vụ cập nhật."
     }
 }
 
@@ -1343,7 +1343,7 @@ Register-Click "btnFlushDnsWinsock" -LockGroup "Gỡ lỗi & Hệ thống" {
         Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
         Clear-DnsResolverCache
         Run-CliStream "netsh.exe" "winsock reset"
-        Log-Text "[✓] Đã làm mới mạng và DNS cache."
+        Log-Text "[OK] Đã làm mới mạng và DNS cache."
     }
 }
 
@@ -1351,7 +1351,7 @@ Register-Click "btnResetTcpIp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Reset TCP/IP Stack" {
         Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
         Reset-NetworkInterfaceStack
-        Log-Text "[✓] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+        Log-Text "[OK] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
     }
 }
 
@@ -1363,7 +1363,7 @@ Register-Click "btnClearTemp" -LockGroup "Gỡ lỗi & Hệ thống" {
         Clear-SystemTempFiles
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
-        Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
+        Log-Text "[OK] Dọn dẹp bộ nhớ tạm thành công!"
     }
 }
 
@@ -1394,7 +1394,7 @@ Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
-        Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
+        Log-Text "[OK] Đã nạp lại Windows Explorer thành công."
     }
 }
 
@@ -1402,22 +1402,22 @@ Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
 Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét Driver lỗi" {
         Log-Text "=========================================================="
-        Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
+        Log-Text "[SCAN] ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
         Log-Text "=========================================================="
         if ($txtStatus) { $txtStatus.Text = "Đang quét thiết bị lỗi..." }
 
         $faulty = Find-FaultyPnpDevices
 
         if ($faulty.Count -eq 0) {
-            Log-Text "[✓] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
+            Log-Text "[OK] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
             if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
         } else {
-            Log-Text "[⚠️] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
+            Log-Text "[WARN] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
             foreach ($d in $faulty) {
-                Log-Text "   • Tên thiết bị: $($d.FriendlyName)"
+                Log-Text "   - Tên thiết bị: $($d.FriendlyName)"
                 Log-Text "     Mã phần cứng: $($d.InstanceId)"
                 Log-Text "     Trạng thái: $($d.Status) | ErrorCode: $($d.ConfigManagerErrorCode)"
-                Log-Text "   ────────────────────────────────────────────────"
+                Log-Text "   ------------------------------------------------"
             }
             if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
         }
@@ -1428,7 +1428,7 @@ Register-Click "btnPnpRescan" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét lại thiết bị PnP" {
         Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
-        Log-Text "[✓] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
+        Log-Text "[OK] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
     }
 }
 
@@ -1453,7 +1453,7 @@ Register-Click "btnFixDriverUpdate" -LockGroup "Quản lý Driver" {
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
-        Log-Text "[✓] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
+        Log-Text "[OK] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
     }
 }
 
@@ -1494,10 +1494,10 @@ Register-Click "btnBackupDrivers" -LockGroup "Quản lý Driver" {
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($res) {
             if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
-            Log-Text "[✓] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+            Log-Text "[OK] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
         } else {
             if ($txtStatus) { $txtStatus.Text = "Sao lưu driver thất bại" }
-            Log-Text "[❌] Lỗi trong quá trình sao lưu driver."
+            Log-Text "[ERR] Lỗi trong quá trình sao lưu driver."
         }
     }
 }
@@ -1526,7 +1526,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
-        Log-Text "[✓] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
+        Log-Text "[OK] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
         }

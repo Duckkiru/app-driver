@@ -192,7 +192,7 @@ try {
 
 if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     try {
-        $Host.UI.RawUI.WindowTitle = "App-Driver — Terminal Console (Live Execution)"
+        $Host.UI.RawUI.WindowTitle = "App-Driver - Terminal Console"
     } catch {
         # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
     }
@@ -206,7 +206,6 @@ Write-Host " / __ |/ _ \/ _ \___/ /_/ / __/ / | / / -_) __/   " -ForegroundColor
 Write-Host "/_/ |_/ .__/ .__/  /_____/_/ /_/|___/\__/_/      " -ForegroundColor Cyan
 Write-Host "     /_/  /_/      Windows Software & Driver Suite" -ForegroundColor DarkCyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
-Write-Host "[*] Cửa sổ Terminal này hiển thị trực tiếp các lệnh thực thi & thanh tiến trình (như WinUtil)." -ForegroundColor Gray
 Write-Host "[!] Vui lòng KHÔNG đóng cửa sổ Terminal này khi đang sử dụng giao diện App-Driver.`n" -ForegroundColor Yellow
 
 Add-Type -AssemblyName PresentationFramework
@@ -4601,7 +4600,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 "@
 
 # 5. MODULES & FUNCTIONS
-# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (CHUẨN WINUTIL) ──
+# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (KHÔNG ICON/EMOJI) ──
 
 function Log-Text {
     param([string]$text)
@@ -4616,18 +4615,27 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
+    # Chuẩn hóa triệt để mọi ký hiệu icon/emoji sang nhãn ASCII thuần túy để chống vỡ font Terminal
+    $trimmed = $trimmed.Replace("[✓]", "[OK]").Replace("[✓ ", "[OK - ").Replace("✓", "OK")
+    $trimmed = $trimmed.Replace("[❌]", "[ERR]").Replace("[❌ ", "[ERR - ").Replace("❌", "ERR")
+    $trimmed = $trimmed.Replace("[⚠️]", "[WARN]").Replace("[⚠️ ", "[WARN - ").Replace("⚠️", "WARN")
+    $trimmed = $trimmed.Replace("[🔍]", "[SCAN]").Replace("🔍 ", "").Replace("🔍", "")
+    $trimmed = $trimmed.Replace("[↗]", "[WEB]").Replace("↗", "->")
+    $trimmed = $trimmed.Replace("🟢 ", "").Replace("🔴 ", "").Replace("🚀 ", "").Replace("⚡ ", "").Replace("🗑️ ", "")
+    $trimmed = $trimmed.Replace("•", "-").Replace("─", "-")
+
     $timestamp = (Get-Date).ToString("HH:mm:ss")
     $color = [System.ConsoleColor]::Gray
 
-    if ($trimmed -match '^={4,}|^─{4,}|^\s*─{4,}') {
+    if ($trimmed -match '^={4,}|^-{4,}|^\s*-{4,}') {
         $color = [System.ConsoleColor]::DarkCyan
-    } elseif ($trimmed -match '\[✓|HOÀN THÀNH|THÀNH CÔNG') {
+    } elseif ($trimmed -match '\[OK|HOÀN THÀNH|THÀNH CÔNG') {
         $color = [System.ConsoleColor]::Green
-    } elseif ($trimmed -match '\[❌|\[x\]|LỖI') {
+    } elseif ($trimmed -match '\[ERR|\[x\]|LỖI') {
         $color = [System.ConsoleColor]::Red
-    } elseif ($trimmed -match '\[!\]|\[⚠️\]|\[LOCK\]') {
+    } elseif ($trimmed -match '\[!\]|\[WARN|\[LOCK\]') {
         $color = [System.ConsoleColor]::Yellow
-    } elseif ($trimmed -match '🚀|⚡|🗑️|🔍|\[🔍\]') {
+    } elseif ($trimmed -match '\[SCAN\]|BẮT ĐẦU|ĐANG QUÉT') {
         $color = [System.ConsoleColor]::Cyan
     } elseif ($trimmed -match '\[CLEAN\]') {
         $color = [System.ConsoleColor]::Magenta
@@ -4653,14 +4661,12 @@ function Run-CliStream {
     try {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
         try {
-            Write-Host "[$timestamp] ❯ $FileName $Args" -ForegroundColor DarkGray
+            Write-Host "[$timestamp] > $FileName $Args" -ForegroundColor DarkGray
         } catch {}
 
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = $FileName
         $pinfo.Arguments = $Args
-        # Kế thừa trực tiếp Console Handle của cửa sổ Terminal chạy nền (như WinUtil)
-        # Giúp hiển thị 100% thanh tiến trình thực (progress bar) và màu sắc gốc của WinGet / DISM / SFC
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $false
         $pinfo.RedirectStandardOutput = $false
@@ -5141,7 +5147,7 @@ function Scan-And-ColorizeApps {
 
     $script:isScanningApps = $true
     try {
-        Log-Text "[🔍] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
+        Log-Text "[SCAN] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
         if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         [System.Windows.Forms.Application]::DoEvents()
@@ -5154,7 +5160,7 @@ function Scan-And-ColorizeApps {
             $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
             if (-not $primary.Available) {
                 $wingetMissing = $true
-                Log-Text "[⚠️] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
+                Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
             } else {
                 $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
                 if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
@@ -5162,9 +5168,9 @@ function Scan-And-ColorizeApps {
                     $wingetOk = $true
                 } else {
                     if ($primary.TimedOut) {
-                        Log-Text "[⚠️] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                        Log-Text "[WARN] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
                     } else {
-                        Log-Text "[⚠️] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        Log-Text "[WARN] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
                         if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
                             Log-Text "[stderr] $($primary.StdErr.Trim())"
                         }
@@ -5364,8 +5370,8 @@ function Scan-And-ColorizeApps {
 
         $script:hasCompletedAppScan = $true
         $modeTag = if (-not $wingetOk) { " [Chế độ dự phòng Registry/Appx]" } else { "" }
-        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])$modeTag"
-        Log-Text "[✓] $summary"
+        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [XANH], $countOutdated bản cũ [ĐỎ])$modeTag"
+        Log-Text "[OK] $summary"
         if ($txtStatus) {
             $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
         }
@@ -5402,7 +5408,7 @@ function Invoke-PnpDeviceRescan {
     #>
     $code = Run-CliStream "pnputil.exe" "/scan-devices"
     if ($code -eq 0) {
-        Log-Text "[✓] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
+        Log-Text "[OK] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Quét thiết bị phần cứng PnP thất bại hoặc gặp lỗi (ExitCode: $code)."
     }
@@ -5434,7 +5440,7 @@ function Invoke-PnpDriverStoreCleanup {
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {
-            Log-Text "[✓] Không tìm thấy gói driver OEM nào trong DriverStore."
+            Log-Text "[OK] Không tìm thấy gói driver OEM nào trong DriverStore."
             return
         }
 
@@ -5465,14 +5471,14 @@ function Invoke-PnpDriverStoreCleanup {
 
                 if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
                     $deletedCount++
-                    Log-Text "   [✓ Đã dọn] $inf"
+                    Log-Text "   [OK - Đã dọn] $inf"
                 } elseif ($combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối') {
                     $inUseCount++
                 } else {
                     $errorCount++
                     $errDetail = ($combined -split "`r?`n" | Where-Object { $_ -match 'failed|lỗi|error' } | Select-Object -First 1)
                     if (-not $errDetail) { $errDetail = "ExitCode $($delP.ExitCode)" }
-                    Log-Text "   [⚠️ Lỗi gói $inf] $errDetail"
+                    Log-Text "   [WARN - Lỗi gói $inf] $errDetail"
                 }
             } catch {
                 $errorCount++
@@ -5482,9 +5488,9 @@ function Invoke-PnpDriverStoreCleanup {
         }
 
         if ($deletedCount -gt 0) {
-            Log-Text "[✓] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
+            Log-Text "[OK] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
         } else {
-            Log-Text "[✓] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
+            Log-Text "[OK] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
         }
         if ($errorCount -gt 0) {
             Log-Text "[!] Có $errorCount gói driver gặp lỗi trong quá trình xử lý."
@@ -5499,12 +5505,12 @@ function Invoke-DismComponentCleanup {
     .SYNOPSIS
         Dọn dẹp và giải phóng kho linh kiện Windows qua DISM Component Cleanup.
     #>
-    Log-Text "[⚠️] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
+    Log-Text "[WARN] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
     Log-Text "[*] Sau khi hoàn tất thao tác này, bạn SẼ KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại."
     Log-Text "[*] Đang tiến hành dọn dẹp và nén kho linh kiện WinSxS qua DISM..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
     if ($code -eq 0) {
-        Log-Text "[✓] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[OK] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Dọn dẹp kho linh kiện WinSxS thất bại hoặc bị gián đoạn (ExitCode: $code)."
     }
@@ -5529,13 +5535,13 @@ function Export-SystemDriversBackup {
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
-        Log-Text "[✓] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
+        Log-Text "[OK] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
         return $true
     } catch {
         Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
         $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
         if ($exitCode -eq 0) {
-            Log-Text "[✓] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
+            Log-Text "[OK] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
             return $true
         } else {
             Log-Text "[!] Sao lưu driver qua pnputil.exe thất bại (ExitCode: $exitCode)."
@@ -5568,7 +5574,7 @@ function Reset-WindowsUpdateEngine {
         Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $sdPath) {
             $sdRenamed = $false
-            Log-Text "[⚠️] Không thể đổi tên SoftwareDistribution (tệp đang bị khóa bởi tiến trình khác)."
+            Log-Text "[WARN] Không thể đổi tên SoftwareDistribution (tệp đang bị khóa bởi tiến trình khác)."
         }
     }
 
@@ -5579,7 +5585,7 @@ function Reset-WindowsUpdateEngine {
         Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $crPath) {
             $crRenamed = $false
-            Log-Text "[⚠️] Không thể đổi tên catroot2 (tệp đang bị khóa)."
+            Log-Text "[WARN] Không thể đổi tên catroot2 (tệp đang bị khóa)."
         }
     }
 
@@ -5590,7 +5596,7 @@ function Reset-WindowsUpdateEngine {
     Start-Service -Name "dosvc" -ErrorAction SilentlyContinue
 
     if ($sdRenamed -and $crRenamed) {
-        Log-Text "[✓] Đã khởi tạo lại dịch vụ Windows Update và xóa sạch cache thành công!"
+        Log-Text "[OK] Đã khởi tạo lại dịch vụ Windows Update và xóa sạch cache thành công!"
     } else {
         Log-Text "[*] Đã đặt lại dịch vụ Windows Update (một số thư mục cache đang được hệ thống bảo vệ)."
     }
@@ -5605,7 +5611,7 @@ function Invoke-WindowsUpdateScan {
     try {
         $au = New-Object -ComObject Microsoft.Update.AutoUpdate
         $au.DetectNow()
-        Log-Text "[✓] Đã kích hoạt Microsoft.Update.AutoUpdate.DetectNow() thành công."
+        Log-Text "[OK] Đã kích hoạt Microsoft.Update.AutoUpdate.DetectNow() thành công."
     } catch {
         Log-Text "[*] COM AutoUpdate không phản hồi, mở trang cập nhật hệ thống..."
     }
@@ -5623,7 +5629,7 @@ function Invoke-SystemFileCheck {
     Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)..."
     $code = Run-CliStream "sfc.exe" "/scannow"
     if ($code -eq 0) {
-        Log-Text "[✓] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
+        Log-Text "[OK] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
     } else {
         Log-Text "[!] SFC Scan phát hiện lỗi hoặc không thể sửa chữa toàn bộ tệp hệ thống (ExitCode: $code)."
     }
@@ -5638,7 +5644,7 @@ function Invoke-DismRestoreHealth {
     Log-Text "[*] Đang khởi chạy DISM RestoreHealth khôi phục kho linh kiện hệ thống..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
     if ($code -eq 0) {
-        Log-Text "[✓] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[OK] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] DISM RestoreHealth thất bại hoặc gặp sự cố (ExitCode: $code). Hãy kiểm tra kết nối mạng hoặc nguồn tệp hệ thống."
     }
@@ -5652,7 +5658,7 @@ function Clear-DnsResolverCache {
     #>
     $code = Run-CliStream "ipconfig.exe" "/flushdns"
     if ($code -eq 0) {
-        Log-Text "[✓] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
+        Log-Text "[OK] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Làm mới bộ nhớ đệm DNS thất bại (ExitCode: $code)."
     }
@@ -5667,7 +5673,7 @@ function Reset-NetworkInterfaceStack {
     $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
     $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
     if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
-        Log-Text "[✓] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
+        Log-Text "[OK] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
     } else {
         Log-Text "[!] Đặt lại mạng gặp lỗi (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
     }
@@ -5700,7 +5706,7 @@ function Clear-SystemEventLogs {
             [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName)
         } catch {}
     }
-    Log-Text "[✓] Toàn bộ Windows Event Logs đã được làm sạch."
+    Log-Text "[OK] Toàn bộ Windows Event Logs đã được làm sạch."
 }
 
 # 6. ENTRYPOINT & CONTROLLER
@@ -6149,7 +6155,7 @@ function Invoke-GuardedAction {
         [switch]$DeferExpand
     )
     if ($script:isActionRunning) {
-        Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
+        Log-Text "[WARN] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
         return
     }
     if (-not $DeferExpand) {
@@ -6830,7 +6836,7 @@ Register-Click "btnInstall" {
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
-        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "[INSTALL] BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
 
         try {
@@ -6850,12 +6856,12 @@ Register-Click "btnInstall" {
                 }
 
                 if ($code -eq 0) {
-                    Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+                    Log-Text "   [OK - HOÀN THÀNH] $($app.Name)"
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                 } else {
-                    Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                    Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                        Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                        Log-Text "   [WEB] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
                     }
                 }
@@ -6897,7 +6903,7 @@ Register-Click "btnUninstall" {
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
-        Log-Text "🗑️ BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
+        Log-Text "[UNINSTALL] BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
         Log-Text "=========================================================="
 
         foreach ($tag in $selectedTags) {
@@ -6916,10 +6922,10 @@ Register-Click "btnUninstall" {
             }
             $code = Run-CliStream "winget" $unArgs
             if ($code -eq 0) {
-                Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
+                Log-Text "   [OK - ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
                 if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
             } else {
-                Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
+                Log-Text "   [ERR - LỖI GỠ] $($app.Name) (Exit Code: $code)"
             }
         }
         Update-SelectionCount
@@ -6932,7 +6938,7 @@ Register-Click "btnUninstall" {
 Register-Click "btnUpgradeAll" {
     Invoke-GuardedAction "Nâng cấp toàn bộ" {
         Log-Text "=========================================================="
-        Log-Text "⚡ BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
+        Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
         Log-Text "=========================================================="
         if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
@@ -6945,7 +6951,7 @@ Register-Click "btnUpgradeAll" {
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-        Log-Text "[✓] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
+        Log-Text "[OK] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
         Scan-And-ColorizeApps
     }
 }
@@ -6981,7 +6987,7 @@ Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-SystemFileCheck
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
-        Log-Text "[✓] Quá trình SFC đã kết thúc."
+        Log-Text "[OK] Quá trình SFC đã kết thúc."
     }
 }
 
@@ -6993,7 +6999,7 @@ Register-Click "btnDismRestore" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-DismRestoreHealth
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
-        Log-Text "[✓] DISM RestoreHealth hoàn thành xuất sắc."
+        Log-Text "[OK] DISM RestoreHealth hoàn thành xuất sắc."
     }
 }
 
@@ -7014,7 +7020,7 @@ Register-Click "btnDismCleanup" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
-        Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
+        Log-Text "[OK] Đã giải phóng dung lượng kho linh kiện."
     }
 }
 
@@ -7034,7 +7040,7 @@ Register-Click "btnRestartUpdateServices" -LockGroup "Gỡ lỗi & Hệ thống"
         Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
         Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
-        Log-Text "[✓] Đã khởi động lại dịch vụ cập nhật."
+        Log-Text "[OK] Đã khởi động lại dịch vụ cập nhật."
     }
 }
 
@@ -7049,7 +7055,7 @@ Register-Click "btnFlushDnsWinsock" -LockGroup "Gỡ lỗi & Hệ thống" {
         Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
         Clear-DnsResolverCache
         Run-CliStream "netsh.exe" "winsock reset"
-        Log-Text "[✓] Đã làm mới mạng và DNS cache."
+        Log-Text "[OK] Đã làm mới mạng và DNS cache."
     }
 }
 
@@ -7057,7 +7063,7 @@ Register-Click "btnResetTcpIp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Reset TCP/IP Stack" {
         Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
         Reset-NetworkInterfaceStack
-        Log-Text "[✓] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+        Log-Text "[OK] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
     }
 }
 
@@ -7069,7 +7075,7 @@ Register-Click "btnClearTemp" -LockGroup "Gỡ lỗi & Hệ thống" {
         Clear-SystemTempFiles
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
-        Log-Text "[✓] Dọn dẹp bộ nhớ tạm thành công!"
+        Log-Text "[OK] Dọn dẹp bộ nhớ tạm thành công!"
     }
 }
 
@@ -7100,7 +7106,7 @@ Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
-        Log-Text "[✓] Đã nạp lại Windows Explorer thành công."
+        Log-Text "[OK] Đã nạp lại Windows Explorer thành công."
     }
 }
 
@@ -7108,22 +7114,22 @@ Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
 Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét Driver lỗi" {
         Log-Text "=========================================================="
-        Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
+        Log-Text "[SCAN] ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
         Log-Text "=========================================================="
         if ($txtStatus) { $txtStatus.Text = "Đang quét thiết bị lỗi..." }
 
         $faulty = Find-FaultyPnpDevices
 
         if ($faulty.Count -eq 0) {
-            Log-Text "[✓] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
+            Log-Text "[OK] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
             if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
         } else {
-            Log-Text "[⚠️] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
+            Log-Text "[WARN] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
             foreach ($d in $faulty) {
-                Log-Text "   • Tên thiết bị: $($d.FriendlyName)"
+                Log-Text "   - Tên thiết bị: $($d.FriendlyName)"
                 Log-Text "     Mã phần cứng: $($d.InstanceId)"
                 Log-Text "     Trạng thái: $($d.Status) | ErrorCode: $($d.ConfigManagerErrorCode)"
-                Log-Text "   ────────────────────────────────────────────────"
+                Log-Text "   ------------------------------------------------"
             }
             if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
         }
@@ -7134,7 +7140,7 @@ Register-Click "btnPnpRescan" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét lại thiết bị PnP" {
         Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
-        Log-Text "[✓] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
+        Log-Text "[OK] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
     }
 }
 
@@ -7159,7 +7165,7 @@ Register-Click "btnFixDriverUpdate" -LockGroup "Quản lý Driver" {
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
-        Log-Text "[✓] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
+        Log-Text "[OK] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
     }
 }
 
@@ -7200,10 +7206,10 @@ Register-Click "btnBackupDrivers" -LockGroup "Quản lý Driver" {
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($res) {
             if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
-            Log-Text "[✓] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+            Log-Text "[OK] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
         } else {
             if ($txtStatus) { $txtStatus.Text = "Sao lưu driver thất bại" }
-            Log-Text "[❌] Lỗi trong quá trình sao lưu driver."
+            Log-Text "[ERR] Lỗi trong quá trình sao lưu driver."
         }
     }
 }
@@ -7232,7 +7238,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
-        Log-Text "[✓] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
+        Log-Text "[OK] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
         }

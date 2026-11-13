@@ -451,7 +451,7 @@ function Scan-And-ColorizeApps {
 
     $script:isScanningApps = $true
     try {
-        Log-Text "[🔍] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
+        Log-Text "[SCAN] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
         if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         [System.Windows.Forms.Application]::DoEvents()
@@ -464,7 +464,7 @@ function Scan-And-ColorizeApps {
             $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
             if (-not $primary.Available) {
                 $wingetMissing = $true
-                Log-Text "[⚠️] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
+                Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
             } else {
                 $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
                 if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
@@ -472,9 +472,9 @@ function Scan-And-ColorizeApps {
                     $wingetOk = $true
                 } else {
                     if ($primary.TimedOut) {
-                        Log-Text "[⚠️] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                        Log-Text "[WARN] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
                     } else {
-                        Log-Text "[⚠️] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        Log-Text "[WARN] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
                         if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
                             Log-Text "[stderr] $($primary.StdErr.Trim())"
                         }
@@ -674,8 +674,8 @@ function Scan-And-ColorizeApps {
 
         $script:hasCompletedAppScan = $true
         $modeTag = if (-not $wingetOk) { " [Chế độ dự phòng Registry/Appx]" } else { "" }
-        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])$modeTag"
-        Log-Text "[✓] $summary"
+        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [XANH], $countOutdated bản cũ [ĐỎ])$modeTag"
+        Log-Text "[OK] $summary"
         if ($txtStatus) {
             $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
         }

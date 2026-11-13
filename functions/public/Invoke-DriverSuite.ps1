@@ -1,4 +1,4 @@
-﻿# ── FUNCTION: CÁC TIỆN ÍCH QUẢN LÝ & GỠ LỖI DRIVER ──
+# ── FUNCTION: CÁC TIỆN ÍCH QUẢN LÝ & GỠ LỖI DRIVER ──
 
 function Find-FaultyPnpDevices {
     <#
@@ -22,7 +22,7 @@ function Invoke-PnpDeviceRescan {
     #>
     $code = Run-CliStream "pnputil.exe" "/scan-devices"
     if ($code -eq 0) {
-        Log-Text "[✓] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
+        Log-Text "[OK] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Quét thiết bị phần cứng PnP thất bại hoặc gặp lỗi (ExitCode: $code)."
     }
@@ -54,7 +54,7 @@ function Invoke-PnpDriverStoreCleanup {
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {
-            Log-Text "[✓] Không tìm thấy gói driver OEM nào trong DriverStore."
+            Log-Text "[OK] Không tìm thấy gói driver OEM nào trong DriverStore."
             return
         }
 
@@ -85,14 +85,14 @@ function Invoke-PnpDriverStoreCleanup {
 
                 if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
                     $deletedCount++
-                    Log-Text "   [✓ Đã dọn] $inf"
+                    Log-Text "   [OK - Đã dọn] $inf"
                 } elseif ($combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối') {
                     $inUseCount++
                 } else {
                     $errorCount++
                     $errDetail = ($combined -split "`r?`n" | Where-Object { $_ -match 'failed|lỗi|error' } | Select-Object -First 1)
                     if (-not $errDetail) { $errDetail = "ExitCode $($delP.ExitCode)" }
-                    Log-Text "   [⚠️ Lỗi gói $inf] $errDetail"
+                    Log-Text "   [WARN - Lỗi gói $inf] $errDetail"
                 }
             } catch {
                 $errorCount++
@@ -102,9 +102,9 @@ function Invoke-PnpDriverStoreCleanup {
         }
 
         if ($deletedCount -gt 0) {
-            Log-Text "[✓] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
+            Log-Text "[OK] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
         } else {
-            Log-Text "[✓] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
+            Log-Text "[OK] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
         }
         if ($errorCount -gt 0) {
             Log-Text "[!] Có $errorCount gói driver gặp lỗi trong quá trình xử lý."
@@ -119,12 +119,12 @@ function Invoke-DismComponentCleanup {
     .SYNOPSIS
         Dọn dẹp và giải phóng kho linh kiện Windows qua DISM Component Cleanup.
     #>
-    Log-Text "[⚠️] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
+    Log-Text "[WARN] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
     Log-Text "[*] Sau khi hoàn tất thao tác này, bạn SẼ KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại."
     Log-Text "[*] Đang tiến hành dọn dẹp và nén kho linh kiện WinSxS qua DISM..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
     if ($code -eq 0) {
-        Log-Text "[✓] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[OK] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Dọn dẹp kho linh kiện WinSxS thất bại hoặc bị gián đoạn (ExitCode: $code)."
     }
@@ -149,13 +149,13 @@ function Export-SystemDriversBackup {
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
-        Log-Text "[✓] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
+        Log-Text "[OK] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
         return $true
     } catch {
         Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
         $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
         if ($exitCode -eq 0) {
-            Log-Text "[✓] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
+            Log-Text "[OK] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
             return $true
         } else {
             Log-Text "[!] Sao lưu driver qua pnputil.exe thất bại (ExitCode: $exitCode)."

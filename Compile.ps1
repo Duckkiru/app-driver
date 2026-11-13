@@ -8,7 +8,7 @@
 
 $root = $PSScriptRoot
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "🚀 APP-DRIVER BUNDLER - COMPILING PROJECT ARTIFACTS..." -ForegroundColor Cyan
+Write-Host "APP-DRIVER BUNDLER - COMPILING PROJECT ARTIFACTS..." -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Đọc các tệp thành phần
@@ -65,7 +65,7 @@ $outPath = Join-Path $root "App-Driver.ps1"
 
 $fileInfo = Get-Item $outPath
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "✓ COMPILATION SUCCESSFUL!" -ForegroundColor Green
+Write-Host "[OK] COMPILATION SUCCESSFUL!" -ForegroundColor Green
 Write-Host "  File output : $outPath" -ForegroundColor Green
 Write-Host "  File size   : $($fileInfo.Length) bytes ($([math]::Round($fileInfo.Length / 1KB, 2)) KB)" -ForegroundColor Green
 Write-Host "  Ready for   : irm is.gd/appdriver | iex" -ForegroundColor Green

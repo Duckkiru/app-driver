@@ -192,7 +192,7 @@ try {
 
 if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     try {
-        $Host.UI.RawUI.WindowTitle = "App-Driver — Terminal Console (Live Execution)"
+        $Host.UI.RawUI.WindowTitle = "App-Driver - Terminal Console"
     } catch {
         # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
     }
@@ -206,7 +206,6 @@ Write-Host " / __ |/ _ \/ _ \___/ /_/ / __/ / | / / -_) __/   " -ForegroundColor
 Write-Host "/_/ |_/ .__/ .__/  /_____/_/ /_/|___/\__/_/      " -ForegroundColor Cyan
 Write-Host "     /_/  /_/      Windows Software & Driver Suite" -ForegroundColor DarkCyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
-Write-Host "[*] Cửa sổ Terminal này hiển thị trực tiếp các lệnh thực thi & thanh tiến trình (như WinUtil)." -ForegroundColor Gray
 Write-Host "[!] Vui lòng KHÔNG đóng cửa sổ Terminal này khi đang sử dụng giao diện App-Driver.`n" -ForegroundColor Yellow
 
 Add-Type -AssemblyName PresentationFramework
