@@ -22,6 +22,134 @@ function Get-CleanAppName {
     return $clean.Trim()
 }
 
+function Get-CharDisplayWidth {
+    param([int]$Code)
+    # CJK, Hangul, Kana, Fullwidth & Emoji chiếm 2 cột hiển thị trong terminal Windows/winget
+    if (
+        ($Code -ge 0x1100 -and $Code -le 0x115F) -or
+        ($Code -eq 0x2329 -or $Code -eq 0x232A) -or
+        ($Code -ge 0x2E80 -and $Code -le 0x303E) -or
+        ($Code -ge 0x3041 -and $Code -le 0x33FF) -or
+        ($Code -ge 0x3400 -and $Code -le 0x4DBF) -or
+        ($Code -ge 0x4E00 -and $Code -le 0xA4CF) -or
+        ($Code -ge 0xA960 -and $Code -le 0xA97F) -or
+        ($Code -ge 0xAC00 -and $Code -le 0xD7AF) -or
+        ($Code -ge 0xF900 -and $Code -le 0xFAFF) -or
+        ($Code -ge 0xFE10 -and $Code -le 0xFE19) -or
+        ($Code -ge 0xFE30 -and $Code -le 0xFE6F) -or
+        ($Code -ge 0xFF01 -and $Code -le 0xFF60) -or
+        ($Code -ge 0xFFE0 -and $Code -le 0xFFE6) -or
+        ($Code -ge 0x1F300 -and $Code -le 0x1FAFF)
+    ) { return 2 }
+    return 1
+}
+
+function Get-SliceByDisplayWidth {
+    param([string]$Line, [int[]]$Offsets)
+    # Cắt chuỗi theo độ rộng cột console để các dòng tiếng Trung/Nhật/Hàn không làm lệch cột ID/Version
+    $idIdx    = if ($Offsets.Count -ge 2) { $Offsets[1] } else { -1 }
+    $verIdx   = if ($Offsets.Count -ge 3) { $Offsets[2] } else { -1 }
+    $availIdx = if ($Offsets.Count -ge 4) { $Offsets[3] } else { -1 }
+    $srcIdx   = if ($Offsets.Count -ge 5) { $Offsets[4] } else { -1 }
+
+    $targets = @($idIdx, $verIdx, $availIdx, $srcIdx)
+    $charPos = @(-1, -1, -1, -1)
+    $w = 0
+    for ($i = 0; $i -lt $Line.Length; $i++) {
+        for ($t = 0; $t -lt 4; $t++) {
+            if ($charPos[$t] -lt 0 -and $targets[$t] -ge 0 -and $w -ge $targets[$t]) {
+                $charPos[$t] = $i
+            }
+        }
+        $ch = $Line[$i]
+        if ([char]::IsHighSurrogate($ch) -and ($i + 1) -lt $Line.Length -and [char]::IsLowSurrogate($Line[$i + 1])) {
+            $cp = [char]::ConvertToUtf32($ch, $Line[$i + 1])
+            $w += Get-CharDisplayWidth $cp
+            $i++
+        } else {
+            $w += Get-CharDisplayWidth ([int]$ch)
+        }
+    }
+
+    $cId    = $charPos[0]
+    $cVer   = $charPos[1]
+    $cAvail = $charPos[2]
+    $cSrc   = $charPos[3]
+
+    $appName = ""; $appId = ""; $version = ""; $avail = ""
+    if ($cId -gt 0 -and $Line.Length -gt $cId) {
+        $appName = $Line.Substring(0, $cId).Trim()
+        if ($cVer -gt $cId -and $Line.Length -gt $cVer) {
+            $appId = $Line.Substring($cId, $cVer - $cId).Trim()
+            if ($cAvail -gt $cVer -and $Line.Length -gt $cAvail) {
+                $version = $Line.Substring($cVer, $cAvail - $cVer).Trim()
+                if ($cSrc -gt $cAvail -and $Line.Length -gt $cSrc) {
+                    $avail = $Line.Substring($cAvail, $cSrc - $cAvail).Trim()
+                } else {
+                    $avail = $Line.Substring($cAvail).Trim()
+                }
+            } else {
+                $version = $Line.Substring($cVer).Trim()
+            }
+        } else {
+            $appId = $Line.Substring($cId).Trim()
+        }
+    }
+    return @($appName, $appId, $version, $avail)
+}
+
+function Set-PreferredMapEntry {
+    param($Map, [string]$Key, $Candidate)
+    if ([string]::IsNullOrWhiteSpace($Key)) { return }
+    if (-not $Map.ContainsKey($Key)) {
+        $Map[$Key] = $Candidate
+        return
+    }
+    $cur = $Map[$Key]
+    $preferUpdate = (-not $cur.HasUpdate -and $Candidate.HasUpdate)
+    $preferNativeId = ($cur.HasUpdate -eq $Candidate.HasUpdate -and $cur.ID -match '^(ARP|MSIX)\\' -and $Candidate.ID -notmatch '^(ARP|MSIX)\\')
+    if ($preferUpdate -or $preferNativeId) {
+        $Map[$Key] = $Candidate
+    }
+}
+
+function Test-MatchCompatible {
+    param($TargetApp, $Item)
+    if (-not $TargetApp -or -not $Item) { return $false }
+
+    $tName = [string]$TargetApp.Name
+    $tId   = [string]$TargetApp.ID
+    $iName = [string]$Item.Name
+    $iId   = [string]$Item.ID
+
+    # Chặn khớp chéo giữa bản thường và bản Preview
+    $tPrev = ($tName -match 'Preview') -or ($tId -match 'Preview')
+    $iPrev = ($iName -match 'Preview') -or ($iId -match 'Preview')
+    if ($tPrev -ne $iPrev) { return $false }
+
+    # Chặn gói UWP/VCLibs khớp nhầm vào Desktop Redistributable
+    if (($tId -match 'VCRedist' -or $tName -match 'VC\+\+') -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
+        return $false
+    }
+
+    # Kiểm tra đồng nhất kiến trúc x64 / x86 / arm64 (KHÔNG xét nhánh registry ARP\Machine\X86 vì app x64 vẫn có thể ghi khóa WOW6432Node)
+    $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
+             elseif ($tName -match '\(x86\)|\.x86' -or $tId -match '\.x86$') { "x86" }
+             elseif ($tName -match '\(arm64\)|\.arm64' -or $tId -match '\.arm64$') { "arm64" }
+             else { "" }
+
+    if ($tArch) {
+        $idForArch = if ($iId -match '^(ARP|MSIX)\\') { "" } else { $iId }
+        $iArch = if ($iName -match '(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x64$') { "x64" }
+                 elseif ($iName -match '(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x86$') { "x86" }
+                 elseif ($iName -match '(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])' -or $idForArch -match '\.arm64$') { "arm64" }
+                 else { "" }
+        if ($iArch -and $iArch -ne $tArch) { return $false }
+    }
+
+    return $true
+}
+
 function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
@@ -57,16 +185,22 @@ function Scan-And-ColorizeApps {
         # Đọc dữ liệu bất đồng bộ đồng thời cả 2 luồng stdout và stderr để tránh tràn buffer gây deadlock
         $readTask = $p.StandardOutput.ReadToEndAsync()
         $errTask  = $p.StandardError.ReadToEndAsync()
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
         while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+            if ($sw.Elapsed.TotalSeconds -gt 45) {
+                try { if (-not $p.HasExited) { $p.Kill() } } catch {}
+                Log-Text "[⚠️] Lệnh winget list vượt quá thời gian chờ (45s)."
+                break
+            }
             [System.Windows.Forms.Application]::DoEvents()
             Start-Sleep -Milliseconds 30
         }
-        $rawList = $readTask.Result
-        $errList = $errTask.Result
-        $p.WaitForExit()
+        if ($readTask.IsCompleted) { $rawList = $readTask.Result }
+        if ($errTask.IsCompleted) { $errList = $errTask.Result }
+        try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
 
         # Kiểm tra ExitCode của winget list
-        if ($p.ExitCode -ne 0) {
+        if ($p.HasExited -and $p.ExitCode -ne 0) {
             Log-Text "[⚠️] WinGet list kết thúc với mã $($p.ExitCode)."
             if (-not [string]::IsNullOrWhiteSpace($errList)) {
                 Log-Text "[stderr] $errList"
@@ -84,8 +218,15 @@ function Scan-And-ColorizeApps {
         return
     }
 
-    # Phân tích danh sách đã cài đặt từ winget
-    $lines = $rawList -split "`r?`n"
+    # Chuẩn hóa từng dòng (loại bỏ \r cuối dòng \r\n, đồng thời loại bỏ thanh spinner \r trước nội dung thực)
+    $rawLines = $rawList -split "`n"
+    $lines = [System.Collections.Generic.List[string]]::new($rawLines.Count)
+    foreach ($rl in $rawLines) {
+        $cleanLine = $rl.TrimEnd("`r")
+        if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+        $lines.Add($cleanLine)
+    }
+
     $separatorIndex = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
         if ($lines[$i] -match '^---\s*---' -or $lines[$i] -match '^---+$') {
@@ -94,17 +235,15 @@ function Scan-And-ColorizeApps {
         }
     }
 
-    $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $installedList = [System.Collections.Generic.List[object]]::new()
 
     if ($separatorIndex -gt 0) {
         $separatorLine = $lines[$separatorIndex]
         $headerLine    = $lines[$separatorIndex - 1]
 
-        # Xác định tọa độ bắt đầu của từng cột theo dấu gạch ngang (---) hoặc khoảng trắng kép giữa các tiêu đề cột
-        # Đảm bảo 100% tương thích trên mọi ngôn ngữ Windows (Việt, Anh, Nhật, Trung...) mà không phụ thuộc chuỗi "Version"/"Available"
         $colOffsets = @()
         if ($separatorLine -match '---+\s+---+') {
             $dashMatches = [System.Text.RegularExpressions.Regex]::Matches($separatorLine, '-+')
@@ -123,12 +262,12 @@ function Scan-And-ColorizeApps {
             $line = $lines[$j]
             if ([string]::IsNullOrWhiteSpace($line)) { continue }
 
-            $appName  = ""
-            $appId    = ""
-            $version  = ""
-            $avail    = ""
+            $appName = ""; $appId = ""; $version = ""; $avail = ""
 
-            if ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
+            if ($idIdx -gt 0 -and $line -match '[^\x00-\xFF]') {
+                $sliced = Get-SliceByDisplayWidth -Line $line -Offsets $colOffsets
+                $appName = $sliced[0]; $appId = $sliced[1]; $version = $sliced[2]; $avail = $sliced[3]
+            } elseif ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
                 $appName = $line.Substring(0, $idIdx).Trim()
                 if ($verIdx -gt $idIdx -and $line.Length -gt $verIdx) {
                     $appId = $line.Substring($idIdx, $verIdx - $idIdx).Trim()
@@ -146,7 +285,6 @@ function Scan-And-ColorizeApps {
                     $appId = $line.Substring($idIdx).Trim()
                 }
             } else {
-                # Fallback tách cột bằng khoảng trắng kép
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
                 if ($cols.Count -ge 2) {
                     $appName = $cols[0].Trim()
@@ -169,9 +307,9 @@ function Scan-And-ColorizeApps {
                 }
 
                 $installedList.Add($itemObj)
-                if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
-                if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
+                Set-PreferredMapEntry $idMap $appId $itemObj
+                Set-PreferredMapEntry $nameMap $appName $itemObj
+                if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
             }
         }
     } else {
@@ -197,9 +335,9 @@ function Scan-And-ColorizeApps {
                     }
 
                     $installedList.Add($itemObj)
-                    if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
-                    if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                    if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
+                    Set-PreferredMapEntry $idMap $appId $itemObj
+                    Set-PreferredMapEntry $nameMap $appName $itemObj
+                    if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
                 }
             }
         }
@@ -225,7 +363,7 @@ function Scan-And-ColorizeApps {
         }
 
         # 2. Exact Name match (O(1))
-        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match)) {
+        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
@@ -238,12 +376,12 @@ function Scan-And-ColorizeApps {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
-                if ($nameMap.TryGetValue($alias, [ref]$match)) {
+                if ($nameMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
                 $cleanAlias = Get-CleanAppName $alias
-                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match)) {
+                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
@@ -252,21 +390,18 @@ function Scan-And-ColorizeApps {
 
         # 4. Clean Name match (O(1))
         $cleanTarget = Get-CleanAppName $targetApp.Name
-        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match)) {
+        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4, dùng ranh giới từ (\b), và chặn khớp chéo Preview
+        # 5. Fuzzy / Non-Alphanumeric Boundary Matching (khớp chuẩn cả chuỗi chứa dấu +, ., (x64), (x86))
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
-                $pattern = "\b" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "\b"
+                $pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
                 foreach ($item in $installedList) {
-                    # Chặn khớp chéo giữa bản thường và bản Preview
-                    if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
-                    if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
-
+                    if (-not (Test-MatchCompatible $targetApp $item)) { continue }
                     if ($item.ID -match $pattern -or $item.Name -match $pattern) {
                         $lookupCache[$targetId] = $item
                         return $item
@@ -276,12 +411,9 @@ function Scan-And-ColorizeApps {
         }
 
         if ($cleanTarget.Length -ge 4) {
-            $patternClean = "\b" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "\b"
+            $patternClean = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
             foreach ($item in $installedList) {
-                # Chặn khớp chéo giữa bản thường và bản Preview
-                if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
-                if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
-
+                if (-not (Test-MatchCompatible $targetApp $item)) { continue }
                 if ($item.CleanName -match $patternClean) {
                     $lookupCache[$targetId] = $item
                     return $item
@@ -301,7 +433,9 @@ function Scan-And-ColorizeApps {
     foreach ($row in $allItemBorders) {
         $app = $row.Tag.App
         $grid = $row.Child
-        $tb = $grid.Children[2]
+        $tb = if ($row.Tag.NameText) { $row.Tag.NameText } else { $grid.Children[2] }
+        $updateBadge = $row.Tag.UpdateBadge
+        $updateText  = $row.Tag.UpdateText
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
 
         $info = Find-InstalledAppFast $app
@@ -313,24 +447,32 @@ function Scan-And-ColorizeApps {
             $row.Tag.InstalledVersion = $info.Version
 
             if ($info.HasUpdate -eq $true) {
-                # ── 🔴 BẢN CŨ: Tên ĐỎ + Gạch chân mỏng (Không tô nền đỏ) ──
+                # ── 🔴 BẢN CŨ: Tên ĐỎ + Pill phiên bản mới gọn gàng (không cắt mất tên App) ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
                 $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
-                $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
-                $tb.Text = "$($app.Name)  $updateBadge"
+                $tb.Text = $app.Name
                 $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
-                $tb.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                if ($updateBadge -and $updateText) {
+                    $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
+                    $updateBadge.Visibility = [System.Windows.Visibility]::Visible
+                }
+                $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = $tip
+                $row.ToolTip = $tip
             } else {
-                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ (Không ghi 'Mới nhất', không tô nền xanh) ──
+                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
                 $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushLatestFg
                 $tb.Text = $app.Name
                 $tb.TextDecorations = $null
-                $tb.ToolTip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
+                $tip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = $tip
+                $row.ToolTip = $tip
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
@@ -341,7 +483,10 @@ function Scan-And-ColorizeApps {
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
-            $tb.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
+            $tip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            $tb.ToolTip = $tip
+            $row.ToolTip = $tip
         }
     }
 

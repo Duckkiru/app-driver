@@ -2,6 +2,18 @@
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
+# Tự động co kích thước cửa sổ vừa với vùng làm việc màn hình (hỗ trợ laptop / DPI 125%-150%)
+try {
+    $wa = [System.Windows.SystemParameters]::WorkArea
+    if ($wa.Width -gt 0 -and $window.Width -gt ($wa.Width - 24)) {
+        $window.Width = [math]::Max($window.MinWidth, $wa.Width - 24)
+    }
+    if ($wa.Height -gt 0 -and $window.Height -gt ($wa.Height - 24)) {
+        $window.Height = [math]::Max(560, $wa.Height - 24)
+        $window.MinHeight = [math]::Min($window.MinHeight, $window.Height)
+    }
+} catch {}
+
 # Các Control chính
 $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
@@ -35,10 +47,13 @@ $script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
 $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushLinkBtnHoverFg.Freeze()
 
-# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng (Frosted Badge & Glow)
-$script:brushIconBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(35, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
-$script:brushIconBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(50, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
-$script:cornerIconBadge       = New-Object System.Windows.CornerRadius(4)
+# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng & Update Pill
+$script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(52, 235, 240, 250)); $script:brushIconBadgeBg.Freeze()
+$script:brushIconBadgeBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(72, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
+$script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
+$script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(40, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
+$script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(115, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
+$script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
 
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
 $marginCardBorder = New-Object System.Windows.Thickness(5)
@@ -57,29 +72,47 @@ $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
 if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
     try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
 } else {
-    # Tự động dọn dẹp các icon cache cũ bị sai/trùng lặp (230B Microsoft generic, 588B GitHub Octocat)
+    # Tự động dọn dẹp các icon cache rỗng / bị hỏng / quá nhỏ từ phiên bản cũ
     try {
         Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
-            $_.Length -eq 230 -or $_.Length -eq 588
+            $_.Length -le 230 -or $_.Length -eq 588
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Tự động dọn dẹp cache cho các app đã được nâng cấp URL/Domain chính hãng (v2.2)
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v2.2.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn HD (v3.0) đồng bộ nguồn chính hãng
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.0.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
-            $staleIcons = @(
-                "Google.Chrome.png", "Mozilla.Firefox.png", "Opera.OperaGX.png", 
-                "GoLang.Go.png", "RARLab.WinRAR.png", "VideoLAN.VLC.png", 
-                "EpicGames.EpicGamesLauncher.png", "GIMP.GIMP.png", 
-                "Inkscape.Inkscape.png", "CodecGuide.K-LiteCodecPack.Mega.png"
-            )
-            foreach ($stale in $staleIcons) {
-                $stalePath = Join-Path $iconsCacheDir $stale
-                if (Test-Path -LiteralPath $stalePath) { Remove-Item -LiteralPath $stalePath -Force -ErrorAction SilentlyContinue }
-            }
-            Set-Content -LiteralPath $cacheMarker -Value "v2.2" -Force -ErrorAction SilentlyContinue
+            Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.0" -Force -ErrorAction SilentlyContinue
         } catch {}
+    }
+}
+
+function Save-BitmapToCacheAtomic {
+    param($BitmapSource, [string]$DestPath)
+    if (-not $BitmapSource -or [string]::IsNullOrWhiteSpace($DestPath) -or (Test-Path -LiteralPath $DestPath)) { return }
+    try {
+        if ($BitmapSource.PixelWidth -le 0 -or $BitmapSource.PixelHeight -le 0) { return }
+        $tmpPath = "$DestPath.$([guid]::NewGuid().ToString('N')).tmp"
+        $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+        $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($BitmapSource))
+        $fs = $null
+        try {
+            $fs = [System.IO.File]::OpenWrite($tmpPath)
+            $encoder.Save($fs)
+        } finally {
+            if ($fs) { $fs.Dispose() }
+        }
+        if ((Test-Path -LiteralPath $tmpPath) -and (Get-Item -LiteralPath $tmpPath).Length -gt 64) {
+            Move-Item -LiteralPath $tmpPath -Destination $DestPath -Force -ErrorAction SilentlyContinue
+        } elseif (Test-Path -LiteralPath $tmpPath) {
+            Remove-Item -LiteralPath $tmpPath -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        if ($tmpPath -and (Test-Path -LiteralPath $tmpPath)) {
+            Remove-Item -LiteralPath $tmpPath -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -87,13 +120,19 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
 $script:isActionRunning = $false
 
 function Invoke-GuardedAction {
-    param([string]$ActionName, [scriptblock]$Action)
+    param(
+        [string]$ActionName,
+        [scriptblock]$Action,
+        [switch]$DeferExpand
+    )
     if ($script:isActionRunning) {
         Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
         return
     }
-    # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
-    Expand-TerminalLog
+    if (-not $DeferExpand) {
+        # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
+        Expand-TerminalLog
+    }
     $script:isActionRunning = $true
     try {
         & $Action
@@ -259,7 +298,6 @@ $script:colHeights = @(0, 0, 0, 0)
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
 $allItemBorders  = [System.Collections.Generic.List[object]]::new()
-$categoryCardMap = [System.Collections.Generic.Dictionary[object, System.Collections.Generic.List[object]]]::new()
 
 $categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
 
@@ -289,7 +327,6 @@ $cardCols = @(
 # Cache BitmapImage từ xa theo URL trong RAM để cắt giảm triệt để request mạng trùng lặp
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-$catIndex = 0
 foreach ($cat in $categories) {
     $cardBorder = New-Object System.Windows.Controls.Border
     $cardBorder.Background = $script:brushCardBg
@@ -303,7 +340,6 @@ foreach ($cat in $categories) {
 
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
-    $rowsInCard = [System.Collections.Generic.List[object]]::new()
 
     # Header Card
     $headerGrid = New-Object System.Windows.Controls.Grid
@@ -368,10 +404,10 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Container Icon Huy hiệu Frosted Glass & Hiệu ứng phát sáng làm nổi Logo tối màu trên nền đen
+        # 2. Container Icon Huy hiệu Frosted Glass làm nổi Logo trên nền tối
         $iconBadge = New-Object System.Windows.Controls.Border
-        $iconBadge.Width = 20
-        $iconBadge.Height = 20
+        $iconBadge.Width = 22
+        $iconBadge.Height = 22
         $iconBadge.CornerRadius = $script:cornerIconBadge
         $iconBadge.Background = $script:brushIconBadgeBg
         $iconBadge.BorderBrush = $script:brushIconBadgeBorder
@@ -393,17 +429,11 @@ foreach ($cat in $categories) {
 
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
+        $img.Stretch = [System.Windows.Media.Stretch]::Uniform
+        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $img.Visibility = [System.Windows.Visibility]::Collapsed
-
-        # Hiệu ứng Outer Rim Glow (hào quang viền trắng) giúp logo màu tối (Notion, Steam, 7-Zip, Obsidian...) nổi bật 100% trên nền đen
-        $imgGlow = New-Object System.Windows.Media.Effects.DropShadowEffect
-        $imgGlow.Color = [System.Windows.Media.Color]::FromRgb(255, 255, 255)
-        $imgGlow.BlurRadius = 3
-        $imgGlow.ShadowDepth = 0
-        $imgGlow.Opacity = 0.65
-        $img.Effect = $imgGlow
 
         $iconInnerGrid.Children.Add($img) | Out-Null
         $iconBadge.Child = $iconInnerGrid
@@ -416,15 +446,19 @@ foreach ($cat in $categories) {
                 $bmp.UriSource = New-Object System.Uri($localIconPath, [System.UriKind]::Absolute)
                 $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
                 $bmp.EndInit()
-                $img.Source = $bmp
-                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                $img.Visibility = [System.Windows.Visibility]::Visible
-            } catch {}
+                if ($bmp.PixelWidth -gt 0) {
+                    $img.Source = $bmp
+                    $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                    $img.Visibility = [System.Windows.Visibility]::Visible
+                }
+            } catch {
+                try { Remove-Item -LiteralPath $localIconPath -Force -ErrorAction SilentlyContinue } catch {}
+            }
         } else {
             $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
                 $app.IconUrl
             } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32"
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=64"
             } else {
                 $null
             }
@@ -444,35 +478,23 @@ foreach ($cat in $categories) {
                         $script:remoteBmpCache[$remoteIconTarget] = $bmp
                     }
 
-                    # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
                     $cacheClosure = {
                         param($sender, $e)
                         try {
-                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                            $img.Visibility = [System.Windows.Visibility]::Visible
-                            if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
-                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
-                                $fs = [System.IO.File]::OpenWrite($localIconPath)
-                                $encoder.Save($fs)
-                                $fs.Close()
+                            if ($sender -and $sender.PixelWidth -gt 0) {
+                                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                                $img.Visibility = [System.Windows.Visibility]::Visible
+                                Save-BitmapToCacheAtomic -BitmapSource $sender -DestPath $localIconPath
                             }
                         } catch {}
                     }.GetNewClosure()
 
                     if (-not $bmp.IsDownloading) {
-                        # Đã có sẵn trong RAM cache hoặc đã tải xong
-                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                        $img.Visibility = [System.Windows.Visibility]::Visible
-                        $img.Source = $bmp
-                        if (-not (Test-Path -LiteralPath $localIconPath)) {
-                            try {
-                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
-                                $fs = [System.IO.File]::OpenWrite($localIconPath)
-                                $encoder.Save($fs)
-                                $fs.Close()
-                            } catch {}
+                        if ($bmp.PixelWidth -gt 0) {
+                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                            $img.Visibility = [System.Windows.Visibility]::Visible
+                            $img.Source = $bmp
+                            Save-BitmapToCacheAtomic -BitmapSource $bmp -DestPath $localIconPath
                         }
                     } else {
                         $bmp.Add_DownloadCompleted($cacheClosure)
@@ -484,7 +506,13 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
         $rowGrid.Children.Add($iconBadge) | Out-Null
 
-        # 3. Tên ứng dụng (Căn chỉnh thẳng hàng tuyệt đối với lề trái đồng đều)
+        # 3. Tên ứng dụng + Badge phiên bản mới gọn gàng (tránh cắt tên App khi cột hẹp)
+        $nameAreaGrid = New-Object System.Windows.Controls.Grid
+        $nameCol0 = New-Object System.Windows.Controls.ColumnDefinition; $nameCol0.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $nameCol1 = New-Object System.Windows.Controls.ColumnDefinition; $nameCol1.Width = [System.Windows.GridLength]::Auto
+        $nameAreaGrid.ColumnDefinitions.Add($nameCol0) | Out-Null
+        $nameAreaGrid.ColumnDefinitions.Add($nameCol1) | Out-Null
+
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
         $nameText.Foreground = $script:brushTextWhite
@@ -495,10 +523,44 @@ foreach ($cat in $categories) {
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
         $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
-        [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
-        $rowGrid.Children.Add($nameText) | Out-Null
+        $rowBorder.ToolTip = $nameText.ToolTip
+        [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
+        $nameAreaGrid.Children.Add($nameText) | Out-Null
+
+        $updateBadge = New-Object System.Windows.Controls.Border
+        $updateBadge.Background = $script:brushUpdateBadgeBg
+        $updateBadge.BorderBrush = $script:brushUpdateBadgeBorder
+        $updateBadge.BorderThickness = $thicknessOne
+        $updateBadge.CornerRadius = $script:cornerIconBadge
+        $updateBadge.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
+        $updateBadge.Margin = New-Object System.Windows.Thickness(2, 0, 4, 0)
+        $updateBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+        $updateBadge.MaxWidth = 86
+
+        $updateText = New-Object System.Windows.Controls.TextBlock
+        $updateText.FontSize = 9.5
+        $updateText.FontWeight = [System.Windows.FontWeights]::Bold
+        $updateText.Foreground = $script:brushUpdateBadgeFg
+        $updateText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $updateBadge.Child = $updateText
+        [System.Windows.Controls.Grid]::SetColumn($updateBadge, 1)
+        $nameAreaGrid.Children.Add($updateBadge) | Out-Null
+
+        $rowBorder.Tag["NameText"]    = $nameText
+        $rowBorder.Tag["UpdateBadge"] = $updateBadge
+        $rowBorder.Tag["UpdateText"]  = $updateText
+
+        [System.Windows.Controls.Grid]::SetColumn($nameAreaGrid, 2)
+        $rowGrid.Children.Add($nameAreaGrid) | Out-Null
 
         # 4. Button Link Website ngoài cùng bên phải (Icon Link 🔗 chuẩn, căn thẳng hàng)
+        $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
+            $app.Url
+        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            if ($app.Domain.StartsWith("http")) { $app.Domain } else { "https://$($app.Domain)" }
+        } else { "" }
+
         $linkBtn = New-Object System.Windows.Controls.Border
         $linkBtn.Width = 22
         $linkBtn.Height = 18
@@ -510,8 +572,8 @@ foreach ($cat in $categories) {
         $linkBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = New-Object System.Windows.Thickness(0)
-        $linkBtn.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
-        $linkBtn.Tag = $app.Domain
+        $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
+        $linkBtn.Tag = $targetPageUrl
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
         $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
@@ -590,12 +652,10 @@ foreach ($cat in $categories) {
         $rowBorder.Child = $rowGrid
         $cardStack.Children.Add($rowBorder) | Out-Null
         $allItemBorders.Add($rowBorder)
-        $rowsInCard.Add($rowBorder)
     }
 
     $cardBorder.Child = $cardStack
-    $categoryCardMap[$cardBorder] = $rowsInCard
-    
+
     # Trọng số chiều cao ước tính: 48px (Header card + Separator) + (Số dòng app * 28px) + 10px (Margin)
     $cardEstimatedHeight = 58 + ($appsInCat.Count * 28)
 
@@ -616,7 +676,6 @@ foreach ($cat in $categories) {
 
     # Cập nhật chiều cao tích lũy của cột
     $script:colHeights[$targetColIndex] += $cardEstimatedHeight
-    $catIndex++
 }
 
 # ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──
@@ -626,47 +685,50 @@ Register-Click "btnScanInstalled" {
     }
 }
 
-Register-Click "btnInstall" {
-    Invoke-GuardedAction "Cài đặt ứng dụng" {
-        $selected = [System.Collections.Generic.List[object]]::new()
+function Clear-AllCheckBoxes {
+    $script:suppressSelectionCount = $true
+    try {
         foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -eq $true) {
-                $selected.Add($cb.Tag.App)
+            if ($cb.IsChecked -ne $false) {
+                $cb.IsChecked = $false
             }
         }
+    } finally {
+        $script:suppressSelectionCount = $false
+    }
+    Update-SelectionCount
+}
 
-        if ($selected.Count -eq 0) {
-            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
-            return
+function Invoke-GitHubAssetInstall {
+    param($App)
+    try {
+        Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
+        $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
+        $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
+        if (-not $asset) {
+            Log-Text "   [!] Không tìm thấy bộ cài phù hợp trên GitHub Release."
+            return -1
         }
-
-        $total = $selected.Count
-        $idx = 0
-        Log-Text "=========================================================="
-        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
-        Log-Text "=========================================================="
-
-        foreach ($app in $selected) {
-            $idx++
-            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
-            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
-
-            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-            if ($code -eq 0) {
-                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+        $dlPath = Join-Path $env:TEMP $asset.name
+        Log-Text "   -> Đang tải $($asset.name)..."
+        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
+        try {
+            if ($dlPath -match '\.msi$') {
+                return (Run-CliStream "msiexec.exe" "/i `"$dlPath`" /qn /norestart")
             } else {
-                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                return (Run-CliStream $dlPath "--silent-install")
             }
+        } finally {
+            if (Test-Path -LiteralPath $dlPath) { Remove-Item -LiteralPath $dlPath -Force -ErrorAction SilentlyContinue }
         }
-        if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
-        if ($progressBar) { $progressBar.Value = 100 }
-        Scan-And-ColorizeApps
+    } catch {
+        Log-Text "   [!] Lỗi tải/cài từ GitHub: $($_.Exception.Message)"
+        return -1
     }
 }
 
-Register-Click "btnUninstall" {
-    Invoke-GuardedAction "Gỡ cài đặt" {
+Register-Click "btnInstall" {
+    Invoke-GuardedAction "Cài đặt ứng dụng" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -675,6 +737,60 @@ Register-Click "btnUninstall" {
         }
 
         if ($selectedTags.Count -eq 0) {
+            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
+            return
+        }
+
+        $total = $selectedTags.Count
+        $idx = 0
+        Log-Text "=========================================================="
+        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "=========================================================="
+
+        foreach ($tag in $selectedTags) {
+            $idx++
+            $app = $tag.App
+            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+
+            if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+                $code = Invoke-GitHubAssetInstall -App $app
+            } else {
+                $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
+                $code = Run-CliStream "winget" $wgArgs
+            }
+
+            if ($code -eq 0) {
+                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+            } else {
+                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                    Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                    try { Start-Process $app.FallbackUrl } catch {}
+                }
+            }
+        }
+        Update-SelectionCount
+        if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
+        if ($progressBar) { $progressBar.Value = 100 }
+        Scan-And-ColorizeApps
+    }
+}
+
+Register-Click "btnUninstall" {
+    Invoke-GuardedAction "Gỡ cài đặt" -DeferExpand {
+        $selectedTags = [System.Collections.Generic.List[object]]::new()
+        foreach ($cb in $allCheckBoxes) {
+            if ($cb.IsChecked -eq $true) {
+                $selectedTags.Add($cb.Tag)
+            }
+        }
+
+        if ($selectedTags.Count -eq 0) {
+            Expand-TerminalLog
             Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
             return
         }
@@ -687,6 +803,7 @@ Register-Click "btnUninstall" {
         )
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
+        Expand-TerminalLog
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
@@ -696,20 +813,26 @@ Register-Click "btnUninstall" {
         foreach ($tag in $selectedTags) {
             $idx++
             $app = $tag.App
-            # Ưu tiên sử dụng DetectedId thực tế phát hiện được qua SmartMatcher (Section 3.2)
+            # Ưu tiên sử dụng DetectedId thực tế phát hiện được qua SmartMatcher
             $uninstallId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
 
             if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
             if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
             Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (Mã gỡ: $uninstallId)..."
 
-            $code = Run-CliStream "winget" "uninstall --id `"$uninstallId`" --silent"
+            $unArgs = "uninstall --id `"$uninstallId`" --silent --accept-source-agreements"
+            if ($app.Source -eq "msstore" -and $uninstallId -eq $app.ID) {
+                $unArgs += " --source msstore"
+            }
+            $code = Run-CliStream "winget" $unArgs
             if ($code -eq 0) {
                 Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
+                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
             } else {
                 Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
             }
         }
+        Update-SelectionCount
         if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
         if ($progressBar) { $progressBar.Value = 100 }
         Scan-And-ColorizeApps
@@ -733,14 +856,13 @@ Register-Click "btnUpgradeAll" {
     }
 }
 
-# Chọn tất cả: chỉ chọn các dòng đang hiển thị theo bộ lọc tìm kiếm (Section 3.3)
+# Chọn tất cả các dòng đang hiển thị
 Register-Click "btnSelectAll" {
     $script:suppressSelectionCount = $true
     try {
         foreach ($row in $allItemBorders) {
-            if ($row.Visibility -eq [System.Windows.Visibility]::Visible) {
-                $grid = $row.Child
-                $cb = $grid.Children[0]
+            if ($row.Visibility -eq [System.Windows.Visibility]::Visible -and $row.Tag -and $row.Tag.CheckBox) {
+                $cb = $row.Tag.CheckBox
                 if ($cb.IsChecked -ne $true) {
                     $cb.IsChecked = $true
                 }
@@ -753,17 +875,7 @@ Register-Click "btnSelectAll" {
 }
 
 Register-Click "btnDeselectAll" {
-    $script:suppressSelectionCount = $true
-    try {
-        foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -ne $false) {
-                $cb.IsChecked = $false
-            }
-        }
-    } finally {
-        $script:suppressSelectionCount = $false
-    }
-    Update-SelectionCount
+    Clear-AllCheckBoxes
 }
 
 Register-Click "btnClearLog" {
@@ -796,11 +908,20 @@ Register-Click "btnDismRestore" {
 }
 
 Register-Click "btnDismCleanup" {
-    Invoke-GuardedAction "DISM Component Cleanup" {
+    Invoke-GuardedAction "DISM Component Cleanup" -DeferExpand {
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Lệnh DISM /StartComponentCleanup /ResetBase sẽ nén kho WinSxS và KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại về sau.`n`nBạn có chắc chắn muốn tiếp tục?",
+            "Xác nhận dọn kho linh kiện (WinSxS)",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+        Expand-TerminalLog
         Log-Text "[*] Đang dọn dẹp kho linh kiện hệ thống (DISM Component Cleanup)..."
         if ($txtStatus) { $txtStatus.Text = "Đang dọn kho linh kiện..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        Invoke-DriverStoreCleanup
+        Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
         Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
@@ -863,7 +984,7 @@ Register-Click "btnClearTemp" {
 }
 
 Register-Click "btnCleanEventLogs" {
-    Invoke-GuardedAction "Dọn dẹp Windows Event Logs" {
+    Invoke-GuardedAction "Dọn dẹp Windows Event Logs" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?",
             "Xác nhận dọn dẹp Event Logs",
@@ -872,6 +993,7 @@ Register-Click "btnCleanEventLogs" {
         )
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
+        Expand-TerminalLog
         if ($txtStatus) { $txtStatus.Text = "Đang dọn Event Logs..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Clear-SystemEventLogs
@@ -958,7 +1080,16 @@ Register-Click "btnScanWindowsUpdateDrivers" {
 }
 
 Register-Click "btnCleanDriverStore" {
-    Invoke-GuardedAction "Dọn dẹp DriverStore" {
+    Invoke-GuardedAction "Dọn dẹp DriverStore" -DeferExpand {
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Hành động này sẽ xóa các gói driver OEM cũ không còn thiết bị sử dụng trong DriverStore.`nBạn có chắc chắn muốn tiếp tục?",
+            "Xác nhận dọn dẹp DriverStore",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+        Expand-TerminalLog
         if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Invoke-PnpDriverStoreCleanup

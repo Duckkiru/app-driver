@@ -114,7 +114,7 @@ function Invoke-PnpDriverStoreCleanup {
     }
 }
 
-function Invoke-DriverStoreCleanup {
+function Invoke-DismComponentCleanup {
     <#
     .SYNOPSIS
         Dọn dẹp và giải phóng kho linh kiện Windows qua DISM Component Cleanup.

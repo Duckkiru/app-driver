@@ -206,1330 +206,1501 @@ Add-Type -AssemblyName System.Windows.Forms
 # 3. KHO DỮ LIỆU ỨNG DỤNG (NHẬN TỪ CONFIG/APPS.JSON)
 $appsRawJson = @'
 [
-  {
-    "ID": "Google.Chrome",
-    "Name": "Google Chrome",
-    "Domain": "google.com/chrome",
-    "Aliases": [
-      "Google Chrome",
-      "Google.Chrome"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 1
-  },
-  {
-    "ID": "Mozilla.Firefox",
-    "Name": "Mozilla Firefox",
-    "Domain": "firefox.com",
-    "Aliases": [
-      "Mozilla Firefox",
-      "Firefox",
-      "Mozilla.Firefox"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 2
-  },
-  {
-    "ID": "Brave.Brave",
-    "Name": "Brave Browser",
-    "Domain": "brave.com",
-    "Aliases": [
-      "Brave",
-      "BraveSoftware",
-      "Brave.Brave",
-      "Brave Browser"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 3
-  },
-  {
-    "ID": "LibreWolf.LibreWolf",
-    "Name": "LibreWolf",
-    "Domain": "librewolf.net",
-    "Aliases": [
-      "LibreWolf",
-      "LibreWolf.LibreWolf"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 4
-  },
-  {
-    "ID": "VivaldiTechnologies.Vivaldi",
-    "Name": "Vivaldi",
-    "Domain": "vivaldi.com",
-    "Aliases": [
-      "Vivaldi",
-      "VivaldiTechnologies.Vivaldi"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 5
-  },
-  {
-    "ID": "TorProject.TorBrowser",
-    "Name": "Tor Browser",
-    "Domain": "torproject.org",
-    "Aliases": [
-      "Tor Browser",
-      "TorProject.TorBrowser"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 6
-  },
-  {
-    "ID": "Opera.OperaGX",
-    "Name": "Opera GX",
-    "Domain": "opera.com/gx",
-    "Aliases": [
-      "Opera GX",
-      "OperaGX",
-      "Opera.OperaGX"
-    ],
-    "Category": "Web Browsers",
-    "IDn": 7
-  },
-  {
-    "ID": "Discord.Discord",
-    "Name": "Discord",
-    "Domain": "discord.com",
-    "Aliases": [
-      "Discord",
-      "Discord.Discord"
-    ],
-    "Category": "Communication",
-    "IDn": 8
-  },
-  {
-    "ID": "Telegram.TelegramDesktop",
-    "Name": "Telegram",
-    "Domain": "telegram.org",
-    "Aliases": [
-      "Telegram Desktop",
-      "Telegram",
-      "TelegramDesktop",
-      "Telegram.TelegramDesktop"
-    ],
-    "Category": "Communication",
-    "IDn": 9
-  },
-  {
-    "ID": "OpenWhisperSystems.Signal",
-    "Name": "Signal",
-    "Domain": "signal.org",
-    "Aliases": [
-      "Signal",
-      "OpenWhisperSystems.Signal"
-    ],
-    "Category": "Communication",
-    "IDn": 10
-  },
-  {
-    "ID": "VNG.Zalo",
-    "Name": "Zalo",
-    "Domain": "zalo.me",
-    "Aliases": [
-      "Zalo",
-      "VNG.Zalo"
-    ],
-    "Category": "Communication",
-    "IDn": 11
-  },
-  {
-    "ID": "Zoom.Zoom",
-    "Name": "Zoom",
-    "Domain": "zoom.us",
-    "Aliases": [
-      "Zoom",
-      "Zoom.Zoom"
-    ],
-    "Category": "Communication",
-    "IDn": 12
-  },
-  {
-    "ID": "SlackTechnologies.Slack",
-    "Name": "Slack",
-    "Domain": "slack.com",
-    "Aliases": [
-      "Slack",
-      "SlackTechnologies.Slack"
-    ],
-    "Category": "Communication",
-    "IDn": 13
-  },
-  {
-    "ID": "WhatsApp.WhatsApp",
-    "Name": "WhatsApp",
-    "Domain": "whatsapp.com",
-    "Aliases": [
-      "WhatsApp",
-      "WhatsApp.WhatsApp"
-    ],
-    "Category": "Communication",
-    "IDn": 14
-  },
-  {
-    "ID": "Microsoft.Teams",
-    "Name": "Microsoft Teams",
-    "Domain": "teams.microsoft.com",
-    "Aliases": [
-      "Microsoft Teams",
-      "Teams",
-      "Microsoft.Teams"
-    ],
-    "Category": "Communication",
-    "IDn": 15
-  },
-  {
-    "ID": "RustDesk.RustDesk",
-    "Name": "RustDesk",
-    "Domain": "rustdesk.com",
-    "Aliases": [
-      "RustDesk",
-      "RustDesk.RustDesk"
-    ],
-    "Category": "Remote Desktop",
-    "IDn": 16
-  },
-  {
-    "ID": "AnyDesk.AnyDesk",
-    "Name": "AnyDesk",
-    "Domain": "anydesk.com",
-    "Aliases": [
-      "AnyDesk",
-      "AnyDesk.AnyDesk"
-    ],
-    "Category": "Remote Desktop",
-    "IDn": 17
-  },
-  {
-    "ID": "DucFabulous.UltraViewer",
-    "Name": "UltraViewer",
-    "Domain": "ultraviewer.net",
-    "Aliases": [
-      "UltraViewer",
-      "DucFabulous.UltraViewer"
-    ],
-    "Category": "Remote Desktop",
-    "IDn": 18
-  },
-  {
-    "ID": "TeamViewer.TeamViewer",
-    "Name": "TeamViewer",
-    "Domain": "teamviewer.com",
-    "Aliases": [
-      "TeamViewer",
-      "TeamViewer.TeamViewer"
-    ],
-    "Category": "Remote Desktop",
-    "IDn": 19
-  },
-  {
-    "ID": "Microsoft.VisualStudioCode",
-    "Name": "VS Code",
-    "Domain": "code.visualstudio.com",
-    "Aliases": [
-      "Visual Studio Code",
-      "VS Code",
-      "VSCode",
-      "Microsoft.VisualStudioCode"
-    ],
-    "Category": "Development",
-    "IDn": 20
-  },
-  {
-    "ID": "Git.Git",
-    "Name": "Git",
-    "Domain": "git-scm.com",
-    "Aliases": [
-      "Git",
-      "Git.Git"
-    ],
-    "Category": "Development",
-    "IDn": 21
-  },
-  {
-    "ID": "Microsoft.WindowsTerminal",
-    "Name": "Windows Terminal",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Windows Terminal",
-      "Microsoft.WindowsTerminal"
-    ],
-    "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images/Square44x44Logo.targetsize-32.png",
-    "Category": "Development",
-    "IDn": 22
-  },
-  {
-    "ID": "Microsoft.WindowsTerminal.Preview",
-    "Name": "Windows Terminal Preview",
-    "Domain": "microsoft.com",
-    "Aliases": [
-      "Windows Terminal Preview",
-      "Microsoft.WindowsTerminal.Preview"
-    ],
-    "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images-Pre/Square44x44Logo.targetsize-32.png",
-    "Category": "Development",
-    "IDn": 23
-  },
-  {
-    "ID": "Python.Python.3.12",
-    "Name": "Python 3.12",
-    "Domain": "python.org",
-    "Aliases": [
-      "Python 3.12",
-      "Python",
-      "Python.Python.3.12"
-    ],
-    "Category": "Development",
-    "IDn": 24
-  },
-  {
-    "ID": "OpenJS.NodeJS.LTS",
-    "Name": "Node.js LTS",
-    "Domain": "nodejs.org",
-    "Aliases": [
-      "Node.js",
-      "NodeJS",
-      "OpenJS.NodeJS.LTS"
-    ],
-    "Category": "Development",
-    "IDn": 25
-  },
-  {
-    "ID": "Docker.DockerDesktop",
-    "Name": "Docker Desktop",
-    "Domain": "docker.com",
-    "Aliases": [
-      "Docker Desktop",
-      "Docker",
-      "Docker.DockerDesktop"
-    ],
-    "Category": "Development",
-    "IDn": 26
-  },
-  {
-    "ID": "Notepad++.Notepad++",
-    "Name": "Notepad++",
-    "Domain": "notepad-plus-plus.org",
-    "Aliases": [
-      "Notepad++",
-      "NotepadPlusPlus",
-      "Notepad++.Notepad++"
-    ],
-    "Category": "Development",
-    "IDn": 27
-  },
-  {
-    "ID": "Postman.Postman",
-    "Name": "Postman",
-    "Domain": "postman.com",
-    "Aliases": [
-      "Postman",
-      "Postman.Postman"
-    ],
-    "Category": "Development",
-    "IDn": 28
-  },
-  {
-    "ID": "dbeaver.dbeaver",
-    "Name": "DBeaver CE",
-    "Domain": "dbeaver.io",
-    "Aliases": [
-      "DBeaver",
-      "DBeaver CE",
-      "dbeaver.dbeaver"
-    ],
-    "Category": "Development",
-    "IDn": 29
-  },
-  {
-    "ID": "GoLang.Go",
-    "Name": "Go Lang",
-    "Domain": "go.dev",
-    "Aliases": [
-      "Go",
-      "Go Programming Language",
-      "GoLang",
-      "GoLang.Go"
-    ],
-    "Category": "Development",
-    "IDn": 30
-  },
-  {
-    "ID": "Rustlang.Rustup",
-    "Name": "Rust (rustup)",
-    "Domain": "rust-lang.org",
-    "Aliases": [
-      "Rust",
-      "rustup",
-      "Rustlang.Rustup"
-    ],
-    "Category": "Development",
-    "IDn": 31
-  },
-  {
-    "ID": "Microsoft.DotNet.Framework.Runtime",
-    "Name": ".NET Framework 4.8.1",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Framework 4.8.1 Runtime",
-      "Microsoft .NET Framework Runtime",
-      "Microsoft.DotNet.Framework.Runtime"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 32
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.3_1",
-    "Name": ".NET Desktop Runtime 3.1",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 3.1",
-      "DesktopRuntime.3_1",
-      "Microsoft.DotNet.DesktopRuntime.3_1"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 33
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.5",
-    "Name": ".NET Desktop Runtime 5.0",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 5.0",
-      "DesktopRuntime.5",
-      "Microsoft.DotNet.DesktopRuntime.5"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 34
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.6",
-    "Name": ".NET Desktop Runtime 6 (LTS)",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 6.0",
-      "DesktopRuntime.6",
-      "Microsoft.DotNet.DesktopRuntime.6"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 35
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.6.x86",
-    "Name": ".NET Desktop Runtime 6 (x86)",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 6.0 (x86)",
-      "Microsoft.DotNet.DesktopRuntime.6.x86"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 36
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.7",
-    "Name": ".NET Desktop Runtime 7",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 7.0",
-      "DesktopRuntime.7",
-      "Microsoft.DotNet.DesktopRuntime.7"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 37
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.7.x86",
-    "Name": ".NET Desktop Runtime 7 (x86)",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 7.0 (x86)",
-      "Microsoft.DotNet.DesktopRuntime.7.x86"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 38
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.8",
-    "Name": ".NET Desktop Runtime 8 (LTS)",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 8.0",
-      "DesktopRuntime.8",
-      "Microsoft.DotNet.DesktopRuntime.8"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 39
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.8.x86",
-    "Name": ".NET Desktop Runtime 8 (x86)",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 8.0 (x86)",
-      "Microsoft.DotNet.DesktopRuntime.8.x86"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 40
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.9",
-    "Name": ".NET Desktop Runtime 9",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 9.0",
-      "DesktopRuntime.9",
-      "Microsoft.DotNet.DesktopRuntime.9"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 41
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.10",
-    "Name": ".NET Desktop Runtime 10",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 10.0",
-      "DesktopRuntime.10",
-      "Microsoft.DotNet.DesktopRuntime.10"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 42
-  },
-  {
-    "ID": "Microsoft.DotNet.DesktopRuntime.Preview",
-    "Name": ".NET Desktop Runtime 11 Preview",
-    "Domain": "dotnet.microsoft.com",
-    "Aliases": [
-      "Microsoft .NET Windows Desktop Runtime 11.0 Preview",
-      "Microsoft.DotNet.DesktopRuntime.Preview"
-    ],
-    "Category": ".NET Runtimes",
-    "IDn": 43
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.8.JRE",
-    "Name": "Java 8 JRE (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JRE with Hotspot 8",
-      "Temurin 8 JRE",
-      "EclipseAdoptium.Temurin.8.JRE"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 44
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.8.JDK",
-    "Name": "Java 8 JDK (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 8",
-      "Temurin 8",
-      "OpenJDK 8",
-      "EclipseAdoptium.Temurin.8.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 45
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.11.JRE",
-    "Name": "Java 11 JRE (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JRE with Hotspot 11",
-      "Temurin 11 JRE",
-      "EclipseAdoptium.Temurin.11.JRE"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 46
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.11.JDK",
-    "Name": "Java 11 JDK (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 11",
-      "Temurin 11",
-      "OpenJDK 11",
-      "EclipseAdoptium.Temurin.11.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 47
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.16.JDK",
-    "Name": "Java 16 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 16",
-      "Temurin 16",
-      "EclipseAdoptium.Temurin.16.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 48
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.17.JRE",
-    "Name": "Java 17 JRE (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JRE with Hotspot 17",
-      "Temurin 17 JRE",
-      "EclipseAdoptium.Temurin.17.JRE"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 49
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.17.JDK",
-    "Name": "Java 17 JDK (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 17",
-      "Temurin 17",
-      "OpenJDK 17",
-      "EclipseAdoptium.Temurin.17.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 50
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.18.JDK",
-    "Name": "Java 18 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 18",
-      "Temurin 18",
-      "EclipseAdoptium.Temurin.18.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 51
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.19.JDK",
-    "Name": "Java 19 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 19",
-      "Temurin 19",
-      "EclipseAdoptium.Temurin.19.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 52
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.20.JDK",
-    "Name": "Java 20 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 20",
-      "Temurin 20",
-      "EclipseAdoptium.Temurin.20.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 53
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.21.JRE",
-    "Name": "Java 21 JRE (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JRE with Hotspot 21",
-      "Temurin 21 JRE",
-      "EclipseAdoptium.Temurin.21.JRE"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 54
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.21.JDK",
-    "Name": "Java 21 JDK (LTS)",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 21",
-      "Temurin 21",
-      "OpenJDK 21",
-      "EclipseAdoptium.Temurin.21.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 55
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.22.JDK",
-    "Name": "Java 22 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 22",
-      "Temurin 22",
-      "EclipseAdoptium.Temurin.22.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 56
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.23.JDK",
-    "Name": "Java 23 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 23",
-      "Temurin 23",
-      "EclipseAdoptium.Temurin.23.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 57
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.24.JDK",
-    "Name": "Java 24 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 24",
-      "Temurin 24",
-      "EclipseAdoptium.Temurin.24.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 58
-  },
-  {
-    "ID": "EclipseAdoptium.Temurin.25.JDK",
-    "Name": "Java 25 JDK",
-    "Domain": "adoptium.net",
-    "Aliases": [
-      "Eclipse Temurin JDK with Hotspot 25",
-      "Temurin 25",
-      "EclipseAdoptium.Temurin.25.JDK"
-    ],
-    "Category": "Java Runtimes",
-    "IDn": 59
-  },
-  {
-    "ID": "Microsoft.VCRedist.2005.x64",
-    "Name": "VC++ 2005 (x64)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2005 Redistributable (x64)",
-      "Microsoft.VCRedist.2005.x64"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 60
-  },
-  {
-    "ID": "Microsoft.VCRedist.2005.x86",
-    "Name": "VC++ 2005 (x86)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2005 Redistributable (x86)",
-      "Microsoft.VCRedist.2005.x86"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 61
-  },
-  {
-    "ID": "Microsoft.VCRedist.2008.x64",
-    "Name": "VC++ 2008 (x64)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2008 Redistributable - x64",
-      "Microsoft.VCRedist.2008.x64"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 62
-  },
-  {
-    "ID": "Microsoft.VCRedist.2008.x86",
-    "Name": "VC++ 2008 (x86)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2008 Redistributable - x86",
-      "Microsoft.VCRedist.2008.x86"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 63
-  },
-  {
-    "ID": "Microsoft.VCRedist.2010.x64",
-    "Name": "VC++ 2010 (x64)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2010 x64 Redistributable",
-      "Microsoft.VCRedist.2010.x64"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 64
-  },
-  {
-    "ID": "Microsoft.VCRedist.2010.x86",
-    "Name": "VC++ 2010 (x86)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2010 x86 Redistributable",
-      "Microsoft.VCRedist.2010.x86"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 65
-  },
-  {
-    "ID": "Microsoft.VCRedist.2012.x64",
-    "Name": "VC++ 2012 (x64)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2012 Redistributable (x64)",
-      "Microsoft.VCRedist.2012.x64"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 66
-  },
-  {
-    "ID": "Microsoft.VCRedist.2012.x86",
-    "Name": "VC++ 2012 (x86)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2012 Redistributable (x86)",
-      "Microsoft.VCRedist.2012.x86"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 67
-  },
-  {
-    "ID": "Microsoft.VCRedist.2013.x64",
-    "Name": "VC++ 2013 (x64)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2013 Redistributable (x64)",
-      "Microsoft.VCRedist.2013.x64"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 68
-  },
-  {
-    "ID": "Microsoft.VCRedist.2013.x86",
-    "Name": "VC++ 2013 (x86)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2013 Redistributable (x86)",
-      "Microsoft.VCRedist.2013.x86"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 69
-  },
-  {
-    "ID": "Microsoft.VCRedist.2015+.x64",
-    "Name": "VC++ 2015-2022 (x64)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Visual C++",
-      "Microsoft Visual C++ 2015-2022 Redistributable (x64)",
-      "Microsoft Visual C++ 2015-2022",
-      "Microsoft.VCRedist.2015+.x64"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 70
-  },
-  {
-    "ID": "Microsoft.VCRedist.2015+.x86",
-    "Name": "VC++ 2015-2022 (x86)",
-    "Domain": "visualstudio.microsoft.com",
-    "Aliases": [
-      "Microsoft Visual C++ 2015-2022 Redistributable (x86)",
-      "Microsoft.VCRedist.2015+.x86"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 71
-  },
-  {
-    "ID": "Microsoft.DirectX",
-    "Name": "DirectX End-User",
-    "Domain": "xbox.com",
-    "Aliases": [
-      "DirectX",
-      "Microsoft DirectX",
-      "DirectX End-User Runtimes",
-      "Microsoft.DirectX"
-    ],
-    "Category": "C++ & System Runtimes",
-    "IDn": 72
-  },
-  {
-    "ID": "7zip.7zip",
-    "Name": "7-Zip",
-    "Domain": "7-zip.org",
-    "Aliases": [
-      "7-Zip",
-      "7zip.7zip"
-    ],
-    "Category": "System Utilities",
-    "IDn": 73
-  },
-  {
-    "ID": "RARLab.WinRAR",
-    "Name": "WinRAR",
-    "Domain": "win-rar.com",
-    "Aliases": [
-      "WinRAR",
-      "RARLab.WinRAR"
-    ],
-    "Category": "System Utilities",
-    "IDn": 74
-  },
-  {
-    "ID": "voidtools.Everything",
-    "Name": "Everything",
-    "Domain": "voidtools.com",
-    "Aliases": [
-      "Everything",
-      "voidtools.Everything"
-    ],
-    "Category": "System Utilities",
-    "IDn": 75
-  },
-  {
-    "ID": "Microsoft.PowerToys",
-    "Name": "PowerToys",
-    "Domain": "learn.microsoft.com",
-    "Aliases": [
-      "PowerToys",
-      "Microsoft PowerToys",
-      "Microsoft.PowerToys"
-    ],
-    "IconUrl": "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
-    "Category": "System Utilities",
-    "IDn": 76
-  },
-  {
-    "ID": "Flow-Launcher.Flow-Launcher",
-    "Name": "Flow Launcher",
-    "Domain": "flowlauncher.com",
-    "Aliases": [
-      "Flow Launcher",
-      "Flow-Launcher.Flow-Launcher"
-    ],
-    "Category": "System Utilities",
-    "IDn": 77
-  },
-  {
-    "ID": "VSRevoGroup.RevoUninstaller",
-    "Name": "Revo Uninstaller",
-    "Domain": "revouninstaller.com",
-    "Aliases": [
-      "Revo Uninstaller",
-      "VSRevoGroup.RevoUninstaller"
-    ],
-    "Category": "System Utilities",
-    "IDn": 78
-  },
-  {
-    "ID": "JAMSoftware.TreeSize.Free",
-    "Name": "TreeSize Free",
-    "Domain": "jam-software.com",
-    "Aliases": [
-      "TreeSize Free",
-      "JAMSoftware.TreeSize.Free"
-    ],
-    "Category": "System Utilities",
-    "IDn": 79
-  },
-  {
-    "ID": "BleachBit.BleachBit",
-    "Name": "BleachBit",
-    "Domain": "bleachbit.org",
-    "Aliases": [
-      "BleachBit",
-      "BleachBit.BleachBit"
-    ],
-    "Category": "System Utilities",
-    "IDn": 80
-  },
-  {
-    "ID": "Guru3D.Afterburner",
-    "Name": "MSI Afterburner",
-    "Domain": "msi.com",
-    "Aliases": [
-      "MSI Afterburner",
-      "Afterburner",
-      "Guru3D.Afterburner"
-    ],
-    "Category": "Hardware & Monitoring",
-    "IDn": 81
-  },
-  {
-    "ID": "Rem0o.FanControl",
-    "Name": "FanControl",
-    "Domain": "getfancontrol.com",
-    "Aliases": [
-      "FanControl",
-      "Fan Control",
-      "Rem0o.FanControl"
-    ],
-    "Category": "Hardware & Monitoring",
-    "IDn": 82
-  },
-  {
-    "ID": "CPUID.CPU-Z",
-    "Name": "CPUID CPU-Z",
-    "Domain": "cpuid.com",
-    "Aliases": [
-      "CPUID CPU-Z",
-      "CPU-Z",
-      "CPUID.CPU-Z"
-    ],
-    "Category": "Hardware & Monitoring",
-    "IDn": 83
-  },
-  {
-    "ID": "CPUID.HWMonitor",
-    "Name": "CPUID HWMonitor",
-    "Domain": "cpuid.com",
-    "Aliases": [
-      "CPUID HWMonitor",
-      "HWMonitor",
-      "CPUID.HWMonitor"
-    ],
-    "Category": "Hardware & Monitoring",
-    "IDn": 84
-  },
-  {
-    "ID": "Bitwarden.Bitwarden",
-    "Name": "Bitwarden",
-    "Domain": "bitwarden.com",
-    "Aliases": [
-      "Bitwarden",
-      "Bitwarden.Bitwarden"
-    ],
-    "Category": "Security & Network",
-    "IDn": 85
-  },
-  {
-    "ID": "KeePassXCTeam.KeePassXC",
-    "Name": "KeePassXC",
-    "Domain": "keepassxc.org",
-    "Aliases": [
-      "KeePassXC",
-      "KeePassXCTeam.KeePassXC"
-    ],
-    "Category": "Security & Network",
-    "IDn": 86
-  },
-  {
-    "ID": "Cryptomator.Cryptomator",
-    "Name": "Cryptomator",
-    "Domain": "cryptomator.org",
-    "Aliases": [
-      "Cryptomator",
-      "Cryptomator.Cryptomator"
-    ],
-    "Category": "Security & Network",
-    "IDn": 87
-  },
-  {
-    "ID": "ProtonTechnologies.ProtonVPN",
-    "Name": "ProtonVPN",
-    "Domain": "protonvpn.com",
-    "Aliases": [
-      "Proton VPN",
-      "ProtonVPN",
-      "Proton.ProtonVPN",
-      "ProtonTechnologies.ProtonVPN"
-    ],
-    "Category": "Security & Network",
-    "IDn": 88
-  },
-  {
-    "ID": "WiresharkFoundation.Wireshark",
-    "Name": "Wireshark",
-    "Domain": "wireshark.org",
-    "Aliases": [
-      "Wireshark",
-      "WiresharkFoundation.Wireshark"
-    ],
-    "Category": "Security & Network",
-    "IDn": 89
-  },
-  {
-    "ID": "VideoLAN.VLC",
-    "Name": "VLC Media Player",
-    "Domain": "www.videolan.org",
-    "Aliases": [
-      "VLC media player",
-      "VLC",
-      "VideoLAN.VLC"
-    ],
-    "Category": "Audio & Video",
-    "IDn": 90
-  },
-  {
-    "ID": "OBSProject.OBSStudio",
-    "Name": "OBS Studio",
-    "Domain": "obsproject.com",
-    "Aliases": [
-      "OBS Studio",
-      "OBS",
-      "OBSProject.OBSStudio"
-    ],
-    "Category": "Audio & Video",
-    "IDn": 91
-  },
-  {
-    "ID": "Spotify.Spotify",
-    "Name": "Spotify",
-    "Domain": "spotify.com",
-    "Aliases": [
-      "Spotify",
-      "Spotify.Spotify"
-    ],
-    "Category": "Audio & Video",
-    "IDn": 92
-  },
-  {
-    "ID": "Audacity.Audacity",
-    "Name": "Audacity",
-    "Domain": "audacityteam.org",
-    "Aliases": [
-      "Audacity",
-      "Audacity.Audacity"
-    ],
-    "Category": "Audio & Video",
-    "IDn": 93
-  },
-  {
-    "ID": "HandBrake.HandBrake",
-    "Name": "HandBrake",
-    "Domain": "handbrake.fr",
-    "Aliases": [
-      "HandBrake",
-      "HandBrake.HandBrake"
-    ],
-    "Category": "Audio & Video",
-    "IDn": 94
-  },
-  {
-    "ID": "CodecGuide.K-LiteCodecPack.Mega",
-    "Name": "K-Lite Codec Mega",
-    "Domain": "codecguide.com",
-    "Aliases": [
-      "K-Lite Mega Codec Pack",
-      "K-Lite Codec Pack",
-      "CodecGuide.K-LiteCodecPack.Mega"
-    ],
-    "Category": "Audio & Video",
-    "IDn": 95,
-    "IconUrl": "https://icons.duckduckgo.com/ip3/codecguide.com.ico"
-  },
-  {
-    "ID": "ShareX.ShareX",
-    "Name": "ShareX",
-    "Domain": "getsharex.com",
-    "Aliases": [
-      "ShareX",
-      "ShareX.ShareX"
-    ],
-    "Category": "Graphics & Design",
-    "IDn": 96
-  },
-  {
-    "ID": "GIMP.GIMP",
-    "Name": "GIMP",
-    "Domain": "gimp.org",
-    "Aliases": [
-      "GIMP",
-      "GNU Image Manipulation Program",
-      "GIMP.GIMP"
-    ],
-    "Category": "Graphics & Design",
-    "IDn": 97,
-    "IconUrl": "https://icons.duckduckgo.com/ip3/gimp.org.ico"
-  },
-  {
-    "ID": "KDE.Krita",
-    "Name": "Krita",
-    "Domain": "krita.org",
-    "Aliases": [
-      "Krita",
-      "KDE.Krita"
-    ],
-    "Category": "Graphics & Design",
-    "IDn": 98
-  },
-  {
-    "ID": "BlenderFoundation.Blender",
-    "Name": "Blender",
-    "Domain": "blender.org",
-    "Aliases": [
-      "Blender",
-      "BlenderFoundation.Blender"
-    ],
-    "Category": "Graphics & Design",
-    "IDn": 99
-  },
-  {
-    "ID": "Inkscape.Inkscape",
-    "Name": "Inkscape",
-    "Domain": "inkscape.org",
-    "Aliases": [
-      "Inkscape",
-      "Inkscape.Inkscape"
-    ],
-    "Category": "Graphics & Design",
-    "IDn": 100,
-    "IconUrl": "https://icons.duckduckgo.com/ip3/inkscape.org.ico"
-  },
-  {
-    "ID": "TheDocumentFoundation.LibreOffice",
-    "Name": "LibreOffice",
-    "Domain": "libreoffice.org",
-    "Aliases": [
-      "LibreOffice",
-      "TheDocumentFoundation.LibreOffice"
-    ],
-    "Category": "Documents & Office",
-    "IDn": 101
-  },
-  {
-    "ID": "Obsidian.Obsidian",
-    "Name": "Obsidian",
-    "Domain": "obsidian.md",
-    "Aliases": [
-      "Obsidian",
-      "Obsidian.Obsidian"
-    ],
-    "Category": "Documents & Office",
-    "IDn": 102
-  },
-  {
-    "ID": "Notion.Notion",
-    "Name": "Notion",
-    "Domain": "notion.so",
-    "Aliases": [
-      "Notion",
-      "Notion.Notion"
-    ],
-    "Category": "Documents & Office",
-    "IDn": 103
-  },
-  {
-    "ID": "SumatraPDF.SumatraPDF",
-    "Name": "SumatraPDF",
-    "Domain": "sumatrapdfreader.org",
-    "Aliases": [
-      "SumatraPDF",
-      "SumatraPDF.SumatraPDF"
-    ],
-    "Category": "Documents & Office",
-    "IDn": 104
-  },
-  {
-    "ID": "Foxit.FoxitReader",
-    "Name": "Foxit PDF Reader",
-    "Domain": "foxit.com",
-    "Aliases": [
-      "Foxit PDF Reader",
-      "Foxit Reader",
-      "Foxit.FoxitReader"
-    ],
-    "Category": "Documents & Office",
-    "IDn": 105
-  },
-  {
-    "ID": "Valve.Steam",
-    "Name": "Steam",
-    "Domain": "steampowered.com",
-    "Aliases": [
-      "Steam",
-      "Valve.Steam"
-    ],
-    "Category": "Game Launchers",
-    "IDn": 106
-  },
-  {
-    "ID": "EpicGames.EpicGamesLauncher",
-    "Name": "Epic Games Launcher",
-    "Domain": "epicgames.com",
-    "Aliases": [
-      "Epic Games Launcher",
-      "Epic Games",
-      "EpicGames.EpicGamesLauncher"
-    ],
-    "Category": "Game Launchers",
-    "IDn": 107,
-    "IconUrl": "https://icons.duckduckgo.com/ip3/unrealengine.com.ico"
-  },
-  {
-    "ID": "GOG.Galaxy",
-    "Name": "GOG Galaxy",
-    "Domain": "gog.com",
-    "Aliases": [
-      "GOG Galaxy",
-      "GOG.Galaxy"
-    ],
-    "Category": "Game Launchers",
-    "IDn": 108
-  },
-  {
-    "ID": "Playnite.Playnite",
-    "Name": "Playnite",
-    "Domain": "playnite.link",
-    "Aliases": [
-      "Playnite",
-      "Playnite.Playnite"
-    ],
-    "Category": "Game Launchers",
-    "IDn": 109
-  },
-  {
-    "ID": "qBittorrent.qBittorrent",
-    "Name": "qBittorrent",
-    "Domain": "qbittorrent.org",
-    "Aliases": [
-      "qBittorrent",
-      "qBittorrent.qBittorrent"
-    ],
-    "Category": "File Transfer & Cloud",
-    "IDn": 110
-  },
-  {
-    "ID": "LocalSend.LocalSend",
-    "Name": "LocalSend",
-    "Domain": "localsend.org",
-    "Aliases": [
-      "LocalSend",
-      "LocalSend.LocalSend"
-    ],
-    "Category": "File Transfer & Cloud",
-    "IDn": 111
-  },
-  {
-    "ID": "WinSCP.WinSCP",
-    "Name": "WinSCP",
-    "Domain": "winscp.net",
-    "Aliases": [
-      "WinSCP",
-      "WinSCP.WinSCP"
-    ],
-    "Category": "File Transfer & Cloud",
-    "IDn": 112
-  },
-  {
-    "ID": "TimKosse.FileZilla.Client",
-    "Name": "FileZilla",
-    "Domain": "filezilla-project.org",
-    "Aliases": [
-      "FileZilla Client",
-      "FileZilla",
-      "TimKosse.FileZilla.Client"
-    ],
-    "Category": "File Transfer & Cloud",
-    "IDn": 113
-  },
-  {
-    "ID": "Rclone.Rclone",
-    "Name": "Rclone",
-    "Domain": "rclone.org",
-    "Aliases": [
-      "Rclone",
-      "Rclone.Rclone"
-    ],
-    "Category": "File Transfer & Cloud",
-    "IDn": 114
-  }
+    {
+        "ID": "Google.Chrome",
+        "Name": "Google Chrome",
+        "Domain": "google.com/chrome",
+        "Aliases": [
+            "Google Chrome",
+            "Google.Chrome"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 1,
+        "Url": "https://www.google.com/chrome/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-chrome.png"
+    },
+    {
+        "ID": "Mozilla.Firefox",
+        "Name": "Mozilla Firefox",
+        "Domain": "firefox.com",
+        "Aliases": [
+            "Mozilla Firefox",
+            "Firefox",
+            "Mozilla.Firefox"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 2,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/firefox.png"
+    },
+    {
+        "ID": "Brave.Brave",
+        "Name": "Brave Browser",
+        "Domain": "brave.com",
+        "Aliases": [
+            "Brave",
+            "BraveSoftware",
+            "Brave.Brave",
+            "Brave Browser"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 3,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/brave.png"
+    },
+    {
+        "ID": "LibreWolf.LibreWolf",
+        "Name": "LibreWolf",
+        "Domain": "librewolf.net",
+        "Aliases": [
+            "LibreWolf",
+            "LibreWolf.LibreWolf"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 4,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/librewolf.png"
+    },
+    {
+        "ID": "Vivaldi.Vivaldi",
+        "Name": "Vivaldi",
+        "Domain": "vivaldi.com",
+        "Aliases": [
+            "Vivaldi",
+            "Vivaldi.Vivaldi"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 5,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vivaldi.png"
+    },
+    {
+        "ID": "TorProject.TorBrowser",
+        "Name": "Tor Browser",
+        "Domain": "torproject.org",
+        "Aliases": [
+            "Tor Browser",
+            "TorProject.TorBrowser"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 6
+    },
+    {
+        "ID": "Opera.OperaGX",
+        "Name": "Opera GX",
+        "Domain": "opera.com/gx",
+        "Aliases": [
+            "Opera GX",
+            "OperaGX",
+            "Opera.OperaGX"
+        ],
+        "Category": "Web Browsers",
+        "IDn": 7,
+        "Url": "https://www.opera.com/gx"
+    },
+    {
+        "ID": "Discord.Discord",
+        "Name": "Discord",
+        "Domain": "discord.com",
+        "Aliases": [
+            "Discord",
+            "Discord.Discord"
+        ],
+        "Category": "Communication",
+        "IDn": 8,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/discord.png"
+    },
+    {
+        "ID": "Telegram.TelegramDesktop",
+        "Name": "Telegram",
+        "Domain": "telegram.org",
+        "Aliases": [
+            "Telegram Desktop",
+            "Telegram",
+            "TelegramDesktop",
+            "Telegram.TelegramDesktop"
+        ],
+        "Category": "Communication",
+        "IDn": 9,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/telegram.png"
+    },
+    {
+        "ID": "OpenWhisperSystems.Signal",
+        "Name": "Signal",
+        "Domain": "signal.org",
+        "Aliases": [
+            "Signal",
+            "OpenWhisperSystems.Signal"
+        ],
+        "Category": "Communication",
+        "IDn": 10,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/signal.png"
+    },
+    {
+        "ID": "VNGCorp.Zalo",
+        "Name": "Zalo",
+        "Domain": "zalo.me",
+        "Aliases": [
+            "Zalo",
+            "VNGCorp.Zalo"
+        ],
+        "Category": "Communication",
+        "IDn": 11,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zalo.png"
+    },
+    {
+        "ID": "Zoom.Zoom",
+        "Name": "Zoom Workplace",
+        "Domain": "zoom.us",
+        "Aliases": [
+            "Zoom Workplace",
+            "Zoom",
+            "Zoom.Zoom"
+        ],
+        "Category": "Communication",
+        "IDn": 12,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zoom.png"
+    },
+    {
+        "ID": "SlackTechnologies.Slack",
+        "Name": "Slack",
+        "Domain": "slack.com",
+        "Aliases": [
+            "Slack",
+            "SlackTechnologies.Slack"
+        ],
+        "Category": "Communication",
+        "IDn": 13,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/slack.png"
+    },
+    {
+        "ID": "9NKSQGP7F2NH",
+        "Name": "WhatsApp",
+        "Domain": "whatsapp.com",
+        "Aliases": [
+            "WhatsApp",
+            "WhatsApp.WhatsApp",
+            "9NKSQGP7F2NH"
+        ],
+        "Category": "Communication",
+        "IDn": 14,
+        "Source": "msstore",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/whatsapp.png"
+    },
+    {
+        "ID": "Microsoft.Teams",
+        "Name": "Microsoft Teams",
+        "Domain": "teams.microsoft.com",
+        "Aliases": [
+            "Microsoft Teams",
+            "Microsoft Teams (work or school)",
+            "MSTeams",
+            "Microsoft.Teams"
+        ],
+        "Category": "Communication",
+        "IDn": 15,
+        "Url": "https://www.microsoft.com/en-us/microsoft-teams/download-app",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/microsoft-teams.png"
+    },
+    {
+        "ID": "RustDesk.RustDesk",
+        "Name": "RustDesk",
+        "Domain": "rustdesk.com",
+        "Aliases": [
+            "RustDesk",
+            "RustDesk.RustDesk"
+        ],
+        "Category": "Remote Desktop",
+        "IDn": 16,
+        "GitHubRepo": "rustdesk/rustdesk",
+        "AssetRegex": "x86_64\\.msi$",
+        "FallbackUrl": "https://github.com/rustdesk/rustdesk/releases/latest",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rustdesk.png"
+    },
+    {
+        "ID": "AnyDesk.AnyDesk",
+        "Name": "AnyDesk",
+        "Domain": "anydesk.com",
+        "Aliases": [
+            "AnyDesk",
+            "AnyDesk.AnyDesk"
+        ],
+        "Category": "Remote Desktop",
+        "IDn": 17,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/anydesk.png"
+    },
+    {
+        "ID": "DucFabulous.UltraViewer",
+        "Name": "UltraViewer",
+        "Domain": "ultraviewer.net",
+        "Aliases": [
+            "UltraViewer",
+            "DucFabulous.UltraViewer"
+        ],
+        "Category": "Remote Desktop",
+        "IDn": 18
+    },
+    {
+        "ID": "TeamViewer.TeamViewer",
+        "Name": "TeamViewer",
+        "Domain": "teamviewer.com",
+        "Aliases": [
+            "TeamViewer",
+            "TeamViewer.TeamViewer"
+        ],
+        "Category": "Remote Desktop",
+        "IDn": 19
+    },
+    {
+        "ID": "Microsoft.VisualStudioCode",
+        "Name": "VS Code",
+        "Domain": "code.visualstudio.com",
+        "Aliases": [
+            "Visual Studio Code",
+            "VS Code",
+            "VSCode",
+            "Microsoft.VisualStudioCode"
+        ],
+        "Category": "Development",
+        "IDn": 20,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vscode.png"
+    },
+    {
+        "ID": "Git.Git",
+        "Name": "Git",
+        "Domain": "git-scm.com",
+        "Aliases": [
+            "Git",
+            "Git.Git"
+        ],
+        "Category": "Development",
+        "IDn": 21,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/git.png"
+    },
+    {
+        "ID": "Microsoft.WindowsTerminal",
+        "Name": "Windows Terminal",
+        "Domain": "microsoft.com",
+        "Aliases": [
+            "Windows Terminal",
+            "Bảng điều khiển Windows",
+            "Microsoft.WindowsTerminal"
+        ],
+        "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images/Square44x44Logo.targetsize-64.png",
+        "Category": "Development",
+        "IDn": 22,
+        "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
+    },
+    {
+        "ID": "Microsoft.WindowsTerminal.Preview",
+        "Name": "Windows Terminal Preview",
+        "Domain": "microsoft.com",
+        "Aliases": [
+            "Windows Terminal Preview",
+            "Microsoft.WindowsTerminal.Preview"
+        ],
+        "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images-Pre/Square44x44Logo.targetsize-64.png",
+        "Category": "Development",
+        "IDn": 23,
+        "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
+    },
+    {
+        "ID": "Python.Python.3.13",
+        "Name": "Python 3.13",
+        "Domain": "python.org",
+        "Aliases": [
+            "Python 3.13",
+            "Python.Python.3.13"
+        ],
+        "Category": "Development",
+        "IDn": 24,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/python.png"
+    },
+    {
+        "ID": "OpenJS.NodeJS.LTS",
+        "Name": "Node.js LTS",
+        "Domain": "nodejs.org",
+        "Aliases": [
+            "Node.js",
+            "NodeJS",
+            "OpenJS.NodeJS.LTS"
+        ],
+        "Category": "Development",
+        "IDn": 25,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nodejs.png"
+    },
+    {
+        "ID": "Docker.DockerDesktop",
+        "Name": "Docker Desktop",
+        "Domain": "docker.com",
+        "Aliases": [
+            "Docker Desktop",
+            "Docker",
+            "Docker.DockerDesktop"
+        ],
+        "Category": "Development",
+        "IDn": 26,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/docker.png"
+    },
+    {
+        "ID": "Notepad++.Notepad++",
+        "Name": "Notepad++",
+        "Domain": "notepad-plus-plus.org",
+        "Aliases": [
+            "Notepad++",
+            "NotepadPlusPlus",
+            "Notepad++.Notepad++"
+        ],
+        "Category": "Development",
+        "IDn": 27
+    },
+    {
+        "ID": "Postman.Postman",
+        "Name": "Postman",
+        "Domain": "postman.com",
+        "Aliases": [
+            "Postman",
+            "Postman.Postman"
+        ],
+        "Category": "Development",
+        "IDn": 28,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/postman.png"
+    },
+    {
+        "ID": "DBeaver.DBeaver.Community",
+        "Name": "DBeaver CE",
+        "Domain": "dbeaver.io",
+        "Aliases": [
+            "DBeaver",
+            "DBeaver CE",
+            "DBeaver Community",
+            "DBeaver.DBeaver.Community"
+        ],
+        "Category": "Development",
+        "IDn": 29
+    },
+    {
+        "ID": "GoLang.Go",
+        "Name": "Go",
+        "Domain": "go.dev",
+        "Aliases": [
+            "Go Programming Language",
+            "GoLang",
+            "GoLang.Go"
+        ],
+        "Category": "Development",
+        "IDn": 30,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/go.png"
+    },
+    {
+        "ID": "Rustlang.Rustup",
+        "Name": "Rust (rustup)",
+        "Domain": "rust-lang.org",
+        "Aliases": [
+            "Rustup",
+            "Rustup: the Rust toolchain installer",
+            "Rustlang.Rustup"
+        ],
+        "Category": "Development",
+        "IDn": 31,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rust-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.Framework.Runtime",
+        "Name": ".NET Framework 4.8.1",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Framework 4.8.1 Runtime",
+            "Microsoft .NET Framework Runtime",
+            "Microsoft.DotNet.Framework.Runtime"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 32,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.3_1",
+        "Name": ".NET Desktop Runtime 3.1",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 3.1",
+            "DesktopRuntime.3_1",
+            "Microsoft.DotNet.DesktopRuntime.3_1"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 33,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.5",
+        "Name": ".NET Desktop Runtime 5.0",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 5.0",
+            "DesktopRuntime.5",
+            "Microsoft.DotNet.DesktopRuntime.5"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 34,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.6",
+        "Name": ".NET Desktop Runtime 6 (LTS)",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 6.0",
+            "DesktopRuntime.6",
+            "Microsoft.DotNet.DesktopRuntime.6"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 35,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.6.x86",
+        "Name": ".NET Desktop Runtime 6 (x86)",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 6.0 (x86)",
+            "Microsoft.DotNet.DesktopRuntime.6.x86"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 36,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.7",
+        "Name": ".NET Desktop Runtime 7",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 7.0",
+            "DesktopRuntime.7",
+            "Microsoft.DotNet.DesktopRuntime.7"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 37,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.7.x86",
+        "Name": ".NET Desktop Runtime 7 (x86)",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 7.0 (x86)",
+            "Microsoft.DotNet.DesktopRuntime.7.x86"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 38,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.8",
+        "Name": ".NET Desktop Runtime 8 (LTS)",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 8.0",
+            "DesktopRuntime.8",
+            "Microsoft.DotNet.DesktopRuntime.8"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 39,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.8.x86",
+        "Name": ".NET Desktop Runtime 8 (x86)",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 8.0 (x86)",
+            "Microsoft.DotNet.DesktopRuntime.8.x86"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 40,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.9",
+        "Name": ".NET Desktop Runtime 9",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 9.0",
+            "DesktopRuntime.9",
+            "Microsoft.DotNet.DesktopRuntime.9"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 41,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.10",
+        "Name": ".NET Desktop Runtime 10",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 10.0",
+            "DesktopRuntime.10",
+            "Microsoft.DotNet.DesktopRuntime.10"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 42,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "Microsoft.DotNet.DesktopRuntime.Preview",
+        "Name": ".NET Desktop Runtime 11 Preview",
+        "Domain": "dotnet.microsoft.com",
+        "Aliases": [
+            "Microsoft .NET Windows Desktop Runtime 11.0 Preview",
+            "Microsoft.DotNet.DesktopRuntime.Preview"
+        ],
+        "Category": ".NET Runtimes",
+        "IDn": 43,
+        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.8.JRE",
+        "Name": "Java 8 JRE (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JRE with Hotspot 8",
+            "Temurin 8 JRE",
+            "EclipseAdoptium.Temurin.8.JRE"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 44,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.8.JDK",
+        "Name": "Java 8 JDK (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 8",
+            "Temurin 8",
+            "OpenJDK 8",
+            "EclipseAdoptium.Temurin.8.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 45,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.11.JRE",
+        "Name": "Java 11 JRE (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JRE with Hotspot 11",
+            "Temurin 11 JRE",
+            "EclipseAdoptium.Temurin.11.JRE"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 46,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.11.JDK",
+        "Name": "Java 11 JDK (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 11",
+            "Temurin 11",
+            "OpenJDK 11",
+            "EclipseAdoptium.Temurin.11.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 47,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.16.JDK",
+        "Name": "Java 16 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 16",
+            "Temurin 16",
+            "EclipseAdoptium.Temurin.16.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 48,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.17.JRE",
+        "Name": "Java 17 JRE (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JRE with Hotspot 17",
+            "Temurin 17 JRE",
+            "EclipseAdoptium.Temurin.17.JRE"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 49,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.17.JDK",
+        "Name": "Java 17 JDK (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 17",
+            "Temurin 17",
+            "OpenJDK 17",
+            "EclipseAdoptium.Temurin.17.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 50,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.18.JDK",
+        "Name": "Java 18 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 18",
+            "Temurin 18",
+            "EclipseAdoptium.Temurin.18.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 51,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.19.JDK",
+        "Name": "Java 19 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 19",
+            "Temurin 19",
+            "EclipseAdoptium.Temurin.19.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 52,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.20.JDK",
+        "Name": "Java 20 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 20",
+            "Temurin 20",
+            "EclipseAdoptium.Temurin.20.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 53,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.21.JRE",
+        "Name": "Java 21 JRE (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JRE with Hotspot 21",
+            "Temurin 21 JRE",
+            "EclipseAdoptium.Temurin.21.JRE"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 54,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.21.JDK",
+        "Name": "Java 21 JDK (LTS)",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 21",
+            "Temurin 21",
+            "OpenJDK 21",
+            "EclipseAdoptium.Temurin.21.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 55,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.22.JDK",
+        "Name": "Java 22 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 22",
+            "Temurin 22",
+            "EclipseAdoptium.Temurin.22.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 56,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.23.JDK",
+        "Name": "Java 23 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 23",
+            "Temurin 23",
+            "EclipseAdoptium.Temurin.23.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 57,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.24.JDK",
+        "Name": "Java 24 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 24",
+            "Temurin 24",
+            "EclipseAdoptium.Temurin.24.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 58,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "EclipseAdoptium.Temurin.25.JDK",
+        "Name": "Java 25 JDK",
+        "Domain": "adoptium.net",
+        "Aliases": [
+            "Eclipse Temurin JDK with Hotspot 25",
+            "Temurin 25",
+            "EclipseAdoptium.Temurin.25.JDK"
+        ],
+        "Category": "Java Runtimes",
+        "IDn": 59,
+        "Url": "https://adoptium.net/temurin/releases/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2005.x64",
+        "Name": "VC++ 2005 (x64)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2005 Redistributable (x64)",
+            "Microsoft Visual C++ 2005 Redistributable - x64",
+            "Microsoft.VCRedist.2005.x64"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 60,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2005.x86",
+        "Name": "VC++ 2005 (x86)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2005 Redistributable (x86)",
+            "Microsoft Visual C++ 2005 Redistributable - x86",
+            "Microsoft.VCRedist.2005.x86"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 61,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2008.x64",
+        "Name": "VC++ 2008 (x64)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2008 Redistributable - x64",
+            "Microsoft Visual C++ 2008 Redistributable (x64)",
+            "Microsoft.VCRedist.2008.x64"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 62,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2008.x86",
+        "Name": "VC++ 2008 (x86)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2008 Redistributable - x86",
+            "Microsoft Visual C++ 2008 Redistributable (x86)",
+            "Microsoft.VCRedist.2008.x86"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 63,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2010.x64",
+        "Name": "VC++ 2010 (x64)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2010 x64 Redistributable",
+            "Microsoft Visual C++ 2010 Redistributable - x64",
+            "Microsoft Visual C++ 2010 Redistributable (x64)",
+            "Microsoft.VCRedist.2010.x64"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 64,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2010.x86",
+        "Name": "VC++ 2010 (x86)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2010 x86 Redistributable",
+            "Microsoft Visual C++ 2010 Redistributable - x86",
+            "Microsoft Visual C++ 2010 Redistributable (x86)",
+            "Microsoft.VCRedist.2010.x86"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 65,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2012.x64",
+        "Name": "VC++ 2012 (x64)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2012 Redistributable (x64)",
+            "Microsoft Visual C++ 2012 Redistributable - x64",
+            "Microsoft.VCRedist.2012.x64"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 66,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2012.x86",
+        "Name": "VC++ 2012 (x86)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2012 Redistributable (x86)",
+            "Microsoft Visual C++ 2012 Redistributable - x86",
+            "Microsoft.VCRedist.2012.x86"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 67,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2013.x64",
+        "Name": "VC++ 2013 (x64)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2013 Redistributable (x64)",
+            "Microsoft Visual C++ 2013 Redistributable - x64",
+            "Microsoft.VCRedist.2013.x64"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 68,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2013.x86",
+        "Name": "VC++ 2013 (x86)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ 2013 Redistributable (x86)",
+            "Microsoft Visual C++ 2013 Redistributable - x86",
+            "Microsoft.VCRedist.2013.x86"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 69,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2015+.x64",
+        "Name": "VC++ 2015-2026 (x64)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ v14 Redistributable (x64)",
+            "Microsoft Visual C++ 2015-2022 Redistributable (x64)",
+            "Microsoft.VCRedist.2015+.x64"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 70,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.VCRedist.2015+.x86",
+        "Name": "VC++ 2015-2026 (x86)",
+        "Domain": "visualstudio.microsoft.com",
+        "Aliases": [
+            "Microsoft Visual C++ v14 Redistributable (x86)",
+            "Microsoft Visual C++ 2015-2022 Redistributable (x86)",
+            "Microsoft.VCRedist.2015+.x86"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 71,
+        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+    },
+    {
+        "ID": "Microsoft.DirectX",
+        "Name": "DirectX End-User",
+        "Domain": "microsoft.com",
+        "Aliases": [
+            "DirectX",
+            "Microsoft DirectX",
+            "DirectX End-User Runtimes",
+            "Microsoft.DirectX"
+        ],
+        "Category": "C++ & System Runtimes",
+        "IDn": 72,
+        "Url": "https://www.microsoft.com/en-us/download/details.aspx?id=35"
+    },
+    {
+        "ID": "7zip.7zip",
+        "Name": "7-Zip",
+        "Domain": "7-zip.org",
+        "Aliases": [
+            "7-Zip",
+            "7zip.7zip"
+        ],
+        "Category": "System Utilities",
+        "IDn": 73,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/7zip.png"
+    },
+    {
+        "ID": "RARLab.WinRAR",
+        "Name": "WinRAR",
+        "Domain": "win-rar.com",
+        "Aliases": [
+            "WinRAR",
+            "RARLab.WinRAR"
+        ],
+        "Category": "System Utilities",
+        "IDn": 74
+    },
+    {
+        "ID": "voidtools.Everything",
+        "Name": "Everything",
+        "Domain": "voidtools.com",
+        "Aliases": [
+            "Everything",
+            "voidtools.Everything"
+        ],
+        "Category": "System Utilities",
+        "IDn": 75
+    },
+    {
+        "ID": "Microsoft.PowerToys",
+        "Name": "PowerToys",
+        "Domain": "learn.microsoft.com",
+        "Aliases": [
+            "PowerToys",
+            "Microsoft PowerToys",
+            "Microsoft.PowerToys"
+        ],
+        "IconUrl": "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
+        "Category": "System Utilities",
+        "IDn": 76,
+        "Url": "https://learn.microsoft.com/en-us/windows/powertoys/"
+    },
+    {
+        "ID": "Flow-Launcher.Flow-Launcher",
+        "Name": "Flow Launcher",
+        "Domain": "flowlauncher.com",
+        "Aliases": [
+            "Flow Launcher",
+            "Flow-Launcher.Flow-Launcher"
+        ],
+        "Category": "System Utilities",
+        "IDn": 77,
+        "IconUrl": "https://raw.githubusercontent.com/Flow-Launcher/Flow.Launcher/dev/Flow.Launcher/Images/app.png"
+    },
+    {
+        "ID": "RevoUninstaller.RevoUninstaller",
+        "Name": "Revo Uninstaller",
+        "Domain": "revouninstaller.com",
+        "Aliases": [
+            "Revo Uninstaller",
+            "Revo Uninstaller Free",
+            "RevoUninstaller.RevoUninstaller"
+        ],
+        "Category": "System Utilities",
+        "IDn": 78,
+        "Url": "https://www.revouninstaller.com/products/revo-uninstaller-free/"
+    },
+    {
+        "ID": "JAMSoftware.TreeSize.Free",
+        "Name": "TreeSize Free",
+        "Domain": "jam-software.com",
+        "Aliases": [
+            "TreeSize Free",
+            "JAMSoftware.TreeSize.Free"
+        ],
+        "Category": "System Utilities",
+        "IDn": 79,
+        "Url": "https://www.jam-software.com/treesize-free",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/treesize.png"
+    },
+    {
+        "ID": "BleachBit.BleachBit",
+        "Name": "BleachBit",
+        "Domain": "bleachbit.org",
+        "Aliases": [
+            "BleachBit",
+            "BleachBit.BleachBit"
+        ],
+        "Category": "System Utilities",
+        "IDn": 80
+    },
+    {
+        "ID": "Guru3D.Afterburner",
+        "Name": "MSI Afterburner",
+        "Domain": "msi.com",
+        "Aliases": [
+            "MSI Afterburner",
+            "Afterburner",
+            "Guru3D.Afterburner"
+        ],
+        "Category": "Hardware & Monitoring",
+        "IDn": 81,
+        "Url": "https://www.msi.com/Landing/afterburner/graphics-cards"
+    },
+    {
+        "ID": "Rem0o.FanControl",
+        "Name": "FanControl",
+        "Domain": "getfancontrol.com",
+        "Aliases": [
+            "FanControl",
+            "Fan Control",
+            "Rem0o.FanControl"
+        ],
+        "Category": "Hardware & Monitoring",
+        "IDn": 82
+    },
+    {
+        "ID": "CPUID.CPU-Z",
+        "Name": "CPU-Z",
+        "Domain": "cpuid.com",
+        "Aliases": [
+            "CPUID CPU-Z",
+            "CPU-Z",
+            "CPUID.CPU-Z"
+        ],
+        "Category": "Hardware & Monitoring",
+        "IDn": 83,
+        "Url": "https://www.cpuid.com/softwares/cpu-z.html",
+        "IconUrl": "https://www.cpuid.com/medias/images/apple-touch-icon-precomposed.png"
+    },
+    {
+        "ID": "CPUID.HWMonitor",
+        "Name": "HWMonitor",
+        "Domain": "cpuid.com",
+        "Aliases": [
+            "CPUID HWMonitor",
+            "HWMonitor",
+            "CPUID.HWMonitor"
+        ],
+        "Category": "Hardware & Monitoring",
+        "IDn": 84,
+        "Url": "https://www.cpuid.com/softwares/hwmonitor.html",
+        "IconUrl": "https://www.cpuid.com/medias/images/apple-touch-icon-precomposed.png"
+    },
+    {
+        "ID": "Bitwarden.Bitwarden",
+        "Name": "Bitwarden",
+        "Domain": "bitwarden.com",
+        "Aliases": [
+            "Bitwarden",
+            "Bitwarden.Bitwarden"
+        ],
+        "Category": "Security & Network",
+        "IDn": 85,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png"
+    },
+    {
+        "ID": "KeePassXCTeam.KeePassXC",
+        "Name": "KeePassXC",
+        "Domain": "keepassxc.org",
+        "Aliases": [
+            "KeePassXC",
+            "KeePassXCTeam.KeePassXC"
+        ],
+        "Category": "Security & Network",
+        "IDn": 86,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/keepassxc.png"
+    },
+    {
+        "ID": "Cryptomator.Cryptomator",
+        "Name": "Cryptomator",
+        "Domain": "cryptomator.org",
+        "Aliases": [
+            "Cryptomator",
+            "Cryptomator.Cryptomator"
+        ],
+        "Category": "Security & Network",
+        "IDn": 87,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cryptomator.png"
+    },
+    {
+        "ID": "Proton.ProtonVPN",
+        "Name": "Proton VPN",
+        "Domain": "protonvpn.com",
+        "Aliases": [
+            "Proton VPN",
+            "ProtonVPN",
+            "Proton.ProtonVPN"
+        ],
+        "Category": "Security & Network",
+        "IDn": 88,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proton-vpn.png"
+    },
+    {
+        "ID": "WiresharkFoundation.Wireshark",
+        "Name": "Wireshark",
+        "Domain": "wireshark.org",
+        "Aliases": [
+            "Wireshark",
+            "WiresharkFoundation.Wireshark"
+        ],
+        "Category": "Security & Network",
+        "IDn": 89,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/wireshark.png"
+    },
+    {
+        "ID": "VideoLAN.VLC",
+        "Name": "VLC media player",
+        "Domain": "videolan.org",
+        "Aliases": [
+            "VLC media player",
+            "VLC",
+            "VideoLAN.VLC"
+        ],
+        "Category": "Audio & Video",
+        "IDn": 90,
+        "Url": "https://www.videolan.org/vlc/",
+        "IconUrl": "https://raw.githubusercontent.com/videolan/vlc/master/share/icons/128x128/vlc.png"
+    },
+    {
+        "ID": "OBSProject.OBSStudio",
+        "Name": "OBS Studio",
+        "Domain": "obsproject.com",
+        "Aliases": [
+            "OBS Studio",
+            "OBS",
+            "OBSProject.OBSStudio"
+        ],
+        "Category": "Audio & Video",
+        "IDn": 91,
+        "IconUrl": "https://raw.githubusercontent.com/obsproject/obs-studio/master/frontend/cmake/linux/icons/obs-logo-128.png"
+    },
+    {
+        "ID": "Spotify.Spotify",
+        "Name": "Spotify",
+        "Domain": "spotify.com",
+        "Aliases": [
+            "Spotify",
+            "Spotify.Spotify"
+        ],
+        "Category": "Audio & Video",
+        "IDn": 92,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/spotify.png"
+    },
+    {
+        "ID": "Audacity.Audacity",
+        "Name": "Audacity",
+        "Domain": "audacityteam.org",
+        "Aliases": [
+            "Audacity",
+            "Audacity.Audacity"
+        ],
+        "Category": "Audio & Video",
+        "IDn": 93,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/audacity.png"
+    },
+    {
+        "ID": "HandBrake.HandBrake",
+        "Name": "HandBrake",
+        "Domain": "handbrake.fr",
+        "Aliases": [
+            "HandBrake",
+            "HandBrake.HandBrake"
+        ],
+        "Category": "Audio & Video",
+        "IDn": 94,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/handbrake.png"
+    },
+    {
+        "ID": "CodecGuide.K-LiteCodecPack.Mega",
+        "Name": "K-Lite Codec Pack Mega",
+        "Domain": "codecguide.com",
+        "Aliases": [
+            "K-Lite Mega Codec Pack",
+            "K-Lite Codec Pack",
+            "K-Lite Codec Pack Mega",
+            "CodecGuide.K-LiteCodecPack.Mega"
+        ],
+        "Category": "Audio & Video",
+        "IDn": 95,
+        "IconUrl": "https://icons.duckduckgo.com/ip3/codecguide.com.ico",
+        "Url": "https://codecguide.com/download_k-lite_codec_pack_mega.htm"
+    },
+    {
+        "ID": "ShareX.ShareX",
+        "Name": "ShareX",
+        "Domain": "getsharex.com",
+        "Aliases": [
+            "ShareX",
+            "ShareX.ShareX"
+        ],
+        "Category": "Graphics & Design",
+        "IDn": 96
+    },
+    {
+        "ID": "GIMP.GIMP",
+        "Name": "GIMP",
+        "Domain": "gimp.org",
+        "Aliases": [
+            "GIMP",
+            "GNU Image Manipulation Program",
+            "GIMP.GIMP"
+        ],
+        "Category": "Graphics & Design",
+        "IDn": 97,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/gimp.png"
+    },
+    {
+        "ID": "KDE.Krita",
+        "Name": "Krita",
+        "Domain": "krita.org",
+        "Aliases": [
+            "Krita",
+            "KDE.Krita"
+        ],
+        "Category": "Graphics & Design",
+        "IDn": 98
+    },
+    {
+        "ID": "BlenderFoundation.Blender",
+        "Name": "Blender",
+        "Domain": "blender.org",
+        "Aliases": [
+            "Blender",
+            "BlenderFoundation.Blender"
+        ],
+        "Category": "Graphics & Design",
+        "IDn": 99,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/blender.png"
+    },
+    {
+        "ID": "Inkscape.Inkscape",
+        "Name": "Inkscape",
+        "Domain": "inkscape.org",
+        "Aliases": [
+            "Inkscape",
+            "Inkscape.Inkscape"
+        ],
+        "Category": "Graphics & Design",
+        "IDn": 100,
+        "IconUrl": "https://icons.duckduckgo.com/ip3/inkscape.org.ico"
+    },
+    {
+        "ID": "TheDocumentFoundation.LibreOffice",
+        "Name": "LibreOffice",
+        "Domain": "libreoffice.org",
+        "Aliases": [
+            "LibreOffice",
+            "TheDocumentFoundation.LibreOffice"
+        ],
+        "Category": "Documents & Office",
+        "IDn": 101,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/libreoffice-colibre-text.png"
+    },
+    {
+        "ID": "Obsidian.Obsidian",
+        "Name": "Obsidian",
+        "Domain": "obsidian.md",
+        "Aliases": [
+            "Obsidian",
+            "Obsidian.Obsidian"
+        ],
+        "Category": "Documents & Office",
+        "IDn": 102,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/obsidian.png"
+    },
+    {
+        "ID": "Notion.Notion",
+        "Name": "Notion",
+        "Domain": "notion.so",
+        "Aliases": [
+            "Notion",
+            "Notion.Notion"
+        ],
+        "Category": "Documents & Office",
+        "IDn": 103,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/notion-light.png"
+    },
+    {
+        "ID": "SumatraPDF.SumatraPDF",
+        "Name": "SumatraPDF",
+        "Domain": "sumatrapdfreader.org",
+        "Aliases": [
+            "SumatraPDF",
+            "SumatraPDF.SumatraPDF"
+        ],
+        "Category": "Documents & Office",
+        "IDn": 104,
+        "Url": "https://www.sumatrapdfreader.org/free-pdf-reader"
+    },
+    {
+        "ID": "Foxit.FoxitReader",
+        "Name": "Foxit PDF Reader",
+        "Domain": "foxit.com",
+        "Aliases": [
+            "Foxit PDF Reader",
+            "Foxit Reader",
+            "Foxit.FoxitReader"
+        ],
+        "Category": "Documents & Office",
+        "IDn": 105,
+        "Url": "https://www.foxit.com/pdf-reader/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/foxit-icon.png"
+    },
+    {
+        "ID": "Valve.Steam",
+        "Name": "Steam",
+        "Domain": "store.steampowered.com",
+        "Aliases": [
+            "Steam",
+            "Valve.Steam"
+        ],
+        "Category": "Game Launchers",
+        "IDn": 106,
+        "Url": "https://store.steampowered.com/",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/steam.png"
+    },
+    {
+        "ID": "EpicGames.EpicGamesLauncher",
+        "Name": "Epic Games Launcher",
+        "Domain": "store.epicgames.com",
+        "Aliases": [
+            "Epic Games Launcher",
+            "Epic Games",
+            "EpicGames.EpicGamesLauncher"
+        ],
+        "Category": "Game Launchers",
+        "IDn": 107,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/epic-games-light.png",
+        "Url": "https://store.epicgames.com/"
+    },
+    {
+        "ID": "GOG.Galaxy",
+        "Name": "GOG Galaxy",
+        "Domain": "gog.com",
+        "Aliases": [
+            "GOG Galaxy",
+            "GOG.Galaxy"
+        ],
+        "Category": "Game Launchers",
+        "IDn": 108,
+        "Url": "https://www.gog.com/galaxy",
+        "IconUrl": "https://gogalaxy.gog-statics.com/favicons/android-icon-192x192.png"
+    },
+    {
+        "ID": "Playnite.Playnite",
+        "Name": "Playnite",
+        "Domain": "playnite.link",
+        "Aliases": [
+            "Playnite",
+            "Playnite.Playnite"
+        ],
+        "Category": "Game Launchers",
+        "IDn": 109,
+        "IconUrl": "https://raw.githubusercontent.com/JosefNemec/Playnite/master/source/Playnite.DesktopApp/Themes/Desktop/Default/Images/applogo.png"
+    },
+    {
+        "ID": "qBittorrent.qBittorrent",
+        "Name": "qBittorrent",
+        "Domain": "qbittorrent.org",
+        "Aliases": [
+            "qBittorrent",
+            "qBittorrent.qBittorrent"
+        ],
+        "Category": "File Transfer & Cloud",
+        "IDn": 110,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/qbittorrent.png"
+    },
+    {
+        "ID": "LocalSend.LocalSend",
+        "Name": "LocalSend",
+        "Domain": "localsend.org",
+        "Aliases": [
+            "LocalSend",
+            "LocalSend.LocalSend"
+        ],
+        "Category": "File Transfer & Cloud",
+        "IDn": 111,
+        "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/assets/img/logo-512.png"
+    },
+    {
+        "ID": "WinSCP.WinSCP",
+        "Name": "WinSCP",
+        "Domain": "winscp.net",
+        "Aliases": [
+            "WinSCP",
+            "WinSCP.WinSCP"
+        ],
+        "Category": "File Transfer & Cloud",
+        "IDn": 112
+    },
+    {
+        "ID": "TimKosse.FileZilla.Client",
+        "Name": "FileZilla",
+        "Domain": "filezilla-project.org",
+        "Aliases": [
+            "FileZilla Client",
+            "FileZilla",
+            "TimKosse.FileZilla.Client"
+        ],
+        "Category": "File Transfer & Cloud",
+        "IDn": 113,
+        "FallbackUrl": "https://filezilla-project.org/download.php?platform=win64",
+        "Url": "https://filezilla-project.org/download.php?platform=win64",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/filezilla.png"
+    },
+    {
+        "ID": "Rclone.Rclone",
+        "Name": "Rclone",
+        "Domain": "rclone.org",
+        "Aliases": [
+            "Rclone",
+            "Rclone.Rclone"
+        ],
+        "Category": "File Transfer & Cloud",
+        "IDn": 114,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rclone.png"
+    }
 ]
 '@
 $AppCatalog = ConvertFrom-Json $appsRawJson
@@ -1540,8 +1711,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="DuckUtil - Cyber Obsidian Suite"
-    Width="1280" Height="890"
-    MinWidth="1200" MinHeight="820"
+    Width="1260" Height="780"
+    MinWidth="980" MinHeight="620"
     WindowStartupLocation="CenterScreen"
     Background="#090B10"
     Foreground="#F8FAFC"
@@ -1890,7 +2061,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
-                    <WrapPanel ItemWidth="590" Orientation="Horizontal">
+                    <UniformGrid Columns="2" VerticalAlignment="Top">
                         <!-- Card 1: File Hệ Thống -->
                         <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
@@ -1957,14 +2128,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
-                    </WrapPanel>
+                    </UniformGrid>
                 </ScrollViewer>
             </TabItem>
 
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
-                    <WrapPanel ItemWidth="390" Orientation="Horizontal">
+                    <UniformGrid Columns="3" VerticalAlignment="Top">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
                         <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
                             <StackPanel>
@@ -2014,7 +2185,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
                             </StackPanel>
                         </Border>
-                    </WrapPanel>
+                    </UniformGrid>
                 </ScrollViewer>
             </TabItem>
         </TabControl>
@@ -2053,7 +2224,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0,0,0,5">
+                <Grid Grid.Row="0" Margin="0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Border Background="#EF4444" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
                         <Border Background="#F59E0B" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
@@ -2071,7 +2242,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 Cursor="Hand" FontSize="11" Padding="6,2"/>
                     </StackPanel>
                 </Grid>
-                <TextBox Grid.Row="1" Name="txtLog" Visibility="Collapsed" Background="Transparent" Foreground="#34D399"
+                <TextBox Grid.Row="1" Name="txtLog" Visibility="Collapsed" Margin="0,6,0,0" Background="Transparent" Foreground="#34D399"
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0" CaretBrush="#38BDF8"
@@ -2243,6 +2414,134 @@ function Get-CleanAppName {
     return $clean.Trim()
 }
 
+function Get-CharDisplayWidth {
+    param([int]$Code)
+    # CJK, Hangul, Kana, Fullwidth & Emoji chiếm 2 cột hiển thị trong terminal Windows/winget
+    if (
+        ($Code -ge 0x1100 -and $Code -le 0x115F) -or
+        ($Code -eq 0x2329 -or $Code -eq 0x232A) -or
+        ($Code -ge 0x2E80 -and $Code -le 0x303E) -or
+        ($Code -ge 0x3041 -and $Code -le 0x33FF) -or
+        ($Code -ge 0x3400 -and $Code -le 0x4DBF) -or
+        ($Code -ge 0x4E00 -and $Code -le 0xA4CF) -or
+        ($Code -ge 0xA960 -and $Code -le 0xA97F) -or
+        ($Code -ge 0xAC00 -and $Code -le 0xD7AF) -or
+        ($Code -ge 0xF900 -and $Code -le 0xFAFF) -or
+        ($Code -ge 0xFE10 -and $Code -le 0xFE19) -or
+        ($Code -ge 0xFE30 -and $Code -le 0xFE6F) -or
+        ($Code -ge 0xFF01 -and $Code -le 0xFF60) -or
+        ($Code -ge 0xFFE0 -and $Code -le 0xFFE6) -or
+        ($Code -ge 0x1F300 -and $Code -le 0x1FAFF)
+    ) { return 2 }
+    return 1
+}
+
+function Get-SliceByDisplayWidth {
+    param([string]$Line, [int[]]$Offsets)
+    # Cắt chuỗi theo độ rộng cột console để các dòng tiếng Trung/Nhật/Hàn không làm lệch cột ID/Version
+    $idIdx    = if ($Offsets.Count -ge 2) { $Offsets[1] } else { -1 }
+    $verIdx   = if ($Offsets.Count -ge 3) { $Offsets[2] } else { -1 }
+    $availIdx = if ($Offsets.Count -ge 4) { $Offsets[3] } else { -1 }
+    $srcIdx   = if ($Offsets.Count -ge 5) { $Offsets[4] } else { -1 }
+
+    $targets = @($idIdx, $verIdx, $availIdx, $srcIdx)
+    $charPos = @(-1, -1, -1, -1)
+    $w = 0
+    for ($i = 0; $i -lt $Line.Length; $i++) {
+        for ($t = 0; $t -lt 4; $t++) {
+            if ($charPos[$t] -lt 0 -and $targets[$t] -ge 0 -and $w -ge $targets[$t]) {
+                $charPos[$t] = $i
+            }
+        }
+        $ch = $Line[$i]
+        if ([char]::IsHighSurrogate($ch) -and ($i + 1) -lt $Line.Length -and [char]::IsLowSurrogate($Line[$i + 1])) {
+            $cp = [char]::ConvertToUtf32($ch, $Line[$i + 1])
+            $w += Get-CharDisplayWidth $cp
+            $i++
+        } else {
+            $w += Get-CharDisplayWidth ([int]$ch)
+        }
+    }
+
+    $cId    = $charPos[0]
+    $cVer   = $charPos[1]
+    $cAvail = $charPos[2]
+    $cSrc   = $charPos[3]
+
+    $appName = ""; $appId = ""; $version = ""; $avail = ""
+    if ($cId -gt 0 -and $Line.Length -gt $cId) {
+        $appName = $Line.Substring(0, $cId).Trim()
+        if ($cVer -gt $cId -and $Line.Length -gt $cVer) {
+            $appId = $Line.Substring($cId, $cVer - $cId).Trim()
+            if ($cAvail -gt $cVer -and $Line.Length -gt $cAvail) {
+                $version = $Line.Substring($cVer, $cAvail - $cVer).Trim()
+                if ($cSrc -gt $cAvail -and $Line.Length -gt $cSrc) {
+                    $avail = $Line.Substring($cAvail, $cSrc - $cAvail).Trim()
+                } else {
+                    $avail = $Line.Substring($cAvail).Trim()
+                }
+            } else {
+                $version = $Line.Substring($cVer).Trim()
+            }
+        } else {
+            $appId = $Line.Substring($cId).Trim()
+        }
+    }
+    return @($appName, $appId, $version, $avail)
+}
+
+function Set-PreferredMapEntry {
+    param($Map, [string]$Key, $Candidate)
+    if ([string]::IsNullOrWhiteSpace($Key)) { return }
+    if (-not $Map.ContainsKey($Key)) {
+        $Map[$Key] = $Candidate
+        return
+    }
+    $cur = $Map[$Key]
+    $preferUpdate = (-not $cur.HasUpdate -and $Candidate.HasUpdate)
+    $preferNativeId = ($cur.HasUpdate -eq $Candidate.HasUpdate -and $cur.ID -match '^(ARP|MSIX)\\' -and $Candidate.ID -notmatch '^(ARP|MSIX)\\')
+    if ($preferUpdate -or $preferNativeId) {
+        $Map[$Key] = $Candidate
+    }
+}
+
+function Test-MatchCompatible {
+    param($TargetApp, $Item)
+    if (-not $TargetApp -or -not $Item) { return $false }
+
+    $tName = [string]$TargetApp.Name
+    $tId   = [string]$TargetApp.ID
+    $iName = [string]$Item.Name
+    $iId   = [string]$Item.ID
+
+    # Chặn khớp chéo giữa bản thường và bản Preview
+    $tPrev = ($tName -match 'Preview') -or ($tId -match 'Preview')
+    $iPrev = ($iName -match 'Preview') -or ($iId -match 'Preview')
+    if ($tPrev -ne $iPrev) { return $false }
+
+    # Chặn gói UWP/VCLibs khớp nhầm vào Desktop Redistributable
+    if (($tId -match 'VCRedist' -or $tName -match 'VC\+\+') -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
+        return $false
+    }
+
+    # Kiểm tra đồng nhất kiến trúc x64 / x86 / arm64 (KHÔNG xét nhánh registry ARP\Machine\X86 vì app x64 vẫn có thể ghi khóa WOW6432Node)
+    $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
+             elseif ($tName -match '\(x86\)|\.x86' -or $tId -match '\.x86$') { "x86" }
+             elseif ($tName -match '\(arm64\)|\.arm64' -or $tId -match '\.arm64$') { "arm64" }
+             else { "" }
+
+    if ($tArch) {
+        $idForArch = if ($iId -match '^(ARP|MSIX)\\') { "" } else { $iId }
+        $iArch = if ($iName -match '(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x64$') { "x64" }
+                 elseif ($iName -match '(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x86$') { "x86" }
+                 elseif ($iName -match '(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])' -or $idForArch -match '\.arm64$') { "arm64" }
+                 else { "" }
+        if ($iArch -and $iArch -ne $tArch) { return $false }
+    }
+
+    return $true
+}
+
 function Scan-And-ColorizeApps {
     Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
     if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
@@ -2278,16 +2577,22 @@ function Scan-And-ColorizeApps {
         # Đọc dữ liệu bất đồng bộ đồng thời cả 2 luồng stdout và stderr để tránh tràn buffer gây deadlock
         $readTask = $p.StandardOutput.ReadToEndAsync()
         $errTask  = $p.StandardError.ReadToEndAsync()
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
         while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+            if ($sw.Elapsed.TotalSeconds -gt 45) {
+                try { if (-not $p.HasExited) { $p.Kill() } } catch {}
+                Log-Text "[⚠️] Lệnh winget list vượt quá thời gian chờ (45s)."
+                break
+            }
             [System.Windows.Forms.Application]::DoEvents()
             Start-Sleep -Milliseconds 30
         }
-        $rawList = $readTask.Result
-        $errList = $errTask.Result
-        $p.WaitForExit()
+        if ($readTask.IsCompleted) { $rawList = $readTask.Result }
+        if ($errTask.IsCompleted) { $errList = $errTask.Result }
+        try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
 
         # Kiểm tra ExitCode của winget list
-        if ($p.ExitCode -ne 0) {
+        if ($p.HasExited -and $p.ExitCode -ne 0) {
             Log-Text "[⚠️] WinGet list kết thúc với mã $($p.ExitCode)."
             if (-not [string]::IsNullOrWhiteSpace($errList)) {
                 Log-Text "[stderr] $errList"
@@ -2305,8 +2610,15 @@ function Scan-And-ColorizeApps {
         return
     }
 
-    # Phân tích danh sách đã cài đặt từ winget
-    $lines = $rawList -split "`r?`n"
+    # Chuẩn hóa từng dòng (loại bỏ \r cuối dòng \r\n, đồng thời loại bỏ thanh spinner \r trước nội dung thực)
+    $rawLines = $rawList -split "`n"
+    $lines = [System.Collections.Generic.List[string]]::new($rawLines.Count)
+    foreach ($rl in $rawLines) {
+        $cleanLine = $rl.TrimEnd("`r")
+        if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+        $lines.Add($cleanLine)
+    }
+
     $separatorIndex = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
         if ($lines[$i] -match '^---\s*---' -or $lines[$i] -match '^---+$') {
@@ -2315,17 +2627,15 @@ function Scan-And-ColorizeApps {
         }
     }
 
-    $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $installedList = [System.Collections.Generic.List[object]]::new()
 
     if ($separatorIndex -gt 0) {
         $separatorLine = $lines[$separatorIndex]
         $headerLine    = $lines[$separatorIndex - 1]
 
-        # Xác định tọa độ bắt đầu của từng cột theo dấu gạch ngang (---) hoặc khoảng trắng kép giữa các tiêu đề cột
-        # Đảm bảo 100% tương thích trên mọi ngôn ngữ Windows (Việt, Anh, Nhật, Trung...) mà không phụ thuộc chuỗi "Version"/"Available"
         $colOffsets = @()
         if ($separatorLine -match '---+\s+---+') {
             $dashMatches = [System.Text.RegularExpressions.Regex]::Matches($separatorLine, '-+')
@@ -2344,12 +2654,12 @@ function Scan-And-ColorizeApps {
             $line = $lines[$j]
             if ([string]::IsNullOrWhiteSpace($line)) { continue }
 
-            $appName  = ""
-            $appId    = ""
-            $version  = ""
-            $avail    = ""
+            $appName = ""; $appId = ""; $version = ""; $avail = ""
 
-            if ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
+            if ($idIdx -gt 0 -and $line -match '[^\x00-\xFF]') {
+                $sliced = Get-SliceByDisplayWidth -Line $line -Offsets $colOffsets
+                $appName = $sliced[0]; $appId = $sliced[1]; $version = $sliced[2]; $avail = $sliced[3]
+            } elseif ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
                 $appName = $line.Substring(0, $idIdx).Trim()
                 if ($verIdx -gt $idIdx -and $line.Length -gt $verIdx) {
                     $appId = $line.Substring($idIdx, $verIdx - $idIdx).Trim()
@@ -2367,7 +2677,6 @@ function Scan-And-ColorizeApps {
                     $appId = $line.Substring($idIdx).Trim()
                 }
             } else {
-                # Fallback tách cột bằng khoảng trắng kép
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
                 if ($cols.Count -ge 2) {
                     $appName = $cols[0].Trim()
@@ -2390,9 +2699,9 @@ function Scan-And-ColorizeApps {
                 }
 
                 $installedList.Add($itemObj)
-                if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
-                if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
+                Set-PreferredMapEntry $idMap $appId $itemObj
+                Set-PreferredMapEntry $nameMap $appName $itemObj
+                if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
             }
         }
     } else {
@@ -2418,9 +2727,9 @@ function Scan-And-ColorizeApps {
                     }
 
                     $installedList.Add($itemObj)
-                    if (-not $idMap.ContainsKey($appId)) { $idMap[$appId] = $itemObj }
-                    if (-not [string]::IsNullOrWhiteSpace($appName) -and -not $nameMap.ContainsKey($appName)) { $nameMap[$appName] = $itemObj }
-                    if ($clean.Length -ge 3 -and -not $cleanNameMap.ContainsKey($clean)) { $cleanNameMap[$clean] = $itemObj }
+                    Set-PreferredMapEntry $idMap $appId $itemObj
+                    Set-PreferredMapEntry $nameMap $appName $itemObj
+                    if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
                 }
             }
         }
@@ -2446,7 +2755,7 @@ function Scan-And-ColorizeApps {
         }
 
         # 2. Exact Name match (O(1))
-        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match)) {
+        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
@@ -2459,12 +2768,12 @@ function Scan-And-ColorizeApps {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
-                if ($nameMap.TryGetValue($alias, [ref]$match)) {
+                if ($nameMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
                 $cleanAlias = Get-CleanAppName $alias
-                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match)) {
+                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
@@ -2473,21 +2782,18 @@ function Scan-And-ColorizeApps {
 
         # 4. Clean Name match (O(1))
         $cleanTarget = Get-CleanAppName $targetApp.Name
-        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match)) {
+        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 5. Fuzzy / Token boundary matching: siết chặt yêu cầu độ dài >= 4, dùng ranh giới từ (\b), và chặn khớp chéo Preview
+        # 5. Fuzzy / Non-Alphanumeric Boundary Matching (khớp chuẩn cả chuỗi chứa dấu +, ., (x64), (x86))
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
-                $pattern = "\b" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "\b"
+                $pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
                 foreach ($item in $installedList) {
-                    # Chặn khớp chéo giữa bản thường và bản Preview
-                    if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
-                    if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
-
+                    if (-not (Test-MatchCompatible $targetApp $item)) { continue }
                     if ($item.ID -match $pattern -or $item.Name -match $pattern) {
                         $lookupCache[$targetId] = $item
                         return $item
@@ -2497,12 +2803,9 @@ function Scan-And-ColorizeApps {
         }
 
         if ($cleanTarget.Length -ge 4) {
-            $patternClean = "\b" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "\b"
+            $patternClean = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
             foreach ($item in $installedList) {
-                # Chặn khớp chéo giữa bản thường và bản Preview
-                if (($item.Name -match 'Preview' -or $item.ID -match 'Preview') -and ($targetApp.Name -notmatch 'Preview')) { continue }
-                if (($targetApp.Name -match 'Preview') -and ($item.Name -notmatch 'Preview' -and $item.ID -notmatch 'Preview')) { continue }
-
+                if (-not (Test-MatchCompatible $targetApp $item)) { continue }
                 if ($item.CleanName -match $patternClean) {
                     $lookupCache[$targetId] = $item
                     return $item
@@ -2522,7 +2825,9 @@ function Scan-And-ColorizeApps {
     foreach ($row in $allItemBorders) {
         $app = $row.Tag.App
         $grid = $row.Child
-        $tb = $grid.Children[2]
+        $tb = if ($row.Tag.NameText) { $row.Tag.NameText } else { $grid.Children[2] }
+        $updateBadge = $row.Tag.UpdateBadge
+        $updateText  = $row.Tag.UpdateText
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
 
         $info = Find-InstalledAppFast $app
@@ -2534,24 +2839,32 @@ function Scan-And-ColorizeApps {
             $row.Tag.InstalledVersion = $info.Version
 
             if ($info.HasUpdate -eq $true) {
-                # ── 🔴 BẢN CŨ: Tên ĐỎ + Gạch chân mỏng (Không tô nền đỏ) ──
+                # ── 🔴 BẢN CŨ: Tên ĐỎ + Pill phiên bản mới gọn gàng (không cắt mất tên App) ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
                 $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
-                $updateBadge = if ($info.Available) { " (Có bản: $($info.Available))" } else { " (Có bản mới)" }
-                $tb.Text = "$($app.Name)  $updateBadge"
+                $tb.Text = $app.Name
                 $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
-                $tb.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                if ($updateBadge -and $updateText) {
+                    $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
+                    $updateBadge.Visibility = [System.Windows.Visibility]::Visible
+                }
+                $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = $tip
+                $row.ToolTip = $tip
             } else {
-                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ (Không ghi 'Mới nhất', không tô nền xanh) ──
+                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
                 $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushLatestFg
                 $tb.Text = $app.Name
                 $tb.TextDecorations = $null
-                $tb.ToolTip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
+                $tip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                $tb.ToolTip = $tip
+                $row.ToolTip = $tip
             }
         } else {
             # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
@@ -2562,7 +2875,10 @@ function Scan-And-ColorizeApps {
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
-            $tb.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
+            $tip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            $tb.ToolTip = $tip
+            $row.ToolTip = $tip
         }
     }
 
@@ -2689,7 +3005,7 @@ function Invoke-PnpDriverStoreCleanup {
     }
 }
 
-function Invoke-DriverStoreCleanup {
+function Invoke-DismComponentCleanup {
     <#
     .SYNOPSIS
         Dọn dẹp và giải phóng kho linh kiện Windows qua DISM Component Cleanup.
@@ -2903,6 +3219,18 @@ function Clear-SystemEventLogs {
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
+# Tự động co kích thước cửa sổ vừa với vùng làm việc màn hình (hỗ trợ laptop / DPI 125%-150%)
+try {
+    $wa = [System.Windows.SystemParameters]::WorkArea
+    if ($wa.Width -gt 0 -and $window.Width -gt ($wa.Width - 24)) {
+        $window.Width = [math]::Max($window.MinWidth, $wa.Width - 24)
+    }
+    if ($wa.Height -gt 0 -and $window.Height -gt ($wa.Height - 24)) {
+        $window.Height = [math]::Max(560, $wa.Height - 24)
+        $window.MinHeight = [math]::Min($window.MinHeight, $window.Height)
+    }
+} catch {}
+
 # Các Control chính
 $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
@@ -2936,10 +3264,13 @@ $script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
 $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushLinkBtnHoverFg.Freeze()
 
-# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng (Frosted Badge & Glow)
-$script:brushIconBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(35, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
-$script:brushIconBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(50, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
-$script:cornerIconBadge       = New-Object System.Windows.CornerRadius(4)
+# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng & Update Pill
+$script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(52, 235, 240, 250)); $script:brushIconBadgeBg.Freeze()
+$script:brushIconBadgeBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(72, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
+$script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
+$script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(40, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
+$script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(115, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
+$script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
 
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
 $marginCardBorder = New-Object System.Windows.Thickness(5)
@@ -2958,29 +3289,47 @@ $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
 if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
     try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
 } else {
-    # Tự động dọn dẹp các icon cache cũ bị sai/trùng lặp (230B Microsoft generic, 588B GitHub Octocat)
+    # Tự động dọn dẹp các icon cache rỗng / bị hỏng / quá nhỏ từ phiên bản cũ
     try {
         Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
-            $_.Length -eq 230 -or $_.Length -eq 588
+            $_.Length -le 230 -or $_.Length -eq 588
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Tự động dọn dẹp cache cho các app đã được nâng cấp URL/Domain chính hãng (v2.2)
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v2.2.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn HD (v3.0) đồng bộ nguồn chính hãng
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.0.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
-            $staleIcons = @(
-                "Google.Chrome.png", "Mozilla.Firefox.png", "Opera.OperaGX.png", 
-                "GoLang.Go.png", "RARLab.WinRAR.png", "VideoLAN.VLC.png", 
-                "EpicGames.EpicGamesLauncher.png", "GIMP.GIMP.png", 
-                "Inkscape.Inkscape.png", "CodecGuide.K-LiteCodecPack.Mega.png"
-            )
-            foreach ($stale in $staleIcons) {
-                $stalePath = Join-Path $iconsCacheDir $stale
-                if (Test-Path -LiteralPath $stalePath) { Remove-Item -LiteralPath $stalePath -Force -ErrorAction SilentlyContinue }
-            }
-            Set-Content -LiteralPath $cacheMarker -Value "v2.2" -Force -ErrorAction SilentlyContinue
+            Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.0" -Force -ErrorAction SilentlyContinue
         } catch {}
+    }
+}
+
+function Save-BitmapToCacheAtomic {
+    param($BitmapSource, [string]$DestPath)
+    if (-not $BitmapSource -or [string]::IsNullOrWhiteSpace($DestPath) -or (Test-Path -LiteralPath $DestPath)) { return }
+    try {
+        if ($BitmapSource.PixelWidth -le 0 -or $BitmapSource.PixelHeight -le 0) { return }
+        $tmpPath = "$DestPath.$([guid]::NewGuid().ToString('N')).tmp"
+        $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+        $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($BitmapSource))
+        $fs = $null
+        try {
+            $fs = [System.IO.File]::OpenWrite($tmpPath)
+            $encoder.Save($fs)
+        } finally {
+            if ($fs) { $fs.Dispose() }
+        }
+        if ((Test-Path -LiteralPath $tmpPath) -and (Get-Item -LiteralPath $tmpPath).Length -gt 64) {
+            Move-Item -LiteralPath $tmpPath -Destination $DestPath -Force -ErrorAction SilentlyContinue
+        } elseif (Test-Path -LiteralPath $tmpPath) {
+            Remove-Item -LiteralPath $tmpPath -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        if ($tmpPath -and (Test-Path -LiteralPath $tmpPath)) {
+            Remove-Item -LiteralPath $tmpPath -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -2988,13 +3337,19 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
 $script:isActionRunning = $false
 
 function Invoke-GuardedAction {
-    param([string]$ActionName, [scriptblock]$Action)
+    param(
+        [string]$ActionName,
+        [scriptblock]$Action,
+        [switch]$DeferExpand
+    )
     if ($script:isActionRunning) {
         Log-Text "[⚠️] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
         return
     }
-    # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
-    Expand-TerminalLog
+    if (-not $DeferExpand) {
+        # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
+        Expand-TerminalLog
+    }
     $script:isActionRunning = $true
     try {
         & $Action
@@ -3160,7 +3515,6 @@ $script:colHeights = @(0, 0, 0, 0)
 # ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
 $allItemBorders  = [System.Collections.Generic.List[object]]::new()
-$categoryCardMap = [System.Collections.Generic.Dictionary[object, System.Collections.Generic.List[object]]]::new()
 
 $categories = $AppCatalog | Select-Object -ExpandProperty Category -Unique
 
@@ -3190,7 +3544,6 @@ $cardCols = @(
 # Cache BitmapImage từ xa theo URL trong RAM để cắt giảm triệt để request mạng trùng lặp
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-$catIndex = 0
 foreach ($cat in $categories) {
     $cardBorder = New-Object System.Windows.Controls.Border
     $cardBorder.Background = $script:brushCardBg
@@ -3204,7 +3557,6 @@ foreach ($cat in $categories) {
 
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
-    $rowsInCard = [System.Collections.Generic.List[object]]::new()
 
     # Header Card
     $headerGrid = New-Object System.Windows.Controls.Grid
@@ -3269,10 +3621,10 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Container Icon Huy hiệu Frosted Glass & Hiệu ứng phát sáng làm nổi Logo tối màu trên nền đen
+        # 2. Container Icon Huy hiệu Frosted Glass làm nổi Logo trên nền tối
         $iconBadge = New-Object System.Windows.Controls.Border
-        $iconBadge.Width = 20
-        $iconBadge.Height = 20
+        $iconBadge.Width = 22
+        $iconBadge.Height = 22
         $iconBadge.CornerRadius = $script:cornerIconBadge
         $iconBadge.Background = $script:brushIconBadgeBg
         $iconBadge.BorderBrush = $script:brushIconBadgeBorder
@@ -3294,17 +3646,11 @@ foreach ($cat in $categories) {
 
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
+        $img.Stretch = [System.Windows.Media.Stretch]::Uniform
+        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $img.Visibility = [System.Windows.Visibility]::Collapsed
-
-        # Hiệu ứng Outer Rim Glow (hào quang viền trắng) giúp logo màu tối (Notion, Steam, 7-Zip, Obsidian...) nổi bật 100% trên nền đen
-        $imgGlow = New-Object System.Windows.Media.Effects.DropShadowEffect
-        $imgGlow.Color = [System.Windows.Media.Color]::FromRgb(255, 255, 255)
-        $imgGlow.BlurRadius = 3
-        $imgGlow.ShadowDepth = 0
-        $imgGlow.Opacity = 0.65
-        $img.Effect = $imgGlow
 
         $iconInnerGrid.Children.Add($img) | Out-Null
         $iconBadge.Child = $iconInnerGrid
@@ -3317,15 +3663,19 @@ foreach ($cat in $categories) {
                 $bmp.UriSource = New-Object System.Uri($localIconPath, [System.UriKind]::Absolute)
                 $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
                 $bmp.EndInit()
-                $img.Source = $bmp
-                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                $img.Visibility = [System.Windows.Visibility]::Visible
-            } catch {}
+                if ($bmp.PixelWidth -gt 0) {
+                    $img.Source = $bmp
+                    $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                    $img.Visibility = [System.Windows.Visibility]::Visible
+                }
+            } catch {
+                try { Remove-Item -LiteralPath $localIconPath -Force -ErrorAction SilentlyContinue } catch {}
+            }
         } else {
             $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
                 $app.IconUrl
             } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=32"
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=64"
             } else {
                 $null
             }
@@ -3345,35 +3695,23 @@ foreach ($cat in $categories) {
                         $script:remoteBmpCache[$remoteIconTarget] = $bmp
                     }
 
-                    # Gắn sự kiện DownloadCompleted an toàn với GetNewClosure() để lưu cache không bị đè icon
                     $cacheClosure = {
                         param($sender, $e)
                         try {
-                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                            $img.Visibility = [System.Windows.Visibility]::Visible
-                            if ($sender -and -not (Test-Path -LiteralPath $localIconPath)) {
-                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($sender))
-                                $fs = [System.IO.File]::OpenWrite($localIconPath)
-                                $encoder.Save($fs)
-                                $fs.Close()
+                            if ($sender -and $sender.PixelWidth -gt 0) {
+                                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                                $img.Visibility = [System.Windows.Visibility]::Visible
+                                Save-BitmapToCacheAtomic -BitmapSource $sender -DestPath $localIconPath
                             }
                         } catch {}
                     }.GetNewClosure()
 
                     if (-not $bmp.IsDownloading) {
-                        # Đã có sẵn trong RAM cache hoặc đã tải xong
-                        $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                        $img.Visibility = [System.Windows.Visibility]::Visible
-                        $img.Source = $bmp
-                        if (-not (Test-Path -LiteralPath $localIconPath)) {
-                            try {
-                                $encoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
-                                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
-                                $fs = [System.IO.File]::OpenWrite($localIconPath)
-                                $encoder.Save($fs)
-                                $fs.Close()
-                            } catch {}
+                        if ($bmp.PixelWidth -gt 0) {
+                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+                            $img.Visibility = [System.Windows.Visibility]::Visible
+                            $img.Source = $bmp
+                            Save-BitmapToCacheAtomic -BitmapSource $bmp -DestPath $localIconPath
                         }
                     } else {
                         $bmp.Add_DownloadCompleted($cacheClosure)
@@ -3385,7 +3723,13 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
         $rowGrid.Children.Add($iconBadge) | Out-Null
 
-        # 3. Tên ứng dụng (Căn chỉnh thẳng hàng tuyệt đối với lề trái đồng đều)
+        # 3. Tên ứng dụng + Badge phiên bản mới gọn gàng (tránh cắt tên App khi cột hẹp)
+        $nameAreaGrid = New-Object System.Windows.Controls.Grid
+        $nameCol0 = New-Object System.Windows.Controls.ColumnDefinition; $nameCol0.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $nameCol1 = New-Object System.Windows.Controls.ColumnDefinition; $nameCol1.Width = [System.Windows.GridLength]::Auto
+        $nameAreaGrid.ColumnDefinitions.Add($nameCol0) | Out-Null
+        $nameAreaGrid.ColumnDefinitions.Add($nameCol1) | Out-Null
+
         $nameText = New-Object System.Windows.Controls.TextBlock
         $nameText.Text = $app.Name
         $nameText.Foreground = $script:brushTextWhite
@@ -3396,10 +3740,44 @@ foreach ($cat in $categories) {
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
         $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
-        [System.Windows.Controls.Grid]::SetColumn($nameText, 2)
-        $rowGrid.Children.Add($nameText) | Out-Null
+        $rowBorder.ToolTip = $nameText.ToolTip
+        [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
+        $nameAreaGrid.Children.Add($nameText) | Out-Null
+
+        $updateBadge = New-Object System.Windows.Controls.Border
+        $updateBadge.Background = $script:brushUpdateBadgeBg
+        $updateBadge.BorderBrush = $script:brushUpdateBadgeBorder
+        $updateBadge.BorderThickness = $thicknessOne
+        $updateBadge.CornerRadius = $script:cornerIconBadge
+        $updateBadge.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
+        $updateBadge.Margin = New-Object System.Windows.Thickness(2, 0, 4, 0)
+        $updateBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+        $updateBadge.MaxWidth = 86
+
+        $updateText = New-Object System.Windows.Controls.TextBlock
+        $updateText.FontSize = 9.5
+        $updateText.FontWeight = [System.Windows.FontWeights]::Bold
+        $updateText.Foreground = $script:brushUpdateBadgeFg
+        $updateText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $updateBadge.Child = $updateText
+        [System.Windows.Controls.Grid]::SetColumn($updateBadge, 1)
+        $nameAreaGrid.Children.Add($updateBadge) | Out-Null
+
+        $rowBorder.Tag["NameText"]    = $nameText
+        $rowBorder.Tag["UpdateBadge"] = $updateBadge
+        $rowBorder.Tag["UpdateText"]  = $updateText
+
+        [System.Windows.Controls.Grid]::SetColumn($nameAreaGrid, 2)
+        $rowGrid.Children.Add($nameAreaGrid) | Out-Null
 
         # 4. Button Link Website ngoài cùng bên phải (Icon Link 🔗 chuẩn, căn thẳng hàng)
+        $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
+            $app.Url
+        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            if ($app.Domain.StartsWith("http")) { $app.Domain } else { "https://$($app.Domain)" }
+        } else { "" }
+
         $linkBtn = New-Object System.Windows.Controls.Border
         $linkBtn.Width = 22
         $linkBtn.Height = 18
@@ -3411,8 +3789,8 @@ foreach ($cat in $categories) {
         $linkBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = New-Object System.Windows.Thickness(0)
-        $linkBtn.ToolTip = "Mở trang chủ chính thức: https://$($app.Domain)"
-        $linkBtn.Tag = $app.Domain
+        $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
+        $linkBtn.Tag = $targetPageUrl
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
         $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
@@ -3491,12 +3869,10 @@ foreach ($cat in $categories) {
         $rowBorder.Child = $rowGrid
         $cardStack.Children.Add($rowBorder) | Out-Null
         $allItemBorders.Add($rowBorder)
-        $rowsInCard.Add($rowBorder)
     }
 
     $cardBorder.Child = $cardStack
-    $categoryCardMap[$cardBorder] = $rowsInCard
-    
+
     # Trọng số chiều cao ước tính: 48px (Header card + Separator) + (Số dòng app * 28px) + 10px (Margin)
     $cardEstimatedHeight = 58 + ($appsInCat.Count * 28)
 
@@ -3517,7 +3893,6 @@ foreach ($cat in $categories) {
 
     # Cập nhật chiều cao tích lũy của cột
     $script:colHeights[$targetColIndex] += $cardEstimatedHeight
-    $catIndex++
 }
 
 # ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──
@@ -3527,47 +3902,50 @@ Register-Click "btnScanInstalled" {
     }
 }
 
-Register-Click "btnInstall" {
-    Invoke-GuardedAction "Cài đặt ứng dụng" {
-        $selected = [System.Collections.Generic.List[object]]::new()
+function Clear-AllCheckBoxes {
+    $script:suppressSelectionCount = $true
+    try {
         foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -eq $true) {
-                $selected.Add($cb.Tag.App)
+            if ($cb.IsChecked -ne $false) {
+                $cb.IsChecked = $false
             }
         }
+    } finally {
+        $script:suppressSelectionCount = $false
+    }
+    Update-SelectionCount
+}
 
-        if ($selected.Count -eq 0) {
-            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
-            return
+function Invoke-GitHubAssetInstall {
+    param($App)
+    try {
+        Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
+        $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
+        $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
+        if (-not $asset) {
+            Log-Text "   [!] Không tìm thấy bộ cài phù hợp trên GitHub Release."
+            return -1
         }
-
-        $total = $selected.Count
-        $idx = 0
-        Log-Text "=========================================================="
-        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
-        Log-Text "=========================================================="
-
-        foreach ($app in $selected) {
-            $idx++
-            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
-            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
-
-            $code = Run-CliStream "winget" "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-            if ($code -eq 0) {
-                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+        $dlPath = Join-Path $env:TEMP $asset.name
+        Log-Text "   -> Đang tải $($asset.name)..."
+        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
+        try {
+            if ($dlPath -match '\.msi$') {
+                return (Run-CliStream "msiexec.exe" "/i `"$dlPath`" /qn /norestart")
             } else {
-                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                return (Run-CliStream $dlPath "--silent-install")
             }
+        } finally {
+            if (Test-Path -LiteralPath $dlPath) { Remove-Item -LiteralPath $dlPath -Force -ErrorAction SilentlyContinue }
         }
-        if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
-        if ($progressBar) { $progressBar.Value = 100 }
-        Scan-And-ColorizeApps
+    } catch {
+        Log-Text "   [!] Lỗi tải/cài từ GitHub: $($_.Exception.Message)"
+        return -1
     }
 }
 
-Register-Click "btnUninstall" {
-    Invoke-GuardedAction "Gỡ cài đặt" {
+Register-Click "btnInstall" {
+    Invoke-GuardedAction "Cài đặt ứng dụng" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -3576,6 +3954,60 @@ Register-Click "btnUninstall" {
         }
 
         if ($selectedTags.Count -eq 0) {
+            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
+            return
+        }
+
+        $total = $selectedTags.Count
+        $idx = 0
+        Log-Text "=========================================================="
+        Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "=========================================================="
+
+        foreach ($tag in $selectedTags) {
+            $idx++
+            $app = $tag.App
+            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+
+            if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+                $code = Invoke-GitHubAssetInstall -App $app
+            } else {
+                $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
+                $code = Run-CliStream "winget" $wgArgs
+            }
+
+            if ($code -eq 0) {
+                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+            } else {
+                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                    Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                    try { Start-Process $app.FallbackUrl } catch {}
+                }
+            }
+        }
+        Update-SelectionCount
+        if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
+        if ($progressBar) { $progressBar.Value = 100 }
+        Scan-And-ColorizeApps
+    }
+}
+
+Register-Click "btnUninstall" {
+    Invoke-GuardedAction "Gỡ cài đặt" -DeferExpand {
+        $selectedTags = [System.Collections.Generic.List[object]]::new()
+        foreach ($cb in $allCheckBoxes) {
+            if ($cb.IsChecked -eq $true) {
+                $selectedTags.Add($cb.Tag)
+            }
+        }
+
+        if ($selectedTags.Count -eq 0) {
+            Expand-TerminalLog
             Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
             return
         }
@@ -3588,6 +4020,7 @@ Register-Click "btnUninstall" {
         )
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
+        Expand-TerminalLog
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
@@ -3597,20 +4030,26 @@ Register-Click "btnUninstall" {
         foreach ($tag in $selectedTags) {
             $idx++
             $app = $tag.App
-            # Ưu tiên sử dụng DetectedId thực tế phát hiện được qua SmartMatcher (Section 3.2)
+            # Ưu tiên sử dụng DetectedId thực tế phát hiện được qua SmartMatcher
             $uninstallId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
 
             if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
             if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
             Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (Mã gỡ: $uninstallId)..."
 
-            $code = Run-CliStream "winget" "uninstall --id `"$uninstallId`" --silent"
+            $unArgs = "uninstall --id `"$uninstallId`" --silent --accept-source-agreements"
+            if ($app.Source -eq "msstore" -and $uninstallId -eq $app.ID) {
+                $unArgs += " --source msstore"
+            }
+            $code = Run-CliStream "winget" $unArgs
             if ($code -eq 0) {
                 Log-Text "   [✓ ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
+                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
             } else {
                 Log-Text "   [❌ LỖI GỠ] $($app.Name) (Exit Code: $code)"
             }
         }
+        Update-SelectionCount
         if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
         if ($progressBar) { $progressBar.Value = 100 }
         Scan-And-ColorizeApps
@@ -3634,14 +4073,13 @@ Register-Click "btnUpgradeAll" {
     }
 }
 
-# Chọn tất cả: chỉ chọn các dòng đang hiển thị theo bộ lọc tìm kiếm (Section 3.3)
+# Chọn tất cả các dòng đang hiển thị
 Register-Click "btnSelectAll" {
     $script:suppressSelectionCount = $true
     try {
         foreach ($row in $allItemBorders) {
-            if ($row.Visibility -eq [System.Windows.Visibility]::Visible) {
-                $grid = $row.Child
-                $cb = $grid.Children[0]
+            if ($row.Visibility -eq [System.Windows.Visibility]::Visible -and $row.Tag -and $row.Tag.CheckBox) {
+                $cb = $row.Tag.CheckBox
                 if ($cb.IsChecked -ne $true) {
                     $cb.IsChecked = $true
                 }
@@ -3654,17 +4092,7 @@ Register-Click "btnSelectAll" {
 }
 
 Register-Click "btnDeselectAll" {
-    $script:suppressSelectionCount = $true
-    try {
-        foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -ne $false) {
-                $cb.IsChecked = $false
-            }
-        }
-    } finally {
-        $script:suppressSelectionCount = $false
-    }
-    Update-SelectionCount
+    Clear-AllCheckBoxes
 }
 
 Register-Click "btnClearLog" {
@@ -3697,11 +4125,20 @@ Register-Click "btnDismRestore" {
 }
 
 Register-Click "btnDismCleanup" {
-    Invoke-GuardedAction "DISM Component Cleanup" {
+    Invoke-GuardedAction "DISM Component Cleanup" -DeferExpand {
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Lệnh DISM /StartComponentCleanup /ResetBase sẽ nén kho WinSxS và KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại về sau.`n`nBạn có chắc chắn muốn tiếp tục?",
+            "Xác nhận dọn kho linh kiện (WinSxS)",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+        Expand-TerminalLog
         Log-Text "[*] Đang dọn dẹp kho linh kiện hệ thống (DISM Component Cleanup)..."
         if ($txtStatus) { $txtStatus.Text = "Đang dọn kho linh kiện..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        Invoke-DriverStoreCleanup
+        Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
         Log-Text "[✓] Đã giải phóng dung lượng kho linh kiện."
@@ -3764,7 +4201,7 @@ Register-Click "btnClearTemp" {
 }
 
 Register-Click "btnCleanEventLogs" {
-    Invoke-GuardedAction "Dọn dẹp Windows Event Logs" {
+    Invoke-GuardedAction "Dọn dẹp Windows Event Logs" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?",
             "Xác nhận dọn dẹp Event Logs",
@@ -3773,6 +4210,7 @@ Register-Click "btnCleanEventLogs" {
         )
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
+        Expand-TerminalLog
         if ($txtStatus) { $txtStatus.Text = "Đang dọn Event Logs..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Clear-SystemEventLogs
@@ -3859,7 +4297,16 @@ Register-Click "btnScanWindowsUpdateDrivers" {
 }
 
 Register-Click "btnCleanDriverStore" {
-    Invoke-GuardedAction "Dọn dẹp DriverStore" {
+    Invoke-GuardedAction "Dọn dẹp DriverStore" -DeferExpand {
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Hành động này sẽ xóa các gói driver OEM cũ không còn thiết bị sử dụng trong DriverStore.`nBạn có chắc chắn muốn tiếp tục?",
+            "Xác nhận dọn dẹp DriverStore",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+        Expand-TerminalLog
         if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Invoke-PnpDriverStoreCleanup
