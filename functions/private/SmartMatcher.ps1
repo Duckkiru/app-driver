@@ -368,44 +368,64 @@ function ConvertFrom-WingetListOutput {
 
 function Get-LocalInstalledEntries {
     $localItems = [System.Collections.Generic.List[object]]::new()
-    $regRoots = @(
-        @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*';             Prefix = 'ARP\Machine\X64\' },
-        @{ Path = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; Prefix = 'ARP\Machine\X86\' },
-        @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*';             Prefix = 'ARP\User\X64\' },
-        @{ Path = 'HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; Prefix = 'ARP\User\X86\' }
+    $regConfigs = @(
+        @{ Hive = [Microsoft.Win32.Registry]::LocalMachine; SubKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';             Prefix = 'ARP\Machine\X64\' },
+        @{ Hive = [Microsoft.Win32.Registry]::LocalMachine; SubKey = 'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'; Prefix = 'ARP\Machine\X86\' },
+        @{ Hive = [Microsoft.Win32.Registry]::CurrentUser;  SubKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';             Prefix = 'ARP\User\X64\' },
+        @{ Hive = [Microsoft.Win32.Registry]::CurrentUser;  SubKey = 'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'; Prefix = 'ARP\User\X86\' }
     )
 
-    foreach ($root in $regRoots) {
-        $entries = Get-ItemProperty $root.Path -ErrorAction SilentlyContinue
-        foreach ($reg in $entries) {
-            if ([string]::IsNullOrWhiteSpace($reg.DisplayName) -or $reg.SystemComponent -eq 1 -or $reg.ReleaseType) { continue }
-            $appName = [string]$reg.DisplayName
-            if ($appName -match 'Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack') { continue }
+    foreach ($cfg in $regConfigs) {
+        $baseKey = $null
+        try {
+            $baseKey = $cfg.Hive.OpenSubKey($cfg.SubKey, $false)
+            if ($null -eq $baseKey) { continue }
+            foreach ($subName in $baseKey.GetSubKeyNames()) {
+                $subKey = $null
+                try {
+                    $subKey = $baseKey.OpenSubKey($subName, $false)
+                    if ($null -eq $subKey) { continue }
+                    $dispName = [string]$subKey.GetValue('DisplayName', '')
+                    if ([string]::IsNullOrWhiteSpace($dispName)) { continue }
+                    $sysComp = $subKey.GetValue('SystemComponent', 0)
+                    if ($sysComp -eq 1) { continue }
+                    $relType = [string]$subKey.GetValue('ReleaseType', '')
+                    if (-not [string]::IsNullOrWhiteSpace($relType)) { continue }
+                    if ($dispName -match 'Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack') { continue }
 
-            $appId = $root.Prefix + [string]$reg.PSChildName
-            $localItems.Add([PSCustomObject]@{
-                Name      = $appName.Trim()
-                ID        = $appId
-                Version   = [string]$reg.DisplayVersion
-                Available = ""
-                HasUpdate = $false
-                CleanName = (Get-CleanAppName $appName)
-            })
+                    $dispVer = [string]$subKey.GetValue('DisplayVersion', '')
+                    $localItems.Add([PSCustomObject]@{
+                        Name      = $dispName.Trim()
+                        ID        = ($cfg.Prefix + $subName)
+                        Version   = $dispVer
+                        Available = ""
+                        HasUpdate = $false
+                        CleanName = (Get-CleanAppName $dispName)
+                    })
+                } catch {} finally {
+                    if ($null -ne $subKey) { $subKey.Dispose() }
+                }
+            }
+        } catch {} finally {
+            if ($null -ne $baseKey) { $baseKey.Dispose() }
         }
     }
 
-    foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
-        if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
-        $pkgName = [string]$pkg.Name
-        $localItems.Add([PSCustomObject]@{
-            Name      = $pkgName
-            ID        = "MSIX\" + [string]$pkg.PackageFullName
-            Version   = [string]$pkg.Version
-            Available = ""
-            HasUpdate = $false
-            CleanName = (Get-CleanAppName $pkgName)
-        })
-    }
+    [System.Windows.Forms.Application]::DoEvents()
+    try {
+        foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
+            if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
+            $pkgName = [string]$pkg.Name
+            $localItems.Add([PSCustomObject]@{
+                Name      = $pkgName
+                ID        = "MSIX\" + [string]$pkg.PackageFullName
+                Version   = [string]$pkg.Version
+                Available = ""
+                HasUpdate = $false
+                CleanName = (Get-CleanAppName $pkgName)
+            })
+        }
+    } catch {}
 
     return $localItems
 }
@@ -417,6 +437,7 @@ function Scan-And-ColorizeApps {
     }
 
     $script:isScanningApps = $true
+    if ($MainTabControl) { $MainTabControl.IsHitTestVisible = $false }
     try {
         Log-Text "[🔍] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
         if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
@@ -478,13 +499,15 @@ function Scan-And-ColorizeApps {
             if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
         }
 
-        # Luôn bổ sung dữ liệu cục bộ từ Uninstall Registry + Appx để không bao giờ rớt app đã cài khi WinGet trục trặc
-        $localItems = Get-LocalInstalledEntries
-        foreach ($locObj in $localItems) {
-            $installedList.Add($locObj)
-            Set-PreferredMapEntry $idMap $locObj.ID $locObj
-            Set-PreferredMapEntry $nameMap $locObj.Name $locObj
-            if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+        # Chỉ quét dự phòng Registry + Appx khi WinGet gặp sự cố / trả về quá ít dữ liệu (tránh chặn luồng UI 4 giây không cần thiết vì winget list đã gồm cả ARP & MSIX)
+        if (-not $wingetOk -or $wingetItems.Count -lt 5) {
+            $localItems = Get-LocalInstalledEntries
+            foreach ($locObj in $localItems) {
+                $installedList.Add($locObj)
+                Set-PreferredMapEntry $idMap $locObj.ID $locObj
+                Set-PreferredMapEntry $nameMap $locObj.Name $locObj
+                if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+            }
         }
 
         if ($installedList.Count -eq 0 -and -not $wingetOk) {
@@ -553,8 +576,7 @@ function Scan-And-ColorizeApps {
                 if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
                 $pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
                 foreach ($item in $installedList) {
-                    if (-not (Test-MatchCompatible $targetApp $item)) { continue }
-                    if ($item.ID -match $pattern -or $item.Name -match $pattern) {
+                    if (($item.ID -match $pattern -or $item.Name -match $pattern) -and (Test-MatchCompatible $targetApp $item)) {
                         $lookupCache[$targetId] = $item
                         return $item
                     }
@@ -565,8 +587,7 @@ function Scan-And-ColorizeApps {
         if ($cleanTarget.Length -ge 4) {
             $patternClean = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
             foreach ($item in $installedList) {
-                if (-not (Test-MatchCompatible $targetApp $item)) { continue }
-                if ($item.CleanName -match $patternClean) {
+                if ($item.CleanName -match $patternClean -and (Test-MatchCompatible $targetApp $item)) {
                     $lookupCache[$targetId] = $item
                     return $item
                 }
@@ -602,7 +623,6 @@ function Scan-And-ColorizeApps {
                 # ── 🔴 BẢN CŨ: Tên ĐỎ + Pill phiên bản mới gọn gàng (không cắt mất tên App) ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
-                $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
                 $tb.Text = $app.Name
                 $tb.TextDecorations = $null
@@ -617,7 +637,6 @@ function Scan-And-ColorizeApps {
                 # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
-                $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushLatestFg
                 $tb.Text = $app.Name
                 $tb.TextDecorations = $null
@@ -631,7 +650,6 @@ function Scan-And-ColorizeApps {
             $row.Tag.Status = "NONE"
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null
-            $row.Background = $script:brushNoneBg
             $tb.Foreground = $script:brushNoneFg
             $tb.Text = $app.Name
             $tb.TextDecorations = $null
@@ -651,6 +669,10 @@ function Scan-And-ColorizeApps {
         }
     } finally {
         $script:isScanningApps = $false
+        if ($MainTabControl) { $MainTabControl.IsHitTestVisible = $true }
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
+            Flush-PendingIconCache
+        }
     }
 }

@@ -55,6 +55,158 @@ $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(14, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
 $script:brushIconBadgeLightBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(245, 255, 255, 255)); $script:brushIconBadgeLightBg.Freeze()
 $script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
+
+# Native WPF Styles cho dòng App & nút Link (chạy 100% trong WPF C++ engine, không gọi PowerShell ScriptBlock khi di chuột)
+$script:styleAppRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
+$script:styleAppRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushTransparent)))
+$trigRowHover = New-Object System.Windows.Trigger
+$trigRowHover.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$trigRowHover.Value = $true
+$trigRowHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushRowHover)))
+$script:styleAppRow.Triggers.Add($trigRowHover)
+$script:styleAppRow.Seal()
+
+$script:styleLinkBtn = New-Object System.Windows.Style([System.Windows.Controls.Border])
+$script:styleLinkBtn.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushLinkBtnBg)))
+$script:styleLinkBtn.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushLinkBtnBorder)))
+$trigLinkHover = New-Object System.Windows.Trigger
+$trigLinkHover.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$trigLinkHover.Value = $true
+$trigLinkHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushLinkBtnHoverBg)))
+$trigLinkHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushLinkBtnHoverBdr)))
+$script:styleLinkBtn.Triggers.Add($trigLinkHover)
+$script:styleLinkBtn.Seal()
+
+# Tối ưu giới hạn kết nối mạng song song cho tiến trình tải icon nền
+try {
+    [System.Net.ServicePointManager]::DefaultConnectionLimit = 24
+    [System.Net.ServicePointManager]::Expect100Continue = $false
+} catch {}
+
+function Import-LocalIconBitmap {
+    param(
+        [string]$Path,
+        [string]$CacheKey = ""
+    )
+    if (-not [string]::IsNullOrWhiteSpace($CacheKey)) {
+        $cached = $null
+        if ($script:remoteBmpCache -and $script:remoteBmpCache.TryGetValue($CacheKey, [ref]$cached)) {
+            return $cached
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not [System.IO.File]::Exists($Path)) { return $null }
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($Path)
+        if (-not $bytes -or $bytes.Length -le 64) { return $null }
+        $ms = [System.IO.MemoryStream]::new($bytes)
+        try {
+            $bmp = [System.Windows.Media.Imaging.BitmapImage]::new()
+            $bmp.BeginInit()
+            $bmp.StreamSource = $ms
+            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.DecodePixelWidth = 36
+            $bmp.EndInit()
+            $bmp.Freeze()
+            if (-not [string]::IsNullOrWhiteSpace($CacheKey) -and $script:remoteBmpCache) {
+                $script:remoteBmpCache[$CacheKey] = $bmp
+            }
+            return $bmp
+        } finally {
+            $ms.Dispose()
+        }
+    } catch {
+        try { [System.IO.File]::Delete($Path) } catch {}
+        return $null
+    }
+}
+
+# Hàng đợi tải icon bất đồng bộ bằng Task nền .NET (không dùng Add-Type csc.exe, không khóa luồng UI hay PowerShell Runspace)
+$script:pendingIconSaves = [System.Collections.Generic.List[hashtable]]::new()
+$script:inFlightIconTasks = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+function Start-BackgroundIconDownload {
+    param(
+        [string]$Url,
+        [string]$DestPath
+    )
+    if ([string]::IsNullOrWhiteSpace($Url) -or [string]::IsNullOrWhiteSpace($DestPath)) { return $null }
+    $existing = $null
+    if ($script:inFlightIconTasks.TryGetValue($Url, [ref]$existing)) {
+        return $existing
+    }
+    try {
+        $wc = [System.Net.WebClient]::new()
+        $wc.Proxy = $null
+        $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DuckUtil/3.5")
+        $task = $wc.DownloadDataTaskAsync([uri]$Url)
+        $info = @{
+            Url      = $Url
+            DestPath = $DestPath
+            Client   = $wc
+            Task     = $task
+            Saved    = $false
+        }
+        $script:inFlightIconTasks[$Url] = $info
+        return $info
+    } catch {
+        return $null
+    }
+}
+
+function Flush-PendingIconCache {
+    if (-not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) { return }
+    if ($script:isScanningApps -or $script:isActionRunning) { return }
+    $inFlightCount = 0
+    $decodedCount  = 0
+    for ($idx = $script:pendingIconSaves.Count - 1; $idx -ge 0; $idx--) {
+        $entry = $script:pendingIconSaves[$idx]
+        if (-not $entry.DownloadInfo -and $entry.Url) {
+            if ($inFlightCount -ge 10 -and -not $script:inFlightIconTasks.ContainsKey($entry.Url)) {
+                continue
+            }
+            $entry.DownloadInfo = Start-BackgroundIconDownload -Url $entry.Url -DestPath $entry.DestPath
+        }
+        $dlInfo = $entry.DownloadInfo
+        if ($dlInfo -and $dlInfo.Task) {
+            if (-not $dlInfo.Task.IsCompleted) {
+                $inFlightCount++
+                continue
+            }
+            if (-not $dlInfo.Saved) {
+                $dlInfo.Saved = $true
+                if ($dlInfo.Task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    try {
+                        $data = $dlInfo.Task.Result
+                        if ($data -and $data.Length -gt 64 -and -not [System.IO.File]::Exists($entry.DestPath)) {
+                            $tmpFile = "$($entry.DestPath).$([guid]::NewGuid().ToString('N')).tmp"
+                            [System.IO.File]::WriteAllBytes($tmpFile, $data)
+                            Move-Item -LiteralPath $tmpFile -Destination $entry.DestPath -Force -ErrorAction SilentlyContinue
+                        }
+                    } catch {}
+                }
+                try { if ($dlInfo.Client) { $dlInfo.Client.Dispose() } } catch {}
+            }
+        }
+        if ([System.IO.File]::Exists($entry.DestPath) -or ($script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($entry.CacheKey))) {
+            if ($decodedCount -ge 20) { continue }
+            $bmp = Import-LocalIconBitmap -Path $entry.DestPath -CacheKey $entry.CacheKey
+            if ($bmp -and $bmp.PixelWidth -gt 0) {
+                $decodedCount++
+                if (-not [System.IO.File]::Exists($entry.DestPath)) {
+                    Save-BitmapToCacheAtomic -BitmapSource $bmp -DestPath $entry.DestPath
+                }
+                if ($entry.Img) {
+                    $entry.Img.Source = $bmp
+                    $entry.Img.Visibility = [System.Windows.Visibility]::Visible
+                }
+                if ($entry.Fallback) {
+                    $entry.Fallback.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
+        }
+        $script:pendingIconSaves.RemoveAt($idx)
+    }
+}
 $script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
 $script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(28, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
 $script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(85, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
@@ -85,30 +237,40 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Tự động đồng bộ cache icon dựa trên chữ ký SHA256 của toàn bộ URL biểu tượng trong catalog
+    # Đồng bộ cache icon thông minh theo từng ứng dụng (chỉ xóa icon của app có URL thay đổi, không bao giờ xóa toàn bộ cache)
     try {
-        $sigSource = if ($AppCatalog) {
-            ($AppCatalog | ForEach-Object { "$($_.ID)|$($_.IconUrl)|$($_.Domain)|$($_.IconBg)" }) -join "`n"
-        } else {
-            "v3.5"
+        $mapFile = Join-Path $iconsCacheDir "cache.icons.map.txt"
+        $oldMap = @{}
+        if (Test-Path -LiteralPath $mapFile) {
+            foreach ($line in [System.IO.File]::ReadAllLines($mapFile)) {
+                $sepIdx = $line.IndexOf('=')
+                if ($sepIdx -gt 0) {
+                    $oldMap[$line.Substring(0, $sepIdx)] = $line.Substring($sepIdx + 1)
+                }
+            }
         }
-        $sha = [System.Security.Cryptography.SHA256]::Create()
-        try {
-            $sigBytes = [System.Text.Encoding]::UTF8.GetBytes($sigSource)
-            $currentSig = [System.BitConverter]::ToString($sha.ComputeHash($sigBytes)).Replace("-", "")
-        } finally {
-            $sha.Dispose()
+        $newLines = [System.Collections.Generic.List[string]]::new()
+        $mapChanged = $false
+        if ($AppCatalog) {
+            foreach ($appItem in $AppCatalog) {
+                $appKey = "$($appItem.ID)"
+                $appVal = "$($appItem.IconUrl)|$($appItem.Domain)"
+                $newLines.Add("$appKey=$appVal")
+                if ($oldMap.ContainsKey($appKey)) {
+                    if ($oldMap[$appKey] -ne $appVal) {
+                        $staleIcon = Join-Path $iconsCacheDir "$appKey.png"
+                        if (Test-Path -LiteralPath $staleIcon) {
+                            Remove-Item -LiteralPath $staleIcon -Force -ErrorAction SilentlyContinue
+                        }
+                        $mapChanged = $true
+                    }
+                } else {
+                    $mapChanged = $true
+                }
+            }
         }
-        $sigFile = Join-Path $iconsCacheDir "cache.icons.sha256"
-        $rawSig = if (Test-Path -LiteralPath $sigFile) {
-            Get-Content -LiteralPath $sigFile -Raw -ErrorAction SilentlyContinue
-        } else {
-            $null
-        }
-        $savedSig = if ($null -ne $rawSig) { "$rawSig".Trim() } else { "" }
-        if ($savedSig -ne $currentSig) {
-            Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $sigFile -Value $currentSig -Force -ErrorAction SilentlyContinue
+        if ($mapChanged -or -not (Test-Path -LiteralPath $mapFile)) {
+            [System.IO.File]::WriteAllLines($mapFile, $newLines, [System.Text.Encoding]::UTF8)
         }
     } catch {}
 }
@@ -158,12 +320,15 @@ function Invoke-GuardedAction {
         Expand-TerminalLog
     }
     $script:isActionRunning = $true
+    if ($MainTabControl) { $MainTabControl.IsHitTestVisible = $false }
     try {
         & $Action
     } catch {
         Log-Text "[!] Lỗi khi thực hiện '$ActionName': $($_.Exception.Message)"
     } finally {
         $script:isActionRunning = $false
+        if ($MainTabControl) { $MainTabControl.IsHitTestVisible = $true }
+        try { Flush-PendingIconCache } catch {}
         [System.Windows.Forms.Application]::DoEvents()
     }
 }
@@ -393,63 +558,129 @@ $cardCols = @(
 # Cache BitmapImage từ xa theo URL trong RAM để cắt giảm triệt để request mạng trùng lặp
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
+# Các hằng số hình học & delegate dùng chung cho toàn bộ 190 dòng (tránh gọi cmdlet New-Object hàng ngàn lần khi khởi tạo)
+$glCol0             = [System.Windows.GridLength]::new(20, [System.Windows.GridUnitType]::Pixel)
+$glCol1             = [System.Windows.GridLength]::new(23, [System.Windows.GridUnitType]::Pixel)
+$glCol2             = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+$glCol3             = [System.Windows.GridLength]::new(22, [System.Windows.GridUnitType]::Pixel)
+$glAuto             = [System.Windows.GridLength]::Auto
+$marginCardBottom   = [System.Windows.Thickness]::new(0, 0, 0, 10)
+$paddingHeaderCnt   = [System.Windows.Thickness]::new(6, 1, 6, 1)
+$marginNameText     = [System.Windows.Thickness]::new(5, 0, 4, 0)
+$paddingUpdateBadge = [System.Windows.Thickness]::new(5, 1, 5, 1)
+$marginUpdateBadge  = [System.Windows.Thickness]::new(2, 0, 4, 0)
+$marginLinkIcon     = [System.Windows.Thickness]::new(0, -1, 0, 0)
+$cornerFour         = [System.Windows.CornerRadius]::new(4)
+$strOpenLinkGlyph   = [string][char]0x2197
+
+$script:cbChangedHandler = [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
+$script:linkClickHandler = [System.Windows.Input.MouseButtonEventHandler]{
+    param($s, $e)
+    $e.Handled = $true
+    if ($script:isScanningApps -or $script:isActionRunning) { return }
+    $domain = if ($s.Tag -and $s.Tag.Url) { $s.Tag.Url } else { "" }
+    if (-not [string]::IsNullOrWhiteSpace($domain)) {
+        $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
+        try {
+            Start-Process $targetUrl
+        } catch {
+            Log-Text "[!] Không thể mở trang web: $targetUrl"
+        }
+    }
+}
+$script:rowClickHandler = [System.Windows.Input.MouseButtonEventHandler]{
+    param($sender, $e)
+    if ($e.Handled) { return }
+    if ($script:isScanningApps -or $script:isActionRunning) { return }
+
+    $src = $e.OriginalSource
+    $isCb = $false
+    $node = $src
+    while ($node -ne $null -and $node -ne $sender) {
+        if ($node -is [System.Windows.Controls.CheckBox]) {
+            $isCb = $true
+            break
+        }
+        if ($node -is [System.Windows.Media.Visual]) {
+            $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+        } else {
+            break
+        }
+    }
+    if ($isCb) { return }
+
+    if ($sender.Tag -and $sender.Tag.CheckBox) {
+        $targetCb = $sender.Tag.CheckBox
+        $targetCb.IsChecked = -not $targetCb.IsChecked
+    }
+}
+
+# Gom nhóm sẵn ứng dụng theo Category bằng Dictionary O(1)
+$appsByCategory = @{}
+foreach ($item in $AppCatalog) {
+    if (-not $appsByCategory.ContainsKey($item.Category)) {
+        $appsByCategory[$item.Category] = [System.Collections.Generic.List[object]]::new()
+    }
+    $appsByCategory[$item.Category].Add($item)
+}
+
 foreach ($cat in $categories) {
-    $cardBorder = New-Object System.Windows.Controls.Border
+    $cardBorder = [System.Windows.Controls.Border]::new()
     $cardBorder.Background = $script:brushCardBg
     $cardBorder.BorderBrush = $script:brushCardBorder
     $cardBorder.BorderThickness = $thicknessOne
     $cardBorder.CornerRadius = $cornerCard
-    $cardBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 10)
+    $cardBorder.Margin = $marginCardBottom
     $cardBorder.Padding = $paddingCard
     $cardBorder.Height = [double]::NaN
     $cardBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
 
-    $cardStack = New-Object System.Windows.Controls.StackPanel
-    $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
+    $cardStack = [System.Windows.Controls.StackPanel]::new()
+    $appsInCat = $appsByCategory[$cat]
 
     # Header Card (Tiêu đề bên trái + Badge đếm tối giản bên phải)
-    $headerGrid = New-Object System.Windows.Controls.Grid
+    $headerGrid = [System.Windows.Controls.Grid]::new()
     $headerGrid.Margin = $marginHeaderGrid
 
-    $headerText = New-Object System.Windows.Controls.TextBlock
+    $headerText = [System.Windows.Controls.TextBlock]::new()
     $headerText.Text = $cat
     $headerText.FontSize = 12
     $headerText.FontWeight = [System.Windows.FontWeights]::SemiBold
     $headerText.Foreground = $script:brushHeaderFg
     $headerText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $headerText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $headerGrid.Children.Add($headerText) | Out-Null
+    [void]$headerGrid.Children.Add($headerText)
 
-    $headerCountBadge = New-Object System.Windows.Controls.Border
+    $headerCountBadge = [System.Windows.Controls.Border]::new()
     $headerCountBadge.Background = $script:brushHeaderCntBg
-    $headerCountBadge.CornerRadius = New-Object System.Windows.CornerRadius(4)
-    $headerCountBadge.Padding = New-Object System.Windows.Thickness(6, 1, 6, 1)
+    $headerCountBadge.CornerRadius = $cornerFour
+    $headerCountBadge.Padding = $paddingHeaderCnt
     $headerCountBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
     $headerCountBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $headerCountText = New-Object System.Windows.Controls.TextBlock
+    $headerCountText = [System.Windows.Controls.TextBlock]::new()
     $headerCountText.Text = "$($appsInCat.Count)"
     $headerCountText.FontSize = 10
     $headerCountText.FontWeight = [System.Windows.FontWeights]::SemiBold
     $headerCountText.Foreground = $script:brushHeaderCntFg
     $headerCountBadge.Child = $headerCountText
-    $headerGrid.Children.Add($headerCountBadge) | Out-Null
+    [void]$headerGrid.Children.Add($headerCountBadge)
 
-    $separator = New-Object System.Windows.Controls.Border
+    $separator = [System.Windows.Controls.Border]::new()
     $separator.Height = 1
     $separator.Background = $script:brushSeparator
     $separator.Margin = $marginSeparator
 
-    $cardStack.Children.Add($headerGrid) | Out-Null
-    $cardStack.Children.Add($separator) | Out-Null
+    [void]$cardStack.Children.Add($headerGrid)
+    [void]$cardStack.Children.Add($separator)
 
     # Từng dòng App: CheckBox + Logo (nền mờ nhẹ) + Tên + Nút Link tối giản
     foreach ($app in $appsInCat) {
-        $rowBorder = New-Object System.Windows.Controls.Border
+        $rowBorder = [System.Windows.Controls.Border]::new()
         $rowBorder.Height = 27
         $rowBorder.CornerRadius = $cornerRow
         $rowBorder.Padding = $paddingRow
         $rowBorder.Margin = $marginRowBorder
-        $rowBorder.Background = $script:brushTransparent
+        $rowBorder.Style = $script:styleAppRow
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
         $rowBorder.Tag = @{
@@ -461,34 +692,34 @@ foreach ($cat in $categories) {
         }
 
         # Grid 4 cột cố định tỉ lệ, triệt tiêu hoàn toàn hiện tượng lệch dòng
-        $rowGrid = New-Object System.Windows.Controls.Grid
+        $rowGrid = [System.Windows.Controls.Grid]::new()
         $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
-        $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(20, [System.Windows.GridUnitType]::Pixel)
-        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(23, [System.Windows.GridUnitType]::Pixel)
-        $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(22, [System.Windows.GridUnitType]::Pixel)
-        $rowGrid.ColumnDefinitions.Add($col0) | Out-Null
-        $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
-        $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
-        $rowGrid.ColumnDefinitions.Add($col3) | Out-Null
+        $col0 = [System.Windows.Controls.ColumnDefinition]::new(); $col0.Width = $glCol0
+        $col1 = [System.Windows.Controls.ColumnDefinition]::new(); $col1.Width = $glCol1
+        $col2 = [System.Windows.Controls.ColumnDefinition]::new(); $col2.Width = $glCol2
+        $col3 = [System.Windows.Controls.ColumnDefinition]::new(); $col3.Width = $glCol3
+        [void]$rowGrid.ColumnDefinitions.Add($col0)
+        [void]$rowGrid.ColumnDefinitions.Add($col1)
+        [void]$rowGrid.ColumnDefinitions.Add($col2)
+        [void]$rowGrid.ColumnDefinitions.Add($col3)
 
         # 1. CheckBox
-        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb = [System.Windows.Controls.CheckBox]::new()
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-        $cb.Margin = New-Object System.Windows.Thickness(0)
+        $cb.Margin = $thicknessZero
         $cb.Tag = $rowBorder.Tag
-        $cb.Add_Checked({ Update-SelectionCount })
-        $cb.Add_Unchecked({ Update-SelectionCount })
+        $cb.Add_Checked($script:cbChangedHandler)
+        $cb.Add_Unchecked($script:cbChangedHandler)
         [System.Windows.Controls.Grid]::SetColumn($cb, 0)
-        $rowGrid.Children.Add($cb) | Out-Null
+        [void]$rowGrid.Children.Add($cb)
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
         # 2. Khung đỡ Logo (nền trắng chuẩn cho Java / logo tối màu, nền sương mờ nhẹ cho app thường)
         $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
-        $iconBadge = New-Object System.Windows.Controls.Border
+        $iconBadge = [System.Windows.Controls.Border]::new()
         $iconBadge.Width = 20
         $iconBadge.Height = 20
         $iconBadge.CornerRadius = $script:cornerIconBadge
@@ -498,19 +729,19 @@ foreach ($cat in $categories) {
         $iconBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
-        $iconInnerGrid = New-Object System.Windows.Controls.Grid
+        $iconInnerGrid = [System.Windows.Controls.Grid]::new()
         $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
-        $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
+        $fallbackGlyph = [System.Windows.Controls.TextBlock]::new()
         $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
         $fallbackGlyph.FontFamily = $script:fontSegoeEmoji
         $fallbackGlyph.FontSize = 10
         $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $iconInnerGrid.Children.Add($fallbackGlyph) | Out-Null
+        [void]$iconInnerGrid.Children.Add($fallbackGlyph)
 
-        $img = New-Object System.Windows.Controls.Image
+        $img = [System.Windows.Controls.Image]::new()
         $imgDim = if ($useLightBadge) { 15 } else { 17 }
         $img.Width = $imgDim; $img.Height = $imgDim
         $img.Stretch = [System.Windows.Media.Stretch]::Uniform
@@ -519,124 +750,87 @@ foreach ($cat in $categories) {
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $img.Visibility = [System.Windows.Visibility]::Collapsed
 
-        $iconInnerGrid.Children.Add($img) | Out-Null
+        [void]$iconInnerGrid.Children.Add($img)
         $iconBadge.Child = $iconInnerGrid
 
-        $localIconPath = Join-Path $iconsCacheDir "$($app.ID).png"
-        if (Test-Path -LiteralPath $localIconPath) {
-            try {
-                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                $bmp.BeginInit()
-                $bmp.UriSource = New-Object System.Uri($localIconPath, [System.UriKind]::Absolute)
-                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                $bmp.EndInit()
-                if ($bmp.PixelWidth -gt 0) {
-                    $img.Source = $bmp
-                    $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                    $img.Visibility = [System.Windows.Visibility]::Visible
-                }
-            } catch {
-                try { Remove-Item -LiteralPath $localIconPath -Force -ErrorAction SilentlyContinue } catch {}
-            }
+        $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
+            $app.IconUrl
+        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
         } else {
-            $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
-                $app.IconUrl
-            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
-            } else {
-                $null
+            $null
+        }
+        $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
+        $localIconPath = Join-Path $iconsCacheDir "$($app.ID).png"
+
+        $loadedBmp = Import-LocalIconBitmap -Path $localIconPath -CacheKey $iconCacheKey
+        if ($loadedBmp -and $loadedBmp.PixelWidth -gt 0) {
+            $img.Source = $loadedBmp
+            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+            $img.Visibility = [System.Windows.Visibility]::Visible
+            if (-not [System.IO.File]::Exists($localIconPath)) {
+                Save-BitmapToCacheAtomic -BitmapSource $loadedBmp -DestPath $localIconPath
             }
-
-            if ($remoteIconTarget) {
-                try {
-                    $cachedBmp = $null
-                    if ($script:remoteBmpCache.TryGetValue($remoteIconTarget, [ref]$cachedBmp)) {
-                        $bmp = $cachedBmp
-                    } else {
-                        $remoteUri = New-Object System.Uri($remoteIconTarget, [System.UriKind]::Absolute)
-                        $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-                        $bmp.BeginInit()
-                        $bmp.UriSource = $remoteUri
-                        $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                        $bmp.EndInit()
-                        $script:remoteBmpCache[$remoteIconTarget] = $bmp
-                    }
-
-                    $cacheClosure = {
-                        param($sender, $e)
-                        try {
-                            if ($sender -and $sender.PixelWidth -gt 0) {
-                                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                                $img.Visibility = [System.Windows.Visibility]::Visible
-                                Save-BitmapToCacheAtomic -BitmapSource $sender -DestPath $localIconPath
-                            }
-                        } catch {}
-                    }.GetNewClosure()
-
-                    if (-not $bmp.IsDownloading) {
-                        if ($bmp.PixelWidth -gt 0) {
-                            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                            $img.Visibility = [System.Windows.Visibility]::Visible
-                            $img.Source = $bmp
-                            Save-BitmapToCacheAtomic -BitmapSource $bmp -DestPath $localIconPath
-                        }
-                    } else {
-                        $bmp.Add_DownloadCompleted($cacheClosure)
-                        $img.Source = $bmp
-                    }
-                } catch {}
-            }
+        } elseif ($remoteIconTarget) {
+            $script:pendingIconSaves.Add(@{
+                Url          = $remoteIconTarget
+                CacheKey     = $iconCacheKey
+                DestPath     = $localIconPath
+                DownloadInfo = $null
+                Img          = $img
+                Fallback     = $fallbackGlyph
+            })
         }
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
-        $rowGrid.Children.Add($iconBadge) | Out-Null
+        [void]$rowGrid.Children.Add($iconBadge)
 
         # 3. Tên ứng dụng + Badge phiên bản mới gọn gàng (tránh cắt tên App khi cột hẹp)
-        $nameAreaGrid = New-Object System.Windows.Controls.Grid
-        $nameCol0 = New-Object System.Windows.Controls.ColumnDefinition; $nameCol0.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $nameCol1 = New-Object System.Windows.Controls.ColumnDefinition; $nameCol1.Width = [System.Windows.GridLength]::Auto
-        $nameAreaGrid.ColumnDefinitions.Add($nameCol0) | Out-Null
-        $nameAreaGrid.ColumnDefinitions.Add($nameCol1) | Out-Null
+        $nameAreaGrid = [System.Windows.Controls.Grid]::new()
+        $nameCol0 = [System.Windows.Controls.ColumnDefinition]::new(); $nameCol0.Width = $glCol2
+        $nameCol1 = [System.Windows.Controls.ColumnDefinition]::new(); $nameCol1.Width = $glAuto
+        [void]$nameAreaGrid.ColumnDefinitions.Add($nameCol0)
+        [void]$nameAreaGrid.ColumnDefinitions.Add($nameCol1)
 
-        $nameText = New-Object System.Windows.Controls.TextBlock
+        $nameText = [System.Windows.Controls.TextBlock]::new()
         $nameText.Text = $app.Name
         $nameText.Foreground = $script:brushTextWhite
         $nameText.FontSize = 12
         $nameText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $nameText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $nameText.Margin = New-Object System.Windows.Thickness(5, 0, 4, 0)
+        $nameText.Margin = $marginNameText
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
         $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
         $rowBorder.ToolTip = $nameText.ToolTip
         [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
-        $nameAreaGrid.Children.Add($nameText) | Out-Null
+        [void]$nameAreaGrid.Children.Add($nameText)
 
-        $updateBadge = New-Object System.Windows.Controls.Border
+        $updateBadge = [System.Windows.Controls.Border]::new()
         $updateBadge.Background = $script:brushUpdateBadgeBg
         $updateBadge.BorderBrush = $script:brushUpdateBadgeBorder
         $updateBadge.BorderThickness = $thicknessOne
         $updateBadge.CornerRadius = $script:cornerIconBadge
-        $updateBadge.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
-        $updateBadge.Margin = New-Object System.Windows.Thickness(2, 0, 4, 0)
+        $updateBadge.Padding = $paddingUpdateBadge
+        $updateBadge.Margin = $marginUpdateBadge
         $updateBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
         $updateBadge.MaxWidth = 86
 
-        $updateText = New-Object System.Windows.Controls.TextBlock
+        $updateText = [System.Windows.Controls.TextBlock]::new()
         $updateText.FontSize = 9.5
         $updateText.FontWeight = [System.Windows.FontWeights]::Bold
         $updateText.Foreground = $script:brushUpdateBadgeFg
         $updateText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $updateBadge.Child = $updateText
         [System.Windows.Controls.Grid]::SetColumn($updateBadge, 1)
-        $nameAreaGrid.Children.Add($updateBadge) | Out-Null
+        [void]$nameAreaGrid.Children.Add($updateBadge)
 
         $rowBorder.Tag["NameText"]    = $nameText
         $rowBorder.Tag["UpdateBadge"] = $updateBadge
         $rowBorder.Tag["UpdateText"]  = $updateText
 
         [System.Windows.Controls.Grid]::SetColumn($nameAreaGrid, 2)
-        $rowGrid.Children.Add($nameAreaGrid) | Out-Null
+        [void]$rowGrid.Children.Add($nameAreaGrid)
 
         # 4. Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil, chỉ sáng khi hover)
         $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
@@ -645,106 +839,38 @@ foreach ($cat in $categories) {
             if ($app.Domain.StartsWith("http")) { $app.Domain } else { "https://$($app.Domain)" }
         } else { "" }
 
-        $linkBtn = New-Object System.Windows.Controls.Border
+        $linkBtn = [System.Windows.Controls.Border]::new()
         $linkBtn.Width = 20
         $linkBtn.Height = 19
-        $linkBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $linkBtn.Background = $script:brushLinkBtnBg
-        $linkBtn.BorderBrush = $script:brushLinkBtnBorder
+        $linkBtn.CornerRadius = $cornerFour
+        $linkBtn.Style = $script:styleLinkBtn
         $linkBtn.BorderThickness = $thicknessOne
         $linkBtn.Cursor = [System.Windows.Input.Cursors]::Hand
         $linkBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $linkBtn.Margin = New-Object System.Windows.Thickness(0)
+        $linkBtn.Margin = $thicknessZero
         $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
         $linkBtn.Tag = @{ Url = $targetPageUrl; Row = $rowBorder }
 
-        $linkIcon = New-Object System.Windows.Controls.TextBlock
-        $linkIcon.Text = [string][char]0x2197 # ↗ Open Link
+        $linkIcon = [System.Windows.Controls.TextBlock]::new()
+        $linkIcon.Text = $strOpenLinkGlyph
         $linkIcon.FontFamily = $script:fontSegoeUI
         $linkIcon.FontSize = 11.5
         $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
-        $linkIcon.Foreground = $script:brushLinkBtnFg
+        $linkIcon.Foreground = $script:brushLinkBtnRowHover
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $linkIcon.Margin = New-Object System.Windows.Thickness(0, -1, 0, 0)
+        $linkIcon.Margin = $marginLinkIcon
         $linkBtn.Child = $linkIcon
         $rowBorder.Tag["LinkBtn"]  = $linkBtn
         $rowBorder.Tag["LinkIcon"] = $linkIcon
 
-        $linkBtn.Add_MouseEnter({
-            param($s, $e)
-            $s.Background = $script:brushLinkBtnHoverBg
-            $s.BorderBrush = $script:brushLinkBtnHoverBdr
-            if ($s.Child) { $s.Child.Foreground = $script:brushLinkBtnHoverFg }
-        })
-        $linkBtn.Add_MouseLeave({
-            param($s, $e)
-            $s.Background = $script:brushLinkBtnBg
-            $s.BorderBrush = $script:brushLinkBtnBorder
-            if ($s.Child) {
-                $rowHovered = ($s.Tag -and $s.Tag.Row -and $s.Tag.Row.IsMouseOver)
-                $s.Child.Foreground = if ($rowHovered) { $script:brushLinkBtnRowHover } else { $script:brushLinkBtnFg }
-            }
-        })
-        $linkBtn.Add_MouseLeftButtonUp({
-            param($s, $e)
-            $e.Handled = $true  # Chặn sự kiện nổi bọt để không làm toggle CheckBox
-            $domain = if ($s.Tag -and $s.Tag.Url) { $s.Tag.Url } else { "" }
-            if (-not [string]::IsNullOrWhiteSpace($domain)) {
-                $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
-                try {
-                    Start-Process $targetUrl
-                } catch {
-                    Log-Text "[!] Không thể mở trang web: $targetUrl"
-                }
-            }
-        })
+        $linkBtn.Add_MouseLeftButtonUp($script:linkClickHandler)
         [System.Windows.Controls.Grid]::SetColumn($linkBtn, 3)
-        $rowGrid.Children.Add($linkBtn) | Out-Null
+        [void]$rowGrid.Children.Add($linkBtn)
 
         # Tối ưu nhấp chọn toàn dòng: Nhấp vào Tên ứng dụng hoặc khoảng trống dòng -> TỰ ĐỘNG TÍCH CHECKBOX
-        $rowBorder.Add_MouseLeftButtonUp({
-            param($sender, $e)
-            if ($e.Handled) { return }
-
-            $src = $e.OriginalSource
-            $isCb = $false
-            $node = $src
-            while ($node -ne $null -and $node -ne $sender) {
-                if ($node -is [System.Windows.Controls.CheckBox]) {
-                    $isCb = $true
-                    break
-                }
-                if ($node -is [System.Windows.Media.Visual]) {
-                    $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
-                } else {
-                    break
-                }
-            }
-            if ($isCb) { return }
-
-            if ($sender.Tag -and $sender.Tag.CheckBox) {
-                $targetCb = $sender.Tag.CheckBox
-                $targetCb.IsChecked = -not $targetCb.IsChecked
-            }
-        })
-
-        # Hover thanh lịch kiểu Win11 ListItem
-        $rowBorder.Add_MouseEnter({
-            param($sender, $e)
-            $sender.Background = $script:brushRowHover
-            if ($sender.Tag -and $sender.Tag.LinkIcon -and $sender.Tag.LinkBtn -and (-not $sender.Tag.LinkBtn.IsMouseOver)) {
-                $sender.Tag.LinkIcon.Foreground = $script:brushLinkBtnRowHover
-            }
-        })
-        $rowBorder.Add_MouseLeave({
-            param($sender, $e)
-            $sender.Background = $script:brushTransparent
-            if ($sender.Tag -and $sender.Tag.LinkIcon) {
-                $sender.Tag.LinkIcon.Foreground = $script:brushLinkBtnFg
-            }
-        })
+        $rowBorder.Add_MouseLeftButtonUp($script:rowClickHandler)
 
         $rowBorder.Child = $rowGrid
         $cardStack.Children.Add($rowBorder) | Out-Null
@@ -1282,15 +1408,38 @@ Register-Click "btnOpenBackupFolder" -LockGroup "Quản lý Driver" {
 }
 
 # ── TỰ ĐỘNG QUÉT KHI MỞ CỬA SỔ & KHỞI CHẠY GIAO DIỆN ──
+$script:iconSyncTimer = New-Object System.Windows.Threading.DispatcherTimer
+$script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(250)
+$script:iconSyncTimer.Add_Tick({
+    if ($script:isScanningApps -or $script:isActionRunning) { return }
+    Flush-PendingIconCache
+    if (-not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) {
+        $script:iconSyncTimer.Stop()
+    }
+})
+
 $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
-        [System.Windows.Forms.Application]::DoEvents()
-        Invoke-GuardedAction "Quét ứng dụng khởi động" -DeferExpand {
-            Scan-And-ColorizeApps
+        if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
+            $script:iconSyncTimer.Start()
         }
+        $window.Dispatcher.BeginInvoke(
+            [System.Windows.Threading.DispatcherPriority]::ApplicationIdle,
+            [Action]{
+                Invoke-GuardedAction "Quét ứng dụng khởi động" -DeferExpand {
+                    Scan-And-ColorizeApps
+                }
+            }
+        ) | Out-Null
     }
+})
+$window.Add_Closed({
+    try {
+        if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() }
+        Flush-PendingIconCache
+    } catch {}
 })
 
 $window.ShowDialog() | Out-Null

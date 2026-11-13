@@ -125,9 +125,11 @@ function Run-CliStream {
             }
         }
 
-        $p.WaitForExit()
+        try { [void]$p.WaitForExit(1000) } catch {}
         [System.Windows.Forms.Application]::DoEvents()
-        return $p.ExitCode
+        $exitCode = $p.ExitCode
+        try { $p.Dispose() } catch {}
+        return $exitCode
     } catch {
         Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Args]: $($_.Exception.Message)"
         return -1
