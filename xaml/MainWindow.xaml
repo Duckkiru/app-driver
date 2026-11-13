@@ -269,6 +269,12 @@
                                 <Setter Property="Foreground" Value="#E2E8F0"/>
                                 <Setter TargetName="navBorder" Property="Background" Value="#121825"/>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.48"/>
+                                <Setter Property="Foreground" Value="#64748B"/>
+                                <Setter Property="Cursor" Value="No"/>
+                                <Setter TargetName="navBorder" Property="Background" Value="Transparent"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -290,8 +296,10 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="Ứng dụng (Install)" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                    <Button Name="navBtnRepair" Content="Gỡ lỗi &amp; Hệ thống" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnDrivers" Content="Quản lý Driver" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
+                    <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
                 </StackPanel>
                 <TextBlock Text="DuckUtil" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
@@ -387,8 +395,15 @@
 
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14">
-                    <UniformGrid Columns="2" VerticalAlignment="Top">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Module Gỡ lỗi &amp; Hệ thống hiện đang được khóa để tập trung ổn định trình cài đặt và cập nhật ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
+                        <UniformGrid Columns="2" VerticalAlignment="Top">
                         <!-- Card 1: File Hệ Thống -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
@@ -455,14 +470,22 @@
                                 <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
-                    </UniformGrid>
-                </ScrollViewer>
+                        </UniformGrid>
+                    </ScrollViewer>
+                </DockPanel>
             </TabItem>
 
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14">
-                    <UniformGrid Columns="3" VerticalAlignment="Top">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Module Quản lý Driver hiện đang được khóa để đảm bảo an toàn hệ thống và tập trung quản lý ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
+                        <UniformGrid Columns="3" VerticalAlignment="Top">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
@@ -512,8 +535,9 @@
                                 <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
-                    </UniformGrid>
-                </ScrollViewer>
+                        </UniformGrid>
+                    </ScrollViewer>
+                </DockPanel>
             </TabItem>
         </TabControl>
 

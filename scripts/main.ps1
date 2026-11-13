@@ -167,12 +167,46 @@ function Invoke-GuardedAction {
     }
 }
 
-# Hàm an toàn gắn sự kiện Click cho nút
+# Khóa an toàn các module bảo trì hệ thống & driver khi chưa mở rộng sử dụng
+$script:LockMaintenanceTabs = $true
+$script:LockedButtonActions = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+function Test-MaintenanceFeatureLocked {
+    param([string]$FeatureName)
+    if ($script:LockMaintenanceTabs) {
+        Log-Text "[LOCK] Tính năng '$FeatureName' hiện đang được tạm khóa."
+        if ($txtStatus) { $txtStatus.Text = "Tính năng '$FeatureName' đang tạm khóa" }
+        return $true
+    }
+    return $false
+}
+
+# Hàm an toàn gắn sự kiện Click cho nút (hỗ trợ khóa theo nhóm tính năng)
 function Register-Click {
-    param([string]$ButtonName, [scriptblock]$Action)
+    param(
+        [string]$ButtonName,
+        [scriptblock]$Action,
+        [string]$LockGroup = ""
+    )
     $btn = $window.FindName($ButtonName)
     if ($btn) {
-        $btn.Add_Click($Action)
+        if (-not [string]::IsNullOrWhiteSpace($LockGroup)) {
+            $script:LockedButtonActions[$ButtonName] = @{
+                Group  = $LockGroup
+                Action = $Action
+            }
+            if ($script:LockMaintenanceTabs) {
+                $btn.IsEnabled = $false
+            }
+            $btn.Add_Click({
+                param($sender, $e)
+                $entry = $script:LockedButtonActions[$sender.Name]
+                if ($entry -and (Test-MaintenanceFeatureLocked $entry.Group)) { return }
+                if ($entry -and $entry.Action) { & $entry.Action }
+            })
+        } else {
+            $btn.Add_Click($Action)
+        }
     } else {
         Write-Warning "Không tìm thấy nút trong XAML: $ButtonName"
     }
@@ -185,6 +219,11 @@ $navBtnDrivers = $window.FindName("navBtnDrivers")
 
 function Set-ActiveTab {
     param([int]$index, $activeBtn)
+    if ($script:LockMaintenanceTabs -and ($index -eq 1 -or $index -eq 2)) {
+        $feature = if ($index -eq 1) { "Gỡ lỗi & Hệ thống" } else { "Quản lý Driver" }
+        Test-MaintenanceFeatureLocked $feature | Out-Null
+        return
+    }
     if ($MainTabControl) {
         $MainTabControl.SelectedIndex = $index
     }
@@ -204,8 +243,8 @@ function Set-ActiveTab {
 }
 
 Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
-Register-Click "navBtnRepair"  { Set-ActiveTab 1 $navBtnRepair }
-Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
+Register-Click "navBtnRepair"  -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 1 $navBtnRepair }
+Register-Click "navBtnDrivers" -LockGroup "Quản lý Driver"    { Set-ActiveTab 2 $navBtnDrivers }
 
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
@@ -779,6 +818,55 @@ function Invoke-GitHubAssetInstall {
     }
 }
 
+function Clear-WinGetTempInstallers {
+    param([string[]]$RootPaths)
+    if (-not $RootPaths -or $RootPaths.Count -eq 0) {
+        $rawCandidates = @(
+            (Join-Path ([System.IO.Path]::GetTempPath()) "WinGet"),
+            $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "Temp\WinGet" })
+        )
+        $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $RootPaths = foreach ($cand in $rawCandidates) {
+            if ([string]::IsNullOrWhiteSpace($cand)) { continue }
+            $full = [System.IO.Path]::GetFullPath($cand).TrimEnd('\')
+            if ($seen.Add($full)) { $full }
+        }
+    }
+
+    $removedCount = 0
+    $freedBytes = [long]0
+    foreach ($wingetTemp in $RootPaths) {
+        if ([string]::IsNullOrWhiteSpace($wingetTemp) -or -not (Test-Path -LiteralPath $wingetTemp)) { continue }
+
+        $entries = Get-ChildItem -LiteralPath $wingetTemp -Force -ErrorAction SilentlyContinue
+        foreach ($entry in $entries) {
+            # Giữ lại thư mục cache manifest nội bộ của WinGet
+            if ($entry.Name -ieq "cache") { continue }
+
+            $entryBytes = [long]0
+            if ($entry.PSIsContainer) {
+                $measure = Get-ChildItem -LiteralPath $entry.FullName -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
+                if ($measure -and $null -ne $measure.Sum) { $entryBytes = [long]$measure.Sum }
+            } else {
+                $entryBytes = [long]$entry.Length
+            }
+
+            try {
+                Remove-Item -LiteralPath $entry.FullName -Recurse -Force -ErrorAction Stop
+                $removedCount++
+                $freedBytes += $entryBytes
+            } catch {
+                # Bỏ qua tệp đang bị tiến trình cài đặt khác giữ khóa
+            }
+        }
+    }
+
+    if ($removedCount -gt 0) {
+        $freedMB = [math]::Round($freedBytes / 1MB, 1)
+        Log-Text "[CLEAN] Đã tự động dọn $removedCount thư mục/tệp bộ cài WinGet tồn dư ($freedMB MB)."
+    }
+}
+
 Register-Click "btnInstall" {
     Invoke-GuardedAction "Cài đặt ứng dụng" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
@@ -799,31 +887,35 @@ Register-Click "btnInstall" {
         Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
 
-        foreach ($tag in $selectedTags) {
-            $idx++
-            $app = $tag.App
-            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
-            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+        try {
+            foreach ($tag in $selectedTags) {
+                $idx++
+                $app = $tag.App
+                if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+                Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
-            if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
-                $code = Invoke-GitHubAssetInstall -App $app
-            } else {
-                $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-                if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
-                $code = Run-CliStream "winget" $wgArgs
-            }
+                if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+                    $code = Invoke-GitHubAssetInstall -App $app
+                } else {
+                    $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                    if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
+                    $code = Run-CliStream "winget" $wgArgs
+                }
 
-            if ($code -eq 0) {
-                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
-                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-            } else {
-                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
-                if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                    Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
-                    try { Start-Process $app.FallbackUrl } catch {}
+                if ($code -eq 0) {
+                    Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                } else {
+                    Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                    if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                        Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                        try { Start-Process $app.FallbackUrl } catch {}
+                    }
                 }
             }
+        } finally {
+            Clear-WinGetTempInstallers
         }
         Update-SelectionCount
         if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
@@ -899,7 +991,11 @@ Register-Click "btnUpgradeAll" {
         if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-        Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+        try {
+            Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+        } finally {
+            Clear-WinGetTempInstallers
+        }
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
@@ -935,7 +1031,7 @@ Register-Click "btnClearLog" {
 }
 
 # ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
-Register-Click "btnSfcScan" {
+Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "SFC Scan" {
         Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
         if ($txtStatus) { $txtStatus.Text = "Đang chạy SFC Scan..." }
@@ -947,7 +1043,7 @@ Register-Click "btnSfcScan" {
     }
 }
 
-Register-Click "btnDismRestore" {
+Register-Click "btnDismRestore" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "DISM RestoreHealth" {
         Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
         if ($txtStatus) { $txtStatus.Text = "Đang chạy DISM RestoreHealth..." }
@@ -959,7 +1055,7 @@ Register-Click "btnDismRestore" {
     }
 }
 
-Register-Click "btnDismCleanup" {
+Register-Click "btnDismCleanup" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "DISM Component Cleanup" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Lệnh DISM /StartComponentCleanup /ResetBase sẽ nén kho WinSxS và KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại về sau.`n`nBạn có chắc chắn muốn tiếp tục?",
@@ -980,7 +1076,7 @@ Register-Click "btnDismCleanup" {
     }
 }
 
-Register-Click "btnFixWindowsUpdate" {
+Register-Click "btnFixWindowsUpdate" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Khởi tạo lại Windows Update" {
         Log-Text "[*] Bắt đầu khởi tạo và xóa sạch cache lỗi Windows Update..."
         if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi Windows Update..." }
@@ -991,7 +1087,7 @@ Register-Click "btnFixWindowsUpdate" {
     }
 }
 
-Register-Click "btnRestartUpdateServices" {
+Register-Click "btnRestartUpdateServices" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Khởi động lại Update Services" {
         Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
@@ -1000,13 +1096,13 @@ Register-Click "btnRestartUpdateServices" {
     }
 }
 
-Register-Click "btnTriggerScanUpdate" {
+Register-Click "btnTriggerScanUpdate" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Kích hoạt quét cập nhật" {
         Invoke-WindowsUpdateScan
     }
 }
 
-Register-Click "btnFlushDnsWinsock" {
+Register-Click "btnFlushDnsWinsock" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Flush DNS & Reset Winsock" {
         Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
         Clear-DnsResolverCache
@@ -1015,7 +1111,7 @@ Register-Click "btnFlushDnsWinsock" {
     }
 }
 
-Register-Click "btnResetTcpIp" {
+Register-Click "btnResetTcpIp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Reset TCP/IP Stack" {
         Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
         Reset-NetworkInterfaceStack
@@ -1023,7 +1119,7 @@ Register-Click "btnResetTcpIp" {
     }
 }
 
-Register-Click "btnClearTemp" {
+Register-Click "btnClearTemp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Dọn dẹp Temp" {
         Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
         if ($txtStatus) { $txtStatus.Text = "Đang dọn tệp rác Temp..." }
@@ -1035,7 +1131,7 @@ Register-Click "btnClearTemp" {
     }
 }
 
-Register-Click "btnCleanEventLogs" {
+Register-Click "btnCleanEventLogs" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Dọn dẹp Windows Event Logs" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?",
@@ -1054,7 +1150,7 @@ Register-Click "btnCleanEventLogs" {
     }
 }
 
-Register-Click "btnRestartExplorer" {
+Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Khởi động lại Windows Explorer" {
         Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
         Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
@@ -1067,7 +1163,7 @@ Register-Click "btnRestartExplorer" {
 }
 
 # ── LOGIC MODULE QUẢN LÝ & GỠ LỖI DRIVER ──
-Register-Click "btnScanFaultyDrivers" {
+Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét Driver lỗi" {
         Log-Text "=========================================================="
         Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
@@ -1092,7 +1188,7 @@ Register-Click "btnScanFaultyDrivers" {
     }
 }
 
-Register-Click "btnPnpRescan" {
+Register-Click "btnPnpRescan" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét lại thiết bị PnP" {
         Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
@@ -1100,12 +1196,12 @@ Register-Click "btnPnpRescan" {
     }
 }
 
-Register-Click "btnOpenDeviceManager" {
+Register-Click "btnOpenDeviceManager" -LockGroup "Quản lý Driver" {
     Log-Text "[*] Đang mở Trình quản lý thiết bị (devmgmt.msc)..."
     Start-Process "devmgmt.msc"
 }
 
-Register-Click "btnFixDriverUpdate" {
+Register-Click "btnFixDriverUpdate" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Gỡ lỗi kẹt driver update" {
         Log-Text "[*] Đang giải phóng hàng đợi tải driver bị kẹt trong Windows Update..."
         if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..." }
@@ -1125,13 +1221,13 @@ Register-Click "btnFixDriverUpdate" {
     }
 }
 
-Register-Click "btnScanWindowsUpdateDrivers" {
+Register-Click "btnScanWindowsUpdateDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét driver từ Windows Update" {
         Invoke-WindowsUpdateScan
     }
 }
 
-Register-Click "btnCleanDriverStore" {
+Register-Click "btnCleanDriverStore" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Dọn dẹp DriverStore" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Hành động này sẽ xóa các gói driver OEM cũ không còn thiết bị sử dụng trong DriverStore.`nBạn có chắc chắn muốn tiếp tục?",
@@ -1150,7 +1246,7 @@ Register-Click "btnCleanDriverStore" {
     }
 }
 
-Register-Click "btnBackupDrivers" {
+Register-Click "btnBackupDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Sao lưu Driver" {
         $dest = "C:\Backup_Drivers"
         Log-Text "[*] Đang sao lưu toàn bộ Driver của máy ra thư mục: '$dest'..."
@@ -1170,7 +1266,7 @@ Register-Click "btnBackupDrivers" {
     }
 }
 
-Register-Click "btnOpenBackupFolder" {
+Register-Click "btnOpenBackupFolder" -LockGroup "Quản lý Driver" {
     $dest = "C:\Backup_Drivers"
     if (Test-Path -LiteralPath $dest) {
         Start-Process explorer.exe "`"$dest`""
@@ -1185,7 +1281,9 @@ $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
         [System.Windows.Forms.Application]::DoEvents()
-        Scan-And-ColorizeApps
+        Invoke-GuardedAction "Quét ứng dụng khởi động" -DeferExpand {
+            Scan-And-ColorizeApps
+        }
     }
 })
 

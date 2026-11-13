@@ -1986,6 +1986,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <Setter Property="Foreground" Value="#E2E8F0"/>
                                 <Setter TargetName="navBorder" Property="Background" Value="#121825"/>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.48"/>
+                                <Setter Property="Foreground" Value="#64748B"/>
+                                <Setter Property="Cursor" Value="No"/>
+                                <Setter TargetName="navBorder" Property="Background" Value="Transparent"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -2007,8 +2013,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 <StackPanel Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="Ứng dụng (Install)" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                    <Button Name="navBtnRepair" Content="Gỡ lỗi &amp; Hệ thống" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnDrivers" Content="Quản lý Driver" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
+                    <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
                 </StackPanel>
                 <TextBlock Text="DuckUtil" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
@@ -2104,8 +2112,15 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14">
-                    <UniformGrid Columns="2" VerticalAlignment="Top">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Module Gỡ lỗi &amp; Hệ thống hiện đang được khóa để tập trung ổn định trình cài đặt và cập nhật ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
+                        <UniformGrid Columns="2" VerticalAlignment="Top">
                         <!-- Card 1: File Hệ Thống -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
@@ -2172,14 +2187,22 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
-                    </UniformGrid>
-                </ScrollViewer>
+                        </UniformGrid>
+                    </ScrollViewer>
+                </DockPanel>
             </TabItem>
 
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14">
-                    <UniformGrid Columns="3" VerticalAlignment="Top">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Module Quản lý Driver hiện đang được khóa để đảm bảo an toàn hệ thống và tập trung quản lý ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
+                        <UniformGrid Columns="3" VerticalAlignment="Top">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
@@ -2229,8 +2252,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
-                    </UniformGrid>
-                </ScrollViewer>
+                        </UniformGrid>
+                    </ScrollViewer>
+                </DockPanel>
             </TabItem>
         </TabControl>
 
@@ -2585,95 +2609,103 @@ function Test-MatchCompatible {
     return $true
 }
 
-function Scan-And-ColorizeApps {
-    Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
-    if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    [System.Windows.Forms.Application]::DoEvents()
+$script:isScanningApps = $false
+$script:hasCompletedAppScan = $false
+
+function Invoke-WingetListCapture {
+    param(
+        [string]$Arguments = "list --disable-interactivity --accept-source-agreements",
+        [int]$TimeoutSeconds = 35
+    )
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
-        Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
-        Log-Text "[*] Vui lòng cài/cập nhật gói 'App Installer' từ Microsoft Store để kích hoạt tính năng App."
-        if ($txtStatus) { $txtStatus.Text = "Thiếu WinGet | Cần cài App Installer" }
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        return
+        return [PSCustomObject]@{
+            Available = $false
+            TimedOut  = $false
+            ExitCode  = -1
+            StdOut    = ""
+            StdErr    = ""
+        }
     }
 
     $rawList = ""
     $errList = ""
-    try {
-        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-        $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
-        $pinfo.RedirectStandardOutput = $true
-        $pinfo.RedirectStandardError = $true
-        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-        $pinfo.UseShellExecute = $false
-        $pinfo.CreateNoWindow = $true
+    $timedOut = $false
+    $exitCode = -1
 
-        $p = [System.Diagnostics.Process]::Start($pinfo)
-        if ($null -eq $p) {
-            throw "Không thể khởi động tiến trình winget."
-        }
+    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+    $pinfo.FileName = "winget"
+    $pinfo.Arguments = $Arguments
+    $pinfo.RedirectStandardOutput = $true
+    $pinfo.RedirectStandardError = $true
+    $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+    $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+    $pinfo.UseShellExecute = $false
+    $pinfo.CreateNoWindow = $true
 
-        # Đọc dữ liệu bất đồng bộ đồng thời cả 2 luồng stdout và stderr để tránh tràn buffer gây deadlock
-        $readTask = $p.StandardOutput.ReadToEndAsync()
-        $errTask  = $p.StandardError.ReadToEndAsync()
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
-        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-            if ($sw.Elapsed.TotalSeconds -gt 45) {
-                try { if (-not $p.HasExited) { $p.Kill() } } catch {}
-                Log-Text "[⚠️] Lệnh winget list vượt quá thời gian chờ (45s)."
-                break
-            }
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 30
-        }
-        if ($readTask.IsCompleted) { $rawList = $readTask.Result }
-        if ($errTask.IsCompleted) { $errList = $errTask.Result }
-        try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
-
-        # Kiểm tra ExitCode của winget list
-        if ($p.HasExited -and $p.ExitCode -ne 0) {
-            Log-Text "[⚠️] WinGet list kết thúc với mã $($p.ExitCode)."
-            if (-not [string]::IsNullOrWhiteSpace($errList)) {
-                Log-Text "[stderr] $errList"
-            }
-            if ([string]::IsNullOrWhiteSpace($rawList)) {
-                Log-Text "[!] Không nhận được dữ liệu từ WinGet. Giữ nguyên trạng thái quét hiện tại."
-                if ($progressBar) { $progressBar.IsIndeterminate = $false }
-                if ($txtStatus) { $txtStatus.Text = "Lỗi quét WinGet (Mã $($p.ExitCode))" }
-                return
-            }
-        }
-    } catch {
-        Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        return
+    $p = [System.Diagnostics.Process]::Start($pinfo)
+    if ($null -eq $p) {
+        throw "Không thể khởi động tiến trình winget."
     }
 
-    # Chuẩn hóa từng dòng (loại bỏ \r cuối dòng \r\n, đồng thời loại bỏ thanh spinner \r trước nội dung thực)
-    $rawLines = $rawList -split "`n"
+    # Đọc bất đồng bộ cả stdout và stderr để tránh deadlock buffer
+    $readTask = $p.StandardOutput.ReadToEndAsync()
+    $errTask  = $p.StandardError.ReadToEndAsync()
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+        if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+            $timedOut = $true
+            try { if (-not $p.HasExited) { $p.Kill() } } catch {}
+            break
+        }
+        [System.Windows.Forms.Application]::DoEvents()
+        Start-Sleep -Milliseconds 30
+    }
+
+    try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
+    if ($readTask.IsCompleted) { $rawList = $readTask.Result }
+    if ($errTask.IsCompleted)  { $errList = $errTask.Result }
+    if ($p.HasExited) { $exitCode = $p.ExitCode }
+
+    return [PSCustomObject]@{
+        Available = $true
+        TimedOut  = $timedOut
+        ExitCode  = $exitCode
+        StdOut    = $rawList
+        StdErr    = $errList
+    }
+}
+
+function ConvertFrom-WingetListOutput {
+    param(
+        [string]$RawText,
+        [bool]$AllowHeaderless = $false
+    )
+
+    $parsed = [System.Collections.Generic.List[object]]::new()
+    if ([string]::IsNullOrWhiteSpace($RawText)) {
+        return [PSCustomObject]@{ HasTable = $false; Items = $parsed }
+    }
+
+    $rawLines = $RawText -split "`n"
     $lines = [System.Collections.Generic.List[string]]::new($rawLines.Count)
     foreach ($rl in $rawLines) {
         $cleanLine = $rl.TrimEnd("`r")
         if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+        # Loại bỏ mã màu/điều khiển ANSI nếu winget xuất ra luồng chuyển hướng
+        if ($cleanLine.Contains([char]0x1B)) {
+            $cleanLine = [System.Text.RegularExpressions.Regex]::Replace($cleanLine, '\x1B\[[0-9;?]*[A-Za-z]', '')
+        }
         $lines.Add($cleanLine)
     }
 
     $separatorIndex = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match '^---\s*---' -or $lines[$i] -match '^---+$') {
+        if ($lines[$i] -match '^---+(\s+---+)*\s*$') {
             $separatorIndex = $i
             break
         }
     }
-
-    $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $installedList = [System.Collections.Generic.List[object]]::new()
 
     if ($separatorIndex -gt 0) {
         $separatorLine = $lines[$separatorIndex]
@@ -2732,51 +2764,174 @@ function Scan-And-ColorizeApps {
             if (-not [string]::IsNullOrWhiteSpace($appId)) {
                 $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
                 $clean = Get-CleanAppName $appName
-                $itemObj = [PSCustomObject]@{
+                $parsed.Add([PSCustomObject]@{
                     Name      = $appName
                     ID        = $appId
                     Version   = $version
                     Available = $avail
                     HasUpdate = $hasUpdate
                     CleanName = $clean
-                }
-
-                $installedList.Add($itemObj)
-                Set-PreferredMapEntry $idMap $appId $itemObj
-                Set-PreferredMapEntry $nameMap $appName $itemObj
-                if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
+                })
             }
         }
-    } else {
-        # Fallback hoàn toàn cho winget không in header tiêu chuẩn
+    } elseif ($AllowHeaderless) {
+        # Chỉ fallback khi winget thoát bình thường và dòng thực sự có ID hợp lệ
         foreach ($line in $lines) {
             if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
                 if ($cols.Count -ge 2) {
                     $appName = $cols[0].Trim()
                     $appId   = $cols[1].Trim()
+                    if ($appId -notmatch '^(ARP|MSIX)\\|\S+\.\S+') { continue }
                     $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
                     $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
                     $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
                     $clean = Get-CleanAppName $appName
 
-                    $itemObj = [PSCustomObject]@{
+                    $parsed.Add([PSCustomObject]@{
                         Name      = $appName
                         ID        = $appId
                         Version   = $version
                         Available = $avail
                         HasUpdate = $hasUpdate
                         CleanName = $clean
-                    }
-
-                    $installedList.Add($itemObj)
-                    Set-PreferredMapEntry $idMap $appId $itemObj
-                    Set-PreferredMapEntry $nameMap $appName $itemObj
-                    if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
+                    })
                 }
             }
         }
     }
+
+    return [PSCustomObject]@{ HasTable = ($separatorIndex -gt 0); Items = $parsed }
+}
+
+function Get-LocalInstalledEntries {
+    $localItems = [System.Collections.Generic.List[object]]::new()
+    $regRoots = @(
+        @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*';             Prefix = 'ARP\Machine\X64\' },
+        @{ Path = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; Prefix = 'ARP\Machine\X86\' },
+        @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*';             Prefix = 'ARP\User\X64\' },
+        @{ Path = 'HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; Prefix = 'ARP\User\X86\' }
+    )
+
+    foreach ($root in $regRoots) {
+        $entries = Get-ItemProperty $root.Path -ErrorAction SilentlyContinue
+        foreach ($reg in $entries) {
+            if ([string]::IsNullOrWhiteSpace($reg.DisplayName) -or $reg.SystemComponent -eq 1 -or $reg.ReleaseType) { continue }
+            $appName = [string]$reg.DisplayName
+            if ($appName -match 'Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack') { continue }
+
+            $appId = $root.Prefix + [string]$reg.PSChildName
+            $localItems.Add([PSCustomObject]@{
+                Name      = $appName.Trim()
+                ID        = $appId
+                Version   = [string]$reg.DisplayVersion
+                Available = ""
+                HasUpdate = $false
+                CleanName = (Get-CleanAppName $appName)
+            })
+        }
+    }
+
+    foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
+        if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
+        $pkgName = [string]$pkg.Name
+        $localItems.Add([PSCustomObject]@{
+            Name      = $pkgName
+            ID        = "MSIX\" + [string]$pkg.PackageFullName
+            Version   = [string]$pkg.Version
+            Available = ""
+            HasUpdate = $false
+            CleanName = (Get-CleanAppName $pkgName)
+        })
+    }
+
+    return $localItems
+}
+
+function Scan-And-ColorizeApps {
+    if ($script:isScanningApps) {
+        Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
+        return
+    }
+
+    $script:isScanningApps = $true
+    try {
+        Log-Text "[🔍] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
+        if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        [System.Windows.Forms.Application]::DoEvents()
+
+        $wingetItems = [System.Collections.Generic.List[object]]::new()
+        $wingetOk = $false
+        $wingetMissing = $false
+
+        try {
+            $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
+            if (-not $primary.Available) {
+                $wingetMissing = $true
+                Log-Text "[⚠️] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
+            } else {
+                $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
+                if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
+                    $wingetItems = $parsedPrimary.Items
+                    $wingetOk = $true
+                } else {
+                    if ($primary.TimedOut) {
+                        Log-Text "[⚠️] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                    } else {
+                        Log-Text "[⚠️] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
+                            Log-Text "[stderr] $($primary.StdErr.Trim())"
+                        }
+                    }
+
+                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
+                    $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
+
+                    if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
+                        $wingetItems = $parsedFallback.Items
+                        $wingetOk = $true
+                    } elseif ($parsedPrimary.HasTable -and $parsedPrimary.Items.Count -gt $parsedFallback.Items.Count) {
+                        $wingetItems = $parsedPrimary.Items
+                        $wingetOk = $true
+                    } elseif ($parsedFallback.HasTable -and $parsedFallback.Items.Count -gt 0) {
+                        $wingetItems = $parsedFallback.Items
+                        $wingetOk = $true
+                    }
+                }
+            }
+        } catch {
+            Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
+        }
+
+        $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $installedList = [System.Collections.Generic.List[object]]::new()
+
+        foreach ($itemObj in $wingetItems) {
+            $installedList.Add($itemObj)
+            Set-PreferredMapEntry $idMap $itemObj.ID $itemObj
+            Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj
+            if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+        }
+
+        # Luôn bổ sung dữ liệu cục bộ từ Uninstall Registry + Appx để không bao giờ rớt app đã cài khi WinGet trục trặc
+        $localItems = Get-LocalInstalledEntries
+        foreach ($locObj in $localItems) {
+            $installedList.Add($locObj)
+            Set-PreferredMapEntry $idMap $locObj.ID $locObj
+            Set-PreferredMapEntry $nameMap $locObj.Name $locObj
+            if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+        }
+
+        if ($installedList.Count -eq 0 -and -not $wingetOk) {
+            Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
+            if ($txtStatus -and -not $script:hasCompletedAppScan) {
+                $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Get Installed lại" }
+            }
+            return
+        }
 
     # Bộ nhớ đệm tra cứu đa bí danh tốc độ cao (Multi-Alias Lookup Cache)
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -2925,10 +3080,16 @@ function Scan-And-ColorizeApps {
         }
     }
 
-    $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])"
-    Log-Text "[✓] $summary"
-    if ($txtStatus) {
-        $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+        $script:hasCompletedAppScan = $true
+        $modeTag = if (-not $wingetOk) { " [Chế độ dự phòng Registry/Appx]" } else { "" }
+        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])$modeTag"
+        Log-Text "[✓] $summary"
+        if ($txtStatus) {
+            $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
+        }
+    } finally {
+        $script:isScanningApps = $false
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
     }
 }
 
@@ -3427,12 +3588,46 @@ function Invoke-GuardedAction {
     }
 }
 
-# Hàm an toàn gắn sự kiện Click cho nút
+# Khóa an toàn các module bảo trì hệ thống & driver khi chưa mở rộng sử dụng
+$script:LockMaintenanceTabs = $true
+$script:LockedButtonActions = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+function Test-MaintenanceFeatureLocked {
+    param([string]$FeatureName)
+    if ($script:LockMaintenanceTabs) {
+        Log-Text "[LOCK] Tính năng '$FeatureName' hiện đang được tạm khóa."
+        if ($txtStatus) { $txtStatus.Text = "Tính năng '$FeatureName' đang tạm khóa" }
+        return $true
+    }
+    return $false
+}
+
+# Hàm an toàn gắn sự kiện Click cho nút (hỗ trợ khóa theo nhóm tính năng)
 function Register-Click {
-    param([string]$ButtonName, [scriptblock]$Action)
+    param(
+        [string]$ButtonName,
+        [scriptblock]$Action,
+        [string]$LockGroup = ""
+    )
     $btn = $window.FindName($ButtonName)
     if ($btn) {
-        $btn.Add_Click($Action)
+        if (-not [string]::IsNullOrWhiteSpace($LockGroup)) {
+            $script:LockedButtonActions[$ButtonName] = @{
+                Group  = $LockGroup
+                Action = $Action
+            }
+            if ($script:LockMaintenanceTabs) {
+                $btn.IsEnabled = $false
+            }
+            $btn.Add_Click({
+                param($sender, $e)
+                $entry = $script:LockedButtonActions[$sender.Name]
+                if ($entry -and (Test-MaintenanceFeatureLocked $entry.Group)) { return }
+                if ($entry -and $entry.Action) { & $entry.Action }
+            })
+        } else {
+            $btn.Add_Click($Action)
+        }
     } else {
         Write-Warning "Không tìm thấy nút trong XAML: $ButtonName"
     }
@@ -3445,6 +3640,11 @@ $navBtnDrivers = $window.FindName("navBtnDrivers")
 
 function Set-ActiveTab {
     param([int]$index, $activeBtn)
+    if ($script:LockMaintenanceTabs -and ($index -eq 1 -or $index -eq 2)) {
+        $feature = if ($index -eq 1) { "Gỡ lỗi & Hệ thống" } else { "Quản lý Driver" }
+        Test-MaintenanceFeatureLocked $feature | Out-Null
+        return
+    }
     if ($MainTabControl) {
         $MainTabControl.SelectedIndex = $index
     }
@@ -3464,8 +3664,8 @@ function Set-ActiveTab {
 }
 
 Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
-Register-Click "navBtnRepair"  { Set-ActiveTab 1 $navBtnRepair }
-Register-Click "navBtnDrivers" { Set-ActiveTab 2 $navBtnDrivers }
+Register-Click "navBtnRepair"  -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 1 $navBtnRepair }
+Register-Click "navBtnDrivers" -LockGroup "Quản lý Driver"    { Set-ActiveTab 2 $navBtnDrivers }
 
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
@@ -4039,6 +4239,55 @@ function Invoke-GitHubAssetInstall {
     }
 }
 
+function Clear-WinGetTempInstallers {
+    param([string[]]$RootPaths)
+    if (-not $RootPaths -or $RootPaths.Count -eq 0) {
+        $rawCandidates = @(
+            (Join-Path ([System.IO.Path]::GetTempPath()) "WinGet"),
+            $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "Temp\WinGet" })
+        )
+        $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $RootPaths = foreach ($cand in $rawCandidates) {
+            if ([string]::IsNullOrWhiteSpace($cand)) { continue }
+            $full = [System.IO.Path]::GetFullPath($cand).TrimEnd('\')
+            if ($seen.Add($full)) { $full }
+        }
+    }
+
+    $removedCount = 0
+    $freedBytes = [long]0
+    foreach ($wingetTemp in $RootPaths) {
+        if ([string]::IsNullOrWhiteSpace($wingetTemp) -or -not (Test-Path -LiteralPath $wingetTemp)) { continue }
+
+        $entries = Get-ChildItem -LiteralPath $wingetTemp -Force -ErrorAction SilentlyContinue
+        foreach ($entry in $entries) {
+            # Giữ lại thư mục cache manifest nội bộ của WinGet
+            if ($entry.Name -ieq "cache") { continue }
+
+            $entryBytes = [long]0
+            if ($entry.PSIsContainer) {
+                $measure = Get-ChildItem -LiteralPath $entry.FullName -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
+                if ($measure -and $null -ne $measure.Sum) { $entryBytes = [long]$measure.Sum }
+            } else {
+                $entryBytes = [long]$entry.Length
+            }
+
+            try {
+                Remove-Item -LiteralPath $entry.FullName -Recurse -Force -ErrorAction Stop
+                $removedCount++
+                $freedBytes += $entryBytes
+            } catch {
+                # Bỏ qua tệp đang bị tiến trình cài đặt khác giữ khóa
+            }
+        }
+    }
+
+    if ($removedCount -gt 0) {
+        $freedMB = [math]::Round($freedBytes / 1MB, 1)
+        Log-Text "[CLEAN] Đã tự động dọn $removedCount thư mục/tệp bộ cài WinGet tồn dư ($freedMB MB)."
+    }
+}
+
 Register-Click "btnInstall" {
     Invoke-GuardedAction "Cài đặt ứng dụng" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
@@ -4059,31 +4308,35 @@ Register-Click "btnInstall" {
         Log-Text "🚀 BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
 
-        foreach ($tag in $selectedTags) {
-            $idx++
-            $app = $tag.App
-            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
-            Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+        try {
+            foreach ($tag in $selectedTags) {
+                $idx++
+                $app = $tag.App
+                if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+                Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
-            if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
-                $code = Invoke-GitHubAssetInstall -App $app
-            } else {
-                $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-                if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
-                $code = Run-CliStream "winget" $wgArgs
-            }
+                if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+                    $code = Invoke-GitHubAssetInstall -App $app
+                } else {
+                    $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                    if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
+                    $code = Run-CliStream "winget" $wgArgs
+                }
 
-            if ($code -eq 0) {
-                Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
-                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-            } else {
-                Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
-                if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                    Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
-                    try { Start-Process $app.FallbackUrl } catch {}
+                if ($code -eq 0) {
+                    Log-Text "   [✓ HOÀN THÀNH] $($app.Name)"
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                } else {
+                    Log-Text "   [❌ LỖI] $($app.Name) (Exit Code: $code)"
+                    if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                        Log-Text "   [↗] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                        try { Start-Process $app.FallbackUrl } catch {}
+                    }
                 }
             }
+        } finally {
+            Clear-WinGetTempInstallers
         }
         Update-SelectionCount
         if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
@@ -4159,7 +4412,11 @@ Register-Click "btnUpgradeAll" {
         if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
-        Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+        try {
+            Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+        } finally {
+            Clear-WinGetTempInstallers
+        }
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
@@ -4195,7 +4452,7 @@ Register-Click "btnClearLog" {
 }
 
 # ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
-Register-Click "btnSfcScan" {
+Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "SFC Scan" {
         Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
         if ($txtStatus) { $txtStatus.Text = "Đang chạy SFC Scan..." }
@@ -4207,7 +4464,7 @@ Register-Click "btnSfcScan" {
     }
 }
 
-Register-Click "btnDismRestore" {
+Register-Click "btnDismRestore" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "DISM RestoreHealth" {
         Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
         if ($txtStatus) { $txtStatus.Text = "Đang chạy DISM RestoreHealth..." }
@@ -4219,7 +4476,7 @@ Register-Click "btnDismRestore" {
     }
 }
 
-Register-Click "btnDismCleanup" {
+Register-Click "btnDismCleanup" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "DISM Component Cleanup" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Lệnh DISM /StartComponentCleanup /ResetBase sẽ nén kho WinSxS và KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại về sau.`n`nBạn có chắc chắn muốn tiếp tục?",
@@ -4240,7 +4497,7 @@ Register-Click "btnDismCleanup" {
     }
 }
 
-Register-Click "btnFixWindowsUpdate" {
+Register-Click "btnFixWindowsUpdate" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Khởi tạo lại Windows Update" {
         Log-Text "[*] Bắt đầu khởi tạo và xóa sạch cache lỗi Windows Update..."
         if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi Windows Update..." }
@@ -4251,7 +4508,7 @@ Register-Click "btnFixWindowsUpdate" {
     }
 }
 
-Register-Click "btnRestartUpdateServices" {
+Register-Click "btnRestartUpdateServices" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Khởi động lại Update Services" {
         Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
@@ -4260,13 +4517,13 @@ Register-Click "btnRestartUpdateServices" {
     }
 }
 
-Register-Click "btnTriggerScanUpdate" {
+Register-Click "btnTriggerScanUpdate" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Kích hoạt quét cập nhật" {
         Invoke-WindowsUpdateScan
     }
 }
 
-Register-Click "btnFlushDnsWinsock" {
+Register-Click "btnFlushDnsWinsock" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Flush DNS & Reset Winsock" {
         Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
         Clear-DnsResolverCache
@@ -4275,7 +4532,7 @@ Register-Click "btnFlushDnsWinsock" {
     }
 }
 
-Register-Click "btnResetTcpIp" {
+Register-Click "btnResetTcpIp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Reset TCP/IP Stack" {
         Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
         Reset-NetworkInterfaceStack
@@ -4283,7 +4540,7 @@ Register-Click "btnResetTcpIp" {
     }
 }
 
-Register-Click "btnClearTemp" {
+Register-Click "btnClearTemp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Dọn dẹp Temp" {
         Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
         if ($txtStatus) { $txtStatus.Text = "Đang dọn tệp rác Temp..." }
@@ -4295,7 +4552,7 @@ Register-Click "btnClearTemp" {
     }
 }
 
-Register-Click "btnCleanEventLogs" {
+Register-Click "btnCleanEventLogs" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Dọn dẹp Windows Event Logs" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?",
@@ -4314,7 +4571,7 @@ Register-Click "btnCleanEventLogs" {
     }
 }
 
-Register-Click "btnRestartExplorer" {
+Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Khởi động lại Windows Explorer" {
         Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
         Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
@@ -4327,7 +4584,7 @@ Register-Click "btnRestartExplorer" {
 }
 
 # ── LOGIC MODULE QUẢN LÝ & GỠ LỖI DRIVER ──
-Register-Click "btnScanFaultyDrivers" {
+Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét Driver lỗi" {
         Log-Text "=========================================================="
         Log-Text "🔍 ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
@@ -4352,7 +4609,7 @@ Register-Click "btnScanFaultyDrivers" {
     }
 }
 
-Register-Click "btnPnpRescan" {
+Register-Click "btnPnpRescan" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét lại thiết bị PnP" {
         Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
@@ -4360,12 +4617,12 @@ Register-Click "btnPnpRescan" {
     }
 }
 
-Register-Click "btnOpenDeviceManager" {
+Register-Click "btnOpenDeviceManager" -LockGroup "Quản lý Driver" {
     Log-Text "[*] Đang mở Trình quản lý thiết bị (devmgmt.msc)..."
     Start-Process "devmgmt.msc"
 }
 
-Register-Click "btnFixDriverUpdate" {
+Register-Click "btnFixDriverUpdate" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Gỡ lỗi kẹt driver update" {
         Log-Text "[*] Đang giải phóng hàng đợi tải driver bị kẹt trong Windows Update..."
         if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..." }
@@ -4385,13 +4642,13 @@ Register-Click "btnFixDriverUpdate" {
     }
 }
 
-Register-Click "btnScanWindowsUpdateDrivers" {
+Register-Click "btnScanWindowsUpdateDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét driver từ Windows Update" {
         Invoke-WindowsUpdateScan
     }
 }
 
-Register-Click "btnCleanDriverStore" {
+Register-Click "btnCleanDriverStore" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Dọn dẹp DriverStore" -DeferExpand {
         $confirm = [System.Windows.Forms.MessageBox]::Show(
             "Hành động này sẽ xóa các gói driver OEM cũ không còn thiết bị sử dụng trong DriverStore.`nBạn có chắc chắn muốn tiếp tục?",
@@ -4410,7 +4667,7 @@ Register-Click "btnCleanDriverStore" {
     }
 }
 
-Register-Click "btnBackupDrivers" {
+Register-Click "btnBackupDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Sao lưu Driver" {
         $dest = "C:\Backup_Drivers"
         Log-Text "[*] Đang sao lưu toàn bộ Driver của máy ra thư mục: '$dest'..."
@@ -4430,7 +4687,7 @@ Register-Click "btnBackupDrivers" {
     }
 }
 
-Register-Click "btnOpenBackupFolder" {
+Register-Click "btnOpenBackupFolder" -LockGroup "Quản lý Driver" {
     $dest = "C:\Backup_Drivers"
     if (Test-Path -LiteralPath $dest) {
         Start-Process explorer.exe "`"$dest`""
@@ -4445,7 +4702,9 @@ $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
         [System.Windows.Forms.Application]::DoEvents()
-        Scan-And-ColorizeApps
+        Invoke-GuardedAction "Quét ứng dụng khởi động" -DeferExpand {
+            Scan-And-ColorizeApps
+        }
     }
 })
 

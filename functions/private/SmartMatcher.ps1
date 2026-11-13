@@ -150,95 +150,103 @@ function Test-MatchCompatible {
     return $true
 }
 
-function Scan-And-ColorizeApps {
-    Log-Text "[🔍] Đang chạy quét nhận diện ứng dụng & phân tích phiên bản (winget list)..."
-    if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
-    if ($progressBar) { $progressBar.IsIndeterminate = $true }
-    [System.Windows.Forms.Application]::DoEvents()
+$script:isScanningApps = $false
+$script:hasCompletedAppScan = $false
+
+function Invoke-WingetListCapture {
+    param(
+        [string]$Arguments = "list --disable-interactivity --accept-source-agreements",
+        [int]$TimeoutSeconds = 35
+    )
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
-        Log-Text "[⚠️] Máy tính của bạn chưa có WinGet (Windows Package Manager)."
-        Log-Text "[*] Vui lòng cài/cập nhật gói 'App Installer' từ Microsoft Store để kích hoạt tính năng App."
-        if ($txtStatus) { $txtStatus.Text = "Thiếu WinGet | Cần cài App Installer" }
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        return
+        return [PSCustomObject]@{
+            Available = $false
+            TimedOut  = $false
+            ExitCode  = -1
+            StdOut    = ""
+            StdErr    = ""
+        }
     }
 
     $rawList = ""
     $errList = ""
-    try {
-        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-        $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
-        $pinfo.RedirectStandardOutput = $true
-        $pinfo.RedirectStandardError = $true
-        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-        $pinfo.UseShellExecute = $false
-        $pinfo.CreateNoWindow = $true
+    $timedOut = $false
+    $exitCode = -1
 
-        $p = [System.Diagnostics.Process]::Start($pinfo)
-        if ($null -eq $p) {
-            throw "Không thể khởi động tiến trình winget."
-        }
+    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+    $pinfo.FileName = "winget"
+    $pinfo.Arguments = $Arguments
+    $pinfo.RedirectStandardOutput = $true
+    $pinfo.RedirectStandardError = $true
+    $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+    $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+    $pinfo.UseShellExecute = $false
+    $pinfo.CreateNoWindow = $true
 
-        # Đọc dữ liệu bất đồng bộ đồng thời cả 2 luồng stdout và stderr để tránh tràn buffer gây deadlock
-        $readTask = $p.StandardOutput.ReadToEndAsync()
-        $errTask  = $p.StandardError.ReadToEndAsync()
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
-        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-            if ($sw.Elapsed.TotalSeconds -gt 45) {
-                try { if (-not $p.HasExited) { $p.Kill() } } catch {}
-                Log-Text "[⚠️] Lệnh winget list vượt quá thời gian chờ (45s)."
-                break
-            }
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 30
-        }
-        if ($readTask.IsCompleted) { $rawList = $readTask.Result }
-        if ($errTask.IsCompleted) { $errList = $errTask.Result }
-        try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
-
-        # Kiểm tra ExitCode của winget list
-        if ($p.HasExited -and $p.ExitCode -ne 0) {
-            Log-Text "[⚠️] WinGet list kết thúc với mã $($p.ExitCode)."
-            if (-not [string]::IsNullOrWhiteSpace($errList)) {
-                Log-Text "[stderr] $errList"
-            }
-            if ([string]::IsNullOrWhiteSpace($rawList)) {
-                Log-Text "[!] Không nhận được dữ liệu từ WinGet. Giữ nguyên trạng thái quét hiện tại."
-                if ($progressBar) { $progressBar.IsIndeterminate = $false }
-                if ($txtStatus) { $txtStatus.Text = "Lỗi quét WinGet (Mã $($p.ExitCode))" }
-                return
-            }
-        }
-    } catch {
-        Log-Text "[!] Lỗi khi quét danh sách ứng dụng qua WinGet: $($_.Exception.Message)"
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        return
+    $p = [System.Diagnostics.Process]::Start($pinfo)
+    if ($null -eq $p) {
+        throw "Không thể khởi động tiến trình winget."
     }
 
-    # Chuẩn hóa từng dòng (loại bỏ \r cuối dòng \r\n, đồng thời loại bỏ thanh spinner \r trước nội dung thực)
-    $rawLines = $rawList -split "`n"
+    # Đọc bất đồng bộ cả stdout và stderr để tránh deadlock buffer
+    $readTask = $p.StandardOutput.ReadToEndAsync()
+    $errTask  = $p.StandardError.ReadToEndAsync()
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+        if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+            $timedOut = $true
+            try { if (-not $p.HasExited) { $p.Kill() } } catch {}
+            break
+        }
+        [System.Windows.Forms.Application]::DoEvents()
+        Start-Sleep -Milliseconds 30
+    }
+
+    try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
+    if ($readTask.IsCompleted) { $rawList = $readTask.Result }
+    if ($errTask.IsCompleted)  { $errList = $errTask.Result }
+    if ($p.HasExited) { $exitCode = $p.ExitCode }
+
+    return [PSCustomObject]@{
+        Available = $true
+        TimedOut  = $timedOut
+        ExitCode  = $exitCode
+        StdOut    = $rawList
+        StdErr    = $errList
+    }
+}
+
+function ConvertFrom-WingetListOutput {
+    param(
+        [string]$RawText,
+        [bool]$AllowHeaderless = $false
+    )
+
+    $parsed = [System.Collections.Generic.List[object]]::new()
+    if ([string]::IsNullOrWhiteSpace($RawText)) {
+        return [PSCustomObject]@{ HasTable = $false; Items = $parsed }
+    }
+
+    $rawLines = $RawText -split "`n"
     $lines = [System.Collections.Generic.List[string]]::new($rawLines.Count)
     foreach ($rl in $rawLines) {
         $cleanLine = $rl.TrimEnd("`r")
         if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+        # Loại bỏ mã màu/điều khiển ANSI nếu winget xuất ra luồng chuyển hướng
+        if ($cleanLine.Contains([char]0x1B)) {
+            $cleanLine = [System.Text.RegularExpressions.Regex]::Replace($cleanLine, '\x1B\[[0-9;?]*[A-Za-z]', '')
+        }
         $lines.Add($cleanLine)
     }
 
     $separatorIndex = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match '^---\s*---' -or $lines[$i] -match '^---+$') {
+        if ($lines[$i] -match '^---+(\s+---+)*\s*$') {
             $separatorIndex = $i
             break
         }
     }
-
-    $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    $installedList = [System.Collections.Generic.List[object]]::new()
 
     if ($separatorIndex -gt 0) {
         $separatorLine = $lines[$separatorIndex]
@@ -297,51 +305,174 @@ function Scan-And-ColorizeApps {
             if (-not [string]::IsNullOrWhiteSpace($appId)) {
                 $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
                 $clean = Get-CleanAppName $appName
-                $itemObj = [PSCustomObject]@{
+                $parsed.Add([PSCustomObject]@{
                     Name      = $appName
                     ID        = $appId
                     Version   = $version
                     Available = $avail
                     HasUpdate = $hasUpdate
                     CleanName = $clean
-                }
-
-                $installedList.Add($itemObj)
-                Set-PreferredMapEntry $idMap $appId $itemObj
-                Set-PreferredMapEntry $nameMap $appName $itemObj
-                if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
+                })
             }
         }
-    } else {
-        # Fallback hoàn toàn cho winget không in header tiêu chuẩn
+    } elseif ($AllowHeaderless) {
+        # Chỉ fallback khi winget thoát bình thường và dòng thực sự có ID hợp lệ
         foreach ($line in $lines) {
             if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
                 if ($cols.Count -ge 2) {
                     $appName = $cols[0].Trim()
                     $appId   = $cols[1].Trim()
+                    if ($appId -notmatch '^(ARP|MSIX)\\|\S+\.\S+') { continue }
                     $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
                     $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
                     $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
                     $clean = Get-CleanAppName $appName
 
-                    $itemObj = [PSCustomObject]@{
+                    $parsed.Add([PSCustomObject]@{
                         Name      = $appName
                         ID        = $appId
                         Version   = $version
                         Available = $avail
                         HasUpdate = $hasUpdate
                         CleanName = $clean
-                    }
-
-                    $installedList.Add($itemObj)
-                    Set-PreferredMapEntry $idMap $appId $itemObj
-                    Set-PreferredMapEntry $nameMap $appName $itemObj
-                    if ($clean.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $clean $itemObj }
+                    })
                 }
             }
         }
     }
+
+    return [PSCustomObject]@{ HasTable = ($separatorIndex -gt 0); Items = $parsed }
+}
+
+function Get-LocalInstalledEntries {
+    $localItems = [System.Collections.Generic.List[object]]::new()
+    $regRoots = @(
+        @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*';             Prefix = 'ARP\Machine\X64\' },
+        @{ Path = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; Prefix = 'ARP\Machine\X86\' },
+        @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*';             Prefix = 'ARP\User\X64\' },
+        @{ Path = 'HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'; Prefix = 'ARP\User\X86\' }
+    )
+
+    foreach ($root in $regRoots) {
+        $entries = Get-ItemProperty $root.Path -ErrorAction SilentlyContinue
+        foreach ($reg in $entries) {
+            if ([string]::IsNullOrWhiteSpace($reg.DisplayName) -or $reg.SystemComponent -eq 1 -or $reg.ReleaseType) { continue }
+            $appName = [string]$reg.DisplayName
+            if ($appName -match 'Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack') { continue }
+
+            $appId = $root.Prefix + [string]$reg.PSChildName
+            $localItems.Add([PSCustomObject]@{
+                Name      = $appName.Trim()
+                ID        = $appId
+                Version   = [string]$reg.DisplayVersion
+                Available = ""
+                HasUpdate = $false
+                CleanName = (Get-CleanAppName $appName)
+            })
+        }
+    }
+
+    foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
+        if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
+        $pkgName = [string]$pkg.Name
+        $localItems.Add([PSCustomObject]@{
+            Name      = $pkgName
+            ID        = "MSIX\" + [string]$pkg.PackageFullName
+            Version   = [string]$pkg.Version
+            Available = ""
+            HasUpdate = $false
+            CleanName = (Get-CleanAppName $pkgName)
+        })
+    }
+
+    return $localItems
+}
+
+function Scan-And-ColorizeApps {
+    if ($script:isScanningApps) {
+        Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
+        return
+    }
+
+    $script:isScanningApps = $true
+    try {
+        Log-Text "[🔍] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
+        if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        [System.Windows.Forms.Application]::DoEvents()
+
+        $wingetItems = [System.Collections.Generic.List[object]]::new()
+        $wingetOk = $false
+        $wingetMissing = $false
+
+        try {
+            $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
+            if (-not $primary.Available) {
+                $wingetMissing = $true
+                Log-Text "[⚠️] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
+            } else {
+                $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
+                if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
+                    $wingetItems = $parsedPrimary.Items
+                    $wingetOk = $true
+                } else {
+                    if ($primary.TimedOut) {
+                        Log-Text "[⚠️] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                    } else {
+                        Log-Text "[⚠️] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
+                            Log-Text "[stderr] $($primary.StdErr.Trim())"
+                        }
+                    }
+
+                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
+                    $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
+
+                    if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
+                        $wingetItems = $parsedFallback.Items
+                        $wingetOk = $true
+                    } elseif ($parsedPrimary.HasTable -and $parsedPrimary.Items.Count -gt $parsedFallback.Items.Count) {
+                        $wingetItems = $parsedPrimary.Items
+                        $wingetOk = $true
+                    } elseif ($parsedFallback.HasTable -and $parsedFallback.Items.Count -gt 0) {
+                        $wingetItems = $parsedFallback.Items
+                        $wingetOk = $true
+                    }
+                }
+            }
+        } catch {
+            Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
+        }
+
+        $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $installedList = [System.Collections.Generic.List[object]]::new()
+
+        foreach ($itemObj in $wingetItems) {
+            $installedList.Add($itemObj)
+            Set-PreferredMapEntry $idMap $itemObj.ID $itemObj
+            Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj
+            if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+        }
+
+        # Luôn bổ sung dữ liệu cục bộ từ Uninstall Registry + Appx để không bao giờ rớt app đã cài khi WinGet trục trặc
+        $localItems = Get-LocalInstalledEntries
+        foreach ($locObj in $localItems) {
+            $installedList.Add($locObj)
+            Set-PreferredMapEntry $idMap $locObj.ID $locObj
+            Set-PreferredMapEntry $nameMap $locObj.Name $locObj
+            if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+        }
+
+        if ($installedList.Count -eq 0 -and -not $wingetOk) {
+            Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
+            if ($txtStatus -and -not $script:hasCompletedAppScan) {
+                $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Get Installed lại" }
+            }
+            return
+        }
 
     # Bộ nhớ đệm tra cứu đa bí danh tốc độ cao (Multi-Alias Lookup Cache)
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -490,9 +621,15 @@ function Scan-And-ColorizeApps {
         }
     }
 
-    $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])"
-    Log-Text "[✓] $summary"
-    if ($txtStatus) {
-        $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)"
+        $script:hasCompletedAppScan = $true
+        $modeTag = if (-not $wingetOk) { " [Chế độ dự phòng Registry/Appx]" } else { "" }
+        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [🟢 XANH], $countOutdated bản cũ [🔴 ĐỎ])$modeTag"
+        Log-Text "[✓] $summary"
+        if ($txtStatus) {
+            $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
+        }
+    } finally {
+        $script:isScanningApps = $false
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
     }
 }
