@@ -292,7 +292,8 @@ $appsRawJson = @'
         ],
         "Category": "Web Browsers",
         "IDn": 7,
-        "Url": "https://www.opera.com/gx"
+        "Url": "https://www.opera.com/gx",
+        "IconUrl": "https://img.icons8.com/color/96/opera-gx.png"
     },
     {
         "ID": "Discord.Discord",
@@ -330,7 +331,7 @@ $appsRawJson = @'
         ],
         "Category": "Communication",
         "IDn": 10,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/signal.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/signal-app.png"
     },
     {
         "ID": "VNGCorp.Zalo",
@@ -445,7 +446,8 @@ $appsRawJson = @'
             "TeamViewer.TeamViewer"
         ],
         "Category": "Remote Desktop",
-        "IDn": 19
+        "IDn": 19,
+        "IconUrl": "https://www.google.com/s2/favicons?domain=teamviewer.com&sz=128"
     },
     {
         "ID": "Microsoft.VisualStudioCode",
@@ -482,7 +484,7 @@ $appsRawJson = @'
             "Bảng điều khiển Windows",
             "Microsoft.WindowsTerminal"
         ],
-        "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images/Square44x44Logo.targetsize-64.png",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/windows-terminal.png",
         "Category": "Development",
         "IDn": 22,
         "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
@@ -548,7 +550,8 @@ $appsRawJson = @'
             "Notepad++.Notepad++"
         ],
         "Category": "Development",
-        "IDn": 27
+        "IDn": 27,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/notepad-plus-plus.png"
     },
     {
         "ID": "Postman.Postman",
@@ -573,7 +576,8 @@ $appsRawJson = @'
             "DBeaver.DBeaver.Community"
         ],
         "Category": "Development",
-        "IDn": 29
+        "IDn": 29,
+        "IconUrl": "https://raw.githubusercontent.com/dbeaver/dbeaver/devel/plugins/org.jkiss.dbeaver.ui.app.standalone/icons/dbeaver256.png"
     },
     {
         "ID": "GoLang.Go",
@@ -599,7 +603,7 @@ $appsRawJson = @'
         ],
         "Category": "Development",
         "IDn": 31,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rust-dark.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/rust-light.png"
     },
     {
         "ID": "Microsoft.DotNet.Framework.Runtime",
@@ -777,7 +781,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 44,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.8.JDK",
@@ -792,7 +796,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 45,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JRE",
@@ -806,7 +810,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 46,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JDK",
@@ -821,7 +825,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 47,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.16.JDK",
@@ -835,7 +839,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 48,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JRE",
@@ -849,7 +853,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 49,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JDK",
@@ -864,7 +868,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 50,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.18.JDK",
@@ -878,7 +882,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 51,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.19.JDK",
@@ -892,7 +896,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 52,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.20.JDK",
@@ -906,7 +910,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 53,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JRE",
@@ -920,7 +924,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 54,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JDK",
@@ -935,7 +939,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 55,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.22.JDK",
@@ -949,7 +953,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 56,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.23.JDK",
@@ -963,7 +967,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 57,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.24.JDK",
@@ -977,7 +981,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 58,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.25.JDK",
@@ -991,7 +995,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 59,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "Microsoft.VCRedist.2005.x64",
@@ -1198,7 +1202,8 @@ $appsRawJson = @'
             "RARLab.WinRAR"
         ],
         "Category": "System Utilities",
-        "IDn": 74
+        "IDn": 74,
+        "IconUrl": "https://www.google.com/s2/favicons?domain=win-rar.com&sz=128"
     },
     {
         "ID": "voidtools.Everything",
@@ -1285,7 +1290,8 @@ $appsRawJson = @'
         ],
         "Category": "Hardware & Monitoring",
         "IDn": 81,
-        "Url": "https://www.msi.com/Landing/afterburner/graphics-cards"
+        "Url": "https://www.msi.com/Landing/afterburner/graphics-cards",
+        "IconUrl": "https://img.icons8.com/fluency/96/msi-afterburner.png"
     },
     {
         "ID": "Rem0o.FanControl",
@@ -1413,7 +1419,7 @@ $appsRawJson = @'
         ],
         "Category": "Audio & Video",
         "IDn": 91,
-        "IconUrl": "https://raw.githubusercontent.com/obsproject/obs-studio/master/frontend/cmake/linux/icons/obs-logo-128.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/obs-studio.png"
     },
     {
         "ID": "Spotify.Spotify",
@@ -1437,7 +1443,7 @@ $appsRawJson = @'
         ],
         "Category": "Audio & Video",
         "IDn": 93,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/audacity.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/audacity.png"
     },
     {
         "ID": "HandBrake.HandBrake",
@@ -1475,7 +1481,8 @@ $appsRawJson = @'
             "ShareX.ShareX"
         ],
         "Category": "Graphics & Design",
-        "IDn": 96
+        "IDn": 96,
+        "IconUrl": "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png"
     },
     {
         "ID": "GIMP.GIMP",
@@ -1488,7 +1495,7 @@ $appsRawJson = @'
         ],
         "Category": "Graphics & Design",
         "IDn": 97,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/gimp.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/gimp.png"
     },
     {
         "ID": "KDE.Krita",
@@ -1499,7 +1506,8 @@ $appsRawJson = @'
             "KDE.Krita"
         ],
         "Category": "Graphics & Design",
-        "IDn": 98
+        "IDn": 98,
+        "IconUrl": "https://img.icons8.com/color/96/krita.png"
     },
     {
         "ID": "BlenderFoundation.Blender",
@@ -1523,7 +1531,7 @@ $appsRawJson = @'
         ],
         "Category": "Graphics & Design",
         "IDn": 100,
-        "IconUrl": "https://icons.duckduckgo.com/ip3/inkscape.org.ico"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/inkscape-light.png"
     },
     {
         "ID": "TheDocumentFoundation.LibreOffice",
@@ -1559,7 +1567,7 @@ $appsRawJson = @'
         ],
         "Category": "Documents & Office",
         "IDn": 103,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/notion-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/notion.png"
     },
     {
         "ID": "SumatraPDF.SumatraPDF",
@@ -1598,7 +1606,7 @@ $appsRawJson = @'
         "Category": "Game Launchers",
         "IDn": 106,
         "Url": "https://store.steampowered.com/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/steam.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/steam.png"
     },
     {
         "ID": "EpicGames.EpicGamesLauncher",
@@ -1611,7 +1619,7 @@ $appsRawJson = @'
         ],
         "Category": "Game Launchers",
         "IDn": 107,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/epic-games-light.png",
+        "IconUrl": "https://img.icons8.com/fluency/96/epic-games.png",
         "Url": "https://store.epicgames.com/"
     },
     {
@@ -1625,7 +1633,7 @@ $appsRawJson = @'
         "Category": "Game Launchers",
         "IDn": 108,
         "Url": "https://www.gog.com/galaxy",
-        "IconUrl": "https://gogalaxy.gog-statics.com/favicons/android-icon-192x192.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/gog-galaxy.png"
     },
     {
         "ID": "Playnite.Playnite",
@@ -1661,7 +1669,7 @@ $appsRawJson = @'
         ],
         "Category": "File Transfer & Cloud",
         "IDn": 111,
-        "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/assets/img/logo-512.png"
+        "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
     },
     {
         "ID": "WinSCP.WinSCP",
@@ -1710,12 +1718,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="DuckUtil - Cyber Obsidian Suite"
+    Title="DuckUtil — Windows Software &amp; Maintenance Suite"
     Width="1260" Height="780"
     MinWidth="980" MinHeight="620"
     WindowStartupLocation="CenterScreen"
-    Background="#090B10"
-    Foreground="#F8FAFC"
+    Background="#0C1018"
+    Foreground="#E2E8F0"
     FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType"
@@ -1723,8 +1731,52 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
     SnapsToDevicePixels="True">
 
     <Window.Resources>
-        <!-- ═══ PHONG CÁCH THANH CUỘN (SCROLLBAR) HIỆN ĐẠI SIÊU GỌN - OBSIDIAN CYBER (8PX) ═══ -->
-        <!-- Style cho Thumb thanh cuộn (Dọc) -->
+        <!-- ═══ FLUENT CHECKBOX TỐI GIẢN CHUẨN WINUTIL ═══ -->
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <Grid Background="Transparent" Width="16" Height="16">
+                            <Border x:Name="box" Width="15" Height="15" CornerRadius="4"
+                                    Background="#131B29" BorderBrush="#334155" BorderThickness="1.2"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Path x:Name="checkMark" Visibility="Collapsed"
+                                      Data="M 2.2,6.2 L 5.2,9.2 L 10.8,3.2"
+                                      Stroke="#FFFFFF" StrokeThickness="1.8"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="box" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="box" Property="Background" Value="#192335"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="box" Property="Background" Value="#0284C7"/>
+                                <Setter TargetName="box" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="checkMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="box" Property="Background" Value="#0EA5E9"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="box" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ═══ THANH CUỘN (SCROLLBAR) MẢNH 7PX ═══ -->
         <Style x:Key="ModernScrollThumb" TargetType="{x:Type Thumb}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
@@ -1733,7 +1785,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Border Name="thumbBorder" Background="#26334D" CornerRadius="4" Margin="2,0"/>
+                        <Border Name="thumbBorder" Background="#253147" CornerRadius="3" Margin="2,0"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="thumbBorder" Property="Background" Value="#38BDF8"/>
@@ -1747,7 +1799,6 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Setter>
         </Style>
 
-        <!-- RepeatButton trong suốt không mũi tên -->
         <Style x:Key="ScrollBarPageButton" TargetType="{x:Type RepeatButton}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
@@ -1762,13 +1813,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Setter>
         </Style>
 
-        <!-- Style toàn cục tự động áp dụng cho tất cả ScrollBar trong App -->
         <Style TargetType="{x:Type ScrollBar}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Style.Triggers>
                 <Trigger Property="Orientation" Value="Vertical">
-                    <Setter Property="Width" Value="8"/>
+                    <Setter Property="Width" Value="7"/>
                     <Setter Property="Height" Value="Auto"/>
                     <Setter Property="Template">
                         <Setter.Value>
@@ -1792,7 +1842,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 </Trigger>
                 <Trigger Property="Orientation" Value="Horizontal">
                     <Setter Property="Width" Value="Auto"/>
-                    <Setter Property="Height" Value="8"/>
+                    <Setter Property="Height" Value="7"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type ScrollBar}">
@@ -1805,7 +1855,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             <Thumb Style="{StaticResource ModernScrollThumb}">
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border Name="hThumbBorder" Background="#26334D" CornerRadius="4" Margin="0,2"/>
+                                                        <Border Name="hThumbBorder" Background="#253147" CornerRadius="3" Margin="0,2"/>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter TargetName="hThumbBorder" Property="Background" Value="#38BDF8"/>
@@ -1830,34 +1880,34 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Style.Triggers>
         </Style>
 
-        <!-- Nút bấm phong cách Action (Primary Accent Buttons) -->
+        <!-- Nút bấm chính (Matte Fluent Accent - Đỡ chói mắt) -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#25FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#24FFFFFF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.88"/>
-                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#60FFFFFF"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.90"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#55FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.70"/>
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.72"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="btnBorder" Property="Opacity" Value="0.45"/>
@@ -1868,16 +1918,16 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Setter>
         </Style>
 
-        <!-- Nút phụ (Secondary Buttons - Dark Slate Accent) -->
+        <!-- Nút phụ (Clean Dark Slate Flat Style chuẩn WinUtil) -->
         <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#121724"/>
-            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="Background" Value="#141B29"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="14,8"/>
-            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="Padding" Value="13,7"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#1F2A3D"/>
+            <Setter Property="BorderBrush" Value="#212B3F"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Template">
@@ -1886,16 +1936,16 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7" Padding="{TemplateBinding Padding}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#1C2538"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="#1B2538"/>
                                 <Setter TargetName="btnBorder" Property="BorderBrush" Value="#38BDF8"/>
-                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="btnBorder" Property="Background" Value="#161E2E"/>
@@ -1910,14 +1960,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Setter>
         </Style>
 
-        <!-- Nút điều hướng Tab chính (NavTabButton) -->
+        <!-- Nút điều hướng Tab chính (WinUtil Clean Tab Strip) -->
         <Style x:Key="NavTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#64748B"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="22,12"/>
-            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0,0,0,2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -1934,7 +1984,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Foreground" Value="#E2E8F0"/>
-                                <Setter TargetName="navBorder" Property="Background" Value="#141824"/>
+                                <Setter TargetName="navBorder" Property="Background" Value="#121825"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -1948,28 +1998,32 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="Auto" Name="rowDefTerminal"/>  <!-- Cyber Terminal Log -->
+            <RowDefinition Height="Auto" Name="rowDefTerminal"/>  <!-- Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
-        <Border Grid.Row="0" Background="#0D1018" Padding="18,0" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <Button Name="navBtnApps" Content="📦 ỨNG DỤNG (APPLICATIONS)" Style="{StaticResource NavTabButton}"
-                        BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                <Button Name="navBtnRepair" Content="🔧 GỠ LỖI &amp; SỬA HỆ THỐNG" Style="{StaticResource NavTabButton}"/>
-                <Button Name="navBtnDrivers" Content="🚗 QUẢN LÝ &amp; GỠ LỖI DRIVER" Style="{StaticResource NavTabButton}"/>
-            </StackPanel>
+        <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#192130" BorderThickness="0,0,0,1">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Button Name="navBtnApps" Content="Ứng dụng (Install)" Style="{StaticResource NavTabButton}"
+                            BorderBrush="#38BDF8" Foreground="#38BDF8"/>
+                    <Button Name="navBtnRepair" Content="Gỡ lỗi &amp; Hệ thống" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnDrivers" Content="Quản lý Driver" Style="{StaticResource NavTabButton}"/>
+                </StackPanel>
+                <TextBlock Text="DuckUtil" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
+            </Grid>
         </Border>
 
         <!-- ═══ 2. MAIN VIEWPORT (TAB CONTROL) ═══ -->
-        <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderThickness="0">
+        <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderThickness="0" Padding="0">
             <TabControl.ItemContainerStyle>
                 <Style TargetType="TabItem">
                     <Setter Property="Visibility" Value="Collapsed"/>
                 </Style>
             </TabControl.ItemContainerStyle>
 
-            <!-- ── TAB 1: ỨNG DỤNG (BỐ CỤC 4 CỘT) ── -->
+            <!-- ── TAB 1: ỨNG DỤNG (BỐ CỤC 4 CỘT TỐI GIẢN CHUẨN WINUTIL) ── -->
             <TabItem>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -1977,15 +2031,15 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Thanh nút bấm ứng dụng + Chú giải phân màu -->
-                    <Border Grid.Row="0" Background="#0E121B" Padding="18,10" BorderBrush="#181E2C" BorderThickness="0,0,0,1">
+                    <!-- Thanh công cụ tối giản -->
+                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <!-- Hàng 1: Nút bấm hành động -->
+                            <!-- Hàng 1: Hành động chính -->
                             <Grid Grid.Row="0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -1994,54 +2048,44 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Button Name="btnInstall" Content="🚀 Install Selected" Style="{StaticResource ActionButton}"
-                                            Background="#10B981" Padding="18,9"/>
-                                    <Button Name="btnUpgradeAll" Content="⚡ Upgrade All" Style="{StaticResource ActionButton}"
-                                            Background="#F59E0B" Padding="16,9"/>
-                                    <Button Name="btnUninstall" Content="🗑️ Uninstall Selected" Style="{StaticResource ActionButton}"
-                                            Background="#EF4444" Padding="16,9"/>
-                                    <Button Name="btnScanInstalled" Content="🔍 Get Installed" Style="{StaticResource ActionButton}"
-                                            Background="#0EA5E9" Padding="16,9"/>
+                                    <Button Name="btnInstall" Content="Install Selected" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Padding="15,7"/>
+                                    <Button Name="btnUpgradeAll" Content="Upgrade All" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#FBBF24" BorderBrush="#3B311B"/>
+                                    <Button Name="btnUninstall" Content="Uninstall Selected" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#F87171" BorderBrush="#3E2027"/>
+                                    <Button Name="btnScanInstalled" Content="Get Installed" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#1D3652"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                    <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}"/>
-                                    <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}"/>
+                                    <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                                    <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}" Margin="0"/>
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Hàng 2: Chú thích màu sắc chuẩn dạng Cyber Pill Badge -->
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="4,10,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Trạng thái màu tên App:" FontSize="11.5" Foreground="#64748B" Margin="0,0,12,0"
-                                           FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <Border Background="#161D2C" BorderBrush="#253249" BorderThickness="1"
-                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="●" Foreground="#FFFFFF" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Trắng: Chưa cài đặt" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Background="#0C2518" BorderBrush="#14532D" BorderThickness="1"
-                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="●" Foreground="#34D399" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Xanh lá: Đã cài (Bản mới nhất)" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Background="#2A1216" BorderBrush="#5B1621" BorderThickness="1"
-                                        CornerRadius="12" Padding="10,3" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="●" Foreground="#F87171" Margin="0,0,6,0" FontSize="10" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Đỏ: Đã cài (Bản cũ - Có cập nhật)" FontSize="11" Foreground="#F87171" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Border>
+                            <!-- Hàng 2: Chú thích trạng thái siêu gọn (Không nhét hộp pill dày cộm) -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
+                                    <Ellipse Width="7" Height="7" Fill="#F1F5F9" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Chưa cài đặt" FontSize="11" Foreground="#CBD5E1"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
+                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đã cài (Mới nhất)" FontSize="11" Foreground="#34D399"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="7" Height="7" Fill="#F87171" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Bản cũ (Có cập nhật)" FontSize="11" Foreground="#F87171"/>
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
                     </Border>
 
-                    <!-- Lưới Card 4 CỘT DỌC TỰ NHIÊN (Masonry 4 Cột, Chiều cao Auto, Chiều rộng cân đối) -->
+                    <!-- Lưới Card 4 Cột Dọc Tự Nhiên (Masonry 4 Cột) -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                                  CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,12">
+                                  CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                         <Grid Name="CardsContainer">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -2060,72 +2104,72 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
             <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14">
                     <UniformGrid Columns="2" VerticalAlignment="Top">
                         <!-- Card 1: File Hệ Thống -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#0C283F" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="ExtraBold" Foreground="#38BDF8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#12263A" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="Bold" Foreground="#38BDF8"/>
                                     </Border>
-                                    <TextBlock Text="🛠️ SỬA CHỮA FILE HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Sửa chữa file hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Quét và tự động sửa các file hệ thống Windows bị hỏng hoặc mất qua SFC và DISM."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Windows Update -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#311F0D" BorderBrush="#B45309" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F59E0B"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#2A1F12" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
-                                    <TextBlock Text="🔄 GỠ LỖI WINDOWS UPDATE" FontWeight="Bold" FontSize="14" Foreground="#F59E0B" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Gỡ lỗi Windows Update" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Khắc phục triệt để lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFixWindowsUpdate" Content="⚡ Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnFixWindowsUpdate" Content="Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#B45309" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Mạng & DNS -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#09281C" BorderBrush="#059669" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="ExtraBold" Foreground="#10B981"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#0E2920" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
-                                    <TextBlock Text="🌐 SỬA LỖI MẠNG &amp; KẾT NỐI" FontWeight="Bold" FontSize="14" Foreground="#10B981" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Sửa lỗi Mạng &amp; Kết nối" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Khắc phục sự cố mất kết nối mạng, gián đoạn truy cập web, lỗi DNS và sự cố bộ giao thức."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 4: Dọn Rác & Khôi Phục UI -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#22173B" BorderBrush="#7C3AED" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="ExtraBold" Foreground="#A78BFA"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#1F1936" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="Bold" Foreground="#A78BFA"/>
                                     </Border>
-                                    <TextBlock Text="🧹 BẢO TRÌ &amp; DỌN DẸP HỆ THỐNG" FontWeight="Bold" FontSize="14" Foreground="#A78BFA" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Bảo trì &amp; Dọn dẹp hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Giải phóng dung lượng ổ C bị chiếm dụng bởi tệp tạm, nhật ký sự kiện và nạp lại thanh Taskbar khi bị treo."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnCleanEventLogs" Content="Dọn Dẹp Windows Event Logs" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnCleanEventLogs" Content="Dọn Dẹp Windows Event Logs" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
                     </UniformGrid>
@@ -2134,55 +2178,55 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
             <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14">
                     <UniformGrid Columns="3" VerticalAlignment="Top">
                         <!-- Card 1: Chẩn Đoán Driver Lỗi -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#310D18" BorderBrush="#BE123C" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F43F5E"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#2D141D" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="Bold" Foreground="#FB7185"/>
                                     </Border>
-                                    <TextBlock Text="⚠️ CHẨN ĐOÁN PHẦN CỨNG" FontWeight="Bold" FontSize="14" Foreground="#F43F5E" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Chẩn đoán phần cứng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị xung đột crash."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnScanFaultyDrivers" Content="🔍 Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#E11D48" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnScanFaultyDrivers" Content="Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#BE123C" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 2: Gỡ Lỗi Update Driver -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#311F0D" BorderBrush="#B45309" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="ExtraBold" Foreground="#F59E0B"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#2A1F12" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
-                                    <TextBlock Text="🛠️ GỠ LỖI CẬP NHẬT DRIVER" FontWeight="Bold" FontSize="14" Foreground="#F59E0B" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Gỡ lỗi cập nhật Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnFixDriverUpdate" Content="⚡ Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#EA580C" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnFixDriverUpdate" Content="Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#B45309" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
                         <!-- Card 3: Sao Lưu Driver -->
-                        <Border Background="#0F1420" BorderBrush="#1E283C" BorderThickness="1" CornerRadius="12" Margin="8" Padding="20">
+                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Border Background="#09281C" BorderBrush="#059669" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="ExtraBold" Foreground="#10B981"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Border Background="#0E2920" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
-                                    <TextBlock Text="💾 SAO LƯU &amp; BẢO VỆ DRIVER" FontWeight="Bold" FontSize="14" Foreground="#10B981" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Sao lưu &amp; Bảo vệ Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi."
-                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
-                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,4" HorizontalContentAlignment="Left" Padding="16,10"/>
+                                           FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
                     </UniformGrid>
@@ -2191,7 +2235,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
         </TabControl>
 
         <!-- ═══ 3. STATUS & PROGRESS BAR ═══ -->
-        <Border Grid.Row="2" Background="#0A0D14" Padding="20,7" BorderBrush="#181E2C" BorderThickness="0,1,0,0">
+        <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#192130" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -2203,22 +2247,22 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#10B981" Width="7" Height="7" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <Ellipse Fill="#10B981" Width="7" Height="7" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Name="txtStatus" Text="Sẵn sàng"
-                               Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold"/>
+                               Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold"/>
                 </StackPanel>
 
                 <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app được chọn"
-                           Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                           Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
 
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
-                             Name="progressBar" Height="3" Margin="0,6,0,2"
-                             Background="#161C2A" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
+                             Name="progressBar" Height="2" Margin="0,5,0,1"
+                             Background="#141C2B" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
             </Grid>
         </Border>
 
-        <!-- ═══ 4. CYBER TERMINAL LOG ═══ -->
-        <Border Grid.Row="3" Background="#05070B" Padding="16,8" BorderBrush="#141924" BorderThickness="0,1,0,0">
+        <!-- ═══ 4. TERMINAL LOG (THU GỌN MẶC ĐỊNH) ═══ -->
+        <Border Grid.Row="3" Background="#080B12" Padding="16,6" BorderBrush="#151C29" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -2226,15 +2270,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Background="#EF4444" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
-                        <Border Background="#F59E0B" Width="8" Height="8" CornerRadius="4" Margin="0,0,5,0"/>
-                        <Border Background="#10B981" Width="8" Height="8" CornerRadius="4" Margin="0,0,8,0"/>
-                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="Bold" Foreground="#475569"
-                                   FontFamily="Cascadia Mono, Consolas, sans-serif" VerticalAlignment="Center"/>
+                        <TextBlock Text="&gt;_" FontSize="10.5" FontWeight="Bold" Foreground="#38BDF8"
+                                   FontFamily="Cascadia Mono, Consolas, monospace" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"
+                                   FontFamily="Cascadia Mono, Consolas, monospace" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Name="btnToggleTerminal" Content="▲ Mở rộng"
-                                Background="#111622" BorderBrush="#243044" BorderThickness="1"
+                                Background="#111722" BorderBrush="#1F293B" BorderThickness="1"
                                 Foreground="#34D399" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
                                 Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
                         <Button Name="btnClearLog" Content="Xóa Log"
@@ -2246,7 +2289,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0" CaretBrush="#38BDF8"
-                         Text="[DuckUtil Cyber Suite] Khởi tạo thành công với bố cục 4 cột và phân màu phiên bản.&#x0d;&#x0a;"/>
+                         Text="[DuckUtil] Khởi tạo thành công.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
     </Grid>
@@ -2396,7 +2439,7 @@ function Run-CliStream {
 $script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
-$script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF))
+$script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9))
 
 $script:brushOutdatedFg.Freeze()
 $script:brushLatestFg.Freeze()
@@ -2845,7 +2888,7 @@ function Scan-And-ColorizeApps {
                 $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
                 $tb.Text = $app.Name
-                $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
+                $tb.TextDecorations = $null
                 if ($updateBadge -and $updateText) {
                     $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
@@ -3246,42 +3289,47 @@ $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushNavInactive.Freeze()
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
-$script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0F, 0x14, 0x20)); $script:brushCardBg.Freeze()
-$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x28, 0x3C)); $script:brushCardBorder.Freeze()
-$script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushHeaderFg.Freeze()
-$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x26, 0x38)); $script:brushSeparator.Freeze()
+$script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x17, 0x22)); $script:brushCardBg.Freeze()
+$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x36)); $script:brushCardBorder.Freeze()
+$script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7D, 0xD3, 0xFC)); $script:brushHeaderFg.Freeze()
+$script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x1E, 0x2E)); $script:brushHeaderCntBg.Freeze()
+$script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushHeaderCntFg.Freeze()
+$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1A, 0x22, 0x32)); $script:brushSeparator.Freeze()
 
-$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x3B)); $script:brushRowHover.Freeze()
-$script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushTextWhite.Freeze()
+$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x19, 0x22, 0x34)); $script:brushRowHover.Freeze()
+$script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
 $script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
+$script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Arial")
 
-# Bảng màu cho Button Link Website ngoài cùng bên phải (Cyber Mini-Button)
-$script:brushLinkBtnBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushLinkBtnBg.Freeze()
-$script:brushLinkBtnBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x38, 0x4F)); $script:brushLinkBtnBorder.Freeze()
-$script:brushLinkBtnFg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushLinkBtnFg.Freeze()
+# Bảng màu cho Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil)
+$script:brushLinkBtnBg        = [System.Windows.Media.Brushes]::Transparent
+$script:brushLinkBtnBorder    = [System.Windows.Media.Brushes]::Transparent
+$script:brushLinkBtnFg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x52, 0x60, 0x76)); $script:brushLinkBtnFg.Freeze()
+$script:brushLinkBtnRowHover  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushLinkBtnRowHover.Freeze()
 
-$script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushLinkBtnHoverBg.Freeze()
+$script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushLinkBtnHoverBg.Freeze()
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
-$script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushLinkBtnHoverFg.Freeze()
+$script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverFg.Freeze()
 
-# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng & Update Pill
-$script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(52, 235, 240, 250)); $script:brushIconBadgeBg.Freeze()
-$script:brushIconBadgeBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(72, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
+# Nền icon sương mờ siêu nhẹ (~5.5% trắng, không viền) & Update Pill gọn gàng
+$script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(14, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
+$script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
 $script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
-$script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(40, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
-$script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(115, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
+$script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(28, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
+$script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(85, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
 $script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
 
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
-$marginCardBorder = New-Object System.Windows.Thickness(5)
-$paddingCard      = New-Object System.Windows.Thickness(12, 10, 12, 12)
-$marginHeaderGrid = New-Object System.Windows.Thickness(0, 0, 0, 8)
-$marginSeparator  = New-Object System.Windows.Thickness(0, 2, 0, 6)
+$marginCardBorder = New-Object System.Windows.Thickness(4)
+$paddingCard      = New-Object System.Windows.Thickness(10, 8, 10, 10)
+$marginHeaderGrid = New-Object System.Windows.Thickness(2, 0, 2, 6)
+$marginSeparator  = New-Object System.Windows.Thickness(0, 1, 0, 5)
 $marginRowBorder  = New-Object System.Windows.Thickness(0, 1, 0, 1)
-$paddingRow       = New-Object System.Windows.Thickness(6, 4, 6, 4)
+$paddingRow       = New-Object System.Windows.Thickness(5, 0, 4, 0)
 $marginIcon       = New-Object System.Windows.Thickness(7, 0, 8, 0)
-$cornerCard       = New-Object System.Windows.CornerRadius(10)
-$cornerRow        = New-Object System.Windows.CornerRadius(6)
+$cornerCard       = New-Object System.Windows.CornerRadius(8)
+$cornerRow        = New-Object System.Windows.CornerRadius(5)
+$thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
 # Thư mục lưu cache biểu tượng ứng dụng cục bộ
@@ -3296,12 +3344,12 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn HD (v3.0) đồng bộ nguồn chính hãng
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.0.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.1) đồng bộ logo thị trường
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.1.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.0" -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.1" -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 }
@@ -3558,16 +3606,32 @@ foreach ($cat in $categories) {
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
 
-    # Header Card
+    # Header Card (Tiêu đề bên trái + Badge đếm tối giản bên phải)
     $headerGrid = New-Object System.Windows.Controls.Grid
     $headerGrid.Margin = $marginHeaderGrid
 
     $headerText = New-Object System.Windows.Controls.TextBlock
-    $headerText.Text = "$cat ($($appsInCat.Count))"
-    $headerText.FontSize = 12.5
-    $headerText.FontWeight = [System.Windows.FontWeights]::Bold
+    $headerText.Text = $cat
+    $headerText.FontSize = 12
+    $headerText.FontWeight = [System.Windows.FontWeights]::SemiBold
     $headerText.Foreground = $script:brushHeaderFg
+    $headerText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $headerText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
     $headerGrid.Children.Add($headerText) | Out-Null
+
+    $headerCountBadge = New-Object System.Windows.Controls.Border
+    $headerCountBadge.Background = $script:brushHeaderCntBg
+    $headerCountBadge.CornerRadius = New-Object System.Windows.CornerRadius(4)
+    $headerCountBadge.Padding = New-Object System.Windows.Thickness(6, 1, 6, 1)
+    $headerCountBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $headerCountBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $headerCountText = New-Object System.Windows.Controls.TextBlock
+    $headerCountText.Text = "$($appsInCat.Count)"
+    $headerCountText.FontSize = 10
+    $headerCountText.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $headerCountText.Foreground = $script:brushHeaderCntFg
+    $headerCountBadge.Child = $headerCountText
+    $headerGrid.Children.Add($headerCountBadge) | Out-Null
 
     $separator = New-Object System.Windows.Controls.Border
     $separator.Height = 1
@@ -3577,13 +3641,13 @@ foreach ($cat in $categories) {
     $cardStack.Children.Add($headerGrid) | Out-Null
     $cardStack.Children.Add($separator) | Out-Null
 
-    # Từng dòng App: Logo + CheckBox + Tên (90%) + Icon Link Web (10%)
+    # Từng dòng App: CheckBox + Logo (nền mờ nhẹ) + Tên + Nút Link tối giản
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.Height = 28
+        $rowBorder.Height = 27
         $rowBorder.CornerRadius = $cornerRow
-        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 0, 6, 0)
-        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+        $rowBorder.Padding = $paddingRow
+        $rowBorder.Margin = $marginRowBorder
         $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
@@ -3600,9 +3664,9 @@ foreach ($cat in $categories) {
         $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(20, [System.Windows.GridUnitType]::Pixel)
-        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
+        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(23, [System.Windows.GridUnitType]::Pixel)
         $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(22, [System.Windows.GridUnitType]::Pixel)
         $rowGrid.ColumnDefinitions.Add($col0) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
@@ -3621,14 +3685,14 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Container Icon Huy hiệu Frosted Glass làm nổi Logo trên nền tối
+        # 2. Khung đỡ Logo sương mờ siêu nhẹ (không viền cộm) giúp logo nổi tự nhiên
         $iconBadge = New-Object System.Windows.Controls.Border
-        $iconBadge.Width = 22
-        $iconBadge.Height = 22
+        $iconBadge.Width = 20
+        $iconBadge.Height = 20
         $iconBadge.CornerRadius = $script:cornerIconBadge
         $iconBadge.Background = $script:brushIconBadgeBg
         $iconBadge.BorderBrush = $script:brushIconBadgeBorder
-        $iconBadge.BorderThickness = $thicknessOne
+        $iconBadge.BorderThickness = $thicknessZero
         $iconBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -3645,7 +3709,7 @@ foreach ($cat in $categories) {
         $iconInnerGrid.Children.Add($fallbackGlyph) | Out-Null
 
         $img = New-Object System.Windows.Controls.Image
-        $img.Width = 16; $img.Height = 16
+        $img.Width = 17; $img.Height = 17
         $img.Stretch = [System.Windows.Media.Stretch]::Uniform
         [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
@@ -3675,7 +3739,7 @@ foreach ($cat in $categories) {
             $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
                 $app.IconUrl
             } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=64"
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
             } else {
                 $null
             }
@@ -3771,7 +3835,7 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($nameAreaGrid, 2)
         $rowGrid.Children.Add($nameAreaGrid) | Out-Null
 
-        # 4. Button Link Website ngoài cùng bên phải (Icon Link 🔗 chuẩn, căn thẳng hàng)
+        # 4. Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil, chỉ sáng khi hover)
         $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
             $app.Url
         } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
@@ -3779,8 +3843,8 @@ foreach ($cat in $categories) {
         } else { "" }
 
         $linkBtn = New-Object System.Windows.Controls.Border
-        $linkBtn.Width = 22
-        $linkBtn.Height = 18
+        $linkBtn.Width = 20
+        $linkBtn.Height = 19
         $linkBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $linkBtn.Background = $script:brushLinkBtnBg
         $linkBtn.BorderBrush = $script:brushLinkBtnBorder
@@ -3790,16 +3854,20 @@ foreach ($cat in $categories) {
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = New-Object System.Windows.Thickness(0)
         $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
-        $linkBtn.Tag = $targetPageUrl
+        $linkBtn.Tag = @{ Url = $targetPageUrl; Row = $rowBorder }
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
-        $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
-        $linkIcon.FontFamily = $script:fontSegoeEmoji
-        $linkIcon.FontSize = 9.5
+        $linkIcon.Text = [string][char]0x2197 # ↗ Open Link
+        $linkIcon.FontFamily = $script:fontSegoeUI
+        $linkIcon.FontSize = 11.5
+        $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
         $linkIcon.Foreground = $script:brushLinkBtnFg
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $linkIcon.Margin = New-Object System.Windows.Thickness(0, -1, 0, 0)
         $linkBtn.Child = $linkIcon
+        $rowBorder.Tag["LinkBtn"]  = $linkBtn
+        $rowBorder.Tag["LinkIcon"] = $linkIcon
 
         $linkBtn.Add_MouseEnter({
             param($s, $e)
@@ -3811,12 +3879,15 @@ foreach ($cat in $categories) {
             param($s, $e)
             $s.Background = $script:brushLinkBtnBg
             $s.BorderBrush = $script:brushLinkBtnBorder
-            if ($s.Child) { $s.Child.Foreground = $script:brushLinkBtnFg }
+            if ($s.Child) {
+                $rowHovered = ($s.Tag -and $s.Tag.Row -and $s.Tag.Row.IsMouseOver)
+                $s.Child.Foreground = if ($rowHovered) { $script:brushLinkBtnRowHover } else { $script:brushLinkBtnFg }
+            }
         })
         $linkBtn.Add_MouseLeftButtonUp({
             param($s, $e)
             $e.Handled = $true  # Chặn sự kiện nổi bọt để không làm toggle CheckBox
-            $domain = $s.Tag
+            $domain = if ($s.Tag -and $s.Tag.Url) { $s.Tag.Url } else { "" }
             if (-not [string]::IsNullOrWhiteSpace($domain)) {
                 $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
                 try {
@@ -3856,14 +3927,20 @@ foreach ($cat in $categories) {
             }
         })
 
-        # Hover phát sáng & phục hồi nền trong suốt thanh lịch (Không tô màu nền đỏ/xanh)
+        # Hover thanh lịch kiểu Win11 ListItem
         $rowBorder.Add_MouseEnter({
             param($sender, $e)
             $sender.Background = $script:brushRowHover
+            if ($sender.Tag -and $sender.Tag.LinkIcon -and $sender.Tag.LinkBtn -and (-not $sender.Tag.LinkBtn.IsMouseOver)) {
+                $sender.Tag.LinkIcon.Foreground = $script:brushLinkBtnRowHover
+            }
         })
         $rowBorder.Add_MouseLeave({
             param($sender, $e)
             $sender.Background = $script:brushTransparent
+            if ($sender.Tag -and $sender.Tag.LinkIcon) {
+                $sender.Tag.LinkIcon.Foreground = $script:brushLinkBtnFg
+            }
         })
 
         $rowBorder.Child = $rowGrid
@@ -3873,8 +3950,8 @@ foreach ($cat in $categories) {
 
     $cardBorder.Child = $cardStack
 
-    # Trọng số chiều cao ước tính: 48px (Header card + Separator) + (Số dòng app * 28px) + 10px (Margin)
-    $cardEstimatedHeight = 58 + ($appsInCat.Count * 28)
+    # Trọng số chiều cao ước tính: 46px (Header card + Separator) + (Số dòng app * 29px) + 10px (Margin)
+    $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
 
     # Tìm cột hiện có tổng chiều cao thấp nhất để rót card vào (nguyên lý bình thông nhau, triệt tiêu khoảng trống)
     $targetColIndex = 0

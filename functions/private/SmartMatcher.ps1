@@ -4,7 +4,7 @@
 $script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
-$script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF))
+$script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9))
 
 $script:brushOutdatedFg.Freeze()
 $script:brushLatestFg.Freeze()
@@ -453,7 +453,7 @@ function Scan-And-ColorizeApps {
                 $row.Background = $script:brushNoneBg
                 $tb.Foreground = $script:brushOutdatedFg
                 $tb.Text = $app.Name
-                $tb.TextDecorations = [System.Windows.TextDecorations]::Underline
+                $tb.TextDecorations = $null
                 if ($updateBadge -and $updateText) {
                     $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible

@@ -29,42 +29,47 @@ $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushNavInactive.Freeze()
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
-$script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0F, 0x14, 0x20)); $script:brushCardBg.Freeze()
-$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x28, 0x3C)); $script:brushCardBorder.Freeze()
-$script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushHeaderFg.Freeze()
-$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x26, 0x38)); $script:brushSeparator.Freeze()
+$script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x17, 0x22)); $script:brushCardBg.Freeze()
+$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x36)); $script:brushCardBorder.Freeze()
+$script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7D, 0xD3, 0xFC)); $script:brushHeaderFg.Freeze()
+$script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x1E, 0x2E)); $script:brushHeaderCntBg.Freeze()
+$script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushHeaderCntFg.Freeze()
+$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1A, 0x22, 0x32)); $script:brushSeparator.Freeze()
 
-$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x3B)); $script:brushRowHover.Freeze()
-$script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushTextWhite.Freeze()
+$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x19, 0x22, 0x34)); $script:brushRowHover.Freeze()
+$script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
 $script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
+$script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Arial")
 
-# Bảng màu cho Button Link Website ngoài cùng bên phải (Cyber Mini-Button)
-$script:brushLinkBtnBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushLinkBtnBg.Freeze()
-$script:brushLinkBtnBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2A, 0x38, 0x4F)); $script:brushLinkBtnBorder.Freeze()
-$script:brushLinkBtnFg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushLinkBtnFg.Freeze()
+# Bảng màu cho Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil)
+$script:brushLinkBtnBg        = [System.Windows.Media.Brushes]::Transparent
+$script:brushLinkBtnBorder    = [System.Windows.Media.Brushes]::Transparent
+$script:brushLinkBtnFg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x52, 0x60, 0x76)); $script:brushLinkBtnFg.Freeze()
+$script:brushLinkBtnRowHover  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushLinkBtnRowHover.Freeze()
 
-$script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushLinkBtnHoverBg.Freeze()
+$script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushLinkBtnHoverBg.Freeze()
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
-$script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushLinkBtnHoverFg.Freeze()
+$script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverFg.Freeze()
 
-# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng & Update Pill
-$script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(52, 235, 240, 250)); $script:brushIconBadgeBg.Freeze()
-$script:brushIconBadgeBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(72, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
+# Nền icon sương mờ siêu nhẹ (~5.5% trắng, không viền) & Update Pill gọn gàng
+$script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(14, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
+$script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
 $script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
-$script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(40, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
-$script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(115, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
+$script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(28, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
+$script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(85, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
 $script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
 
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
-$marginCardBorder = New-Object System.Windows.Thickness(5)
-$paddingCard      = New-Object System.Windows.Thickness(12, 10, 12, 12)
-$marginHeaderGrid = New-Object System.Windows.Thickness(0, 0, 0, 8)
-$marginSeparator  = New-Object System.Windows.Thickness(0, 2, 0, 6)
+$marginCardBorder = New-Object System.Windows.Thickness(4)
+$paddingCard      = New-Object System.Windows.Thickness(10, 8, 10, 10)
+$marginHeaderGrid = New-Object System.Windows.Thickness(2, 0, 2, 6)
+$marginSeparator  = New-Object System.Windows.Thickness(0, 1, 0, 5)
 $marginRowBorder  = New-Object System.Windows.Thickness(0, 1, 0, 1)
-$paddingRow       = New-Object System.Windows.Thickness(6, 4, 6, 4)
+$paddingRow       = New-Object System.Windows.Thickness(5, 0, 4, 0)
 $marginIcon       = New-Object System.Windows.Thickness(7, 0, 8, 0)
-$cornerCard       = New-Object System.Windows.CornerRadius(10)
-$cornerRow        = New-Object System.Windows.CornerRadius(6)
+$cornerCard       = New-Object System.Windows.CornerRadius(8)
+$cornerRow        = New-Object System.Windows.CornerRadius(5)
+$thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
 # Thư mục lưu cache biểu tượng ứng dụng cục bộ
@@ -79,12 +84,12 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn HD (v3.0) đồng bộ nguồn chính hãng
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.0.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.1) đồng bộ logo thị trường
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.1.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.0" -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.1" -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 }
@@ -341,16 +346,32 @@ foreach ($cat in $categories) {
     $cardStack = New-Object System.Windows.Controls.StackPanel
     $appsInCat = @($AppCatalog | Where-Object { $_.Category -eq $cat })
 
-    # Header Card
+    # Header Card (Tiêu đề bên trái + Badge đếm tối giản bên phải)
     $headerGrid = New-Object System.Windows.Controls.Grid
     $headerGrid.Margin = $marginHeaderGrid
 
     $headerText = New-Object System.Windows.Controls.TextBlock
-    $headerText.Text = "$cat ($($appsInCat.Count))"
-    $headerText.FontSize = 12.5
-    $headerText.FontWeight = [System.Windows.FontWeights]::Bold
+    $headerText.Text = $cat
+    $headerText.FontSize = 12
+    $headerText.FontWeight = [System.Windows.FontWeights]::SemiBold
     $headerText.Foreground = $script:brushHeaderFg
+    $headerText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $headerText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
     $headerGrid.Children.Add($headerText) | Out-Null
+
+    $headerCountBadge = New-Object System.Windows.Controls.Border
+    $headerCountBadge.Background = $script:brushHeaderCntBg
+    $headerCountBadge.CornerRadius = New-Object System.Windows.CornerRadius(4)
+    $headerCountBadge.Padding = New-Object System.Windows.Thickness(6, 1, 6, 1)
+    $headerCountBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $headerCountBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $headerCountText = New-Object System.Windows.Controls.TextBlock
+    $headerCountText.Text = "$($appsInCat.Count)"
+    $headerCountText.FontSize = 10
+    $headerCountText.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $headerCountText.Foreground = $script:brushHeaderCntFg
+    $headerCountBadge.Child = $headerCountText
+    $headerGrid.Children.Add($headerCountBadge) | Out-Null
 
     $separator = New-Object System.Windows.Controls.Border
     $separator.Height = 1
@@ -360,13 +381,13 @@ foreach ($cat in $categories) {
     $cardStack.Children.Add($headerGrid) | Out-Null
     $cardStack.Children.Add($separator) | Out-Null
 
-    # Từng dòng App: Logo + CheckBox + Tên (90%) + Icon Link Web (10%)
+    # Từng dòng App: CheckBox + Logo (nền mờ nhẹ) + Tên + Nút Link tối giản
     foreach ($app in $appsInCat) {
         $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.Height = 28
+        $rowBorder.Height = 27
         $rowBorder.CornerRadius = $cornerRow
-        $rowBorder.Padding = New-Object System.Windows.Thickness(6, 0, 6, 0)
-        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+        $rowBorder.Padding = $paddingRow
+        $rowBorder.Margin = $marginRowBorder
         $rowBorder.Background = $script:brushTransparent
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
@@ -383,9 +404,9 @@ foreach ($cat in $categories) {
         $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(20, [System.Windows.GridUnitType]::Pixel)
-        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
+        $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(23, [System.Windows.GridUnitType]::Pixel)
         $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(24, [System.Windows.GridUnitType]::Pixel)
+        $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(22, [System.Windows.GridUnitType]::Pixel)
         $rowGrid.ColumnDefinitions.Add($col0) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col1) | Out-Null
         $rowGrid.ColumnDefinitions.Add($col2) | Out-Null
@@ -404,14 +425,14 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Container Icon Huy hiệu Frosted Glass làm nổi Logo trên nền tối
+        # 2. Khung đỡ Logo sương mờ siêu nhẹ (không viền cộm) giúp logo nổi tự nhiên
         $iconBadge = New-Object System.Windows.Controls.Border
-        $iconBadge.Width = 22
-        $iconBadge.Height = 22
+        $iconBadge.Width = 20
+        $iconBadge.Height = 20
         $iconBadge.CornerRadius = $script:cornerIconBadge
         $iconBadge.Background = $script:brushIconBadgeBg
         $iconBadge.BorderBrush = $script:brushIconBadgeBorder
-        $iconBadge.BorderThickness = $thicknessOne
+        $iconBadge.BorderThickness = $thicknessZero
         $iconBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -428,7 +449,7 @@ foreach ($cat in $categories) {
         $iconInnerGrid.Children.Add($fallbackGlyph) | Out-Null
 
         $img = New-Object System.Windows.Controls.Image
-        $img.Width = 16; $img.Height = 16
+        $img.Width = 17; $img.Height = 17
         $img.Stretch = [System.Windows.Media.Stretch]::Uniform
         [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
@@ -458,7 +479,7 @@ foreach ($cat in $categories) {
             $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
                 $app.IconUrl
             } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=64"
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
             } else {
                 $null
             }
@@ -554,7 +575,7 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($nameAreaGrid, 2)
         $rowGrid.Children.Add($nameAreaGrid) | Out-Null
 
-        # 4. Button Link Website ngoài cùng bên phải (Icon Link 🔗 chuẩn, căn thẳng hàng)
+        # 4. Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil, chỉ sáng khi hover)
         $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
             $app.Url
         } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
@@ -562,8 +583,8 @@ foreach ($cat in $categories) {
         } else { "" }
 
         $linkBtn = New-Object System.Windows.Controls.Border
-        $linkBtn.Width = 22
-        $linkBtn.Height = 18
+        $linkBtn.Width = 20
+        $linkBtn.Height = 19
         $linkBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $linkBtn.Background = $script:brushLinkBtnBg
         $linkBtn.BorderBrush = $script:brushLinkBtnBorder
@@ -573,16 +594,20 @@ foreach ($cat in $categories) {
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = New-Object System.Windows.Thickness(0)
         $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
-        $linkBtn.Tag = $targetPageUrl
+        $linkBtn.Tag = @{ Url = $targetPageUrl; Row = $rowBorder }
 
         $linkIcon = New-Object System.Windows.Controls.TextBlock
-        $linkIcon.Text = [char]::ConvertFromUtf32(0x1F517) # 🔗 Link
-        $linkIcon.FontFamily = $script:fontSegoeEmoji
-        $linkIcon.FontSize = 9.5
+        $linkIcon.Text = [string][char]0x2197 # ↗ Open Link
+        $linkIcon.FontFamily = $script:fontSegoeUI
+        $linkIcon.FontSize = 11.5
+        $linkIcon.FontWeight = [System.Windows.FontWeights]::Bold
         $linkIcon.Foreground = $script:brushLinkBtnFg
         $linkIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $linkIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $linkIcon.Margin = New-Object System.Windows.Thickness(0, -1, 0, 0)
         $linkBtn.Child = $linkIcon
+        $rowBorder.Tag["LinkBtn"]  = $linkBtn
+        $rowBorder.Tag["LinkIcon"] = $linkIcon
 
         $linkBtn.Add_MouseEnter({
             param($s, $e)
@@ -594,12 +619,15 @@ foreach ($cat in $categories) {
             param($s, $e)
             $s.Background = $script:brushLinkBtnBg
             $s.BorderBrush = $script:brushLinkBtnBorder
-            if ($s.Child) { $s.Child.Foreground = $script:brushLinkBtnFg }
+            if ($s.Child) {
+                $rowHovered = ($s.Tag -and $s.Tag.Row -and $s.Tag.Row.IsMouseOver)
+                $s.Child.Foreground = if ($rowHovered) { $script:brushLinkBtnRowHover } else { $script:brushLinkBtnFg }
+            }
         })
         $linkBtn.Add_MouseLeftButtonUp({
             param($s, $e)
             $e.Handled = $true  # Chặn sự kiện nổi bọt để không làm toggle CheckBox
-            $domain = $s.Tag
+            $domain = if ($s.Tag -and $s.Tag.Url) { $s.Tag.Url } else { "" }
             if (-not [string]::IsNullOrWhiteSpace($domain)) {
                 $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
                 try {
@@ -639,14 +667,20 @@ foreach ($cat in $categories) {
             }
         })
 
-        # Hover phát sáng & phục hồi nền trong suốt thanh lịch (Không tô màu nền đỏ/xanh)
+        # Hover thanh lịch kiểu Win11 ListItem
         $rowBorder.Add_MouseEnter({
             param($sender, $e)
             $sender.Background = $script:brushRowHover
+            if ($sender.Tag -and $sender.Tag.LinkIcon -and $sender.Tag.LinkBtn -and (-not $sender.Tag.LinkBtn.IsMouseOver)) {
+                $sender.Tag.LinkIcon.Foreground = $script:brushLinkBtnRowHover
+            }
         })
         $rowBorder.Add_MouseLeave({
             param($sender, $e)
             $sender.Background = $script:brushTransparent
+            if ($sender.Tag -and $sender.Tag.LinkIcon) {
+                $sender.Tag.LinkIcon.Foreground = $script:brushLinkBtnFg
+            }
         })
 
         $rowBorder.Child = $rowGrid
@@ -656,8 +690,8 @@ foreach ($cat in $categories) {
 
     $cardBorder.Child = $cardStack
 
-    # Trọng số chiều cao ước tính: 48px (Header card + Separator) + (Số dòng app * 28px) + 10px (Margin)
-    $cardEstimatedHeight = 58 + ($appsInCat.Count * 28)
+    # Trọng số chiều cao ước tính: 46px (Header card + Separator) + (Số dòng app * 29px) + 10px (Margin)
+    $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
 
     # Tìm cột hiện có tổng chiều cao thấp nhất để rót card vào (nguyên lý bình thông nhau, triệt tiêu khoảng trống)
     $targetColIndex = 0

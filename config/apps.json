@@ -85,7 +85,8 @@
         ],
         "Category": "Web Browsers",
         "IDn": 7,
-        "Url": "https://www.opera.com/gx"
+        "Url": "https://www.opera.com/gx",
+        "IconUrl": "https://img.icons8.com/color/96/opera-gx.png"
     },
     {
         "ID": "Discord.Discord",
@@ -123,7 +124,7 @@
         ],
         "Category": "Communication",
         "IDn": 10,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/signal.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/signal-app.png"
     },
     {
         "ID": "VNGCorp.Zalo",
@@ -238,7 +239,8 @@
             "TeamViewer.TeamViewer"
         ],
         "Category": "Remote Desktop",
-        "IDn": 19
+        "IDn": 19,
+        "IconUrl": "https://www.google.com/s2/favicons?domain=teamviewer.com&sz=128"
     },
     {
         "ID": "Microsoft.VisualStudioCode",
@@ -275,7 +277,7 @@
             "Bảng điều khiển Windows",
             "Microsoft.WindowsTerminal"
         ],
-        "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images/Square44x44Logo.targetsize-64.png",
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/windows-terminal.png",
         "Category": "Development",
         "IDn": 22,
         "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
@@ -341,7 +343,8 @@
             "Notepad++.Notepad++"
         ],
         "Category": "Development",
-        "IDn": 27
+        "IDn": 27,
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/notepad-plus-plus.png"
     },
     {
         "ID": "Postman.Postman",
@@ -366,7 +369,8 @@
             "DBeaver.DBeaver.Community"
         ],
         "Category": "Development",
-        "IDn": 29
+        "IDn": 29,
+        "IconUrl": "https://raw.githubusercontent.com/dbeaver/dbeaver/devel/plugins/org.jkiss.dbeaver.ui.app.standalone/icons/dbeaver256.png"
     },
     {
         "ID": "GoLang.Go",
@@ -392,7 +396,7 @@
         ],
         "Category": "Development",
         "IDn": 31,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rust-dark.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/rust-light.png"
     },
     {
         "ID": "Microsoft.DotNet.Framework.Runtime",
@@ -570,7 +574,7 @@
         "Category": "Java Runtimes",
         "IDn": 44,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.8.JDK",
@@ -585,7 +589,7 @@
         "Category": "Java Runtimes",
         "IDn": 45,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JRE",
@@ -599,7 +603,7 @@
         "Category": "Java Runtimes",
         "IDn": 46,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JDK",
@@ -614,7 +618,7 @@
         "Category": "Java Runtimes",
         "IDn": 47,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.16.JDK",
@@ -628,7 +632,7 @@
         "Category": "Java Runtimes",
         "IDn": 48,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JRE",
@@ -642,7 +646,7 @@
         "Category": "Java Runtimes",
         "IDn": 49,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JDK",
@@ -657,7 +661,7 @@
         "Category": "Java Runtimes",
         "IDn": 50,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.18.JDK",
@@ -671,7 +675,7 @@
         "Category": "Java Runtimes",
         "IDn": 51,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.19.JDK",
@@ -685,7 +689,7 @@
         "Category": "Java Runtimes",
         "IDn": 52,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.20.JDK",
@@ -699,7 +703,7 @@
         "Category": "Java Runtimes",
         "IDn": 53,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JRE",
@@ -713,7 +717,7 @@
         "Category": "Java Runtimes",
         "IDn": 54,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JDK",
@@ -728,7 +732,7 @@
         "Category": "Java Runtimes",
         "IDn": 55,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.22.JDK",
@@ -742,7 +746,7 @@
         "Category": "Java Runtimes",
         "IDn": 56,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.23.JDK",
@@ -756,7 +760,7 @@
         "Category": "Java Runtimes",
         "IDn": 57,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.24.JDK",
@@ -770,7 +774,7 @@
         "Category": "Java Runtimes",
         "IDn": 58,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.25.JDK",
@@ -784,7 +788,7 @@
         "Category": "Java Runtimes",
         "IDn": 59,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
     },
     {
         "ID": "Microsoft.VCRedist.2005.x64",
@@ -991,7 +995,8 @@
             "RARLab.WinRAR"
         ],
         "Category": "System Utilities",
-        "IDn": 74
+        "IDn": 74,
+        "IconUrl": "https://www.google.com/s2/favicons?domain=win-rar.com&sz=128"
     },
     {
         "ID": "voidtools.Everything",
@@ -1078,7 +1083,8 @@
         ],
         "Category": "Hardware & Monitoring",
         "IDn": 81,
-        "Url": "https://www.msi.com/Landing/afterburner/graphics-cards"
+        "Url": "https://www.msi.com/Landing/afterburner/graphics-cards",
+        "IconUrl": "https://img.icons8.com/fluency/96/msi-afterburner.png"
     },
     {
         "ID": "Rem0o.FanControl",
@@ -1206,7 +1212,7 @@
         ],
         "Category": "Audio & Video",
         "IDn": 91,
-        "IconUrl": "https://raw.githubusercontent.com/obsproject/obs-studio/master/frontend/cmake/linux/icons/obs-logo-128.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/obs-studio.png"
     },
     {
         "ID": "Spotify.Spotify",
@@ -1230,7 +1236,7 @@
         ],
         "Category": "Audio & Video",
         "IDn": 93,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/audacity.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/audacity.png"
     },
     {
         "ID": "HandBrake.HandBrake",
@@ -1268,7 +1274,8 @@
             "ShareX.ShareX"
         ],
         "Category": "Graphics & Design",
-        "IDn": 96
+        "IDn": 96,
+        "IconUrl": "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png"
     },
     {
         "ID": "GIMP.GIMP",
@@ -1281,7 +1288,7 @@
         ],
         "Category": "Graphics & Design",
         "IDn": 97,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/gimp.png"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/gimp.png"
     },
     {
         "ID": "KDE.Krita",
@@ -1292,7 +1299,8 @@
             "KDE.Krita"
         ],
         "Category": "Graphics & Design",
-        "IDn": 98
+        "IDn": 98,
+        "IconUrl": "https://img.icons8.com/color/96/krita.png"
     },
     {
         "ID": "BlenderFoundation.Blender",
@@ -1316,7 +1324,7 @@
         ],
         "Category": "Graphics & Design",
         "IDn": 100,
-        "IconUrl": "https://icons.duckduckgo.com/ip3/inkscape.org.ico"
+        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/inkscape-light.png"
     },
     {
         "ID": "TheDocumentFoundation.LibreOffice",
@@ -1352,7 +1360,7 @@
         ],
         "Category": "Documents & Office",
         "IDn": 103,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/notion-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/notion.png"
     },
     {
         "ID": "SumatraPDF.SumatraPDF",
@@ -1391,7 +1399,7 @@
         "Category": "Game Launchers",
         "IDn": 106,
         "Url": "https://store.steampowered.com/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/steam.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/steam.png"
     },
     {
         "ID": "EpicGames.EpicGamesLauncher",
@@ -1404,7 +1412,7 @@
         ],
         "Category": "Game Launchers",
         "IDn": 107,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/epic-games-light.png",
+        "IconUrl": "https://img.icons8.com/fluency/96/epic-games.png",
         "Url": "https://store.epicgames.com/"
     },
     {
@@ -1418,7 +1426,7 @@
         "Category": "Game Launchers",
         "IDn": 108,
         "Url": "https://www.gog.com/galaxy",
-        "IconUrl": "https://gogalaxy.gog-statics.com/favicons/android-icon-192x192.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/gog-galaxy.png"
     },
     {
         "ID": "Playnite.Playnite",
@@ -1454,7 +1462,7 @@
         ],
         "Category": "File Transfer & Cloud",
         "IDn": 111,
-        "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/assets/img/logo-512.png"
+        "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
     },
     {
         "ID": "WinSCP.WinSCP",
