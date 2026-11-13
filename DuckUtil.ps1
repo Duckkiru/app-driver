@@ -293,7 +293,7 @@ $appsRawJson = @'
         "Category": "Web Browsers",
         "IDn": 7,
         "Url": "https://www.opera.com/gx",
-        "IconUrl": "https://img.icons8.com/color/96/opera-gx.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/opera-gx.png"
     },
     {
         "ID": "Discord.Discord",
@@ -781,7 +781,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 44,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.8.JDK",
@@ -796,7 +796,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 45,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JRE",
@@ -810,7 +810,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 46,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JDK",
@@ -825,7 +825,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 47,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.16.JDK",
@@ -839,7 +839,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 48,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JRE",
@@ -853,7 +853,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 49,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JDK",
@@ -868,7 +868,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 50,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.18.JDK",
@@ -882,7 +882,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 51,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.19.JDK",
@@ -896,7 +896,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 52,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.20.JDK",
@@ -910,7 +910,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 53,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JRE",
@@ -924,7 +924,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 54,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JDK",
@@ -939,7 +939,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 55,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.22.JDK",
@@ -953,7 +953,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 56,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.23.JDK",
@@ -967,7 +967,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 57,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.24.JDK",
@@ -981,7 +981,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 58,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.25.JDK",
@@ -995,7 +995,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 59,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "Microsoft.VCRedist.2005.x64",
@@ -3344,14 +3344,32 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.3) đồng bộ logo .NET và Java
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.3.marker"
-    if (-not (Test-Path -LiteralPath $cacheMarker)) {
+    # Tự động đồng bộ cache icon dựa trên chữ ký SHA256 của toàn bộ URL biểu tượng trong catalog
+    try {
+        $sigSource = if ($AppCatalog) {
+            ($AppCatalog | ForEach-Object { "$($_.ID)|$($_.IconUrl)|$($_.Domain)" }) -join "`n"
+        } else {
+            "v3.4"
+        }
+        $sha = [System.Security.Cryptography.SHA256]::Create()
         try {
+            $sigBytes = [System.Text.Encoding]::UTF8.GetBytes($sigSource)
+            $currentSig = [System.BitConverter]::ToString($sha.ComputeHash($sigBytes)).Replace("-", "")
+        } finally {
+            $sha.Dispose()
+        }
+        $sigFile = Join-Path $iconsCacheDir "cache.icons.sha256"
+        $rawSig = if (Test-Path -LiteralPath $sigFile) {
+            Get-Content -LiteralPath $sigFile -Raw -ErrorAction SilentlyContinue
+        } else {
+            $null
+        }
+        $savedSig = if ($null -ne $rawSig) { "$rawSig".Trim() } else { "" }
+        if ($savedSig -ne $currentSig) {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.3" -Force -ErrorAction SilentlyContinue
-        } catch {}
-    }
+            Set-Content -LiteralPath $sigFile -Value $currentSig -Force -ErrorAction SilentlyContinue
+        }
+    } catch {}
 }
 
 function Save-BitmapToCacheAtomic {

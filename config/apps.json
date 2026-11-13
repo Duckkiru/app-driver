@@ -86,7 +86,7 @@
         "Category": "Web Browsers",
         "IDn": 7,
         "Url": "https://www.opera.com/gx",
-        "IconUrl": "https://img.icons8.com/color/96/opera-gx.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/opera-gx.png"
     },
     {
         "ID": "Discord.Discord",
@@ -574,7 +574,7 @@
         "Category": "Java Runtimes",
         "IDn": 44,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.8.JDK",
@@ -589,7 +589,7 @@
         "Category": "Java Runtimes",
         "IDn": 45,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JRE",
@@ -603,7 +603,7 @@
         "Category": "Java Runtimes",
         "IDn": 46,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JDK",
@@ -618,7 +618,7 @@
         "Category": "Java Runtimes",
         "IDn": 47,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.16.JDK",
@@ -632,7 +632,7 @@
         "Category": "Java Runtimes",
         "IDn": 48,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JRE",
@@ -646,7 +646,7 @@
         "Category": "Java Runtimes",
         "IDn": 49,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JDK",
@@ -661,7 +661,7 @@
         "Category": "Java Runtimes",
         "IDn": 50,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.18.JDK",
@@ -675,7 +675,7 @@
         "Category": "Java Runtimes",
         "IDn": 51,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.19.JDK",
@@ -689,7 +689,7 @@
         "Category": "Java Runtimes",
         "IDn": 52,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.20.JDK",
@@ -703,7 +703,7 @@
         "Category": "Java Runtimes",
         "IDn": 53,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JRE",
@@ -717,7 +717,7 @@
         "Category": "Java Runtimes",
         "IDn": 54,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JDK",
@@ -732,7 +732,7 @@
         "Category": "Java Runtimes",
         "IDn": 55,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.22.JDK",
@@ -746,7 +746,7 @@
         "Category": "Java Runtimes",
         "IDn": 56,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.23.JDK",
@@ -760,7 +760,7 @@
         "Category": "Java Runtimes",
         "IDn": 57,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.24.JDK",
@@ -774,7 +774,7 @@
         "Category": "Java Runtimes",
         "IDn": 58,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.25.JDK",
@@ -788,7 +788,7 @@
         "Category": "Java Runtimes",
         "IDn": 59,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
+        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
     },
     {
         "ID": "Microsoft.VCRedist.2005.x64",

@@ -84,14 +84,32 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.3) đồng bộ logo .NET và Java
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.3.marker"
-    if (-not (Test-Path -LiteralPath $cacheMarker)) {
+    # Tự động đồng bộ cache icon dựa trên chữ ký SHA256 của toàn bộ URL biểu tượng trong catalog
+    try {
+        $sigSource = if ($AppCatalog) {
+            ($AppCatalog | ForEach-Object { "$($_.ID)|$($_.IconUrl)|$($_.Domain)" }) -join "`n"
+        } else {
+            "v3.4"
+        }
+        $sha = [System.Security.Cryptography.SHA256]::Create()
         try {
+            $sigBytes = [System.Text.Encoding]::UTF8.GetBytes($sigSource)
+            $currentSig = [System.BitConverter]::ToString($sha.ComputeHash($sigBytes)).Replace("-", "")
+        } finally {
+            $sha.Dispose()
+        }
+        $sigFile = Join-Path $iconsCacheDir "cache.icons.sha256"
+        $rawSig = if (Test-Path -LiteralPath $sigFile) {
+            Get-Content -LiteralPath $sigFile -Raw -ErrorAction SilentlyContinue
+        } else {
+            $null
+        }
+        $savedSig = if ($null -ne $rawSig) { "$rawSig".Trim() } else { "" }
+        if ($savedSig -ne $currentSig) {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.3" -Force -ErrorAction SilentlyContinue
-        } catch {}
-    }
+            Set-Content -LiteralPath $sigFile -Value $currentSig -Force -ErrorAction SilentlyContinue
+        }
+    } catch {}
 }
 
 function Save-BitmapToCacheAtomic {
