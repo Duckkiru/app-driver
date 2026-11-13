@@ -375,7 +375,7 @@
                     </Border>
 
                     <!-- Lưới Card 4 Cột Dọc Tự Nhiên (Masonry 4 Cột) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                    <ScrollViewer Name="AppsScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                   CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                         <Grid Name="CardsContainer">
                             <Grid.ColumnDefinitions>

@@ -450,7 +450,6 @@ function Scan-And-ColorizeApps {
     }
 
     $script:isScanningApps = $true
-    if ($MainTabControl) { $MainTabControl.IsHitTestVisible = $false }
     try {
         Log-Text "[🔍] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
         if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
@@ -682,7 +681,6 @@ function Scan-And-ColorizeApps {
         }
     } finally {
         $script:isScanningApps = $false
-        if ($MainTabControl) { $MainTabControl.IsHitTestVisible = $true }
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
             Flush-PendingIconCache
