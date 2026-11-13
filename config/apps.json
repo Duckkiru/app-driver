@@ -1,1505 +1,2530 @@
 [
-    {
-        "ID": "Google.Chrome",
-        "Name": "Google Chrome",
-        "Domain": "google.com/chrome",
-        "Aliases": [
-            "Google Chrome",
-            "Google.Chrome"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 1,
-        "Url": "https://www.google.com/chrome/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-chrome.png"
-    },
-    {
-        "ID": "Mozilla.Firefox",
-        "Name": "Mozilla Firefox",
-        "Domain": "firefox.com",
-        "Aliases": [
-            "Mozilla Firefox",
-            "Firefox",
-            "Mozilla.Firefox"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 2,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/firefox.png"
-    },
-    {
-        "ID": "Brave.Brave",
-        "Name": "Brave Browser",
-        "Domain": "brave.com",
-        "Aliases": [
-            "Brave",
-            "BraveSoftware",
-            "Brave.Brave",
-            "Brave Browser"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 3,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/brave.png"
-    },
-    {
-        "ID": "LibreWolf.LibreWolf",
-        "Name": "LibreWolf",
-        "Domain": "librewolf.net",
-        "Aliases": [
-            "LibreWolf",
-            "LibreWolf.LibreWolf"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 4,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/librewolf.png"
-    },
-    {
-        "ID": "Vivaldi.Vivaldi",
-        "Name": "Vivaldi",
-        "Domain": "vivaldi.com",
-        "Aliases": [
-            "Vivaldi",
-            "Vivaldi.Vivaldi"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 5,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vivaldi.png"
-    },
-    {
-        "ID": "TorProject.TorBrowser",
-        "Name": "Tor Browser",
-        "Domain": "torproject.org",
-        "Aliases": [
-            "Tor Browser",
-            "TorProject.TorBrowser"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 6
-    },
-    {
-        "ID": "Opera.OperaGX",
-        "Name": "Opera GX",
-        "Domain": "opera.com/gx",
-        "Aliases": [
-            "Opera GX",
-            "OperaGX",
-            "Opera.OperaGX"
-        ],
-        "Category": "Web Browsers",
-        "IDn": 7,
-        "Url": "https://www.opera.com/gx",
-        "IconUrl": "https://img.icons8.com/fluency/96/opera-gx.png"
-    },
-    {
-        "ID": "Discord.Discord",
-        "Name": "Discord",
-        "Domain": "discord.com",
-        "Aliases": [
-            "Discord",
-            "Discord.Discord"
-        ],
-        "Category": "Communication",
-        "IDn": 8,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/discord.png"
-    },
-    {
-        "ID": "Telegram.TelegramDesktop",
-        "Name": "Telegram",
-        "Domain": "telegram.org",
-        "Aliases": [
-            "Telegram Desktop",
-            "Telegram",
-            "TelegramDesktop",
-            "Telegram.TelegramDesktop"
-        ],
-        "Category": "Communication",
-        "IDn": 9,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/telegram.png"
-    },
-    {
-        "ID": "OpenWhisperSystems.Signal",
-        "Name": "Signal",
-        "Domain": "signal.org",
-        "Aliases": [
-            "Signal",
-            "OpenWhisperSystems.Signal"
-        ],
-        "Category": "Communication",
-        "IDn": 10,
-        "IconUrl": "https://img.icons8.com/fluency/96/signal-app.png"
-    },
-    {
-        "ID": "VNGCorp.Zalo",
-        "Name": "Zalo",
-        "Domain": "zalo.me",
-        "Aliases": [
-            "Zalo",
-            "VNGCorp.Zalo"
-        ],
-        "Category": "Communication",
-        "IDn": 11,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zalo.png"
-    },
-    {
-        "ID": "Zoom.Zoom",
-        "Name": "Zoom Workplace",
-        "Domain": "zoom.us",
-        "Aliases": [
-            "Zoom Workplace",
-            "Zoom",
-            "Zoom.Zoom"
-        ],
-        "Category": "Communication",
-        "IDn": 12,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zoom.png"
-    },
-    {
-        "ID": "SlackTechnologies.Slack",
-        "Name": "Slack",
-        "Domain": "slack.com",
-        "Aliases": [
-            "Slack",
-            "SlackTechnologies.Slack"
-        ],
-        "Category": "Communication",
-        "IDn": 13,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/slack.png"
-    },
-    {
-        "ID": "9NKSQGP7F2NH",
-        "Name": "WhatsApp",
-        "Domain": "whatsapp.com",
-        "Aliases": [
-            "WhatsApp",
-            "WhatsApp.WhatsApp",
-            "9NKSQGP7F2NH"
-        ],
-        "Category": "Communication",
-        "IDn": 14,
-        "Source": "msstore",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/whatsapp.png"
-    },
-    {
-        "ID": "Microsoft.Teams",
-        "Name": "Microsoft Teams",
-        "Domain": "teams.microsoft.com",
-        "Aliases": [
-            "Microsoft Teams",
-            "Microsoft Teams (work or school)",
-            "MSTeams",
-            "Microsoft.Teams"
-        ],
-        "Category": "Communication",
-        "IDn": 15,
-        "Url": "https://www.microsoft.com/en-us/microsoft-teams/download-app",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/microsoft-teams.png"
-    },
-    {
-        "ID": "RustDesk.RustDesk",
-        "Name": "RustDesk",
-        "Domain": "rustdesk.com",
-        "Aliases": [
-            "RustDesk",
-            "RustDesk.RustDesk"
-        ],
-        "Category": "Remote Desktop",
-        "IDn": 16,
-        "GitHubRepo": "rustdesk/rustdesk",
-        "AssetRegex": "x86_64\\.msi$",
-        "FallbackUrl": "https://github.com/rustdesk/rustdesk/releases/latest",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rustdesk.png"
-    },
-    {
-        "ID": "AnyDesk.AnyDesk",
-        "Name": "AnyDesk",
-        "Domain": "anydesk.com",
-        "Aliases": [
-            "AnyDesk",
-            "AnyDesk.AnyDesk"
-        ],
-        "Category": "Remote Desktop",
-        "IDn": 17,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/anydesk.png"
-    },
-    {
-        "ID": "DucFabulous.UltraViewer",
-        "Name": "UltraViewer",
-        "Domain": "ultraviewer.net",
-        "Aliases": [
-            "UltraViewer",
-            "DucFabulous.UltraViewer"
-        ],
-        "Category": "Remote Desktop",
-        "IDn": 18
-    },
-    {
-        "ID": "TeamViewer.TeamViewer",
-        "Name": "TeamViewer",
-        "Domain": "teamviewer.com",
-        "Aliases": [
-            "TeamViewer",
-            "TeamViewer.TeamViewer"
-        ],
-        "Category": "Remote Desktop",
-        "IDn": 19,
-        "IconUrl": "https://www.google.com/s2/favicons?domain=teamviewer.com&sz=128"
-    },
-    {
-        "ID": "Microsoft.VisualStudioCode",
-        "Name": "VS Code",
-        "Domain": "code.visualstudio.com",
-        "Aliases": [
-            "Visual Studio Code",
-            "VS Code",
-            "VSCode",
-            "Microsoft.VisualStudioCode"
-        ],
-        "Category": "Development",
-        "IDn": 20,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vscode.png"
-    },
-    {
-        "ID": "Git.Git",
-        "Name": "Git",
-        "Domain": "git-scm.com",
-        "Aliases": [
-            "Git",
-            "Git.Git"
-        ],
-        "Category": "Development",
-        "IDn": 21,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/git.png"
-    },
-    {
-        "ID": "Microsoft.WindowsTerminal",
-        "Name": "Windows Terminal",
-        "Domain": "microsoft.com",
-        "Aliases": [
-            "Windows Terminal",
-            "Bảng điều khiển Windows",
-            "Microsoft.WindowsTerminal"
-        ],
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/windows-terminal.png",
-        "Category": "Development",
-        "IDn": 22,
-        "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
-    },
-    {
-        "ID": "Microsoft.WindowsTerminal.Preview",
-        "Name": "Windows Terminal Preview",
-        "Domain": "microsoft.com",
-        "Aliases": [
-            "Windows Terminal Preview",
-            "Microsoft.WindowsTerminal.Preview"
-        ],
-        "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images-Pre/Square44x44Logo.targetsize-64.png",
-        "Category": "Development",
-        "IDn": 23,
-        "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
-    },
-    {
-        "ID": "Python.Python.3.13",
-        "Name": "Python 3.13",
-        "Domain": "python.org",
-        "Aliases": [
-            "Python 3.13",
-            "Python.Python.3.13"
-        ],
-        "Category": "Development",
-        "IDn": 24,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/python.png"
-    },
-    {
-        "ID": "OpenJS.NodeJS.LTS",
-        "Name": "Node.js LTS",
-        "Domain": "nodejs.org",
-        "Aliases": [
-            "Node.js",
-            "NodeJS",
-            "OpenJS.NodeJS.LTS"
-        ],
-        "Category": "Development",
-        "IDn": 25,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nodejs.png"
-    },
-    {
-        "ID": "Docker.DockerDesktop",
-        "Name": "Docker Desktop",
-        "Domain": "docker.com",
-        "Aliases": [
-            "Docker Desktop",
-            "Docker",
-            "Docker.DockerDesktop"
-        ],
-        "Category": "Development",
-        "IDn": 26,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/docker.png"
-    },
-    {
-        "ID": "Notepad++.Notepad++",
-        "Name": "Notepad++",
-        "Domain": "notepad-plus-plus.org",
-        "Aliases": [
-            "Notepad++",
-            "NotepadPlusPlus",
-            "Notepad++.Notepad++"
-        ],
-        "Category": "Development",
-        "IDn": 27,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/notepad-plus-plus.png"
-    },
-    {
-        "ID": "Postman.Postman",
-        "Name": "Postman",
-        "Domain": "postman.com",
-        "Aliases": [
-            "Postman",
-            "Postman.Postman"
-        ],
-        "Category": "Development",
-        "IDn": 28,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/postman.png"
-    },
-    {
-        "ID": "DBeaver.DBeaver.Community",
-        "Name": "DBeaver CE",
-        "Domain": "dbeaver.io",
-        "Aliases": [
-            "DBeaver",
-            "DBeaver CE",
-            "DBeaver Community",
-            "DBeaver.DBeaver.Community"
-        ],
-        "Category": "Development",
-        "IDn": 29,
-        "IconUrl": "https://raw.githubusercontent.com/dbeaver/dbeaver/devel/plugins/org.jkiss.dbeaver.ui.app.standalone/icons/dbeaver256.png"
-    },
-    {
-        "ID": "GoLang.Go",
-        "Name": "Go",
-        "Domain": "go.dev",
-        "Aliases": [
-            "Go Programming Language",
-            "GoLang",
-            "GoLang.Go"
-        ],
-        "Category": "Development",
-        "IDn": 30,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/go.png"
-    },
-    {
-        "ID": "Rustlang.Rustup",
-        "Name": "Rust (rustup)",
-        "Domain": "rust-lang.org",
-        "Aliases": [
-            "Rustup",
-            "Rustup: the Rust toolchain installer",
-            "Rustlang.Rustup"
-        ],
-        "Category": "Development",
-        "IDn": 31,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/rust-light.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.Framework.Runtime",
-        "Name": ".NET Framework 4.8.1",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Framework 4.8.1 Runtime",
-            "Microsoft .NET Framework Runtime",
-            "Microsoft.DotNet.Framework.Runtime"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 32,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.3_1",
-        "Name": ".NET Desktop Runtime 3.1",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 3.1",
-            "DesktopRuntime.3_1",
-            "Microsoft.DotNet.DesktopRuntime.3_1"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 33,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.5",
-        "Name": ".NET Desktop Runtime 5.0",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 5.0",
-            "DesktopRuntime.5",
-            "Microsoft.DotNet.DesktopRuntime.5"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 34,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.6",
-        "Name": ".NET Desktop Runtime 6 (LTS)",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 6.0",
-            "DesktopRuntime.6",
-            "Microsoft.DotNet.DesktopRuntime.6"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 35,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.6.x86",
-        "Name": ".NET Desktop Runtime 6 (x86)",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 6.0 (x86)",
-            "Microsoft.DotNet.DesktopRuntime.6.x86"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 36,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.7",
-        "Name": ".NET Desktop Runtime 7",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 7.0",
-            "DesktopRuntime.7",
-            "Microsoft.DotNet.DesktopRuntime.7"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 37,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.7.x86",
-        "Name": ".NET Desktop Runtime 7 (x86)",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 7.0 (x86)",
-            "Microsoft.DotNet.DesktopRuntime.7.x86"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 38,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.8",
-        "Name": ".NET Desktop Runtime 8 (LTS)",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 8.0",
-            "DesktopRuntime.8",
-            "Microsoft.DotNet.DesktopRuntime.8"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 39,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.8.x86",
-        "Name": ".NET Desktop Runtime 8 (x86)",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 8.0 (x86)",
-            "Microsoft.DotNet.DesktopRuntime.8.x86"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 40,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.9",
-        "Name": ".NET Desktop Runtime 9",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 9.0",
-            "DesktopRuntime.9",
-            "Microsoft.DotNet.DesktopRuntime.9"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 41,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.10",
-        "Name": ".NET Desktop Runtime 10",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 10.0",
-            "DesktopRuntime.10",
-            "Microsoft.DotNet.DesktopRuntime.10"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 42,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "Microsoft.DotNet.DesktopRuntime.Preview",
-        "Name": ".NET Desktop Runtime 11 Preview",
-        "Domain": "dotnet.microsoft.com",
-        "Aliases": [
-            "Microsoft .NET Windows Desktop Runtime 11.0 Preview",
-            "Microsoft.DotNet.DesktopRuntime.Preview"
-        ],
-        "Category": ".NET Runtimes",
-        "IDn": 43,
-        "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.8.JRE",
-        "Name": "Java 8 JRE (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JRE with Hotspot 8",
-            "Temurin 8 JRE",
-            "EclipseAdoptium.Temurin.8.JRE"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 44,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.8.JDK",
-        "Name": "Java 8 JDK (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 8",
-            "Temurin 8",
-            "OpenJDK 8",
-            "EclipseAdoptium.Temurin.8.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 45,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.11.JRE",
-        "Name": "Java 11 JRE (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JRE with Hotspot 11",
-            "Temurin 11 JRE",
-            "EclipseAdoptium.Temurin.11.JRE"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 46,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.11.JDK",
-        "Name": "Java 11 JDK (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 11",
-            "Temurin 11",
-            "OpenJDK 11",
-            "EclipseAdoptium.Temurin.11.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 47,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.16.JDK",
-        "Name": "Java 16 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 16",
-            "Temurin 16",
-            "EclipseAdoptium.Temurin.16.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 48,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.17.JRE",
-        "Name": "Java 17 JRE (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JRE with Hotspot 17",
-            "Temurin 17 JRE",
-            "EclipseAdoptium.Temurin.17.JRE"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 49,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.17.JDK",
-        "Name": "Java 17 JDK (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 17",
-            "Temurin 17",
-            "OpenJDK 17",
-            "EclipseAdoptium.Temurin.17.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 50,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.18.JDK",
-        "Name": "Java 18 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 18",
-            "Temurin 18",
-            "EclipseAdoptium.Temurin.18.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 51,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.19.JDK",
-        "Name": "Java 19 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 19",
-            "Temurin 19",
-            "EclipseAdoptium.Temurin.19.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 52,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.20.JDK",
-        "Name": "Java 20 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 20",
-            "Temurin 20",
-            "EclipseAdoptium.Temurin.20.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 53,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.21.JRE",
-        "Name": "Java 21 JRE (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JRE with Hotspot 21",
-            "Temurin 21 JRE",
-            "EclipseAdoptium.Temurin.21.JRE"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 54,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.21.JDK",
-        "Name": "Java 21 JDK (LTS)",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 21",
-            "Temurin 21",
-            "OpenJDK 21",
-            "EclipseAdoptium.Temurin.21.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 55,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.22.JDK",
-        "Name": "Java 22 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 22",
-            "Temurin 22",
-            "EclipseAdoptium.Temurin.22.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 56,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.23.JDK",
-        "Name": "Java 23 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 23",
-            "Temurin 23",
-            "EclipseAdoptium.Temurin.23.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 57,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.24.JDK",
-        "Name": "Java 24 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 24",
-            "Temurin 24",
-            "EclipseAdoptium.Temurin.24.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 58,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "EclipseAdoptium.Temurin.25.JDK",
-        "Name": "Java 25 JDK",
-        "Domain": "adoptium.net",
-        "Aliases": [
-            "Eclipse Temurin JDK with Hotspot 25",
-            "Temurin 25",
-            "EclipseAdoptium.Temurin.25.JDK"
-        ],
-        "Category": "Java Runtimes",
-        "IDn": 59,
-        "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://img.icons8.com/ios-filled/96/FFA726/java-coffee-cup-logo.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2005.x64",
-        "Name": "VC++ 2005 (x64)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2005 Redistributable (x64)",
-            "Microsoft Visual C++ 2005 Redistributable - x64",
-            "Microsoft.VCRedist.2005.x64"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 60,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2005.x86",
-        "Name": "VC++ 2005 (x86)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2005 Redistributable (x86)",
-            "Microsoft Visual C++ 2005 Redistributable - x86",
-            "Microsoft.VCRedist.2005.x86"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 61,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2008.x64",
-        "Name": "VC++ 2008 (x64)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2008 Redistributable - x64",
-            "Microsoft Visual C++ 2008 Redistributable (x64)",
-            "Microsoft.VCRedist.2008.x64"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 62,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2008.x86",
-        "Name": "VC++ 2008 (x86)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2008 Redistributable - x86",
-            "Microsoft Visual C++ 2008 Redistributable (x86)",
-            "Microsoft.VCRedist.2008.x86"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 63,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2010.x64",
-        "Name": "VC++ 2010 (x64)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2010 x64 Redistributable",
-            "Microsoft Visual C++ 2010 Redistributable - x64",
-            "Microsoft Visual C++ 2010 Redistributable (x64)",
-            "Microsoft.VCRedist.2010.x64"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 64,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2010.x86",
-        "Name": "VC++ 2010 (x86)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2010 x86 Redistributable",
-            "Microsoft Visual C++ 2010 Redistributable - x86",
-            "Microsoft Visual C++ 2010 Redistributable (x86)",
-            "Microsoft.VCRedist.2010.x86"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 65,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2012.x64",
-        "Name": "VC++ 2012 (x64)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2012 Redistributable (x64)",
-            "Microsoft Visual C++ 2012 Redistributable - x64",
-            "Microsoft.VCRedist.2012.x64"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 66,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2012.x86",
-        "Name": "VC++ 2012 (x86)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2012 Redistributable (x86)",
-            "Microsoft Visual C++ 2012 Redistributable - x86",
-            "Microsoft.VCRedist.2012.x86"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 67,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2013.x64",
-        "Name": "VC++ 2013 (x64)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2013 Redistributable (x64)",
-            "Microsoft Visual C++ 2013 Redistributable - x64",
-            "Microsoft.VCRedist.2013.x64"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 68,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2013.x86",
-        "Name": "VC++ 2013 (x86)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ 2013 Redistributable (x86)",
-            "Microsoft Visual C++ 2013 Redistributable - x86",
-            "Microsoft.VCRedist.2013.x86"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 69,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2015+.x64",
-        "Name": "VC++ 2015-2026 (x64)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ v14 Redistributable (x64)",
-            "Microsoft Visual C++ 2015-2022 Redistributable (x64)",
-            "Microsoft.VCRedist.2015+.x64"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 70,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.VCRedist.2015+.x86",
-        "Name": "VC++ 2015-2026 (x86)",
-        "Domain": "visualstudio.microsoft.com",
-        "Aliases": [
-            "Microsoft Visual C++ v14 Redistributable (x86)",
-            "Microsoft Visual C++ 2015-2022 Redistributable (x86)",
-            "Microsoft.VCRedist.2015+.x86"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 71,
-        "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
-    },
-    {
-        "ID": "Microsoft.DirectX",
-        "Name": "DirectX End-User",
-        "Domain": "microsoft.com",
-        "Aliases": [
-            "DirectX",
-            "Microsoft DirectX",
-            "DirectX End-User Runtimes",
-            "Microsoft.DirectX"
-        ],
-        "Category": "C++ & System Runtimes",
-        "IDn": 72,
-        "Url": "https://www.microsoft.com/en-us/download/details.aspx?id=35"
-    },
-    {
-        "ID": "7zip.7zip",
-        "Name": "7-Zip",
-        "Domain": "7-zip.org",
-        "Aliases": [
-            "7-Zip",
-            "7zip.7zip"
-        ],
-        "Category": "System Utilities",
-        "IDn": 73,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/7zip.png"
-    },
-    {
-        "ID": "RARLab.WinRAR",
-        "Name": "WinRAR",
-        "Domain": "win-rar.com",
-        "Aliases": [
-            "WinRAR",
-            "RARLab.WinRAR"
-        ],
-        "Category": "System Utilities",
-        "IDn": 74,
-        "IconUrl": "https://www.google.com/s2/favicons?domain=win-rar.com&sz=128"
-    },
-    {
-        "ID": "voidtools.Everything",
-        "Name": "Everything",
-        "Domain": "voidtools.com",
-        "Aliases": [
-            "Everything",
-            "voidtools.Everything"
-        ],
-        "Category": "System Utilities",
-        "IDn": 75
-    },
-    {
-        "ID": "Microsoft.PowerToys",
-        "Name": "PowerToys",
-        "Domain": "learn.microsoft.com",
-        "Aliases": [
-            "PowerToys",
-            "Microsoft PowerToys",
-            "Microsoft.PowerToys"
-        ],
-        "IconUrl": "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
-        "Category": "System Utilities",
-        "IDn": 76,
-        "Url": "https://learn.microsoft.com/en-us/windows/powertoys/"
-    },
-    {
-        "ID": "Flow-Launcher.Flow-Launcher",
-        "Name": "Flow Launcher",
-        "Domain": "flowlauncher.com",
-        "Aliases": [
-            "Flow Launcher",
-            "Flow-Launcher.Flow-Launcher"
-        ],
-        "Category": "System Utilities",
-        "IDn": 77,
-        "IconUrl": "https://raw.githubusercontent.com/Flow-Launcher/Flow.Launcher/dev/Flow.Launcher/Images/app.png"
-    },
-    {
-        "ID": "RevoUninstaller.RevoUninstaller",
-        "Name": "Revo Uninstaller",
-        "Domain": "revouninstaller.com",
-        "Aliases": [
-            "Revo Uninstaller",
-            "Revo Uninstaller Free",
-            "RevoUninstaller.RevoUninstaller"
-        ],
-        "Category": "System Utilities",
-        "IDn": 78,
-        "Url": "https://www.revouninstaller.com/products/revo-uninstaller-free/"
-    },
-    {
-        "ID": "JAMSoftware.TreeSize.Free",
-        "Name": "TreeSize Free",
-        "Domain": "jam-software.com",
-        "Aliases": [
-            "TreeSize Free",
-            "JAMSoftware.TreeSize.Free"
-        ],
-        "Category": "System Utilities",
-        "IDn": 79,
-        "Url": "https://www.jam-software.com/treesize-free",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/treesize.png"
-    },
-    {
-        "ID": "BleachBit.BleachBit",
-        "Name": "BleachBit",
-        "Domain": "bleachbit.org",
-        "Aliases": [
-            "BleachBit",
-            "BleachBit.BleachBit"
-        ],
-        "Category": "System Utilities",
-        "IDn": 80
-    },
-    {
-        "ID": "Guru3D.Afterburner",
-        "Name": "MSI Afterburner",
-        "Domain": "msi.com",
-        "Aliases": [
-            "MSI Afterburner",
-            "Afterburner",
-            "Guru3D.Afterburner"
-        ],
-        "Category": "Hardware & Monitoring",
-        "IDn": 81,
-        "Url": "https://www.msi.com/Landing/afterburner/graphics-cards",
-        "IconUrl": "https://img.icons8.com/fluency/96/msi-afterburner.png"
-    },
-    {
-        "ID": "Rem0o.FanControl",
-        "Name": "FanControl",
-        "Domain": "getfancontrol.com",
-        "Aliases": [
-            "FanControl",
-            "Fan Control",
-            "Rem0o.FanControl"
-        ],
-        "Category": "Hardware & Monitoring",
-        "IDn": 82
-    },
-    {
-        "ID": "CPUID.CPU-Z",
-        "Name": "CPU-Z",
-        "Domain": "cpuid.com",
-        "Aliases": [
-            "CPUID CPU-Z",
-            "CPU-Z",
-            "CPUID.CPU-Z"
-        ],
-        "Category": "Hardware & Monitoring",
-        "IDn": 83,
-        "Url": "https://www.cpuid.com/softwares/cpu-z.html",
-        "IconUrl": "https://www.cpuid.com/medias/images/softwares/cpu-z.png"
-    },
-    {
-        "ID": "CPUID.HWMonitor",
-        "Name": "HWMonitor",
-        "Domain": "cpuid.com",
-        "Aliases": [
-            "CPUID HWMonitor",
-            "HWMonitor",
-            "CPUID.HWMonitor"
-        ],
-        "Category": "Hardware & Monitoring",
-        "IDn": 84,
-        "Url": "https://www.cpuid.com/softwares/hwmonitor.html",
-        "IconUrl": "https://www.cpuid.com/medias/images/softwares/hwmonitor.png"
-    },
-    {
-        "ID": "Bitwarden.Bitwarden",
-        "Name": "Bitwarden",
-        "Domain": "bitwarden.com",
-        "Aliases": [
-            "Bitwarden",
-            "Bitwarden.Bitwarden"
-        ],
-        "Category": "Security & Network",
-        "IDn": 85,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png"
-    },
-    {
-        "ID": "KeePassXCTeam.KeePassXC",
-        "Name": "KeePassXC",
-        "Domain": "keepassxc.org",
-        "Aliases": [
-            "KeePassXC",
-            "KeePassXCTeam.KeePassXC"
-        ],
-        "Category": "Security & Network",
-        "IDn": 86,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/keepassxc.png"
-    },
-    {
-        "ID": "Cryptomator.Cryptomator",
-        "Name": "Cryptomator",
-        "Domain": "cryptomator.org",
-        "Aliases": [
-            "Cryptomator",
-            "Cryptomator.Cryptomator"
-        ],
-        "Category": "Security & Network",
-        "IDn": 87,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cryptomator.png"
-    },
-    {
-        "ID": "Proton.ProtonVPN",
-        "Name": "Proton VPN",
-        "Domain": "protonvpn.com",
-        "Aliases": [
-            "Proton VPN",
-            "ProtonVPN",
-            "Proton.ProtonVPN"
-        ],
-        "Category": "Security & Network",
-        "IDn": 88,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proton-vpn.png"
-    },
-    {
-        "ID": "WiresharkFoundation.Wireshark",
-        "Name": "Wireshark",
-        "Domain": "wireshark.org",
-        "Aliases": [
-            "Wireshark",
-            "WiresharkFoundation.Wireshark"
-        ],
-        "Category": "Security & Network",
-        "IDn": 89,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/wireshark.png"
-    },
-    {
-        "ID": "VideoLAN.VLC",
-        "Name": "VLC media player",
-        "Domain": "videolan.org",
-        "Aliases": [
-            "VLC media player",
-            "VLC",
-            "VideoLAN.VLC"
-        ],
-        "Category": "Audio & Video",
-        "IDn": 90,
-        "Url": "https://www.videolan.org/vlc/",
-        "IconUrl": "https://raw.githubusercontent.com/videolan/vlc/master/share/icons/128x128/vlc.png"
-    },
-    {
-        "ID": "OBSProject.OBSStudio",
-        "Name": "OBS Studio",
-        "Domain": "obsproject.com",
-        "Aliases": [
-            "OBS Studio",
-            "OBS",
-            "OBSProject.OBSStudio"
-        ],
-        "Category": "Audio & Video",
-        "IDn": 91,
-        "IconUrl": "https://img.icons8.com/fluency/96/obs-studio.png"
-    },
-    {
-        "ID": "Spotify.Spotify",
-        "Name": "Spotify",
-        "Domain": "spotify.com",
-        "Aliases": [
-            "Spotify",
-            "Spotify.Spotify"
-        ],
-        "Category": "Audio & Video",
-        "IDn": 92,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/spotify.png"
-    },
-    {
-        "ID": "Audacity.Audacity",
-        "Name": "Audacity",
-        "Domain": "audacityteam.org",
-        "Aliases": [
-            "Audacity",
-            "Audacity.Audacity"
-        ],
-        "Category": "Audio & Video",
-        "IDn": 93,
-        "IconUrl": "https://img.icons8.com/fluency/96/audacity.png"
-    },
-    {
-        "ID": "HandBrake.HandBrake",
-        "Name": "HandBrake",
-        "Domain": "handbrake.fr",
-        "Aliases": [
-            "HandBrake",
-            "HandBrake.HandBrake"
-        ],
-        "Category": "Audio & Video",
-        "IDn": 94,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/handbrake.png"
-    },
-    {
-        "ID": "CodecGuide.K-LiteCodecPack.Mega",
-        "Name": "K-Lite Codec Pack Mega",
-        "Domain": "codecguide.com",
-        "Aliases": [
-            "K-Lite Mega Codec Pack",
-            "K-Lite Codec Pack",
-            "K-Lite Codec Pack Mega",
-            "CodecGuide.K-LiteCodecPack.Mega"
-        ],
-        "Category": "Audio & Video",
-        "IDn": 95,
-        "IconUrl": "https://icons.duckduckgo.com/ip3/codecguide.com.ico",
-        "Url": "https://codecguide.com/download_k-lite_codec_pack_mega.htm"
-    },
-    {
-        "ID": "ShareX.ShareX",
-        "Name": "ShareX",
-        "Domain": "getsharex.com",
-        "Aliases": [
-            "ShareX",
-            "ShareX.ShareX"
-        ],
-        "Category": "Graphics & Design",
-        "IDn": 96,
-        "IconUrl": "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png"
-    },
-    {
-        "ID": "GIMP.GIMP",
-        "Name": "GIMP",
-        "Domain": "gimp.org",
-        "Aliases": [
-            "GIMP",
-            "GNU Image Manipulation Program",
-            "GIMP.GIMP"
-        ],
-        "Category": "Graphics & Design",
-        "IDn": 97,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/gimp.png"
-    },
-    {
-        "ID": "KDE.Krita",
-        "Name": "Krita",
-        "Domain": "krita.org",
-        "Aliases": [
-            "Krita",
-            "KDE.Krita"
-        ],
-        "Category": "Graphics & Design",
-        "IDn": 98,
-        "IconUrl": "https://img.icons8.com/color/96/krita.png"
-    },
-    {
-        "ID": "BlenderFoundation.Blender",
-        "Name": "Blender",
-        "Domain": "blender.org",
-        "Aliases": [
-            "Blender",
-            "BlenderFoundation.Blender"
-        ],
-        "Category": "Graphics & Design",
-        "IDn": 99,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/blender.png"
-    },
-    {
-        "ID": "Inkscape.Inkscape",
-        "Name": "Inkscape",
-        "Domain": "inkscape.org",
-        "Aliases": [
-            "Inkscape",
-            "Inkscape.Inkscape"
-        ],
-        "Category": "Graphics & Design",
-        "IDn": 100,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/inkscape-light.png"
-    },
-    {
-        "ID": "TheDocumentFoundation.LibreOffice",
-        "Name": "LibreOffice",
-        "Domain": "libreoffice.org",
-        "Aliases": [
-            "LibreOffice",
-            "TheDocumentFoundation.LibreOffice"
-        ],
-        "Category": "Documents & Office",
-        "IDn": 101,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/libreoffice-colibre-text.png"
-    },
-    {
-        "ID": "Obsidian.Obsidian",
-        "Name": "Obsidian",
-        "Domain": "obsidian.md",
-        "Aliases": [
-            "Obsidian",
-            "Obsidian.Obsidian"
-        ],
-        "Category": "Documents & Office",
-        "IDn": 102,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/obsidian.png"
-    },
-    {
-        "ID": "Notion.Notion",
-        "Name": "Notion",
-        "Domain": "notion.so",
-        "Aliases": [
-            "Notion",
-            "Notion.Notion"
-        ],
-        "Category": "Documents & Office",
-        "IDn": 103,
-        "IconUrl": "https://img.icons8.com/fluency/96/notion.png"
-    },
-    {
-        "ID": "SumatraPDF.SumatraPDF",
-        "Name": "SumatraPDF",
-        "Domain": "sumatrapdfreader.org",
-        "Aliases": [
-            "SumatraPDF",
-            "SumatraPDF.SumatraPDF"
-        ],
-        "Category": "Documents & Office",
-        "IDn": 104,
-        "Url": "https://www.sumatrapdfreader.org/free-pdf-reader"
-    },
-    {
-        "ID": "Foxit.FoxitReader",
-        "Name": "Foxit PDF Reader",
-        "Domain": "foxit.com",
-        "Aliases": [
-            "Foxit PDF Reader",
-            "Foxit Reader",
-            "Foxit.FoxitReader"
-        ],
-        "Category": "Documents & Office",
-        "IDn": 105,
-        "Url": "https://www.foxit.com/pdf-reader/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/foxit-icon.png"
-    },
-    {
-        "ID": "Valve.Steam",
-        "Name": "Steam",
-        "Domain": "store.steampowered.com",
-        "Aliases": [
-            "Steam",
-            "Valve.Steam"
-        ],
-        "Category": "Game Launchers",
-        "IDn": 106,
-        "Url": "https://store.steampowered.com/",
-        "IconUrl": "https://img.icons8.com/fluency/96/steam.png"
-    },
-    {
-        "ID": "EpicGames.EpicGamesLauncher",
-        "Name": "Epic Games Launcher",
-        "Domain": "store.epicgames.com",
-        "Aliases": [
-            "Epic Games Launcher",
-            "Epic Games",
-            "EpicGames.EpicGamesLauncher"
-        ],
-        "Category": "Game Launchers",
-        "IDn": 107,
-        "IconUrl": "https://img.icons8.com/fluency/96/epic-games.png",
-        "Url": "https://store.epicgames.com/"
-    },
-    {
-        "ID": "GOG.Galaxy",
-        "Name": "GOG Galaxy",
-        "Domain": "gog.com",
-        "Aliases": [
-            "GOG Galaxy",
-            "GOG.Galaxy"
-        ],
-        "Category": "Game Launchers",
-        "IDn": 108,
-        "Url": "https://www.gog.com/galaxy",
-        "IconUrl": "https://img.icons8.com/fluency/96/gog-galaxy.png"
-    },
-    {
-        "ID": "Playnite.Playnite",
-        "Name": "Playnite",
-        "Domain": "playnite.link",
-        "Aliases": [
-            "Playnite",
-            "Playnite.Playnite"
-        ],
-        "Category": "Game Launchers",
-        "IDn": 109,
-        "IconUrl": "https://raw.githubusercontent.com/JosefNemec/Playnite/master/source/Playnite.DesktopApp/Themes/Desktop/Default/Images/applogo.png"
-    },
-    {
-        "ID": "qBittorrent.qBittorrent",
-        "Name": "qBittorrent",
-        "Domain": "qbittorrent.org",
-        "Aliases": [
-            "qBittorrent",
-            "qBittorrent.qBittorrent"
-        ],
-        "Category": "File Transfer & Cloud",
-        "IDn": 110,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/qbittorrent.png"
-    },
-    {
-        "ID": "LocalSend.LocalSend",
-        "Name": "LocalSend",
-        "Domain": "localsend.org",
-        "Aliases": [
-            "LocalSend",
-            "LocalSend.LocalSend"
-        ],
-        "Category": "File Transfer & Cloud",
-        "IDn": 111,
-        "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
-    },
-    {
-        "ID": "WinSCP.WinSCP",
-        "Name": "WinSCP",
-        "Domain": "winscp.net",
-        "Aliases": [
-            "WinSCP",
-            "WinSCP.WinSCP"
-        ],
-        "Category": "File Transfer & Cloud",
-        "IDn": 112
-    },
-    {
-        "ID": "TimKosse.FileZilla.Client",
-        "Name": "FileZilla",
-        "Domain": "filezilla-project.org",
-        "Aliases": [
-            "FileZilla Client",
-            "FileZilla",
-            "TimKosse.FileZilla.Client"
-        ],
-        "Category": "File Transfer & Cloud",
-        "IDn": 113,
-        "FallbackUrl": "https://filezilla-project.org/download.php?platform=win64",
-        "Url": "https://filezilla-project.org/download.php?platform=win64",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/filezilla.png"
-    },
-    {
-        "ID": "Rclone.Rclone",
-        "Name": "Rclone",
-        "Domain": "rclone.org",
-        "Aliases": [
-            "Rclone",
-            "Rclone.Rclone"
-        ],
-        "Category": "File Transfer & Cloud",
-        "IDn": 114,
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rclone.png"
-    }
+  {
+    "ID": "Google.Chrome",
+    "Name": "Google Chrome",
+    "Domain": "google.com/chrome",
+    "Aliases": [
+      "Google Chrome",
+      "Google.Chrome"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 1,
+    "Url": "https://www.google.com/chrome/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-chrome.png"
+  },
+  {
+    "ID": "Mozilla.Firefox",
+    "Name": "Mozilla Firefox",
+    "Domain": "firefox.com",
+    "Aliases": [
+      "Mozilla Firefox",
+      "Firefox",
+      "Mozilla.Firefox"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 2,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/firefox.png"
+  },
+  {
+    "ID": "Brave.Brave",
+    "Name": "Brave Browser",
+    "Domain": "brave.com",
+    "Aliases": [
+      "Brave",
+      "BraveSoftware",
+      "Brave.Brave",
+      "Brave Browser"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 3,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/brave.png"
+  },
+  {
+    "ID": "LibreWolf.LibreWolf",
+    "Name": "LibreWolf",
+    "Domain": "librewolf.net",
+    "Aliases": [
+      "LibreWolf",
+      "LibreWolf.LibreWolf"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 4,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/librewolf.png"
+  },
+  {
+    "ID": "Vivaldi.Vivaldi",
+    "Name": "Vivaldi",
+    "Domain": "vivaldi.com",
+    "Aliases": [
+      "Vivaldi",
+      "Vivaldi.Vivaldi"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 5,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vivaldi.png"
+  },
+  {
+    "ID": "TorProject.TorBrowser",
+    "Name": "Tor Browser",
+    "Domain": "torproject.org",
+    "Aliases": [
+      "Tor Browser",
+      "TorProject.TorBrowser"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 6
+  },
+  {
+    "ID": "Opera.OperaGX",
+    "Name": "Opera GX",
+    "Domain": "opera.com/gx",
+    "Aliases": [
+      "Opera GX",
+      "OperaGX",
+      "Opera.OperaGX"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 7,
+    "Url": "https://www.opera.com/gx",
+    "IconUrl": "https://img.icons8.com/fluency/96/opera-gx.png"
+  },
+  {
+    "ID": "Microsoft.Edge",
+    "Name": "Microsoft Edge",
+    "Domain": "microsoft.com/edge",
+    "Aliases": [
+      "Microsoft Edge",
+      "Microsoft.Edge"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 8,
+    "Url": "https://www.microsoft.com/edge",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/microsoft-edge.png"
+  },
+  {
+    "ID": "Zen-Team.Zen-Browser",
+    "Name": "Zen Browser",
+    "Domain": "zen-browser.app",
+    "Aliases": [
+      "Zen Browser",
+      "Zen",
+      "Zen-Team.Zen-Browser"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 9,
+    "Url": "https://zen-browser.app/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zen-browser.png"
+  },
+  {
+    "ID": "Ablaze.Floorp",
+    "Name": "Floorp",
+    "Domain": "floorp.app",
+    "Aliases": [
+      "Ablaze Floorp",
+      "Floorp",
+      "Ablaze.Floorp"
+    ],
+    "Category": "Web Browsers",
+    "IDn": 10,
+    "Url": "https://floorp.app/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=floorp.app&sz=128"
+  },
+  {
+    "ID": "Discord.Discord",
+    "Name": "Discord",
+    "Domain": "discord.com",
+    "Aliases": [
+      "Discord",
+      "Discord.Discord"
+    ],
+    "Category": "Communication",
+    "IDn": 11,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/discord.png"
+  },
+  {
+    "ID": "Telegram.TelegramDesktop",
+    "Name": "Telegram",
+    "Domain": "telegram.org",
+    "Aliases": [
+      "Telegram Desktop",
+      "Telegram",
+      "TelegramDesktop",
+      "Telegram.TelegramDesktop"
+    ],
+    "Category": "Communication",
+    "IDn": 12,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/telegram.png"
+  },
+  {
+    "ID": "OpenWhisperSystems.Signal",
+    "Name": "Signal",
+    "Domain": "signal.org",
+    "Aliases": [
+      "Signal",
+      "OpenWhisperSystems.Signal"
+    ],
+    "Category": "Communication",
+    "IDn": 13,
+    "IconUrl": "https://img.icons8.com/fluency/96/signal-app.png"
+  },
+  {
+    "ID": "VNGCorp.Zalo",
+    "Name": "Zalo",
+    "Domain": "zalo.me",
+    "Aliases": [
+      "Zalo",
+      "VNGCorp.Zalo"
+    ],
+    "Category": "Communication",
+    "IDn": 14,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zalo.png"
+  },
+  {
+    "ID": "Zoom.Zoom",
+    "Name": "Zoom Workplace",
+    "Domain": "zoom.us",
+    "Aliases": [
+      "Zoom Workplace",
+      "Zoom",
+      "Zoom.Zoom"
+    ],
+    "Category": "Communication",
+    "IDn": 15,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zoom.png"
+  },
+  {
+    "ID": "SlackTechnologies.Slack",
+    "Name": "Slack",
+    "Domain": "slack.com",
+    "Aliases": [
+      "Slack",
+      "SlackTechnologies.Slack"
+    ],
+    "Category": "Communication",
+    "IDn": 16,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/slack.png"
+  },
+  {
+    "ID": "9NKSQGP7F2NH",
+    "Name": "WhatsApp",
+    "Domain": "whatsapp.com",
+    "Aliases": [
+      "WhatsApp",
+      "WhatsApp.WhatsApp",
+      "9NKSQGP7F2NH"
+    ],
+    "Category": "Communication",
+    "IDn": 17,
+    "Source": "msstore",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/whatsapp.png"
+  },
+  {
+    "ID": "Microsoft.Teams",
+    "Name": "Microsoft Teams",
+    "Domain": "teams.microsoft.com",
+    "Aliases": [
+      "Microsoft Teams",
+      "Microsoft Teams (work or school)",
+      "MSTeams",
+      "Microsoft.Teams"
+    ],
+    "Category": "Communication",
+    "IDn": 18,
+    "Url": "https://www.microsoft.com/en-us/microsoft-teams/download-app",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/microsoft-teams.png"
+  },
+  {
+    "ID": "RustDesk.RustDesk",
+    "Name": "RustDesk",
+    "Domain": "rustdesk.com",
+    "Aliases": [
+      "RustDesk",
+      "RustDesk.RustDesk"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 19,
+    "GitHubRepo": "rustdesk/rustdesk",
+    "AssetRegex": "x86_64\\.msi$",
+    "FallbackUrl": "https://github.com/rustdesk/rustdesk/releases/latest",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rustdesk.png"
+  },
+  {
+    "ID": "AnyDesk.AnyDesk",
+    "Name": "AnyDesk",
+    "Domain": "anydesk.com",
+    "Aliases": [
+      "AnyDesk",
+      "AnyDesk.AnyDesk"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 20,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/anydesk.png"
+  },
+  {
+    "ID": "DucFabulous.UltraViewer",
+    "Name": "UltraViewer",
+    "Domain": "ultraviewer.net",
+    "Aliases": [
+      "UltraViewer",
+      "DucFabulous.UltraViewer"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 21
+  },
+  {
+    "ID": "TeamViewer.TeamViewer",
+    "Name": "TeamViewer",
+    "Domain": "teamviewer.com",
+    "Aliases": [
+      "TeamViewer",
+      "TeamViewer.TeamViewer"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 22,
+    "IconUrl": "https://www.google.com/s2/favicons?domain=teamviewer.com&sz=128"
+  },
+  {
+    "ID": "Parsec.Parsec",
+    "Name": "Parsec",
+    "Domain": "parsec.app",
+    "Aliases": [
+      "Parsec",
+      "Parsec.Parsec"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 23,
+    "Url": "https://parsec.app/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=parsec.app&sz=128"
+  },
+  {
+    "ID": "MoonlightGameStreamingProject.Moonlight",
+    "Name": "Moonlight",
+    "Domain": "moonlight-stream.org",
+    "Aliases": [
+      "Moonlight Game Streaming Client",
+      "Moonlight",
+      "MoonlightGameStreamingProject.Moonlight"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 24,
+    "Url": "https://moonlight-stream.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=moonlight-stream.org&sz=128"
+  },
+  {
+    "ID": "Google.ChromeRemoteDesktopHost",
+    "Name": "Chrome Remote Desktop",
+    "Domain": "remotedesktop.google.com",
+    "Aliases": [
+      "Chrome Remote Desktop Host",
+      "Google.ChromeRemoteDesktopHost"
+    ],
+    "Category": "Remote Desktop",
+    "IDn": 25,
+    "Url": "https://remotedesktop.google.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=remotedesktop.google.com&sz=128"
+  },
+  {
+    "ID": "Google.Antigravity",
+    "Name": "Antigravity",
+    "Domain": "antigravity.google",
+    "Aliases": [
+      "Antigravity",
+      "Google.Antigravity"
+    ],
+    "Category": "Antigravity",
+    "IDn": 26,
+    "Url": "https://antigravity.google/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=antigravity.google&sz=128"
+  },
+  {
+    "ID": "Google.AntigravityIDE",
+    "Name": "Antigravity IDE",
+    "Domain": "antigravity.google",
+    "Aliases": [
+      "Antigravity IDE",
+      "Antigravity IDE (User)",
+      "Google.AntigravityIDE"
+    ],
+    "Category": "Antigravity",
+    "IDn": 27,
+    "Url": "https://antigravity.google/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=antigravity.google&sz=128"
+  },
+  {
+    "ID": "Google.AntigravityCLI",
+    "Name": "Antigravity CLI",
+    "Domain": "antigravity.google",
+    "Aliases": [
+      "Antigravity CLI",
+      "Google.AntigravityCLI"
+    ],
+    "Category": "Antigravity",
+    "IDn": 28,
+    "Url": "https://antigravity.google/docs",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=antigravity.google&sz=128"
+  },
+  {
+    "ID": "OpenAI.ChatGPT",
+    "Name": "ChatGPT",
+    "Domain": "chatgpt.com",
+    "Aliases": [
+      "ChatGPT",
+      "OpenAI.ChatGPT"
+    ],
+    "Category": "AI & Assistants",
+    "IDn": 29,
+    "Url": "https://chatgpt.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/chatgpt.png"
+  },
+  {
+    "ID": "Anthropic.Claude",
+    "Name": "Claude",
+    "Domain": "claude.ai",
+    "Aliases": [
+      "Claude",
+      "Anthropic.Claude"
+    ],
+    "Category": "AI & Assistants",
+    "IDn": 30,
+    "Url": "https://claude.ai/download",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/claude-ai.png"
+  },
+  {
+    "ID": "Anysphere.Cursor",
+    "Name": "Cursor",
+    "Domain": "cursor.com",
+    "Aliases": [
+      "Cursor",
+      "Anysphere.Cursor"
+    ],
+    "Category": "AI & Assistants",
+    "IDn": 31,
+    "Url": "https://www.cursor.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=cursor.com&sz=128"
+  },
+  {
+    "ID": "Ollama.Ollama",
+    "Name": "Ollama",
+    "Domain": "ollama.com",
+    "Aliases": [
+      "Ollama",
+      "Ollama.Ollama"
+    ],
+    "Category": "AI & Assistants",
+    "IDn": 32,
+    "Url": "https://ollama.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ollama.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "ElementLabs.LMStudio",
+    "Name": "LM Studio",
+    "Domain": "lmstudio.ai",
+    "Aliases": [
+      "LM Studio",
+      "ElementLabs.LMStudio"
+    ],
+    "Category": "AI & Assistants",
+    "IDn": 33,
+    "Url": "https://lmstudio.ai/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=lmstudio.ai&sz=128"
+  },
+  {
+    "ID": "JetBrains.Toolbox",
+    "Name": "JetBrains Toolbox",
+    "Domain": "jetbrains.com",
+    "Aliases": [
+      "JetBrains Toolbox",
+      "JetBrains.Toolbox"
+    ],
+    "Category": "JetBrains",
+    "IDn": 34,
+    "Url": "https://www.jetbrains.com/toolbox-app/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/Toolbox_icon.png"
+  },
+  {
+    "ID": "JetBrains.IntelliJIDEA.Community",
+    "Name": "IntelliJ IDEA Community",
+    "Domain": "jetbrains.com/idea",
+    "Aliases": [
+      "IntelliJ IDEA Community Edition",
+      "JetBrains.IntelliJIDEA.Community"
+    ],
+    "Category": "JetBrains",
+    "IDn": 35,
+    "Url": "https://www.jetbrains.com/idea/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/IntelliJ_IDEA_icon.png"
+  },
+  {
+    "ID": "JetBrains.IntelliJIDEA.Ultimate",
+    "Name": "IntelliJ IDEA Ultimate",
+    "Domain": "jetbrains.com/idea",
+    "Aliases": [
+      "IntelliJ IDEA Ultimate Edition",
+      "JetBrains.IntelliJIDEA.Ultimate"
+    ],
+    "Category": "JetBrains",
+    "IDn": 36,
+    "Url": "https://www.jetbrains.com/idea/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/IntelliJ_IDEA_icon.png"
+  },
+  {
+    "ID": "JetBrains.PyCharm.Community",
+    "Name": "PyCharm Community",
+    "Domain": "jetbrains.com/pycharm",
+    "Aliases": [
+      "PyCharm Community Edition",
+      "JetBrains.PyCharm.Community"
+    ],
+    "Category": "JetBrains",
+    "IDn": 37,
+    "Url": "https://www.jetbrains.com/pycharm/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/PyCharm_icon.png"
+  },
+  {
+    "ID": "JetBrains.PyCharm.Professional",
+    "Name": "PyCharm Professional",
+    "Domain": "jetbrains.com/pycharm",
+    "Aliases": [
+      "PyCharm Professional Edition",
+      "JetBrains.PyCharm.Professional"
+    ],
+    "Category": "JetBrains",
+    "IDn": 38,
+    "Url": "https://www.jetbrains.com/pycharm/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/PyCharm_icon.png"
+  },
+  {
+    "ID": "JetBrains.WebStorm",
+    "Name": "WebStorm",
+    "Domain": "jetbrains.com/webstorm",
+    "Aliases": [
+      "WebStorm",
+      "JetBrains.WebStorm"
+    ],
+    "Category": "JetBrains",
+    "IDn": 39,
+    "Url": "https://www.jetbrains.com/webstorm/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/WebStorm_icon.png"
+  },
+  {
+    "ID": "JetBrains.PhpStorm",
+    "Name": "PhpStorm",
+    "Domain": "jetbrains.com/phpstorm",
+    "Aliases": [
+      "PhpStorm",
+      "JetBrains.PhpStorm"
+    ],
+    "Category": "JetBrains",
+    "IDn": 40,
+    "Url": "https://www.jetbrains.com/phpstorm/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/PhpStorm_icon.png"
+  },
+  {
+    "ID": "JetBrains.GoLand",
+    "Name": "GoLand",
+    "Domain": "jetbrains.com/go",
+    "Aliases": [
+      "GoLand",
+      "JetBrains.GoLand"
+    ],
+    "Category": "JetBrains",
+    "IDn": 41,
+    "Url": "https://www.jetbrains.com/go/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/GoLand_icon.png"
+  },
+  {
+    "ID": "JetBrains.Rider",
+    "Name": "Rider",
+    "Domain": "jetbrains.com/rider",
+    "Aliases": [
+      "JetBrains Rider",
+      "Rider",
+      "JetBrains.Rider"
+    ],
+    "Category": "JetBrains",
+    "IDn": 42,
+    "Url": "https://www.jetbrains.com/rider/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/Rider_icon.png"
+  },
+  {
+    "ID": "JetBrains.CLion",
+    "Name": "CLion",
+    "Domain": "jetbrains.com/clion",
+    "Aliases": [
+      "CLion",
+      "JetBrains.CLion"
+    ],
+    "Category": "JetBrains",
+    "IDn": 43,
+    "Url": "https://www.jetbrains.com/clion/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/CLion_icon.png"
+  },
+  {
+    "ID": "JetBrains.DataGrip",
+    "Name": "DataGrip",
+    "Domain": "jetbrains.com/datagrip",
+    "Aliases": [
+      "DataGrip",
+      "JetBrains.DataGrip"
+    ],
+    "Category": "JetBrains",
+    "IDn": 44,
+    "Url": "https://www.jetbrains.com/datagrip/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/DataGrip_icon.png"
+  },
+  {
+    "ID": "JetBrains.RustRover",
+    "Name": "RustRover",
+    "Domain": "jetbrains.com/rust",
+    "Aliases": [
+      "RustRover",
+      "JetBrains.RustRover"
+    ],
+    "Category": "JetBrains",
+    "IDn": 45,
+    "Url": "https://www.jetbrains.com/rust/",
+    "IconUrl": "https://resources.jetbrains.com/storage/products/company/brand/logos/RustRover_icon.png"
+  },
+  {
+    "ID": "Microsoft.VisualStudioCode",
+    "Name": "VS Code",
+    "Domain": "code.visualstudio.com",
+    "Aliases": [
+      "Visual Studio Code",
+      "VS Code",
+      "VSCode",
+      "Microsoft.VisualStudioCode"
+    ],
+    "Category": "Development",
+    "IDn": 46,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vscode.png"
+  },
+  {
+    "ID": "Git.Git",
+    "Name": "Git",
+    "Domain": "git-scm.com",
+    "Aliases": [
+      "Git",
+      "Git.Git"
+    ],
+    "Category": "Development",
+    "IDn": 47,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/git.png"
+  },
+  {
+    "ID": "Microsoft.WindowsTerminal",
+    "Name": "Windows Terminal",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Windows Terminal",
+      "Bảng điều khiển Windows",
+      "Microsoft.WindowsTerminal"
+    ],
+    "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/windows-terminal.png",
+    "Category": "Development",
+    "IDn": 48,
+    "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
+  },
+  {
+    "ID": "Microsoft.WindowsTerminal.Preview",
+    "Name": "Windows Terminal Preview",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "Windows Terminal Preview",
+      "Microsoft.WindowsTerminal.Preview"
+    ],
+    "IconUrl": "https://raw.githubusercontent.com/microsoft/terminal/main/res/terminal/images-Pre/Square44x44Logo.targetsize-64.png",
+    "Category": "Development",
+    "IDn": 49,
+    "Url": "https://learn.microsoft.com/en-us/windows/terminal/"
+  },
+  {
+    "ID": "Python.Python.3.13",
+    "Name": "Python 3.13",
+    "Domain": "python.org",
+    "Aliases": [
+      "Python 3.13",
+      "Python.Python.3.13"
+    ],
+    "Category": "Development",
+    "IDn": 50,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/python.png"
+  },
+  {
+    "ID": "OpenJS.NodeJS.LTS",
+    "Name": "Node.js LTS",
+    "Domain": "nodejs.org",
+    "Aliases": [
+      "Node.js",
+      "NodeJS",
+      "OpenJS.NodeJS.LTS"
+    ],
+    "Category": "Development",
+    "IDn": 51,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nodejs.png"
+  },
+  {
+    "ID": "Docker.DockerDesktop",
+    "Name": "Docker Desktop",
+    "Domain": "docker.com",
+    "Aliases": [
+      "Docker Desktop",
+      "Docker",
+      "Docker.DockerDesktop"
+    ],
+    "Category": "Development",
+    "IDn": 52,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/docker.png"
+  },
+  {
+    "ID": "Notepad++.Notepad++",
+    "Name": "Notepad++",
+    "Domain": "notepad-plus-plus.org",
+    "Aliases": [
+      "Notepad++",
+      "NotepadPlusPlus",
+      "Notepad++.Notepad++"
+    ],
+    "Category": "Development",
+    "IDn": 53,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/notepad-plus-plus.png"
+  },
+  {
+    "ID": "Postman.Postman",
+    "Name": "Postman",
+    "Domain": "postman.com",
+    "Aliases": [
+      "Postman",
+      "Postman.Postman"
+    ],
+    "Category": "Development",
+    "IDn": 54,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/postman.png"
+  },
+  {
+    "ID": "DBeaver.DBeaver.Community",
+    "Name": "DBeaver CE",
+    "Domain": "dbeaver.io",
+    "Aliases": [
+      "DBeaver",
+      "DBeaver CE",
+      "DBeaver Community",
+      "DBeaver.DBeaver.Community"
+    ],
+    "Category": "Development",
+    "IDn": 55,
+    "IconUrl": "https://raw.githubusercontent.com/dbeaver/dbeaver/devel/plugins/org.jkiss.dbeaver.ui.app.standalone/icons/dbeaver256.png"
+  },
+  {
+    "ID": "GoLang.Go",
+    "Name": "Go",
+    "Domain": "go.dev",
+    "Aliases": [
+      "Go Programming Language",
+      "GoLang",
+      "GoLang.Go"
+    ],
+    "Category": "Development",
+    "IDn": 56,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/go.png"
+  },
+  {
+    "ID": "Rustlang.Rustup",
+    "Name": "Rust (rustup)",
+    "Domain": "rust-lang.org",
+    "Aliases": [
+      "Rustup",
+      "Rustup: the Rust toolchain installer",
+      "Rustlang.Rustup"
+    ],
+    "Category": "Development",
+    "IDn": 57,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/rust-light.png"
+  },
+  {
+    "ID": "Microsoft.PowerShell",
+    "Name": "PowerShell 7",
+    "Domain": "learn.microsoft.com/powershell",
+    "Aliases": [
+      "PowerShell",
+      "Microsoft.PowerShell"
+    ],
+    "Category": "Development",
+    "IDn": 58,
+    "Url": "https://github.com/PowerShell/PowerShell",
+    "IconUrl": "https://img.icons8.com/color/96/powershell.png"
+  },
+  {
+    "ID": "Microsoft.WSL",
+    "Name": "WSL (Linux Subsystem)",
+    "Domain": "learn.microsoft.com/windows/wsl",
+    "Aliases": [
+      "Windows Subsystem for Linux",
+      "Microsoft.WSL"
+    ],
+    "Category": "Development",
+    "IDn": 59,
+    "Url": "https://learn.microsoft.com/windows/wsl/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/tux.png"
+  },
+  {
+    "ID": "GitHub.GitHubDesktop",
+    "Name": "GitHub Desktop",
+    "Domain": "desktop.github.com",
+    "Aliases": [
+      "GitHub Desktop",
+      "GitHub.GitHubDesktop"
+    ],
+    "Category": "Development",
+    "IDn": 60,
+    "Url": "https://desktop.github.com/",
+    "IconUrl": "https://avatars.githubusercontent.com/u/19267068?s=128&v=4"
+  },
+  {
+    "ID": "GitHub.cli",
+    "Name": "GitHub CLI",
+    "Domain": "cli.github.com",
+    "Aliases": [
+      "GitHub CLI",
+      "GitHub.cli"
+    ],
+    "Category": "Development",
+    "IDn": 61,
+    "Url": "https://cli.github.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/github-light.png"
+  },
+  {
+    "ID": "SublimeHQ.SublimeText.4",
+    "Name": "Sublime Text 4",
+    "Domain": "sublimetext.com",
+    "Aliases": [
+      "Sublime Text",
+      "Sublime Text 4",
+      "SublimeHQ.SublimeText.4"
+    ],
+    "Category": "Development",
+    "IDn": 62,
+    "Url": "https://www.sublimetext.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=sublimetext.com&sz=128"
+  },
+  {
+    "ID": "Neovim.Neovim",
+    "Name": "Neovim",
+    "Domain": "neovim.io",
+    "Aliases": [
+      "Neovim",
+      "Neovim.Neovim"
+    ],
+    "Category": "Development",
+    "IDn": 63,
+    "Url": "https://neovim.io/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=neovim.io&sz=128"
+  },
+  {
+    "ID": "astral-sh.uv",
+    "Name": "uv (Python Manager)",
+    "Domain": "docs.astral.sh",
+    "Aliases": [
+      "uv",
+      "astral-sh.uv"
+    ],
+    "Category": "Development",
+    "IDn": 64,
+    "Url": "https://docs.astral.sh/uv/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=docs.astral.sh&sz=128"
+  },
+  {
+    "ID": "Oracle.VirtualBox",
+    "Name": "Oracle VirtualBox",
+    "Domain": "virtualbox.org",
+    "Aliases": [
+      "Oracle VirtualBox",
+      "Oracle VM VirtualBox",
+      "Oracle.VirtualBox"
+    ],
+    "Category": "Development",
+    "IDn": 65,
+    "Url": "https://www.virtualbox.org/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/virtualbox.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.Framework.Runtime",
+    "Name": ".NET Framework 4.8.1",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Framework 4.8.1 Runtime",
+      "Microsoft .NET Framework Runtime",
+      "Microsoft.DotNet.Framework.Runtime"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 66,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.3_1",
+    "Name": ".NET Desktop Runtime 3.1",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 3.1",
+      "DesktopRuntime.3_1",
+      "Microsoft.DotNet.DesktopRuntime.3_1"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 67,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.5",
+    "Name": ".NET Desktop Runtime 5.0",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 5.0",
+      "DesktopRuntime.5",
+      "Microsoft.DotNet.DesktopRuntime.5"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 68,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.6",
+    "Name": ".NET Desktop Runtime 6 (LTS)",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 6.0",
+      "DesktopRuntime.6",
+      "Microsoft.DotNet.DesktopRuntime.6"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 69,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.6.x86",
+    "Name": ".NET Desktop Runtime 6 (x86)",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 6.0 (x86)",
+      "Microsoft.DotNet.DesktopRuntime.6.x86"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 70,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.7",
+    "Name": ".NET Desktop Runtime 7",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 7.0",
+      "DesktopRuntime.7",
+      "Microsoft.DotNet.DesktopRuntime.7"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 71,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.7.x86",
+    "Name": ".NET Desktop Runtime 7 (x86)",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 7.0 (x86)",
+      "Microsoft.DotNet.DesktopRuntime.7.x86"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 72,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.8",
+    "Name": ".NET Desktop Runtime 8 (LTS)",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 8.0",
+      "DesktopRuntime.8",
+      "Microsoft.DotNet.DesktopRuntime.8"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 73,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.8.x86",
+    "Name": ".NET Desktop Runtime 8 (x86)",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 8.0 (x86)",
+      "Microsoft.DotNet.DesktopRuntime.8.x86"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 74,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.9",
+    "Name": ".NET Desktop Runtime 9",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 9.0",
+      "DesktopRuntime.9",
+      "Microsoft.DotNet.DesktopRuntime.9"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 75,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.10",
+    "Name": ".NET Desktop Runtime 10",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 10.0",
+      "DesktopRuntime.10",
+      "Microsoft.DotNet.DesktopRuntime.10"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 76,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "Microsoft.DotNet.DesktopRuntime.Preview",
+    "Name": ".NET Desktop Runtime 11 Preview",
+    "Domain": "dotnet.microsoft.com",
+    "Aliases": [
+      "Microsoft .NET Windows Desktop Runtime 11.0 Preview",
+      "Microsoft.DotNet.DesktopRuntime.Preview"
+    ],
+    "Category": ".NET Runtimes",
+    "IDn": 77,
+    "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
+    "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.8.JRE",
+    "Name": "Java 8 JRE (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JRE with Hotspot 8",
+      "Temurin 8 JRE",
+      "EclipseAdoptium.Temurin.8.JRE"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 78,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.8.JDK",
+    "Name": "Java 8 JDK (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 8",
+      "Temurin 8",
+      "OpenJDK 8",
+      "EclipseAdoptium.Temurin.8.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 79,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.11.JRE",
+    "Name": "Java 11 JRE (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JRE with Hotspot 11",
+      "Temurin 11 JRE",
+      "EclipseAdoptium.Temurin.11.JRE"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 80,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.11.JDK",
+    "Name": "Java 11 JDK (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 11",
+      "Temurin 11",
+      "OpenJDK 11",
+      "EclipseAdoptium.Temurin.11.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 81,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.16.JDK",
+    "Name": "Java 16 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 16",
+      "Temurin 16",
+      "EclipseAdoptium.Temurin.16.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 82,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.17.JRE",
+    "Name": "Java 17 JRE (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JRE with Hotspot 17",
+      "Temurin 17 JRE",
+      "EclipseAdoptium.Temurin.17.JRE"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 83,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.17.JDK",
+    "Name": "Java 17 JDK (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 17",
+      "Temurin 17",
+      "OpenJDK 17",
+      "EclipseAdoptium.Temurin.17.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 84,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.18.JDK",
+    "Name": "Java 18 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 18",
+      "Temurin 18",
+      "EclipseAdoptium.Temurin.18.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 85,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.19.JDK",
+    "Name": "Java 19 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 19",
+      "Temurin 19",
+      "EclipseAdoptium.Temurin.19.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 86,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.20.JDK",
+    "Name": "Java 20 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 20",
+      "Temurin 20",
+      "EclipseAdoptium.Temurin.20.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 87,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.21.JRE",
+    "Name": "Java 21 JRE (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JRE with Hotspot 21",
+      "Temurin 21 JRE",
+      "EclipseAdoptium.Temurin.21.JRE"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 88,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.21.JDK",
+    "Name": "Java 21 JDK (LTS)",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 21",
+      "Temurin 21",
+      "OpenJDK 21",
+      "EclipseAdoptium.Temurin.21.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 89,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.22.JDK",
+    "Name": "Java 22 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 22",
+      "Temurin 22",
+      "EclipseAdoptium.Temurin.22.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 90,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.23.JDK",
+    "Name": "Java 23 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 23",
+      "Temurin 23",
+      "EclipseAdoptium.Temurin.23.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 91,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.24.JDK",
+    "Name": "Java 24 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 24",
+      "Temurin 24",
+      "EclipseAdoptium.Temurin.24.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 92,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "EclipseAdoptium.Temurin.25.JDK",
+    "Name": "Java 25 JDK",
+    "Domain": "adoptium.net",
+    "Aliases": [
+      "Eclipse Temurin JDK with Hotspot 25",
+      "Temurin 25",
+      "EclipseAdoptium.Temurin.25.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 93,
+    "Url": "https://adoptium.net/temurin/releases/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "Oracle.JavaRuntimeEnvironment",
+    "Name": "Oracle Java 8 JRE",
+    "Domain": "java.com",
+    "Aliases": [
+      "Java 8",
+      "Oracle.JavaRuntimeEnvironment"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 94,
+    "Url": "https://www.java.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "Amazon.Corretto.25.JDK",
+    "Name": "Amazon Corretto 25 JDK",
+    "Domain": "aws.amazon.com/corretto",
+    "Aliases": [
+      "Amazon Corretto 25",
+      "Amazon Corretto (x64)",
+      "Amazon.Corretto.25.JDK"
+    ],
+    "Category": "Java Runtimes",
+    "IDn": 95,
+    "Url": "https://aws.amazon.com/corretto/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
+    "IconBg": "light"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2005.x64",
+    "Name": "VC++ 2005 (x64)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2005 Redistributable (x64)",
+      "Microsoft Visual C++ 2005 Redistributable - x64",
+      "Microsoft.VCRedist.2005.x64"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 96,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2005.x86",
+    "Name": "VC++ 2005 (x86)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2005 Redistributable (x86)",
+      "Microsoft Visual C++ 2005 Redistributable - x86",
+      "Microsoft.VCRedist.2005.x86"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 97,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2008.x64",
+    "Name": "VC++ 2008 (x64)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2008 Redistributable - x64",
+      "Microsoft Visual C++ 2008 Redistributable (x64)",
+      "Microsoft.VCRedist.2008.x64"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 98,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2008.x86",
+    "Name": "VC++ 2008 (x86)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2008 Redistributable - x86",
+      "Microsoft Visual C++ 2008 Redistributable (x86)",
+      "Microsoft.VCRedist.2008.x86"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 99,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2010.x64",
+    "Name": "VC++ 2010 (x64)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2010 x64 Redistributable",
+      "Microsoft Visual C++ 2010 Redistributable - x64",
+      "Microsoft Visual C++ 2010 Redistributable (x64)",
+      "Microsoft.VCRedist.2010.x64"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 100,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2010.x86",
+    "Name": "VC++ 2010 (x86)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2010 x86 Redistributable",
+      "Microsoft Visual C++ 2010 Redistributable - x86",
+      "Microsoft Visual C++ 2010 Redistributable (x86)",
+      "Microsoft.VCRedist.2010.x86"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 101,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2012.x64",
+    "Name": "VC++ 2012 (x64)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2012 Redistributable (x64)",
+      "Microsoft Visual C++ 2012 Redistributable - x64",
+      "Microsoft.VCRedist.2012.x64"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 102,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2012.x86",
+    "Name": "VC++ 2012 (x86)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2012 Redistributable (x86)",
+      "Microsoft Visual C++ 2012 Redistributable - x86",
+      "Microsoft.VCRedist.2012.x86"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 103,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2013.x64",
+    "Name": "VC++ 2013 (x64)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2013 Redistributable (x64)",
+      "Microsoft Visual C++ 2013 Redistributable - x64",
+      "Microsoft.VCRedist.2013.x64"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 104,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2013.x86",
+    "Name": "VC++ 2013 (x86)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ 2013 Redistributable (x86)",
+      "Microsoft Visual C++ 2013 Redistributable - x86",
+      "Microsoft.VCRedist.2013.x86"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 105,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2015+.x64",
+    "Name": "VC++ 2015-2026 (x64)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ v14 Redistributable (x64)",
+      "Microsoft Visual C++ 2015-2022 Redistributable (x64)",
+      "Microsoft.VCRedist.2015+.x64"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 106,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.VCRedist.2015+.x86",
+    "Name": "VC++ 2015-2026 (x86)",
+    "Domain": "visualstudio.microsoft.com",
+    "Aliases": [
+      "Microsoft Visual C++ v14 Redistributable (x86)",
+      "Microsoft Visual C++ 2015-2022 Redistributable (x86)",
+      "Microsoft.VCRedist.2015+.x86"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 107,
+    "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
+  },
+  {
+    "ID": "Microsoft.DirectX",
+    "Name": "DirectX End-User",
+    "Domain": "microsoft.com",
+    "Aliases": [
+      "DirectX",
+      "Microsoft DirectX",
+      "DirectX End-User Runtimes",
+      "Microsoft.DirectX"
+    ],
+    "Category": "C++ & System Runtimes",
+    "IDn": 108,
+    "Url": "https://www.microsoft.com/en-us/download/details.aspx?id=35"
+  },
+  {
+    "ID": "7zip.7zip",
+    "Name": "7-Zip",
+    "Domain": "7-zip.org",
+    "Aliases": [
+      "7-Zip",
+      "7zip.7zip"
+    ],
+    "Category": "System Utilities",
+    "IDn": 109,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/7zip.png"
+  },
+  {
+    "ID": "RARLab.WinRAR",
+    "Name": "WinRAR",
+    "Domain": "win-rar.com",
+    "Aliases": [
+      "WinRAR",
+      "RARLab.WinRAR"
+    ],
+    "Category": "System Utilities",
+    "IDn": 110,
+    "IconUrl": "https://www.google.com/s2/favicons?domain=win-rar.com&sz=128"
+  },
+  {
+    "ID": "voidtools.Everything",
+    "Name": "Everything",
+    "Domain": "voidtools.com",
+    "Aliases": [
+      "Everything",
+      "voidtools.Everything"
+    ],
+    "Category": "System Utilities",
+    "IDn": 111
+  },
+  {
+    "ID": "Microsoft.PowerToys",
+    "Name": "PowerToys",
+    "Domain": "learn.microsoft.com",
+    "Aliases": [
+      "PowerToys",
+      "Microsoft PowerToys",
+      "Microsoft.PowerToys"
+    ],
+    "IconUrl": "https://raw.githubusercontent.com/microsoft/PowerToys/main/src/settings-ui/Settings.UI/Assets/Settings/logo44.png",
+    "Category": "System Utilities",
+    "IDn": 112,
+    "Url": "https://learn.microsoft.com/en-us/windows/powertoys/"
+  },
+  {
+    "ID": "Flow-Launcher.Flow-Launcher",
+    "Name": "Flow Launcher",
+    "Domain": "flowlauncher.com",
+    "Aliases": [
+      "Flow Launcher",
+      "Flow-Launcher.Flow-Launcher"
+    ],
+    "Category": "System Utilities",
+    "IDn": 113,
+    "IconUrl": "https://raw.githubusercontent.com/Flow-Launcher/Flow.Launcher/dev/Flow.Launcher/Images/app.png"
+  },
+  {
+    "ID": "RevoUninstaller.RevoUninstaller",
+    "Name": "Revo Uninstaller",
+    "Domain": "revouninstaller.com",
+    "Aliases": [
+      "Revo Uninstaller",
+      "Revo Uninstaller Free",
+      "RevoUninstaller.RevoUninstaller"
+    ],
+    "Category": "System Utilities",
+    "IDn": 114,
+    "Url": "https://www.revouninstaller.com/products/revo-uninstaller-free/"
+  },
+  {
+    "ID": "JAMSoftware.TreeSize.Free",
+    "Name": "TreeSize Free",
+    "Domain": "jam-software.com",
+    "Aliases": [
+      "TreeSize Free",
+      "JAMSoftware.TreeSize.Free"
+    ],
+    "Category": "System Utilities",
+    "IDn": 115,
+    "Url": "https://www.jam-software.com/treesize-free",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/treesize.png"
+  },
+  {
+    "ID": "BleachBit.BleachBit",
+    "Name": "BleachBit",
+    "Domain": "bleachbit.org",
+    "Aliases": [
+      "BleachBit",
+      "BleachBit.BleachBit"
+    ],
+    "Category": "System Utilities",
+    "IDn": 116
+  },
+  {
+    "ID": "lamquangminh.EVKey",
+    "Name": "EVKey (Gõ Tiếng Việt)",
+    "Domain": "evkeyvn.com",
+    "Aliases": [
+      "EVKey",
+      "lamquangminh.EVKey"
+    ],
+    "Category": "System Utilities",
+    "IDn": 117,
+    "Url": "https://evkeyvn.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=evkeyvn.com&sz=128"
+  },
+  {
+    "ID": "Tuyenvm.OpenKey",
+    "Name": "OpenKey (Gõ Tiếng Việt)",
+    "Domain": "github.com/tuyenvm/OpenKey",
+    "Aliases": [
+      "OpenKey",
+      "Tuyenvm.OpenKey"
+    ],
+    "Category": "System Utilities",
+    "IDn": 118,
+    "Url": "https://github.com/tuyenvm/OpenKey",
+    "IconUrl": "https://avatars.githubusercontent.com/u/30750862?s=128&v=4"
+  },
+  {
+    "ID": "UniKey.UniKey",
+    "Name": "UniKey",
+    "Domain": "unikey.org",
+    "Aliases": [
+      "UniKey",
+      "UniKey.UniKey"
+    ],
+    "Category": "System Utilities",
+    "IDn": 119,
+    "Url": "https://www.unikey.org/",
+    "IconUrl": "https://img.icons8.com/fluency/96/keyboard.png"
+  },
+  {
+    "ID": "M2Team.NanaZip",
+    "Name": "NanaZip",
+    "Domain": "github.com/M2Team/NanaZip",
+    "Aliases": [
+      "NanaZip",
+      "M2Team.NanaZip"
+    ],
+    "Category": "System Utilities",
+    "IDn": 120,
+    "Url": "https://github.com/M2Team/NanaZip",
+    "IconUrl": "https://avatars.githubusercontent.com/u/86552972?s=128&v=4"
+  },
+  {
+    "ID": "AntibodySoftware.WizTree",
+    "Name": "WizTree",
+    "Domain": "diskanalyzer.com",
+    "Aliases": [
+      "WizTree",
+      "AntibodySoftware.WizTree"
+    ],
+    "Category": "System Utilities",
+    "IDn": 121,
+    "Url": "https://diskanalyzer.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=diskanalyzer.com&sz=128"
+  },
+  {
+    "ID": "Klocman.BulkCrapUninstaller",
+    "Name": "BCUninstaller",
+    "Domain": "bcuninstaller.com",
+    "Aliases": [
+      "BCUninstaller",
+      "Bulk Crap Uninstaller",
+      "Klocman.BulkCrapUninstaller"
+    ],
+    "Category": "System Utilities",
+    "IDn": 122,
+    "Url": "https://www.bcuninstaller.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=bcuninstaller.com&sz=128"
+  },
+  {
+    "ID": "Henry++.MemReduct",
+    "Name": "Mem Reduct",
+    "Domain": "henrypp.org",
+    "Aliases": [
+      "Mem Reduct",
+      "Henry++.MemReduct"
+    ],
+    "Category": "System Utilities",
+    "IDn": 123,
+    "Url": "https://www.henrypp.org/product/memreduct",
+    "IconUrl": "https://avatars.githubusercontent.com/u/1976542?s=128&v=4"
+  },
+  {
+    "ID": "CharlesMilette.TranslucentTB",
+    "Name": "TranslucentTB",
+    "Domain": "github.com/TranslucentTB",
+    "Aliases": [
+      "TranslucentTB",
+      "CharlesMilette.TranslucentTB"
+    ],
+    "Category": "System Utilities",
+    "IDn": 124,
+    "Url": "https://github.com/TranslucentTB/TranslucentTB",
+    "IconUrl": "https://avatars.githubusercontent.com/u/25596512?s=128&v=4"
+  },
+  {
+    "ID": "RamenSoftware.Windhawk",
+    "Name": "Windhawk",
+    "Domain": "windhawk.net",
+    "Aliases": [
+      "Windhawk",
+      "RamenSoftware.Windhawk"
+    ],
+    "Category": "System Utilities",
+    "IDn": 125,
+    "Url": "https://windhawk.net/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=windhawk.net&sz=128"
+  },
+  {
+    "ID": "Rufus.Rufus",
+    "Name": "Rufus",
+    "Domain": "rufus.ie",
+    "Aliases": [
+      "Rufus",
+      "Rufus.Rufus"
+    ],
+    "Category": "System Utilities",
+    "IDn": 126,
+    "Url": "https://rufus.ie/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=rufus.ie&sz=128"
+  },
+  {
+    "ID": "Guru3D.Afterburner",
+    "Name": "MSI Afterburner",
+    "Domain": "msi.com",
+    "Aliases": [
+      "MSI Afterburner",
+      "Afterburner",
+      "Guru3D.Afterburner"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 127,
+    "Url": "https://www.msi.com/Landing/afterburner/graphics-cards",
+    "IconUrl": "https://img.icons8.com/fluency/96/msi-afterburner.png"
+  },
+  {
+    "ID": "Rem0o.FanControl",
+    "Name": "FanControl",
+    "Domain": "getfancontrol.com",
+    "Aliases": [
+      "FanControl",
+      "Fan Control",
+      "Rem0o.FanControl"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 128
+  },
+  {
+    "ID": "CPUID.CPU-Z",
+    "Name": "CPU-Z",
+    "Domain": "cpuid.com",
+    "Aliases": [
+      "CPUID CPU-Z",
+      "CPU-Z",
+      "CPUID.CPU-Z"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 129,
+    "Url": "https://www.cpuid.com/softwares/cpu-z.html",
+    "IconUrl": "https://www.cpuid.com/medias/images/softwares/cpu-z.png"
+  },
+  {
+    "ID": "CPUID.HWMonitor",
+    "Name": "HWMonitor",
+    "Domain": "cpuid.com",
+    "Aliases": [
+      "CPUID HWMonitor",
+      "HWMonitor",
+      "CPUID.HWMonitor"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 130,
+    "Url": "https://www.cpuid.com/softwares/hwmonitor.html",
+    "IconUrl": "https://www.cpuid.com/medias/images/softwares/hwmonitor.png"
+  },
+  {
+    "ID": "TechPowerUp.GPU-Z",
+    "Name": "TechPowerUp GPU-Z",
+    "Domain": "techpowerup.com",
+    "Aliases": [
+      "TechPowerUp GPU-Z",
+      "GPU-Z",
+      "TechPowerUp.GPU-Z"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 131,
+    "Url": "https://www.techpowerup.com/gpuz/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=techpowerup.com&sz=128"
+  },
+  {
+    "ID": "REALiX.HWiNFO",
+    "Name": "HWiNFO",
+    "Domain": "hwinfo.com",
+    "Aliases": [
+      "HWiNFO",
+      "HWiNFO64",
+      "REALiX.HWiNFO"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 132,
+    "Url": "https://www.hwinfo.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=hwinfo.com&sz=128"
+  },
+  {
+    "ID": "CrystalDewWorld.CrystalDiskInfo",
+    "Name": "CrystalDiskInfo",
+    "Domain": "crystalmark.info",
+    "Aliases": [
+      "CrystalDiskInfo",
+      "CrystalDewWorld.CrystalDiskInfo"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 133,
+    "Url": "https://crystalmark.info/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=crystalmark.info&sz=128"
+  },
+  {
+    "ID": "CrystalDewWorld.CrystalDiskMark",
+    "Name": "CrystalDiskMark",
+    "Domain": "crystalmark.info",
+    "Aliases": [
+      "CrystalDiskMark",
+      "CrystalDewWorld.CrystalDiskMark"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 134,
+    "Url": "https://crystalmark.info/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=crystalmark.info&sz=128"
+  },
+  {
+    "ID": "TechPowerUp.NVCleanstall",
+    "Name": "NVCleanstall",
+    "Domain": "techpowerup.com",
+    "Aliases": [
+      "NVCleanstall",
+      "TechPowerUp.NVCleanstall"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 135,
+    "Url": "https://www.techpowerup.com/nvcleanstall/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=techpowerup.com&sz=128"
+  },
+  {
+    "ID": "Wagnardsoft.DisplayDriverUninstaller",
+    "Name": "Display Driver Uninstaller (DDU)",
+    "Domain": "wagnardsoft.com",
+    "Aliases": [
+      "Display Driver Uninstaller",
+      "DDU",
+      "Wagnardsoft.DisplayDriverUninstaller"
+    ],
+    "Category": "Hardware & Monitoring",
+    "IDn": 136,
+    "Url": "https://www.wagnardsoft.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=wagnardsoft.com&sz=128"
+  },
+  {
+    "ID": "Bitwarden.Bitwarden",
+    "Name": "Bitwarden",
+    "Domain": "bitwarden.com",
+    "Aliases": [
+      "Bitwarden",
+      "Bitwarden.Bitwarden"
+    ],
+    "Category": "Security & Network",
+    "IDn": 137,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png"
+  },
+  {
+    "ID": "KeePassXCTeam.KeePassXC",
+    "Name": "KeePassXC",
+    "Domain": "keepassxc.org",
+    "Aliases": [
+      "KeePassXC",
+      "KeePassXCTeam.KeePassXC"
+    ],
+    "Category": "Security & Network",
+    "IDn": 138,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/keepassxc.png"
+  },
+  {
+    "ID": "Cryptomator.Cryptomator",
+    "Name": "Cryptomator",
+    "Domain": "cryptomator.org",
+    "Aliases": [
+      "Cryptomator",
+      "Cryptomator.Cryptomator"
+    ],
+    "Category": "Security & Network",
+    "IDn": 139,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cryptomator.png"
+  },
+  {
+    "ID": "Proton.ProtonVPN",
+    "Name": "Proton VPN",
+    "Domain": "protonvpn.com",
+    "Aliases": [
+      "Proton VPN",
+      "ProtonVPN",
+      "Proton.ProtonVPN"
+    ],
+    "Category": "Security & Network",
+    "IDn": 140,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proton-vpn.png"
+  },
+  {
+    "ID": "WiresharkFoundation.Wireshark",
+    "Name": "Wireshark",
+    "Domain": "wireshark.org",
+    "Aliases": [
+      "Wireshark",
+      "WiresharkFoundation.Wireshark"
+    ],
+    "Category": "Security & Network",
+    "IDn": 141,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/wireshark.png"
+  },
+  {
+    "ID": "Cloudflare.Warp",
+    "Name": "Cloudflare WARP (1.1.1.1)",
+    "Domain": "one.one.one.one",
+    "Aliases": [
+      "Cloudflare WARP",
+      "Cloudflare One Client",
+      "Cloudflare.Warp"
+    ],
+    "Category": "Security & Network",
+    "IDn": 142,
+    "Url": "https://one.one.one.one/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cloudflare.png"
+  },
+  {
+    "ID": "Tailscale.Tailscale",
+    "Name": "Tailscale",
+    "Domain": "tailscale.com",
+    "Aliases": [
+      "Tailscale",
+      "Tailscale.Tailscale"
+    ],
+    "Category": "Security & Network",
+    "IDn": 143,
+    "Url": "https://tailscale.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/tailscale-light.png"
+  },
+  {
+    "ID": "WireGuard.WireGuard",
+    "Name": "WireGuard",
+    "Domain": "wireguard.com",
+    "Aliases": [
+      "WireGuard",
+      "WireGuard.WireGuard"
+    ],
+    "Category": "Security & Network",
+    "IDn": 144,
+    "Url": "https://www.wireguard.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/wireguard.png"
+  },
+  {
+    "ID": "ZeroTier.ZeroTierOne",
+    "Name": "ZeroTier One",
+    "Domain": "zerotier.com",
+    "Aliases": [
+      "ZeroTier One",
+      "ZeroTier.ZeroTierOne"
+    ],
+    "Category": "Security & Network",
+    "IDn": 145,
+    "Url": "https://www.zerotier.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerotier.png"
+  },
+  {
+    "ID": "Famatech.RadminVPN",
+    "Name": "Radmin VPN",
+    "Domain": "radmin-vpn.com",
+    "Aliases": [
+      "Radmin VPN",
+      "Famatech.RadminVPN"
+    ],
+    "Category": "Security & Network",
+    "IDn": 146,
+    "Url": "https://www.radmin-vpn.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=radmin-vpn.com&sz=128"
+  },
+  {
+    "ID": "NextDNS.NextDNS",
+    "Name": "NextDNS",
+    "Domain": "nextdns.io",
+    "Aliases": [
+      "NextDNS",
+      "NextDNS.NextDNS"
+    ],
+    "Category": "Security & Network",
+    "IDn": 147,
+    "Url": "https://nextdns.io/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nextdns.png"
+  },
+  {
+    "ID": "VideoLAN.VLC",
+    "Name": "VLC media player",
+    "Domain": "videolan.org",
+    "Aliases": [
+      "VLC media player",
+      "VLC",
+      "VideoLAN.VLC"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 148,
+    "Url": "https://www.videolan.org/vlc/",
+    "IconUrl": "https://raw.githubusercontent.com/videolan/vlc/master/share/icons/128x128/vlc.png"
+  },
+  {
+    "ID": "OBSProject.OBSStudio",
+    "Name": "OBS Studio",
+    "Domain": "obsproject.com",
+    "Aliases": [
+      "OBS Studio",
+      "OBS",
+      "OBSProject.OBSStudio"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 149,
+    "IconUrl": "https://img.icons8.com/fluency/96/obs-studio.png"
+  },
+  {
+    "ID": "Spotify.Spotify",
+    "Name": "Spotify",
+    "Domain": "spotify.com",
+    "Aliases": [
+      "Spotify",
+      "Spotify.Spotify"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 150,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/spotify.png"
+  },
+  {
+    "ID": "Audacity.Audacity",
+    "Name": "Audacity",
+    "Domain": "audacityteam.org",
+    "Aliases": [
+      "Audacity",
+      "Audacity.Audacity"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 151,
+    "IconUrl": "https://img.icons8.com/fluency/96/audacity.png"
+  },
+  {
+    "ID": "HandBrake.HandBrake",
+    "Name": "HandBrake",
+    "Domain": "handbrake.fr",
+    "Aliases": [
+      "HandBrake",
+      "HandBrake.HandBrake"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 152,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/handbrake.png"
+  },
+  {
+    "ID": "CodecGuide.K-LiteCodecPack.Mega",
+    "Name": "K-Lite Codec Pack Mega",
+    "Domain": "codecguide.com",
+    "Aliases": [
+      "K-Lite Mega Codec Pack",
+      "K-Lite Codec Pack",
+      "K-Lite Codec Pack Mega",
+      "CodecGuide.K-LiteCodecPack.Mega"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 153,
+    "IconUrl": "https://icons.duckduckgo.com/ip3/codecguide.com.ico",
+    "Url": "https://codecguide.com/download_k-lite_codec_pack_mega.htm"
+  },
+  {
+    "ID": "Daum.PotPlayer",
+    "Name": "PotPlayer",
+    "Domain": "potplayer.tv",
+    "Aliases": [
+      "PotPlayer",
+      "PotPlayer-64 bit",
+      "Daum.PotPlayer"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 154,
+    "Url": "https://potplayer.tv/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=potplayer.tv&sz=128"
+  },
+  {
+    "ID": "ByteDance.CapCut",
+    "Name": "CapCut",
+    "Domain": "capcut.com",
+    "Aliases": [
+      "CapCut",
+      "ByteDance.CapCut"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 155,
+    "Url": "https://www.capcut.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=capcut.com&sz=128"
+  },
+  {
+    "ID": "KDE.Kdenlive",
+    "Name": "Kdenlive",
+    "Domain": "kdenlive.org",
+    "Aliases": [
+      "Kdenlive",
+      "KDE.Kdenlive"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 156,
+    "Url": "https://kdenlive.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=kdenlive.org&sz=128"
+  },
+  {
+    "ID": "Gyan.FFmpeg",
+    "Name": "FFmpeg",
+    "Domain": "ffmpeg.org",
+    "Aliases": [
+      "FFmpeg",
+      "Gyan.FFmpeg"
+    ],
+    "Category": "Audio & Video",
+    "IDn": 157,
+    "Url": "https://ffmpeg.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=ffmpeg.org&sz=128"
+  },
+  {
+    "ID": "ShareX.ShareX",
+    "Name": "ShareX",
+    "Domain": "getsharex.com",
+    "Aliases": [
+      "ShareX",
+      "ShareX.ShareX"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 158,
+    "IconUrl": "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png"
+  },
+  {
+    "ID": "GIMP.GIMP",
+    "Name": "GIMP",
+    "Domain": "gimp.org",
+    "Aliases": [
+      "GIMP",
+      "GNU Image Manipulation Program",
+      "GIMP.GIMP"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 159,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/gimp.png"
+  },
+  {
+    "ID": "KDE.Krita",
+    "Name": "Krita",
+    "Domain": "krita.org",
+    "Aliases": [
+      "Krita",
+      "KDE.Krita"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 160,
+    "IconUrl": "https://img.icons8.com/color/96/krita.png"
+  },
+  {
+    "ID": "BlenderFoundation.Blender",
+    "Name": "Blender",
+    "Domain": "blender.org",
+    "Aliases": [
+      "Blender",
+      "BlenderFoundation.Blender"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 161,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/blender.png"
+  },
+  {
+    "ID": "Inkscape.Inkscape",
+    "Name": "Inkscape",
+    "Domain": "inkscape.org",
+    "Aliases": [
+      "Inkscape",
+      "Inkscape.Inkscape"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 162,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/inkscape-light.png"
+  },
+  {
+    "ID": "Figma.Figma",
+    "Name": "Figma",
+    "Domain": "figma.com",
+    "Aliases": [
+      "Figma",
+      "Figma.Figma"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 163,
+    "Url": "https://www.figma.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/figma.png"
+  },
+  {
+    "ID": "JannisX11.Blockbench",
+    "Name": "Blockbench",
+    "Domain": "blockbench.net",
+    "Aliases": [
+      "Blockbench",
+      "JannisX11.Blockbench"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 164,
+    "Url": "https://www.blockbench.net/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=blockbench.net&sz=128"
+  },
+  {
+    "ID": "dotPDN.PaintDotNet",
+    "Name": "paint.net",
+    "Domain": "getpaint.net",
+    "Aliases": [
+      "paint.net",
+      "dotPDN.PaintDotNet"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 165,
+    "Url": "https://www.getpaint.net/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=getpaint.net&sz=128"
+  },
+  {
+    "ID": "DuongDieuPhap.ImageGlass",
+    "Name": "ImageGlass",
+    "Domain": "imageglass.org",
+    "Aliases": [
+      "ImageGlass",
+      "DuongDieuPhap.ImageGlass"
+    ],
+    "Category": "Graphics & Design",
+    "IDn": 166,
+    "Url": "https://imageglass.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=imageglass.org&sz=128"
+  },
+  {
+    "ID": "TheDocumentFoundation.LibreOffice",
+    "Name": "LibreOffice",
+    "Domain": "libreoffice.org",
+    "Aliases": [
+      "LibreOffice",
+      "TheDocumentFoundation.LibreOffice"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 167,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/libreoffice-colibre-text.png"
+  },
+  {
+    "ID": "Obsidian.Obsidian",
+    "Name": "Obsidian",
+    "Domain": "obsidian.md",
+    "Aliases": [
+      "Obsidian",
+      "Obsidian.Obsidian"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 168,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/obsidian.png"
+  },
+  {
+    "ID": "Notion.Notion",
+    "Name": "Notion",
+    "Domain": "notion.so",
+    "Aliases": [
+      "Notion",
+      "Notion.Notion"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 169,
+    "IconUrl": "https://img.icons8.com/fluency/96/notion.png"
+  },
+  {
+    "ID": "SumatraPDF.SumatraPDF",
+    "Name": "SumatraPDF",
+    "Domain": "sumatrapdfreader.org",
+    "Aliases": [
+      "SumatraPDF",
+      "SumatraPDF.SumatraPDF"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 170,
+    "Url": "https://www.sumatrapdfreader.org/free-pdf-reader"
+  },
+  {
+    "ID": "Foxit.FoxitReader",
+    "Name": "Foxit PDF Reader",
+    "Domain": "foxit.com",
+    "Aliases": [
+      "Foxit PDF Reader",
+      "Foxit Reader",
+      "Foxit.FoxitReader"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 171,
+    "Url": "https://www.foxit.com/pdf-reader/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/foxit-icon.png"
+  },
+  {
+    "ID": "ONLYOFFICE.DesktopEditors",
+    "Name": "ONLYOFFICE Desktop",
+    "Domain": "onlyoffice.com",
+    "Aliases": [
+      "ONLYOFFICE Desktop Editors",
+      "ONLYOFFICE.DesktopEditors"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 172,
+    "Url": "https://www.onlyoffice.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/onlyoffice.png"
+  },
+  {
+    "ID": "geeksoftwareGmbH.PDF24Creator",
+    "Name": "PDF24 Creator",
+    "Domain": "pdf24.org",
+    "Aliases": [
+      "PDF24 Creator",
+      "geeksoftwareGmbH.PDF24Creator"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 173,
+    "Url": "https://tools.pdf24.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=pdf24.org&sz=128"
+  },
+  {
+    "ID": "calibre.calibre",
+    "Name": "Calibre",
+    "Domain": "calibre-ebook.com",
+    "Aliases": [
+      "calibre",
+      "calibre - E-book management",
+      "calibre.calibre"
+    ],
+    "Category": "Documents & Office",
+    "IDn": 174,
+    "Url": "https://calibre-ebook.com/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/calibre.png"
+  },
+  {
+    "ID": "Valve.Steam",
+    "Name": "Steam",
+    "Domain": "store.steampowered.com",
+    "Aliases": [
+      "Steam",
+      "Valve.Steam"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 175,
+    "Url": "https://store.steampowered.com/",
+    "IconUrl": "https://img.icons8.com/fluency/96/steam.png"
+  },
+  {
+    "ID": "EpicGames.EpicGamesLauncher",
+    "Name": "Epic Games Launcher",
+    "Domain": "store.epicgames.com",
+    "Aliases": [
+      "Epic Games Launcher",
+      "Epic Games",
+      "EpicGames.EpicGamesLauncher"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 176,
+    "IconUrl": "https://img.icons8.com/fluency/96/epic-games.png",
+    "Url": "https://store.epicgames.com/"
+  },
+  {
+    "ID": "GOG.Galaxy",
+    "Name": "GOG Galaxy",
+    "Domain": "gog.com",
+    "Aliases": [
+      "GOG Galaxy",
+      "GOG.Galaxy"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 177,
+    "Url": "https://www.gog.com/galaxy",
+    "IconUrl": "https://img.icons8.com/fluency/96/gog-galaxy.png"
+  },
+  {
+    "ID": "Playnite.Playnite",
+    "Name": "Playnite",
+    "Domain": "playnite.link",
+    "Aliases": [
+      "Playnite",
+      "Playnite.Playnite"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 178,
+    "IconUrl": "https://raw.githubusercontent.com/JosefNemec/Playnite/master/source/Playnite.DesktopApp/Themes/Desktop/Default/Images/applogo.png"
+  },
+  {
+    "ID": "Blizzard.BattleNet",
+    "Name": "Battle.net",
+    "Domain": "battle.net",
+    "Aliases": [
+      "Battle.net",
+      "Battle.net Setup",
+      "Blizzard.BattleNet"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 179,
+    "Url": "https://www.blizzard.com/apps/battle.net/desktop",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=battle.net&sz=128"
+  },
+  {
+    "ID": "ElectronicArts.EADesktop",
+    "Name": "EA app",
+    "Domain": "ea.com",
+    "Aliases": [
+      "EA app",
+      "ElectronicArts.EADesktop"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 180,
+    "Url": "https://www.ea.com/ea-app",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=ea.com&sz=128",
+    "IconBg": "light"
+  },
+  {
+    "ID": "Ubisoft.Connect",
+    "Name": "Ubisoft Connect",
+    "Domain": "ubisoft.com",
+    "Aliases": [
+      "Ubisoft Connect",
+      "Ubisoft.Connect"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 181,
+    "Url": "https://ubisoftconnect.com/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=ubisoft.com&sz=128",
+    "IconBg": "light"
+  },
+  {
+    "ID": "PrismLauncher.PrismLauncher",
+    "Name": "Prism Launcher",
+    "Domain": "prismlauncher.org",
+    "Aliases": [
+      "Prism Launcher",
+      "PrismLauncher.PrismLauncher"
+    ],
+    "Category": "Game Launchers",
+    "IDn": 182,
+    "Url": "https://prismlauncher.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=prismlauncher.org&sz=128"
+  },
+  {
+    "ID": "qBittorrent.qBittorrent",
+    "Name": "qBittorrent",
+    "Domain": "qbittorrent.org",
+    "Aliases": [
+      "qBittorrent",
+      "qBittorrent.qBittorrent"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 183,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/qbittorrent.png"
+  },
+  {
+    "ID": "LocalSend.LocalSend",
+    "Name": "LocalSend",
+    "Domain": "localsend.org",
+    "Aliases": [
+      "LocalSend",
+      "LocalSend.LocalSend"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 184,
+    "IconUrl": "https://raw.githubusercontent.com/localsend/localsend/main/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+  },
+  {
+    "ID": "WinSCP.WinSCP",
+    "Name": "WinSCP",
+    "Domain": "winscp.net",
+    "Aliases": [
+      "WinSCP",
+      "WinSCP.WinSCP"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 185
+  },
+  {
+    "ID": "TimKosse.FileZilla.Client",
+    "Name": "FileZilla",
+    "Domain": "filezilla-project.org",
+    "Aliases": [
+      "FileZilla Client",
+      "FileZilla",
+      "TimKosse.FileZilla.Client"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 186,
+    "FallbackUrl": "https://filezilla-project.org/download.php?platform=win64",
+    "Url": "https://filezilla-project.org/download.php?platform=win64",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/filezilla.png"
+  },
+  {
+    "ID": "Rclone.Rclone",
+    "Name": "Rclone",
+    "Domain": "rclone.org",
+    "Aliases": [
+      "Rclone",
+      "Rclone.Rclone"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 187,
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rclone.png"
+  },
+  {
+    "ID": "Tonec.InternetDownloadManager",
+    "Name": "Internet Download Manager",
+    "Domain": "internetdownloadmanager.com",
+    "Aliases": [
+      "Internet Download Manager",
+      "Tonec.InternetDownloadManager"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 188,
+    "Url": "https://www.internetdownloadmanager.com/",
+    "IconUrl": "https://img.icons8.com/fluency/96/download-from-cloud.png"
+  },
+  {
+    "ID": "SoftDeluxe.FreeDownloadManager",
+    "Name": "Free Download Manager",
+    "Domain": "freedownloadmanager.org",
+    "Aliases": [
+      "Free Download Manager",
+      "SoftDeluxe.FreeDownloadManager"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 189,
+    "Url": "https://www.freedownloadmanager.org/",
+    "IconUrl": "https://www.google.com/s2/favicons?domain=freedownloadmanager.org&sz=128"
+  },
+  {
+    "ID": "Google.GoogleDrive",
+    "Name": "Google Drive",
+    "Domain": "google.com/drive",
+    "Aliases": [
+      "Google Drive",
+      "Google.GoogleDrive"
+    ],
+    "Category": "File Transfer & Cloud",
+    "IDn": 190,
+    "Url": "https://www.google.com/drive/download/",
+    "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-drive.png"
+  }
 ]

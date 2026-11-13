@@ -132,6 +132,27 @@ function Test-MatchCompatible {
         return $false
     }
 
+    # Chặn khớp chéo giữa bản Community và bản Ultimate / Professional (ví dụ IntelliJ IDEA, PyCharm)
+    $tComm = ($tName -match '\bCommunity\b') -or ($tId -match '\.Community\b')
+    $tPro  = ($tName -match '\b(Ultimate|Professional)\b') -or ($tId -match '\.(Ultimate|Professional)\b')
+    $iComm = ($iName -match '\bCommunity\b') -or ($iId -match '\.Community\b')
+    $iPro  = ($iName -match '\b(Ultimate|Professional)\b') -or ($iId -match '\.(Ultimate|Professional)\b')
+    if (($tComm -and $iPro) -or ($tPro -and $iComm)) { return $false }
+
+    # Chặn khớp chéo giữa bản gốc và biến thể IDE / CLI (ví dụ Antigravity vs Antigravity IDE / Antigravity CLI, GitHub Desktop vs GitHub CLI)
+    $tIde = ($tName -match '\bIDE\b') -or ($tId -match 'IDE$')
+    $iIde = ($iName -match '\bIDE\b') -or ($iId -match 'IDE$')
+    if ($tIde -ne $iIde -and ($tId -match 'Antigravity' -or $iId -match 'Antigravity')) { return $false }
+
+    $tCli = ($tName -match '\bCLI\b') -or ($tId -match '(\.cli|CLI)$')
+    $iCli = ($iName -match '\bCLI\b') -or ($iId -match '(\.cli|CLI)$')
+    if ($tCli -ne $iCli) { return $false }
+
+    # Chặn khớp chéo giữa các nhà phân phối Java khác nhau (Temurin vs Oracle vs Corretto)
+    if ($tId -match 'Temurin' -and ($iId -match 'Oracle|Corretto' -or $iName -match 'Corretto|^Java \d+ Update')) { return $false }
+    if ($tId -match 'Oracle\.Java' -and ($iId -match 'Temurin|Corretto' -or $iName -match 'Temurin|Corretto')) { return $false }
+    if ($tId -match 'Corretto' -and ($iId -match 'Temurin|Oracle' -or $iName -match 'Temurin|^Java \d+ Update')) { return $false }
+
     # Kiểm tra đồng nhất kiến trúc x64 / x86 / arm64 (KHÔNG xét nhánh registry ARP\Machine\X86 vì app x64 vẫn có thể ghi khóa WOW6432Node)
     $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
              elseif ($tName -match '\(x86\)|\.x86' -or $tId -match '\.x86$') { "x86" }

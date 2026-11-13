@@ -51,8 +51,9 @@ $script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
 $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverFg.Freeze()
 
-# Nền icon sương mờ siêu nhẹ (~5.5% trắng, không viền) & Update Pill gọn gàng
+# Nền icon sương mờ siêu nhẹ (~5.5% trắng, không viền), nền trắng chuẩn cho Java & Update Pill gọn gàng
 $script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(14, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
+$script:brushIconBadgeLightBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(245, 255, 255, 255)); $script:brushIconBadgeLightBg.Freeze()
 $script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
 $script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
 $script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(28, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
@@ -87,9 +88,9 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
     # Tự động đồng bộ cache icon dựa trên chữ ký SHA256 của toàn bộ URL biểu tượng trong catalog
     try {
         $sigSource = if ($AppCatalog) {
-            ($AppCatalog | ForEach-Object { "$($_.ID)|$($_.IconUrl)|$($_.Domain)" }) -join "`n"
+            ($AppCatalog | ForEach-Object { "$($_.ID)|$($_.IconUrl)|$($_.Domain)|$($_.IconBg)" }) -join "`n"
         } else {
-            "v3.4"
+            "v3.5"
         }
         $sha = [System.Security.Cryptography.SHA256]::Create()
         try {
@@ -334,6 +335,9 @@ function Get-AppFallbackGlyph {
     if ($nameLower -match 'directx') { return [char]::ConvertFromUtf32(0x1F3AE) }
     if ($nameLower -match 'cpu-z|hwmonitor') { return [char]::ConvertFromUtf32(0x1F39B) }
 
+    if ($Category -match 'Antigravity') { return [char]::ConvertFromUtf32(0x1F680) }
+    if ($Category -match 'JetBrains') { return [char]::ConvertFromUtf32(0x1F9E9) }
+    if ($Category -match 'AI|Assistant') { return [char]::ConvertFromUtf32(0x1F916) }
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
     if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
@@ -482,12 +486,13 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Khung đỡ Logo sương mờ siêu nhẹ (không viền cộm) giúp logo nổi tự nhiên
+        # 2. Khung đỡ Logo (nền trắng chuẩn cho Java / logo tối màu, nền sương mờ nhẹ cho app thường)
+        $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
         $iconBadge = New-Object System.Windows.Controls.Border
         $iconBadge.Width = 20
         $iconBadge.Height = 20
         $iconBadge.CornerRadius = $script:cornerIconBadge
-        $iconBadge.Background = $script:brushIconBadgeBg
+        $iconBadge.Background = if ($useLightBadge) { $script:brushIconBadgeLightBg } else { $script:brushIconBadgeBg }
         $iconBadge.BorderBrush = $script:brushIconBadgeBorder
         $iconBadge.BorderThickness = $thicknessZero
         $iconBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
@@ -506,7 +511,8 @@ foreach ($cat in $categories) {
         $iconInnerGrid.Children.Add($fallbackGlyph) | Out-Null
 
         $img = New-Object System.Windows.Controls.Image
-        $img.Width = 17; $img.Height = 17
+        $imgDim = if ($useLightBadge) { 15 } else { 17 }
+        $img.Width = $imgDim; $img.Height = $imgDim
         $img.Stretch = [System.Windows.Media.Stretch]::Uniform
         [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
