@@ -1,5 +1,5 @@
 # ==============================================================================
-#                     DUCK UTIL - CYBER OBSIDIAN SUITE
+#                     APP-DRIVER — WINDOWS SOFTWARE & DRIVER SUITE
 #       Modular Windows Package Manager & System Maintenance Architecture
 # ==============================================================================
 
@@ -120,7 +120,7 @@ if (-not $isAdmin) {
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                 exit
             }
             # Nếu thất bại vì lỗi khởi chạy wt.exe (không phải từ chối UAC), tiếp tục fallback xuống tầng dưới
@@ -145,7 +145,7 @@ if (-not $isAdmin) {
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                 exit
             }
 
@@ -167,7 +167,7 @@ if (-not $isAdmin) {
                 } catch {
                     if (Test-UacCancelled $_) {
                         Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                        Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                        Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                         exit
                     }
                     Write-Host "`n[x] Lỗi khởi chạy quyền Administrator: $($_.Exception.Message)" -ForegroundColor Red
@@ -192,7 +192,7 @@ try {
 
 if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     try {
-        $Host.UI.RawUI.WindowTitle = "DuckUtil - Cyber Obsidian Suite"
+        $Host.UI.RawUI.WindowTitle = "App-Driver — Windows Software & Driver Suite"
     } catch {
         # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
     }
@@ -4046,7 +4046,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="DuckUtil — Windows Software &amp; Maintenance Suite"
+    Title="App-Driver — Windows Software &amp; Driver Suite"
     Width="1260" Height="780"
     MinWidth="980" MinHeight="620"
     WindowStartupLocation="CenterScreen"
@@ -4346,7 +4346,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
                             IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
                 </StackPanel>
-                <TextBlock Text="DuckUtil" HorizontalAlignment="Right" VerticalAlignment="Center"
+                <TextBlock Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
             </Grid>
         </Border>
@@ -4641,7 +4641,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0" CaretBrush="#38BDF8"
-                         Text="[DuckUtil] Khởi tạo thành công.&#x0d;&#x0a;"/>
+                         Text="[App-Driver] Khởi tạo thành công.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
     </Grid>

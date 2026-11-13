@@ -1,7 +1,7 @@
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="DuckUtil — Windows Software &amp; Maintenance Suite"
+    Title="App-Driver — Windows Software &amp; Driver Suite"
     Width="1260" Height="780"
     MinWidth="980" MinHeight="620"
     WindowStartupLocation="CenterScreen"
@@ -301,7 +301,7 @@
                     <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
                             IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
                 </StackPanel>
-                <TextBlock Text="DuckUtil" HorizontalAlignment="Right" VerticalAlignment="Center"
+                <TextBlock Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
             </Grid>
         </Border>
@@ -596,7 +596,7 @@
                          FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
                          IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
                          BorderThickness="0" CaretBrush="#38BDF8"
-                         Text="[DuckUtil] Khởi tạo thành công.&#x0d;&#x0a;"/>
+                         Text="[App-Driver] Khởi tạo thành công.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
     </Grid>

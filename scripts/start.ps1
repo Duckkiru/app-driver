@@ -1,5 +1,5 @@
-# ==============================================================================
-#                     DUCK UTIL - CYBER OBSIDIAN SUITE
+﻿# ==============================================================================
+#                     APP-DRIVER — WINDOWS SOFTWARE & DRIVER SUITE
 #       Modular Windows Package Manager & System Maintenance Architecture
 # ==============================================================================
 
@@ -120,7 +120,7 @@ if (-not $isAdmin) {
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                 exit
             }
             # Nếu thất bại vì lỗi khởi chạy wt.exe (không phải từ chối UAC), tiếp tục fallback xuống tầng dưới
@@ -145,7 +145,7 @@ if (-not $isAdmin) {
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                 exit
             }
 
@@ -167,7 +167,7 @@ if (-not $isAdmin) {
                 } catch {
                     if (Test-UacCancelled $_) {
                         Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                        Write-Host "[*] DuckUtil cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
+                        Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                         exit
                     }
                     Write-Host "`n[x] Lỗi khởi chạy quyền Administrator: $($_.Exception.Message)" -ForegroundColor Red
@@ -192,7 +192,7 @@ try {
 
 if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     try {
-        $Host.UI.RawUI.WindowTitle = "DuckUtil - Cyber Obsidian Suite"
+        $Host.UI.RawUI.WindowTitle = "App-Driver — Windows Software & Driver Suite"
     } catch {
         # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
     }

@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    DuckUtil Project Compiler & Bundler (Inspired by Chris Titus WinUtil Compile.ps1)
+    App-Driver Project Compiler & Bundler (Inspired by Chris Titus WinUtil Compile.ps1)
 .DESCRIPTION
     Tập hợp toàn bộ các module config/apps.json, xaml/MainWindow.xaml,
     functions/ (private & public) và scripts/ thành một file phân phối duy nhất DuckUtil.ps1.
@@ -8,7 +8,7 @@
 
 $root = $PSScriptRoot
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "🦆 DUCK UTIL BUNDLER - COMPILING PROJECT ARTIFACTS..." -ForegroundColor Cyan
+Write-Host "🚀 APP-DRIVER BUNDLER - COMPILING PROJECT ARTIFACTS..." -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Đọc các tệp thành phần
