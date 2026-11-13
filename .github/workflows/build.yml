@@ -1,4 +1,4 @@
-name: DuckUtil Build & Validation
+name: App-Driver Build & Validation
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Run DuckUtil Project Compiler
+    - name: Run App-Driver Project Compiler
       shell: pwsh
       run: |
         ./Compile.ps1
@@ -21,13 +21,13 @@ jobs:
     - name: Verify Compiled Artifact Up-To-Date
       shell: pwsh
       run: |
-        git diff --exit-code DuckUtil.ps1
+        git diff --ignore-cr-at-eol --exit-code App-Driver.ps1
 
     - name: Validate Syntax & XAML
       shell: pwsh
       run: |
         Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
-        $code = Get-Content -Raw -Encoding utf8 ./DuckUtil.ps1
+        $code = Get-Content -Raw -Encoding utf8 ./App-Driver.ps1
         $errors = $null
         $tokens = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseInput($code, [ref]$tokens, [ref]$errors)
@@ -35,4 +35,4 @@ jobs:
             Write-Error "Syntax errors in compiled script!"
             exit 1
         }
-        Write-Host "DuckUtil Syntax is 100% Valid!" -ForegroundColor Green
+        Write-Host "App-Driver Syntax is 100% Valid!" -ForegroundColor Green
