@@ -35,6 +35,11 @@ $script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
 $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushLinkBtnHoverFg.Freeze()
 
+# Bảng màu & Kiểu dáng cho Badge biểu tượng ứng dụng (Frosted Badge & Glow)
+$script:brushIconBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(35, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
+$script:brushIconBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(50, 255, 255, 255)); $script:brushIconBadgeBorder.Freeze()
+$script:cornerIconBadge       = New-Object System.Windows.CornerRadius(4)
+
 # Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
 $marginCardBorder = New-Object System.Windows.Thickness(5)
 $paddingCard      = New-Object System.Windows.Thickness(12, 10, 12, 12)
@@ -58,6 +63,24 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
             $_.Length -eq 230 -or $_.Length -eq 588
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
+
+    # Tự động dọn dẹp cache cho các app đã được nâng cấp URL/Domain chính hãng (v2.2)
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v2.2.marker"
+    if (-not (Test-Path -LiteralPath $cacheMarker)) {
+        try {
+            $staleIcons = @(
+                "Google.Chrome.png", "Mozilla.Firefox.png", "Opera.OperaGX.png", 
+                "GoLang.Go.png", "RARLab.WinRAR.png", "VideoLAN.VLC.png", 
+                "EpicGames.EpicGamesLauncher.png", "GIMP.GIMP.png", 
+                "Inkscape.Inkscape.png", "CodecGuide.K-LiteCodecPack.Mega.png"
+            )
+            foreach ($stale in $staleIcons) {
+                $stalePath = Join-Path $iconsCacheDir $stale
+                if (Test-Path -LiteralPath $stalePath) { Remove-Item -LiteralPath $stalePath -Force -ErrorAction SilentlyContinue }
+            }
+            Set-Content -LiteralPath $cacheMarker -Value "v2.2" -Force -ErrorAction SilentlyContinue
+        } catch {}
+    }
 }
 
 # Trình khóa thực thi đơn nhất (Re-entrancy Guard) chống xung đột tiến trình
@@ -345,27 +368,45 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Container Icon (Chống giật, luôn có Glyph đặc trưng và nạp Logo chính hãng mượt mà)
-        $iconContainer = New-Object System.Windows.Controls.Grid
-        $iconContainer.Width = 16; $iconContainer.Height = 16
-        $iconContainer.Margin = New-Object System.Windows.Thickness(0)
-        $iconContainer.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $iconContainer.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        # 2. Container Icon Huy hiệu Frosted Glass & Hiệu ứng phát sáng làm nổi Logo tối màu trên nền đen
+        $iconBadge = New-Object System.Windows.Controls.Border
+        $iconBadge.Width = 20
+        $iconBadge.Height = 20
+        $iconBadge.CornerRadius = $script:cornerIconBadge
+        $iconBadge.Background = $script:brushIconBadgeBg
+        $iconBadge.BorderBrush = $script:brushIconBadgeBorder
+        $iconBadge.BorderThickness = $thicknessOne
+        $iconBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $iconBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $iconInnerGrid = New-Object System.Windows.Controls.Grid
+        $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $fallbackGlyph = New-Object System.Windows.Controls.TextBlock
         $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
         $fallbackGlyph.FontFamily = $script:fontSegoeEmoji
-        $fallbackGlyph.FontSize = 11
+        $fallbackGlyph.FontSize = 10
         $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $fallbackGlyph.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $iconContainer.Children.Add($fallbackGlyph) | Out-Null
+        $iconInnerGrid.Children.Add($fallbackGlyph) | Out-Null
 
         $img = New-Object System.Windows.Controls.Image
         $img.Width = 16; $img.Height = 16
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $img.Visibility = [System.Windows.Visibility]::Collapsed
-        $iconContainer.Children.Add($img) | Out-Null
+
+        # Hiệu ứng Outer Rim Glow (hào quang viền trắng) giúp logo màu tối (Notion, Steam, 7-Zip, Obsidian...) nổi bật 100% trên nền đen
+        $imgGlow = New-Object System.Windows.Media.Effects.DropShadowEffect
+        $imgGlow.Color = [System.Windows.Media.Color]::FromRgb(255, 255, 255)
+        $imgGlow.BlurRadius = 3
+        $imgGlow.ShadowDepth = 0
+        $imgGlow.Opacity = 0.65
+        $img.Effect = $imgGlow
+
+        $iconInnerGrid.Children.Add($img) | Out-Null
+        $iconBadge.Child = $iconInnerGrid
 
         $localIconPath = Join-Path $iconsCacheDir "$($app.ID).png"
         if (Test-Path -LiteralPath $localIconPath) {
@@ -440,8 +481,8 @@ foreach ($cat in $categories) {
                 } catch {}
             }
         }
-        [System.Windows.Controls.Grid]::SetColumn($iconContainer, 1)
-        $rowGrid.Children.Add($iconContainer) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
+        $rowGrid.Children.Add($iconBadge) | Out-Null
 
         # 3. Tên ứng dụng (Căn chỉnh thẳng hàng tuyệt đối với lề trái đồng đều)
         $nameText = New-Object System.Windows.Controls.TextBlock
