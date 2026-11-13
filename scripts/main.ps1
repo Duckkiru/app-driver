@@ -1350,6 +1350,114 @@ function Clear-WinGetTempInstallers {
     }
 }
 
+function Invoke-SmartAppUpgrade {
+    param($Tag)
+    if (-not $Tag) { return 1 }
+    $app = $Tag.App
+    if (-not $app) { return 1 }
+
+    $upgradeId = if ($Tag.DetectedId -and -not ($Tag.DetectedId.StartsWith("ARP\") -or $Tag.DetectedId.StartsWith("MSIX\"))) {
+        $Tag.DetectedId
+    } else {
+        $app.ID
+    }
+
+    $instApps = if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
+    } else {
+        @()
+    }
+
+    $regMatch = $null
+    foreach ($inst in $instApps) {
+        if (($inst.Id -and ($inst.Id -eq $app.ID -or $inst.Id -eq $Tag.DetectedId)) -or
+            ($inst.DisplayName -and ($inst.DisplayName -eq $app.Name -or $inst.DisplayName -eq $app.ID))) {
+            $regMatch = $inst
+            break
+        }
+    }
+
+    $existingLoc = if ($regMatch -and -not [string]::IsNullOrWhiteSpace($regMatch.InstallLocation) -and (Test-Path -LiteralPath $regMatch.InstallLocation)) {
+        $regMatch.InstallLocation
+    } else {
+        $null
+    }
+
+    $backupDir = $null
+    if ($existingLoc) {
+        try {
+            $targetSubDirs = @("", "config", "data", "settings", "profiles", "portable")
+            $patterns = @("*.ini", "*.cfg", "*.json", "*.xml", "*.yaml", "*.yml", "*.db", "*.sqlite", "*.conf", "*.properties")
+            $filesToBackup = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
+            $totalBackupBytes = 0L
+
+            foreach ($sub in $targetSubDirs) {
+                $scanFolder = if ([string]::IsNullOrEmpty($sub)) { $existingLoc } else { Join-Path $existingLoc $sub }
+                if (Test-Path -LiteralPath $scanFolder) {
+                    foreach ($pat in $patterns) {
+                        $found = Get-ChildItem -LiteralPath $scanFolder -Filter $pat -File -ErrorAction SilentlyContinue
+                        foreach ($f in $found) {
+                            if (($totalBackupBytes + $f.Length) -le (50 * 1024 * 1024)) {
+                                $filesToBackup.Add($f)
+                                $totalBackupBytes += $f.Length
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ($filesToBackup.Count -gt 0) {
+                $backupDir = Join-Path $env:TEMP "AppDriver_UpgradeGuard\$($app.ID)"
+                if (Test-Path -LiteralPath $backupDir) {
+                    Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+                foreach ($f in $filesToBackup) {
+                    $relPath = $f.FullName.Substring($existingLoc.Length).TrimStart('\', '/')
+                    $destFile = Join-Path $backupDir $relPath
+                    $destFolder = [System.IO.Path]::GetDirectoryName($destFile)
+                    if (-not (Test-Path -LiteralPath $destFolder)) {
+                        New-Item -ItemType Directory -Path $destFolder -Force | Out-Null
+                    }
+                    Copy-Item -LiteralPath $f.FullName -Destination $destFile -Force -ErrorAction SilentlyContinue
+                }
+            }
+        } catch {}
+    }
+
+    $upArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
+    if ($existingLoc) {
+        $upArgs += " --location `"$existingLoc`""
+    }
+    $code = Run-CliStream "winget" $upArgs
+
+    if ($backupDir -and (Test-Path -LiteralPath $backupDir) -and $existingLoc -and (Test-Path -LiteralPath $existingLoc)) {
+        try {
+            $backupFiles = Get-ChildItem -LiteralPath $backupDir -Recurse -File -ErrorAction SilentlyContinue
+            foreach ($bf in $backupFiles) {
+                $rel = $bf.FullName.Substring($backupDir.Length).TrimStart('\', '/')
+                $targetFile = Join-Path $existingLoc $rel
+                if (-not (Test-Path -LiteralPath $targetFile)) {
+                    $targetDir = [System.IO.Path]::GetDirectoryName($targetFile)
+                    if (-not (Test-Path -LiteralPath $targetDir)) {
+                        New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+                    }
+                    Copy-Item -LiteralPath $bf.FullName -Destination $targetFile -Force -ErrorAction SilentlyContinue
+                }
+            }
+        } catch {}
+        try {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        } catch {}
+    } elseif ($backupDir -and (Test-Path -LiteralPath $backupDir)) {
+        try {
+            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+        } catch {}
+    }
+
+    return $code
+}
+
 Register-Click "btnInstall" {
     Invoke-GuardedAction "Cài đặt ứng dụng" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
@@ -1376,6 +1484,25 @@ Register-Click "btnInstall" {
                 $app = $tag.App
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+
+                if ($tag.Status -eq "LATEST") {
+                    Log-Text "[OK] $($app.Name) đã ở phiên bản mới nhất ($($tag.InstalledVersion)), bỏ qua cài đè để bảo toàn dữ liệu."
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    continue
+                }
+
+                if ($tag.Status -eq "OUTDATED") {
+                    Log-Text "[$idx/$total] Phát hiện bản cũ ($($tag.InstalledVersion)) -> Chuyển sang Nâng cấp giữ nguyên dữ liệu: $($app.Name)..."
+                    $code = Invoke-SmartAppUpgrade -Tag $tag
+                    if ($code -eq 0) {
+                        Log-Text "   [OK - HOÀN THÀNH] $($app.Name)"
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } else {
+                        Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
+                    }
+                    continue
+                }
+
                 Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
                 if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
@@ -1444,14 +1571,18 @@ Register-Click "btnUpgradeSelected" {
             foreach ($tag in $selectedTags) {
                 $idx++
                 $app = $tag.App
-                $upgradeId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
 
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
-                Log-Text "[$idx/$total] Đang nâng cấp: $($app.Name) (Mã nâng cấp: $upgradeId)..."
 
-                $upArgs = "upgrade --id `"$upgradeId`" --silent --accept-package-agreements --accept-source-agreements"
-                $code = Run-CliStream "winget" $upArgs
+                if ($tag.Status -eq "LATEST") {
+                    Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    continue
+                }
+
+                Log-Text "[$idx/$total] Đang nâng cấp: $($app.Name)..."
+                $code = Invoke-SmartAppUpgrade -Tag $tag
                 if ($code -eq 0) {
                     Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($app.Name)"
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
