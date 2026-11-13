@@ -1,8 +1,6 @@
-﻿# ── KHỞI TẠO CÁC CONTROL TỪ XAML ──
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
-# Tự động co kích thước cửa sổ vừa với vùng làm việc màn hình (hỗ trợ laptop / DPI 125%-150%)
 try {
     $wa = [System.Windows.SystemParameters]::WorkArea
     if ($wa.Width -gt 0 -and $window.Width -gt ($wa.Width - 24)) {
@@ -14,14 +12,12 @@ try {
     }
 } catch {}
 
-# Các Control chính
 $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
 $progressBar       = $window.FindName("progressBar")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
-# Bảng màu Frozen Brush tĩnh tái sử dụng tối đa, loại trừ cấp phát bộ nhớ rác (GC)
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
 $script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushNavInactive.Freeze()
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
@@ -38,7 +34,6 @@ $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
 $script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Arial")
 
-# Bảng màu cho Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil)
 $script:brushLinkBtnBg        = [System.Windows.Media.Brushes]::Transparent
 $script:brushLinkBtnBorder    = [System.Windows.Media.Brushes]::Transparent
 $script:brushLinkBtnFg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x52, 0x60, 0x76)); $script:brushLinkBtnFg.Freeze()
@@ -48,12 +43,10 @@ $script:brushLinkBtnHoverBg   = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverBdr.Freeze()
 $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverFg.Freeze()
 
-# Nền icon sương mờ siêu nhẹ (~5.5% trắng, không viền), nền trắng chuẩn cho Java & Update Pill gọn gàng
 $script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(14, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
 $script:brushIconBadgeLightBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(245, 255, 255, 255)); $script:brushIconBadgeLightBg.Freeze()
 $script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
 
-# Native WPF Styles cho dòng App & nút Link (chạy 100% trong WPF C++ engine, không gọi PowerShell ScriptBlock khi di chuột)
 $script:styleAppRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
 $script:styleAppRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushTransparent)))
 $trigRowHover = New-Object System.Windows.Trigger
@@ -74,7 +67,6 @@ $trigLinkHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Con
 $script:styleLinkBtn.Triggers.Add($trigLinkHover)
 $script:styleLinkBtn.Seal()
 
-# Style viền Card phát sáng nhẹ khi rê chuột qua nhóm danh mục
 $script:brushCardHoverBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x45, 0x68)); $script:brushCardHoverBorder.Freeze()
 $script:styleCategoryCard = New-Object System.Windows.Style([System.Windows.Controls.Border])
 $script:styleCategoryCard.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushCardBorder)))
@@ -85,7 +77,6 @@ $trigCardHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Con
 $script:styleCategoryCard.Triggers.Add($trigCardHover)
 $script:styleCategoryCard.Seal()
 
-# ── BỘ ĐIỀU KHIỂN CUỘN CON LĂN CHUỘT MƯỢT (INERTIA SMOOTH SCROLL 60-240FPS BẰNG C# THUẦN) ──
 if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
     try {
         $wpfSmoothRefs = @(
@@ -208,7 +199,6 @@ if ($appsScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
     $script:smoothScrollCtrl = [DuckUtil.SmoothScrollController]::Attach($appsScrollViewer)
 }
 
-# Tối ưu giới hạn kết nối mạng song song cho tiến trình tải icon nền
 try {
     [System.Net.ServicePointManager]::DefaultConnectionLimit = 24
     [System.Net.ServicePointManager]::Expect100Continue = $false
@@ -251,7 +241,6 @@ function Import-LocalIconBitmap {
     }
 }
 
-# Hàng đợi tải icon bất đồng bộ bằng Task nền .NET (không dùng Add-Type csc.exe, không khóa luồng UI hay PowerShell Runspace)
 $script:pendingIconSaves = [System.Collections.Generic.List[hashtable]]::new()
 $script:inFlightIconTasks = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
@@ -343,7 +332,6 @@ $script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([S
 $script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(85, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
 $script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
 
-# Cấu trúc hình học tái sử dụng (Shared Layout Geometries)
 $marginCardBorder = New-Object System.Windows.Thickness(4)
 $paddingCard      = New-Object System.Windows.Thickness(10, 8, 10, 10)
 $marginHeaderGrid = New-Object System.Windows.Thickness(2, 0, 2, 6)
@@ -356,19 +344,16 @@ $cornerRow        = New-Object System.Windows.CornerRadius(5)
 $thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
-# Thư mục lưu cache biểu tượng ứng dụng cục bộ
 $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
 if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
     try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
 } else {
-    # Tự động dọn dẹp các icon cache rỗng / bị hỏng / quá nhỏ từ phiên bản cũ
     try {
         Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
             $_.Length -le 230 -or $_.Length -eq 588
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Đồng bộ cache icon thông minh theo từng ứng dụng (chỉ xóa icon của app có URL thay đổi, không bao giờ xóa toàn bộ cache)
     try {
         $mapFile = Join-Path $iconsCacheDir "cache.icons.map.txt"
         $oldMap = @{}
@@ -433,7 +418,6 @@ function Save-BitmapToCacheAtomic {
     }
 }
 
-# Trình khóa thực thi đơn nhất (Re-entrancy Guard) chống xung đột tiến trình
 $script:isActionRunning = $false
 
 function Invoke-GuardedAction {
@@ -447,7 +431,6 @@ function Invoke-GuardedAction {
         return
     }
     if (-not $DeferExpand) {
-        # Tự động mở rộng Terminal Log khi bắt đầu thực thi hành động để người dùng theo dõi tiến trình
         Expand-TerminalLog
     }
     $script:isActionRunning = $true
@@ -462,7 +445,6 @@ function Invoke-GuardedAction {
     }
 }
 
-# Khóa an toàn các module bảo trì hệ thống & driver khi chưa mở rộng sử dụng
 $script:LockMaintenanceTabs = $true
 $script:LockedButtonActions = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
@@ -476,7 +458,6 @@ function Test-MaintenanceFeatureLocked {
     return $false
 }
 
-# Hàm an toàn gắn sự kiện Click cho nút (hỗ trợ khóa theo nhóm tính năng)
 function Register-Click {
     param(
         [string]$ButtonName,
@@ -507,7 +488,6 @@ function Register-Click {
     }
 }
 
-# ── LOGIC ĐIỀU HƯỚNG TAB CHÍNH ──
 $navBtnApps    = $window.FindName("navBtnApps")
 $navBtnRepair  = $window.FindName("navBtnRepair")
 $navBtnDrivers = $window.FindName("navBtnDrivers")
@@ -541,15 +521,11 @@ Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnRepair"  -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 1 $navBtnRepair }
 Register-Click "navBtnDrivers" -LockGroup "Quản lý Driver"    { Set-ActiveTab 2 $navBtnDrivers }
 
-# Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
 
-# ── CỬA SỔ TERMINAL CHẠY NỀN RIÊNG BIỆT (CHUẨN WINUTIL) ──
 function Expand-TerminalLog {
-    # Terminal Log hiện được tách sang cửa sổ Console chạy nền riêng biệt
 }
 
-# Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
 function Get-AppFallbackGlyph {
     param([string]$AppName, [string]$Category)
     $nameLower = if ($AppName) { $AppName.ToLowerInvariant() } else { "" }
@@ -631,10 +607,8 @@ function Get-AppFallbackGlyph {
     return [char]::ConvertFromUtf32(0x1F4E6)
 }
 
-# ── MASONRY CÂN BẰNG CHIỀU CAO 4 CỘT TỰ ĐỘNG (LOẠI BỎ TRIỆT ĐỂ KHOẢNG TRỐNG) ──
 $script:colHeights = @(0, 0, 0, 0)
 
-# ── SINH CÁC CARD ỨNG DỤNG BỐ CỤC 4 CỘT HIỆU NĂNG CAO ──
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
 $allItemBorders  = [System.Collections.Generic.List[object]]::new()
 
@@ -655,7 +629,6 @@ function Update-SelectionCount {
     }
 }
 
-# 4 cột dọc phân bố đều các card danh mục (Chiều cao tự nhiên, không cố định, triệt tiêu khoảng trống thừa)
 $cardCols = @(
     $window.FindName("CardsCol0"),
     $window.FindName("CardsCol1"),
@@ -663,10 +636,8 @@ $cardCols = @(
     $window.FindName("CardsCol3")
 )
 
-# Cache BitmapImage từ xa theo URL trong RAM để cắt giảm triệt để request mạng trùng lặp
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-# Các hằng số hình học & delegate dùng chung cho toàn bộ 190 dòng (tránh gọi cmdlet New-Object hàng ngàn lần khi khởi tạo)
 $glCol0             = [System.Windows.GridLength]::new(20, [System.Windows.GridUnitType]::Pixel)
 $glCol1             = [System.Windows.GridLength]::new(23, [System.Windows.GridUnitType]::Pixel)
 $glCol2             = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
@@ -723,7 +694,6 @@ $script:rowClickHandler = [System.Windows.Input.MouseButtonEventHandler]{
     }
 }
 
-# Gom nhóm sẵn ứng dụng theo Category bằng Dictionary O(1)
 $appsByCategory = @{}
 foreach ($item in $AppCatalog) {
     if (-not $appsByCategory.ContainsKey($item.Category)) {
@@ -746,7 +716,6 @@ foreach ($cat in $categories) {
     $cardStack = [System.Windows.Controls.StackPanel]::new()
     $appsInCat = $appsByCategory[$cat]
 
-    # Header Card (Tiêu đề bên trái + Badge đếm tối giản bên phải)
     $headerGrid = [System.Windows.Controls.Grid]::new()
     $headerGrid.Margin = $marginHeaderGrid
 
@@ -781,7 +750,6 @@ foreach ($cat in $categories) {
     [void]$cardStack.Children.Add($headerGrid)
     [void]$cardStack.Children.Add($separator)
 
-    # Từng dòng App: CheckBox + Logo (nền mờ nhẹ) + Tên + Nút Link tối giản
     foreach ($app in $appsInCat) {
         $rowBorder = [System.Windows.Controls.Border]::new()
         $rowBorder.Height = 27
@@ -799,7 +767,6 @@ foreach ($cat in $categories) {
             CardBorder       = $cardBorder
         }
 
-        # Grid 4 cột cố định tỉ lệ, triệt tiêu hoàn toàn hiện tượng lệch dòng
         $rowGrid = [System.Windows.Controls.Grid]::new()
         $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -812,7 +779,6 @@ foreach ($cat in $categories) {
         [void]$rowGrid.ColumnDefinitions.Add($col2)
         [void]$rowGrid.ColumnDefinitions.Add($col3)
 
-        # 1. CheckBox
         $cb = [System.Windows.Controls.CheckBox]::new()
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
@@ -825,7 +791,6 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        # 2. Khung đỡ Logo (nền trắng chuẩn cho Java / logo tối màu, nền sương mờ nhẹ cho app thường)
         $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
         $iconBadge = [System.Windows.Controls.Border]::new()
         $iconBadge.Width = 20
@@ -892,7 +857,6 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
         [void]$rowGrid.Children.Add($iconBadge)
 
-        # 3. Tên ứng dụng + Badge phiên bản mới gọn gàng (tránh cắt tên App khi cột hẹp)
         $nameAreaGrid = [System.Windows.Controls.Grid]::new()
         $nameCol0 = [System.Windows.Controls.ColumnDefinition]::new(); $nameCol0.Width = $glCol2
         $nameCol1 = [System.Windows.Controls.ColumnDefinition]::new(); $nameCol1.Width = $glAuto
@@ -940,7 +904,6 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($nameAreaGrid, 2)
         [void]$rowGrid.Children.Add($nameAreaGrid)
 
-        # 4. Button Link Website ngoài cùng bên phải (Tối giản chuẩn WinUtil, chỉ sáng khi hover)
         $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
             $app.Url
         } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
@@ -977,7 +940,6 @@ foreach ($cat in $categories) {
         [System.Windows.Controls.Grid]::SetColumn($linkBtn, 3)
         [void]$rowGrid.Children.Add($linkBtn)
 
-        # Tối ưu nhấp chọn toàn dòng: Nhấp vào Tên ứng dụng hoặc khoảng trống dòng -> TỰ ĐỘNG TÍCH CHECKBOX
         $rowBorder.Add_MouseLeftButtonUp($script:rowClickHandler)
 
         $rowBorder.Child = $rowGrid
@@ -987,10 +949,8 @@ foreach ($cat in $categories) {
 
     $cardBorder.Child = $cardStack
 
-    # Trọng số chiều cao ước tính: 46px (Header card + Separator) + (Số dòng app * 29px) + 10px (Margin)
     $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
 
-    # Tìm cột hiện có tổng chiều cao thấp nhất để rót card vào (nguyên lý bình thông nhau, triệt tiêu khoảng trống)
     $targetColIndex = 0
     $minHeight = $script:colHeights[0]
     for ($i = 1; $i -lt 4; $i++) {
@@ -1005,11 +965,9 @@ foreach ($cat in $categories) {
         $targetColPanel.Children.Add($cardBorder) | Out-Null
     }
 
-    # Cập nhật chiều cao tích lũy của cột
     $script:colHeights[$targetColIndex] += $cardEstimatedHeight
 }
 
-# ── CÁC HÀNH ĐỘNG CÀI ĐẶT / GỠ / NÂNG CẤP APP ──
 Register-Click "btnScanInstalled" {
     Invoke-GuardedAction "Quét ứng dụng" {
         Scan-And-ColorizeApps
@@ -1080,7 +1038,6 @@ function Clear-WinGetTempInstallers {
 
         $entries = Get-ChildItem -LiteralPath $wingetTemp -Force -ErrorAction SilentlyContinue
         foreach ($entry in $entries) {
-            # Giữ lại thư mục cache manifest nội bộ của WinGet
             if ($entry.Name -ieq "cache") { continue }
 
             $entryBytes = [long]0
@@ -1096,7 +1053,6 @@ function Clear-WinGetTempInstallers {
                 $removedCount++
                 $freedBytes += $entryBytes
             } catch {
-                # Bỏ qua tệp đang bị tiến trình cài đặt khác giữ khóa
             }
         }
     }
@@ -1208,7 +1164,6 @@ Register-Click "btnUninstall" {
         foreach ($tag in $selectedTags) {
             $idx++
             $app = $tag.App
-            # Ưu tiên sử dụng DetectedId thực tế phát hiện được qua SmartMatcher
             $uninstallId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
 
             if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
@@ -1255,7 +1210,6 @@ Register-Click "btnUpgradeAll" {
     }
 }
 
-# Chọn tất cả các dòng đang hiển thị
 Register-Click "btnSelectAll" {
     $script:suppressSelectionCount = $true
     try {
@@ -1277,7 +1231,6 @@ Register-Click "btnDeselectAll" {
     Clear-AllCheckBoxes
 }
 
-# ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
 Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "SFC Scan" {
         Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
@@ -1409,7 +1362,6 @@ Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
     }
 }
 
-# ── LOGIC MODULE QUẢN LÝ & GỠ LỖI DRIVER ──
 Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét Driver lỗi" {
         Log-Text "=========================================================="
@@ -1522,7 +1474,6 @@ Register-Click "btnOpenBackupFolder" -LockGroup "Quản lý Driver" {
     }
 }
 
-# ── TỰ ĐỘNG QUÉT KHI MỞ CỬA SỔ & KHỞI CHẠY GIAO DIỆN ──
 $script:iconSyncTimer = New-Object System.Windows.Threading.DispatcherTimer
 $script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(250)
 $script:iconSyncTimer.Add_Tick({

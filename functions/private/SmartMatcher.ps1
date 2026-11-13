@@ -1,6 +1,3 @@
-﻿# ── FUNCTION: QUÉT & PHÂN LOẠI MÀU PHIÊN BẢN (TRẮNG / XANH / ĐỎ) ──
-
-# Bộ nhớ đệm tĩnh lưu trữ Brush của WPF giúp tối ưu render và triệt tiêu Garbage Collection
 $script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
@@ -13,7 +10,6 @@ $script:brushNoneFg.Freeze()
 function Get-CleanAppName {
     param([string]$RawName)
     if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
-    # Loại bỏ thông tin đóng ngoặc nhưng KHÔNG xóa mất định danh kiến trúc (x64), (x86), (arm64)
     $clean = ($RawName -replace '\((?!x64|x86|arm64).*?\)', '').Replace('(', '').Replace(')', '').Trim().ToLowerInvariant()
     $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")
     foreach ($term in $terms) {
@@ -24,7 +20,6 @@ function Get-CleanAppName {
 
 function Get-CharDisplayWidth {
     param([int]$Code)
-    # CJK, Hangul, Kana, Fullwidth & Emoji chiếm 2 cột hiển thị trong terminal Windows/winget
     if (
         ($Code -ge 0x1100 -and $Code -le 0x115F) -or
         ($Code -eq 0x2329 -or $Code -eq 0x232A) -or
@@ -46,7 +41,6 @@ function Get-CharDisplayWidth {
 
 function Get-SliceByDisplayWidth {
     param([string]$Line, [int[]]$Offsets)
-    # Cắt chuỗi theo độ rộng cột console để các dòng tiếng Trung/Nhật/Hàn không làm lệch cột ID/Version
     $idIdx    = if ($Offsets.Count -ge 2) { $Offsets[1] } else { -1 }
     $verIdx   = if ($Offsets.Count -ge 3) { $Offsets[2] } else { -1 }
     $availIdx = if ($Offsets.Count -ge 4) { $Offsets[3] } else { -1 }
@@ -122,24 +116,20 @@ function Test-MatchCompatible {
     $iName = [string]$Item.Name
     $iId   = [string]$Item.ID
 
-    # Chặn khớp chéo giữa bản thường và bản Preview
     $tPrev = ($tName -match 'Preview') -or ($tId -match 'Preview')
     $iPrev = ($iName -match 'Preview') -or ($iId -match 'Preview')
     if ($tPrev -ne $iPrev) { return $false }
 
-    # Chặn gói UWP/VCLibs khớp nhầm vào Desktop Redistributable
     if (($tId -match 'VCRedist' -or $tName -match 'VC\+\+') -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
         return $false
     }
 
-    # Chặn khớp chéo giữa bản Community và bản Ultimate / Professional (ví dụ IntelliJ IDEA, PyCharm)
     $tComm = ($tName -match '\bCommunity\b') -or ($tId -match '\.Community\b')
     $tPro  = ($tName -match '\b(Ultimate|Professional)\b') -or ($tId -match '\.(Ultimate|Professional)\b')
     $iComm = ($iName -match '\bCommunity\b') -or ($iId -match '\.Community\b')
     $iPro  = ($iName -match '\b(Ultimate|Professional)\b') -or ($iId -match '\.(Ultimate|Professional)\b')
     if (($tComm -and $iPro) -or ($tPro -and $iComm)) { return $false }
 
-    # Chặn khớp chéo giữa bản gốc và biến thể IDE / CLI (ví dụ Antigravity vs Antigravity IDE / Antigravity CLI, GitHub Desktop vs GitHub CLI)
     $tIde = ($tName -match '\bIDE\b') -or ($tId -match 'IDE$')
     $iIde = ($iName -match '\bIDE\b') -or ($iId -match 'IDE$')
     if ($tIde -ne $iIde -and ($tId -match 'Antigravity' -or $iId -match 'Antigravity')) { return $false }
@@ -148,7 +138,6 @@ function Test-MatchCompatible {
     $iCli = ($iName -match '\bCLI\b') -or ($iId -match '(\.cli|CLI)$')
     if ($tCli -ne $iCli) { return $false }
 
-    # Chặn khớp chéo giữa Visual Studio IDE, Visual Studio Build Tools và VS Code, cũng như Everything vs EverythingToolbar
     $tBt = ($tName -match 'Build Tools') -or ($tId -match 'BuildTools')
     $iBt = ($iName -match 'Build Tools') -or ($iId -match 'BuildTools')
     if ($tBt -ne $iBt) { return $false }
@@ -161,12 +150,10 @@ function Test-MatchCompatible {
     $iEtb = ($iId -match 'EverythingToolbar') -or ($iName -match 'EverythingToolbar')
     if ($tEtb -ne $iEtb) { return $false }
 
-    # Chặn khớp chéo giữa các nhà phân phối Java khác nhau (Temurin vs Oracle vs Corretto)
     if ($tId -match 'Temurin' -and ($iId -match 'Oracle|Corretto' -or $iName -match 'Corretto|^Java \d+ Update')) { return $false }
     if ($tId -match 'Oracle\.Java' -and ($iId -match 'Temurin|Corretto' -or $iName -match 'Temurin|Corretto')) { return $false }
     if ($tId -match 'Corretto' -and ($iId -match 'Temurin|Oracle' -or $iName -match 'Temurin|^Java \d+ Update')) { return $false }
 
-    # Kiểm tra đồng nhất kiến trúc x64 / x86 / arm64 (KHÔNG xét nhánh registry ARP\Machine\X86 vì app x64 vẫn có thể ghi khóa WOW6432Node)
     $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
              elseif ($tName -match '\(x86\)|\.x86' -or $tId -match '\.x86$') { "x86" }
              elseif ($tName -match '\(arm64\)|\.arm64' -or $tId -match '\.arm64$') { "arm64" }
@@ -223,7 +210,6 @@ function Invoke-WingetListCapture {
         throw "Không thể khởi động tiến trình winget."
     }
 
-    # Đọc bất đồng bộ cả stdout và stderr để tránh deadlock buffer
     $readTask = $p.StandardOutput.ReadToEndAsync()
     $errTask  = $p.StandardError.ReadToEndAsync()
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -267,7 +253,6 @@ function ConvertFrom-WingetListOutput {
     foreach ($rl in $rawLines) {
         $cleanLine = $rl.TrimEnd("`r")
         if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
-        # Loại bỏ mã màu/điều khiển ANSI nếu winget xuất ra luồng chuyển hướng
         if ($cleanLine.Contains([char]0x1B)) {
             $cleanLine = [System.Text.RegularExpressions.Regex]::Replace($cleanLine, '\x1B\[[0-9;?]*[A-Za-z]', '')
         }
@@ -350,7 +335,6 @@ function ConvertFrom-WingetListOutput {
             }
         }
     } elseif ($AllowHeaderless) {
-        # Chỉ fallback khi winget thoát bình thường và dòng thực sự có ID hợp lệ
         foreach ($line in $lines) {
             if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
@@ -511,7 +495,6 @@ function Scan-And-ColorizeApps {
             if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
         }
 
-        # Nhận diện trực tiếp Legacy Launcher (không nằm trên WinGet) qua đường dẫn cài đặt mặc định
         if (-not $idMap.ContainsKey("LegacyLauncher.LegacyLauncher")) {
             $llPaths = @(
                 (Join-Path $env:APPDATA ".tlauncher\legacy\Minecraft\TL.exe"),
@@ -538,7 +521,6 @@ function Scan-And-ColorizeApps {
             }
         }
 
-        # Chỉ quét dự phòng Registry + Appx khi WinGet gặp sự cố / trả về quá ít dữ liệu (tránh chặn luồng UI 4 giây không cần thiết vì winget list đã gồm cả ARP & MSIX)
         if (-not $wingetOk -or $wingetItems.Count -lt 5) {
             $localItems = Get-LocalInstalledEntries
             foreach ($locObj in $localItems) {
@@ -557,7 +539,6 @@ function Scan-And-ColorizeApps {
             return
         }
 
-    # Bộ nhớ đệm tra cứu đa bí danh tốc độ cao (Multi-Alias Lookup Cache)
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     function Find-InstalledAppFast {
@@ -569,20 +550,17 @@ function Scan-And-ColorizeApps {
             return $cachedMatch
         }
 
-        # 1. Exact ID match (O(1))
         $match = $null
         if ($idMap.TryGetValue($targetId, [ref]$match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 2. Exact Name match (O(1))
         if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 3. Tra cứu danh sách Aliases trong O(1)
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias)) { continue }
@@ -602,14 +580,12 @@ function Scan-And-ColorizeApps {
             }
         }
 
-        # 4. Clean Name match (O(1))
         $cleanTarget = Get-CleanAppName $targetApp.Name
         if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        # 5. Fuzzy / Non-Alphanumeric Boundary Matching (khớp chuẩn cả chuỗi chứa dấu +, ., (x64), (x86))
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
@@ -654,12 +630,10 @@ function Scan-And-ColorizeApps {
 
         if ($info) {
             $countInstalled++
-            # Lưu lại ID phát hiện thực tế để phục vụ lệnh gỡ cài đặt chính xác
             $row.Tag.DetectedId = $info.ID
             $row.Tag.InstalledVersion = $info.Version
 
             if ($info.HasUpdate -eq $true) {
-                # ── 🔴 BẢN CŨ: Tên ĐỎ + Pill phiên bản mới gọn gàng (không cắt mất tên App) ──
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
                 $tb.Foreground = $script:brushOutdatedFg
@@ -673,7 +647,6 @@ function Scan-And-ColorizeApps {
                 $tb.ToolTip = $tip
                 $row.ToolTip = $tip
             } else {
-                # ── 🟢 BẢN MỚI NHẤT: Tên XANH LÁ ──
                 $countLatest++
                 $row.Tag.Status = "LATEST"
                 $tb.Foreground = $script:brushLatestFg
@@ -685,7 +658,6 @@ function Scan-And-ColorizeApps {
                 $row.ToolTip = $tip
             }
         } else {
-            # ── ⚪ CHƯA CÀI ĐẶT: Tên TRẮNG + Nền trong suốt ──
             $row.Tag.Status = "NONE"
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null

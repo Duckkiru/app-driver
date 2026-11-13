@@ -1,26 +1,17 @@
-﻿# ==============================================================================
-#                     APP-DRIVER — WINDOWS SOFTWARE & DRIVER SUITE
-#       Modular Windows Package Manager & System Maintenance Architecture
-# ==============================================================================
-
-# 1. TỰ ĐỘNG CHUYỂN SANG QUYỀN ADMINISTRATOR (SELF-ELEVATION & WINDOWS TERMINAL SUPPORT)
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
 )
 
-# Nhận diện phiên bản và môi trường Windows Terminal
 $isInsideWT = -not [string]::IsNullOrWhiteSpace($env:WT_SESSION)
 $script:IsInsideWindowsTerminal = $isInsideWT
 
 if (-not $isAdmin) {
-    # Chọn runtime PowerShell phù hợp nhất (PowerShell 7 Core nếu có, fallback Windows PowerShell 5.1)
     $psExe = if ($PSVersionTable.PSEdition -eq 'Core' -or (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)) {
         "pwsh.exe"
     } else {
         "powershell.exe"
     }
 
-    # Xác định thư mục làm việc và đường dẫn script
     $isWebSource = [string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)
     $workDir = if (-not $isWebSource) {
         Split-Path -Parent (Resolve-Path -LiteralPath $PSCommandPath).Path
@@ -28,7 +19,6 @@ if (-not $isAdmin) {
         if ($PWD -and $PWD.Path -and (Test-Path -LiteralPath $PWD.Path)) { $PWD.Path } else { [Environment]::GetFolderPath('UserProfile') }
     }
 
-    # Xây dựng đối số thực thi cho PowerShell (Bao gồm cờ -Sta để đảm bảo môi trường STA cho WPF)
     if ($isWebSource) {
         $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
     } else {
@@ -47,9 +37,7 @@ if (-not $isAdmin) {
         }
     }
 
-    # Hàm tìm kiếm thực thi Windows Terminal (Hỗ trợ WT Stable, WT Preview, WT Canary)
     function Get-WindowsTerminalPath {
-        # 1. Tìm trong PATH hệ thống (wt.exe hoặc wtd.exe)
         foreach ($bin in @('wt.exe', 'wtd.exe', 'wt')) {
             $cmd = Get-Command -Name $bin -CommandType Application -ErrorAction SilentlyContinue
             if ($cmd -and $cmd.Source -and (Test-Path -LiteralPath $cmd.Source)) {
@@ -57,7 +45,6 @@ if (-not $isAdmin) {
             }
         }
 
-        # 2. Tìm trong AppExecutionAliases (Canary, Preview, Stable)
         $aliasCandidates = @(
             (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\Microsoft.WindowsTerminalCanary_8wekyb3d8bbwe\wt.exe"),
             (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\wt.exe"),
@@ -71,7 +58,6 @@ if (-not $isAdmin) {
             }
         }
 
-        # 3. Nếu đang chạy trong session của Windows Terminal nhưng không tìm thấy alias
         if (-not [string]::IsNullOrWhiteSpace($env:WT_SESSION)) {
             return "wt.exe"
         }
@@ -79,7 +65,6 @@ if (-not $isAdmin) {
         return $null
     }
 
-    # Hàm kiểm tra xem người dùng có chủ động từ chối UAC hay không
     function Test-UacCancelled ($errorRecord) {
         if (-not $errorRecord) { return $false }
         $currEx = $errorRecord.Exception
@@ -98,18 +83,14 @@ if (-not $isAdmin) {
     $wtExe = Get-WindowsTerminalPath
     $elevationSuccess = $false
 
-    # Tầng 1: Tự nâng quyền qua Windows Terminal (nếu đang ở trong WT hoặc tìm thấy wt.exe)
     if ($isInsideWT -or $wtExe) {
         $targetWt = if ($wtExe) { $wtExe } else { "wt.exe" }
 
-        # Chuẩn hóa đường dẫn: Tránh ký tự '\' cuối làm escape dấu nháy kép trong Win32 CommandLineToArgvW
         $safeWorkDir = $workDir.TrimEnd('\')
         if ($safeWorkDir -match '^[a-zA-Z]:$') {
             $safeWorkDir += '\\'
         }
 
-        # Trong cú pháp dòng lệnh của wt.exe, dấu chấm phẩy ';' là ký tự phân tách sub-command (tab/pane mới)
-        # Cần escape các dấu ';' thành '\;' để không bị chia nhỏ dòng lệnh của PowerShell
         $wtPsArgs = $psArgs -replace '(?<!\\);', '\;'
         $wtArgs = "-d `"$safeWorkDir`" $psExe $wtPsArgs"
 
@@ -123,11 +104,9 @@ if (-not $isAdmin) {
                 Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
                 exit
             }
-            # Nếu thất bại vì lỗi khởi chạy wt.exe (không phải từ chối UAC), tiếp tục fallback xuống tầng dưới
         }
     }
 
-    # Tầng 2: Fallback nâng quyền trực tiếp bằng PowerShell runtime đã chọn ($psExe)
     if (-not $elevationSuccess) {
         try {
             $startParams = @{
@@ -149,7 +128,6 @@ if (-not $isAdmin) {
                 exit
             }
 
-            # Tầng 3: Fallback khẩn cấp sang powershell.exe mặc định nếu pwsh.exe gặp sự cố
             if ($psExe -ne "powershell.exe" -and (Get-Command powershell.exe -CommandType Application -ErrorAction SilentlyContinue)) {
                 try {
                     $fallbackParams = @{
@@ -182,19 +160,16 @@ if (-not $isAdmin) {
     exit
 }
 
-# 2. CẤU HÌNH MÔI TRƯỜNG & NẠP THƯ VIỆN WPF & WINFORMS
 try {
     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 } catch {
-    # Không làm gián đoạn nếu host không hỗ trợ thay đổi console encoding
 }
 
 if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     try {
         $Host.UI.RawUI.WindowTitle = "App-Driver - Terminal Console"
     } catch {
-        # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
     }
 }
 

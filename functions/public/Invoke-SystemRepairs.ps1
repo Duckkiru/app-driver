@@ -1,17 +1,10 @@
-# ── FUNCTION: CÁC TIỆN ÍCH SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
-
 function Reset-WindowsUpdateEngine {
-    <#
-    .SYNOPSIS
-        Khởi tạo lại toàn bộ dịch vụ Windows Update và xóa cache bị lỗi/kẹt.
-    #>
     Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS, DoSvc & TrustedInstaller..."
     $services = @("wuauserv", "bits", "cryptsvc", "dosvc", "trustedinstaller")
     foreach ($s in $services) {
         Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
     }
 
-    # Chờ tiến trình giải phóng hoàn toàn các handle tệp tin
     Start-Sleep -Milliseconds 1500
 
     Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
@@ -51,10 +44,6 @@ function Reset-WindowsUpdateEngine {
 }
 
 function Invoke-WindowsUpdateScan {
-    <#
-    .SYNOPSIS
-        Kích hoạt quét tìm kiếm bản cập nhật Windows qua COM API chính thức và Windows Settings.
-    #>
     Log-Text "[*] Đang gửi tín hiệu yêu cầu Windows tìm kiếm bản cập nhật mới..."
     try {
         $au = New-Object -ComObject Microsoft.Update.AutoUpdate
@@ -70,10 +59,6 @@ function Invoke-WindowsUpdateScan {
 }
 
 function Invoke-SystemFileCheck {
-    <#
-    .SYNOPSIS
-        Chạy SFC Scan kiểm tra toàn vẹn file hệ thống.
-    #>
     Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)..."
     $code = Run-CliStream "sfc.exe" "/scannow"
     if ($code -eq 0) {
@@ -85,10 +70,6 @@ function Invoke-SystemFileCheck {
 }
 
 function Invoke-DismRestoreHealth {
-    <#
-    .SYNOPSIS
-        Khôi phục kho linh kiện Windows qua DISM RestoreHealth từ server Microsoft.
-    #>
     Log-Text "[*] Đang khởi chạy DISM RestoreHealth khôi phục kho linh kiện hệ thống..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
     if ($code -eq 0) {
@@ -100,10 +81,6 @@ function Invoke-DismRestoreHealth {
 }
 
 function Clear-DnsResolverCache {
-    <#
-    .SYNOPSIS
-        Làm mới bộ nhớ đệm DNS.
-    #>
     $code = Run-CliStream "ipconfig.exe" "/flushdns"
     if ($code -eq 0) {
         Log-Text "[OK] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
@@ -114,10 +91,6 @@ function Clear-DnsResolverCache {
 }
 
 function Reset-NetworkInterfaceStack {
-    <#
-    .SYNOPSIS
-        Khôi phục danh mục Winsock Catalog và TCP/IP Stack.
-    #>
     $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
     $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
     if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
@@ -129,10 +102,6 @@ function Reset-NetworkInterfaceStack {
 }
 
 function Clear-SystemTempFiles {
-    <#
-    .SYNOPSIS
-        Dọn dẹp tệp tạm thời trong thư mục User Temp và Windows Temp.
-    #>
     $tempPaths = @($env:TEMP, "C:\Windows\Temp")
     foreach ($p in $tempPaths) {
         if (Test-Path -LiteralPath $p) {
@@ -144,10 +113,6 @@ function Clear-SystemTempFiles {
 }
 
 function Clear-SystemEventLogs {
-    <#
-    .SYNOPSIS
-        Xóa sạch toàn bộ nhật ký sự kiện Windows Event Logs.
-    #>
     Log-Text "[*] Đang quét và dọn sạch nhật ký sự kiện Windows Event Logs..."
     Get-WinEvent -ListLog * -ErrorAction SilentlyContinue | ForEach-Object {
         try {

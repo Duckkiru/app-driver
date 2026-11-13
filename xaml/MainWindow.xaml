@@ -14,7 +14,6 @@
     SnapsToDevicePixels="True">
 
     <Window.Resources>
-        <!-- ═══ FLUENT CHECKBOX TỐI GIẢN CHUẨN WINUTIL ═══ -->
         <Style TargetType="{x:Type CheckBox}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -59,7 +58,6 @@
             </Setter>
         </Style>
 
-        <!-- ═══ THANH CUỘN (SCROLLBAR) MẢNH 7PX ═══ -->
         <Style x:Key="ModernScrollThumb" TargetType="{x:Type Thumb}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
@@ -163,7 +161,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Nút bấm chính (Matte Fluent Accent - Đỡ chói mắt) -->
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
@@ -201,7 +198,6 @@
             </Setter>
         </Style>
 
-        <!-- Nút phụ (Clean Dark Slate Flat Style chuẩn WinUtil) -->
         <Style x:Key="SecondaryButton" TargetType="Button">
             <Setter Property="Background" Value="#141B29"/>
             <Setter Property="Foreground" Value="#CBD5E1"/>
@@ -243,7 +239,6 @@
             </Setter>
         </Style>
 
-        <!-- Nút điều hướng Tab chính (WinUtil Clean Tab Strip) -->
         <Style x:Key="NavTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#64748B"/>
@@ -284,12 +279,11 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
-            <RowDefinition Height="*"/>    <!-- Main Viewport -->
-            <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
+            <RowDefinition Height="Auto"/> 
+            <RowDefinition Height="*"/>    
+            <RowDefinition Height="Auto"/> 
         </Grid.RowDefinitions>
 
-        <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
         <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#192130" BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Orientation="Horizontal">
@@ -305,7 +299,6 @@
             </Grid>
         </Border>
 
-        <!-- ═══ 2. MAIN VIEWPORT (TAB CONTROL) ═══ -->
         <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderThickness="0" Padding="0">
             <TabControl.ItemContainerStyle>
                 <Style TargetType="TabItem">
@@ -313,7 +306,6 @@
                 </Style>
             </TabControl.ItemContainerStyle>
 
-            <!-- ── TAB 1: ỨNG DỤNG (BỐ CỤC 4 CỘT TỐI GIẢN CHUẨN WINUTIL) ── -->
             <TabItem>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -321,7 +313,6 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Thanh công cụ tối giản -->
                     <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -329,7 +320,6 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <!-- Hàng 1: Hành động chính -->
                             <Grid Grid.Row="0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -354,7 +344,6 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Hàng 2: Chú thích trạng thái siêu gọn (Không nhét hộp pill dày cộm) -->
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
                                 <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
@@ -373,7 +362,6 @@
                         </Grid>
                     </Border>
 
-                    <!-- Lưới Card 4 Cột Dọc Tự Nhiên (Masonry 4 Cột) -->
                     <ScrollViewer Name="AppsScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                   CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                         <Grid Name="CardsContainer">
@@ -392,7 +380,6 @@
                 </Grid>
             </TabItem>
 
-            <!-- ── TAB 2: GỠ LỖI & SỬA HỆ THỐNG ── -->
             <TabItem>
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
@@ -403,7 +390,6 @@
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
                         <UniformGrid Columns="2" VerticalAlignment="Top">
-                        <!-- Card 1: File Hệ Thống -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -420,7 +406,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 2: Windows Update -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -437,7 +422,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 3: Mạng & DNS -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -453,7 +437,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 4: Dọn Rác & Khôi Phục UI -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -474,7 +457,6 @@
                 </DockPanel>
             </TabItem>
 
-            <!-- ── TAB 3: QUẢN LÝ & GỠ LỖI DRIVER ── -->
             <TabItem>
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
@@ -485,7 +467,6 @@
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
                         <UniformGrid Columns="3" VerticalAlignment="Top">
-                        <!-- Card 1: Chẩn Đoán Driver Lỗi -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -502,7 +483,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 2: Gỡ Lỗi Update Driver -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -519,7 +499,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 3: Sao Lưu Driver -->
                         <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -540,7 +519,6 @@
             </TabItem>
         </TabControl>
 
-        <!-- ═══ 3. STATUS & PROGRESS BAR ═══ -->
         <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#192130" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>

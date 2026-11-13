@@ -1,5 +1,3 @@
-﻿# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (KHÔNG ICON/EMOJI) ──
-
 $script:activeChildProcess = $null
 $script:isWindowClosing    = $false
 
@@ -15,7 +13,6 @@ function Log-Text {
     param([string]$text)
     if ([string]::IsNullOrWhiteSpace($text)) { return }
 
-    # Loại bỏ các mã màu ANSI escape code nếu có
     $clean = $text -replace '\x1B\[[0-9;]*[a-zA-Z]', ''
     if ($clean.Contains("`r")) {
         $parts = $clean -split "`r"
@@ -24,7 +21,6 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-    # Chuẩn hóa triệt để mọi ký hiệu icon/emoji sang nhãn ASCII thuần túy để chống vỡ font Terminal
     $trimmed = $trimmed.Replace("[✓]", "[OK]").Replace("[✓ ", "[OK - ").Replace("✓", "OK")
     $trimmed = $trimmed.Replace("[❌]", "[ERR]").Replace("[❌ ", "[ERR - ").Replace("❌", "ERR")
     $trimmed = $trimmed.Replace("[⚠️]", "[WARN]").Replace("[⚠️ ", "[WARN - ").Replace("⚠️", "WARN")

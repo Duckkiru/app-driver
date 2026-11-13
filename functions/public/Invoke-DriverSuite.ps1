@@ -1,10 +1,4 @@
-# ── FUNCTION: CÁC TIỆN ÍCH QUẢN LÝ & GỠ LỖI DRIVER ──
-
 function Find-FaultyPnpDevices {
-    <#
-    .SYNOPSIS
-        Quét và liệt kê tất cả các thiết bị phần cứng bị lỗi, thiếu driver hoặc chấm than vàng qua ConfigManagerErrorCode.
-    #>
     try {
         return @(Get-PnpDevice -ErrorAction Stop | Where-Object {
             $_.Present -eq $true -and ($_.Status -ne 'OK' -or ($null -ne $_.ConfigManagerErrorCode -and $_.ConfigManagerErrorCode -ne 0))
@@ -16,10 +10,6 @@ function Find-FaultyPnpDevices {
 }
 
 function Invoke-PnpDeviceRescan {
-    <#
-    .SYNOPSIS
-        Buộc Windows gửi tín hiệu quét lại toàn bộ phần cứng cắm trên máy.
-    #>
     $code = Run-CliStream "pnputil.exe" "/scan-devices"
     if ($code -eq 0) {
         Log-Text "[OK] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
@@ -30,10 +20,6 @@ function Invoke-PnpDeviceRescan {
 }
 
 function Invoke-PnpDriverStoreCleanup {
-    <#
-    .SYNOPSIS
-        Quét và dọn dẹp các gói Driver OEM của bên thứ ba không còn được sử dụng trong DriverStore bằng pnputil.
-    #>
     Log-Text "[*] Đang phân tích danh sách gói Driver OEM bên thứ ba (pnputil /enum-drivers)..."
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
@@ -49,7 +35,6 @@ function Invoke-PnpDriverStoreCleanup {
         $p.WaitForExit()
         $raw = $outTask.Result
 
-        # Tìm các Published Name: oemX.inf
         $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?i)(?:Published Name|Tên đã phát hành):\s*(oem\d+\.inf)')
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
@@ -64,7 +49,6 @@ function Invoke-PnpDriverStoreCleanup {
         $errorCount = 0
 
         foreach ($inf in $oemList) {
-            # Chạy xóa an toàn không dùng /force để Windows tự bảo vệ các driver đang được phần cứng sử dụng
             try {
                 $delPinfo = New-Object System.Diagnostics.ProcessStartInfo
                 $delPinfo.FileName = "pnputil.exe"
@@ -115,10 +99,6 @@ function Invoke-PnpDriverStoreCleanup {
 }
 
 function Invoke-DismComponentCleanup {
-    <#
-    .SYNOPSIS
-        Dọn dẹp và giải phóng kho linh kiện Windows qua DISM Component Cleanup.
-    #>
     Log-Text "[WARN] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
     Log-Text "[*] Sau khi hoàn tất thao tác này, bạn SẼ KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại."
     Log-Text "[*] Đang tiến hành dọn dẹp và nén kho linh kiện WinSxS qua DISM..."
@@ -132,10 +112,6 @@ function Invoke-DismComponentCleanup {
 }
 
 function Export-SystemDriversBackup {
-    <#
-    .SYNOPSIS
-        Sao lưu toàn bộ Driver của máy ra thư mục chỉ định.
-    #>
     param([string]$Destination = "C:\Backup_Drivers")
 
     if (-not (Test-Path -LiteralPath $Destination)) {
