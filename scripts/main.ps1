@@ -79,124 +79,35 @@ $script:styleCategoryCard.Seal()
 
 if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
     try {
-        $wpfSmoothRefs = @(
-            [System.Windows.Controls.ScrollViewer].Assembly.Location,
-            [System.Windows.UIElement].Assembly.Location,
-            [System.Windows.DependencyObject].Assembly.Location,
-            [System.Windows.Markup.IQueryAmbient].Assembly.Location,
-            [System.Diagnostics.Stopwatch].Assembly.Location,
-            [System.Object].Assembly.Location
-        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
-
-        $smoothScrollCs = @"
-using System;
-using System.Diagnostics;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
-
-namespace DuckUtil {
-    public sealed class SmoothScrollController {
-        private readonly ScrollViewer _sv;
-        private double _currentOffset;
-        private double _targetOffset;
-        private double _lastAppliedOffset;
-        private bool _isAnimating;
-        private readonly Stopwatch _sw = new Stopwatch();
-        private double _lastTimeSec;
-
-        private SmoothScrollController(ScrollViewer sv) {
-            _sv = sv;
-            _currentOffset = sv.VerticalOffset;
-            _targetOffset = sv.VerticalOffset;
-            _lastAppliedOffset = sv.VerticalOffset;
-            _sv.PreviewMouseWheel += OnPreviewMouseWheel;
-        }
-
-        public static SmoothScrollController Attach(ScrollViewer sv) {
-            if (sv == null) return null;
-            return new SmoothScrollController(sv);
-        }
-
-        private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e) {
-            if (e == null || e.Handled) return;
-            if (Keyboard.Modifiers != ModifierKeys.None) return;
-
-            double maxScroll = _sv.ScrollableHeight;
-            if (maxScroll <= 0) return;
-
-            if (!_isAnimating || Math.Abs(_sv.VerticalOffset - _lastAppliedOffset) > 2.5) {
-                _currentOffset = _sv.VerticalOffset;
-                _targetOffset = _sv.VerticalOffset;
-            }
-
-            double step = -e.Delta * 0.85;
-            _targetOffset = Math.Max(0.0, Math.Min(maxScroll, _targetOffset + step));
-            e.Handled = true;
-
-            if (!_isAnimating) {
-                _isAnimating = true;
-                _sw.Restart();
-                _lastTimeSec = 0.0;
-                CompositionTarget.Rendering += OnRendering;
+        $csCandidates = @(
+            (Join-Path $PSScriptRoot "..\csharp\SmoothScrollController.cs"),
+            (Join-Path $PSScriptRoot "csharp\SmoothScrollController.cs")
+        )
+        foreach ($cand in $csCandidates) {
+            if (Test-Path -LiteralPath $cand) {
+                $wpfSmoothRefs = @(
+                    [System.Windows.Controls.ScrollViewer].Assembly.Location,
+                    [System.Windows.UIElement].Assembly.Location,
+                    [System.Windows.DependencyObject].Assembly.Location,
+                    [System.Windows.Markup.IQueryAmbient].Assembly.Location,
+                    [System.Diagnostics.Stopwatch].Assembly.Location,
+                    [System.Object].Assembly.Location
+                ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+                $smoothScrollCs = Get-Content -Raw -Encoding utf8 $cand
+                Add-Type -TypeDefinition $smoothScrollCs -ReferencedAssemblies $wpfSmoothRefs -ErrorAction SilentlyContinue
+                break
             }
         }
-
-        private void OnRendering(object sender, EventArgs e) {
-            if (!_sv.IsLoaded) {
-                StopAnimation();
-                return;
-            }
-
-            if (Math.Abs(_sv.VerticalOffset - _lastAppliedOffset) > 2.5) {
-                _currentOffset = _sv.VerticalOffset;
-                _targetOffset = _sv.VerticalOffset;
-                StopAnimation();
-                return;
-            }
-
-            double nowSec = _sw.Elapsed.TotalSeconds;
-            double dt = nowSec - _lastTimeSec;
-            _lastTimeSec = nowSec;
-            if (dt <= 0.0 || dt > 0.1) dt = 0.016;
-
-            double maxScroll = _sv.ScrollableHeight;
-            if (_targetOffset > maxScroll) _targetOffset = maxScroll;
-            if (_targetOffset < 0.0) _targetOffset = 0.0;
-
-            double diff = _targetOffset - _currentOffset;
-            if (Math.Abs(diff) < 0.25) {
-                _currentOffset = _targetOffset;
-                _lastAppliedOffset = _currentOffset;
-                _sv.ScrollToVerticalOffset(_currentOffset);
-                StopAnimation();
-                return;
-            }
-
-            double factor = 1.0 - Math.Exp(-17.0 * dt);
-            _currentOffset += diff * factor;
-            _lastAppliedOffset = _currentOffset;
-            _sv.ScrollToVerticalOffset(_currentOffset);
-        }
-
-        private void StopAnimation() {
-            if (_isAnimating) {
-                _isAnimating = false;
-                CompositionTarget.Rendering -= OnRendering;
-                _sw.Stop();
-            }
-        }
-    }
-}
-"@
-        Add-Type -TypeDefinition $smoothScrollCs -ReferencedAssemblies $wpfSmoothRefs -ErrorAction SilentlyContinue
     } catch {}
 }
 
 $appsScrollViewer = $window.FindName("AppsScrollViewer")
 if ($appsScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
     $script:smoothScrollCtrl = [DuckUtil.SmoothScrollController]::Attach($appsScrollViewer)
+}
+$uninstallerScrollViewer = $window.FindName("UninstallerScrollViewer")
+if ($uninstallerScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+    $script:uninstallerSmoothScrollCtrl = [DuckUtil.SmoothScrollController]::Attach($uninstallerScrollViewer)
 }
 
 try {
@@ -488,14 +399,17 @@ function Register-Click {
     }
 }
 
-$navBtnApps    = $window.FindName("navBtnApps")
-$navBtnRepair  = $window.FindName("navBtnRepair")
-$navBtnDrivers = $window.FindName("navBtnDrivers")
+$navBtnApps        = $window.FindName("navBtnApps")
+$navBtnUninstaller = $window.FindName("navBtnUninstaller")
+$navBtnRepair      = $window.FindName("navBtnRepair")
+$navBtnDrivers     = $window.FindName("navBtnDrivers")
+
+$script:uninstallerLoadedOnce = $false
 
 function Set-ActiveTab {
     param([int]$index, $activeBtn)
-    if ($script:LockMaintenanceTabs -and ($index -eq 1 -or $index -eq 2)) {
-        $feature = if ($index -eq 1) { "Gỡ lỗi & Hệ thống" } else { "Quản lý Driver" }
+    if ($script:LockMaintenanceTabs -and ($index -eq 2 -or $index -eq 3)) {
+        $feature = if ($index -eq 2) { "Gỡ lỗi & Hệ thống" } else { "Quản lý Driver" }
         Test-MaintenanceFeatureLocked $feature | Out-Null
         return
     }
@@ -503,7 +417,12 @@ function Set-ActiveTab {
         $MainTabControl.SelectedIndex = $index
     }
 
-    $buttons = @($navBtnApps, $navBtnRepair, $navBtnDrivers)
+    if ($index -eq 1 -and -not $script:uninstallerLoadedOnce) {
+        $script:uninstallerLoadedOnce = $true
+        Update-UninstallerList
+    }
+
+    $buttons = @($navBtnApps, $navBtnUninstaller, $navBtnRepair, $navBtnDrivers)
     foreach ($btn in $buttons) {
         if ($btn) {
             $btn.Foreground  = $script:brushNavInactive
@@ -517,11 +436,379 @@ function Set-ActiveTab {
     }
 }
 
-Register-Click "navBtnApps"    { Set-ActiveTab 0 $navBtnApps }
-Register-Click "navBtnRepair"  -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 1 $navBtnRepair }
-Register-Click "navBtnDrivers" -LockGroup "Quản lý Driver"    { Set-ActiveTab 2 $navBtnDrivers }
+Register-Click "navBtnApps"        { Set-ActiveTab 0 $navBtnApps }
+Register-Click "navBtnUninstaller" { Set-ActiveTab 1 $navBtnUninstaller }
+Register-Click "navBtnRepair"      -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 2 $navBtnRepair }
+Register-Click "navBtnDrivers"     -LockGroup "Quản lý Driver"    { Set-ActiveTab 3 $navBtnDrivers }
 
 Set-ActiveTab 0 $navBtnApps
+
+$btnDeepUninstall        = $window.FindName("btnDeepUninstall")
+$btnScanOrphans          = $window.FindName("btnScanOrphans")
+$btnRefreshUninstaller   = $window.FindName("btnRefreshUninstaller")
+$btnFilterUninstAll      = $window.FindName("btnFilterUninstAll")
+$btnFilterUninstBroken   = $window.FindName("btnFilterUninstBroken")
+$txtUninstallSearch      = $window.FindName("txtUninstallSearch")
+$btnClearUninstallSearch = $window.FindName("btnClearUninstallSearch")
+$btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
+$btnUninstallDeselectAll = $window.FindName("btnUninstallDeselectAll")
+$txtUninstallerSummary   = $window.FindName("txtUninstallerSummary")
+$uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
+
+$script:cachedUninstallerApps = @()
+$script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
+$script:uninstallerFilterMode = "All"
+
+function Update-UninstallerSelectionCount {
+    $count = 0
+    foreach ($entry in $script:uninstallerRowEntries) {
+        if ($entry.CheckBox -and $entry.CheckBox.IsChecked -eq $true) {
+            $count++
+        }
+    }
+    if ($btnDeepUninstall) {
+        $btnDeepUninstall.Content = "Gỡ Tận Gốc ($count)"
+        $btnDeepUninstall.IsEnabled = ($count -gt 0)
+    }
+}
+
+function Apply-UninstallerFilter {
+    $q = if ($txtUninstallSearch) { $txtUninstallSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $visibleCount = 0
+    $brokenCount = 0
+
+    foreach ($entry in $script:uninstallerRowEntries) {
+        $app = $entry.App
+        if ($app.IsBrokenOrphan) { $brokenCount++ }
+
+        $matchSearch = [string]::IsNullOrEmpty($q) -or $entry.SearchText.Contains($q)
+        $matchFilter = if ($script:uninstallerFilterMode -eq "Broken") { [bool]$app.IsBrokenOrphan } else { $true }
+
+        if ($matchSearch -and $matchFilter) {
+            $entry.Row.Visibility = [System.Windows.Visibility]::Visible
+            $visibleCount++
+        } else {
+            $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+
+    if ($txtUninstallerSummary) {
+        $total = $script:cachedUninstallerApps.Count
+        $txtUninstallerSummary.Text = "Đang hiển thị $visibleCount / $total ứng dụng ($brokenCount ứng dụng lỗi/mồ côi)"
+    }
+    Update-UninstallerSelectionCount
+}
+
+function Update-UninstallerList {
+    if (-not $uninstallerRowsPanel) { return }
+    if ($txtUninstallerSummary) { $txtUninstallerSummary.Text = "Đang quét danh sách ứng dụng đã cài..." }
+    [System.Windows.Forms.Application]::DoEvents()
+
+    if (Get-Command "Get-SystemInstalledAppsFast" -ErrorAction SilentlyContinue) {
+        $script:cachedUninstallerApps = @(Get-SystemInstalledAppsFast)
+    } else {
+        $script:cachedUninstallerApps = @()
+    }
+
+    $uninstallerRowsPanel.Children.Clear()
+    $script:uninstallerRowEntries.Clear()
+
+    foreach ($app in $script:cachedUninstallerApps) {
+        $rowBorder = New-Object System.Windows.Controls.Border
+        $rowBorder.Height = 34
+        $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $rowBorder.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
+        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+        $rowBorder.Background = $script:brushTransparent
+        $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
+
+        $rowGrid = New-Object System.Windows.Controls.Grid
+        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = New-Object System.Windows.GridLength(36, [System.Windows.GridUnitType]::Pixel)
+        $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = New-Object System.Windows.GridLength(120, [System.Windows.GridUnitType]::Pixel)
+        $c3 = New-Object System.Windows.Controls.ColumnDefinition; $c3.Width = New-Object System.Windows.GridLength(180, [System.Windows.GridUnitType]::Pixel)
+        $c4 = New-Object System.Windows.Controls.ColumnDefinition; $c4.Width = New-Object System.Windows.GridLength(95, [System.Windows.GridUnitType]::Pixel)
+        $c5 = New-Object System.Windows.Controls.ColumnDefinition; $c5.Width = New-Object System.Windows.GridLength(110, [System.Windows.GridUnitType]::Pixel)
+        $c6 = New-Object System.Windows.Controls.ColumnDefinition; $c6.Width = New-Object System.Windows.GridLength(44, [System.Windows.GridUnitType]::Pixel)
+
+        $rowGrid.ColumnDefinitions.Add($c0) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($c1) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($c2) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($c3) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($c4) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($c5) | Out-Null
+        $rowGrid.ColumnDefinitions.Add($c6) | Out-Null
+
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $cb.Margin = New-Object System.Windows.Thickness(2, 0, 0, 0)
+        $cb.Add_Checked({ Update-UninstallerSelectionCount })
+        $cb.Add_Unchecked({ Update-UninstallerSelectionCount })
+        [System.Windows.Controls.Grid]::SetColumn($cb, 0)
+        $rowGrid.Children.Add($cb) | Out-Null
+
+        $namePanel = New-Object System.Windows.Controls.StackPanel
+        $namePanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $namePanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $glyphTb = New-Object System.Windows.Controls.TextBlock
+        $glyphTb.Text = if ($app.IsBrokenOrphan) { [char]::ConvertFromUtf32(0x26A0) } else { [char]::ConvertFromUtf32(0x1F4E6) }
+        $glyphTb.FontSize = 11
+        $glyphTb.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+        $glyphTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $namePanel.Children.Add($glyphTb) | Out-Null
+
+        $nameTb = New-Object System.Windows.Controls.TextBlock
+        $nameTb.Text = $app.DisplayName
+        $nameTb.FontSize = 12
+        $nameTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $nameTb.Foreground = if ($app.IsBrokenOrphan) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FCA5A5") } else { $script:brushTextWhite }
+        $nameTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $namePanel.Children.Add($nameTb) | Out-Null
+
+        $rowTooltip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)`nLệnh gỡ: $($app.UninstallString)"
+        $rowBorder.ToolTip = $rowTooltip
+
+        [System.Windows.Controls.Grid]::SetColumn($namePanel, 1)
+        $rowGrid.Children.Add($namePanel) | Out-Null
+
+        $verTb = New-Object System.Windows.Controls.TextBlock
+        $verTb.Text = if ($app.DisplayVersion) { $app.DisplayVersion } else { "--" }
+        $verTb.FontSize = 11.5
+        $verTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+        $verTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $verTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $verTb.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        [System.Windows.Controls.Grid]::SetColumn($verTb, 2)
+        $rowGrid.Children.Add($verTb) | Out-Null
+
+        $pubTb = New-Object System.Windows.Controls.TextBlock
+        $pubTb.Text = if ($app.Publisher) { $app.Publisher } else { "--" }
+        $pubTb.FontSize = 11.5
+        $pubTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $pubTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $pubTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $pubTb.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        [System.Windows.Controls.Grid]::SetColumn($pubTb, 3)
+        $rowGrid.Children.Add($pubTb) | Out-Null
+
+        $sizeText = if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
+            $mb = [double]$app.SizeBytes / 1MB
+            if ($mb -ge 1024) { "{0:N2} GB" -f ($mb / 1024.0) } else { "{0:N1} MB" -f $mb }
+        } else {
+            "--"
+        }
+        $sizeTb = New-Object System.Windows.Controls.TextBlock
+        $sizeTb.Text = $sizeText
+        $sizeTb.FontSize = 11.5
+        $sizeTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+        $sizeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $sizeTb.TextAlignment = [System.Windows.TextAlignment]::Right
+        $sizeTb.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+        [System.Windows.Controls.Grid]::SetColumn($sizeTb, 4)
+        $rowGrid.Children.Add($sizeTb) | Out-Null
+
+        $statusBorder = New-Object System.Windows.Controls.Border
+        $statusBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
+        $statusBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
+        $statusBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $statusBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $statusTb = New-Object System.Windows.Controls.TextBlock
+        $statusTb.FontSize = 10.5
+        $statusTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+
+        if ($app.IsBrokenOrphan) {
+            $statusBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2D1215")
+            $statusBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E11D48")
+            $statusBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+            $statusTb.Text = "Xóa sai cách"
+            $statusTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+        } else {
+            $statusBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0C2518")
+            $statusBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#10B981")
+            $statusBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+            $statusTb.Text = "Bình thường"
+            $statusTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#34D399")
+        }
+        $statusBorder.Child = $statusTb
+        [System.Windows.Controls.Grid]::SetColumn($statusBorder, 5)
+        $rowGrid.Children.Add($statusBorder) | Out-Null
+
+        $folderBtn = New-Object System.Windows.Controls.Border
+        $folderBtn.Width = 24
+        $folderBtn.Height = 20
+        $folderBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
+        $folderBtn.Background = $script:brushLinkBtnBg
+        $folderBtn.BorderBrush = $script:brushLinkBtnBorder
+        $folderBtn.BorderThickness = New-Object System.Windows.Thickness(1)
+        $folderBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $folderBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $folderBtn.Cursor = [System.Windows.Input.Cursors]::Hand
+
+        $folderIcon = New-Object System.Windows.Controls.TextBlock
+        $folderIcon.Text = [char]::ConvertFromUtf32(0x1F4C1)
+        $folderIcon.FontSize = 10
+        $folderIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $folderIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $folderBtn.Child = $folderIcon
+
+        $hasLoc = (-not [string]::IsNullOrWhiteSpace($app.InstallLocation)) -and (Test-Path -LiteralPath $app.InstallLocation)
+        if ($hasLoc) {
+            $loc = $app.InstallLocation
+            $folderBtn.ToolTip = "Mở thư mục cài đặt: $loc"
+            $folderBtn.Add_MouseDown({
+                param($s, $e)
+                $e.Handled = $true
+                try { Start-Process "explorer.exe" "`"$loc`"" } catch {}
+            }.GetNewClosure())
+        } else {
+            $folderBtn.Opacity = 0.25
+            $folderBtn.Cursor = [System.Windows.Input.Cursors]::Arrow
+            $folderBtn.ToolTip = "Không tìm thấy thư mục cài đặt"
+        }
+        [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
+        $rowGrid.Children.Add($folderBtn) | Out-Null
+
+        $rowBorder.Child = $rowGrid
+
+        $rowBorder.Add_MouseEnter({
+            param($sender, $e)
+            $sender.Background = $script:brushRowHover
+        })
+        $rowBorder.Add_MouseLeave({
+            param($sender, $e)
+            $sender.Background = $script:brushTransparent
+        })
+        $rowBorder.Add_MouseLeftButtonUp({
+            param($sender, $e)
+            $cbRef = $sender.Tag.CheckBox
+            if ($cbRef) {
+                $cbRef.IsChecked = -not $cbRef.IsChecked
+            }
+        })
+
+        $entry = @{
+            Row = $rowBorder
+            App = $app
+            CheckBox = $cb
+            SearchText = "$($app.DisplayName) $($app.Publisher) $($app.DisplayVersion)".ToLowerInvariant()
+        }
+        $rowBorder.Tag = $entry
+        $script:uninstallerRowEntries.Add($entry)
+        $uninstallerRowsPanel.Children.Add($rowBorder) | Out-Null
+    }
+
+    Apply-UninstallerFilter
+}
+
+if ($btnFilterUninstAll) {
+    $btnFilterUninstAll.Add_Click({
+        $script:uninstallerFilterMode = "All"
+        $btnFilterUninstAll.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+        $btnFilterUninstAll.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+        $btnFilterUninstBroken.Background = $script:brushTransparent
+        $btnFilterUninstBroken.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        Apply-UninstallerFilter
+    })
+}
+
+if ($btnFilterUninstBroken) {
+    $btnFilterUninstBroken.Add_Click({
+        $script:uninstallerFilterMode = "Broken"
+        $btnFilterUninstBroken.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2D1215")
+        $btnFilterUninstBroken.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+        $btnFilterUninstAll.Background = $script:brushTransparent
+        $btnFilterUninstAll.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        Apply-UninstallerFilter
+    })
+}
+
+if ($txtUninstallSearch) {
+    $txtUninstallSearch.Add_TextChanged({
+        Apply-UninstallerFilter
+    })
+}
+
+if ($btnClearUninstallSearch) {
+    $btnClearUninstallSearch.Add_Click({
+        if ($txtUninstallSearch) { $txtUninstallSearch.Text = "" }
+        Apply-UninstallerFilter
+    })
+}
+
+if ($btnUninstallSelectAll) {
+    $btnUninstallSelectAll.Add_Click({
+        foreach ($entry in $script:uninstallerRowEntries) {
+            if ($entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $entry.CheckBox.IsChecked = $true
+            }
+        }
+        Update-UninstallerSelectionCount
+    })
+}
+
+if ($btnUninstallDeselectAll) {
+    $btnUninstallDeselectAll.Add_Click({
+        foreach ($entry in $script:uninstallerRowEntries) {
+            $entry.CheckBox.IsChecked = $false
+        }
+        Update-UninstallerSelectionCount
+    })
+}
+
+if ($btnRefreshUninstaller) {
+    $btnRefreshUninstaller.Add_Click({
+        Update-UninstallerList
+    })
+}
+
+if ($btnDeepUninstall) {
+    $btnDeepUninstall.Add_Click({
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        if ($selectedItems.Count -eq 0) { return }
+
+        $confirm = [System.Windows.Forms.MessageBox]::Show(
+            "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?",
+            "Xác nhận Gỡ Tận Gốc",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
+        foreach ($item in $selectedItems) {
+            if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
+                Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window
+            }
+        }
+        Update-UninstallerList
+    })
+}
+
+if ($btnScanOrphans) {
+    $btnScanOrphans.Add_Click({
+        if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
+            $orphans = @(Find-SystemOrphanLeftovers -InstalledApps $script:cachedUninstallerApps -CatalogApps $AppCatalog)
+            if ($orphans.Count -eq 0) {
+                [System.Windows.Forms.MessageBox]::Show(
+                    "Không phát hiện tệp tin rác hoặc ứng dụng nào bị xóa sai cách trên hệ thống!",
+                    "Quét Rác Tồn Dư",
+                    [System.Windows.Forms.MessageBoxButtons]::OK,
+                    [System.Windows.Forms.MessageBoxIcon]::Information
+                ) | Out-Null
+            } else {
+                if (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue) {
+                    Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Quét Rác Tồn Dư & App Xóa Sai Cách"
+                }
+                Update-UninstallerList
+            }
+        }
+    })
+}
 
 function Expand-TerminalLog {
 }
@@ -1131,8 +1418,8 @@ Register-Click "btnInstall" {
     }
 }
 
-Register-Click "btnUninstall" {
-    Invoke-GuardedAction "Gỡ cài đặt" -DeferExpand {
+Register-Click "btnUpgradeSelected" {
+    Invoke-GuardedAction "Nâng cấp đã chọn" -DeferExpand {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -1142,48 +1429,41 @@ Register-Click "btnUninstall" {
 
         if ($selectedTags.Count -eq 0) {
             Expand-TerminalLog
-            Log-Text "[!] Bạn chưa chọn ứng dụng nào để gỡ cài đặt!"
+            Log-Text "[!] Bạn chưa chọn ứng dụng nào để nâng cấp!"
             return
         }
-
-        $confirm = [System.Windows.Forms.MessageBox]::Show(
-            "Bạn có chắc chắn muốn gỡ bỏ $($selectedTags.Count) ứng dụng đã chọn?",
-            "Xác nhận gỡ cài đặt",
-            [System.Windows.Forms.MessageBoxButtons]::YesNo,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes) { return }
 
         Expand-TerminalLog
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
-        Log-Text "[UNINSTALL] BẮT ĐẦU GỠ CÀI ĐẶT $total ỨNG DỤNG ĐÃ CHỌN"
+        Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP $total ỨNG DỤNG ĐÃ CHỌN"
         Log-Text "=========================================================="
 
-        foreach ($tag in $selectedTags) {
-            $idx++
-            $app = $tag.App
-            $uninstallId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
+        try {
+            foreach ($tag in $selectedTags) {
+                $idx++
+                $app = $tag.App
+                $upgradeId = if ($tag.DetectedId) { $tag.DetectedId } else { $app.ID }
 
-            if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-            if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang gỡ bỏ: $($app.Name)..." }
-            Log-Text "[$idx/$total] Đang gỡ: $($app.Name) (Mã gỡ: $uninstallId)..."
+                if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
+                Log-Text "[$idx/$total] Đang nâng cấp: $($app.Name) (Mã nâng cấp: $upgradeId)..."
 
-            $unArgs = "uninstall --id `"$uninstallId`" --silent --accept-source-agreements"
-            if ($app.Source -eq "msstore" -and $uninstallId -eq $app.ID) {
-                $unArgs += " --source msstore"
+                $upArgs = "upgrade --id `"$upgradeId`" --silent --accept-package-agreements --accept-source-agreements"
+                $code = Run-CliStream "winget" $upArgs
+                if ($code -eq 0) {
+                    Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($app.Name)"
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                } else {
+                    Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($app.Name) (Exit Code: $code)"
+                }
             }
-            $code = Run-CliStream "winget" $unArgs
-            if ($code -eq 0) {
-                Log-Text "   [OK - ĐÃ GỠ THÀNH CÔNG] $($app.Name)"
-                if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-            } else {
-                Log-Text "   [ERR - LỖI GỠ] $($app.Name) (Exit Code: $code)"
-            }
+        } finally {
+            Clear-WinGetTempInstallers
         }
         Update-SelectionCount
-        if ($txtStatus) { $txtStatus.Text = "Gỡ cài đặt hoàn tất!" }
+        if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
         if ($progressBar) { $progressBar.Value = 100 }
         Scan-And-ColorizeApps
     }

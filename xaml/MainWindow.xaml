@@ -275,6 +275,30 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="FilterTabButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="filterBorder" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -289,6 +313,7 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
+                    <Button Name="navBtnUninstaller" Content="Gỡ cài đặt" Style="{StaticResource NavTabButton}"/>
                     <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
                             IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
                     <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
@@ -330,10 +355,10 @@
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                                     <Button Name="btnInstall" Content="Install Selected" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="15,7"/>
+                                    <Button Name="btnUpgradeSelected" Content="Upgrade Selected" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#A78BFA" BorderBrush="#2E234E"/>
                                     <Button Name="btnUpgradeAll" Content="Upgrade All" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#3B311B"/>
-                                    <Button Name="btnUninstall" Content="Uninstall Selected" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#F87171" BorderBrush="#3E2027"/>
                                     <Button Name="btnScanInstalled" Content="Get Installed" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#1D3652"/>
                                 </StackPanel>
@@ -376,6 +401,100 @@
                             <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
                             <StackPanel Grid.Column="3" Name="CardsCol3" Margin="4,0"/>
                         </Grid>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <TabItem>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="#0D121B" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Name="btnDeepUninstall" Content="Gỡ Tận Gốc (0)" Style="{StaticResource ActionButton}"
+                                        Background="#991B1B" Foreground="#FEE2E2" Padding="14,8"/>
+                                <Button Name="btnScanOrphans" Content="Quét App Xóa Sai Cách" Style="{StaticResource ActionButton}"
+                                        Background="#0284C7" Foreground="#E0F2FE" Padding="14,8"/>
+                                <Button Name="btnRefreshUninstaller" Content="Làm mới" Style="{StaticResource SecondaryButton}"
+                                        Background="#1E293B" Foreground="#93C5FD" Padding="12,8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
+                                                Background="#1E293B" Foreground="#38BDF8"/>
+                                        <Button Name="btnFilterUninstBroken" Content="Xóa sai cách / Lỗi" Style="{StaticResource FilterTabButton}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#101520" CornerRadius="6" BorderBrush="#1E283A" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
+                                    <Grid Width="220">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="🔍" Foreground="#475569" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                                        <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
+                                                 ToolTip="Tìm kiếm theo tên ứng dụng, nhà phát hành hoặc phiên bản..."/>
+                                        <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="✕" Background="Transparent" Foreground="#64748B"
+                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="Xóa bộ lọc"/>
+                                    </Grid>
+                                </Border>
+                                <Button Name="btnUninstallSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                <Button Name="btnUninstallDeselectAll" Content="Clear" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Background="#090D14" Padding="16,7" BorderBrush="#141B26" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Name="txtUninstallerSummary" Text="Chưa tải danh sách"
+                                       Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+
+                            <Grid Grid.Column="1" Margin="14,0,14,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="95"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="44"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="1" Text="TÊN ỨNG DỤNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0"/>
+                                <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0"/>
+                                <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0"/>
+                                <TextBlock Grid.Column="4" Text="DUNG LƯỢNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="6" Text="THƯ MỤC" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Center"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                        <StackPanel Name="UninstallerRowsPanel" Margin="14,6,14,14"/>
                     </ScrollViewer>
                 </Grid>
             </TabItem>

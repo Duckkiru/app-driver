@@ -7,6 +7,8 @@ $startCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1
 $appsJson = Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json")
 $xamlCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml")
 $mainCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1")
+$smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothScrollController.cs")
+$deepCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\DeepUninstallerEngine.cs")
 
 $sb = [System.Text.StringBuilder]::new()
 
@@ -24,6 +26,34 @@ $dq = [char]34
 $sb.AppendLine(('[xml]$XAML = @' + $dq)) | Out-Null
 $sb.AppendLine($xamlCode.Trim()) | Out-Null
 $sb.AppendLine(($dq + '@')) | Out-Null
+$sb.AppendLine() | Out-Null
+
+$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type])) {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine('        $wpfSmoothRefs = @(') | Out-Null
+$sb.AppendLine('            [System.Windows.Controls.ScrollViewer].Assembly.Location,') | Out-Null
+$sb.AppendLine('            [System.Windows.UIElement].Assembly.Location,') | Out-Null
+$sb.AppendLine('            [System.Windows.DependencyObject].Assembly.Location,') | Out-Null
+$sb.AppendLine('            [System.Windows.Markup.IQueryAmbient].Assembly.Location,') | Out-Null
+$sb.AppendLine('            [System.Diagnostics.Stopwatch].Assembly.Location,') | Out-Null
+$sb.AppendLine('            [System.Object].Assembly.Location') | Out-Null
+$sb.AppendLine('        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique') | Out-Null
+$sb.AppendLine(('        $smoothScrollCs = @' + $q)) | Out-Null
+$sb.AppendLine($smoothCsCode.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('        Add-Type -TypeDefinition $smoothScrollCs -ReferencedAssemblies $wpfSmoothRefs -ErrorAction SilentlyContinue') | Out-Null
+$sb.AppendLine('    } catch {}') | Out-Null
+$sb.AppendLine('}') | Out-Null
+$sb.AppendLine() | Out-Null
+
+$sb.AppendLine('if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine(('        $deepUninstCs = @' + $q)) | Out-Null
+$sb.AppendLine($deepCsCode.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('        Add-Type -TypeDefinition $deepUninstCs -ErrorAction SilentlyContinue') | Out-Null
+$sb.AppendLine('    } catch {}') | Out-Null
+$sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
 
 $fnDirs = @("functions\private", "functions\public")
