@@ -1,4 +1,4 @@
-# ── KHỞI TẠO CÁC CONTROL TỪ XAML ──
+﻿# ── KHỞI TẠO CÁC CONTROL TỪ XAML ──
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
@@ -1541,10 +1541,16 @@ $window.Add_ContentRendered({
     }
 })
 $window.Add_Closed({
+    $script:isWindowClosing = $true
     try {
         if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() }
+        Stop-ActiveChildProcess
         Flush-PendingIconCache
     } catch {}
 })
 
 $window.ShowDialog() | Out-Null
+if (-not $script:SkipHostExit) {
+    Stop-ActiveChildProcess
+    [Environment]::Exit(0)
+}

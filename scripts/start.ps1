@@ -116,7 +116,7 @@ if (-not $isAdmin) {
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
             $elevationSuccess = $true
-            exit
+            [Environment]::Exit(0)
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
@@ -141,7 +141,7 @@ if (-not $isAdmin) {
             }
             Start-Process @startParams
             $elevationSuccess = $true
-            exit
+            [Environment]::Exit(0)
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
@@ -163,7 +163,7 @@ if (-not $isAdmin) {
                     }
                     Start-Process @fallbackParams
                     $elevationSuccess = $true
-                    exit
+                    [Environment]::Exit(0)
                 } catch {
                     if (Test-UacCancelled $_) {
                         Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow

@@ -116,7 +116,7 @@ if (-not $isAdmin) {
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
             $elevationSuccess = $true
-            exit
+            [Environment]::Exit(0)
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
@@ -141,7 +141,7 @@ if (-not $isAdmin) {
             }
             Start-Process @startParams
             $elevationSuccess = $true
-            exit
+            [Environment]::Exit(0)
         } catch {
             if (Test-UacCancelled $_) {
                 Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
@@ -163,7 +163,7 @@ if (-not $isAdmin) {
                     }
                     Start-Process @fallbackParams
                     $elevationSuccess = $true
-                    exit
+                    [Environment]::Exit(0)
                 } catch {
                     if (Test-UacCancelled $_) {
                         Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
@@ -4602,6 +4602,17 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 # 5. MODULES & FUNCTIONS
 # ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (KHÔNG ICON/EMOJI) ──
 
+$script:activeChildProcess = $null
+$script:isWindowClosing    = $false
+
+function Stop-ActiveChildProcess {
+    try {
+        if ($script:activeChildProcess -and -not $script:activeChildProcess.HasExited) {
+            $script:activeChildProcess.Kill()
+        }
+    } catch {}
+}
+
 function Log-Text {
     param([string]$text)
     if ([string]::IsNullOrWhiteSpace($text)) { return }
@@ -4678,16 +4689,25 @@ function Run-CliStream {
             return -1
         }
 
-        while (-not $p.HasExited) {
-            [System.Windows.Forms.Application]::DoEvents()
-            Start-Sleep -Milliseconds 25
-        }
+        $script:activeChildProcess = $p
+        try {
+            while (-not $p.HasExited) {
+                if ($script:isWindowClosing) {
+                    Stop-ActiveChildProcess
+                    break
+                }
+                [System.Windows.Forms.Application]::DoEvents()
+                Start-Sleep -Milliseconds 25
+            }
 
-        try { [void]$p.WaitForExit(1000) } catch {}
-        [System.Windows.Forms.Application]::DoEvents()
-        $exitCode = $p.ExitCode
-        try { $p.Dispose() } catch {}
-        return $exitCode
+            try { [void]$p.WaitForExit(1000) } catch {}
+            [System.Windows.Forms.Application]::DoEvents()
+            $exitCode = $p.ExitCode
+            return $exitCode
+        } finally {
+            $script:activeChildProcess = $null
+            try { $p.Dispose() } catch {}
+        }
     } catch {
         Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Args]: $($_.Exception.Message)"
         return -1
@@ -7253,10 +7273,16 @@ $window.Add_ContentRendered({
     }
 })
 $window.Add_Closed({
+    $script:isWindowClosing = $true
     try {
         if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() }
+        Stop-ActiveChildProcess
         Flush-PendingIconCache
     } catch {}
 })
 
 $window.ShowDialog() | Out-Null
+if (-not $script:SkipHostExit) {
+    Stop-ActiveChildProcess
+    [Environment]::Exit(0)
+}
