@@ -287,7 +287,6 @@
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="Auto" Name="rowDefTerminal"/>  <!-- Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
@@ -565,38 +564,6 @@
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                              Name="progressBar" Height="2" Margin="0,5,0,1"
                              Background="#141C2B" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
-            </Grid>
-        </Border>
-
-        <!-- ═══ 4. TERMINAL LOG (THU GỌN MẶC ĐỊNH) ═══ -->
-        <Border Grid.Row="3" Background="#080B12" Padding="16,6" BorderBrush="#151C29" BorderThickness="0,1,0,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&gt;_" FontSize="10.5" FontWeight="Bold" Foreground="#38BDF8"
-                                   FontFamily="Cascadia Mono, Consolas, monospace" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"
-                                   FontFamily="Cascadia Mono, Consolas, monospace" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="btnToggleTerminal" Content="▲ Mở rộng"
-                                Background="#111722" BorderBrush="#1F293B" BorderThickness="1"
-                                Foreground="#34D399" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
-                                Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
-                        <Button Name="btnClearLog" Content="Xóa Log"
-                                Background="Transparent" Foreground="#64748B" BorderThickness="0"
-                                Cursor="Hand" FontSize="11" Padding="6,2"/>
-                    </StackPanel>
-                </Grid>
-                <TextBox Grid.Row="1" Name="txtLog" Visibility="Collapsed" Margin="0,6,0,0" Background="Transparent" Foreground="#34D399"
-                         FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
-                         IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
-                         BorderThickness="0" CaretBrush="#38BDF8"
-                         Text="[App-Driver] Khởi tạo thành công.&#x0d;&#x0a;"/>
             </Grid>
         </Border>
     </Grid>

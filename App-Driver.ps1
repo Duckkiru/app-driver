@@ -192,11 +192,22 @@ try {
 
 if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     try {
-        $Host.UI.RawUI.WindowTitle = "App-Driver — Windows Software & Driver Suite"
+        $Host.UI.RawUI.WindowTitle = "App-Driver — Terminal Console (Live Execution)"
     } catch {
         # Bỏ qua nếu host không hỗ trợ đổi tiêu đề
     }
 }
+
+try { Clear-Host } catch {}
+Write-Host "==========================================================================" -ForegroundColor Cyan
+Write-Host "   ___                ____       _                " -ForegroundColor Cyan
+Write-Host "  / _ | ___  ___ ____/ __ \____ (_)  _____ ____   " -ForegroundColor Cyan
+Write-Host " / __ |/ _ \/ _ \___/ /_/ / __/ / | / / -_) __/   " -ForegroundColor Cyan
+Write-Host "/_/ |_/ .__/ .__/  /_____/_/ /_/|___/\__/_/      " -ForegroundColor Cyan
+Write-Host "     /_/  /_/      Windows Software & Driver Suite" -ForegroundColor DarkCyan
+Write-Host "==========================================================================" -ForegroundColor Cyan
+Write-Host "[*] Cửa sổ Terminal này hiển thị trực tiếp các lệnh thực thi & thanh tiến trình (như WinUtil)." -ForegroundColor Gray
+Write-Host "[!] Vui lòng KHÔNG đóng cửa sổ Terminal này khi đang sử dụng giao diện App-Driver.`n" -ForegroundColor Yellow
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -4306,7 +4317,6 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <RowDefinition Height="Auto"/> <!-- Main Nav Tab Bar -->
             <RowDefinition Height="*"/>    <!-- Main Viewport -->
             <RowDefinition Height="Auto"/> <!-- Status & Progress Bar -->
-            <RowDefinition Height="Auto" Name="rowDefTerminal"/>  <!-- Terminal Log -->
         </Grid.RowDefinitions>
 
         <!-- ═══ 1. MAIN NAV TAB BAR ═══ -->
@@ -4586,71 +4596,49 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                              Background="#141C2B" Foreground="#0EA5E9" BorderThickness="0" Value="0"/>
             </Grid>
         </Border>
-
-        <!-- ═══ 4. TERMINAL LOG (THU GỌN MẶC ĐỊNH) ═══ -->
-        <Border Grid.Row="3" Background="#080B12" Padding="16,6" BorderBrush="#151C29" BorderThickness="0,1,0,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&gt;_" FontSize="10.5" FontWeight="Bold" Foreground="#38BDF8"
-                                   FontFamily="Cascadia Mono, Consolas, monospace" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="TERMINAL LOG" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"
-                                   FontFamily="Cascadia Mono, Consolas, monospace" VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="btnToggleTerminal" Content="▲ Mở rộng"
-                                Background="#111722" BorderBrush="#1F293B" BorderThickness="1"
-                                Foreground="#34D399" Cursor="Hand" FontSize="11" FontWeight="SemiBold"
-                                Padding="8,2" Margin="0,0,8,0" ToolTip="Ẩn / Hiện khung Terminal Log"/>
-                        <Button Name="btnClearLog" Content="Xóa Log"
-                                Background="Transparent" Foreground="#64748B" BorderThickness="0"
-                                Cursor="Hand" FontSize="11" Padding="6,2"/>
-                    </StackPanel>
-                </Grid>
-                <TextBox Grid.Row="1" Name="txtLog" Visibility="Collapsed" Margin="0,6,0,0" Background="Transparent" Foreground="#34D399"
-                         FontFamily="Cascadia Mono, Cascadia Code, Consolas, Courier New" FontSize="11"
-                         IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
-                         BorderThickness="0" CaretBrush="#38BDF8"
-                         Text="[App-Driver] Khởi tạo thành công.&#x0d;&#x0a;"/>
-            </Grid>
-        </Border>
     </Grid>
 </Window>
 "@
 
 # 5. MODULES & FUNCTIONS
-# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG VÀO TERMINAL ──
+# ── FUNCTION: THỰC THI TIẾN TRÌNH & STREAM LOG TRỰC TIẾP RA CỬA SỔ TERMINAL (CHUẨN WINUTIL) ──
 
 function Log-Text {
     param([string]$text)
     if ([string]::IsNullOrWhiteSpace($text)) { return }
-    $logBox = if ($txtLog) { $txtLog } elseif ($txtTerminal) { $txtTerminal } else { $null }
-    if ($logBox) {
-        # Loại bỏ các mã màu ANSI escape code nếu có
-        $clean = $text -replace '\x1B\[[0-9;]*[a-zA-Z]', ''
-        # Xử lý ký tự carriage return (\r) trên các thanh tiến trình CLI
-        if ($clean.Contains("`r")) {
-            $parts = $clean -split "`r"
-            $clean = $parts[-1]
-        }
-        $trimmed = $clean.TrimEnd("`r", "`n")
-        if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-        # Giới hạn kích thước log để bảo vệ bộ nhớ và chống giật lag UI khi chạy lâu
-        if ($logBox.LineCount -gt 1500) {
-            $allLines = $logBox.Text -split "`r?`n"
-            if ($allLines.Count -gt 600) {
-                $logBox.Text = ($allLines[($allLines.Count - 600)..($allLines.Count - 1)] -join "`r`n") + "`r`n"
-            }
-        }
+    # Loại bỏ các mã màu ANSI escape code nếu có
+    $clean = $text -replace '\x1B\[[0-9;]*[a-zA-Z]', ''
+    if ($clean.Contains("`r")) {
+        $parts = $clean -split "`r"
+        $clean = $parts[-1]
+    }
+    $trimmed = $clean.TrimEnd("`r", "`n")
+    if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-        $timestamp = (Get-Date).ToString("HH:mm:ss")
-        $logBox.AppendText("[$timestamp] $trimmed`r`n")
-        $logBox.ScrollToEnd()
+    $timestamp = (Get-Date).ToString("HH:mm:ss")
+    $color = [System.ConsoleColor]::Gray
+
+    if ($trimmed -match '^={4,}|^─{4,}|^\s*─{4,}') {
+        $color = [System.ConsoleColor]::DarkCyan
+    } elseif ($trimmed -match '\[✓|HOÀN THÀNH|THÀNH CÔNG') {
+        $color = [System.ConsoleColor]::Green
+    } elseif ($trimmed -match '\[❌|\[x\]|LỖI') {
+        $color = [System.ConsoleColor]::Red
+    } elseif ($trimmed -match '\[!\]|\[⚠️\]|\[LOCK\]') {
+        $color = [System.ConsoleColor]::Yellow
+    } elseif ($trimmed -match '🚀|⚡|🗑️|🔍|\[🔍\]') {
+        $color = [System.ConsoleColor]::Cyan
+    } elseif ($trimmed -match '\[CLEAN\]') {
+        $color = [System.ConsoleColor]::Magenta
+    } elseif ($trimmed -match '^\[\d+/\d+\]') {
+        $color = [System.ConsoleColor]::White
+    }
+
+    try {
+        Write-Host "[$timestamp] $trimmed" -ForegroundColor $color
+    } catch {
+        [Console]::WriteLine("[$timestamp] $trimmed")
     }
 }
 
@@ -4663,31 +4651,20 @@ function Run-CliStream {
     )
 
     try {
+        $timestamp = (Get-Date).ToString("HH:mm:ss")
+        try {
+            Write-Host "[$timestamp] ❯ $FileName $Args" -ForegroundColor DarkGray
+        } catch {}
+
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = $FileName
         $pinfo.Arguments = $Args
-        $pinfo.RedirectStandardOutput = $true
-        $pinfo.RedirectStandardError = $true
-
-        # Nhận diện bảng mã luồng phù hợp cho từng công cụ để chống lỗi font (mojibake)
-        # sfc.exe xuất Unicode (UTF-16LE), winget xuất UTF-8, các lệnh hệ thống khác dùng Console OEM/Default
-        $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName).ToLowerInvariant()
-        $streamEncoding = switch ($baseName) {
-            "sfc"    { [System.Text.Encoding]::Unicode }
-            "winget" { [System.Text.Encoding]::UTF8 }
-            default  {
-                if ([System.Console]::OutputEncoding) {
-                    [System.Console]::OutputEncoding
-                } else {
-                    [System.Text.Encoding]::Default
-                }
-            }
-        }
-
-        $pinfo.StandardOutputEncoding = $streamEncoding
-        $pinfo.StandardErrorEncoding  = $streamEncoding
+        # Kế thừa trực tiếp Console Handle của cửa sổ Terminal chạy nền (như WinUtil)
+        # Giúp hiển thị 100% thanh tiến trình thực (progress bar) và màu sắc gốc của WinGet / DISM / SFC
         $pinfo.UseShellExecute = $false
-        $pinfo.CreateNoWindow = $true
+        $pinfo.CreateNoWindow = $false
+        $pinfo.RedirectStandardOutput = $false
+        $pinfo.RedirectStandardError = $false
 
         $p = [System.Diagnostics.Process]::Start($pinfo)
         if ($null -eq $p) {
@@ -4695,59 +4672,9 @@ function Run-CliStream {
             return -1
         }
 
-        # Đọc bất đồng bộ đồng thời 2 luồng stdout và stderr để triệt tiêu nguy cơ treo luồng (deadlock)
-        $outTask = $p.StandardOutput.ReadLineAsync()
-        $errTask = $p.StandardError.ReadLineAsync()
-        $lastEventTime = [System.DateTime]::UtcNow
-        $exitWaitStart = $null
-
-        while ($true) {
-            $hasData = $false
-
-            if ($outTask -ne $null -and $outTask.IsCompleted) {
-                $line = $outTask.Result
-                if ($line -ne $null) {
-                    Log-Text $line
-                    $outTask = $p.StandardOutput.ReadLineAsync()
-                    $hasData = $true
-                } else {
-                    $outTask = $null
-                }
-            }
-
-            if ($errTask -ne $null -and $errTask.IsCompleted) {
-                $errLine = $errTask.Result
-                if ($errLine -ne $null) {
-                    Log-Text $errLine
-                    $errTask = $p.StandardError.ReadLineAsync()
-                    $hasData = $true
-                } else {
-                    $errTask = $null
-                }
-            }
-
-            if ($p.HasExited) {
-                if ($outTask -eq $null -and $errTask -eq $null) {
-                    break
-                }
-                # Tránh deadlock vĩnh viễn nếu tiến trình con phân nhánh giữ handle pipe mở
-                if ($null -eq $exitWaitStart) {
-                    $exitWaitStart = [System.DateTime]::UtcNow
-                } elseif (([System.DateTime]::UtcNow - $exitWaitStart).TotalSeconds -ge 5) {
-                    break
-                }
-            }
-
-            # Bơm thông điệp giao diện WPF/WinForms có điều tiết (throttling) để tối ưu hiệu năng render
-            $now = [System.DateTime]::UtcNow
-            if (($now - $lastEventTime).TotalMilliseconds -ge 25 -or $hasData) {
-                [System.Windows.Forms.Application]::DoEvents()
-                $lastEventTime = $now
-            }
-
-            if (-not $hasData) {
-                Start-Sleep -Milliseconds 20
-            }
+        while (-not $p.HasExited) {
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 25
         }
 
         try { [void]$p.WaitForExit(1000) } catch {}
@@ -5797,11 +5724,8 @@ try {
 $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
 $progressBar       = $window.FindName("progressBar")
-$txtLog            = $window.FindName("txtLog")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
-$rowDefTerminal    = $window.FindName("rowDefTerminal")
-$btnToggleTerminal = $window.FindName("btnToggleTerminal")
 
 # Bảng màu Frozen Brush tĩnh tái sử dụng tối đa, loại trừ cấp phát bộ nhớ rác (GC)
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
@@ -6326,33 +6250,9 @@ Register-Click "navBtnDrivers" -LockGroup "Quản lý Driver"    { Set-ActiveTab
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
 
-# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MẶC ĐỊNH THU GỌN KHI KHỞI CHẠY) ──
-$script:isTerminalCollapsed = $true
-
+# ── CỬA SỔ TERMINAL CHẠY NỀN RIÊNG BIỆT (CHUẨN WINUTIL) ──
 function Expand-TerminalLog {
-    if ($script:isTerminalCollapsed -and $btnToggleTerminal -and $rowDefTerminal) {
-        $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
-        if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
-        $btnToggleTerminal.Content = "▼ Thu gọn"
-        $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
-        $script:isTerminalCollapsed = $false
-    }
-}
-
-if ($btnToggleTerminal -and $rowDefTerminal) {
-    $btnToggleTerminal.Add_Click({
-        if ($script:isTerminalCollapsed) {
-            # Mở rộng lại 150px
-            Expand-TerminalLog
-        } else {
-            # Thu gọn (chỉ giữ thanh tiêu đề)
-            $rowDefTerminal.Height = [System.Windows.GridLength]::Auto
-            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Collapsed }
-            $btnToggleTerminal.Content = "▲ Mở rộng"
-            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
-            $script:isTerminalCollapsed = $true
-        }
-    })
+    # Terminal Log hiện được tách sang cửa sổ Console chạy nền riêng biệt
 }
 
 # Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
@@ -7072,10 +6972,6 @@ Register-Click "btnDeselectAll" {
     Clear-AllCheckBoxes
 }
 
-Register-Click "btnClearLog" {
-    if ($txtLog) { $txtLog.Clear() }
-}
-
 # ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
 Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "SFC Scan" {
@@ -7336,6 +7232,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
+        Log-Text "[✓] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
         }

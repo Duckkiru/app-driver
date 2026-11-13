@@ -18,11 +18,8 @@ try {
 $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
 $progressBar       = $window.FindName("progressBar")
-$txtLog            = $window.FindName("txtLog")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
-$rowDefTerminal    = $window.FindName("rowDefTerminal")
-$btnToggleTerminal = $window.FindName("btnToggleTerminal")
 
 # Bảng màu Frozen Brush tĩnh tái sử dụng tối đa, loại trừ cấp phát bộ nhớ rác (GC)
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
@@ -547,33 +544,9 @@ Register-Click "navBtnDrivers" -LockGroup "Quản lý Driver"    { Set-ActiveTab
 # Đồng bộ trạng thái tab khởi tạo ban đầu (Section 3.4)
 Set-ActiveTab 0 $navBtnApps
 
-# ── LOGIC THU GỌN / MỞ RỘNG TERMINAL LOG (MẶC ĐỊNH THU GỌN KHI KHỞI CHẠY) ──
-$script:isTerminalCollapsed = $true
-
+# ── CỬA SỔ TERMINAL CHẠY NỀN RIÊNG BIỆT (CHUẨN WINUTIL) ──
 function Expand-TerminalLog {
-    if ($script:isTerminalCollapsed -and $btnToggleTerminal -and $rowDefTerminal) {
-        $rowDefTerminal.Height = New-Object System.Windows.GridLength(150, [System.Windows.GridUnitType]::Pixel)
-        if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Visible }
-        $btnToggleTerminal.Content = "▼ Thu gọn"
-        $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8))
-        $script:isTerminalCollapsed = $false
-    }
-}
-
-if ($btnToggleTerminal -and $rowDefTerminal) {
-    $btnToggleTerminal.Add_Click({
-        if ($script:isTerminalCollapsed) {
-            # Mở rộng lại 150px
-            Expand-TerminalLog
-        } else {
-            # Thu gọn (chỉ giữ thanh tiêu đề)
-            $rowDefTerminal.Height = [System.Windows.GridLength]::Auto
-            if ($txtLog) { $txtLog.Visibility = [System.Windows.Visibility]::Collapsed }
-            $btnToggleTerminal.Content = "▲ Mở rộng"
-            $btnToggleTerminal.Foreground = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
-            $script:isTerminalCollapsed = $true
-        }
-    })
+    # Terminal Log hiện được tách sang cửa sổ Console chạy nền riêng biệt
 }
 
 # Hàm ánh xạ icon emoji/glyph đặc trưng cho ứng dụng và danh mục (hiển thị tức thì 0ms, không bao giờ bị khuyết icon)
@@ -1293,10 +1266,6 @@ Register-Click "btnDeselectAll" {
     Clear-AllCheckBoxes
 }
 
-Register-Click "btnClearLog" {
-    if ($txtLog) { $txtLog.Clear() }
-}
-
 # ── LOGIC MODULE SỬA LỖI HỆ THỐNG (SYSTEM REPAIRS) ──
 Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "SFC Scan" {
@@ -1557,6 +1526,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup) {
         $script:autoScannedOnStartup = $true
+        Log-Text "[✓] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
         }
