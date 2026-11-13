@@ -148,6 +148,19 @@ function Test-MatchCompatible {
     $iCli = ($iName -match '\bCLI\b') -or ($iId -match '(\.cli|CLI)$')
     if ($tCli -ne $iCli) { return $false }
 
+    # Chặn khớp chéo giữa Visual Studio IDE, Visual Studio Build Tools và VS Code, cũng như Everything vs EverythingToolbar
+    $tBt = ($tName -match 'Build Tools') -or ($tId -match 'BuildTools')
+    $iBt = ($iName -match 'Build Tools') -or ($iId -match 'BuildTools')
+    if ($tBt -ne $iBt) { return $false }
+
+    $tVsc = ($tId -match 'VisualStudioCode') -or ($tName -match 'VS Code|Visual Studio Code')
+    $iVsc = ($iId -match 'VisualStudioCode') -or ($iName -match 'VS Code|Visual Studio Code')
+    if ($tVsc -ne $iVsc -and ($tId -match 'VisualStudio' -or $iId -match 'VisualStudio')) { return $false }
+
+    $tEtb = ($tId -match 'EverythingToolbar') -or ($tName -match 'EverythingToolbar')
+    $iEtb = ($iId -match 'EverythingToolbar') -or ($iName -match 'EverythingToolbar')
+    if ($tEtb -ne $iEtb) { return $false }
+
     # Chặn khớp chéo giữa các nhà phân phối Java khác nhau (Temurin vs Oracle vs Corretto)
     if ($tId -match 'Temurin' -and ($iId -match 'Oracle|Corretto' -or $iName -match 'Corretto|^Java \d+ Update')) { return $false }
     if ($tId -match 'Oracle\.Java' -and ($iId -match 'Temurin|Corretto' -or $iName -match 'Temurin|Corretto')) { return $false }
