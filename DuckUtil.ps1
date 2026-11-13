@@ -617,7 +617,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 32,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.3_1",
@@ -631,7 +631,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 33,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.5",
@@ -645,7 +645,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 34,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.6",
@@ -659,7 +659,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 35,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.6.x86",
@@ -672,7 +672,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 36,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.7",
@@ -686,7 +686,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 37,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.7.x86",
@@ -699,7 +699,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 38,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.8",
@@ -713,7 +713,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 39,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.8.x86",
@@ -726,7 +726,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 40,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.9",
@@ -740,7 +740,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 41,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.10",
@@ -754,7 +754,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 42,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "Microsoft.DotNet.DesktopRuntime.Preview",
@@ -767,7 +767,7 @@ $appsRawJson = @'
         "Category": ".NET Runtimes",
         "IDn": 43,
         "Url": "https://dotnet.microsoft.com/en-us/download/dotnet",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dotnet-dark.png"
+        "IconUrl": "https://raw.githubusercontent.com/dotnet/brand/main/logo/dotnet-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.8.JRE",
@@ -781,7 +781,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 44,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.8.JDK",
@@ -796,7 +796,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 45,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JRE",
@@ -810,7 +810,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 46,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.11.JDK",
@@ -825,7 +825,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 47,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.16.JDK",
@@ -839,7 +839,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 48,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JRE",
@@ -853,7 +853,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 49,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.17.JDK",
@@ -868,7 +868,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 50,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.18.JDK",
@@ -882,7 +882,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 51,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.19.JDK",
@@ -896,7 +896,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 52,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.20.JDK",
@@ -910,7 +910,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 53,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JRE",
@@ -924,7 +924,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 54,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.21.JDK",
@@ -939,7 +939,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 55,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.22.JDK",
@@ -953,7 +953,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 56,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.23.JDK",
@@ -967,7 +967,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 57,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.24.JDK",
@@ -981,7 +981,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 58,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "EclipseAdoptium.Temurin.25.JDK",
@@ -995,7 +995,7 @@ $appsRawJson = @'
         "Category": "Java Runtimes",
         "IDn": 59,
         "Url": "https://adoptium.net/temurin/releases/",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/java-light.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png"
     },
     {
         "ID": "Microsoft.VCRedist.2005.x64",
@@ -3344,12 +3344,12 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.2) đồng bộ logo VC++ và CPUID
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.2.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.3) đồng bộ logo .NET và Java
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.3.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.2" -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.3" -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 }

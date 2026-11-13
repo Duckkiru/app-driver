@@ -84,12 +84,12 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.2) đồng bộ logo VC++ và CPUID
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.2.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.3) đồng bộ logo .NET và Java
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.3.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.2" -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.3" -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 }
