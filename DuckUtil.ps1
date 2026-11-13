@@ -1009,7 +1009,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 60,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2005.x86",
@@ -1023,7 +1023,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 61,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2008.x64",
@@ -1037,7 +1037,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 62,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2008.x86",
@@ -1051,7 +1051,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 63,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2010.x64",
@@ -1066,7 +1066,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 64,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2010.x86",
@@ -1081,7 +1081,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 65,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2012.x64",
@@ -1095,7 +1095,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 66,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2012.x86",
@@ -1109,7 +1109,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 67,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2013.x64",
@@ -1123,7 +1123,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 68,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2013.x86",
@@ -1137,7 +1137,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 69,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2015+.x64",
@@ -1151,7 +1151,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 70,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.VCRedist.2015+.x86",
@@ -1165,7 +1165,7 @@ $appsRawJson = @'
         "Category": "C++ & System Runtimes",
         "IDn": 71,
         "Url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
-        "IconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cpp.png"
+        "IconUrl": "https://img.icons8.com/fluency/96/visual-studio.png"
     },
     {
         "ID": "Microsoft.DirectX",
@@ -1317,7 +1317,7 @@ $appsRawJson = @'
         "Category": "Hardware & Monitoring",
         "IDn": 83,
         "Url": "https://www.cpuid.com/softwares/cpu-z.html",
-        "IconUrl": "https://www.cpuid.com/medias/images/apple-touch-icon-precomposed.png"
+        "IconUrl": "https://www.cpuid.com/medias/images/softwares/cpu-z.png"
     },
     {
         "ID": "CPUID.HWMonitor",
@@ -1331,7 +1331,7 @@ $appsRawJson = @'
         "Category": "Hardware & Monitoring",
         "IDn": 84,
         "Url": "https://www.cpuid.com/softwares/hwmonitor.html",
-        "IconUrl": "https://www.cpuid.com/medias/images/apple-touch-icon-precomposed.png"
+        "IconUrl": "https://www.cpuid.com/medias/images/softwares/hwmonitor.png"
     },
     {
         "ID": "Bitwarden.Bitwarden",
@@ -3344,12 +3344,12 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
         } | Remove-Item -Force -ErrorAction SilentlyContinue
     } catch {}
 
-    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.1) đồng bộ logo thị trường
-    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.1.marker"
+    # Nâng cấp toàn bộ cache biểu tượng chuẩn sáng (v3.2) đồng bộ logo VC++ và CPUID
+    $cacheMarker = Join-Path $iconsCacheDir "cache.v3.2.marker"
     if (-not (Test-Path -LiteralPath $cacheMarker)) {
         try {
             Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-            Set-Content -LiteralPath $cacheMarker -Value "v3.1" -Force -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath $cacheMarker -Value "v3.2" -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 }
