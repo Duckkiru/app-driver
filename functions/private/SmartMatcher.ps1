@@ -511,6 +511,33 @@ function Scan-And-ColorizeApps {
             if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
         }
 
+        # Nhận diện trực tiếp Legacy Launcher (không nằm trên WinGet) qua đường dẫn cài đặt mặc định
+        if (-not $idMap.ContainsKey("LegacyLauncher.LegacyLauncher")) {
+            $llPaths = @(
+                (Join-Path $env:APPDATA ".tlauncher\legacy\Minecraft\TL.exe"),
+                (Join-Path $env:APPDATA ".tlauncher\legacy"),
+                (Join-Path $env:APPDATA ".minecraft\LLauncher.exe"),
+                (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Legacy Launcher.lnk")
+            )
+            foreach ($lp in $llPaths) {
+                if ($lp -and [System.IO.File]::Exists($lp) -or ($lp -and [System.IO.Directory]::Exists($lp))) {
+                    $llObj = [PSCustomObject]@{
+                        ID        = "LegacyLauncher.LegacyLauncher"
+                        Name      = "Legacy Launcher"
+                        CleanName = "legacylauncher"
+                        Version   = "Installed"
+                        Available = ""
+                        HasUpdate = $false
+                        Source    = "local"
+                    }
+                    $installedList.Add($llObj)
+                    Set-PreferredMapEntry $idMap $llObj.ID $llObj
+                    Set-PreferredMapEntry $nameMap $llObj.Name $llObj
+                    break
+                }
+            }
+        }
+
         # Chỉ quét dự phòng Registry + Appx khi WinGet gặp sự cố / trả về quá ít dữ liệu (tránh chặn luồng UI 4 giây không cần thiết vì winget list đã gồm cả ARP & MSIX)
         if (-not $wingetOk -or $wingetItems.Count -lt 5) {
             $localItems = Get-LocalInstalledEntries

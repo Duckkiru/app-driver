@@ -2151,19 +2151,6 @@ $appsRawJson = @'
     "IDn":  143
   },
   {
-    "ID":  "Henry++.MemReduct",
-    "Name":  "Mem Reduct",
-    "Domain":  "henrypp.org",
-    "Aliases":  [
-            "Mem Reduct",
-            "Henry++.MemReduct"
-          ],
-    "Category":  "System Utilities",
-    "Url":  "https://www.henrypp.org/product/memreduct",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/1976542?s=128\u0026v=4",
-    "IDn":  144
-  },
-  {
     "ID":  "CharlesMilette.TranslucentTB",
     "Name":  "TranslucentTB",
     "Domain":  "github.com/TranslucentTB",
@@ -2174,7 +2161,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://github.com/TranslucentTB/TranslucentTB",
     "IconUrl":  "https://avatars.githubusercontent.com/u/25596512?s=128\u0026v=4",
-    "IDn":  145
+    "IDn":  144
   },
   {
     "ID":  "RamenSoftware.Windhawk",
@@ -2187,7 +2174,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://windhawk.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=windhawk.net\u0026sz=128",
-    "IDn":  146
+    "IDn":  145
   },
   {
     "ID":  "Rufus.Rufus",
@@ -2200,7 +2187,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://rufus.ie/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=rufus.ie\u0026sz=128",
-    "IDn":  147
+    "IDn":  146
   },
   {
     "ID":  "WinsiderSS.SystemInformer",
@@ -2214,7 +2201,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://systeminformer.sourceforge.io/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=systeminformer.sourceforge.io\u0026sz=128",
-    "IDn":  148
+    "IDn":  147
   },
   {
     "ID":  "Microsoft.Sysinternals.Autoruns",
@@ -2228,7 +2215,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=microsoft.com\u0026sz=128",
-    "IDn":  149
+    "IDn":  148
   },
   {
     "ID":  "Microsoft.Sysinternals.ProcessExplorer",
@@ -2242,7 +2229,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://learn.microsoft.com/en-us/sysinternals/downloads/process-explorer",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=microsoft.com\u0026sz=128",
-    "IDn":  150
+    "IDn":  149
   },
   {
     "ID":  "Ventoy.Ventoy",
@@ -2255,7 +2242,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://www.ventoy.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=ventoy.net\u0026sz=128",
-    "IDn":  151
+    "IDn":  150
   },
   {
     "ID":  "File-New-Project.EarTrumpet",
@@ -2268,7 +2255,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://eartrumpet.app/",
     "IconUrl":  "https://avatars.githubusercontent.com/u/11562010?s=128\u0026v=4",
-    "IDn":  152
+    "IDn":  151
   },
   {
     "ID":  "xanderfrangos.twinkletray",
@@ -2283,7 +2270,7 @@ $appsRawJson = @'
     "AssetRegex":  "Twinkle\\.Tray\\.v[0-9.]+\\.exe$",
     "Url":  "https://twinkletray.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=twinkletray.com\u0026sz=128",
-    "IDn":  153
+    "IDn":  152
   },
   {
     "ID":  "AutoHotkey.AutoHotkey",
@@ -2298,7 +2285,7 @@ $appsRawJson = @'
     "AssetRegex":  "AutoHotkey_[0-9.]+_setup\\.exe$",
     "Url":  "https://www.autohotkey.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=autohotkey.com\u0026sz=128",
-    "IDn":  154
+    "IDn":  153
   },
   {
     "ID":  "Nilesoft.Shell",
@@ -2311,7 +2298,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://nilesoft.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=nilesoft.org\u0026sz=128",
-    "IDn":  155
+    "IDn":  154
   },
   {
     "ID":  "FilesCommunity.Files",
@@ -2325,7 +2312,7 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://files.community/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=files.community\u0026sz=128",
-    "IDn":  156
+    "IDn":  155
   },
   {
     "ID":  "srwi.EverythingToolbar.Launcher",
@@ -2341,7 +2328,7 @@ $appsRawJson = @'
     "AssetRegex":  "\\.msi$",
     "Url":  "https://github.com/srwi/EverythingToolbar",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=voidtools.com\u0026sz=128",
-    "IDn":  157
+    "IDn":  156
   },
   {
     "ID":  "QL-Win.QuickLook",
@@ -2356,7 +2343,7 @@ $appsRawJson = @'
     "AssetRegex":  "QuickLook-[0-9.]+\\.msi$",
     "Url":  "https://github.com/QL-Win/QuickLook",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=github.com\u0026sz=128",
-    "IDn":  158
+    "IDn":  157
   },
   {
     "ID":  "Ditto.Ditto",
@@ -2370,7 +2357,197 @@ $appsRawJson = @'
     "Category":  "System Utilities",
     "Url":  "https://ditto-cp.sourceforge.io/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=sourceforge.net\u0026sz=128",
+    "IDn":  158
+  },
+  {
+    "ID":  "Henry++.MemReduct",
+    "Name":  "Mem Reduct",
+    "Domain":  "henrypp.org",
+    "Aliases":  [
+            "Mem Reduct",
+            "Henry++.MemReduct"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://www.henrypp.org/product/memreduct",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/1976542?s=128\u0026v=4",
     "IDn":  159
+  },
+  {
+    "ID":  "BitSum.ProcessLasso",
+    "Name":  "Process Lasso",
+    "Domain":  "bitsum.com",
+    "Aliases":  [
+            "Process Lasso",
+            "BitSum.ProcessLasso"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://bitsum.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=bitsum.com\u0026sz=128",
+    "IDn":  160
+  },
+  {
+    "ID":  "BitSum.ParkControl",
+    "Name":  "ParkControl (CPU Unpark)",
+    "Domain":  "bitsum.com",
+    "Aliases":  [
+            "ParkControl",
+            "BitSum.ParkControl"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://bitsum.com/parkcontrol/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=bitsum.com\u0026sz=128",
+    "IDn":  161
+  },
+  {
+    "ID":  "CoderBag.QuickCPUx64",
+    "Name":  "Quick CPU",
+    "Domain":  "coderbag.com",
+    "Aliases":  [
+            "Quick CPU",
+            "QuickCPU",
+            "CoderBag.QuickCPUx64"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://coderbag.com/product/quickcpu",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=coderbag.com\u0026sz=128",
+    "IDn":  162
+  },
+  {
+    "ID":  "TechPowerUp.ThrottleStop",
+    "Name":  "ThrottleStop",
+    "Domain":  "techpowerup.com",
+    "Aliases":  [
+            "ThrottleStop",
+            "TechPowerUp.ThrottleStop"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://www.techpowerup.com/download/techpowerup-throttlestop/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=techpowerup.com\u0026sz=128",
+    "IDn":  163
+  },
+  {
+    "ID":  "JamesCJ60.Universalx86TuningUtility",
+    "Name":  "Universal x86 Tuning (UXTU)",
+    "Domain":  "amdaputuningutility.com",
+    "Aliases":  [
+            "Universal x86 Tuning Utility",
+            "UXTU",
+            "JamesCJ60.Universalx86TuningUtility"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://amdaputuningutility.com/",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/105427589?s=128\u0026v=4",
+    "IDn":  164
+  },
+  {
+    "ID":  "Microsoft.Sysinternals.RAMMap",
+    "Name":  "RAMMap (Empty Standby)",
+    "Domain":  "learn.microsoft.com",
+    "Aliases":  [
+            "RAMMap",
+            "Microsoft.Sysinternals.RAMMap"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://learn.microsoft.com/en-us/sysinternals/downloads/rammap",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=learn.microsoft.com\u0026sz=128",
+    "IDn":  165
+  },
+  {
+    "ID":  "OO-Software.ShutUp10",
+    "Name":  "O\u0026O ShutUp10++",
+    "Domain":  "oo-software.com",
+    "Aliases":  [
+            "O\u0026O ShutUp10++",
+            "O\u0026O ShutUp10",
+            "OO-Software.ShutUp10"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://www.oo-software.com/en/shutup10",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=oo-software.com\u0026sz=128",
+    "IDn":  166
+  },
+  {
+    "ID":  "9PM860492SZD",
+    "Name":  "Microsoft PC Manager",
+    "Domain":  "pcmanager.microsoft.com",
+    "Aliases":  [
+            "Microsoft PC Manager",
+            "PC Manager",
+            "9PM860492SZD"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Source":  "msstore",
+    "Url":  "https://pcmanager.microsoft.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=pcmanager.microsoft.com\u0026sz=128",
+    "IDn":  167
+  },
+  {
+    "ID":  "IridiumIO.CompactGUI",
+    "Name":  "CompactGUI (Nén Game)",
+    "Domain":  "github.com/IridiumIO/CompactGUI",
+    "Aliases":  [
+            "CompactGUI",
+            "IridiumIO.CompactGUI"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://github.com/IridiumIO/CompactGUI",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/14960348?s=128\u0026v=4",
+    "IDn":  168
+  },
+  {
+    "ID":  "Blinue.Magpie",
+    "Name":  "Magpie (FSR Upscaler)",
+    "Domain":  "github.com/Blinue/Magpie",
+    "Aliases":  [
+            "Magpie",
+            "Blinue.Magpie"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://github.com/Blinue/Magpie",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/34770031?s=128\u0026v=4",
+    "IDn":  169
+  },
+  {
+    "ID":  "Orbmu2k.nvidiaProfileInspector",
+    "Name":  "NVIDIA Profile Inspector",
+    "Domain":  "github.com/Orbmu2k/nvidiaProfileInspector",
+    "Aliases":  [
+            "NVIDIA Profile Inspector",
+            "nvidiaProfileInspector",
+            "Orbmu2k.nvidiaProfileInspector"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://github.com/Orbmu2k/nvidiaProfileInspector",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=nvidia.com\u0026sz=128",
+    "IDn":  170
+  },
+  {
+    "ID":  "seerge.g-helper",
+    "Name":  "G-Helper (ASUS ROG/TUF)",
+    "Domain":  "g-helper.com",
+    "Aliases":  [
+            "G-Helper",
+            "g-helper",
+            "seerge.g-helper"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://g-helper.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=g-helper.com\u0026sz=128",
+    "IDn":  171
+  },
+  {
+    "ID":  "LenovoLegionToolkitTeam.LenovoLegionToolkit",
+    "Name":  "Lenovo Legion Toolkit",
+    "Domain":  "github.com/BartoszCichecki/LenovoLegionToolkit",
+    "Aliases":  [
+            "Lenovo Legion Toolkit",
+            "LenovoLegionToolkitTeam.LenovoLegionToolkit",
+            "BartoszCichecki.LenovoLegionToolkit"
+          ],
+    "Category":  "Optimization \u0026 Tuning",
+    "Url":  "https://github.com/BartoszCichecki/LenovoLegionToolkit",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/197661095?s=128\u0026v=4",
+    "IDn":  172
   },
   {
     "ID":  "Guru3D.Afterburner",
@@ -2384,7 +2561,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.msi.com/Landing/afterburner/graphics-cards",
     "IconUrl":  "https://img.icons8.com/fluency/96/msi-afterburner.png",
-    "IDn":  160
+    "IDn":  173
   },
   {
     "ID":  "Rem0o.FanControl",
@@ -2396,7 +2573,7 @@ $appsRawJson = @'
             "Rem0o.FanControl"
           ],
     "Category":  "Hardware \u0026 Monitoring",
-    "IDn":  161
+    "IDn":  174
   },
   {
     "ID":  "CPUID.CPU-Z",
@@ -2410,7 +2587,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.cpuid.com/softwares/cpu-z.html",
     "IconUrl":  "https://www.cpuid.com/medias/images/softwares/cpu-z.png",
-    "IDn":  162
+    "IDn":  175
   },
   {
     "ID":  "CPUID.HWMonitor",
@@ -2424,7 +2601,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.cpuid.com/softwares/hwmonitor.html",
     "IconUrl":  "https://www.cpuid.com/medias/images/softwares/hwmonitor.png",
-    "IDn":  163
+    "IDn":  176
   },
   {
     "ID":  "TechPowerUp.GPU-Z",
@@ -2438,7 +2615,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.techpowerup.com/gpuz/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=techpowerup.com\u0026sz=128",
-    "IDn":  164
+    "IDn":  177
   },
   {
     "ID":  "REALiX.HWiNFO",
@@ -2452,7 +2629,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.hwinfo.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=hwinfo.com\u0026sz=128",
-    "IDn":  165
+    "IDn":  178
   },
   {
     "ID":  "CrystalDewWorld.CrystalDiskInfo",
@@ -2465,20 +2642,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://crystalmark.info/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=crystalmark.info\u0026sz=128",
-    "IDn":  166
-  },
-  {
-    "ID":  "CrystalDewWorld.CrystalDiskMark",
-    "Name":  "CrystalDiskMark",
-    "Domain":  "crystalmark.info",
-    "Aliases":  [
-            "CrystalDiskMark",
-            "CrystalDewWorld.CrystalDiskMark"
-          ],
-    "Category":  "Hardware \u0026 Monitoring",
-    "Url":  "https://crystalmark.info/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=crystalmark.info\u0026sz=128",
-    "IDn":  167
+    "IDn":  179
   },
   {
     "ID":  "TechPowerUp.NVCleanstall",
@@ -2491,7 +2655,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.techpowerup.com/nvcleanstall/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=techpowerup.com\u0026sz=128",
-    "IDn":  168
+    "IDn":  180
   },
   {
     "ID":  "Wagnardsoft.DisplayDriverUninstaller",
@@ -2505,7 +2669,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.wagnardsoft.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=wagnardsoft.com\u0026sz=128",
-    "IDn":  169
+    "IDn":  181
   },
   {
     "ID":  "OpenRGB.OpenRGB",
@@ -2518,7 +2682,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://openrgb.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=openrgb.org\u0026sz=128",
-    "IDn":  170
+    "IDn":  182
   },
   {
     "ID":  "Logitech.GHUB",
@@ -2532,7 +2696,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.logitechg.com/en-us/innovation/g-hub.html",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=logitechg.com\u0026sz=128",
-    "IDn":  171
+    "IDn":  183
   },
   {
     "ID":  "Logitech.OptionsPlus",
@@ -2546,34 +2710,7 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.logitech.com/en-us/software/logi-options-plus.html",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=logitech.com\u0026sz=128",
-    "IDn":  172
-  },
-  {
-    "ID":  "OCBase.OCCT.Personal",
-    "Name":  "OCCT (Stress Test)",
-    "Domain":  "ocbase.com",
-    "Aliases":  [
-            "OCCT",
-            "OCBase.OCCT.Personal"
-          ],
-    "Category":  "Hardware \u0026 Monitoring",
-    "Url":  "https://www.ocbase.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=ocbase.com\u0026sz=128",
-    "IDn":  173
-  },
-  {
-    "ID":  "Geeks3D.FurMark.2",
-    "Name":  "FurMark 2 (GPU Test)",
-    "Domain":  "geeks3d.com",
-    "Aliases":  [
-            "FurMark 2",
-            "FurMark",
-            "Geeks3D.FurMark.2"
-          ],
-    "Category":  "Hardware \u0026 Monitoring",
-    "Url":  "https://geeks3d.com/furmark/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=geeks3d.com\u0026sz=128",
-    "IDn":  174
+    "IDn":  184
   },
   {
     "ID":  "Intel.IntelDriverAndSupportAssistant",
@@ -2586,7 +2723,171 @@ $appsRawJson = @'
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.intel.com/content/www/us/en/support/detect.html",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=intel.com\u0026sz=128",
-    "IDn":  175
+    "IDn":  185
+  },
+  {
+    "ID":  "CrystalDewWorld.CrystalDiskMark",
+    "Name":  "CrystalDiskMark",
+    "Domain":  "crystalmark.info",
+    "Aliases":  [
+            "CrystalDiskMark",
+            "CrystalDewWorld.CrystalDiskMark"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://crystalmark.info/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=crystalmark.info\u0026sz=128",
+    "IDn":  186
+  },
+  {
+    "ID":  "OCBase.OCCT.Personal",
+    "Name":  "OCCT (Stress Test)",
+    "Domain":  "ocbase.com",
+    "Aliases":  [
+            "OCCT",
+            "OCBase.OCCT.Personal"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.ocbase.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=ocbase.com\u0026sz=128",
+    "IDn":  187
+  },
+  {
+    "ID":  "Geeks3D.FurMark.2",
+    "Name":  "FurMark 2 (GPU Test)",
+    "Domain":  "geeks3d.com",
+    "Aliases":  [
+            "FurMark 2",
+            "FurMark",
+            "Geeks3D.FurMark.2"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://geeks3d.com/furmark/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=geeks3d.com\u0026sz=128",
+    "IDn":  188
+  },
+  {
+    "ID":  "Maxon.CinebenchR23",
+    "Name":  "Cinebench R23 (CPU Test)",
+    "Domain":  "maxon.net",
+    "Aliases":  [
+            "Cinebench R23",
+            "Cinebench",
+            "Maxon.CinebenchR23"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.maxon.net/en/cinebench",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=maxon.net\u0026sz=128",
+    "IDn":  189
+  },
+  {
+    "ID":  "PrimateLabs.Geekbench.6",
+    "Name":  "Geekbench 6 (CPU/GPU)",
+    "Domain":  "geekbench.com",
+    "Aliases":  [
+            "Geekbench 6",
+            "Geekbench",
+            "PrimateLabs.Geekbench.6"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.geekbench.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=primatelabs.com\u0026sz=128",
+    "IDn":  190
+  },
+  {
+    "ID":  "Unigine.SuperpositionBenchmark",
+    "Name":  "Unigine Superposition (GPU)",
+    "Domain":  "benchmark.unigine.com",
+    "Aliases":  [
+            "Unigine Superposition Benchmark",
+            "Superposition",
+            "Unigine.SuperpositionBenchmark"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://benchmark.unigine.com/superposition",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=benchmark.unigine.com\u0026sz=128",
+    "IDn":  191
+  },
+  {
+    "ID":  "FinalWire.AIDA64.Extreme",
+    "Name":  "AIDA64 Extreme",
+    "Domain":  "aida64.com",
+    "Aliases":  [
+            "AIDA64 Extreme",
+            "AIDA64",
+            "FinalWire.AIDA64.Extreme"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.aida64.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=aida64.com\u0026sz=128",
+    "IDn":  192
+  },
+  {
+    "ID":  "Guru3D.RTSS",
+    "Name":  "RivaTuner (RTSS OSD)",
+    "Domain":  "guru3d.com",
+    "Aliases":  [
+            "Rivatuner Statistics Server",
+            "RTSS",
+            "Guru3D.RTSS"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=guru3d.com\u0026sz=128",
+    "IDn":  193
+  },
+  {
+    "ID":  "CXWorld.CapFrameX",
+    "Name":  "CapFrameX (FPS Benchmark)",
+    "Domain":  "capframex.com",
+    "Aliases":  [
+            "CapFrameX",
+            "CapFrameX Capture and Analysis Tool",
+            "CXWorld.CapFrameX"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.capframex.com/",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/47972546?s=128\u0026v=4",
+    "IDn":  194
+  },
+  {
+    "ID":  "Resplendence.LatencyMon",
+    "Name":  "LatencyMon (DPC Latency)",
+    "Domain":  "resplendence.com",
+    "Aliases":  [
+            "LatencyMon",
+            "Resplendence.LatencyMon"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.resplendence.com/latencymon",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=resplendence.com\u0026sz=128",
+    "IDn":  195
+  },
+  {
+    "ID":  "NirSoft.BlueScreenView",
+    "Name":  "BlueScreenView (BSOD)",
+    "Domain":  "nirsoft.net",
+    "Aliases":  [
+            "BlueScreenView",
+            "NirSoft.BlueScreenView"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.nirsoft.net/utils/blue_screen_view.html",
+    "IconUrl":  "https://img.icons8.com/fluency/96/system-report.png",
+    "IDn":  196
+  },
+  {
+    "ID":  "Resplendence.WhoCrashed",
+    "Name":  "WhoCrashed (Crash Test)",
+    "Domain":  "resplendence.com",
+    "Aliases":  [
+            "WhoCrashed",
+            "WhoCrashed Home Edition",
+            "Resplendence.WhoCrashed"
+          ],
+    "Category":  "Benchmark \u0026 Stress Test",
+    "Url":  "https://www.resplendence.com/whocrashed",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=resplendence.com\u0026sz=128",
+    "IDn":  197
   },
   {
     "ID":  "Bitwarden.Bitwarden",
@@ -2598,7 +2899,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/bitwarden.png",
-    "IDn":  176
+    "IDn":  198
   },
   {
     "ID":  "KeePassXCTeam.KeePassXC",
@@ -2610,7 +2911,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/keepassxc.png",
-    "IDn":  177
+    "IDn":  199
   },
   {
     "ID":  "Cryptomator.Cryptomator",
@@ -2622,7 +2923,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cryptomator.png",
-    "IDn":  178
+    "IDn":  200
   },
   {
     "ID":  "Proton.ProtonVPN",
@@ -2635,7 +2936,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proton-vpn.png",
-    "IDn":  179
+    "IDn":  201
   },
   {
     "ID":  "WiresharkFoundation.Wireshark",
@@ -2647,7 +2948,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/wireshark.png",
-    "IDn":  180
+    "IDn":  202
   },
   {
     "ID":  "Cloudflare.Warp",
@@ -2661,7 +2962,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://one.one.one.one/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cloudflare.png",
-    "IDn":  181
+    "IDn":  203
   },
   {
     "ID":  "Tailscale.Tailscale",
@@ -2674,7 +2975,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://tailscale.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/tailscale-light.png",
-    "IDn":  182
+    "IDn":  204
   },
   {
     "ID":  "WireGuard.WireGuard",
@@ -2687,7 +2988,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://www.wireguard.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/wireguard.png",
-    "IDn":  183
+    "IDn":  205
   },
   {
     "ID":  "ZeroTier.ZeroTierOne",
@@ -2700,7 +3001,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://www.zerotier.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zerotier.png",
-    "IDn":  184
+    "IDn":  206
   },
   {
     "ID":  "Famatech.RadminVPN",
@@ -2713,7 +3014,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://www.radmin-vpn.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=radmin-vpn.com\u0026sz=128",
-    "IDn":  185
+    "IDn":  207
   },
   {
     "ID":  "NextDNS.NextDNS",
@@ -2726,7 +3027,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://nextdns.io/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nextdns.png",
-    "IDn":  186
+    "IDn":  208
   },
   {
     "ID":  "IDRIX.VeraCrypt",
@@ -2739,7 +3040,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://www.veracrypt.fr/",
     "IconUrl":  "https://avatars.githubusercontent.com/u/8641615?s=128\u0026v=4",
-    "IDn":  187
+    "IDn":  209
   },
   {
     "ID":  "MullvadVPN.MullvadVPN",
@@ -2752,7 +3053,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://mullvad.net/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/mullvad.png",
-    "IDn":  188
+    "IDn":  210
   },
   {
     "ID":  "OpenVPNTechnologies.OpenVPNConnect",
@@ -2765,7 +3066,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://openvpn.net/client/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/openvpn.png",
-    "IDn":  189
+    "IDn":  211
   },
   {
     "ID":  "angryziber.AngryIPScanner",
@@ -2780,7 +3081,7 @@ $appsRawJson = @'
     "AssetRegex":  "win64-[0-9.]+\\.exe$",
     "Url":  "https://angryip.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=angryip.org\u0026sz=128",
-    "IDn":  190
+    "IDn":  212
   },
   {
     "ID":  "Insecure.Nmap",
@@ -2793,7 +3094,7 @@ $appsRawJson = @'
     "Category":  "Security \u0026 Network",
     "Url":  "https://nmap.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=nmap.org\u0026sz=128",
-    "IDn":  191
+    "IDn":  213
   },
   {
     "ID":  "VideoLAN.VLC",
@@ -2807,7 +3108,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://www.videolan.org/vlc/",
     "IconUrl":  "https://raw.githubusercontent.com/videolan/vlc/master/share/icons/128x128/vlc.png",
-    "IDn":  192
+    "IDn":  214
   },
   {
     "ID":  "OBSProject.OBSStudio",
@@ -2820,7 +3121,7 @@ $appsRawJson = @'
           ],
     "Category":  "Audio \u0026 Video",
     "IconUrl":  "https://img.icons8.com/fluency/96/obs-studio.png",
-    "IDn":  193
+    "IDn":  215
   },
   {
     "ID":  "Spotify.Spotify",
@@ -2832,7 +3133,7 @@ $appsRawJson = @'
           ],
     "Category":  "Audio \u0026 Video",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/spotify.png",
-    "IDn":  194
+    "IDn":  216
   },
   {
     "ID":  "Audacity.Audacity",
@@ -2844,7 +3145,7 @@ $appsRawJson = @'
           ],
     "Category":  "Audio \u0026 Video",
     "IconUrl":  "https://img.icons8.com/fluency/96/audacity.png",
-    "IDn":  195
+    "IDn":  217
   },
   {
     "ID":  "HandBrake.HandBrake",
@@ -2856,7 +3157,7 @@ $appsRawJson = @'
           ],
     "Category":  "Audio \u0026 Video",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/handbrake.png",
-    "IDn":  196
+    "IDn":  218
   },
   {
     "ID":  "CodecGuide.K-LiteCodecPack.Mega",
@@ -2871,7 +3172,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "IconUrl":  "https://icons.duckduckgo.com/ip3/codecguide.com.ico",
     "Url":  "https://codecguide.com/download_k-lite_codec_pack_mega.htm",
-    "IDn":  197
+    "IDn":  219
   },
   {
     "ID":  "Daum.PotPlayer",
@@ -2885,7 +3186,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://potplayer.tv/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=potplayer.tv\u0026sz=128",
-    "IDn":  198
+    "IDn":  220
   },
   {
     "ID":  "ByteDance.CapCut",
@@ -2898,7 +3199,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://www.capcut.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=capcut.com\u0026sz=128",
-    "IDn":  199
+    "IDn":  221
   },
   {
     "ID":  "KDE.Kdenlive",
@@ -2911,7 +3212,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://kdenlive.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=kdenlive.org\u0026sz=128",
-    "IDn":  200
+    "IDn":  222
   },
   {
     "ID":  "Gyan.FFmpeg",
@@ -2924,7 +3225,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://ffmpeg.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=ffmpeg.org\u0026sz=128",
-    "IDn":  201
+    "IDn":  223
   },
   {
     "ID":  "BlackmagicDesign.DaVinciResolve",
@@ -2939,7 +3240,7 @@ $appsRawJson = @'
     "FallbackUrl":  "https://www.blackmagicdesign.com/products/davinciresolve",
     "Url":  "https://www.blackmagicdesign.com/products/davinciresolve",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=blackmagicdesign.com\u0026sz=128",
-    "IDn":  202
+    "IDn":  224
   },
   {
     "ID":  "Meltytech.Shotcut",
@@ -2954,7 +3255,7 @@ $appsRawJson = @'
     "AssetRegex":  "shotcut-win64-[0-9]+\\.exe$",
     "Url":  "https://www.shotcut.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=shotcut.org\u0026sz=128",
-    "IDn":  203
+    "IDn":  225
   },
   {
     "ID":  "ch.LosslessCut",
@@ -2970,7 +3271,7 @@ $appsRawJson = @'
     "AssetRegex":  "LosslessCut-win-x64\\.7z$",
     "Url":  "https://mifi.no/losslesscut/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=mifi.no\u0026sz=128",
-    "IDn":  204
+    "IDn":  226
   },
   {
     "ID":  "clsid2.mpc-hc",
@@ -2986,7 +3287,7 @@ $appsRawJson = @'
     "AssetRegex":  "MPC-HC\\.[0-9.]+\\.x64\\.exe$",
     "Url":  "https://github.com/clsid2/mpc-hc",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=mpc-hc.org\u0026sz=128",
-    "IDn":  205
+    "IDn":  227
   },
   {
     "ID":  "MoritzBunkus.MKVToolNix",
@@ -2999,7 +3300,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://mkvtoolnix.download/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=mkvtoolnix.download\u0026sz=128",
-    "IDn":  206
+    "IDn":  228
   },
   {
     "ID":  "PaulPacifico.ShutterEncoder",
@@ -3012,7 +3313,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://www.shutterencoder.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=shutterencoder.com\u0026sz=128",
-    "IDn":  207
+    "IDn":  229
   },
   {
     "ID":  "PeterPawlowski.foobar2000",
@@ -3025,7 +3326,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://www.foobar2000.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=foobar2000.org\u0026sz=128",
-    "IDn":  208
+    "IDn":  230
   },
   {
     "ID":  "AIMP.AIMP",
@@ -3038,7 +3339,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://www.aimp.ru/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=aimp.ru\u0026sz=128",
-    "IDn":  209
+    "IDn":  231
   },
   {
     "ID":  "VB-Audio.Voicemeeter.Banana",
@@ -3052,7 +3353,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "Url":  "https://vb-audio.com/Voicemeeter/banana.htm",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=vb-audio.com\u0026sz=128",
-    "IDn":  210
+    "IDn":  232
   },
   {
     "ID":  "ShareX.ShareX",
@@ -3064,7 +3365,7 @@ $appsRawJson = @'
           ],
     "Category":  "Graphics \u0026 Design",
     "IconUrl":  "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png",
-    "IDn":  211
+    "IDn":  233
   },
   {
     "ID":  "GIMP.GIMP",
@@ -3077,7 +3378,7 @@ $appsRawJson = @'
           ],
     "Category":  "Graphics \u0026 Design",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/selfhst/icons/png/gimp.png",
-    "IDn":  212
+    "IDn":  234
   },
   {
     "ID":  "KDE.Krita",
@@ -3089,7 +3390,7 @@ $appsRawJson = @'
           ],
     "Category":  "Graphics \u0026 Design",
     "IconUrl":  "https://img.icons8.com/color/96/krita.png",
-    "IDn":  213
+    "IDn":  235
   },
   {
     "ID":  "BlenderFoundation.Blender",
@@ -3101,7 +3402,7 @@ $appsRawJson = @'
           ],
     "Category":  "Graphics \u0026 Design",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/blender.png",
-    "IDn":  214
+    "IDn":  236
   },
   {
     "ID":  "Inkscape.Inkscape",
@@ -3113,7 +3414,7 @@ $appsRawJson = @'
           ],
     "Category":  "Graphics \u0026 Design",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/selfhst/icons/png/inkscape-light.png",
-    "IDn":  215
+    "IDn":  237
   },
   {
     "ID":  "Figma.Figma",
@@ -3126,7 +3427,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.figma.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/figma.png",
-    "IDn":  216
+    "IDn":  238
   },
   {
     "ID":  "JannisX11.Blockbench",
@@ -3139,7 +3440,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.blockbench.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=blockbench.net\u0026sz=128",
-    "IDn":  217
+    "IDn":  239
   },
   {
     "ID":  "dotPDN.PaintDotNet",
@@ -3152,7 +3453,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.getpaint.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=getpaint.net\u0026sz=128",
-    "IDn":  218
+    "IDn":  240
   },
   {
     "ID":  "DuongDieuPhap.ImageGlass",
@@ -3165,7 +3466,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://imageglass.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=imageglass.org\u0026sz=128",
-    "IDn":  219
+    "IDn":  241
   },
   {
     "ID":  "Pinta.Pinta",
@@ -3180,7 +3481,7 @@ $appsRawJson = @'
     "AssetRegex":  "Pinta\\.exe$",
     "Url":  "https://www.pinta-project.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=pinta-project.com\u0026sz=128",
-    "IDn":  220
+    "IDn":  242
   },
   {
     "ID":  "darktable.darktable",
@@ -3195,7 +3496,7 @@ $appsRawJson = @'
     "AssetRegex":  "win64\\.exe$",
     "Url":  "https://www.darktable.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=darktable.org\u0026sz=128",
-    "IDn":  221
+    "IDn":  243
   },
   {
     "ID":  "RawTherapee.RawTherapee",
@@ -3208,7 +3509,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.rawtherapee.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=rawtherapee.com\u0026sz=128",
-    "IDn":  222
+    "IDn":  244
   },
   {
     "ID":  "FastStone.Viewer",
@@ -3221,7 +3522,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.faststone.org/FSViewerDetail.htm",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=faststone.org\u0026sz=128",
-    "IDn":  223
+    "IDn":  245
   },
   {
     "ID":  "XnSoft.XnViewMP",
@@ -3234,7 +3535,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.xnview.com/en/xnviewmp/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=xnview.com\u0026sz=128",
-    "IDn":  224
+    "IDn":  246
   },
   {
     "ID":  "Flameshot.Flameshot",
@@ -3249,7 +3550,7 @@ $appsRawJson = @'
     "AssetRegex":  "win64\\.msi$",
     "Url":  "https://flameshot.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=flameshot.org\u0026sz=128",
-    "IDn":  225
+    "IDn":  247
   },
   {
     "ID":  "GodotEngine.GodotEngine",
@@ -3263,7 +3564,7 @@ $appsRawJson = @'
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://godotengine.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=godotengine.org\u0026sz=128",
-    "IDn":  226
+    "IDn":  248
   },
   {
     "ID":  "TheDocumentFoundation.LibreOffice",
@@ -3275,7 +3576,7 @@ $appsRawJson = @'
           ],
     "Category":  "Documents \u0026 Office",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/libreoffice-colibre-text.png",
-    "IDn":  227
+    "IDn":  249
   },
   {
     "ID":  "Obsidian.Obsidian",
@@ -3287,7 +3588,7 @@ $appsRawJson = @'
           ],
     "Category":  "Documents \u0026 Office",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/obsidian.png",
-    "IDn":  228
+    "IDn":  250
   },
   {
     "ID":  "Notion.Notion",
@@ -3299,7 +3600,7 @@ $appsRawJson = @'
           ],
     "Category":  "Documents \u0026 Office",
     "IconUrl":  "https://img.icons8.com/fluency/96/notion.png",
-    "IDn":  229
+    "IDn":  251
   },
   {
     "ID":  "SumatraPDF.SumatraPDF",
@@ -3311,7 +3612,7 @@ $appsRawJson = @'
           ],
     "Category":  "Documents \u0026 Office",
     "Url":  "https://www.sumatrapdfreader.org/free-pdf-reader",
-    "IDn":  230
+    "IDn":  252
   },
   {
     "ID":  "Foxit.FoxitReader",
@@ -3325,7 +3626,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://www.foxit.com/pdf-reader/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/foxit-icon.png",
-    "IDn":  231
+    "IDn":  253
   },
   {
     "ID":  "ONLYOFFICE.DesktopEditors",
@@ -3338,7 +3639,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://www.onlyoffice.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/onlyoffice.png",
-    "IDn":  232
+    "IDn":  254
   },
   {
     "ID":  "geeksoftwareGmbH.PDF24Creator",
@@ -3351,7 +3652,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://tools.pdf24.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=pdf24.org\u0026sz=128",
-    "IDn":  233
+    "IDn":  255
   },
   {
     "ID":  "calibre.calibre",
@@ -3365,7 +3666,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://calibre-ebook.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/calibre.png",
-    "IDn":  234
+    "IDn":  256
   },
   {
     "ID":  "Adobe.Acrobat.Reader.64-bit",
@@ -3379,7 +3680,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://get.adobe.com/reader/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=adobe.com\u0026sz=128",
-    "IDn":  235
+    "IDn":  257
   },
   {
     "ID":  "KDE.Okular",
@@ -3392,7 +3693,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://okular.kde.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=okular.kde.org\u0026sz=128",
-    "IDn":  236
+    "IDn":  258
   },
   {
     "ID":  "Logseq.Logseq",
@@ -3407,7 +3708,7 @@ $appsRawJson = @'
     "AssetRegex":  "win-x64-[0-9.]+\\.exe$",
     "Url":  "https://logseq.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=logseq.com\u0026sz=128",
-    "IDn":  237
+    "IDn":  259
   },
   {
     "ID":  "AnyAssociation.Anytype",
@@ -3420,7 +3721,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://anytype.io/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=anytype.io\u0026sz=128",
-    "IDn":  238
+    "IDn":  260
   },
   {
     "ID":  "Anki.Anki",
@@ -3435,7 +3736,7 @@ $appsRawJson = @'
     "AssetRegex":  "windows-qt6\\.exe$",
     "Url":  "https://apps.ankiweb.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=ankiweb.net\u0026sz=128",
-    "IDn":  239
+    "IDn":  261
   },
   {
     "ID":  "Mozilla.Thunderbird",
@@ -3449,7 +3750,7 @@ $appsRawJson = @'
     "Category":  "Documents \u0026 Office",
     "Url":  "https://www.thunderbird.net/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/thunderbird.png",
-    "IDn":  240
+    "IDn":  262
   },
   {
     "ID":  "PrismLauncher.PrismLauncher",
@@ -3462,7 +3763,7 @@ $appsRawJson = @'
     "Category":  "Minecraft \u0026 Modding",
     "Url":  "https://prismlauncher.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=prismlauncher.org\u0026sz=128",
-    "IDn":  241
+    "IDn":  263
   },
   {
     "ID":  "Mojang.MinecraftLauncher",
@@ -3475,7 +3776,7 @@ $appsRawJson = @'
     "Category":  "Minecraft \u0026 Modding",
     "Url":  "https://www.minecraft.net/en-us/download",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/minecraft.png",
-    "IDn":  242
+    "IDn":  264
   },
   {
     "ID":  "Overwolf.CurseForge",
@@ -3488,7 +3789,7 @@ $appsRawJson = @'
     "Category":  "Minecraft \u0026 Modding",
     "Url":  "https://www.curseforge.com/download/app",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=curseforge.com\u0026sz=128",
-    "IDn":  243
+    "IDn":  265
   },
   {
     "ID":  "Overwolf.Overwolf",
@@ -3502,7 +3803,7 @@ $appsRawJson = @'
     "FallbackUrl":  "https://www.overwolf.com/",
     "Url":  "https://www.overwolf.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=overwolf.com\u0026sz=128",
-    "IDn":  244
+    "IDn":  266
   },
   {
     "ID":  "Modrinth.ModrinthApp",
@@ -3516,7 +3817,7 @@ $appsRawJson = @'
     "Category":  "Minecraft \u0026 Modding",
     "Url":  "https://modrinth.com/app",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=modrinth.com\u0026sz=128",
-    "IDn":  245
+    "IDn":  267
   },
   {
     "ID":  "ATLauncher.ATLauncher",
@@ -3531,7 +3832,7 @@ $appsRawJson = @'
     "AssetRegex":  "ATLauncher-[0-9.]+-setup\\.exe$",
     "Url":  "https://atlauncher.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=atlauncher.com\u0026sz=128",
-    "IDn":  246
+    "IDn":  268
   },
   {
     "ID":  "HMCL.HMCL.Stable",
@@ -3547,7 +3848,7 @@ $appsRawJson = @'
     "AssetRegex":  "HMCL-[0-9.]+\\.exe$",
     "Url":  "https://hmcl.huangyuhui.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=hmcl.huangyuhui.net\u0026sz=128",
-    "IDn":  247
+    "IDn":  269
   },
   {
     "ID":  "NexusMods.Vortex",
@@ -3563,7 +3864,23 @@ $appsRawJson = @'
     "AssetRegex":  "vortex-setup-[0-9.]+\\.exe$",
     "Url":  "https://www.nexusmods.com/about/vortex/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=nexusmods.com\u0026sz=128",
-    "IDn":  248
+    "IDn":  270
+  },
+  {
+    "ID":  "LegacyLauncher.LegacyLauncher",
+    "Name":  "Legacy Launcher",
+    "Domain":  "llaun.ch",
+    "Aliases":  [
+            "Legacy Launcher",
+            "LegacyLauncher",
+            "LLauncher"
+          ],
+    "Category":  "Minecraft \u0026 Modding",
+    "Url":  "https://llaun.ch/en",
+    "FallbackUrl":  "https://llaun.ch/exe",
+    "BrowserDownload":  true,
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=llaun.ch\u0026sz=128",
+    "IDn":  271
   },
   {
     "ID":  "Valve.Steam",
@@ -3576,7 +3893,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "Url":  "https://store.steampowered.com/",
     "IconUrl":  "https://img.icons8.com/fluency/96/steam.png",
-    "IDn":  249
+    "IDn":  272
   },
   {
     "ID":  "EpicGames.EpicGamesLauncher",
@@ -3590,7 +3907,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "IconUrl":  "https://img.icons8.com/fluency/96/epic-games.png",
     "Url":  "https://store.epicgames.com/",
-    "IDn":  250
+    "IDn":  273
   },
   {
     "ID":  "GOG.Galaxy",
@@ -3603,7 +3920,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "Url":  "https://www.gog.com/galaxy",
     "IconUrl":  "https://img.icons8.com/fluency/96/gog-galaxy.png",
-    "IDn":  251
+    "IDn":  274
   },
   {
     "ID":  "Playnite.Playnite",
@@ -3615,7 +3932,7 @@ $appsRawJson = @'
           ],
     "Category":  "Game Launchers",
     "IconUrl":  "https://raw.githubusercontent.com/JosefNemec/Playnite/master/source/Playnite.DesktopApp/Themes/Desktop/Default/Images/applogo.png",
-    "IDn":  252
+    "IDn":  275
   },
   {
     "ID":  "Blizzard.BattleNet",
@@ -3629,7 +3946,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "Url":  "https://www.blizzard.com/apps/battle.net/desktop",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=battle.net\u0026sz=128",
-    "IDn":  253
+    "IDn":  276
   },
   {
     "ID":  "ElectronicArts.EADesktop",
@@ -3643,7 +3960,7 @@ $appsRawJson = @'
     "Url":  "https://www.ea.com/ea-app",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=ea.com\u0026sz=128",
     "IconBg":  "light",
-    "IDn":  254
+    "IDn":  277
   },
   {
     "ID":  "Ubisoft.Connect",
@@ -3657,7 +3974,7 @@ $appsRawJson = @'
     "Url":  "https://ubisoftconnect.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=ubisoft.com\u0026sz=128",
     "IconBg":  "light",
-    "IDn":  255
+    "IDn":  278
   },
   {
     "ID":  "HeroicGamesLauncher.HeroicGamesLauncher",
@@ -3673,7 +3990,7 @@ $appsRawJson = @'
     "AssetRegex":  "Setup-x64\\.exe$",
     "Url":  "https://heroicgameslauncher.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=heroicgameslauncher.com\u0026sz=128",
-    "IDn":  256
+    "IDn":  279
   },
   {
     "ID":  "ItchIo.Itch",
@@ -3687,7 +4004,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "Url":  "https://itch.io/app",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=itch.io\u0026sz=128",
-    "IDn":  257
+    "IDn":  280
   },
   {
     "ID":  "Nvidia.GeForceNow",
@@ -3701,7 +4018,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "Url":  "https://www.nvidia.com/en-us/geforce-now/download/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nvidia.png",
-    "IDn":  258
+    "IDn":  281
   },
   {
     "ID":  "Wargaming.GameCenter",
@@ -3714,7 +4031,7 @@ $appsRawJson = @'
     "Category":  "Game Launchers",
     "Url":  "https://eu.wargaming.net/en/wgc",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=wargaming.net\u0026sz=128",
-    "IDn":  259
+    "IDn":  282
   },
   {
     "ID":  "Tonec.InternetDownloadManager",
@@ -3727,7 +4044,7 @@ $appsRawJson = @'
     "Category":  "Download Managers",
     "Url":  "https://www.internetdownloadmanager.com/",
     "IconUrl":  "https://img.icons8.com/fluency/96/download-from-cloud.png",
-    "IDn":  260
+    "IDn":  283
   },
   {
     "ID":  "SoftDeluxe.FreeDownloadManager",
@@ -3740,7 +4057,7 @@ $appsRawJson = @'
     "Category":  "Download Managers",
     "Url":  "https://www.freedownloadmanager.org/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=freedownloadmanager.org\u0026sz=128",
-    "IDn":  261
+    "IDn":  284
   },
   {
     "ID":  "JavadMotallebi.NeatDownloadManager",
@@ -3753,7 +4070,7 @@ $appsRawJson = @'
     "Category":  "Download Managers",
     "Url":  "https://www.neatdownloadmanager.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=neatdownloadmanager.com\u0026sz=128",
-    "IDn":  262
+    "IDn":  285
   },
   {
     "ID":  "amir1376.ABDownloadManager",
@@ -3768,7 +4085,7 @@ $appsRawJson = @'
     "AssetRegex":  "windows_x64\\.exe$",
     "Url":  "https://abdownloadmanager.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=abdownloadmanager.com\u0026sz=128",
-    "IDn":  263
+    "IDn":  286
   },
   {
     "ID":  "subhra74.XtremeDownloadManager",
@@ -3784,7 +4101,7 @@ $appsRawJson = @'
     "AssetRegex":  "xdmsetup-[0-9.]+\\.msi$",
     "Url":  "https://xtremedownloadmanager.com/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=xtremedownloadmanager.com\u0026sz=128",
-    "IDn":  264
+    "IDn":  287
   },
   {
     "ID":  "agalwood.Motrix",
@@ -3799,7 +4116,7 @@ $appsRawJson = @'
     "AssetRegex":  "Setup-[0-9.]+\\.exe$",
     "Url":  "https://motrix.app/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=motrix.app\u0026sz=128",
-    "IDn":  265
+    "IDn":  288
   },
   {
     "ID":  "aria2.aria2",
@@ -3814,7 +4131,7 @@ $appsRawJson = @'
     "AssetRegex":  "win-64bit-build1\\.zip$",
     "Url":  "https://aria2.github.io/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=aria2.github.io\u0026sz=128",
-    "IDn":  266
+    "IDn":  289
   },
   {
     "ID":  "yt-dlp.yt-dlp",
@@ -3829,7 +4146,7 @@ $appsRawJson = @'
     "AssetRegex":  "^yt-dlp\\.exe$",
     "Url":  "https://github.com/yt-dlp/yt-dlp",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=youtube.com\u0026sz=128",
-    "IDn":  267
+    "IDn":  290
   },
   {
     "ID":  "Nickvision.Parabolic",
@@ -3845,7 +4162,7 @@ $appsRawJson = @'
     "AssetRegex":  "NickvisionParabolicSetup\\.exe$",
     "Url":  "https://github.com/NickvisionApps/Parabolic",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=github.com\u0026sz=128",
-    "IDn":  268
+    "IDn":  291
   },
   {
     "ID":  "yt-dlg.yt-dlg",
@@ -3860,7 +4177,7 @@ $appsRawJson = @'
     "AssetRegex":  "yt-dlg-[0-9.]+\\.exe$",
     "Url":  "https://oleksis.github.io/youtube-dl-gui/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=youtube.com\u0026sz=128",
-    "IDn":  269
+    "IDn":  292
   },
   {
     "ID":  "qBittorrent.qBittorrent",
@@ -3872,7 +4189,7 @@ $appsRawJson = @'
           ],
     "Category":  "Download Managers",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/qbittorrent.png",
-    "IDn":  270
+    "IDn":  293
   },
   {
     "ID":  "Transmission.Transmission",
@@ -3887,7 +4204,7 @@ $appsRawJson = @'
     "AssetRegex":  "x64\\.msi$",
     "Url":  "https://transmissionbt.com/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/transmission.png",
-    "IDn":  271
+    "IDn":  294
   },
   {
     "ID":  "DelugeTeam.Deluge",
@@ -3901,7 +4218,7 @@ $appsRawJson = @'
     "Category":  "Download Managers",
     "Url":  "https://deluge-torrent.org/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/deluge.png",
-    "IDn":  272
+    "IDn":  295
   },
   {
     "ID":  "LocalSend.LocalSend",
@@ -3913,7 +4230,7 @@ $appsRawJson = @'
           ],
     "Category":  "File Transfer \u0026 Cloud",
     "IconUrl":  "https://raw.githubusercontent.com/localsend/localsend/main/app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
-    "IDn":  273
+    "IDn":  296
   },
   {
     "ID":  "WinSCP.WinSCP",
@@ -3924,7 +4241,7 @@ $appsRawJson = @'
             "WinSCP.WinSCP"
           ],
     "Category":  "File Transfer \u0026 Cloud",
-    "IDn":  274
+    "IDn":  297
   },
   {
     "ID":  "TimKosse.FileZilla.Client",
@@ -3939,7 +4256,7 @@ $appsRawJson = @'
     "FallbackUrl":  "https://filezilla-project.org/download.php?platform=win64",
     "Url":  "https://filezilla-project.org/download.php?platform=win64",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/filezilla.png",
-    "IDn":  275
+    "IDn":  298
   },
   {
     "ID":  "Rclone.Rclone",
@@ -3951,7 +4268,7 @@ $appsRawJson = @'
           ],
     "Category":  "File Transfer \u0026 Cloud",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/rclone.png",
-    "IDn":  276
+    "IDn":  299
   },
   {
     "ID":  "Google.GoogleDrive",
@@ -3964,7 +4281,7 @@ $appsRawJson = @'
     "Category":  "File Transfer \u0026 Cloud",
     "Url":  "https://www.google.com/drive/download/",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/google-drive.png",
-    "IDn":  277
+    "IDn":  300
   },
   {
     "ID":  "Dropbox.Dropbox",
@@ -3977,7 +4294,7 @@ $appsRawJson = @'
     "Category":  "File Transfer \u0026 Cloud",
     "Url":  "https://www.dropbox.com/install",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/dropbox.png",
-    "IDn":  278
+    "IDn":  301
   },
   {
     "ID":  "Mega.MEGASync",
@@ -3990,7 +4307,7 @@ $appsRawJson = @'
     "Category":  "File Transfer \u0026 Cloud",
     "Url":  "https://mega.io/desktop",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=mega.io\u0026sz=128",
-    "IDn":  279
+    "IDn":  302
   },
   {
     "ID":  "Nextcloud.NextcloudDesktop",
@@ -4003,7 +4320,7 @@ $appsRawJson = @'
     "Category":  "File Transfer \u0026 Cloud",
     "Url":  "https://nextcloud.com/install/#install-clients",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nextcloud.png",
-    "IDn":  280
+    "IDn":  303
   },
   {
     "ID":  "SyncTrayzor.SyncTrayzor",
@@ -4019,7 +4336,7 @@ $appsRawJson = @'
     "AssetRegex":  "SyncTrayzorSetup-x64\\.exe$",
     "Url":  "https://github.com/canton7/SyncTrayzor",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/syncthing.png",
-    "IDn":  281
+    "IDn":  304
   }
 ]
 '@
@@ -5225,6 +5542,33 @@ function Scan-And-ColorizeApps {
             Set-PreferredMapEntry $idMap $itemObj.ID $itemObj
             Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj
             if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+        }
+
+        # Nhận diện trực tiếp Legacy Launcher (không nằm trên WinGet) qua đường dẫn cài đặt mặc định
+        if (-not $idMap.ContainsKey("LegacyLauncher.LegacyLauncher")) {
+            $llPaths = @(
+                (Join-Path $env:APPDATA ".tlauncher\legacy\Minecraft\TL.exe"),
+                (Join-Path $env:APPDATA ".tlauncher\legacy"),
+                (Join-Path $env:APPDATA ".minecraft\LLauncher.exe"),
+                (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Legacy Launcher.lnk")
+            )
+            foreach ($lp in $llPaths) {
+                if ($lp -and [System.IO.File]::Exists($lp) -or ($lp -and [System.IO.Directory]::Exists($lp))) {
+                    $llObj = [PSCustomObject]@{
+                        ID        = "LegacyLauncher.LegacyLauncher"
+                        Name      = "Legacy Launcher"
+                        CleanName = "legacylauncher"
+                        Version   = "Installed"
+                        Available = ""
+                        HasUpdate = $false
+                        Source    = "local"
+                    }
+                    $installedList.Add($llObj)
+                    Set-PreferredMapEntry $idMap $llObj.ID $llObj
+                    Set-PreferredMapEntry $nameMap $llObj.Name $llObj
+                    break
+                }
+            }
         }
 
         # Chỉ quét dự phòng Registry + Appx khi WinGet gặp sự cố / trả về quá ít dữ liệu (tránh chặn luồng UI 4 giây không cần thiết vì winget list đã gồm cả ARP & MSIX)
@@ -6866,6 +7210,17 @@ Register-Click "btnInstall" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
                 Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+
+                if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                    Log-Text "   [WEB] Đang mở liên kết tải bộ cài chính thức: $($app.FallbackUrl)"
+                    try {
+                        Start-Process $app.FallbackUrl
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } catch {
+                        Log-Text "   [ERR - LỖI] Không thể mở trình duyệt cho $($app.Name)"
+                    }
+                    continue
+                }
 
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
                     $code = Invoke-GitHubAssetInstall -App $app

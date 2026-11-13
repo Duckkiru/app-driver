@@ -1135,6 +1135,17 @@ Register-Click "btnInstall" {
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
                 Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
+                if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                    Log-Text "   [WEB] Đang mở liên kết tải bộ cài chính thức: $($app.FallbackUrl)"
+                    try {
+                        Start-Process $app.FallbackUrl
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } catch {
+                        Log-Text "   [ERR - LỖI] Không thể mở trình duyệt cho $($app.Name)"
+                    }
+                    continue
+                }
+
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
                     $code = Invoke-GitHubAssetInstall -App $app
                 } else {
