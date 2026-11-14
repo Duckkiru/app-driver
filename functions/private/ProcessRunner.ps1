@@ -1,4 +1,4 @@
-$script:activeChildProcess = $null
+﻿$script:activeChildProcess = $null
 $script:isWindowClosing    = $false
 
 function Stop-ActiveChildProcess {

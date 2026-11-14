@@ -17,6 +17,8 @@ namespace DuckUtil
         public string Publisher { get; set; }
         public string InstallDate { get; set; }
         public string InstallLocation { get; set; }
+        public string DisplayIcon { get; set; }
+        public string IconSourcePath { get; set; }
         public string UninstallString { get; set; }
         public string QuietUninstallString { get; set; }
         public string RegistryPath { get; set; }
@@ -109,7 +111,9 @@ namespace DuckUtil
                                     info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
                                     string displayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
+                                    info.DisplayIcon = displayIcon;
                                     info.InstallLocation = InferInstallLocation(rawLoc, info.UninstallString, displayIcon);
+                                    info.IconSourcePath = ResolveBestIconPath(subKeyName, displayName, displayIcon, info.InstallLocation, info.UninstallString);
                                     info.Scope = target.Scope;
 
                                     string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
@@ -190,6 +194,275 @@ namespace DuckUtil
                     }
                 }
                 catch {}
+            }
+
+            return "";
+        }
+
+        public static string ConvertToPackedGuid(string guidStr)
+        {
+            if (string.IsNullOrWhiteSpace(guidStr)) return "";
+            string g = guidStr.Trim().Trim('{', '}').Replace("-", "");
+            if (g.Length != 32) return "";
+            for (int k = 0; k < 32; k++)
+            {
+                char c = g[k];
+                bool isHex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+                if (!isHex) return "";
+            }
+            char[] chars = new char[32];
+            for (int i = 0; i < 8; i++) chars[i] = g[7 - i];
+            for (int i = 0; i < 4; i++) chars[8 + i] = g[11 - i];
+            for (int i = 0; i < 4; i++) chars[12 + i] = g[15 - i];
+            for (int i = 0; i < 8; i++)
+            {
+                chars[16 + (i * 2)] = g[16 + (i * 2) + 1];
+                chars[16 + (i * 2) + 1] = g[16 + (i * 2)];
+            }
+            return new string(chars);
+        }
+
+        public static string CleanIconFilePath(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "";
+            string s = Environment.ExpandEnvironmentVariables(raw.Trim()).Replace('/', '\\');
+            if (s.StartsWith("\""))
+            {
+                int q = s.IndexOf('\"', 1);
+                if (q > 1) s = s.Substring(1, q - 1).Trim();
+                else s = s.Trim('\"');
+            }
+            else
+            {
+                int lastComma = s.LastIndexOf(',');
+                if (lastComma > 2)
+                {
+                    string after = s.Substring(lastComma + 1).Trim();
+                    int dummy;
+                    if (int.TryParse(after, out dummy))
+                    {
+                        s = s.Substring(0, lastComma).Trim();
+                    }
+                }
+            }
+            s = s.Trim('\"', ' ');
+            while (s.Contains("\\\\") && !s.StartsWith("\\\\"))
+            {
+                s = s.Replace("\\\\", "\\");
+            }
+            try
+            {
+                if (File.Exists(s)) return s;
+            }
+            catch {}
+
+            string[] exts = new string[] { ".ico", ".exe", ".dll" };
+            foreach (string ext in exts)
+            {
+                int idx = s.IndexOf(ext, StringComparison.OrdinalIgnoreCase);
+                if (idx > 0)
+                {
+                    string cand = s.Substring(0, idx + ext.Length).Trim('\"', ' ');
+                    try
+                    {
+                        if (File.Exists(cand)) return cand;
+                    }
+                    catch {}
+                }
+            }
+            return "";
+        }
+
+        private static string FindBestExeOrIcoInDirectory(string dirPath, string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return "";
+            try
+            {
+                if (!Directory.Exists(dirPath)) return "";
+            }
+            catch { return ""; }
+
+            try
+            {
+                string appIco = Path.Combine(dirPath, "app.ico");
+                if (File.Exists(appIco)) return appIco;
+                string iconIco = Path.Combine(dirPath, "icon.ico");
+                if (File.Exists(iconIco)) return iconIco;
+                string[] icos = Directory.GetFiles(dirPath, "*.ico", SearchOption.TopDirectoryOnly);
+                if (icos != null && icos.Length > 0) return icos[0];
+            }
+            catch {}
+
+            var dirsToScan = new List<string>();
+            dirsToScan.Add(dirPath);
+            string[] commonSubDirs = new string[] { "bin", "bin\\64bit", "64bit", "app", "Application", "Client" };
+            foreach (string sub in commonSubDirs)
+            {
+                try
+                {
+                    string sp = Path.Combine(dirPath, sub);
+                    if (Directory.Exists(sp)) dirsToScan.Add(sp);
+                }
+                catch {}
+            }
+            try
+            {
+                string[] subFolders = Directory.GetDirectories(dirPath, "app-*", SearchOption.TopDirectoryOnly);
+                if (subFolders != null && subFolders.Length > 0)
+                {
+                    for (int i = subFolders.Length - 1; i >= 0; i--)
+                    {
+                        dirsToScan.Add(subFolders[i]);
+                    }
+                }
+            }
+            catch {}
+
+            string cleanDisp = "";
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                cleanDisp = displayName.Replace(" ", "").ToLowerInvariant();
+            }
+
+            string bestExe = "";
+            int bestScore = -1;
+
+            foreach (string d in dirsToScan)
+            {
+                string[] exes = null;
+                try { exes = Directory.GetFiles(d, "*.exe", SearchOption.TopDirectoryOnly); } catch {}
+                if (exes == null || exes.Length == 0) continue;
+
+                foreach (string exe in exes)
+                {
+                    string nameNoExt = "";
+                    try { nameNoExt = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant(); } catch { continue; }
+                    if (string.IsNullOrEmpty(nameNoExt)) continue;
+
+                    if (nameNoExt.Contains("unins") || nameNoExt.Contains("setup") || nameNoExt.Contains("update") ||
+                        nameNoExt.Contains("crash") || nameNoExt.Contains("helper") || nameNoExt.Contains("repair") ||
+                        nameNoExt.Contains("patch") || nameNoExt.Contains("createdump") || nameNoExt.Contains("eclipsec"))
+                    {
+                        continue;
+                    }
+
+                    int score = 10;
+                    string compactExe = nameNoExt.Replace(" ", "").Replace("-", "").Replace("_", "");
+                    if (!string.IsNullOrEmpty(cleanDisp) && compactExe.Length >= 3)
+                    {
+                        if (cleanDisp.Contains(compactExe) || compactExe.Contains(cleanDisp))
+                        {
+                            score += 50;
+                        }
+                    }
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestExe = exe;
+                    }
+                }
+                if (bestScore >= 50) return bestExe;
+            }
+
+            return bestExe;
+        }
+
+        public static string ResolveBestIconPath(string subKeyName, string displayName, string displayIcon, string installLocation, string uninstallString)
+        {
+            string cleanedIcon = CleanIconFilePath(displayIcon);
+            if (!string.IsNullOrEmpty(cleanedIcon))
+            {
+                string fn = "";
+                try { fn = Path.GetFileNameWithoutExtension(cleanedIcon).ToLowerInvariant(); } catch {}
+                if (!fn.Contains("unins"))
+                {
+                    return cleanedIcon;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(subKeyName) && subKeyName.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(subKeyName);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Classes\Installer\Products\" + packed))
+                        {
+                            if (k != null)
+                            {
+                                string pi = CleanIconFilePath(k.GetValue("ProductIcon") as string);
+                                if (!string.IsNullOrEmpty(pi)) return pi;
+                            }
+                        }
+                    }
+                    catch {}
+                    try
+                    {
+                        using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Installer\Products\" + packed))
+                        {
+                            if (k != null)
+                            {
+                                string pi = CleanIconFilePath(k.GetValue("ProductIcon") as string);
+                                if (!string.IsNullOrEmpty(pi)) return pi;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                try
+                {
+                    string wiDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Installer", subKeyName);
+                    if (Directory.Exists(wiDir))
+                    {
+                        string[] wiFiles = Directory.GetFiles(wiDir);
+                        if (wiFiles != null && wiFiles.Length > 0)
+                        {
+                            foreach (string wf in wiFiles)
+                            {
+                                string wfn = Path.GetFileName(wf).ToLowerInvariant();
+                                if (wfn.EndsWith(".ico") || wfn.Contains("icon") || wfn.Contains("logo"))
+                                {
+                                    return wf;
+                                }
+                            }
+                            return wiFiles[0];
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            string fromDir = FindBestExeOrIcoInDirectory(installLocation, displayName);
+            if (!string.IsNullOrEmpty(fromDir)) return fromDir;
+
+            if (!string.IsNullOrEmpty(cleanedIcon))
+            {
+                try
+                {
+                    string iconDir = Path.GetDirectoryName(cleanedIcon);
+                    string sibling = FindBestExeOrIcoInDirectory(iconDir, displayName);
+                    if (!string.IsNullOrEmpty(sibling)) return sibling;
+                }
+                catch {}
+                return cleanedIcon;
+            }
+
+            if (!string.IsNullOrWhiteSpace(uninstallString) && uninstallString.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                string uExe = CleanIconFilePath(uninstallString);
+                if (!string.IsNullOrEmpty(uExe))
+                {
+                    try
+                    {
+                        string uDir = Path.GetDirectoryName(uExe);
+                        string uSibling = FindBestExeOrIcoInDirectory(uDir, displayName);
+                        if (!string.IsNullOrEmpty(uSibling)) return uSibling;
+                    }
+                    catch {}
+                    return uExe;
+                }
             }
 
             return "";

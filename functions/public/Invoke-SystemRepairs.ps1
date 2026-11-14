@@ -1,4 +1,4 @@
-function Reset-WindowsUpdateEngine {
+﻿function Reset-WindowsUpdateEngine {
     Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS, DoSvc & TrustedInstaller..."
     $services = @("wuauserv", "bits", "cryptsvc", "dosvc", "trustedinstaller")
     foreach ($s in $services) {

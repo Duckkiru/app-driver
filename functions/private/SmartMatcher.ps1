@@ -1,4 +1,4 @@
-$script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
+﻿$script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
 $script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9))
@@ -219,8 +219,13 @@ function Invoke-WingetListCapture {
             try { if (-not $p.HasExited) { $p.Kill() } } catch {}
             break
         }
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-        Start-Sleep -Milliseconds 30
+        try {
+            if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
+                Flush-PendingIconCache
+            }
+            [System.Windows.Forms.Application]::DoEvents()
+        } catch {}
+        Start-Sleep -Milliseconds 10
     }
 
     try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}

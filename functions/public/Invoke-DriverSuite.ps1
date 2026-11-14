@@ -1,4 +1,4 @@
-function Find-FaultyPnpDevices {
+﻿function Find-FaultyPnpDevices {
     try {
         return @(Get-PnpDevice -ErrorAction Stop | Where-Object {
             $_.Present -eq $true -and ($_.Status -ne 'OK' -or ($null -ne $_.ConfigManagerErrorCode -and $_.ConfigManagerErrorCode -ne 0))

@@ -1,4 +1,4 @@
-﻿$isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion')
+﻿$isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion') -or ([Environment]::CommandLine -match '(^|\s)--companion(\s|$)')
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
 )
@@ -7,7 +7,7 @@ $isInsideWT = -not [string]::IsNullOrWhiteSpace($env:WT_SESSION)
 $script:IsInsideWindowsTerminal = $isInsideWT
 
 if (-not $isCompanion -or -not $isAdmin) {
-    $psExe = if ($PSVersionTable.PSEdition -eq 'Core' -or (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)) {
+    $psExe = if ($PSVersionTable.PSEdition -eq 'Core') {
         "pwsh.exe"
     } else {
         "powershell.exe"

@@ -324,15 +324,8 @@
             </Grid>
         </Border>
 
-        <TabControl Grid.Row="1" Name="MainTabControl" Background="Transparent" BorderThickness="0" Padding="0">
-            <TabControl.ItemContainerStyle>
-                <Style TargetType="TabItem">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                </Style>
-            </TabControl.ItemContainerStyle>
-
-            <TabItem>
-                <Grid>
+        <Grid Grid.Row="1" Name="MainTabControl" Background="Transparent">
+            <Grid Name="TabPage0" Visibility="Visible">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -402,11 +395,9 @@
                             <StackPanel Grid.Column="3" Name="CardsCol3" Margin="4,0"/>
                         </Grid>
                     </ScrollViewer>
-                </Grid>
-            </TabItem>
+            </Grid>
 
-            <TabItem>
-                <Grid>
+            <Grid Name="TabPage1" Visibility="Hidden" IsHitTestVisible="False">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -502,11 +493,9 @@
                                   HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
                         <StackPanel Name="UninstallerRowsPanel" Margin="16,6,16,14"/>
                     </ScrollViewer>
-                </Grid>
-            </TabItem>
+            </Grid>
 
-            <TabItem>
-                <DockPanel>
+            <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
@@ -579,11 +568,9 @@
                         </Border>
                         </UniformGrid>
                     </ScrollViewer>
-                </DockPanel>
-            </TabItem>
+            </DockPanel>
 
-            <TabItem>
-                <DockPanel>
+            <DockPanel Name="TabPage3" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
@@ -640,9 +627,8 @@
                         </Border>
                         </UniformGrid>
                     </ScrollViewer>
-                </DockPanel>
-            </TabItem>
-        </TabControl>
+            </DockPanel>
+        </Grid>
 
         <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#192130" BorderThickness="0,1,0,0">
             <Grid>
