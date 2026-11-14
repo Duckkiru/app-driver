@@ -1587,21 +1587,9 @@ Register-Click "btnInstall" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
 
-                if ($tag.Status -eq "LATEST") {
-                    Log-Text "[OK] $($app.Name) đã ở phiên bản mới nhất ($($tag.InstalledVersion)), bỏ qua cài đè để bảo toàn dữ liệu."
+                if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED" -or ($script:installedMap -and $script:installedMap.ContainsKey($app.ID))) {
+                    Log-Text "[SKIP] $($app.Name) đã có trên máy (dùng 'Cập nhật mục chọn' nếu muốn nâng cấp)."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    continue
-                }
-
-                if ($tag.Status -eq "OUTDATED") {
-                    Log-Text "[$idx/$total] Phát hiện bản cũ ($($tag.InstalledVersion)) -> Chuyển sang Nâng cấp giữ nguyên dữ liệu: $($app.Name)..."
-                    $code = Invoke-SmartAppUpgrade -Tag $tag
-                    if ($code -eq 0) {
-                        Log-Text "   [OK - HOÀN THÀNH] $($app.Name)"
-                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    } else {
-                        Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
-                    }
                     continue
                 }
 
@@ -1676,6 +1664,12 @@ Register-Click "btnUpgradeSelected" {
 
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
+
+                if ($tag.Status -eq "NOT_INSTALLED" -or (-not $tag.Status -and -not ($script:installedMap -and $script:installedMap.ContainsKey($app.ID)))) {
+                    Log-Text "[SKIP] $($app.Name) chưa có trên máy (dùng 'Cài đặt mục chọn' để cài mới)."
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    continue
+                }
 
                 if ($tag.Status -eq "LATEST") {
                     Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."

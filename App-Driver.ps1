@@ -4672,19 +4672,19 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Button Name="btnInstall" Content="Install Selected" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnInstall" Content="Cài đặt mục chọn" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="15,7"/>
-                                    <Button Name="btnUpgradeSelected" Content="Upgrade Selected" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnUpgradeSelected" Content="Cập nhật mục chọn" Style="{StaticResource SecondaryButton}"
                                             Foreground="#A78BFA" BorderBrush="#2E234E"/>
-                                    <Button Name="btnUpgradeAll" Content="Upgrade All" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnUpgradeAll" Content="Cập nhật tất cả" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#3B311B"/>
-                                    <Button Name="btnScanInstalled" Content="Get Installed" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnScanInstalled" Content="Làm mới" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#1D3652"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                    <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
-                                    <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}" Margin="0"/>
+                                    <Button Name="btnSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                                    <Button Name="btnDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Margin="0"/>
                                 </StackPanel>
                             </Grid>
 
@@ -4775,8 +4775,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                                 BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="Xóa bộ lọc"/>
                                     </Grid>
                                 </Border>
-                                <Button Name="btnUninstallSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
-                                <Button Name="btnUninstallDeselectAll" Content="Clear" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                <Button Name="btnUninstallSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                <Button Name="btnUninstallDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -9921,21 +9921,9 @@ Register-Click "btnInstall" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
 
-                if ($tag.Status -eq "LATEST") {
-                    Log-Text "[OK] $($app.Name) đã ở phiên bản mới nhất ($($tag.InstalledVersion)), bỏ qua cài đè để bảo toàn dữ liệu."
+                if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED" -or ($script:installedMap -and $script:installedMap.ContainsKey($app.ID))) {
+                    Log-Text "[SKIP] $($app.Name) đã có trên máy (dùng 'Cập nhật mục chọn' nếu muốn nâng cấp)."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    continue
-                }
-
-                if ($tag.Status -eq "OUTDATED") {
-                    Log-Text "[$idx/$total] Phát hiện bản cũ ($($tag.InstalledVersion)) -> Chuyển sang Nâng cấp giữ nguyên dữ liệu: $($app.Name)..."
-                    $code = Invoke-SmartAppUpgrade -Tag $tag
-                    if ($code -eq 0) {
-                        Log-Text "   [OK - HOÀN THÀNH] $($app.Name)"
-                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    } else {
-                        Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
-                    }
                     continue
                 }
 
@@ -10010,6 +9998,12 @@ Register-Click "btnUpgradeSelected" {
 
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
+
+                if ($tag.Status -eq "NOT_INSTALLED" -or (-not $tag.Status -and -not ($script:installedMap -and $script:installedMap.ContainsKey($app.ID)))) {
+                    Log-Text "[SKIP] $($app.Name) chưa có trên máy (dùng 'Cài đặt mục chọn' để cài mới)."
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    continue
+                }
 
                 if ($tag.Status -eq "LATEST") {
                     Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."

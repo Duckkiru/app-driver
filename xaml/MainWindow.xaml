@@ -353,19 +353,19 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Button Name="btnInstall" Content="Install Selected" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnInstall" Content="Cài đặt mục chọn" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="15,7"/>
-                                    <Button Name="btnUpgradeSelected" Content="Upgrade Selected" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnUpgradeSelected" Content="Cập nhật mục chọn" Style="{StaticResource SecondaryButton}"
                                             Foreground="#A78BFA" BorderBrush="#2E234E"/>
-                                    <Button Name="btnUpgradeAll" Content="Upgrade All" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnUpgradeAll" Content="Cập nhật tất cả" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#3B311B"/>
-                                    <Button Name="btnScanInstalled" Content="Get Installed" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnScanInstalled" Content="Làm mới" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#1D3652"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                    <Button Name="btnSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
-                                    <Button Name="btnDeselectAll" Content="Clear Selection" Style="{StaticResource SecondaryButton}" Margin="0"/>
+                                    <Button Name="btnSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                                    <Button Name="btnDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Margin="0"/>
                                 </StackPanel>
                             </Grid>
 
@@ -456,8 +456,8 @@
                                                 BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="Xóa bộ lọc"/>
                                     </Grid>
                                 </Border>
-                                <Button Name="btnUninstallSelectAll" Content="Select All" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
-                                <Button Name="btnUninstallDeselectAll" Content="Clear" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                <Button Name="btnUninstallSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                <Button Name="btnUninstallDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
                             </StackPanel>
                         </Grid>
                     </Border>
