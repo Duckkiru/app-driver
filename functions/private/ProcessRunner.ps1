@@ -4,7 +4,13 @@ $script:isWindowClosing    = $false
 function Stop-ActiveChildProcess {
     try {
         if ($script:activeChildProcess -and -not $script:activeChildProcess.HasExited) {
-            $script:activeChildProcess.Kill()
+            $pidToKill = $script:activeChildProcess.Id
+            try {
+                Start-Process "taskkill.exe" -ArgumentList "/F /T /PID $pidToKill" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+            } catch {}
+            try {
+                $script:activeChildProcess.Kill()
+            } catch {}
         }
     } catch {}
 }
@@ -90,13 +96,13 @@ function Run-CliStream {
                     Stop-ActiveChildProcess
                     break
                 }
-                [System.Windows.Forms.Application]::DoEvents()
+                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
                 Start-Sleep -Milliseconds 25
             }
 
             try { [void]$p.WaitForExit(1000) } catch {}
-            [System.Windows.Forms.Application]::DoEvents()
-            $exitCode = $p.ExitCode
+            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+            $exitCode = try { $p.ExitCode } catch { -1 }
             return $exitCode
         } finally {
             $script:activeChildProcess = $null

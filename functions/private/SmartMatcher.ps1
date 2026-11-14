@@ -219,7 +219,7 @@ function Invoke-WingetListCapture {
             try { if (-not $p.HasExited) { $p.Kill() } } catch {}
             break
         }
-        [System.Windows.Forms.Application]::DoEvents()
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
         Start-Sleep -Milliseconds 30
     }
 
@@ -408,7 +408,7 @@ function Get-LocalInstalledEntries {
         }
     }
 
-    [System.Windows.Forms.Application]::DoEvents()
+    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
     try {
         foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
             if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
@@ -438,7 +438,7 @@ function Scan-And-ColorizeApps {
         Log-Text "[SCAN] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
         if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        [System.Windows.Forms.Application]::DoEvents()
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
 
         $wingetItems = [System.Collections.Generic.List[object]]::new()
         $wingetOk = $false
@@ -621,7 +621,7 @@ function Scan-And-ColorizeApps {
     foreach ($row in $allItemBorders) {
         $app = $row.Tag.App
         $grid = $row.Child
-        $tb = if ($row.Tag.NameText) { $row.Tag.NameText } else { $grid.Children[2] }
+        $tb = if ($row.Tag.NameText) { $row.Tag.NameText } elseif ($grid -and $grid.Children.Count -gt 2) { $grid.Children[2] } else { $null }
         $updateBadge = $row.Tag.UpdateBadge
         $updateText  = $row.Tag.UpdateText
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }

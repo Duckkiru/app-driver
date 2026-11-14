@@ -208,7 +208,7 @@ function Find-AppLeftovers {
     }
 
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
-        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
+        $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         $isSafe = $true
         foreach ($ex in $exclusions) {
             if ($loc -like "*\$ex\*" -or $loc -like "*\$ex") { $isSafe = $false; break }
@@ -308,6 +308,7 @@ function Find-AppLeftovers {
         [Environment]::GetFolderPath('Programs'),
         [Environment]::GetFolderPath('CommonPrograms')
     )
+    $wsh = $null
     try {
         $wsh = New-Object -ComObject WScript.Shell
         $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
@@ -340,7 +341,12 @@ function Find-AppLeftovers {
                 } catch {}
             }
         }
-    } catch {}
+    } catch {} finally {
+        if ($null -ne $wsh) {
+            try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
+            $wsh = $null
+        }
+    }
 
     $runKeys = @(
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
@@ -602,6 +608,7 @@ function Find-SystemOrphanLeftovers {
         [Environment]::GetFolderPath('CommonPrograms')
     )
 
+    $wsh = $null
     try {
         $wsh = New-Object -ComObject WScript.Shell
         foreach ($dp in $desktopPaths) {
@@ -630,7 +637,12 @@ function Find-SystemOrphanLeftovers {
                 } catch {}
             }
         }
-    } catch {}
+    } catch {} finally {
+        if ($null -ne $wsh) {
+            try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
+            $wsh = $null
+        }
+    }
 
     return @($orphans)
 }
@@ -652,13 +664,17 @@ function Show-LeftoverReviewDialog {
     $dialog.Height = 580
     $dialog.MinWidth = 760
     $dialog.MinHeight = 440
-    $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    if ($OwnerWindow -and ($OwnerWindow -is [System.Windows.Window]) -and $OwnerWindow.IsLoaded) {
+        $dialog.Owner = $OwnerWindow
+        $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    } else {
+        $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    }
     $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0A0E15")
     $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
-    if ($OwnerWindow) { $dialog.Owner = $OwnerWindow }
 
     $rootGrid = New-Object System.Windows.Controls.Grid
     $rowTop = New-Object System.Windows.Controls.RowDefinition; $rowTop.Height = [System.Windows.GridLength]::Auto
@@ -933,7 +949,7 @@ function Show-LeftoverReviewDialog {
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
         if ($checkedItems.Count -eq 0) {
-            [System.Windows.Forms.MessageBox]::Show("B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+            [System.Windows.MessageBox]::Show($dialog, "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
             return
         }
 
@@ -1039,7 +1055,7 @@ function Invoke-DeepAppUninstall {
 
     $safeLoc = ""
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
-        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
+        $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             $safeLoc = $loc
             $svcCount = [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($loc)

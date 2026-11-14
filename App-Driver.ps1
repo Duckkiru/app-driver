@@ -5109,6 +5109,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32;
@@ -5358,6 +5359,7 @@ namespace DuckUtil
 
             return raw.Trim('\"', ' ');
         }
+
         public static long GetHollowDirectorySize(string rootPath, int maxDepth, long maxSizeLimit)
         {
             if (string.IsNullOrEmpty(rootPath)) return -1L;
@@ -5458,6 +5460,107 @@ namespace DuckUtil
             return totalSize;
         }
 
+        private static List<string> EnumerateFilesSafe(string rootDir, string pattern, int maxDepth)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrEmpty(rootDir)) return results;
+            try
+            {
+                if (!Directory.Exists(rootDir)) return results;
+            }
+            catch { return results; }
+
+            var currentLevel = new List<string> { rootDir };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir, pattern))
+                        {
+                            results.Add(file);
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return results;
+        }
+
+        private static List<string> EnumerateDirectoriesSafe(string rootDir, int maxDepth)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrEmpty(rootDir)) return results;
+            try
+            {
+                if (!Directory.Exists(rootDir)) return results;
+            }
+            catch { return results; }
+
+            var currentLevel = new List<string> { rootDir };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var sub in Directory.EnumerateDirectories(dir))
+                        {
+                            results.Add(sub);
+                            if (depth < maxDepth)
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return results;
+        }
+
+        private static string GetSignerSubject(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return "";
+            try
+            {
+                MethodInfo method = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
+                if (method != null)
+                {
+                    object cert = method.Invoke(null, new object[] { filePath });
+                    if (cert != null)
+                    {
+                        PropertyInfo prop = cert.GetType().GetProperty("Subject");
+                        if (prop != null)
+                        {
+                            return prop.GetValue(cert, null) as string ?? "";
+                        }
+                    }
+                }
+            }
+            catch {}
+            return "";
+        }
+
         public static int StopProcessesInDirectory(string targetDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir)) return 0;
@@ -5483,7 +5586,12 @@ namespace DuckUtil
                     if (!string.IsNullOrEmpty(fileName) &&
                         fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        try { NtSuspendProcess(p.Handle); } catch {}
+                        try
+                        {
+                            IntPtr h = p.Handle;
+                            NtSuspendProcess(h);
+                        }
+                        catch {}
                         matched.Add(p);
                     }
                     else
@@ -5577,7 +5685,7 @@ namespace DuckUtil
 
             try
             {
-                foreach (string taskFile in Directory.EnumerateFiles(tasksRoot, "*", SearchOption.AllDirectories))
+                foreach (string taskFile in EnumerateFilesSafe(tasksRoot, "*", 6))
                 {
                     try
                     {
@@ -5638,7 +5746,7 @@ namespace DuckUtil
             {
                 if (!Directory.Exists(targetDir)) return false;
                 int checkedCount = 0;
-                foreach (string file in Directory.EnumerateFiles(targetDir, "*", SearchOption.AllDirectories))
+                foreach (string file in EnumerateFilesSafe(targetDir, "*", 4))
                 {
                     string ext = Path.GetExtension(file);
                     if (!string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) &&
@@ -5653,13 +5761,7 @@ namespace DuckUtil
                     try
                     {
                         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
-                        string certSubj = "";
-                        try
-                        {
-                            X509Certificate cert = X509Certificate.CreateFromSignedFile(file);
-                            if (cert != null) certSubj = cert.Subject ?? "";
-                        }
-                        catch {}
+                        string certSubj = GetSignerSubject(file);
 
                         string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "") + " | " + (fvi.OriginalFilename ?? "") + " | " + certSubj;
                         foreach (string kw in expectedKeywords)
@@ -5716,7 +5818,7 @@ namespace DuckUtil
                 try
                 {
                     int count = 0;
-                    foreach (string file in Directory.EnumerateFiles(targetDir, "*.exe", SearchOption.AllDirectories))
+                    foreach (string file in EnumerateFilesSafe(targetDir, "*.exe", 4))
                     {
                         count++;
                         if (count > 8) break;
@@ -5744,10 +5846,10 @@ namespace DuckUtil
 
                         try
                         {
-                            X509Certificate cert = X509Certificate.CreateFromSignedFile(file);
-                            if (cert != null && !string.IsNullOrWhiteSpace(cert.Subject))
+                            string certSubj = GetSignerSubject(file);
+                            if (!string.IsNullOrWhiteSpace(certSubj))
                             {
-                                string[] parts = cert.Subject.Split(',');
+                                string[] parts = certSubj.Split(',');
                                 foreach (string part in parts)
                                 {
                                     string p = part.Trim();
@@ -5810,7 +5912,7 @@ namespace DuckUtil
 
             try
             {
-                foreach (string file in Directory.EnumerateFiles(norm, "*", SearchOption.AllDirectories))
+                foreach (string file in EnumerateFilesSafe(norm, "*", 10))
                 {
                     try
                     {
@@ -5842,8 +5944,8 @@ namespace DuckUtil
 
             try
             {
-                string[] subDirs = Directory.GetDirectories(norm, "*", SearchOption.AllDirectories);
-                Array.Sort(subDirs, delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                List<string> subDirs = EnumerateDirectoriesSafe(norm, 10);
+                subDirs.Sort(delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
                 foreach (string sd in subDirs)
                 {
                     try
@@ -5888,7 +5990,13 @@ $script:isWindowClosing    = $false
 function Stop-ActiveChildProcess {
     try {
         if ($script:activeChildProcess -and -not $script:activeChildProcess.HasExited) {
-            $script:activeChildProcess.Kill()
+            $pidToKill = $script:activeChildProcess.Id
+            try {
+                Start-Process "taskkill.exe" -ArgumentList "/F /T /PID $pidToKill" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+            } catch {}
+            try {
+                $script:activeChildProcess.Kill()
+            } catch {}
         }
     } catch {}
 }
@@ -5974,13 +6082,13 @@ function Run-CliStream {
                     Stop-ActiveChildProcess
                     break
                 }
-                [System.Windows.Forms.Application]::DoEvents()
+                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
                 Start-Sleep -Milliseconds 25
             }
 
             try { [void]$p.WaitForExit(1000) } catch {}
-            [System.Windows.Forms.Application]::DoEvents()
-            $exitCode = $p.ExitCode
+            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+            $exitCode = try { $p.ExitCode } catch { -1 }
             return $exitCode
         } finally {
             $script:activeChildProcess = $null
@@ -6213,7 +6321,7 @@ function Invoke-WingetListCapture {
             try { if (-not $p.HasExited) { $p.Kill() } } catch {}
             break
         }
-        [System.Windows.Forms.Application]::DoEvents()
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
         Start-Sleep -Milliseconds 30
     }
 
@@ -6402,7 +6510,7 @@ function Get-LocalInstalledEntries {
         }
     }
 
-    [System.Windows.Forms.Application]::DoEvents()
+    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
     try {
         foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
             if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
@@ -6432,7 +6540,7 @@ function Scan-And-ColorizeApps {
         Log-Text "[SCAN] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
         if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        [System.Windows.Forms.Application]::DoEvents()
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
 
         $wingetItems = [System.Collections.Generic.List[object]]::new()
         $wingetOk = $false
@@ -6615,7 +6723,7 @@ function Scan-And-ColorizeApps {
     foreach ($row in $allItemBorders) {
         $app = $row.Tag.App
         $grid = $row.Child
-        $tb = if ($row.Tag.NameText) { $row.Tag.NameText } else { $grid.Children[2] }
+        $tb = if ($row.Tag.NameText) { $row.Tag.NameText } elseif ($grid -and $grid.Children.Count -gt 2) { $grid.Children[2] } else { $null }
         $updateBadge = $row.Tag.UpdateBadge
         $updateText  = $row.Tag.UpdateText
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
@@ -6891,7 +6999,7 @@ function Find-AppLeftovers {
     }
 
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
-        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
+        $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         $isSafe = $true
         foreach ($ex in $exclusions) {
             if ($loc -like "*\$ex\*" -or $loc -like "*\$ex") { $isSafe = $false; break }
@@ -6991,6 +7099,7 @@ function Find-AppLeftovers {
         [Environment]::GetFolderPath('Programs'),
         [Environment]::GetFolderPath('CommonPrograms')
     )
+    $wsh = $null
     try {
         $wsh = New-Object -ComObject WScript.Shell
         $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
@@ -7023,7 +7132,12 @@ function Find-AppLeftovers {
                 } catch {}
             }
         }
-    } catch {}
+    } catch {} finally {
+        if ($null -ne $wsh) {
+            try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
+            $wsh = $null
+        }
+    }
 
     $runKeys = @(
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
@@ -7285,6 +7399,7 @@ function Find-SystemOrphanLeftovers {
         [Environment]::GetFolderPath('CommonPrograms')
     )
 
+    $wsh = $null
     try {
         $wsh = New-Object -ComObject WScript.Shell
         foreach ($dp in $desktopPaths) {
@@ -7313,7 +7428,12 @@ function Find-SystemOrphanLeftovers {
                 } catch {}
             }
         }
-    } catch {}
+    } catch {} finally {
+        if ($null -ne $wsh) {
+            try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
+            $wsh = $null
+        }
+    }
 
     return @($orphans)
 }
@@ -7335,13 +7455,17 @@ function Show-LeftoverReviewDialog {
     $dialog.Height = 580
     $dialog.MinWidth = 760
     $dialog.MinHeight = 440
-    $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    if ($OwnerWindow -and ($OwnerWindow -is [System.Windows.Window]) -and $OwnerWindow.IsLoaded) {
+        $dialog.Owner = $OwnerWindow
+        $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    } else {
+        $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    }
     $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0A0E15")
     $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
-    if ($OwnerWindow) { $dialog.Owner = $OwnerWindow }
 
     $rootGrid = New-Object System.Windows.Controls.Grid
     $rowTop = New-Object System.Windows.Controls.RowDefinition; $rowTop.Height = [System.Windows.GridLength]::Auto
@@ -7616,7 +7740,7 @@ function Show-LeftoverReviewDialog {
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
         if ($checkedItems.Count -eq 0) {
-            [System.Windows.Forms.MessageBox]::Show("B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+            [System.Windows.MessageBox]::Show($dialog, "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
             return
         }
 
@@ -7722,7 +7846,7 @@ function Invoke-DeepAppUninstall {
 
     $safeLoc = ""
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
-        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
+        $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             $safeLoc = $loc
             $svcCount = [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($loc)

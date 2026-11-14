@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32;
@@ -251,6 +252,7 @@ namespace DuckUtil
 
             return raw.Trim('\"', ' ');
         }
+
         public static long GetHollowDirectorySize(string rootPath, int maxDepth, long maxSizeLimit)
         {
             if (string.IsNullOrEmpty(rootPath)) return -1L;
@@ -351,6 +353,107 @@ namespace DuckUtil
             return totalSize;
         }
 
+        private static List<string> EnumerateFilesSafe(string rootDir, string pattern, int maxDepth)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrEmpty(rootDir)) return results;
+            try
+            {
+                if (!Directory.Exists(rootDir)) return results;
+            }
+            catch { return results; }
+
+            var currentLevel = new List<string> { rootDir };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir, pattern))
+                        {
+                            results.Add(file);
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return results;
+        }
+
+        private static List<string> EnumerateDirectoriesSafe(string rootDir, int maxDepth)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrEmpty(rootDir)) return results;
+            try
+            {
+                if (!Directory.Exists(rootDir)) return results;
+            }
+            catch { return results; }
+
+            var currentLevel = new List<string> { rootDir };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var sub in Directory.EnumerateDirectories(dir))
+                        {
+                            results.Add(sub);
+                            if (depth < maxDepth)
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return results;
+        }
+
+        private static string GetSignerSubject(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return "";
+            try
+            {
+                MethodInfo method = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
+                if (method != null)
+                {
+                    object cert = method.Invoke(null, new object[] { filePath });
+                    if (cert != null)
+                    {
+                        PropertyInfo prop = cert.GetType().GetProperty("Subject");
+                        if (prop != null)
+                        {
+                            return prop.GetValue(cert, null) as string ?? "";
+                        }
+                    }
+                }
+            }
+            catch {}
+            return "";
+        }
+
         public static int StopProcessesInDirectory(string targetDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir)) return 0;
@@ -376,7 +479,12 @@ namespace DuckUtil
                     if (!string.IsNullOrEmpty(fileName) &&
                         fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        try { NtSuspendProcess(p.Handle); } catch {}
+                        try
+                        {
+                            IntPtr h = p.Handle;
+                            NtSuspendProcess(h);
+                        }
+                        catch {}
                         matched.Add(p);
                     }
                     else
@@ -470,7 +578,7 @@ namespace DuckUtil
 
             try
             {
-                foreach (string taskFile in Directory.EnumerateFiles(tasksRoot, "*", SearchOption.AllDirectories))
+                foreach (string taskFile in EnumerateFilesSafe(tasksRoot, "*", 6))
                 {
                     try
                     {
@@ -531,7 +639,7 @@ namespace DuckUtil
             {
                 if (!Directory.Exists(targetDir)) return false;
                 int checkedCount = 0;
-                foreach (string file in Directory.EnumerateFiles(targetDir, "*", SearchOption.AllDirectories))
+                foreach (string file in EnumerateFilesSafe(targetDir, "*", 4))
                 {
                     string ext = Path.GetExtension(file);
                     if (!string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) &&
@@ -546,13 +654,7 @@ namespace DuckUtil
                     try
                     {
                         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
-                        string certSubj = "";
-                        try
-                        {
-                            X509Certificate cert = X509Certificate.CreateFromSignedFile(file);
-                            if (cert != null) certSubj = cert.Subject ?? "";
-                        }
-                        catch {}
+                        string certSubj = GetSignerSubject(file);
 
                         string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "") + " | " + (fvi.OriginalFilename ?? "") + " | " + certSubj;
                         foreach (string kw in expectedKeywords)
@@ -609,7 +711,7 @@ namespace DuckUtil
                 try
                 {
                     int count = 0;
-                    foreach (string file in Directory.EnumerateFiles(targetDir, "*.exe", SearchOption.AllDirectories))
+                    foreach (string file in EnumerateFilesSafe(targetDir, "*.exe", 4))
                     {
                         count++;
                         if (count > 8) break;
@@ -637,10 +739,10 @@ namespace DuckUtil
 
                         try
                         {
-                            X509Certificate cert = X509Certificate.CreateFromSignedFile(file);
-                            if (cert != null && !string.IsNullOrWhiteSpace(cert.Subject))
+                            string certSubj = GetSignerSubject(file);
+                            if (!string.IsNullOrWhiteSpace(certSubj))
                             {
-                                string[] parts = cert.Subject.Split(',');
+                                string[] parts = certSubj.Split(',');
                                 foreach (string part in parts)
                                 {
                                     string p = part.Trim();
@@ -703,7 +805,7 @@ namespace DuckUtil
 
             try
             {
-                foreach (string file in Directory.EnumerateFiles(norm, "*", SearchOption.AllDirectories))
+                foreach (string file in EnumerateFilesSafe(norm, "*", 10))
                 {
                     try
                     {
@@ -735,8 +837,8 @@ namespace DuckUtil
 
             try
             {
-                string[] subDirs = Directory.GetDirectories(norm, "*", SearchOption.AllDirectories);
-                Array.Sort(subDirs, delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                List<string> subDirs = EnumerateDirectoriesSafe(norm, 10);
+                subDirs.Sort(delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
                 foreach (string sd in subDirs)
                 {
                     try
