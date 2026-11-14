@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32;
 
 namespace DuckUtil
@@ -409,10 +410,18 @@ namespace DuckUtil
                     try
                     {
                         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
-                        string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "");
+                        string certSubj = "";
+                        try
+                        {
+                            X509Certificate cert = X509Certificate.CreateFromSignedFile(file);
+                            if (cert != null) certSubj = cert.Subject ?? "";
+                        }
+                        catch {}
+
+                        string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "") + " | " + (fvi.OriginalFilename ?? "") + " | " + certSubj;
                         foreach (string kw in expectedKeywords)
                         {
-                            if (string.IsNullOrWhiteSpace(kw) || kw.Length < 3) continue;
+                            if (string.IsNullOrWhiteSpace(kw) || kw.Length < 2) continue;
                             if (combined.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
                             {
                                 return true;
@@ -424,6 +433,104 @@ namespace DuckUtil
             }
             catch {}
             return false;
+        }
+
+        public static string[] ExtractBinaryAndCertTokens(string targetDir, string uninstallString, string displayIcon)
+        {
+            var results = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var ignoreWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "uninstall", "uninst", "unins000", "unins001", "setup", "install", "installer",
+                "update", "updater", "helper", "launcher", "client", "app", "application",
+                "main", "bin", "x64", "x86", "win32", "win64", "release", "debug", "program files",
+                "program files (x86)", "common files", "programs", "appdata", "local", "roaming",
+                "windows", "system32", "temp", "microsoft", "corporation", "company", "limited",
+                "ltd", "inc", "llc", "corp", "co", "technology", "software", "network", "beijing",
+                "shenzhen", "guangzhou", "shanghai", "hangzhou", "china"
+            };
+
+            string[] exeSources = new string[] { uninstallString, displayIcon };
+            foreach (string src in exeSources)
+            {
+                string exe = ExtractExePath(src);
+                if (!string.IsNullOrWhiteSpace(exe))
+                {
+                    try
+                    {
+                        string baseName = Path.GetFileNameWithoutExtension(exe);
+                        if (!string.IsNullOrWhiteSpace(baseName) && baseName.Length >= 3 && !ignoreWords.Contains(baseName))
+                        {
+                            if (seen.Add(baseName)) results.Add(baseName);
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetDir) && Directory.Exists(targetDir))
+            {
+                try
+                {
+                    int count = 0;
+                    foreach (string file in Directory.EnumerateFiles(targetDir, "*.exe", SearchOption.AllDirectories))
+                    {
+                        count++;
+                        if (count > 8) break;
+                        string fn = Path.GetFileNameWithoutExtension(file);
+                        if (!string.IsNullOrWhiteSpace(fn) && fn.Length >= 3 && !ignoreWords.Contains(fn))
+                        {
+                            if (seen.Add(fn)) results.Add(fn);
+                        }
+
+                        try
+                        {
+                            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
+                            string[] fields = new string[] { fvi.ProductName, fvi.CompanyName, fvi.InternalName };
+                            foreach (string f in fields)
+                            {
+                                if (string.IsNullOrWhiteSpace(f)) continue;
+                                string clean = f.Replace(".exe", "").Replace(".dll", "").Trim();
+                                if (clean.Length >= 3 && clean.Length <= 30 && !ignoreWords.Contains(clean))
+                                {
+                                    if (seen.Add(clean)) results.Add(clean);
+                                }
+                            }
+                        }
+                        catch {}
+
+                        try
+                        {
+                            X509Certificate cert = X509Certificate.CreateFromSignedFile(file);
+                            if (cert != null && !string.IsNullOrWhiteSpace(cert.Subject))
+                            {
+                                string[] parts = cert.Subject.Split(',');
+                                foreach (string part in parts)
+                                {
+                                    string p = part.Trim();
+                                    if (p.StartsWith("CN=", StringComparison.OrdinalIgnoreCase) ||
+                                        p.StartsWith("O=", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        string val = p.Substring(p.IndexOf('=') + 1).Trim('\"', ' ');
+                                        string[] words = val.Split(new char[] { ' ', '(', ')', '.', ',', '-' }, StringSplitOptions.RemoveEmptyEntries);
+                                        foreach (string w in words)
+                                        {
+                                            if (w.Length >= 4 && !ignoreWords.Contains(w))
+                                            {
+                                                if (seen.Add(w)) results.Add(w);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+                catch {}
+            }
+
+            return results.ToArray();
         }
 
         public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)

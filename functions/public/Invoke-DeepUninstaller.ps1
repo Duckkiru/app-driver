@@ -57,7 +57,10 @@ function Test-SafeAppDirectoryForCleanup {
         $parentName = if ($parts.Count -ge 3) { $parts[$parts.Count - 2] } else { "" }
         $matchedOwner = $false
         foreach ($kw in $Keywords) {
-            if ([string]::IsNullOrWhiteSpace($kw) -or $kw.Length -lt 3) { continue }
+            if ([string]::IsNullOrWhiteSpace($kw)) { continue }
+            $isCjk = $kw -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
+            if ((-not $isCjk) -and $kw.Length -lt 3) { continue }
+            if ($isCjk -and $kw.Length -lt 2) { continue }
             if ($leafName.IndexOf($kw, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
                 ($parentName -and $parentName.IndexOf($kw, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)) {
                 $matchedOwner = $true
@@ -66,6 +69,12 @@ function Test-SafeAppDirectoryForCleanup {
         }
         if (-not $matchedOwner) {
             $matchedOwner = [DuckUtil.DeepUninstallerEngine]::VerifyDirectoryExeOwnership($norm, $Keywords)
+        }
+        if (-not $matchedOwner -and $AppEntry.InstallLocation) {
+            $regLoc = $AppEntry.InstallLocation.Trim().TrimEnd('\')
+            if ($regLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -and $parts.Count -ge 3) {
+                $matchedOwner = $true
+            }
         }
         if (-not $matchedOwner) { return $false }
     }
@@ -106,12 +115,84 @@ function Find-AppLeftovers {
     if ([string]::IsNullOrWhiteSpace($rawName)) { return @() }
 
     $cleanName = ($rawName -replace '\(.*?\)', '').Trim()
-    $cleanName = ($cleanName -replace '[0-9]+(\.[0-9]+)*', '').Trim()
-    $nameKeywords = @($cleanName -split '\s+' | Where-Object { $_.Length -ge 4 -and $exclusions -notcontains $_ })
-    if ($cleanName.Length -ge 4 -and $exclusions -notcontains $cleanName) {
-        $nameKeywords = @($cleanName) + $nameKeywords
+    $cleanName = ($cleanName -replace '[0-9]+(\.[0-9]+)+', '').Trim()
+
+    $cnAliasMap = @{
+        "$([char]0x817E)$([char]0x8BAF)" = @("Tencent", "QQ")
+        "$([char]0x5FAE)$([char]0x4FE1)" = @("WeChat", "Tencent")
+        "$([char]0x767E)$([char]0x5EA6)" = @("Baidu", "BaiduNetdisk")
+        "$([char]0x7F51)$([char]0x6613)" = @("NetEase", "CloudMusic")
+        "$([char]0x8FC5)$([char]0x96F7)" = @("Thunder", "Xunlei", "Thunder Network")
+        "$([char]0x5947)$([char]0x864E)" = @("Qihoo360", "360Safe", "360se6")
+        "360"                            = @("360Safe", "Qihoo360", "360se6")
+        "$([char]0x91D1)$([char]0x5C71)" = @("Kingsoft", "WPS Office", "kingsoft")
+        "$([char]0x641C)$([char]0x72D7)" = @("Sogou", "SogouInput", "SogouPY")
+        "$([char]0x54D4)$([char]0x54E9)" = @("Bilibili", "Bililive")
+        "$([char]0x6296)$([char]0x97F3)" = @("Douyin", "ByteDance")
+        "$([char]0x5B57)$([char]0x8282)" = @("ByteDance", "Douyin")
+        "$([char]0x9489)$([char]0x9489)" = @("DingTalk", "Alibaba", "AliWorkbench")
+        "$([char]0x963F)$([char]0x91CC)" = @("Alibaba", "AliWorkbench", "DingTalk")
+        "$([char]0x7231)$([char]0x5947)$([char]0x827A)" = @("IQIYI", "QyClient")
+        "$([char]0x4F18)$([char]0x9177)" = @("Youku", "YoukuClient")
+        "$([char]0x9177)$([char]0x72D7)" = @("KuGou", "KuGouMusic")
+        "$([char]0x9177)$([char]0x6211)" = @("Kuwo", "kwmusic")
+        "$([char]0x9C81)$([char]0x5927)$([char]0x5E08)" = @("LuDaShi", "ComputerZ")
+        "$([char]0x96F7)$([char]0x7535)" = @("LDPlayer", "XuanZhi", "leidian", "dnplayer")
+        "$([char]0x84DD)$([char]0x53E0)" = @("BlueStacks", "BlueStacks_nxt")
+        "2345"                           = @("2345Soft", "2345Pic", "2345Explorer")
+        "$([char]0x864E)$([char]0x7259)" = @("Huya", "HuyaClient")
+        "$([char]0x6597)$([char]0x9C7C)" = @("Douyu", "DouyuClient")
     }
-    $nameKeywords = @($nameKeywords | Select-Object -Unique)
+
+    $candidateTokens = [System.Collections.Generic.List[string]]::new()
+    foreach ($tk in ($cleanName -split '\s+')) {
+        $isCjk = $tk -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
+        if (($isCjk -and $tk.Length -ge 2) -or ((-not $isCjk) -and $tk.Length -ge 4)) {
+            if ($exclusions -notcontains $tk) { $candidateTokens.Add($tk) }
+        }
+    }
+    $isFullCjk = $cleanName -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
+    if (($isFullCjk -and $cleanName.Length -ge 2) -or ((-not $isFullCjk) -and $cleanName.Length -ge 4)) {
+        if ($exclusions -notcontains $cleanName) { $candidateTokens.Add($cleanName) }
+    }
+
+    if ($AppEntry.Id -and $AppEntry.Id -notmatch '^\{?[0-9A-Fa-f\-]{12,}\}?$' -and $AppEntry.Id -notmatch '^MSI') {
+        $cleanId = ($AppEntry.Id -replace '_is1$', '').Trim()
+        if ($cleanId.Length -ge 3 -and $exclusions -notcontains $cleanId) {
+            $candidateTokens.Add($cleanId)
+        }
+    }
+
+    if ($AppEntry.InstallLocation) {
+        $locTrim = $AppEntry.InstallLocation.Trim().TrimEnd('\')
+        $locLeaf = [System.IO.Path]::GetFileName($locTrim)
+        $genericFolders = @('Program Files', 'Program Files (x86)', 'Programs', 'Apps', 'Games', 'Software', 'Tools', 'Common Files', 'bin', 'Client')
+        if ($locLeaf -and $locLeaf.Length -ge 3 -and $genericFolders -notcontains $locLeaf -and $exclusions -notcontains $locLeaf) {
+            $candidateTokens.Add($locLeaf)
+        }
+    }
+
+    $binTokens = [DuckUtil.DeepUninstallerEngine]::ExtractBinaryAndCertTokens($AppEntry.InstallLocation, $AppEntry.UninstallString, "")
+    if ($binTokens) {
+        foreach ($bt in $binTokens) {
+            if ($bt -and $bt.Length -ge 3 -and $exclusions -notcontains $bt) {
+                $candidateTokens.Add($bt)
+            }
+        }
+    }
+
+    $combinedSource = "$rawName | $($AppEntry.Publisher) | $($AppEntry.InstallLocation) | $($AppEntry.UninstallString)"
+    $vendorFolders = [System.Collections.Generic.List[string]]::new()
+    foreach ($cnKey in $cnAliasMap.Keys) {
+        if ($combinedSource.IndexOf($cnKey, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            foreach ($mapped in $cnAliasMap[$cnKey]) {
+                $candidateTokens.Add($mapped)
+                $vendorFolders.Add($mapped)
+            }
+        }
+    }
+
+    $nameKeywords = @($candidateTokens | Select-Object -Unique)
     if ($nameKeywords.Count -eq 0) { return @() }
 
     $ownerKeywords = [System.Collections.Generic.List[string]]::new()
@@ -119,7 +200,8 @@ function Find-AppLeftovers {
     if (-not [string]::IsNullOrWhiteSpace($AppEntry.Publisher)) {
         $pubClean = ($AppEntry.Publisher -replace '\(.*?\)', '').Trim()
         foreach ($pk in ($pubClean -split '\s+')) {
-            if ($pk.Length -ge 4 -and $exclusions -notcontains $pk) {
+            $isPkCjk = $pk -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
+            if ((($isPkCjk -and $pk.Length -ge 2) -or ($pk.Length -ge 3)) -and $exclusions -notcontains $pk) {
                 $ownerKeywords.Add($pk)
             }
         }
@@ -156,12 +238,15 @@ function Find-AppLeftovers {
     }
     if (-not [string]::IsNullOrWhiteSpace($AppEntry.Publisher)) {
         $pubClean = ($AppEntry.Publisher -replace '\(.*?\)', '' -replace '(?i)\b(Inc\.?|LLC|Ltd\.?|Corp\.?|Corporation|GmbH|Co\.?)\b', '').Trim(' ', ',', '.')
-        if ($pubClean.Length -ge 3 -and $exclusions -notcontains $pubClean) {
-            foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, "C:\ProgramData")) {
-                if ($baseRoot) {
-                    $pubSub = Join-Path $baseRoot $pubClean
-                    if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
-                }
+        if ($pubClean.Length -ge 2 -and $exclusions -notcontains $pubClean) {
+            $vendorFolders.Add($pubClean)
+        }
+    }
+    foreach ($vf in ($vendorFolders | Select-Object -Unique)) {
+        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, "C:\ProgramData")) {
+            if ($baseRoot) {
+                $pubSub = Join-Path $baseRoot $vf
+                if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
             }
         }
     }
