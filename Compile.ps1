@@ -8,6 +8,7 @@ $appsJson = Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json")
 $xamlCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml")
 $mainCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1")
 $smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothScrollController.cs")
+$appCatalogCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\AppCatalogEngine.cs")
 $deepCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\DeepUninstallerEngine.cs")
 
 $sb = [System.Text.StringBuilder]::new()
@@ -75,6 +76,15 @@ $sb.AppendLine(('        $smoothScrollCs = @' + $q)) | Out-Null
 $sb.AppendLine($smoothCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
 $sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs') | Out-Null
+$sb.AppendLine('    } catch {}') | Out-Null
+$sb.AppendLine('}') | Out-Null
+$sb.AppendLine() | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine(('        $appCatalogCs = @' + $q)) | Out-Null
+$sb.AppendLine($appCatalogCsCode.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null

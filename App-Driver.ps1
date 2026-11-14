@@ -5205,41 +5205,18 @@ namespace DuckUtil {
     } catch {}
 }
 
-if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {
     try {
-        $deepUninstCs = @'
+        $appCatalogCs = @'
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace DuckUtil
 {
-    public class InstalledAppInfo
-    {
-        public string Id { get; set; }
-        public string DisplayName { get; set; }
-        public string DisplayVersion { get; set; }
-        public string Publisher { get; set; }
-        public string InstallDate { get; set; }
-        public string InstallLocation { get; set; }
-        public string DisplayIcon { get; set; }
-        public string IconSourcePath { get; set; }
-        public string UninstallString { get; set; }
-        public string QuietUninstallString { get; set; }
-        public string RegistryPath { get; set; }
-        public string RawRegPath { get; set; }
-        public string Scope { get; set; }
-        public long SizeBytes { get; set; }
-        public bool IsBrokenOrphan { get; set; }
-    }
-
     public class CatalogSensorItem
     {
         public string Name { get; set; }
@@ -5251,28 +5228,8 @@ namespace DuckUtil
         public string Source { get; set; }
     }
 
-    public struct ScanTarget
+    public static class AppCatalogEngine
     {
-        public RegistryHive Hive;
-        public RegistryView View;
-        public string SubKey;
-        public string Scope;
-        public ScanTarget(RegistryHive h, RegistryView v, string k, string s)
-        {
-            Hive = h;
-            View = v;
-            SubKey = k;
-            Scope = s;
-        }
-    }
-
-    public static class DeepUninstallerEngine
-    {
-        private const int MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
-        private static Dictionary<string, string> _cachedDirIndex;
-        private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
-        private static readonly object _dirIndexLock = new object();
-
         private static readonly Regex _rxCleanParens = new Regex(@"\((?!x64|x86|arm64).*?\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxCleanVerWord = new Regex(@"\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxCleanVerNum = new Regex(@"\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -5281,12 +5238,6 @@ namespace DuckUtil
         private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
         private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
-
-        [DllImport("ntdll.dll", SetLastError = true)]
-        private static extern int NtSuspendProcess(IntPtr processHandle);
 
         public static string CleanCatalogAppName(string name)
         {
@@ -5566,377 +5517,6 @@ namespace DuckUtil
             return parsed;
         }
 
-        private static Dictionary<string, string> BuildInstallDirectoryIndex()
-        {
-            lock (_dirIndexLock)
-            {
-                if (_cachedDirIndex != null && (DateTime.UtcNow - _dirIndexBuiltAt).TotalSeconds < 20)
-                {
-                    return _cachedDirIndex;
-                }
-
-                var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-                RegistryHive[] hives = new RegistryHive[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
-                foreach (var hive in hives)
-                {
-                    try
-                    {
-                        using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
-                        using (var appPaths = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"))
-                        {
-                            if (appPaths != null)
-                            {
-                                foreach (string sub in appPaths.GetSubKeyNames())
-                                {
-                                    try
-                                    {
-                                        using (var sk = appPaths.OpenSubKey(sub))
-                                        {
-                                            if (sk == null) continue;
-                                            string defVal = CleanIconFilePath(sk.GetValue("") as string);
-                                            string pathVal = (sk.GetValue("Path") as string ?? "").Trim().Trim('\"');
-                                            string dir = "";
-                                            if (!string.IsNullOrEmpty(defVal) && File.Exists(defVal))
-                                            {
-                                                dir = Path.GetDirectoryName(defVal);
-                                            }
-                                            else if (!string.IsNullOrEmpty(pathVal) && Directory.Exists(pathVal))
-                                            {
-                                                dir = pathVal;
-                                            }
-                                            if (!string.IsNullOrEmpty(dir) && dir.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) < 0)
-                                            {
-                                                string exeKey = Path.GetFileNameWithoutExtension(sub).ToLowerInvariant();
-                                                if (!string.IsNullOrEmpty(exeKey) && !index.ContainsKey(exeKey))
-                                                {
-                                                    index[exeKey] = dir.TrimEnd('\\');
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch {}
-                                }
-                            }
-                        }
-                    }
-                    catch {}
-                }
-
-                var roots = new List<string>();
-                string pf64 = Environment.GetEnvironmentVariable("ProgramW6432");
-                string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
-                string pf   = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                if (!string.IsNullOrEmpty(pf64)) roots.Add(pf64);
-                if (!string.IsNullOrEmpty(pf) && !roots.Contains(pf)) roots.Add(pf);
-                if (!string.IsNullOrEmpty(pf86)) roots.Add(pf86);
-                if (!string.IsNullOrEmpty(localApp))
-                {
-                    roots.Add(Path.Combine(localApp, "Programs"));
-                    roots.Add(localApp);
-                }
-
-                foreach (string root in roots)
-                {
-                    if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) continue;
-                    bool isRawLocal = string.Equals(root, localApp, StringComparison.OrdinalIgnoreCase);
-                    try
-                    {
-                        foreach (string dir in Directory.GetDirectories(root))
-                        {
-                            string folderName = Path.GetFileName(dir);
-                            if (string.IsNullOrEmpty(folderName)) continue;
-                            if (folderName.Equals("WindowsApps", StringComparison.OrdinalIgnoreCase) ||
-                                folderName.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
-                                folderName.Equals("Microsoft", StringComparison.OrdinalIgnoreCase) ||
-                                folderName.Equals("Package Cache", StringComparison.OrdinalIgnoreCase) ||
-                                folderName.Equals("Common Files", StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
-
-                            string norm = NormalizeLookupToken(folderName);
-                            if (norm.Length >= 3 && !index.ContainsKey(norm))
-                            {
-                                index[norm] = dir;
-                            }
-
-                            if (!isRawLocal)
-                            {
-                                try
-                                {
-                                    foreach (string subDir in Directory.GetDirectories(dir))
-                                    {
-                                        string subName = Path.GetFileName(subDir);
-                                        if (string.IsNullOrEmpty(subName)) continue;
-                                        string normSub = NormalizeLookupToken(subName);
-                                        if (normSub.Length >= 4 && !index.ContainsKey(normSub))
-                                        {
-                                            index[normSub] = subDir;
-                                        }
-                                        string normCombined = NormalizeLookupToken(folderName + subName);
-                                        if (normCombined.Length >= 4 && !index.ContainsKey(normCombined))
-                                        {
-                                            index[normCombined] = subDir;
-                                        }
-                                    }
-                                }
-                                catch {}
-                            }
-                        }
-                    }
-                    catch {}
-                }
-
-                _cachedDirIndex = index;
-                _dirIndexBuiltAt = DateTime.UtcNow;
-                return index;
-            }
-        }
-
-        private static string NormalizeLookupToken(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return "";
-            var sb = new System.Text.StringBuilder(s.Length);
-            foreach (char c in s)
-            {
-                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
-                {
-                    sb.Append(c);
-                }
-                else if (c >= 'A' && c <= 'Z')
-                {
-                    sb.Append((char)(c + 32));
-                }
-            }
-            return sb.ToString();
-        }
-
-        public static List<InstalledAppInfo> GetInstalledApps()
-        {
-            var list = new List<InstalledAppInfo>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var seenCleanNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var dirIndex = BuildInstallDirectoryIndex();
-
-            var targets = new ScanTarget[]
-            {
-                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "System"),
-                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "System"),
-                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "User"),
-                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "User")
-            };
-
-            foreach (var target in targets)
-            {
-                try
-                {
-                    using (var baseKey = RegistryKey.OpenBaseKey(target.Hive, target.View))
-                    using (var uninstallKey = baseKey.OpenSubKey(target.SubKey))
-                    {
-                        if (uninstallKey == null) continue;
-                        foreach (var subKeyName in uninstallKey.GetSubKeyNames())
-                        {
-                            try
-                            {
-                                using (var appKey = uninstallKey.OpenSubKey(subKeyName))
-                                {
-                                    if (appKey == null) continue;
-
-                                    var sysComp = appKey.GetValue("SystemComponent");
-                                    if (sysComp != null && (sysComp.ToString() == "1" || ((sysComp is int) && ((int)sysComp == 1))))
-                                        continue;
-
-                                    var parentKey = appKey.GetValue("ParentKeyName") as string;
-                                    if (!string.IsNullOrEmpty(parentKey)) continue;
-
-                                    var releaseType = appKey.GetValue("ReleaseType") as string;
-                                    if (!string.IsNullOrEmpty(releaseType) && (releaseType.IndexOf("Update", StringComparison.OrdinalIgnoreCase) >= 0 || releaseType.IndexOf("Hotfix", StringComparison.OrdinalIgnoreCase) >= 0))
-                                        continue;
-
-                                    var displayName = appKey.GetValue("DisplayName") as string;
-                                    if (string.IsNullOrWhiteSpace(displayName)) continue;
-                                    displayName = displayName.Trim();
-
-                                    if (displayName.Equals("vs_CoreEditorFonts", StringComparison.OrdinalIgnoreCase) ||
-                                        displayName.Equals("Windows SDK AddOn", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        continue;
-                                    }
-
-                                    string dispVer = (appKey.GetValue("DisplayVersion") as string ?? "").Trim();
-                                    string dedupKey = displayName + "|" + dispVer;
-                                    if (seen.Contains(dedupKey)) continue;
-                                    seen.Add(dedupKey);
-                                    seenCleanNames.Add(NormalizeLookupToken(CleanCatalogAppName(displayName)));
-
-                                    var info = new InstalledAppInfo();
-                                    info.Id = subKeyName;
-                                    info.DisplayName = displayName;
-                                    info.DisplayVersion = dispVer;
-                                    info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
-                                    info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
-                                    info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
-                                    info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
-                                    info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
-                                    info.DisplayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
-                                    info.Scope = target.Scope;
-
-                                    string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
-                                    string fullSub = target.SubKey + @"\" + subKeyName;
-                                    info.RegistryPath = hivePrefix + fullSub;
-                                    info.RawRegPath = (target.Hive == RegistryHive.LocalMachine ? "HKEY_LOCAL_MACHINE\\" : "HKEY_CURRENT_USER\\") + fullSub;
-
-                                    long size = 0;
-                                    var estSize = appKey.GetValue("EstimatedSize");
-                                    if (estSize != null)
-                                    {
-                                        long esVal;
-                                        if (long.TryParse(estSize.ToString(), out esVal))
-                                        {
-                                            size = esVal * 1024L;
-                                        }
-                                    }
-                                    info.SizeBytes = size;
-
-                                    list.Add(info);
-                                }
-                            }
-                            catch {}
-                        }
-                    }
-                }
-                catch {}
-            }
-
-            try
-            {
-                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
-                using (var pkgRoot = baseKey.OpenSubKey(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"))
-                {
-                    if (pkgRoot != null)
-                    {
-                        foreach (string pkgFull in pkgRoot.GetSubKeyNames())
-                        {
-                            if (string.IsNullOrWhiteSpace(pkgFull)) continue;
-                            if (Regex.IsMatch(pkgFull, @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)", RegexOptions.IgnoreCase))
-                            {
-                                continue;
-                            }
-
-                            try
-                            {
-                                using (var sk = pkgRoot.OpenSubKey(pkgFull))
-                                {
-                                    if (sk == null) continue;
-                                    string rootFolder = (sk.GetValue("PackageRootFolder") as string ?? "").Trim();
-                                    string rawDisp = (sk.GetValue("DisplayName") as string ?? "").Trim();
-                                    string[] parts = pkgFull.Split('_');
-                                    string pkgIdPrefix = parts.Length > 0 ? parts[0] : pkgFull;
-                                    string pkgVer = parts.Length > 1 ? parts[1] : "";
-
-                                    string friendlyName = rawDisp;
-                                    string publisher = "Microsoft Store (MSIX)";
-                                    if (pkgIdPrefix.IndexOf("MicrosoftPCManager", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "Microsoft PC Manager";
-                                        publisher = "Microsoft Corporation";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("WindowsTerminal", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "Windows Terminal";
-                                        publisher = "Microsoft Corporation";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("WindowsSubsystemForLinux", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "Windows Subsystem for Linux";
-                                        publisher = "Microsoft Corporation";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("TranslucentTB", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "TranslucentTB";
-                                        publisher = "Charles Milette";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("TelegramDesktop", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "Telegram Desktop";
-                                        publisher = "Telegram Messenger LLP";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("OpenAI.Codex", StringComparison.OrdinalIgnoreCase) >= 0 || pkgIdPrefix.IndexOf("OpenAI.ChatGPT", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "ChatGPT";
-                                        publisher = "OpenAI";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("LenovoCompanion", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "Lenovo Vantage";
-                                        publisher = "Lenovo Group Ltd.";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("KaliLinux", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "Kali Linux";
-                                        publisher = "Offensive Security";
-                                    }
-                                    else if (pkgIdPrefix.IndexOf("NVIDIAControlPanel", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        friendlyName = "NVIDIA Control Panel";
-                                        publisher = "NVIDIA Corporation";
-                                    }
-                                    else if (string.IsNullOrWhiteSpace(friendlyName) || friendlyName.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        continue;
-                                    }
-
-                                    string normClean = NormalizeLookupToken(CleanCatalogAppName(friendlyName));
-                                    if (seenCleanNames.Contains(normClean)) continue;
-                                    seenCleanNames.Add(normClean);
-
-                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Get-AppxPackage -Name '*" + pkgIdPrefix + "*' | Remove-AppxPackage\"";
-                                    var msixInfo = new InstalledAppInfo
-                                    {
-                                        Id = "MSIX\\" + pkgFull,
-                                        DisplayName = friendlyName,
-                                        DisplayVersion = pkgVer,
-                                        Publisher = publisher,
-                                        InstallDate = "",
-                                        InstallLocation = rootFolder,
-                                        DisplayIcon = "",
-                                        UninstallString = uninstCmd,
-                                        QuietUninstallString = uninstCmd,
-                                        RegistryPath = @"HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\" + pkgFull,
-                                        RawRegPath = @"HKEY_CURRENT_USER\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\" + pkgFull,
-                                        Scope = "User",
-                                        SizeBytes = 0
-                                    };
-                                    list.Add(msixInfo);
-                                }
-                            }
-                            catch {}
-                        }
-                    }
-                }
-            }
-            catch {}
-
-            Parallel.ForEach(list, info =>
-            {
-                try
-                {
-                    info.InstallLocation = InferInstallLocation(info.Id, info.DisplayName, info.InstallLocation, info.UninstallString, info.DisplayIcon, dirIndex);
-                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
-                    if (info.SizeBytes == 0 && !string.IsNullOrEmpty(info.InstallLocation))
-                    {
-                        info.SizeBytes = GetDirectorySizeCapped(info.InstallLocation, 2, 350);
-                    }
-                    info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
-                }
-                catch {}
-            });
-
-            return list;
-        }
-
         private static string ResolveCliExactVersion(string exePath, string toolKey)
         {
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath)) return "Installed";
@@ -6023,6 +5603,64 @@ namespace DuckUtil
             return "Installed";
         }
 
+        private static string ExtractExePath(string cmd)
+        {
+            if (string.IsNullOrWhiteSpace(cmd)) return null;
+            string raw = cmd.Trim();
+            if (raw.StartsWith("\""))
+            {
+                int nextQuote = raw.IndexOf('\"', 1);
+                if (nextQuote > 1)
+                {
+                    return raw.Substring(1, nextQuote - 1).Trim();
+                }
+            }
+
+            int exeIdx = raw.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            if (exeIdx > 0)
+            {
+                return raw.Substring(0, exeIdx + 4).Trim('\"', ' ');
+            }
+
+            int spaceIdx = raw.IndexOf(' ');
+            if (spaceIdx > 0)
+            {
+                return raw.Substring(0, spaceIdx).Trim('\"', ' ');
+            }
+
+            return raw.Trim('\"', ' ');
+        }
+
+        private static bool IsBrokenRegistryEntry(string uninstallString, string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(uninstallString)) return false;
+            string u = uninstallString.Trim();
+            if (u.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+
+            string exePath = ExtractExePath(u);
+            if (string.IsNullOrEmpty(exePath)) return false;
+
+            bool exeExists = false;
+            try { exeExists = File.Exists(exePath); } catch {}
+
+            if (!exeExists)
+            {
+                bool locExists = false;
+                try
+                {
+                    if (!string.IsNullOrEmpty(installLocation) && Directory.Exists(installLocation))
+                    {
+                        locExists = true;
+                    }
+                }
+                catch {}
+
+                if (!locExists) return true;
+            }
+
+            return false;
+        }
+
         public static List<CatalogSensorItem> ScanCatalogSensors()
         {
             var items = new List<CatalogSensorItem>(256);
@@ -6077,7 +5715,7 @@ namespace DuckUtil
 
                                     string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim();
                                     string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
-                                    if (CheckIsBrokenOrphan(uStr, loc)) continue;
+                                    if (IsBrokenRegistryEntry(uStr, loc)) continue;
 
                                     string ver = (sk.GetValue("DisplayVersion") as string ?? "Installed").Trim();
                                     if (string.IsNullOrEmpty(ver)) ver = "Installed";
@@ -6345,6 +5983,460 @@ namespace DuckUtil
             }
 
             return items;
+        }
+    }
+}
+'@
+        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp"
+    } catch {}
+}
+
+if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+    try {
+        $deepUninstCs = @'
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+
+namespace DuckUtil
+{
+    public class InstalledAppInfo
+    {
+        public string Id { get; set; }
+        public string DisplayName { get; set; }
+        public string DisplayVersion { get; set; }
+        public string Publisher { get; set; }
+        public string InstallDate { get; set; }
+        public string InstallLocation { get; set; }
+        public string DisplayIcon { get; set; }
+        public string IconSourcePath { get; set; }
+        public string UninstallString { get; set; }
+        public string QuietUninstallString { get; set; }
+        public string RegistryPath { get; set; }
+        public string RawRegPath { get; set; }
+        public string Scope { get; set; }
+        public long SizeBytes { get; set; }
+        public bool IsBrokenOrphan { get; set; }
+    }
+
+    public struct ScanTarget
+    {
+        public RegistryHive Hive;
+        public RegistryView View;
+        public string SubKey;
+        public string Scope;
+        public ScanTarget(RegistryHive h, RegistryView v, string k, string s)
+        {
+            Hive = h;
+            View = v;
+            SubKey = k;
+            Scope = s;
+        }
+    }
+
+    public static class DeepUninstallerEngine
+    {
+        private const int MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
+        private static Dictionary<string, string> _cachedDirIndex;
+        private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
+        private static readonly object _dirIndexLock = new object();
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
+
+        [DllImport("ntdll.dll", SetLastError = true)]
+        private static extern int NtSuspendProcess(IntPtr processHandle);
+
+        private static Dictionary<string, string> BuildInstallDirectoryIndex()
+        {
+            lock (_dirIndexLock)
+            {
+                if (_cachedDirIndex != null && (DateTime.UtcNow - _dirIndexBuiltAt).TotalSeconds < 20)
+                {
+                    return _cachedDirIndex;
+                }
+
+                var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                RegistryHive[] hives = new RegistryHive[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
+                foreach (var hive in hives)
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                        using (var appPaths = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"))
+                        {
+                            if (appPaths != null)
+                            {
+                                foreach (string sub in appPaths.GetSubKeyNames())
+                                {
+                                    try
+                                    {
+                                        using (var sk = appPaths.OpenSubKey(sub))
+                                        {
+                                            if (sk == null) continue;
+                                            string defVal = CleanIconFilePath(sk.GetValue("") as string);
+                                            string pathVal = (sk.GetValue("Path") as string ?? "").Trim().Trim('\"');
+                                            string dir = "";
+                                            if (!string.IsNullOrEmpty(defVal) && File.Exists(defVal))
+                                            {
+                                                dir = Path.GetDirectoryName(defVal);
+                                            }
+                                            else if (!string.IsNullOrEmpty(pathVal) && Directory.Exists(pathVal))
+                                            {
+                                                dir = pathVal;
+                                            }
+                                            if (!string.IsNullOrEmpty(dir) && dir.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) < 0)
+                                            {
+                                                string exeKey = Path.GetFileNameWithoutExtension(sub).ToLowerInvariant();
+                                                if (!string.IsNullOrEmpty(exeKey) && !index.ContainsKey(exeKey))
+                                                {
+                                                    index[exeKey] = dir.TrimEnd('\\');
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                var roots = new List<string>();
+                string pf64 = Environment.GetEnvironmentVariable("ProgramW6432");
+                string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                string pf   = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrEmpty(pf64)) roots.Add(pf64);
+                if (!string.IsNullOrEmpty(pf) && !roots.Contains(pf)) roots.Add(pf);
+                if (!string.IsNullOrEmpty(pf86)) roots.Add(pf86);
+                if (!string.IsNullOrEmpty(localApp))
+                {
+                    roots.Add(Path.Combine(localApp, "Programs"));
+                    roots.Add(localApp);
+                }
+
+                foreach (string root in roots)
+                {
+                    if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) continue;
+                    bool isRawLocal = string.Equals(root, localApp, StringComparison.OrdinalIgnoreCase);
+                    try
+                    {
+                        foreach (string dir in Directory.GetDirectories(root))
+                        {
+                            string folderName = Path.GetFileName(dir);
+                            if (string.IsNullOrEmpty(folderName)) continue;
+                            if (folderName.Equals("WindowsApps", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Package Cache", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Common Files", StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            string norm = NormalizeLookupToken(folderName);
+                            if (norm.Length >= 3 && !index.ContainsKey(norm))
+                            {
+                                index[norm] = dir;
+                            }
+
+                            if (!isRawLocal)
+                            {
+                                try
+                                {
+                                    foreach (string subDir in Directory.GetDirectories(dir))
+                                    {
+                                        string subName = Path.GetFileName(subDir);
+                                        if (string.IsNullOrEmpty(subName)) continue;
+                                        string normSub = NormalizeLookupToken(subName);
+                                        if (normSub.Length >= 4 && !index.ContainsKey(normSub))
+                                        {
+                                            index[normSub] = subDir;
+                                        }
+                                        string normCombined = NormalizeLookupToken(folderName + subName);
+                                        if (normCombined.Length >= 4 && !index.ContainsKey(normCombined))
+                                        {
+                                            index[normCombined] = subDir;
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                _cachedDirIndex = index;
+                _dirIndexBuiltAt = DateTime.UtcNow;
+                return index;
+            }
+        }
+
+        private static string NormalizeLookupToken(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                {
+                    sb.Append(c);
+                }
+                else if (c >= 'A' && c <= 'Z')
+                {
+                    sb.Append((char)(c + 32));
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static string CleanDisplayNameForDedup(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            string c = Regex.Replace(name, @"\((?!x64|x86|arm64).*?\)", "", RegexOptions.IgnoreCase).Replace("(", "").Replace(")", "").Trim().ToLowerInvariant();
+            c = Regex.Replace(c, @"\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*", "", RegexOptions.IgnoreCase);
+            c = Regex.Replace(c, @"\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b", "", RegexOptions.IgnoreCase);
+            string[] terms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
+            foreach (string term in terms)
+            {
+                c = c.Replace(term, "");
+            }
+            return Regex.Replace(c, @"\s+", " ").Trim();
+        }
+
+        public static List<InstalledAppInfo> GetInstalledApps()
+        {
+            var list = new List<InstalledAppInfo>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenCleanNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dirIndex = BuildInstallDirectoryIndex();
+
+            var targets = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "System"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "System"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "User"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "User")
+            };
+
+            foreach (var target in targets)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(target.Hive, target.View))
+                    using (var uninstallKey = baseKey.OpenSubKey(target.SubKey))
+                    {
+                        if (uninstallKey == null) continue;
+                        foreach (var subKeyName in uninstallKey.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var appKey = uninstallKey.OpenSubKey(subKeyName))
+                                {
+                                    if (appKey == null) continue;
+
+                                    var sysComp = appKey.GetValue("SystemComponent");
+                                    if (sysComp != null && (sysComp.ToString() == "1" || ((sysComp is int) && ((int)sysComp == 1))))
+                                        continue;
+
+                                    var parentKey = appKey.GetValue("ParentKeyName") as string;
+                                    if (!string.IsNullOrEmpty(parentKey)) continue;
+
+                                    var releaseType = appKey.GetValue("ReleaseType") as string;
+                                    if (!string.IsNullOrEmpty(releaseType) && (releaseType.IndexOf("Update", StringComparison.OrdinalIgnoreCase) >= 0 || releaseType.IndexOf("Hotfix", StringComparison.OrdinalIgnoreCase) >= 0))
+                                        continue;
+
+                                    var displayName = appKey.GetValue("DisplayName") as string;
+                                    if (string.IsNullOrWhiteSpace(displayName)) continue;
+                                    displayName = displayName.Trim();
+
+                                    if (displayName.Equals("vs_CoreEditorFonts", StringComparison.OrdinalIgnoreCase) ||
+                                        displayName.Equals("Windows SDK AddOn", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        continue;
+                                    }
+
+                                    string dispVer = (appKey.GetValue("DisplayVersion") as string ?? "").Trim();
+                                    string dedupKey = displayName + "|" + dispVer;
+                                    if (seen.Contains(dedupKey)) continue;
+                                    seen.Add(dedupKey);
+                                    seenCleanNames.Add(NormalizeLookupToken(CleanDisplayNameForDedup(displayName)));
+
+                                    var info = new InstalledAppInfo();
+                                    info.Id = subKeyName;
+                                    info.DisplayName = displayName;
+                                    info.DisplayVersion = dispVer;
+                                    info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
+                                    info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
+                                    info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
+                                    info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
+                                    info.DisplayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
+                                    info.Scope = target.Scope;
+
+                                    string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
+                                    string fullSub = target.SubKey + @"\" + subKeyName;
+                                    info.RegistryPath = hivePrefix + fullSub;
+                                    info.RawRegPath = (target.Hive == RegistryHive.LocalMachine ? "HKEY_LOCAL_MACHINE\\" : "HKEY_CURRENT_USER\\") + fullSub;
+
+                                    long size = 0;
+                                    var estSize = appKey.GetValue("EstimatedSize");
+                                    if (estSize != null)
+                                    {
+                                        long esVal;
+                                        if (long.TryParse(estSize.ToString(), out esVal))
+                                        {
+                                            size = esVal * 1024L;
+                                        }
+                                    }
+                                    info.SizeBytes = size;
+
+                                    list.Add(info);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (var pkgRoot = baseKey.OpenSubKey(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"))
+                {
+                    if (pkgRoot != null)
+                    {
+                        foreach (string pkgFull in pkgRoot.GetSubKeyNames())
+                        {
+                            if (string.IsNullOrWhiteSpace(pkgFull)) continue;
+                            if (Regex.IsMatch(pkgFull, @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)", RegexOptions.IgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                using (var sk = pkgRoot.OpenSubKey(pkgFull))
+                                {
+                                    if (sk == null) continue;
+                                    string rootFolder = (sk.GetValue("PackageRootFolder") as string ?? "").Trim();
+                                    string rawDisp = (sk.GetValue("DisplayName") as string ?? "").Trim();
+                                    string[] parts = pkgFull.Split('_');
+                                    string pkgIdPrefix = parts.Length > 0 ? parts[0] : pkgFull;
+                                    string pkgVer = parts.Length > 1 ? parts[1] : "";
+
+                                    string friendlyName = rawDisp;
+                                    string publisher = "Microsoft Store (MSIX)";
+                                    if (pkgIdPrefix.IndexOf("MicrosoftPCManager", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Microsoft PC Manager";
+                                        publisher = "Microsoft Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("WindowsTerminal", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Windows Terminal";
+                                        publisher = "Microsoft Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("WindowsSubsystemForLinux", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Windows Subsystem for Linux";
+                                        publisher = "Microsoft Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("TranslucentTB", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "TranslucentTB";
+                                        publisher = "Charles Milette";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("TelegramDesktop", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Telegram Desktop";
+                                        publisher = "Telegram Messenger LLP";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("OpenAI.Codex", StringComparison.OrdinalIgnoreCase) >= 0 || pkgIdPrefix.IndexOf("OpenAI.ChatGPT", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "ChatGPT";
+                                        publisher = "OpenAI";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("LenovoCompanion", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Lenovo Vantage";
+                                        publisher = "Lenovo Group Ltd.";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("KaliLinux", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Kali Linux";
+                                        publisher = "Offensive Security";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("NVIDIAControlPanel", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "NVIDIA Control Panel";
+                                        publisher = "NVIDIA Corporation";
+                                    }
+                                    else if (string.IsNullOrWhiteSpace(friendlyName) || friendlyName.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        continue;
+                                    }
+
+                                    string normClean = NormalizeLookupToken(CleanDisplayNameForDedup(friendlyName));
+                                    if (seenCleanNames.Contains(normClean)) continue;
+                                    seenCleanNames.Add(normClean);
+
+                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Get-AppxPackage -Name '*" + pkgIdPrefix + "*' | Remove-AppxPackage\"";
+                                    var msixInfo = new InstalledAppInfo
+                                    {
+                                        Id = "MSIX\\" + pkgFull,
+                                        DisplayName = friendlyName,
+                                        DisplayVersion = pkgVer,
+                                        Publisher = publisher,
+                                        InstallDate = "",
+                                        InstallLocation = rootFolder,
+                                        DisplayIcon = "",
+                                        UninstallString = uninstCmd,
+                                        QuietUninstallString = uninstCmd,
+                                        RegistryPath = @"HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\" + pkgFull,
+                                        RawRegPath = @"HKEY_CURRENT_USER\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\" + pkgFull,
+                                        Scope = "User",
+                                        SizeBytes = 0
+                                    };
+                                    list.Add(msixInfo);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            Parallel.ForEach(list, info =>
+            {
+                try
+                {
+                    info.InstallLocation = InferInstallLocation(info.Id, info.DisplayName, info.InstallLocation, info.UninstallString, info.DisplayIcon, dirIndex);
+                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
+                    if (info.SizeBytes == 0 && !string.IsNullOrEmpty(info.InstallLocation))
+                    {
+                        info.SizeBytes = GetDirectorySizeCapped(info.InstallLocation, 2, 350);
+                    }
+                    info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
+                }
+                catch {}
+            });
+
+            return list;
         }
 
         private static string InferInstallLocation(string subKeyName, string displayName, string installLocation, string uninstallString, string displayIcon, Dictionary<string, string> dirIndex)
@@ -7717,6 +7809,29 @@ function Run-CliStream {
     }
 }
 
+if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
+    Add-Type -AssemblyName PresentationCore -ErrorAction SilentlyContinue
+}
+
+if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {
+    try {
+        if ($PSScriptRoot) {
+            $csCandidates = @(
+                (Join-Path $PSScriptRoot "..\..\csharp\AppCatalogEngine.cs"),
+                (Join-Path $PSScriptRoot "..\csharp\AppCatalogEngine.cs"),
+                (Join-Path $PSScriptRoot "csharp\AppCatalogEngine.cs")
+            )
+            foreach ($cand in $csCandidates) {
+                if (Test-Path -LiteralPath $cand) {
+                    $appCatalogCs = Get-Content -Raw -Encoding utf8 $cand
+                    Add-Type -TypeDefinition $appCatalogCs -ErrorAction SilentlyContinue
+                    break
+                }
+            }
+        }
+    } catch {}
+}
+
 $script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
@@ -7739,8 +7854,8 @@ function Get-CleanAppName {
     if ($script:cleanNameCache.TryGetValue($RawName, [ref]$cached)) {
         return $cached
     }
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        $clean = [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($RawName)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        $clean = [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($RawName)
         $script:cleanNameCache[$RawName] = $clean
         return $clean
     }
@@ -7763,8 +7878,8 @@ function Get-VersionNumbers {
     if ($script:versionNumCache.TryGetValue($VerStr, [ref]$cached)) {
         return $cached
     }
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        $arr = [DuckUtil.DeepUninstallerEngine]::GetVersionNumbers($VerStr)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        $arr = [DuckUtil.AppCatalogEngine]::GetVersionNumbers($VerStr)
         $script:versionNumCache[$VerStr] = $arr
         return $arr
     }
@@ -7791,8 +7906,8 @@ function Get-VersionNumbers {
 
 function Compare-AppVersions {
     param([string]$VerA, [string]$VerB)
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        return [DuckUtil.DeepUninstallerEngine]::CompareAppVersions($VerA, $VerB)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        return [DuckUtil.AppCatalogEngine]::CompareAppVersions($VerA, $VerB)
     }
     $a = @(Get-VersionNumbers $VerA)
     $b = @(Get-VersionNumbers $VerB)
@@ -7812,8 +7927,8 @@ function Compare-AppVersions {
 
 function Test-AppUpdateGenuine {
     param([string]$InstalledVer, [string]$AvailableVer)
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        return [DuckUtil.DeepUninstallerEngine]::TestAppUpdateGenuine($InstalledVer, $AvailableVer)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        return [DuckUtil.AppCatalogEngine]::TestAppUpdateGenuine($InstalledVer, $AvailableVer)
     }
     if ([string]::IsNullOrWhiteSpace($AvailableVer)) { return $false }
     $av = $AvailableVer.Trim()
@@ -7960,11 +8075,11 @@ function Get-TargetAppMeta {
     }
 
     $tName = [string]$TargetApp.Name
-    $hasCsClean = ($null -ne ("DuckUtil.DeepUninstallerEngine" -as [type]))
+    $hasCsClean = ($null -ne ("DuckUtil.AppCatalogEngine" -as [type]))
     $cleanTarget = ""
     if (-not [string]::IsNullOrWhiteSpace($tName)) {
         if (-not $script:cleanNameCache.TryGetValue($tName, [ref]$cleanTarget)) {
-            $cleanTarget = if ($hasCsClean) { [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($tName) } else { Get-CleanAppName $tName }
+            $cleanTarget = if ($hasCsClean) { [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($tName) } else { Get-CleanAppName $tName }
             $script:cleanNameCache[$tName] = $cleanTarget
         }
     }
@@ -7986,7 +8101,7 @@ function Get-TargetAppMeta {
             if ([string]::IsNullOrWhiteSpace($alias)) { continue }
             $cAl = ""
             if (-not $script:cleanNameCache.TryGetValue($alias, [ref]$cAl)) {
-                $cAl = if ($hasCsClean) { [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($alias) } else { Get-CleanAppName $alias }
+                $cAl = if ($hasCsClean) { [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($alias) } else { Get-CleanAppName $alias }
                 $script:cleanNameCache[$alias] = $cAl
             }
             $cleanAliases.Add(@{ Raw = $alias; Clean = $cAl })
@@ -8293,9 +8408,9 @@ function ConvertFrom-WingetListOutput {
         return [PSCustomObject]@{ HasTable = $false; Items = [System.Collections.Generic.List[object]]::new() }
     }
 
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
         $hasTable = $false
-        $items = [DuckUtil.DeepUninstallerEngine]::ParseWingetListOutput($RawText, $AllowHeaderless, [ref]$hasTable)
+        $items = [DuckUtil.AppCatalogEngine]::ParseWingetListOutput($RawText, $AllowHeaderless, [ref]$hasTable)
         return [PSCustomObject]@{ HasTable = $hasTable; Items = $items }
     }
 
@@ -8463,9 +8578,9 @@ function Get-ExecutableCleanVersion {
 
 function Get-LocalInstalledEntries {
     param([switch]$SkipAppx)
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
         try {
-            return [DuckUtil.DeepUninstallerEngine]::ScanCatalogSensors()
+            return [DuckUtil.AppCatalogEngine]::ScanCatalogSensors()
         } catch {}
     }
 

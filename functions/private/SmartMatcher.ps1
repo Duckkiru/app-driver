@@ -1,4 +1,27 @@
-﻿$script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
+﻿if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
+    Add-Type -AssemblyName PresentationCore -ErrorAction SilentlyContinue
+}
+
+if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {
+    try {
+        if ($PSScriptRoot) {
+            $csCandidates = @(
+                (Join-Path $PSScriptRoot "..\..\csharp\AppCatalogEngine.cs"),
+                (Join-Path $PSScriptRoot "..\csharp\AppCatalogEngine.cs"),
+                (Join-Path $PSScriptRoot "csharp\AppCatalogEngine.cs")
+            )
+            foreach ($cand in $csCandidates) {
+                if (Test-Path -LiteralPath $cand) {
+                    $appCatalogCs = Get-Content -Raw -Encoding utf8 $cand
+                    Add-Type -TypeDefinition $appCatalogCs -ErrorAction SilentlyContinue
+                    break
+                }
+            }
+        }
+    } catch {}
+}
+
+$script:brushOutdatedFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71))
 $script:brushLatestFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99))
 $script:brushNoneBg     = [System.Windows.Media.Brushes]::Transparent
 $script:brushNoneFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9))
@@ -20,8 +43,8 @@ function Get-CleanAppName {
     if ($script:cleanNameCache.TryGetValue($RawName, [ref]$cached)) {
         return $cached
     }
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        $clean = [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($RawName)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        $clean = [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($RawName)
         $script:cleanNameCache[$RawName] = $clean
         return $clean
     }
@@ -44,8 +67,8 @@ function Get-VersionNumbers {
     if ($script:versionNumCache.TryGetValue($VerStr, [ref]$cached)) {
         return $cached
     }
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        $arr = [DuckUtil.DeepUninstallerEngine]::GetVersionNumbers($VerStr)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        $arr = [DuckUtil.AppCatalogEngine]::GetVersionNumbers($VerStr)
         $script:versionNumCache[$VerStr] = $arr
         return $arr
     }
@@ -72,8 +95,8 @@ function Get-VersionNumbers {
 
 function Compare-AppVersions {
     param([string]$VerA, [string]$VerB)
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        return [DuckUtil.DeepUninstallerEngine]::CompareAppVersions($VerA, $VerB)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        return [DuckUtil.AppCatalogEngine]::CompareAppVersions($VerA, $VerB)
     }
     $a = @(Get-VersionNumbers $VerA)
     $b = @(Get-VersionNumbers $VerB)
@@ -93,8 +116,8 @@ function Compare-AppVersions {
 
 function Test-AppUpdateGenuine {
     param([string]$InstalledVer, [string]$AvailableVer)
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-        return [DuckUtil.DeepUninstallerEngine]::TestAppUpdateGenuine($InstalledVer, $AvailableVer)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        return [DuckUtil.AppCatalogEngine]::TestAppUpdateGenuine($InstalledVer, $AvailableVer)
     }
     if ([string]::IsNullOrWhiteSpace($AvailableVer)) { return $false }
     $av = $AvailableVer.Trim()
@@ -241,11 +264,11 @@ function Get-TargetAppMeta {
     }
 
     $tName = [string]$TargetApp.Name
-    $hasCsClean = ($null -ne ("DuckUtil.DeepUninstallerEngine" -as [type]))
+    $hasCsClean = ($null -ne ("DuckUtil.AppCatalogEngine" -as [type]))
     $cleanTarget = ""
     if (-not [string]::IsNullOrWhiteSpace($tName)) {
         if (-not $script:cleanNameCache.TryGetValue($tName, [ref]$cleanTarget)) {
-            $cleanTarget = if ($hasCsClean) { [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($tName) } else { Get-CleanAppName $tName }
+            $cleanTarget = if ($hasCsClean) { [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($tName) } else { Get-CleanAppName $tName }
             $script:cleanNameCache[$tName] = $cleanTarget
         }
     }
@@ -267,7 +290,7 @@ function Get-TargetAppMeta {
             if ([string]::IsNullOrWhiteSpace($alias)) { continue }
             $cAl = ""
             if (-not $script:cleanNameCache.TryGetValue($alias, [ref]$cAl)) {
-                $cAl = if ($hasCsClean) { [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($alias) } else { Get-CleanAppName $alias }
+                $cAl = if ($hasCsClean) { [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($alias) } else { Get-CleanAppName $alias }
                 $script:cleanNameCache[$alias] = $cAl
             }
             $cleanAliases.Add(@{ Raw = $alias; Clean = $cAl })
@@ -574,9 +597,9 @@ function ConvertFrom-WingetListOutput {
         return [PSCustomObject]@{ HasTable = $false; Items = [System.Collections.Generic.List[object]]::new() }
     }
 
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
         $hasTable = $false
-        $items = [DuckUtil.DeepUninstallerEngine]::ParseWingetListOutput($RawText, $AllowHeaderless, [ref]$hasTable)
+        $items = [DuckUtil.AppCatalogEngine]::ParseWingetListOutput($RawText, $AllowHeaderless, [ref]$hasTable)
         return [PSCustomObject]@{ HasTable = $hasTable; Items = $items }
     }
 
@@ -744,9 +767,9 @@ function Get-ExecutableCleanVersion {
 
 function Get-LocalInstalledEntries {
     param([switch]$SkipAppx)
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
         try {
-            return [DuckUtil.DeepUninstallerEngine]::ScanCatalogSensors()
+            return [DuckUtil.AppCatalogEngine]::ScanCatalogSensors()
         } catch {}
     }
 
