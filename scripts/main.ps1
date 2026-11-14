@@ -1,3 +1,5 @@
+Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
@@ -502,7 +504,7 @@ function Apply-UninstallerFilter {
 function Update-UninstallerList {
     if (-not $uninstallerRowsPanel) { return }
     if ($txtUninstallerSummary) { $txtUninstallerSummary.Text = "Đang quét danh sách ứng dụng đã cài..." }
-    [System.Windows.Forms.Application]::DoEvents()
+    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
 
     if (Get-Command "Get-SystemInstalledAppsFast" -ErrorAction SilentlyContinue) {
         $script:cachedUninstallerApps = @(Get-SystemInstalledAppsFast)
@@ -513,25 +515,35 @@ function Update-UninstallerList {
     $uninstallerRowsPanel.Children.Clear()
     $script:uninstallerRowEntries.Clear()
 
+    $brushRowBg = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0E131D")
+    $brushRowBorder = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#172030")
+    $brushRowHover = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#162032")
+    $brushTextTitle = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
+    $brushTextMuted = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $brushTextDark = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+    $brushTextLight = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+
     foreach ($app in $script:cachedUninstallerApps) {
         $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.Height = 34
+        $rowBorder.Height = 40
         $rowBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
-        $rowBorder.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
-        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
-        $rowBorder.Background = $script:brushTransparent
+        $rowBorder.Padding = New-Object System.Windows.Thickness(12, 0, 12, 0)
+        $rowBorder.Margin = New-Object System.Windows.Thickness(0, 2, 0, 2)
+        $rowBorder.Background = $brushRowBg
+        $rowBorder.BorderBrush = $brushRowBorder
+        $rowBorder.BorderThickness = New-Object System.Windows.Thickness(1)
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
         $rowGrid = New-Object System.Windows.Controls.Grid
         $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
-        $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = New-Object System.Windows.GridLength(36, [System.Windows.GridUnitType]::Pixel)
+        $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = New-Object System.Windows.GridLength(32, [System.Windows.GridUnitType]::Pixel)
         $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = New-Object System.Windows.GridLength(120, [System.Windows.GridUnitType]::Pixel)
-        $c3 = New-Object System.Windows.Controls.ColumnDefinition; $c3.Width = New-Object System.Windows.GridLength(180, [System.Windows.GridUnitType]::Pixel)
-        $c4 = New-Object System.Windows.Controls.ColumnDefinition; $c4.Width = New-Object System.Windows.GridLength(95, [System.Windows.GridUnitType]::Pixel)
-        $c5 = New-Object System.Windows.Controls.ColumnDefinition; $c5.Width = New-Object System.Windows.GridLength(110, [System.Windows.GridUnitType]::Pixel)
-        $c6 = New-Object System.Windows.Controls.ColumnDefinition; $c6.Width = New-Object System.Windows.GridLength(44, [System.Windows.GridUnitType]::Pixel)
+        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = New-Object System.Windows.GridLength(130, [System.Windows.GridUnitType]::Pixel)
+        $c3 = New-Object System.Windows.Controls.ColumnDefinition; $c3.Width = New-Object System.Windows.GridLength(200, [System.Windows.GridUnitType]::Pixel)
+        $c4 = New-Object System.Windows.Controls.ColumnDefinition; $c4.Width = New-Object System.Windows.GridLength(100, [System.Windows.GridUnitType]::Pixel)
+        $c5 = New-Object System.Windows.Controls.ColumnDefinition; $c5.Width = New-Object System.Windows.GridLength(115, [System.Windows.GridUnitType]::Pixel)
+        $c6 = New-Object System.Windows.Controls.ColumnDefinition; $c6.Width = New-Object System.Windows.GridLength(48, [System.Windows.GridUnitType]::Pixel)
 
         $rowGrid.ColumnDefinitions.Add($c0) | Out-Null
         $rowGrid.ColumnDefinitions.Add($c1) | Out-Null
@@ -545,54 +557,156 @@ function Update-UninstallerList {
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
         $cb.Margin = New-Object System.Windows.Thickness(2, 0, 0, 0)
-        $cb.Add_Checked({ Update-UninstallerSelectionCount })
-        $cb.Add_Unchecked({ Update-UninstallerSelectionCount })
+        $cb.Tag = $rowBorder
+
+        $cb.Add_Checked({
+            $p = $this.Tag
+            if ($p) {
+                $p.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#102033")
+                $p.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0284C7")
+            }
+            Update-UninstallerSelectionCount
+        })
+        $cb.Add_Unchecked({
+            $p = $this.Tag
+            if ($p) {
+                $p.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0E131D")
+                $p.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#172030")
+            }
+            Update-UninstallerSelectionCount
+        })
+
         [System.Windows.Controls.Grid]::SetColumn($cb, 0)
         $rowGrid.Children.Add($cb) | Out-Null
 
-        $namePanel = New-Object System.Windows.Controls.StackPanel
-        $namePanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-        $namePanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameGrid = New-Object System.Windows.Controls.Grid
+        $nameGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $ng0 = New-Object System.Windows.Controls.ColumnDefinition; $ng0.Width = New-Object System.Windows.GridLength(28, [System.Windows.GridUnitType]::Pixel)
+        $ng1 = New-Object System.Windows.Controls.ColumnDefinition; $ng1.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $nameGrid.ColumnDefinitions.Add($ng0) | Out-Null
+        $nameGrid.ColumnDefinitions.Add($ng1) | Out-Null
 
-        $glyphTb = New-Object System.Windows.Controls.TextBlock
-        $glyphTb.Text = if ($app.IsBrokenOrphan) { [char]::ConvertFromUtf32(0x26A0) } else { [char]::ConvertFromUtf32(0x1F4E6) }
-        $glyphTb.FontSize = 11
-        $glyphTb.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-        $glyphTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $namePanel.Children.Add($glyphTb) | Out-Null
+        $iconElement = $null
+        $exeFound = $null
+
+        if ($app.InstallLocation -and (Test-Path -LiteralPath $app.InstallLocation)) {
+            try {
+                $exes = [System.IO.Directory]::GetFiles($app.InstallLocation, "*.exe", [System.IO.SearchOption]::TopDirectoryOnly)
+                if ($exes.Count -gt 0) {
+                    foreach ($eFile in $exes) {
+                        $bName = [System.IO.Path]::GetFileNameWithoutExtension($eFile).ToLowerInvariant()
+                        if ($bName -notmatch 'unins|setup|update|crash|helper|repair|patch') {
+                            $exeFound = $eFile
+                            break
+                        }
+                    }
+                    if (-not $exeFound) { $exeFound = $exes[0] }
+                }
+            } catch {}
+        }
+
+        if (-not $exeFound -and $app.UninstallString) {
+            try {
+                $uCmd = $app.UninstallString.Trim()
+                $candExe = if ($uCmd.StartsWith('"')) {
+                    $qEnd = $uCmd.IndexOf('"', 1)
+                    if ($qEnd -gt 1) { $uCmd.Substring(1, $qEnd - 1) } else { "" }
+                } else {
+                    ($uCmd -split '\s+')[0]
+                }
+                if ($candExe -and $candExe.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $candExe)) {
+                    $exeFound = $candExe
+                }
+            } catch {}
+        }
+
+        if ($exeFound) {
+            try {
+                $extractedIco = [System.Drawing.Icon]::ExtractAssociatedIcon($exeFound)
+                if ($extractedIco) {
+                    $bmpSrc = [System.Windows.Interop.Imaging]::CreateBitmapSourceFromHIcon(
+                        $extractedIco.Handle,
+                        [System.Windows.Int32Rect]::Empty,
+                        [System.Windows.Media.Imaging.BitmapSizeOptions]::FromEmptyOptions()
+                    )
+                    $bmpSrc.Freeze()
+                    $img = New-Object System.Windows.Controls.Image
+                    $img.Source = $bmpSrc
+                    $img.Width = 20
+                    $img.Height = 20
+                    $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                    $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+                    $iconElement = $img
+                }
+            } catch {}
+        }
+
+        if (-not $iconElement) {
+            $fallbackBadge = New-Object System.Windows.Controls.Border
+            $fallbackBadge.Width = 20
+            $fallbackBadge.Height = 20
+            $fallbackBadge.CornerRadius = New-Object System.Windows.CornerRadius(4)
+            $fallbackBadge.Background = if ($app.IsBrokenOrphan) {
+                [System.Windows.Media.BrushConverter]::new().ConvertFromString("#3B1218")
+            } else {
+                [System.Windows.Media.BrushConverter]::new().ConvertFromString("#152136")
+            }
+            $fallbackBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+            $fallbackBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+
+            $badgeTb = New-Object System.Windows.Controls.TextBlock
+            $dispTrim = if ($app.DisplayName) { $app.DisplayName.Trim() } else { "A" }
+            $badgeTb.Text = if ($app.IsBrokenOrphan) { "!" } elseif ($dispTrim.Length -gt 0) { [string]$dispTrim.Substring(0, 1).ToUpper() } else { "•" }
+            $badgeTb.FontSize = 10.5
+            $badgeTb.FontWeight = [System.Windows.FontWeights]::Bold
+            $badgeTb.Foreground = if ($app.IsBrokenOrphan) {
+                [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+            } else {
+                [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+            }
+            $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+            $badgeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+            $fallbackBadge.Child = $badgeTb
+            $iconElement = $fallbackBadge
+        }
+
+        [System.Windows.Controls.Grid]::SetColumn($iconElement, 0)
+        $nameGrid.Children.Add($iconElement) | Out-Null
 
         $nameTb = New-Object System.Windows.Controls.TextBlock
         $nameTb.Text = $app.DisplayName
         $nameTb.FontSize = 12
         $nameTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $nameTb.Foreground = if ($app.IsBrokenOrphan) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FCA5A5") } else { $script:brushTextWhite }
+        $nameTb.Foreground = if ($app.IsBrokenOrphan) { [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FCA5A5") } else { $brushTextTitle }
         $nameTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $namePanel.Children.Add($nameTb) | Out-Null
+        $nameTb.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
+        $nameGrid.Children.Add($nameTb) | Out-Null
 
         $rowTooltip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)`nLệnh gỡ: $($app.UninstallString)"
         $rowBorder.ToolTip = $rowTooltip
 
-        [System.Windows.Controls.Grid]::SetColumn($namePanel, 1)
-        $rowGrid.Children.Add($namePanel) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
+        $rowGrid.Children.Add($nameGrid) | Out-Null
 
         $verTb = New-Object System.Windows.Controls.TextBlock
         $verTb.Text = if ($app.DisplayVersion) { $app.DisplayVersion } else { "--" }
         $verTb.FontSize = 11.5
-        $verTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+        $verTb.Foreground = $brushTextMuted
         $verTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $verTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $verTb.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        $verTb.Margin = New-Object System.Windows.Thickness(6, 0, 8, 0)
         [System.Windows.Controls.Grid]::SetColumn($verTb, 2)
         $rowGrid.Children.Add($verTb) | Out-Null
 
         $pubTb = New-Object System.Windows.Controls.TextBlock
         $pubTb.Text = if ($app.Publisher) { $app.Publisher } else { "--" }
         $pubTb.FontSize = 11.5
-        $pubTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $pubTb.Foreground = $brushTextDark
         $pubTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $pubTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $pubTb.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        $pubTb.Margin = New-Object System.Windows.Thickness(6, 0, 8, 0)
         [System.Windows.Controls.Grid]::SetColumn($pubTb, 3)
         $rowGrid.Children.Add($pubTb) | Out-Null
 
@@ -605,16 +719,16 @@ function Update-UninstallerList {
         $sizeTb = New-Object System.Windows.Controls.TextBlock
         $sizeTb.Text = $sizeText
         $sizeTb.FontSize = 11.5
-        $sizeTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+        $sizeTb.Foreground = $brushTextLight
         $sizeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $sizeTb.TextAlignment = [System.Windows.TextAlignment]::Right
-        $sizeTb.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+        $sizeTb.Margin = New-Object System.Windows.Thickness(0, 0, 12, 0)
         [System.Windows.Controls.Grid]::SetColumn($sizeTb, 4)
         $rowGrid.Children.Add($sizeTb) | Out-Null
 
         $statusBorder = New-Object System.Windows.Controls.Border
         $statusBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $statusBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
+        $statusBorder.Padding = New-Object System.Windows.Thickness(8, 2, 8, 2)
         $statusBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $statusBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -640,11 +754,11 @@ function Update-UninstallerList {
         $rowGrid.Children.Add($statusBorder) | Out-Null
 
         $folderBtn = New-Object System.Windows.Controls.Border
-        $folderBtn.Width = 24
-        $folderBtn.Height = 20
+        $folderBtn.Width = 26
+        $folderBtn.Height = 24
         $folderBtn.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $folderBtn.Background = $script:brushLinkBtnBg
-        $folderBtn.BorderBrush = $script:brushLinkBtnBorder
+        $folderBtn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+        $folderBtn.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#334155")
         $folderBtn.BorderThickness = New-Object System.Windows.Thickness(1)
         $folderBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $folderBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -652,7 +766,7 @@ function Update-UninstallerList {
 
         $folderIcon = New-Object System.Windows.Controls.TextBlock
         $folderIcon.Text = [char]::ConvertFromUtf32(0x1F4C1)
-        $folderIcon.FontSize = 10
+        $folderIcon.FontSize = 10.5
         $folderIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $folderIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $folderBtn.Child = $folderIcon
@@ -678,11 +792,15 @@ function Update-UninstallerList {
 
         $rowBorder.Add_MouseEnter({
             param($sender, $e)
-            $sender.Background = $script:brushRowHover
+            if (-not $sender.Tag.CheckBox.IsChecked) {
+                $sender.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#162032")
+            }
         })
         $rowBorder.Add_MouseLeave({
             param($sender, $e)
-            $sender.Background = $script:brushTransparent
+            if (-not $sender.Tag.CheckBox.IsChecked) {
+                $sender.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0E131D")
+            }
         })
         $rowBorder.Add_MouseLeftButtonUp({
             param($sender, $e)
