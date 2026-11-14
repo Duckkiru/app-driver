@@ -22,19 +22,69 @@ if (-not $isCompanion -or -not $isAdmin) {
 
     $scriptTarget = $null
     if ($isWebSource) {
-        $sbStr = if ($MyInvocation.MyCommand -and $MyInvocation.MyCommand.ScriptBlock) {
-            $MyInvocation.MyCommand.ScriptBlock.ToString()
-        } else { "" }
+        $sbStr = ""
+        try {
+            $astNode = ({}).Ast
+            while ($astNode -and $astNode.Parent) {
+                $astNode = $astNode.Parent
+            }
+            if ($astNode -and $astNode.Extent -and $astNode.Extent.Text) {
+                $sbStr = $astNode.Extent.Text
+            }
+        } catch {}
+
+        if ([string]::IsNullOrWhiteSpace($sbStr) -or $sbStr.Length -lt 1000) {
+            if ($MyInvocation.MyCommand -and $MyInvocation.MyCommand.ScriptBlock) {
+                $sbStr = $MyInvocation.MyCommand.ScriptBlock.ToString()
+            }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($sbStr) -or $sbStr.Length -lt 1000) {
+            foreach ($frame in (Get-PSCallStack)) {
+                if ($frame.InvocationInfo -and $frame.InvocationInfo.MyCommand -and $frame.InvocationInfo.MyCommand.ScriptBlock) {
+                    $candidateSb = $frame.InvocationInfo.MyCommand.ScriptBlock.ToString()
+                    if ($candidateSb.Length -gt 1000) {
+                        $sbStr = $candidateSb
+                        break
+                    }
+                }
+            }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($sbStr) -or $sbStr.Length -lt 1000) {
+            try {
+                [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+                $sbStr = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -ErrorAction Stop
+            } catch {}
+        }
 
         if (-not [string]::IsNullOrWhiteSpace($sbStr) -and $sbStr.Length -gt 1000) {
             $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
             try {
-                [System.IO.File]::WriteAllText($cacheScript, $sbStr, [System.Text.UTF8Encoding]::new($false))
+                [System.IO.File]::WriteAllText($cacheScript, $sbStr, [System.Text.UTF8Encoding]::new($true))
                 $scriptTarget = $cacheScript
-            } catch {}
+            } catch {
+                $altCache = Join-Path $env:TEMP "App-Driver-Session-$PID.ps1"
+                try {
+                    [System.IO.File]::WriteAllText($altCache, $sbStr, [System.Text.UTF8Encoding]::new($true))
+                    $scriptTarget = $altCache
+                } catch {
+                    if (Test-Path -LiteralPath $cacheScript) {
+                        $scriptTarget = $cacheScript
+                    }
+                }
+            }
         }
     } else {
-        $scriptTarget = (Resolve-Path -LiteralPath $PSCommandPath).Path
+        $resolvedLocal = (Resolve-Path -LiteralPath $PSCommandPath).Path
+        $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
+        try {
+            $localText = [System.IO.File]::ReadAllText($resolvedLocal, [System.Text.Encoding]::UTF8)
+            [System.IO.File]::WriteAllText($cacheScript, $localText, [System.Text.UTF8Encoding]::new($true))
+            $scriptTarget = $cacheScript
+        } catch {
+            $scriptTarget = $resolvedLocal
+        }
     }
 
     if ($scriptTarget) {
@@ -54,6 +104,7 @@ if (-not $isCompanion -or -not $isAdmin) {
             }
         }
     } else {
+        $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
         $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$env:APP_DRIVER_COMPANION='1'; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
     }
 
@@ -103,7 +154,7 @@ if (-not $isCompanion -or -not $isAdmin) {
     $wtExe = Get-WindowsTerminalPath
     $elevationSuccess = $false
 
-    if ($isInsideWT -or $wtExe) {
+    if (-not $isCompanion -and ($isInsideWT -or $wtExe)) {
         $targetWt = if ($wtExe) { $wtExe } else { "wt.exe" }
 
         $safeWorkDir = $workDir.TrimEnd('\')
@@ -111,8 +162,8 @@ if (-not $isCompanion -or -not $isAdmin) {
             $safeWorkDir += '\\'
         }
 
-        $wtPsArgs = $psArgs -replace '(?<!\\);', '\;'
-        $wtArgs = "-w new -d `"$safeWorkDir`" $psExe $wtPsArgs"
+        $wtPsArgs = if ($scriptTarget) { $psArgs } else { $psArgs -replace '(?<!\\);', '\;' }
+        $wtArgs = "-w -1 new-tab -d `"$safeWorkDir`" $psExe $wtPsArgs"
 
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
