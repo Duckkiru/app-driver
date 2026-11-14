@@ -47,6 +47,9 @@ namespace DuckUtil
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
 
+        [DllImport("ntdll.dll", SetLastError = true)]
+        private static extern int NtSuspendProcess(IntPtr processHandle);
+
         public static List<InstalledAppInfo> GetInstalledApps()
         {
             var list = new List<InstalledAppInfo>();
@@ -354,15 +357,15 @@ namespace DuckUtil
             string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
             if (prefix.Length <= 4) return 0;
 
-            int killed = 0;
             Process[] procs = null;
             try { procs = Process.GetProcesses(); } catch { return 0; }
 
+            var matched = new List<Process>();
             foreach (Process p in procs)
             {
                 try
                 {
-                    if (p.Id <= 4) continue;
+                    if (p.Id <= 4) { p.Dispose(); continue; }
                     string fileName = null;
                     try
                     {
@@ -373,18 +376,151 @@ namespace DuckUtil
                     if (!string.IsNullOrEmpty(fileName) &&
                         fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        p.Kill();
-                        p.WaitForExit(1500);
-                        killed++;
+                        try { NtSuspendProcess(p.Handle); } catch {}
+                        matched.Add(p);
+                    }
+                    else
+                    {
+                        p.Dispose();
                     }
                 }
-                catch {}
-                finally
+                catch
                 {
                     try { p.Dispose(); } catch {}
                 }
             }
+
+            int killed = 0;
+            foreach (Process mp in matched)
+            {
+                try
+                {
+                    mp.Kill();
+                    mp.WaitForExit(1500);
+                    killed++;
+                }
+                catch {}
+                finally
+                {
+                    try { mp.Dispose(); } catch {}
+                }
+            }
             return killed;
+        }
+
+        public static int DisableAndRemoveServicesInDirectory(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
+            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
+            if (prefix.Length <= 4) return 0;
+
+            int neutralized = 0;
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", true))
+                {
+                    if (svcRoot == null) return 0;
+                    foreach (string svcName in svcRoot.GetSubKeyNames())
+                    {
+                        try
+                        {
+                            bool matches = false;
+                            using (var sk = svcRoot.OpenSubKey(svcName, true))
+                            {
+                                if (sk == null) continue;
+                                string imgPath = (sk.GetValue("ImagePath") as string ?? "").Trim('\"', ' ');
+                                if (string.IsNullOrEmpty(imgPath)) continue;
+                                if (imgPath.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    imgPath = imgPath.Substring(4);
+                                }
+                                if (imgPath.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    matches = true;
+                                    try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
+                                    try { sk.DeleteValue("FailureActions", false); } catch {}
+                                }
+                            }
+
+                            if (matches)
+                            {
+                                neutralized++;
+                                RunHiddenSc("stop \"" + svcName + "\"");
+                                RunHiddenSc("delete \"" + svcName + "\"");
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return neutralized;
+        }
+
+        public static int RemoveScheduledTasksInDirectory(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
+            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
+            if (prefix.Length <= 4) return 0;
+
+            int removed = 0;
+            string tasksRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "Tasks");
+            if (!Directory.Exists(tasksRoot)) return 0;
+
+            try
+            {
+                foreach (string taskFile in Directory.EnumerateFiles(tasksRoot, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        if (taskFile.IndexOf(@"\Tasks\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase) >= 0)
+                            continue;
+
+                        string xml = File.ReadAllText(taskFile);
+                        if (xml.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            string relTaskName = taskFile.Substring(tasksRoot.Length);
+                            try
+                            {
+                                var psi = new ProcessStartInfo("schtasks.exe", "/Delete /TN \"" + relTaskName + "\" /F");
+                                psi.CreateNoWindow = true;
+                                psi.UseShellExecute = false;
+                                using (var p = Process.Start(psi))
+                                {
+                                    if (p != null) p.WaitForExit(2000);
+                                }
+                            }
+                            catch {}
+                            try
+                            {
+                                File.SetAttributes(taskFile, FileAttributes.Normal);
+                                File.Delete(taskFile);
+                            }
+                            catch {}
+                            removed++;
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+            return removed;
+        }
+
+        private static void RunHiddenSc(string args)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("sc.exe", args);
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                using (var p = Process.Start(psi))
+                {
+                    if (p != null) p.WaitForExit(2000);
+                }
+            }
+            catch {}
         }
 
         public static bool VerifyDirectoryExeOwnership(string targetDir, string[] expectedKeywords)
@@ -561,6 +697,8 @@ namespace DuckUtil
 
             if (!Directory.Exists(norm)) return true;
 
+            DisableAndRemoveServicesInDirectory(norm);
+            RemoveScheduledTasksInDirectory(norm);
             StopProcessesInDirectory(norm);
 
             try
@@ -574,9 +712,21 @@ namespace DuckUtil
                     }
                     catch
                     {
-                        if (MoveFileEx(file, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                        string deadPath = file + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 6);
+                        try
                         {
-                            rebootScheduledCount++;
+                            File.Move(file, deadPath);
+                            if (MoveFileEx(deadPath, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                            {
+                                rebootScheduledCount++;
+                            }
+                        }
+                        catch
+                        {
+                            if (MoveFileEx(file, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                            {
+                                rebootScheduledCount++;
+                            }
                         }
                     }
                 }

@@ -1037,12 +1037,22 @@ function Invoke-DeepAppUninstall {
 
     $allInstalledNow = Get-SystemInstalledAppsFast
 
+    $safeLoc = ""
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
         $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
+            $safeLoc = $loc
+            $svcCount = [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($loc)
+            if ($svcCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) v$([char]0x00F4) hi$([char]0x1EC7)u h$([char]0x00F3)a & g$([char]0x1EE1) $svcCount Service / Kernel Driver ng$([char]0x1EA7)m trong: $loc"
+            }
+            $taskCount = [DuckUtil.DeepUninstallerEngine]::RemoveScheduledTasksInDirectory($loc)
+            if ($taskCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a $taskCount Scheduled Task t$([char]0x1EF1) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i trong: $loc"
+            }
             $killedCount = [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($loc)
             if ($killedCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
-                Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x00F3)ng $killedCount ti$([char]0x1EBF)n tr$([char]0x00EC)nh $([char]0x0111)ang ch$([char]0x1EA1)y trong: $loc"
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x00F3)ng b$([char]0x0103)ng (NtSuspendProcess) & t$([char]0x1EAF)t $killedCount ti$([char]0x1EBF)n tr$([char]0x00EC)nh trong: $loc"
             }
         }
     }
@@ -1095,6 +1105,12 @@ function Invoke-DeepAppUninstall {
     }
 
     Start-Sleep -Milliseconds 800
+
+    if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
+        [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($safeLoc) | Out-Null
+        [DuckUtil.DeepUninstallerEngine]::RemoveScheduledTasksInDirectory($safeLoc) | Out-Null
+        [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($safeLoc) | Out-Null
+    }
 
     $leftovers = Find-AppLeftovers -AppEntry $AppEntry -AllInstalledApps $allInstalledNow
     if ($leftovers.Count -gt 0) {
