@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace DuckUtil
@@ -39,6 +41,11 @@ namespace DuckUtil
 
     public static class DeepUninstallerEngine
     {
+        private const int MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
+
         public static List<InstalledAppInfo> GetInstalledApps()
         {
             var list = new List<InstalledAppInfo>();
@@ -338,6 +345,171 @@ namespace DuckUtil
             }
 
             return totalSize;
+        }
+
+        public static int StopProcessesInDirectory(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
+            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
+            if (prefix.Length <= 4) return 0;
+
+            int killed = 0;
+            Process[] procs = null;
+            try { procs = Process.GetProcesses(); } catch { return 0; }
+
+            foreach (Process p in procs)
+            {
+                try
+                {
+                    if (p.Id <= 4) continue;
+                    string fileName = null;
+                    try
+                    {
+                        if (p.MainModule != null) fileName = p.MainModule.FileName;
+                    }
+                    catch {}
+
+                    if (!string.IsNullOrEmpty(fileName) &&
+                        fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        p.Kill();
+                        p.WaitForExit(1500);
+                        killed++;
+                    }
+                }
+                catch {}
+                finally
+                {
+                    try { p.Dispose(); } catch {}
+                }
+            }
+            return killed;
+        }
+
+        public static bool VerifyDirectoryExeOwnership(string targetDir, string[] expectedKeywords)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir) || expectedKeywords == null || expectedKeywords.Length == 0)
+                return false;
+            try
+            {
+                if (!Directory.Exists(targetDir)) return false;
+                int checkedCount = 0;
+                foreach (string file in Directory.EnumerateFiles(targetDir, "*", SearchOption.AllDirectories))
+                {
+                    string ext = Path.GetExtension(file);
+                    if (!string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    checkedCount++;
+                    if (checkedCount > 15) break;
+
+                    try
+                    {
+                        FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
+                        string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "");
+                        foreach (string kw in expectedKeywords)
+                        {
+                            if (string.IsNullOrWhiteSpace(kw) || kw.Length < 3) continue;
+                            if (combined.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)
+        {
+            rebootScheduledCount = 0;
+            if (string.IsNullOrWhiteSpace(targetDir)) return false;
+            string norm = targetDir.Trim().TrimEnd('\\');
+            if (norm.Length <= 3) return false;
+
+            if (File.Exists(norm))
+            {
+                try
+                {
+                    File.SetAttributes(norm, FileAttributes.Normal);
+                    File.Delete(norm);
+                    return true;
+                }
+                catch
+                {
+                    if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                    {
+                        rebootScheduledCount++;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
+            if (!Directory.Exists(norm)) return true;
+
+            StopProcessesInDirectory(norm);
+
+            try
+            {
+                foreach (string file in Directory.EnumerateFiles(norm, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+                        if (MoveFileEx(file, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                        {
+                            rebootScheduledCount++;
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string[] subDirs = Directory.GetDirectories(norm, "*", SearchOption.AllDirectories);
+                Array.Sort(subDirs, delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                foreach (string sd in subDirs)
+                {
+                    try
+                    {
+                        File.SetAttributes(sd, FileAttributes.Normal);
+                        Directory.Delete(sd, true);
+                    }
+                    catch
+                    {
+                        MoveFileEx(sd, null, MOVEFILE_DELAY_UNTIL_REBOOT);
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                File.SetAttributes(norm, FileAttributes.Normal);
+                Directory.Delete(norm, true);
+                return true;
+            }
+            catch
+            {
+                if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                {
+                    rebootScheduledCount++;
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

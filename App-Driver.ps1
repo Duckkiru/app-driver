@@ -5107,7 +5107,9 @@ if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
         $deepUninstCs = @'
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace DuckUtil
@@ -5146,6 +5148,11 @@ namespace DuckUtil
 
     public static class DeepUninstallerEngine
     {
+        private const int MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
+
         public static List<InstalledAppInfo> GetInstalledApps()
         {
             var list = new List<InstalledAppInfo>();
@@ -5445,6 +5452,171 @@ namespace DuckUtil
             }
 
             return totalSize;
+        }
+
+        public static int StopProcessesInDirectory(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
+            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
+            if (prefix.Length <= 4) return 0;
+
+            int killed = 0;
+            Process[] procs = null;
+            try { procs = Process.GetProcesses(); } catch { return 0; }
+
+            foreach (Process p in procs)
+            {
+                try
+                {
+                    if (p.Id <= 4) continue;
+                    string fileName = null;
+                    try
+                    {
+                        if (p.MainModule != null) fileName = p.MainModule.FileName;
+                    }
+                    catch {}
+
+                    if (!string.IsNullOrEmpty(fileName) &&
+                        fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        p.Kill();
+                        p.WaitForExit(1500);
+                        killed++;
+                    }
+                }
+                catch {}
+                finally
+                {
+                    try { p.Dispose(); } catch {}
+                }
+            }
+            return killed;
+        }
+
+        public static bool VerifyDirectoryExeOwnership(string targetDir, string[] expectedKeywords)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir) || expectedKeywords == null || expectedKeywords.Length == 0)
+                return false;
+            try
+            {
+                if (!Directory.Exists(targetDir)) return false;
+                int checkedCount = 0;
+                foreach (string file in Directory.EnumerateFiles(targetDir, "*", SearchOption.AllDirectories))
+                {
+                    string ext = Path.GetExtension(file);
+                    if (!string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    checkedCount++;
+                    if (checkedCount > 15) break;
+
+                    try
+                    {
+                        FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
+                        string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "");
+                        foreach (string kw in expectedKeywords)
+                        {
+                            if (string.IsNullOrWhiteSpace(kw) || kw.Length < 3) continue;
+                            if (combined.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)
+        {
+            rebootScheduledCount = 0;
+            if (string.IsNullOrWhiteSpace(targetDir)) return false;
+            string norm = targetDir.Trim().TrimEnd('\\');
+            if (norm.Length <= 3) return false;
+
+            if (File.Exists(norm))
+            {
+                try
+                {
+                    File.SetAttributes(norm, FileAttributes.Normal);
+                    File.Delete(norm);
+                    return true;
+                }
+                catch
+                {
+                    if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                    {
+                        rebootScheduledCount++;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
+            if (!Directory.Exists(norm)) return true;
+
+            StopProcessesInDirectory(norm);
+
+            try
+            {
+                foreach (string file in Directory.EnumerateFiles(norm, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+                        if (MoveFileEx(file, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                        {
+                            rebootScheduledCount++;
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string[] subDirs = Directory.GetDirectories(norm, "*", SearchOption.AllDirectories);
+                Array.Sort(subDirs, delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                foreach (string sd in subDirs)
+                {
+                    try
+                    {
+                        File.SetAttributes(sd, FileAttributes.Normal);
+                        Directory.Delete(sd, true);
+                    }
+                    catch
+                    {
+                        MoveFileEx(sd, null, MOVEFILE_DELAY_UNTIL_REBOOT);
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                File.SetAttributes(norm, FileAttributes.Normal);
+                Directory.Delete(norm, true);
+                return true;
+            }
+            catch
+            {
+                if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                {
+                    rebootScheduledCount++;
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }
@@ -6252,6 +6424,8 @@ function Scan-And-ColorizeApps {
     }
 }
 
+Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
+
 if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
     try {
         $csCandidates = @(
@@ -6315,6 +6489,9 @@ function Test-SafeAppDirectoryForCleanup {
                 $matchedOwner = $true
                 break
             }
+        }
+        if (-not $matchedOwner) {
+            $matchedOwner = [DuckUtil.DeepUninstallerEngine]::VerifyDirectoryExeOwnership($norm, $Keywords)
         }
         if (-not $matchedOwner) { return $false }
     }
@@ -6384,47 +6561,166 @@ function Find-AppLeftovers {
             if ($seenPaths.Add($loc)) {
                 $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($loc, 4)
                 $leftovers.Add([PSCustomObject]@{
-                    Type       = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)"
-                    AppName    = $AppEntry.DisplayName
-                    Path       = $loc
-                    SizeBytes  = [long]$dirSize
-                    SizeMB     = [math]::Round($dirSize / 1MB, 2)
-                    IsRegistry = $false
+                    Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t"
+                    Confidence        = "An to$([char]0x00E0)n 100%"
+                    AppName           = $AppEntry.DisplayName
+                    Path              = $loc
+                    SizeBytes         = [long]$dirSize
+                    SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                    IsRegistry        = $false
+                    RegistryValueName = ""
                 })
             }
         }
     }
 
-    $folderRoots = @(
-        $env:APPDATA,
-        $env:LOCALAPPDATA,
-        (Join-Path $env:LOCALAPPDATA "Programs"),
-        "C:\ProgramData"
-    )
+    $folderRoots = [System.Collections.Generic.List[string]]::new()
+    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
+        if ($baseRoot -and (Test-Path -LiteralPath $baseRoot)) {
+            $folderRoots.Add($baseRoot)
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($AppEntry.Publisher)) {
+        $pubClean = ($AppEntry.Publisher -replace '\(.*?\)', '' -replace '(?i)\b(Inc\.?|LLC|Ltd\.?|Corp\.?|Corporation|GmbH|Co\.?)\b', '').Trim(' ', ',', '.')
+        if ($pubClean.Length -ge 3 -and $exclusions -notcontains $pubClean) {
+            foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, "C:\ProgramData")) {
+                if ($baseRoot) {
+                    $pubSub = Join-Path $baseRoot $pubClean
+                    if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
+                }
+            }
+        }
+    }
 
     foreach ($root in $folderRoots) {
         if (-not (Test-Path -LiteralPath $root)) { continue }
         foreach ($kw in $nameKeywords) {
             $candidatePath = Join-Path $root $kw
             if (Test-Path -LiteralPath $candidatePath) {
-                $fullPath = (Resolve-Path -LiteralPath $candidatePath).Path
+                $fullPath = (Resolve-Path -LiteralPath $candidatePath).Path.TrimEnd('\')
                 $isSafe = $true
                 foreach ($ex in $exclusions) {
-                    if ($fullPath -like "*\$ex*" -or $fullPath -like "*\$ex") { $isSafe = $false; break }
+                    if ($fullPath -like "*\$ex\*" -or $fullPath -like "*\$ex") { $isSafe = $false; break }
                 }
                 if ($isSafe -and $seenPaths.Add($fullPath)) {
                     $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
                     $leftovers.Add([PSCustomObject]@{
-                        Type       = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData"
-                        AppName    = $AppEntry.DisplayName
-                        Path       = $fullPath
-                        SizeBytes  = [long]$dirSize
-                        SizeMB     = [math]::Round($dirSize / 1MB, 2)
-                        IsRegistry = $false
+                        Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $AppEntry.DisplayName
+                        Path              = $fullPath
+                        SizeBytes         = [long]$dirSize
+                        SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                        IsRegistry        = $false
+                        RegistryValueName = ""
                     })
                 }
             }
         }
+    }
+
+    $crashDumpDir = Join-Path $env:LOCALAPPDATA "CrashDumps"
+    if (Test-Path -LiteralPath $crashDumpDir) {
+        foreach ($kw in $nameKeywords) {
+            try {
+                $dumps = [System.IO.Directory]::GetFiles($crashDumpDir, "*$kw*.dmp", [System.IO.SearchOption]::TopDirectoryOnly)
+                foreach ($dmp in $dumps) {
+                    if ($seenPaths.Add($dmp)) {
+                        $dmpSize = (Get-Item -LiteralPath $dmp -ErrorAction SilentlyContinue).Length
+                        $leftovers.Add([PSCustomObject]@{
+                            Type              = "Crash Dump r$([char]0x00E1)c"
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $AppEntry.DisplayName
+                            Path              = $dmp
+                            SizeBytes         = [long]$dmpSize
+                            SizeMB            = [math]::Round($dmpSize / 1MB, 2)
+                            IsRegistry        = $false
+                            RegistryValueName = ""
+                        })
+                    }
+                }
+            } catch {}
+        }
+    }
+
+    $shortcutDirs = @(
+        [Environment]::GetFolderPath('Desktop'),
+        [Environment]::GetFolderPath('CommonDesktopDirectory'),
+        [Environment]::GetFolderPath('Programs'),
+        [Environment]::GetFolderPath('CommonPrograms')
+    )
+    try {
+        $wsh = New-Object -ComObject WScript.Shell
+        $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
+        foreach ($sDir in $shortcutDirs) {
+            if (-not $sDir -or -not (Test-Path -LiteralPath $sDir)) { continue }
+            $lnks = [System.IO.Directory]::GetFiles($sDir, "*.lnk", [System.IO.SearchOption]::AllDirectories)
+            foreach ($lnk in $lnks) {
+                try {
+                    $lnkName = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
+                    $sc = $wsh.CreateShortcut($lnk)
+                    $tPath = $sc.TargetPath
+                    $matchesApp = $false
+                    if ($targetLocPrefix -and $tPath -and $tPath.StartsWith($targetLocPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $matchesApp = $true
+                    } elseif ($lnkName.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -and $tPath -and -not (Test-Path -LiteralPath $tPath)) {
+                        $matchesApp = $true
+                    }
+                    if ($matchesApp -and $seenPaths.Add($lnk)) {
+                        $leftovers.Add([PSCustomObject]@{
+                            Type              = "Shortcut ch$([char]0x1EBF)t"
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $AppEntry.DisplayName
+                            Path              = $lnk
+                            SizeBytes         = 0L
+                            SizeMB            = 0.0
+                            IsRegistry        = $false
+                            RegistryValueName = ""
+                        })
+                    }
+                } catch {}
+            }
+        }
+    } catch {}
+
+    $runKeys = @(
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+    )
+    $locPrefixForRun = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
+    foreach ($rk in $runKeys) {
+        if (-not (Test-Path -LiteralPath $rk)) { continue }
+        try {
+            $props = Get-ItemProperty -LiteralPath $rk -ErrorAction SilentlyContinue
+            if ($null -eq $props) { continue }
+            foreach ($p in $props.PSObject.Properties) {
+                if ($p.Name -in @('PSPath', 'PSParentPath', 'PSChildName', 'PSDrive', 'PSProvider')) { continue }
+                $valStr = [string]$p.Value
+                if ([string]::IsNullOrWhiteSpace($valStr)) { continue }
+                $isAppRun = $false
+                if ($locPrefixForRun -and $valStr.IndexOf($locPrefixForRun, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                    $isAppRun = $true
+                } elseif ($p.Name.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $isAppRun = $true
+                }
+                if ($isAppRun) {
+                    $runDisplayPath = "$rk -> [$($p.Name)]"
+                    if ($seenPaths.Add($runDisplayPath)) {
+                        $leftovers.Add([PSCustomObject]@{
+                            Type              = "Startup m$([char]0x1ED3) c$([char]0x00F4)i"
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $AppEntry.DisplayName
+                            Path              = $rk
+                            SizeBytes         = 0L
+                            SizeMB            = 0.0
+                            IsRegistry        = $true
+                            RegistryValueName = $p.Name
+                        })
+                    }
+                }
+            }
+        } catch {}
     }
 
     $regRoots = @(
@@ -6444,12 +6740,14 @@ function Find-AppLeftovers {
                 }
                 if ($isSafe -and $seenPaths.Add($regPath)) {
                     $leftovers.Add([PSCustomObject]@{
-                        Type       = "Registry m$([char]0x1ED3) c$([char]0x00F4)i"
-                        AppName    = $AppEntry.DisplayName
-                        Path       = $regPath
-                        SizeBytes  = 0L
-                        SizeMB     = 0.0
-                        IsRegistry = $true
+                        Type              = "Registry m$([char]0x1ED3) c$([char]0x00F4)i"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $AppEntry.DisplayName
+                        Path              = $regPath
+                        SizeBytes         = 0L
+                        SizeMB            = 0.0
+                        IsRegistry        = $true
+                        RegistryValueName = ""
                     })
                 }
             }
@@ -6459,12 +6757,14 @@ function Find-AppLeftovers {
     if ($AppEntry.RegistryPath -and (Test-Path -LiteralPath $AppEntry.RegistryPath)) {
         if ($seenPaths.Add($AppEntry.RegistryPath)) {
             $leftovers.Add([PSCustomObject]@{
-                Type       = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
-                AppName    = $AppEntry.DisplayName
-                Path       = $AppEntry.RegistryPath
-                SizeBytes  = 0L
-                SizeMB     = 0.0
-                IsRegistry = $true
+                Type              = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
+                Confidence        = "An to$([char]0x00E0)n 100%"
+                AppName           = $AppEntry.DisplayName
+                Path              = $AppEntry.RegistryPath
+                SizeBytes         = 0L
+                SizeMB            = 0.0
+                IsRegistry        = $true
+                RegistryValueName = ""
             })
         }
     }
@@ -6499,27 +6799,32 @@ function Find-SystemOrphanLeftovers {
             if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
                 if ($seenPaths.Add($app.RegistryPath)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type       = "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
-                        AppName    = $app.DisplayName
-                        Path       = $app.RegistryPath
-                        SizeBytes  = 0L
-                        SizeMB     = 0.0
-                        IsRegistry = $true
+                        Type              = "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $app.DisplayName
+                        Path              = $app.RegistryPath
+                        SizeBytes         = 0L
+                        SizeMB            = 0.0
+                        IsRegistry        = $true
+                        RegistryValueName = ""
                     })
                 }
             }
 
             $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps
             foreach ($lo in $appLeftovers) {
-                if ($seenPaths.Add($lo.Path)) {
+                $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
+                if ($seenPaths.Add($dedupKey)) {
                     $badgeType = if ($lo.IsRegistry) { "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]" } else { "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]" }
                     $orphans.Add([PSCustomObject]@{
-                        Type       = $badgeType
-                        AppName    = $app.DisplayName
-                        Path       = $lo.Path
-                        SizeBytes  = [long]$lo.SizeBytes
-                        SizeMB     = [double]$lo.SizeMB
-                        IsRegistry = [bool]$lo.IsRegistry
+                        Type              = $badgeType
+                        Confidence        = if ($lo.Confidence) { $lo.Confidence } else { "An to$([char]0x00E0)n 100%" }
+                        AppName           = $app.DisplayName
+                        Path              = $lo.Path
+                        SizeBytes         = [long]$lo.SizeBytes
+                        SizeMB            = [double]$lo.SizeMB
+                        IsRegistry        = [bool]$lo.IsRegistry
+                        RegistryValueName = [string]$lo.RegistryValueName
                     })
                 }
             }
@@ -6576,12 +6881,14 @@ function Find-SystemOrphanLeftovers {
             if ($hollowSize -ge 0L) {
                 if ($seenPaths.Add($sd)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type       = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
-                        AppName    = $dirName
-                        Path       = $sd
-                        SizeBytes  = [long]$hollowSize
-                        SizeMB     = [math]::Round($hollowSize / 1MB, 2)
-                        IsRegistry = $false
+                        Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $dirName
+                        Path              = $sd
+                        SizeBytes         = [long]$hollowSize
+                        SizeMB            = [math]::Round($hollowSize / 1MB, 2)
+                        IsRegistry        = $false
+                        RegistryValueName = ""
                     })
                 }
             }
@@ -6613,12 +6920,14 @@ function Find-SystemOrphanLeftovers {
                         if ($seenPaths.Add($full)) {
                             $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
                             $orphans.Add([PSCustomObject]@{
-                                Type       = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                                AppName    = $catApp.Name
-                                Path       = $full
-                                SizeBytes  = [long]$dirSize
-                                SizeMB     = [math]::Round($dirSize / 1MB, 2)
-                                IsRegistry = $false
+                                Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                                Confidence        = "An to$([char]0x00E0)n 100%"
+                                AppName           = $catApp.Name
+                                Path              = $full
+                                SizeBytes         = [long]$dirSize
+                                SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                                IsRegistry        = $false
+                                RegistryValueName = ""
                             })
                         }
                     }
@@ -6647,12 +6956,14 @@ function Find-SystemOrphanLeftovers {
                         if (-not (Test-Path -LiteralPath $target)) {
                             if ($seenPaths.Add($lnk)) {
                                 $orphans.Add([PSCustomObject]@{
-                                    Type       = "[Shortcut ch$([char]0x1EBF)t]"
-                                    AppName    = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
-                                    Path       = $lnk
-                                    SizeBytes  = 0L
-                                    SizeMB     = 0.0
-                                    IsRegistry = $false
+                                    Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
+                                    Path              = $lnk
+                                    SizeBytes         = 0L
+                                    SizeMB            = 0.0
+                                    IsRegistry        = $false
+                                    RegistryValueName = ""
                                 })
                             }
                         }
@@ -6678,10 +6989,10 @@ function Show-LeftoverReviewDialog {
 
     $dialog = New-Object System.Windows.Window
     $dialog.Title = $Title
-    $dialog.Width = 840
-    $dialog.Height = 540
-    $dialog.MinWidth = 720
-    $dialog.MinHeight = 420
+    $dialog.Width = 920
+    $dialog.Height = 580
+    $dialog.MinWidth = 760
+    $dialog.MinHeight = 440
     $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
     $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0A0E15")
     $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
@@ -6731,10 +7042,12 @@ function Show-LeftoverReviewDialog {
         $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = [System.Windows.GridLength]::Auto
         $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
         $c3 = New-Object System.Windows.Controls.ColumnDefinition; $c3.Width = [System.Windows.GridLength]::Auto
+        $c4 = New-Object System.Windows.Controls.ColumnDefinition; $c4.Width = [System.Windows.GridLength]::Auto
         $itemGrid.ColumnDefinitions.Add($c0) | Out-Null
         $itemGrid.ColumnDefinitions.Add($c1) | Out-Null
         $itemGrid.ColumnDefinitions.Add($c2) | Out-Null
         $itemGrid.ColumnDefinitions.Add($c3) | Out-Null
+        $itemGrid.ColumnDefinitions.Add($c4) | Out-Null
 
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.IsChecked = $true
@@ -6745,19 +7058,24 @@ function Show-LeftoverReviewDialog {
         $itemGrid.Children.Add($cb) | Out-Null
         $itemCheckBoxes.Add($cb)
 
+        $badgeStack = New-Object System.Windows.Controls.StackPanel
+        $badgeStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $badgeStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $badgeStack.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+
         $badgeBorder = New-Object System.Windows.Controls.Border
         $badgeColor = switch -Wildcard ($item.Type) {
             "*Registry*" { "#DC2626" }
+            "*Startup*" { "#E11D48" }
             "*R$([char]0x00E1)c AppData*" { "#D97706" }
             "*V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c*" { "#2563EB" }
             "*Shortcut*" { "#7C3AED" }
+            "*Crash Dump*" { "#9333EA" }
             default { "#0D9488" }
         }
         $badgeBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($badgeColor)
         $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $badgeBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
-        $badgeBorder.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
-        $badgeBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $badgeText = New-Object System.Windows.Controls.TextBlock
         $badgeText.Text = $item.Type
@@ -6765,8 +7083,24 @@ function Show-LeftoverReviewDialog {
         $badgeText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $badgeText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
         $badgeBorder.Child = $badgeText
-        [System.Windows.Controls.Grid]::SetColumn($badgeBorder, 1)
-        $itemGrid.Children.Add($badgeBorder) | Out-Null
+        $badgeStack.Children.Add($badgeBorder) | Out-Null
+
+        $confBorder = New-Object System.Windows.Controls.Border
+        $confBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#064E3B")
+        $confBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#059669")
+        $confBorder.BorderThickness = New-Object System.Windows.Thickness(1)
+        $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
+        $confBorder.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
+        $confBorder.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        $confText = New-Object System.Windows.Controls.TextBlock
+        $confText.Text = if ($item.Confidence) { $item.Confidence } else { "An to$([char]0x00E0)n 100%" }
+        $confText.FontSize = 9.5
+        $confText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#6EE7B7")
+        $confBorder.Child = $confText
+        $badgeStack.Children.Add($confBorder) | Out-Null
+
+        [System.Windows.Controls.Grid]::SetColumn($badgeStack, 1)
+        $itemGrid.Children.Add($badgeStack) | Out-Null
 
         $infoPanel = New-Object System.Windows.Controls.StackPanel
         $infoPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -6777,12 +7111,13 @@ function Show-LeftoverReviewDialog {
         $appBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
         $infoPanel.Children.Add($appBlock) | Out-Null
 
+        $displayPathText = if ($item.RegistryValueName) { "$($item.Path) [Value: $($item.RegistryValueName)]" } else { $item.Path }
         $pathBlock = New-Object System.Windows.Controls.TextBlock
-        $pathBlock.Text = $item.Path
+        $pathBlock.Text = $displayPathText
         $pathBlock.FontSize = 11
         $pathBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
         $pathBlock.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $pathBlock.ToolTip = $item.Path
+        $pathBlock.ToolTip = $displayPathText
         $infoPanel.Children.Add($pathBlock) | Out-Null
 
         [System.Windows.Controls.Grid]::SetColumn($infoPanel, 2)
@@ -6792,7 +7127,7 @@ function Show-LeftoverReviewDialog {
         $sizeBlock.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $sizeBlock.FontSize = 11.5
         $sizeBlock.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $sizeBlock.Margin = New-Object System.Windows.Thickness(10, 0, 4, 0)
+        $sizeBlock.Margin = New-Object System.Windows.Thickness(10, 0, 8, 0)
         if ($item.IsRegistry) {
             $sizeBlock.Text = "Registry"
             $sizeBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
@@ -6802,6 +7137,37 @@ function Show-LeftoverReviewDialog {
         }
         [System.Windows.Controls.Grid]::SetColumn($sizeBlock, 3)
         $itemGrid.Children.Add($sizeBlock) | Out-Null
+
+        $btnOpenLoc = New-Object System.Windows.Controls.Button
+        $btnOpenLoc.Content = "M$([char]0x1EDF) v$([char]0x1ECB) tr$([char]0x00ED)"
+        $btnOpenLoc.FontSize = 10.5
+        $btnOpenLoc.Padding = New-Object System.Windows.Thickness(8, 3, 8, 3)
+        $btnOpenLoc.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $btnOpenLoc.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+        $btnOpenLoc.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+        $btnOpenLoc.Tag = $item
+        $btnOpenLoc.Add_Click({
+            param($sender, $e)
+            $tg = $sender.Tag
+            if ($null -eq $tg) { return }
+            try {
+                if ($tg.IsRegistry) {
+                    $rawKey = $tg.Path -replace '^HKCU:\\', 'HKEY_CURRENT_USER\' -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\'
+                    $regApplet = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit"
+                    if (-not (Test-Path -LiteralPath $regApplet)) {
+                        New-Item -Path $regApplet -Force | Out-Null
+                    }
+                    Set-ItemProperty -LiteralPath $regApplet -Name "LastKey" -Value "Computer\$rawKey" -ErrorAction SilentlyContinue
+                    Start-Process "regedit.exe"
+                } else {
+                    if (Test-Path -LiteralPath $tg.Path) {
+                        Start-Process "explorer.exe" -ArgumentList "/select,`"$($tg.Path)`""
+                    }
+                }
+            } catch {}
+        })
+        [System.Windows.Controls.Grid]::SetColumn($btnOpenLoc, 4)
+        $itemGrid.Children.Add($btnOpenLoc) | Out-Null
 
         $itemBorder.Child = $itemGrid
         $itemsStack.Children.Add($itemBorder) | Out-Null
@@ -6823,10 +7189,22 @@ function Show-LeftoverReviewDialog {
     $bottomGrid.ColumnDefinitions.Add($bgCol0) | Out-Null
     $bottomGrid.ColumnDefinitions.Add($bgCol1) | Out-Null
 
+    $leftBottomStack = New-Object System.Windows.Controls.StackPanel
+    $leftBottomStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
     $summaryText = New-Object System.Windows.Controls.TextBlock
-    $summaryText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $summaryText.FontSize = 12
-    $summaryText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $summaryText.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $summaryText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+
+    $chkRecycleBin = New-Object System.Windows.Controls.CheckBox
+    $chkRecycleBin.IsChecked = $true
+    $chkRecycleBin.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
+    $chkRecycleBin.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $chkRecycleBin.Content = "Chuy$([char]0x1EC3)n file/th$([char]0x01B0) m$([char]0x1EE5)c v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c Windows (An to$([char]0x00E0)n, kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c n$([char]0x1EBF)u c$([char]0x1EA7)n)"
+
+    $leftBottomStack.Children.Add($summaryText) | Out-Null
+    $leftBottomStack.Children.Add($chkRecycleBin) | Out-Null
 
     $updateSummary = {
         $selCount = 0
@@ -6847,11 +7225,12 @@ function Show-LeftoverReviewDialog {
         $c.Add_Unchecked($updateSummary)
     }
 
-    [System.Windows.Controls.Grid]::SetColumn($summaryText, 0)
-    $bottomGrid.Children.Add($summaryText) | Out-Null
+    [System.Windows.Controls.Grid]::SetColumn($leftBottomStack, 0)
+    $bottomGrid.Children.Add($leftBottomStack) | Out-Null
 
     $btnStack = New-Object System.Windows.Controls.StackPanel
     $btnStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $btnStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $btnSelectAll = New-Object System.Windows.Controls.Button
     $btnSelectAll.Content = "Ch$([char]0x1ECD)n t$([char]0x1EA5)t c$([char]0x1EA3)"
@@ -6884,7 +7263,7 @@ function Show-LeftoverReviewDialog {
     $btnCancel.Add_Click({ $dialog.Close() })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
-    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L }
+    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0 }
 
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "X$([char]0x00F3)a S$([char]0x1EA1)ch M$([char]0x1EE5)c $([char]0x0110)$([char]0x00E3) Ch$([char]0x1ECD)n"
@@ -6899,17 +7278,58 @@ function Show-LeftoverReviewDialog {
             return
         }
 
+        $useRecycle = [bool]$chkRecycleBin.IsChecked
         $removed = 0
         $freed = 0L
+        $rebootTotal = 0
 
         foreach ($ci in $checkedItems) {
             try {
-                if (Test-Path -LiteralPath $ci.Path) {
-                    Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
-                    $removed++
-                    $freed += $ci.SizeBytes
-                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                        Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a: $($ci.Type) - $($ci.Path)"
+                if ($ci.IsRegistry) {
+                    if ($ci.RegistryValueName) {
+                        if (Test-Path -LiteralPath $ci.Path) {
+                            Remove-ItemProperty -LiteralPath $ci.Path -Name $ci.RegistryValueName -Force -ErrorAction Stop
+                            $removed++
+                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Startup Registry: $($ci.Path) [$($ci.RegistryValueName)]"
+                            }
+                        }
+                    } elseif (Test-Path -LiteralPath $ci.Path) {
+                        Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                        $removed++
+                        if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                            Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry: $($ci.Path)"
+                        }
+                    }
+                } elseif (Test-Path -LiteralPath $ci.Path) {
+                    $deletedOk = $false
+                    if ($useRecycle) {
+                        try {
+                            $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
+                            if ($itemObj.PSIsContainer) {
+                                [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($ci.Path) | Out-Null
+                                [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                            } else {
+                                [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                            }
+                            $deletedOk = $true
+                        } catch {
+                            $deletedOk = $false
+                        }
+                    }
+
+                    if (-not $deletedOk) {
+                        $rbCount = 0
+                        $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                        $rebootTotal += $rbCount
+                    }
+
+                    if ($deletedOk) {
+                        $removed++
+                        $freed += $ci.SizeBytes
+                        if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                            Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch: $($ci.Type) - $($ci.Path)"
+                        }
                     }
                 }
             } catch {
@@ -6919,9 +7339,14 @@ function Show-LeftoverReviewDialog {
             }
         }
 
+        if ($rebootTotal -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
+            Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1ECB)ch x$([char]0x00F3)a $rebootTotal file $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a ngay khi Windows kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i (MoveFileEx)."
+        }
+
         $dialogResult.Confirmed = $true
         $dialogResult.RemovedCount = $removed
         $dialogResult.FreedBytes = $freed
+        $dialogResult.RebootScheduled = $rebootTotal
         $dialog.Close()
     })
     $btnStack.Children.Add($btnDelete) | Out-Null
@@ -6956,19 +7381,10 @@ function Invoke-DeepAppUninstall {
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
         $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
-            try {
-                $procs = Get-Process -ErrorAction SilentlyContinue
-                foreach ($proc in $procs) {
-                    try {
-                        if ($proc.MainModule -and $proc.MainModule.FileName -and $proc.MainModule.FileName.StartsWith($loc + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
-                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                                Log-Text "[*] $([char]0x0110)ang $([char]0x0111)$([char]0x00F3)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh $([char]0x0111)ang ch$([char]0x1EA1)y: $($proc.ProcessName) (PID: $($proc.Id))"
-                            }
-                            $proc.Kill()
-                        }
-                    } catch {}
-                }
-            } catch {}
+            $killedCount = [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($loc)
+            if ($killedCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x00F3)ng $killedCount ti$([char]0x1EBF)n tr$([char]0x00EC)nh $([char]0x0111)ang ch$([char]0x1EA1)y trong: $loc"
+            }
         }
     }
 
