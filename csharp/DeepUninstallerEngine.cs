@@ -1578,7 +1578,14 @@ namespace DuckUtil
 
             var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk"
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab"
+            };
+            var skipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries"
             };
 
             long totalBytes = 0L;
@@ -1622,6 +1629,9 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipDirs.Contains(subName)) continue;
+                                if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
                                 nextLevel.Add(sub);
                             }
                         }
@@ -1662,13 +1672,14 @@ namespace DuckUtil
                             {
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
+                                if (File.Exists(destFile)) continue;
                                 string destDir = Path.GetDirectoryName(destFile);
                                 if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
                                 {
                                     Directory.CreateDirectory(destDir);
                                 }
 
-                                File.Copy(file, destFile, true);
+                                File.Copy(file, destFile, false);
                                 restoredCount++;
                             }
                             catch {}

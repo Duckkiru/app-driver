@@ -7574,7 +7574,14 @@ namespace DuckUtil
 
             var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk"
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab"
+            };
+            var skipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries"
             };
 
             long totalBytes = 0L;
@@ -7618,6 +7625,9 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipDirs.Contains(subName)) continue;
+                                if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
                                 nextLevel.Add(sub);
                             }
                         }
@@ -7658,13 +7668,14 @@ namespace DuckUtil
                             {
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
+                                if (File.Exists(destFile)) continue;
                                 string destDir = Path.GetDirectoryName(destFile);
                                 if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
                                 {
                                     Directory.CreateDirectory(destDir);
                                 }
 
-                                File.Copy(file, destFile, true);
+                                File.Copy(file, destFile, false);
                                 restoredCount++;
                             }
                             catch {}
@@ -12250,6 +12261,78 @@ function Clear-WinGetTempInstallers {
     }
 }
 
+function Wait-WindowsInstallerReady {
+    param([int]$MaxWaitSeconds = 20)
+    $deadline = [DateTime]::UtcNow.AddSeconds($MaxWaitSeconds)
+    $logged = $false
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if ($script:isWindowClosing) { break }
+        $isBusy = $false
+        $mtx = $null
+        try {
+            $mtx = [System.Threading.Mutex]::OpenExisting("Global\_MSIExecute")
+            $acquired = $false
+            try {
+                $acquired = $mtx.WaitOne(0)
+            } catch [System.Threading.AbandonedMutexException] {
+                $acquired = $true
+            }
+            if ($acquired) {
+                try { $mtx.ReleaseMutex() } catch {}
+                $isBusy = $false
+            } else {
+                $isBusy = $true
+            }
+        } catch {
+            $isBusy = $false
+        } finally {
+            if ($mtx) { try { $mtx.Dispose() } catch {} }
+        }
+        if (-not $isBusy) {
+            if ($logged) {
+                Start-Sleep -Milliseconds 600
+                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+            }
+            return $true
+        }
+        if (-not $logged) {
+            Log-Text "[*] Đang chờ tiến trình Windows Installer khác hoàn tất..."
+            $logged = $true
+        }
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        Start-Sleep -Milliseconds 500
+    }
+    return $false
+}
+
+function Invoke-WinGetWithMsiRetry {
+    param([Parameter(Mandatory = $true)][string]$Arguments)
+    [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
+    $code = Run-CliStream "winget" $Arguments
+    if ($code -eq -1978334974 -or $code -eq 1618) {
+        Log-Text "[!] Windows Installer đang bận (1618), đang chờ giải phóng để thử lại..."
+        [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
+        Start-Sleep -Milliseconds 1200
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        $code = Run-CliStream "winget" $Arguments
+    }
+    return $code
+}
+
+function Wait-SquirrelUpdatersSettle {
+    param([int]$MaxWaitMs = 4000)
+    $deadline = [DateTime]::UtcNow.AddMilliseconds($MaxWaitMs)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if ($script:isWindowClosing) { break }
+        $running = @(Get-Process -Name "Update" -ErrorAction SilentlyContinue | Where-Object {
+            try { $_.Path -and $_.Path.StartsWith($env:LOCALAPPDATA, [System.StringComparison]::OrdinalIgnoreCase) } catch { $false }
+        })
+        if ($running.Count -eq 0) { break }
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        Start-Sleep -Milliseconds 350
+    }
+}
+
 function Invoke-SmartAppUpgrade {
     param($Tag)
     if (-not $Tag) { return 1 }
@@ -12340,25 +12423,39 @@ function Invoke-SmartAppUpgrade {
         }
     }
 
+    $normalizedExistingLoc = if ($existingLoc) {
+        try { [System.IO.Path]::GetFullPath($existingLoc).TrimEnd('\') } catch { $existingLoc.TrimEnd('\') }
+    } else { "" }
+
     $targetAppDataDirs = [System.Collections.Generic.List[string]]::new()
+    $seenSnapshotDirs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($normalizedExistingLoc) { [void]$seenSnapshotDirs.Add($normalizedExistingLoc) }
     foreach ($nv in $nameVariations) {
         if ([string]::IsNullOrWhiteSpace($nv)) { continue }
-        $rPath = Join-Path $env:APPDATA $nv
-        if ((Test-Path -LiteralPath $rPath) -and -not $targetAppDataDirs.Contains($rPath)) {
-            $targetAppDataDirs.Add($rPath)
-        }
-        $lPath = Join-Path $env:LOCALAPPDATA $nv
-        if ((Test-Path -LiteralPath $lPath) -and -not $targetAppDataDirs.Contains($lPath)) {
-            $targetAppDataDirs.Add($lPath)
+        foreach ($rootDir in @($env:APPDATA, $env:LOCALAPPDATA)) {
+            if ([string]::IsNullOrWhiteSpace($rootDir)) { continue }
+            $candDir = Join-Path $rootDir $nv
+            if (Test-Path -LiteralPath $candDir) {
+                $normCand = try { [System.IO.Path]::GetFullPath($candDir).TrimEnd('\') } catch { $candDir.TrimEnd('\') }
+                if ($seenSnapshotDirs.Add($normCand)) {
+                    $targetAppDataDirs.Add($normCand)
+                }
+            }
         }
     }
 
-    $hkcuKeys = [System.Collections.Generic.List[string]]::new()
+    $hkcuKeys = [System.Collections.Generic.List[object]]::new()
+    $seenHkcu = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($nv in $nameVariations) {
         if ([string]::IsNullOrWhiteSpace($nv)) { continue }
         $rk = "HKCU:\Software\$nv"
-        if ((Test-Path -LiteralPath $rk) -and -not $hkcuKeys.Contains($rk)) {
-            $hkcuKeys.Add($rk)
+        if ($seenHkcu.Add($rk) -and (Test-Path -LiteralPath $rk)) {
+            $hadData = $false
+            try {
+                $kObj = Get-Item -LiteralPath $rk -ErrorAction SilentlyContinue
+                if ($kObj -and ($kObj.ValueCount -gt 0 -or $kObj.SubKeyCount -gt 0)) { $hadData = $true }
+            } catch {}
+            $hkcuKeys.Add([PSCustomObject]@{ PSPath = $rk; HadData = $hadData })
         }
     }
 
@@ -12391,15 +12488,15 @@ function Invoke-SmartAppUpgrade {
 
     $regFiles = [System.Collections.Generic.List[object]]::new()
     $rkIdx = 0
-    foreach ($rk in $hkcuKeys) {
+    foreach ($rkEntry in $hkcuKeys) {
         $rkIdx++
         $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
-        $rawHkcu = $rk -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
+        $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
         try {
             $pReg = Start-Process "reg.exe" -ArgumentList "export `"$rawHkcu`" `"$rf`" /y" -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
             if ($pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $rf)) {
                 $hasSnapshots = $true
-                $regFiles.Add([PSCustomObject]@{ Key = $rawHkcu; File = $rf })
+                $regFiles.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
             }
         } catch {}
     }
@@ -12408,7 +12505,8 @@ function Invoke-SmartAppUpgrade {
         Log-Text "[*] Đã kích hoạt UpgradeDataGuard: Chụp snapshot dữ liệu cá nhân & cấu hình trước khi nâng cấp."
     }
 
-    $upArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
+    $baseUpArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
+    $upArgs = $baseUpArgs
     if ($existingLoc) {
         $upArgs += " --location `"$existingLoc`""
     }
@@ -12416,41 +12514,82 @@ function Invoke-SmartAppUpgrade {
         $upArgs += " --scope $scope"
     }
 
-    $code = Run-CliStream "winget" $upArgs
+    $code = Invoke-WinGetWithMsiRetry -Arguments $upArgs
     if ($code -ne 0 -and $scope) {
-        Log-Text "[!] Nâng cấp theo scope '$scope' không thành công (Code: $code), đang thử lại chế độ tự do..."
-        $upArgsRetry = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
+        Log-Text "[!] Nâng cấp theo scope '$scope' không thành công (Code: $code), đang thử lại bỏ giới hạn scope..."
+        $upArgsNoScope = $baseUpArgs
         if ($existingLoc) {
-            $upArgsRetry += " --location `"$existingLoc`""
+            $upArgsNoScope += " --location `"$existingLoc`""
         }
-        $code = Run-CliStream "winget" $upArgsRetry
+        $code = Invoke-WinGetWithMsiRetry -Arguments $upArgsNoScope
     }
 
-    if ($hasSnapshots) {
-        if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
-            $restoredLoc = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($locBkp, $existingLoc)
-            if ($restoredLoc -gt 0) {
-                Log-Text "[OK] UpgradeDataGuard: Đã bảo toàn $restoredLoc tệp dữ liệu cá nhân trong thư mục cài đặt."
-            }
-        }
+    if ($code -ne 0 -and $existingLoc) {
+        Log-Text "[!] Nâng cấp kèm đường dẫn cố định không khả dụng (Code: $code), đang thử lại cấu hình mặc định..."
+        $code = Invoke-WinGetWithMsiRetry -Arguments $baseUpArgs
+    }
 
-        if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-            foreach ($item in $appDataBkps) {
-                if (Test-Path -LiteralPath $item.Backup) {
-                    $resAd = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($item.Backup, $item.Source)
-                    if ($resAd -gt 0) {
-                        Log-Text "[OK] UpgradeDataGuard: Đã bảo toàn $resAd tệp dữ liệu/profile trong: $($item.Source)"
+    $alreadyLatest = $false
+    if ($code -eq -1978335189) {
+        try {
+            $probeCap = Invoke-WingetListCapture -Arguments "list --id `"$upgradeId`" --exact --disable-interactivity --accept-source-agreements" -TimeoutSeconds 12
+            if ($probeCap.Available -and -not $probeCap.TimedOut) {
+                $probeParsed = ConvertFrom-WingetListOutput -RawText $probeCap.StdOut -AllowHeaderless $true
+                $probeItem = if ($probeParsed -and $probeParsed.Items.Count -gt 0) {
+                    $probeParsed.Items | Where-Object { $_.ID -ieq $upgradeId } | Select-Object -First 1
+                } else { $null }
+                if ($probeItem -and -not $probeItem.HasUpdate) {
+                    $alreadyLatest = $true
+                    $code = 0
+                    Log-Text "[OK] $($app.Name) hiện đã ở phiên bản mới nhất ($($probeItem.Version))."
+                } elseif ($probeItem -and $probeItem.HasUpdate) {
+                    Log-Text "[*] Phát hiện bản mới $($probeItem.Available) nhưng khác scope cài đặt; đang nâng cấp trực tiếp (--force)..."
+                    $forceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
+                    $code = Invoke-WinGetWithMsiRetry -Arguments $forceArgs
+                }
+            }
+        } catch {}
+    }
+
+    $preInstallerAborted = $alreadyLatest -or ($code -in @(-1978335189, -1978335212, -1978335191, -1978334974, 1618))
+    if ($hasSnapshots) {
+        if (-not $preInstallerAborted) {
+            if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+                $restoredLoc = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($locBkp, $existingLoc)
+                if ($restoredLoc -gt 0) {
+                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
+                }
+            }
+
+            if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+                foreach ($item in $appDataBkps) {
+                    if (Test-Path -LiteralPath $item.Backup) {
+                        $resAd = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($item.Backup, $item.Source)
+                        if ($resAd -gt 0) {
+                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
+                        }
                     }
                 }
             }
-        }
 
-        foreach ($rfItem in $regFiles) {
-            if (Test-Path -LiteralPath $rfItem.File) {
-                try {
-                    Start-Process "reg.exe" -ArgumentList "import `"$($rfItem.File)`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
-                } catch {}
+            foreach ($rfItem in $regFiles) {
+                if (Test-Path -LiteralPath $rfItem.File) {
+                    $needRegRestore = $false
+                    if (-not (Test-Path -LiteralPath $rfItem.PSPath)) {
+                        $needRegRestore = $true
+                    } elseif ($rfItem.HadData) {
+                        try {
+                            $curKey = Get-Item -LiteralPath $rfItem.PSPath -ErrorAction SilentlyContinue
+                            if ($curKey -and $curKey.ValueCount -eq 0 -and $curKey.SubKeyCount -eq 0) { $needRegRestore = $true }
+                        } catch {}
+                    }
+                    if ($needRegRestore) {
+                        try {
+                            Start-Process "reg.exe" -ArgumentList "import `"$($rfItem.File)`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
+                        } catch {}
+                    }
+                }
             }
         }
 
@@ -12478,6 +12617,7 @@ Register-Click "btnInstall" {
 
         $total = $selectedTags.Count
         $idx = 0
+        $didAnyInstall = $false
         Log-Text "=========================================================="
         Log-Text "[INSTALL] BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
@@ -12491,10 +12631,11 @@ Register-Click "btnInstall" {
 
                 if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED" -or ($script:installedMap -and $script:installedMap.ContainsKey($app.ID))) {
                     Log-Text "[SKIP] $($app.Name) đã có trên máy (dùng 'Cập nhật mục chọn' nếu muốn nâng cấp)."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    if ($tag.Status -ne "OUTDATED" -and $tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
 
+                $didAnyInstall = $true
                 Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
                 if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
@@ -12513,7 +12654,7 @@ Register-Click "btnInstall" {
                 } else {
                     $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
                     if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
-                    $code = Run-CliStream "winget" $wgArgs
+                    $code = Invoke-WinGetWithMsiRetry -Arguments $wgArgs
                 }
 
                 if ($code -eq 0) {
@@ -12533,7 +12674,10 @@ Register-Click "btnInstall" {
         Update-SelectionCount
         if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
         if ($progressBar) { $progressBar.Value = 100 }
-        Scan-And-ColorizeApps
+        if ($didAnyInstall) {
+            Wait-SquirrelUpdatersSettle
+            Scan-And-ColorizeApps
+        }
     }
 }
 
@@ -12594,6 +12738,7 @@ Register-Click "btnUpgradeSelected" {
         Update-SelectionCount
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
         if ($progressBar) { $progressBar.Value = 100 }
+        Wait-SquirrelUpdatersSettle
         Scan-And-ColorizeApps
     }
 }
@@ -12635,6 +12780,7 @@ Register-Click "btnUpgradeAll" {
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
         Log-Text "[OK] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
+        Wait-SquirrelUpdatersSettle
         Scan-And-ColorizeApps
     }
 }
