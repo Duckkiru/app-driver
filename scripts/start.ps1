@@ -1,3 +1,4 @@
+$isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion')
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
 )
@@ -5,7 +6,7 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 $isInsideWT = -not [string]::IsNullOrWhiteSpace($env:WT_SESSION)
 $script:IsInsideWindowsTerminal = $isInsideWT
 
-if (-not $isAdmin) {
+if (-not $isCompanion -or -not $isAdmin) {
     $psExe = if ($PSVersionTable.PSEdition -eq 'Core' -or (Get-Command pwsh -CommandType Application -ErrorAction SilentlyContinue)) {
         "pwsh.exe"
     } else {
@@ -19,13 +20,28 @@ if (-not $isAdmin) {
         if ($PWD -and $PWD.Path -and (Test-Path -LiteralPath $PWD.Path)) { $PWD.Path } else { [Environment]::GetFolderPath('UserProfile') }
     }
 
+    $scriptTarget = $null
     if ($isWebSource) {
-        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
+        $sbStr = if ($MyInvocation.MyCommand -and $MyInvocation.MyCommand.ScriptBlock) {
+            $MyInvocation.MyCommand.ScriptBlock.ToString()
+        } else { "" }
+
+        if (-not [string]::IsNullOrWhiteSpace($sbStr) -and $sbStr.Length -gt 1000) {
+            $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
+            try {
+                [System.IO.File]::WriteAllText($cacheScript, $sbStr, [System.Text.UTF8Encoding]::new($false))
+                $scriptTarget = $cacheScript
+            } catch {}
+        }
     } else {
         $scriptTarget = (Resolve-Path -LiteralPath $PSCommandPath).Path
-        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -File `"$scriptTarget`""
+    }
+
+    if ($scriptTarget) {
+        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -File `"$scriptTarget`" --companion"
         if ($args -and $args.Count -gt 0) {
             $forwarded = foreach ($arg in $args) {
+                if ($arg -eq '--companion') { continue }
                 $argStr = "$arg"
                 if ($argStr -match '[\s"]') {
                     '`"' + ($argStr -replace '"', '\"') + '`"'
@@ -33,8 +49,12 @@ if (-not $isAdmin) {
                     $argStr
                 }
             }
-            $psArgs += " " + ($forwarded -join " ")
+            if ($forwarded) {
+                $psArgs += " " + ($forwarded -join " ")
+            }
         }
+    } else {
+        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$env:APP_DRIVER_COMPANION='1'; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
     }
 
     function Get-WindowsTerminalPath {
@@ -92,17 +112,19 @@ if (-not $isAdmin) {
         }
 
         $wtPsArgs = $psArgs -replace '(?<!\\);', '\;'
-        $wtArgs = "-d `"$safeWorkDir`" $psExe $wtPsArgs"
+        $wtArgs = "-w new -d `"$safeWorkDir`" $psExe $wtPsArgs"
 
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
             $elevationSuccess = $true
-            [Environment]::Exit(0)
+            Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
+            Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
+            return
         } catch {
             if (Test-UacCancelled $_) {
-                Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
-                exit
+                Write-Host "`n[!] B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) t$([char]0x1EEB) ch$([char]0x1ED1)i c$([char]0x1EA5)p quy$([char]0x1EC1)n Administrator (UAC)." -ForegroundColor Yellow
+                Write-Host "[*] App-Driver c$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) th$([char]0x1EF1)c hi$([char]0x1EC7)n s$([char]0x1EED)a l$([char]0x1ED7)i h$([char]0x1EC7) th$([char]0x1ED1)ng v$([char]0x00E0) qu$([char]0x1EA3)n l$([char]0x00FD) Driver.`n" -ForegroundColor DarkGray
+                return
             }
         }
     }
@@ -120,12 +142,14 @@ if (-not $isAdmin) {
             }
             Start-Process @startParams
             $elevationSuccess = $true
-            [Environment]::Exit(0)
+            Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
+            Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
+            return
         } catch {
             if (Test-UacCancelled $_) {
-                Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
-                exit
+                Write-Host "`n[!] B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) t$([char]0x1EEB) ch$([char]0x1ED1)i c$([char]0x1EA5)p quy$([char]0x1EC1)n Administrator (UAC)." -ForegroundColor Yellow
+                Write-Host "[*] App-Driver c$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) th$([char]0x1EF1)c hi$([char]0x1EC7)n s$([char]0x1EED)a l$([char]0x1ED7)i h$([char]0x1EC7) th$([char]0x1ED1)ng v$([char]0x00E0) qu$([char]0x1EA3)n l$([char]0x00FD) Driver.`n" -ForegroundColor DarkGray
+                return
             }
 
             if ($psExe -ne "powershell.exe" -and (Get-Command powershell.exe -CommandType Application -ErrorAction SilentlyContinue)) {
@@ -141,23 +165,25 @@ if (-not $isAdmin) {
                     }
                     Start-Process @fallbackParams
                     $elevationSuccess = $true
-                    [Environment]::Exit(0)
+                    Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
+                    Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
+                    return
                 } catch {
                     if (Test-UacCancelled $_) {
-                        Write-Host "`n[!] Bạn đã từ chối cấp quyền Administrator (UAC)." -ForegroundColor Yellow
-                        Write-Host "[*] App-Driver cần quyền Administrator để thực hiện sửa lỗi hệ thống và quản lý Driver.`n" -ForegroundColor DarkGray
-                        exit
+                        Write-Host "`n[!] B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) t$([char]0x1EEB) ch$([char]0x1ED1)i c$([char]0x1EA5)p quy$([char]0x1EC1)n Administrator (UAC)." -ForegroundColor Yellow
+                        Write-Host "[*] App-Driver c$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) th$([char]0x1EF1)c hi$([char]0x1EC7)n s$([char]0x1EED)a l$([char]0x1ED7)i h$([char]0x1EC7) th$([char]0x1ED1)ng v$([char]0x00E0) qu$([char]0x1EA3)n l$([char]0x00FD) Driver.`n" -ForegroundColor DarkGray
+                        return
                     }
-                    Write-Host "`n[x] Lỗi khởi chạy quyền Administrator: $($_.Exception.Message)" -ForegroundColor Red
-                    exit
+                    Write-Host "`n[x] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                    return
                 }
             } else {
-                Write-Host "`n[x] Lỗi khởi chạy quyền Administrator: $($_.Exception.Message)" -ForegroundColor Red
-                exit
+                Write-Host "`n[x] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                return
             }
         }
     }
-    exit
+    return
 }
 
 try {
