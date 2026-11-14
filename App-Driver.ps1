@@ -5200,9 +5200,11 @@ namespace DuckUtil
                                     info.DisplayVersion = (appKey.GetValue("DisplayVersion") as string ?? "").Trim();
                                     info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
                                     info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
-                                    info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim();
+                                    string rawLoc = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
                                     info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
+                                    string displayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
+                                    info.InstallLocation = InferInstallLocation(rawLoc, info.UninstallString, displayIcon);
                                     info.Scope = target.Scope;
 
                                     string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
@@ -5250,6 +5252,42 @@ namespace DuckUtil
             }
 
             return list;
+        }
+
+        private static string InferInstallLocation(string installLocation, string uninstallString, string displayIcon)
+        {
+            if (!string.IsNullOrWhiteSpace(installLocation))
+            {
+                return installLocation.Trim().TrimEnd('\\');
+            }
+
+            string[] candidates = new string[] { uninstallString, displayIcon };
+            foreach (string cand in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(cand)) continue;
+                if (cand.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+
+                string exePath = ExtractExePath(cand);
+                if (string.IsNullOrWhiteSpace(exePath)) continue;
+                if (exePath.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    exePath.IndexOf("\\Package Cache\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    exePath.IndexOf("\\Temp\\", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string dir = Path.GetDirectoryName(exePath);
+                    if (!string.IsNullOrWhiteSpace(dir) && dir.Length > 3)
+                    {
+                        return dir.TrimEnd('\\');
+                    }
+                }
+                catch {}
+            }
+
+            return "";
         }
 
         private static bool CheckIsBrokenOrphan(string uninstallString, string installLocation)
@@ -6236,8 +6274,74 @@ function Get-SystemInstalledAppsFast {
     return @($apps | Sort-Object -Property @{ Expression = { $_.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.DisplayName }; Descending = $false })
 }
 
+function Test-SafeAppDirectoryForCleanup {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)]$AppEntry,
+        [Parameter(Mandatory = $false)][string[]]$Keywords = @(),
+        [Parameter(Mandatory = $false)]$AllInstalledApps = $null
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
+    $norm = $Path.Trim().TrimEnd('\')
+    if ($norm -match '^[A-Za-z]:$') { return $false }
+
+    $parts = @($norm -split '\\' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($parts.Count -lt 2) { return $false }
+
+    $genericContainers = @(
+        'Windows', 'System32', 'SysWOW64', 'Program Files', 'Program Files (x86)',
+        'ProgramData', 'Programs', 'Users', 'AppData', 'Local', 'Roaming', 'LocalLow',
+        'Common Files', 'WindowsApps', 'ModifiableWindowsApps', 'Package Cache', 'Packages',
+        'Temp', 'Apps', 'Applications', 'Games', 'Game', 'Software', 'Softwares', 'Tools',
+        'Downloads', 'Desktop', 'Documents', 'Pictures', 'Music', 'Videos', 'OneDrive',
+        'Steam', 'SteamLibrary', 'steamapps', 'common', 'Epic Games', 'GOG Galaxy', 'Riot Games'
+    )
+
+    $leafName = $parts[$parts.Count - 1]
+    foreach ($gc in $genericContainers) {
+        if ($leafName.Equals($gc, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+
+    if ($Keywords -and $Keywords.Count -gt 0) {
+        $parentName = if ($parts.Count -ge 3) { $parts[$parts.Count - 2] } else { "" }
+        $matchedOwner = $false
+        foreach ($kw in $Keywords) {
+            if ([string]::IsNullOrWhiteSpace($kw) -or $kw.Length -lt 3) { continue }
+            if ($leafName.IndexOf($kw, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+                ($parentName -and $parentName.IndexOf($kw, [System.StringComparison]::OrdinalIgnoreCase) -ge 0)) {
+                $matchedOwner = $true
+                break
+            }
+        }
+        if (-not $matchedOwner) { return $false }
+    }
+
+    if ($AllInstalledApps) {
+        $normWithSlash = $norm + "\"
+        foreach ($other in $AllInstalledApps) {
+            if ($null -eq $other -or $other.Id -eq $AppEntry.Id) { continue }
+            if ($other.IsBrokenOrphan) { continue }
+            $otherLoc = if ($other.InstallLocation) { $other.InstallLocation.Trim().TrimEnd('\') } else { "" }
+            if ($otherLoc) {
+                if ($otherLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -or
+                    $otherLoc.StartsWith($normWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    return $false
+                }
+            }
+        }
+    }
+
+    return $true
+}
+
 function Find-AppLeftovers {
-    param([Parameter(Mandatory = $true)]$AppEntry)
+    param(
+        [Parameter(Mandatory = $true)]$AppEntry,
+        [Parameter(Mandatory = $false)]$AllInstalledApps = $null
+    )
 
     $leftovers = [System.Collections.Generic.List[object]]::new()
     $seenPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -6259,13 +6363,24 @@ function Find-AppLeftovers {
     $nameKeywords = @($nameKeywords | Select-Object -Unique)
     if ($nameKeywords.Count -eq 0) { return @() }
 
+    $ownerKeywords = [System.Collections.Generic.List[string]]::new()
+    foreach ($nk in $nameKeywords) { $ownerKeywords.Add($nk) }
+    if (-not [string]::IsNullOrWhiteSpace($AppEntry.Publisher)) {
+        $pubClean = ($AppEntry.Publisher -replace '\(.*?\)', '').Trim()
+        foreach ($pk in ($pubClean -split '\s+')) {
+            if ($pk.Length -ge 4 -and $exclusions -notcontains $pk) {
+                $ownerKeywords.Add($pk)
+            }
+        }
+    }
+
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
-        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path
+        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
         $isSafe = $true
         foreach ($ex in $exclusions) {
-            if ($loc -like "*\$ex*" -or $loc -like "*\$ex") { $isSafe = $false; break }
+            if ($loc -like "*\$ex\*" -or $loc -like "*\$ex") { $isSafe = $false; break }
         }
-        if ($isSafe -and ($loc -ne "C:\" -and $loc -ne "C:\Windows" -and $loc -ne "C:\Program Files" -and $loc -ne "C:\Program Files (x86)")) {
+        if ($isSafe -and (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)) {
             if ($seenPaths.Add($loc)) {
                 $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($loc, 4)
                 $leftovers.Add([PSCustomObject]@{
@@ -6394,7 +6509,7 @@ function Find-SystemOrphanLeftovers {
                 }
             }
 
-            $appLeftovers = Find-AppLeftovers -AppEntry $app
+            $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps
             foreach ($lo in $appLeftovers) {
                 if ($seenPaths.Add($lo.Path)) {
                     $badgeType = if ($lo.IsRegistry) { "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]" } else { "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]" }
@@ -6411,11 +6526,29 @@ function Find-SystemOrphanLeftovers {
         }
     }
 
-    $programRoots = @(
-        "C:\Program Files",
-        "C:\Program Files (x86)",
-        (Join-Path $env:LOCALAPPDATA "Programs")
-    )
+    $programRoots = [System.Collections.Generic.List[string]]::new()
+    try {
+        foreach ($drv in [System.IO.DriveInfo]::GetDrives()) {
+            if ($drv.DriveType -eq [System.IO.DriveType]::Fixed -and $drv.IsReady) {
+                $pf1 = Join-Path $drv.RootDirectory.FullName "Program Files"
+                $pf2 = Join-Path $drv.RootDirectory.FullName "Program Files (x86)"
+                if (Test-Path -LiteralPath $pf1) { $programRoots.Add($pf1) }
+                if (Test-Path -LiteralPath $pf2) { $programRoots.Add($pf2) }
+            }
+        }
+    } catch {
+        $programRoots.Add("C:\Program Files")
+        $programRoots.Add("C:\Program Files (x86)")
+    }
+    $localProgs = Join-Path $env:LOCALAPPDATA "Programs"
+    if (Test-Path -LiteralPath $localProgs) { $programRoots.Add($localProgs) }
+
+    $activeInstallLocs = [System.Collections.Generic.List[string]]::new()
+    foreach ($ia in $InstalledApps) {
+        if (-not $ia.IsBrokenOrphan -and -not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
+            $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
+        }
+    }
 
     foreach ($pRoot in $programRoots) {
         if (-not (Test-Path -LiteralPath $pRoot)) { continue }
@@ -6427,6 +6560,17 @@ function Find-SystemOrphanLeftovers {
                 if ($dirName -like "$ex*" -or $dirName -eq $ex) { $isExcluded = $true; break }
             }
             if ($isExcluded) { continue }
+
+            $sdNorm = $sd.Trim().TrimEnd('\')
+            $isUsedByActiveApp = $false
+            foreach ($actLoc in $activeInstallLocs) {
+                if ($actLoc.Equals($sdNorm, [System.StringComparison]::OrdinalIgnoreCase) -or
+                    $actLoc.StartsWith($sdNorm + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $isUsedByActiveApp = $true
+                    break
+                }
+            }
+            if ($isUsedByActiveApp) { continue }
 
             $hollowSize = [DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($sd, 3, 52428800L)
             if ($hollowSize -ge 0L) {
@@ -6807,14 +6951,16 @@ function Invoke-DeepAppUninstall {
         Log-Text "=========================================================="
     }
 
+    $allInstalledNow = Get-SystemInstalledAppsFast
+
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
-        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path
-        if ($loc -ne "C:\" -and $loc -ne "C:\Windows" -and $loc -ne "C:\Program Files" -and $loc -ne "C:\Program Files (x86)") {
+        $loc = (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\')
+        if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             try {
                 $procs = Get-Process -ErrorAction SilentlyContinue
                 foreach ($proc in $procs) {
                     try {
-                        if ($proc.MainModule -and $proc.MainModule.FileName -and $proc.MainModule.FileName.StartsWith($loc, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        if ($proc.MainModule -and $proc.MainModule.FileName -and $proc.MainModule.FileName.StartsWith($loc + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                                 Log-Text "[*] $([char]0x0110)ang $([char]0x0111)$([char]0x00F3)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh $([char]0x0111)ang ch$([char]0x1EA1)y: $($proc.ProcessName) (PID: $($proc.Id))"
                             }
@@ -6875,7 +7021,7 @@ function Invoke-DeepAppUninstall {
 
     Start-Sleep -Milliseconds 800
 
-    $leftovers = Find-AppLeftovers -AppEntry $AppEntry
+    $leftovers = Find-AppLeftovers -AppEntry $AppEntry -AllInstalledApps $allInstalledNow
     if ($leftovers.Count -gt 0) {
         if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
             Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c / Registry c$([char]0x00F2)n s$([char]0x00F3)t l$([char]0x1EA1)i sau khi g$([char]0x1EE1) b$([char]0x1ECF)."

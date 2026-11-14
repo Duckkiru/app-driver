@@ -93,9 +93,11 @@ namespace DuckUtil
                                     info.DisplayVersion = (appKey.GetValue("DisplayVersion") as string ?? "").Trim();
                                     info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
                                     info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
-                                    info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim();
+                                    string rawLoc = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
                                     info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
+                                    string displayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
+                                    info.InstallLocation = InferInstallLocation(rawLoc, info.UninstallString, displayIcon);
                                     info.Scope = target.Scope;
 
                                     string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
@@ -143,6 +145,42 @@ namespace DuckUtil
             }
 
             return list;
+        }
+
+        private static string InferInstallLocation(string installLocation, string uninstallString, string displayIcon)
+        {
+            if (!string.IsNullOrWhiteSpace(installLocation))
+            {
+                return installLocation.Trim().TrimEnd('\\');
+            }
+
+            string[] candidates = new string[] { uninstallString, displayIcon };
+            foreach (string cand in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(cand)) continue;
+                if (cand.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+
+                string exePath = ExtractExePath(cand);
+                if (string.IsNullOrWhiteSpace(exePath)) continue;
+                if (exePath.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    exePath.IndexOf("\\Package Cache\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    exePath.IndexOf("\\Temp\\", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string dir = Path.GetDirectoryName(exePath);
+                    if (!string.IsNullOrWhiteSpace(dir) && dir.Length > 3)
+                    {
+                        return dir.TrimEnd('\\');
+                    }
+                }
+                catch {}
+            }
+
+            return "";
         }
 
         private static bool CheckIsBrokenOrphan(string uninstallString, string installLocation)
