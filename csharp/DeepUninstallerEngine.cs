@@ -53,10 +53,148 @@ namespace DuckUtil
         [DllImport("ntdll.dll", SetLastError = true)]
         private static extern int NtSuspendProcess(IntPtr processHandle);
 
+        private static Dictionary<string, string> BuildInstallDirectoryIndex()
+        {
+            var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            RegistryHive[] hives = new RegistryHive[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
+            foreach (var hive in hives)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                    using (var appPaths = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"))
+                    {
+                        if (appPaths != null)
+                        {
+                            foreach (string sub in appPaths.GetSubKeyNames())
+                            {
+                                try
+                                {
+                                    using (var sk = appPaths.OpenSubKey(sub))
+                                    {
+                                        if (sk == null) continue;
+                                        string defVal = CleanIconFilePath(sk.GetValue("") as string);
+                                        string pathVal = (sk.GetValue("Path") as string ?? "").Trim().Trim('\"');
+                                        string dir = "";
+                                        if (!string.IsNullOrEmpty(defVal) && File.Exists(defVal))
+                                        {
+                                            dir = Path.GetDirectoryName(defVal);
+                                        }
+                                        else if (!string.IsNullOrEmpty(pathVal) && Directory.Exists(pathVal))
+                                        {
+                                            dir = pathVal;
+                                        }
+                                        if (!string.IsNullOrEmpty(dir) && dir.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) < 0)
+                                        {
+                                            string exeKey = Path.GetFileNameWithoutExtension(sub).ToLowerInvariant();
+                                            if (!string.IsNullOrEmpty(exeKey) && !index.ContainsKey(exeKey))
+                                            {
+                                                index[exeKey] = dir.TrimEnd('\\');
+                                            }
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            var roots = new List<string>();
+            string pf64 = Environment.GetEnvironmentVariable("ProgramW6432");
+            string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            string pf   = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrEmpty(pf64)) roots.Add(pf64);
+            if (!string.IsNullOrEmpty(pf) && !roots.Contains(pf)) roots.Add(pf);
+            if (!string.IsNullOrEmpty(pf86)) roots.Add(pf86);
+            if (!string.IsNullOrEmpty(localApp))
+            {
+                roots.Add(Path.Combine(localApp, "Programs"));
+                roots.Add(localApp);
+            }
+
+            foreach (string root in roots)
+            {
+                if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) continue;
+                bool isRawLocal = string.Equals(root, localApp, StringComparison.OrdinalIgnoreCase);
+                try
+                {
+                    foreach (string dir in Directory.GetDirectories(root))
+                    {
+                        string folderName = Path.GetFileName(dir);
+                        if (string.IsNullOrEmpty(folderName)) continue;
+                        if (folderName.Equals("WindowsApps", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Package Cache", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Common Files", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        string norm = NormalizeLookupToken(folderName);
+                        if (norm.Length >= 3 && !index.ContainsKey(norm))
+                        {
+                            index[norm] = dir;
+                        }
+
+                        if (!isRawLocal)
+                        {
+                            try
+                            {
+                                foreach (string subDir in Directory.GetDirectories(dir))
+                                {
+                                    string subName = Path.GetFileName(subDir);
+                                    if (string.IsNullOrEmpty(subName)) continue;
+                                    string normSub = NormalizeLookupToken(subName);
+                                    if (normSub.Length >= 4 && !index.ContainsKey(normSub))
+                                    {
+                                        index[normSub] = subDir;
+                                    }
+                                    string normCombined = NormalizeLookupToken(folderName + subName);
+                                    if (normCombined.Length >= 4 && !index.ContainsKey(normCombined))
+                                    {
+                                        index[normCombined] = subDir;
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            return index;
+        }
+
+        private static string NormalizeLookupToken(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                {
+                    sb.Append(c);
+                }
+                else if (c >= 'A' && c <= 'Z')
+                {
+                    sb.Append((char)(c + 32));
+                }
+            }
+            return sb.ToString();
+        }
+
         public static List<InstalledAppInfo> GetInstalledApps()
         {
             var list = new List<InstalledAppInfo>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dirIndex = BuildInstallDirectoryIndex();
 
             var targets = new ScanTarget[]
             {
@@ -112,7 +250,7 @@ namespace DuckUtil
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
                                     string displayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
                                     info.DisplayIcon = displayIcon;
-                                    info.InstallLocation = InferInstallLocation(rawLoc, info.UninstallString, displayIcon);
+                                    info.InstallLocation = InferInstallLocation(subKeyName, displayName, rawLoc, info.UninstallString, displayIcon, dirIndex);
                                     info.IconSourcePath = ResolveBestIconPath(subKeyName, displayName, displayIcon, info.InstallLocation, info.UninstallString);
                                     info.Scope = target.Scope;
 
@@ -133,18 +271,7 @@ namespace DuckUtil
                                     }
                                     if (size == 0 && !string.IsNullOrEmpty(info.InstallLocation))
                                     {
-                                        try
-                                        {
-                                            if (Directory.Exists(info.InstallLocation))
-                                            {
-                                                var dirInfo = new DirectoryInfo(info.InstallLocation);
-                                                foreach (var fi in dirInfo.GetFiles("*", SearchOption.TopDirectoryOnly))
-                                                {
-                                                    size += fi.Length;
-                                                }
-                                            }
-                                        }
-                                        catch {}
+                                        size = GetDirectorySizeCapped(info.InstallLocation, 2, 350);
                                     }
                                     info.SizeBytes = size;
 
@@ -163,11 +290,36 @@ namespace DuckUtil
             return list;
         }
 
-        private static string InferInstallLocation(string installLocation, string uninstallString, string displayIcon)
+        private static string InferInstallLocation(string subKeyName, string displayName, string installLocation, string uninstallString, string displayIcon, Dictionary<string, string> dirIndex)
         {
             if (!string.IsNullOrWhiteSpace(installLocation))
             {
-                return installLocation.Trim().TrimEnd('\\');
+                string trimmed = installLocation.Trim().TrimEnd('\\');
+                if (trimmed.Length > 3) return trimmed;
+            }
+
+            if (!string.IsNullOrWhiteSpace(subKeyName) && subKeyName.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(subKeyName);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var propKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed + @"\InstallProperties"))
+                        {
+                            if (propKey != null)
+                            {
+                                string msiLoc = (propKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"').TrimEnd('\\');
+                                if (!string.IsNullOrEmpty(msiLoc) && msiLoc.Length > 3 && Directory.Exists(msiLoc))
+                                {
+                                    return msiLoc;
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
             }
 
             string[] candidates = new string[] { uninstallString, displayIcon };
@@ -194,6 +346,31 @@ namespace DuckUtil
                     }
                 }
                 catch {}
+            }
+
+            if (dirIndex != null && !string.IsNullOrWhiteSpace(displayName))
+            {
+                if (displayName.IndexOf("Redistributable", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("Runtime", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf(".NET SDK", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("AddOn", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("CoreEditorFonts", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    string cleanName = System.Text.RegularExpressions.Regex.Replace(displayName, @"\(.*?\)|\b(version|v)?\s*\d+(\.\d+)+[^\s]*|\b(x64|x86|64-bit|32-bit)\b", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                    string normFull = NormalizeLookupToken(cleanName);
+                    string matchedDir;
+                    if (normFull.Length >= 3 && dirIndex.TryGetValue(normFull, out matchedDir) && Directory.Exists(matchedDir))
+                    {
+                        return matchedDir;
+                    }
+                    string normRaw = NormalizeLookupToken(displayName);
+                    if (normRaw.Length >= 3 && dirIndex.TryGetValue(normRaw, out matchedDir) && Directory.Exists(matchedDir))
+                    {
+                        return matchedDir;
+                    }
+                    if (normFull.Contains("cloudflareone") && dirIndex.TryGetValue("cloudflarewarp", out matchedDir)) return matchedDir;
+                    if (normFull.Contains("chromeremotedesktop") && dirIndex.TryGetValue("chromeremotedesktop", out matchedDir)) return matchedDir;
+                }
             }
 
             return "";
@@ -578,6 +755,55 @@ namespace DuckUtil
             }
 
             return totalSize < maxSizeLimit ? totalSize : -1L;
+        }
+
+        public static long GetDirectorySizeCapped(string rootPath, int maxDepth, int maxFiles)
+        {
+            if (string.IsNullOrEmpty(rootPath)) return 0L;
+            try
+            {
+                if (!Directory.Exists(rootPath)) return 0L;
+            }
+            catch { return 0L; }
+
+            long totalSize = 0L;
+            int fileCount = 0;
+            var currentLevel = new List<string> { rootPath };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                var fi = new FileInfo(file);
+                                totalSize += fi.Length;
+                                fileCount++;
+                                if (fileCount >= maxFiles) return totalSize;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalSize;
         }
 
         public static long GetDirectorySizeFast(string rootPath, int maxDepth)

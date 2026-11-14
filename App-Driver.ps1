@@ -5263,10 +5263,148 @@ namespace DuckUtil
         [DllImport("ntdll.dll", SetLastError = true)]
         private static extern int NtSuspendProcess(IntPtr processHandle);
 
+        private static Dictionary<string, string> BuildInstallDirectoryIndex()
+        {
+            var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            RegistryHive[] hives = new RegistryHive[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
+            foreach (var hive in hives)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                    using (var appPaths = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"))
+                    {
+                        if (appPaths != null)
+                        {
+                            foreach (string sub in appPaths.GetSubKeyNames())
+                            {
+                                try
+                                {
+                                    using (var sk = appPaths.OpenSubKey(sub))
+                                    {
+                                        if (sk == null) continue;
+                                        string defVal = CleanIconFilePath(sk.GetValue("") as string);
+                                        string pathVal = (sk.GetValue("Path") as string ?? "").Trim().Trim('\"');
+                                        string dir = "";
+                                        if (!string.IsNullOrEmpty(defVal) && File.Exists(defVal))
+                                        {
+                                            dir = Path.GetDirectoryName(defVal);
+                                        }
+                                        else if (!string.IsNullOrEmpty(pathVal) && Directory.Exists(pathVal))
+                                        {
+                                            dir = pathVal;
+                                        }
+                                        if (!string.IsNullOrEmpty(dir) && dir.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) < 0)
+                                        {
+                                            string exeKey = Path.GetFileNameWithoutExtension(sub).ToLowerInvariant();
+                                            if (!string.IsNullOrEmpty(exeKey) && !index.ContainsKey(exeKey))
+                                            {
+                                                index[exeKey] = dir.TrimEnd('\\');
+                                            }
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            var roots = new List<string>();
+            string pf64 = Environment.GetEnvironmentVariable("ProgramW6432");
+            string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            string pf   = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (!string.IsNullOrEmpty(pf64)) roots.Add(pf64);
+            if (!string.IsNullOrEmpty(pf) && !roots.Contains(pf)) roots.Add(pf);
+            if (!string.IsNullOrEmpty(pf86)) roots.Add(pf86);
+            if (!string.IsNullOrEmpty(localApp))
+            {
+                roots.Add(Path.Combine(localApp, "Programs"));
+                roots.Add(localApp);
+            }
+
+            foreach (string root in roots)
+            {
+                if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) continue;
+                bool isRawLocal = string.Equals(root, localApp, StringComparison.OrdinalIgnoreCase);
+                try
+                {
+                    foreach (string dir in Directory.GetDirectories(root))
+                    {
+                        string folderName = Path.GetFileName(dir);
+                        if (string.IsNullOrEmpty(folderName)) continue;
+                        if (folderName.Equals("WindowsApps", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Package Cache", StringComparison.OrdinalIgnoreCase) ||
+                            folderName.Equals("Common Files", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        string norm = NormalizeLookupToken(folderName);
+                        if (norm.Length >= 3 && !index.ContainsKey(norm))
+                        {
+                            index[norm] = dir;
+                        }
+
+                        if (!isRawLocal)
+                        {
+                            try
+                            {
+                                foreach (string subDir in Directory.GetDirectories(dir))
+                                {
+                                    string subName = Path.GetFileName(subDir);
+                                    if (string.IsNullOrEmpty(subName)) continue;
+                                    string normSub = NormalizeLookupToken(subName);
+                                    if (normSub.Length >= 4 && !index.ContainsKey(normSub))
+                                    {
+                                        index[normSub] = subDir;
+                                    }
+                                    string normCombined = NormalizeLookupToken(folderName + subName);
+                                    if (normCombined.Length >= 4 && !index.ContainsKey(normCombined))
+                                    {
+                                        index[normCombined] = subDir;
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            return index;
+        }
+
+        private static string NormalizeLookupToken(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                {
+                    sb.Append(c);
+                }
+                else if (c >= 'A' && c <= 'Z')
+                {
+                    sb.Append((char)(c + 32));
+                }
+            }
+            return sb.ToString();
+        }
+
         public static List<InstalledAppInfo> GetInstalledApps()
         {
             var list = new List<InstalledAppInfo>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dirIndex = BuildInstallDirectoryIndex();
 
             var targets = new ScanTarget[]
             {
@@ -5322,7 +5460,7 @@ namespace DuckUtil
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
                                     string displayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
                                     info.DisplayIcon = displayIcon;
-                                    info.InstallLocation = InferInstallLocation(rawLoc, info.UninstallString, displayIcon);
+                                    info.InstallLocation = InferInstallLocation(subKeyName, displayName, rawLoc, info.UninstallString, displayIcon, dirIndex);
                                     info.IconSourcePath = ResolveBestIconPath(subKeyName, displayName, displayIcon, info.InstallLocation, info.UninstallString);
                                     info.Scope = target.Scope;
 
@@ -5343,18 +5481,7 @@ namespace DuckUtil
                                     }
                                     if (size == 0 && !string.IsNullOrEmpty(info.InstallLocation))
                                     {
-                                        try
-                                        {
-                                            if (Directory.Exists(info.InstallLocation))
-                                            {
-                                                var dirInfo = new DirectoryInfo(info.InstallLocation);
-                                                foreach (var fi in dirInfo.GetFiles("*", SearchOption.TopDirectoryOnly))
-                                                {
-                                                    size += fi.Length;
-                                                }
-                                            }
-                                        }
-                                        catch {}
+                                        size = GetDirectorySizeCapped(info.InstallLocation, 2, 350);
                                     }
                                     info.SizeBytes = size;
 
@@ -5373,11 +5500,36 @@ namespace DuckUtil
             return list;
         }
 
-        private static string InferInstallLocation(string installLocation, string uninstallString, string displayIcon)
+        private static string InferInstallLocation(string subKeyName, string displayName, string installLocation, string uninstallString, string displayIcon, Dictionary<string, string> dirIndex)
         {
             if (!string.IsNullOrWhiteSpace(installLocation))
             {
-                return installLocation.Trim().TrimEnd('\\');
+                string trimmed = installLocation.Trim().TrimEnd('\\');
+                if (trimmed.Length > 3) return trimmed;
+            }
+
+            if (!string.IsNullOrWhiteSpace(subKeyName) && subKeyName.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(subKeyName);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var propKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed + @"\InstallProperties"))
+                        {
+                            if (propKey != null)
+                            {
+                                string msiLoc = (propKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"').TrimEnd('\\');
+                                if (!string.IsNullOrEmpty(msiLoc) && msiLoc.Length > 3 && Directory.Exists(msiLoc))
+                                {
+                                    return msiLoc;
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
             }
 
             string[] candidates = new string[] { uninstallString, displayIcon };
@@ -5404,6 +5556,31 @@ namespace DuckUtil
                     }
                 }
                 catch {}
+            }
+
+            if (dirIndex != null && !string.IsNullOrWhiteSpace(displayName))
+            {
+                if (displayName.IndexOf("Redistributable", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("Runtime", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf(".NET SDK", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("AddOn", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("CoreEditorFonts", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    string cleanName = System.Text.RegularExpressions.Regex.Replace(displayName, @"\(.*?\)|\b(version|v)?\s*\d+(\.\d+)+[^\s]*|\b(x64|x86|64-bit|32-bit)\b", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                    string normFull = NormalizeLookupToken(cleanName);
+                    string matchedDir;
+                    if (normFull.Length >= 3 && dirIndex.TryGetValue(normFull, out matchedDir) && Directory.Exists(matchedDir))
+                    {
+                        return matchedDir;
+                    }
+                    string normRaw = NormalizeLookupToken(displayName);
+                    if (normRaw.Length >= 3 && dirIndex.TryGetValue(normRaw, out matchedDir) && Directory.Exists(matchedDir))
+                    {
+                        return matchedDir;
+                    }
+                    if (normFull.Contains("cloudflareone") && dirIndex.TryGetValue("cloudflarewarp", out matchedDir)) return matchedDir;
+                    if (normFull.Contains("chromeremotedesktop") && dirIndex.TryGetValue("chromeremotedesktop", out matchedDir)) return matchedDir;
+                }
             }
 
             return "";
@@ -5788,6 +5965,55 @@ namespace DuckUtil
             }
 
             return totalSize < maxSizeLimit ? totalSize : -1L;
+        }
+
+        public static long GetDirectorySizeCapped(string rootPath, int maxDepth, int maxFiles)
+        {
+            if (string.IsNullOrEmpty(rootPath)) return 0L;
+            try
+            {
+                if (!Directory.Exists(rootPath)) return 0L;
+            }
+            catch { return 0L; }
+
+            long totalSize = 0L;
+            int fileCount = 0;
+            var currentLevel = new List<string> { rootPath };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                var fi = new FileInfo(file);
+                                totalSize += fi.Length;
+                                fileCount++;
+                                if (fileCount >= maxFiles) return totalSize;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalSize;
         }
 
         public static long GetDirectorySizeFast(string rootPath, int maxDepth)
@@ -6616,11 +6842,63 @@ function Get-CleanAppName {
     param([string]$RawName)
     if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
     $clean = ($RawName -replace '\((?!x64|x86|arm64).*?\)', '').Replace('(', '').Replace(')', '').Trim().ToLowerInvariant()
-    $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user")
+    $clean = $clean -replace '\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*', ''
+    $clean = $clean -replace '\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b', ''
+    $terms = @(" browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit")
     foreach ($term in $terms) {
         $clean = $clean.Replace($term, "")
     }
-    return $clean.Trim()
+    $clean = ($clean -replace '\s+', ' ').Trim()
+    return $clean
+}
+
+function Get-VersionNumbers {
+    param([string]$VerStr)
+    if ([string]::IsNullOrWhiteSpace($VerStr)) { return @() }
+    $s = $VerStr.Trim()
+    if ($s.StartsWith("<")) { $s = $s.Substring(1).Trim() }
+    $m = [System.Text.RegularExpressions.Regex]::Match($s, '\d+(?:[.+_-]\d+)*')
+    if (-not $m.Success) { return @() }
+    $parts = $m.Value -split '[.+_-]'
+    $nums = [System.Collections.Generic.List[long]]::new()
+    foreach ($p in $parts) {
+        $v = 0L
+        if ([long]::TryParse($p, [ref]$v)) {
+            $nums.Add($v)
+        }
+    }
+    return $nums.ToArray()
+}
+
+function Compare-AppVersions {
+    param([string]$VerA, [string]$VerB)
+    $a = @(Get-VersionNumbers $VerA)
+    $b = @(Get-VersionNumbers $VerB)
+    if ($a.Count -eq 0 -and $b.Count -eq 0) { return 0 }
+    if ($a.Count -gt 0 -and $b.Count -eq 0) { return 1 }
+    if ($a.Count -eq 0 -and $b.Count -gt 0) { return -1 }
+
+    $maxLen = [Math]::Max($a.Count, $b.Count)
+    for ($i = 0; $i -lt $maxLen; $i++) {
+        $va = if ($i -lt $a.Count) { [long]$a[$i] } else { 0L }
+        $vb = if ($i -lt $b.Count) { [long]$b[$i] } else { 0L }
+        if ($va -gt $vb) { return 1 }
+        if ($va -lt $vb) { return -1 }
+    }
+    return 0
+}
+
+function Test-AppUpdateGenuine {
+    param([string]$InstalledVer, [string]$AvailableVer)
+    if ([string]::IsNullOrWhiteSpace($AvailableVer)) { return $false }
+    $av = $AvailableVer.Trim()
+    if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown") { return $false }
+    if ($av -notmatch '\d') { return $false }
+    if ([string]::IsNullOrWhiteSpace($InstalledVer)) { return $true }
+    $iv = $InstalledVer.Trim()
+    if ($iv.StartsWith("<")) { return $true }
+    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $true }
+    return ((Compare-AppVersions $av $iv) -gt 0)
 }
 
 function Get-CharDisplayWidth {
@@ -6699,16 +6977,52 @@ function Get-SliceByDisplayWidth {
 
 function Set-PreferredMapEntry {
     param($Map, [string]$Key, $Candidate)
-    if ([string]::IsNullOrWhiteSpace($Key)) { return }
+    if ([string]::IsNullOrWhiteSpace($Key) -or $null -eq $Candidate) { return }
     if (-not $Map.ContainsKey($Key)) {
         $Map[$Key] = $Candidate
         return
     }
     $cur = $Map[$Key]
-    $preferUpdate = (-not $cur.HasUpdate -and $Candidate.HasUpdate)
-    $preferNativeId = ($cur.HasUpdate -eq $Candidate.HasUpdate -and $cur.ID -match '^(ARP|MSIX)\\' -and $Candidate.ID -notmatch '^(ARP|MSIX)\\')
-    if ($preferUpdate -or $preferNativeId) {
+    $curIsLocal = ($cur.Source -eq "local")
+    $candIsLocal = ($Candidate.Source -eq "local")
+
+    if ($curIsLocal -and -not $candIsLocal) {
         $Map[$Key] = $Candidate
+        return
+    }
+    if (-not $curIsLocal -and $candIsLocal) {
+        return
+    }
+
+    $curIsSynthetic = ($cur.ID -match '^(ARP|MSIX|LOCAL)\\')
+    $candIsSynthetic = ($Candidate.ID -match '^(ARP|MSIX|LOCAL)\\')
+    if ($curIsSynthetic -and -not $candIsSynthetic) {
+        $Map[$Key] = $Candidate
+        return
+    }
+    if (-not $curIsSynthetic -and $candIsSynthetic) {
+        return
+    }
+
+    $verCmp = Compare-AppVersions $Candidate.Version $cur.Version
+    $bestVer = if ($verCmp -gt 0 -or [string]::IsNullOrWhiteSpace($cur.Version)) { $Candidate.Version } else { $cur.Version }
+
+    $availCmp = Compare-AppVersions $Candidate.Available $cur.Available
+    $bestAvail = if ($availCmp -gt 0) { $Candidate.Available } else { $cur.Available }
+
+    $mergedHasUpdate = Test-AppUpdateGenuine -InstalledVer $bestVer -AvailableVer $bestAvail
+    if (-not $mergedHasUpdate) { $bestAvail = "" }
+
+    $useCandIdentity = (-not $cur.HasUpdate -and $Candidate.HasUpdate) -or ($verCmp -gt 0)
+    $baseObj = if ($useCandIdentity) { $Candidate } else { $cur }
+    $Map[$Key] = [PSCustomObject]@{
+        Name      = $baseObj.Name
+        ID        = $baseObj.ID
+        Version   = $bestVer
+        Available = $bestAvail
+        HasUpdate = $mergedHasUpdate
+        CleanName = $baseObj.CleanName
+        Source    = $baseObj.Source
     }
 }
 
@@ -6721,9 +7035,20 @@ function Test-MatchCompatible {
     $iName = [string]$Item.Name
     $iId   = [string]$Item.ID
 
+    if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer)' -or
+        $iId   -match '(?i)(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)') {
+        if ($tName -notmatch '(?i)(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)') {
+            return $false
+        }
+    }
+
+    if ($iId -eq 'Python.Launcher' -or $iName -match '^Python Launcher\b') {
+        if ($tId -ne 'Python.Launcher') { return $false }
+    }
+
     $tPrev = ($tName -match 'Preview') -or ($tId -match 'Preview')
     $iPrev = ($iName -match 'Preview') -or ($iId -match 'Preview')
-    if ($tPrev -ne $iPrev) { return $false }
+    if ($tPrev -ne $iPrev -and $tId -ne 'Microsoft.PowerToys') { return $false }
 
     if (($tId -match 'VCRedist' -or $tName -match 'VC\+\+') -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
         return $false
@@ -6759,13 +7084,50 @@ function Test-MatchCompatible {
     if ($tId -match 'Oracle\.Java' -and ($iId -match 'Temurin|Corretto' -or $iName -match 'Temurin|Corretto')) { return $false }
     if ($tId -match 'Corretto' -and ($iId -match 'Temurin|Oracle' -or $iName -match 'Temurin|^Java \d+ Update')) { return $false }
 
+    $tJdk = ($tName -match '\bJDK\b') -or ($tId -match '\.JDK$')
+    $tJre = ($tName -match '\bJRE\b') -or ($tId -match '\.(JRE|JavaRuntimeEnvironment)$')
+    if ($tJdk -or $tJre) {
+        $iJdk = ($iName -match '\bJDK\b') -or ($iId -match '\.JDK$')
+        $iJre = ($iName -match '\bJRE\b|^Java \d+ Update') -or ($iId -match '\.(JRE|JavaRuntimeEnvironment)$')
+        if (($tJdk -and $iJre -and -not $iJdk) -or ($tJre -and $iJdk -and -not $iJre)) { return $false }
+    }
+
+    if ($tId -match '^Python\.Python\.(\d+\.\d+)$') {
+        $reqPy = [regex]::Escape($Matches[1])
+        if ($iId -notmatch $reqPy -and $iName -notmatch $reqPy -and [string]$Item.Version -notmatch "^$reqPy(\.|$)") {
+            return $false
+        }
+    }
+
+    if ($tId -match '\.(Temurin|Corretto)\.(\d+)\.') {
+        $reqJava = $Matches[2]
+        if ($iId -notmatch "\b$reqJava\b" -and $iName -notmatch "\b$reqJava\b" -and [string]$Item.Version -notmatch "^$reqJava(\.|$)") {
+            return $false
+        }
+    }
+
+    if ($tId -match '^Microsoft\.DotNet\.DesktopRuntime\.(\d+(?:_\d+)?)(?:\.|$)') {
+        $reqDn = $Matches[1].Replace('_', '\.')
+        if ($iId -notmatch "DesktopRuntime\.$($Matches[1])(\.|$)" -and $iName -notmatch "\b$reqDn(\.\d+|\b)" -and [string]$Item.Version -notmatch "^$reqDn(\.|$)") {
+            return $false
+        }
+    }
+
+    if ($tId -match '^Microsoft\.VCRedist\.(\d{4})\.') {
+        $reqYear = $Matches[1]
+        if ($iId -notmatch $reqYear -and $iName -notmatch $reqYear) {
+            return $false
+        }
+    }
+
     $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
              elseif ($tName -match '\(x86\)|\.x86' -or $tId -match '\.x86$') { "x86" }
              elseif ($tName -match '\(arm64\)|\.arm64' -or $tId -match '\.arm64$') { "arm64" }
+             elseif ([Environment]::Is64BitOperatingSystem -and $TargetApp.Category -eq '.NET Runtimes' -and $tId -match 'DesktopRuntime') { "x64" }
              else { "" }
 
     if ($tArch) {
-        $idForArch = if ($iId -match '^(ARP|MSIX)\\') { "" } else { $iId }
+        $idForArch = if ($iId -match '^(ARP|MSIX|LOCAL)\\') { "" } else { $iId }
         $iArch = if ($iName -match '(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x64$') { "x64" }
                  elseif ($iName -match '(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x86$') { "x86" }
                  elseif ($iName -match '(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])' -or $idForArch -match '\.arm64$') { "arm64" }
@@ -6908,9 +7270,9 @@ function ConvertFrom-WingetListOutput {
                 $appName = $line.Substring(0, $idIdx).Trim()
                 if ($verIdx -gt $idIdx -and $line.Length -gt $verIdx) {
                     $appId = $line.Substring($idIdx, $verIdx - $idIdx).Trim()
-                    if ($availIdx -gt $verIdx -and $line.Length -gt $availIdx) {
+                    if ($availIdx -gt $verIdx -and $Line.Length -gt $availIdx) {
                         $version = $line.Substring($verIdx, $availIdx - $verIdx).Trim()
-                        if ($srcIdx -gt $availIdx -and $line.Length -gt $srcIdx) {
+                        if ($srcIdx -gt $availIdx -and $Line.Length -gt $srcIdx) {
                             $avail = $line.Substring($availIdx, $srcIdx - $availIdx).Trim()
                         } else {
                             $avail = $line.Substring($availIdx).Trim()
@@ -6932,13 +7294,13 @@ function ConvertFrom-WingetListOutput {
             }
 
             if (-not [string]::IsNullOrWhiteSpace($appId)) {
-                $hasUpdate = (-not [string]::IsNullOrWhiteSpace($avail)) -and ($avail -ne "winget") -and ($avail -ne "msstore")
+                $hasUpdate = Test-AppUpdateGenuine -InstalledVer $version -AvailableVer $avail
                 $clean = Get-CleanAppName $appName
                 $parsed.Add([PSCustomObject]@{
                     Name      = $appName
                     ID        = $appId
                     Version   = $version
-                    Available = $avail
+                    Available = $(if ($hasUpdate) { $avail } else { "" })
                     HasUpdate = $hasUpdate
                     CleanName = $clean
                 })
@@ -6954,14 +7316,14 @@ function ConvertFrom-WingetListOutput {
                     if ($appId -notmatch '^(ARP|MSIX)\\|\S+\.\S+') { continue }
                     $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
                     $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
-                    $hasUpdate = ($cols.Count -ge 5 -or ($cols.Count -eq 4 -and $avail -ne "winget" -and $avail -ne "msstore" -and $avail -ne ""))
+                    $hasUpdate = Test-AppUpdateGenuine -InstalledVer $version -AvailableVer $avail
                     $clean = Get-CleanAppName $appName
 
                     $parsed.Add([PSCustomObject]@{
                         Name      = $appName
                         ID        = $appId
                         Version   = $version
-                        Available = $avail
+                        Available = $(if ($hasUpdate) { $avail } else { "" })
                         HasUpdate = $hasUpdate
                         CleanName = $clean
                     })
@@ -6973,7 +7335,53 @@ function ConvertFrom-WingetListOutput {
     return [PSCustomObject]@{ HasTable = ($separatorIndex -gt 0); Items = $parsed }
 }
 
+function Test-RegistryEntryIsBrokenOrphan {
+    param([string]$UninstallString, [string]$InstallLocation, [string]$DisplayIcon)
+    if (-not [string]::IsNullOrWhiteSpace($InstallLocation)) {
+        $loc = $InstallLocation.Trim().Trim('"')
+        if ($loc.Length -ge 3 -and $loc -match '^[a-zA-Z]:\\') {
+            if (-not [System.IO.Directory]::Exists($loc)) {
+                return $true
+            }
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($UninstallString) -and $UninstallString -notmatch '(?i)msiexec') {
+        $u = $UninstallString.Trim()
+        $exePath = ""
+        if ($u.StartsWith('"')) {
+            $q = $u.IndexOf('"', 1)
+            if ($q -gt 1) { $exePath = $u.Substring(1, $q - 1) }
+        } elseif ($u -match '(?i)^([a-zA-Z]:\\[^"]*?\.exe)\b') {
+            $exePath = $Matches[1]
+        }
+        if (-not [string]::IsNullOrWhiteSpace($exePath) -and $exePath -match '^[a-zA-Z]:\\') {
+            if (-not [System.IO.File]::Exists($exePath)) {
+                return $true
+            }
+        }
+    }
+    return $false
+}
+
+function Get-ExecutableCleanVersion {
+    param([string]$FilePath)
+    if ([string]::IsNullOrWhiteSpace($FilePath) -or -not [System.IO.File]::Exists($FilePath)) { return "Installed" }
+    try {
+        $fvi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($FilePath)
+        foreach ($cand in @($fvi.ProductVersion, $fvi.FileVersion)) {
+            if (-not [string]::IsNullOrWhiteSpace($cand)) {
+                $clean = ($cand -split '\+')[0].Trim()
+                if ($clean -match '\d' -and $clean -notmatch '^0(\.0)+$') {
+                    return $clean
+                }
+            }
+        }
+    } catch {}
+    return "Installed"
+}
+
 function Get-LocalInstalledEntries {
+    param([switch]$SkipAppx)
     $localItems = [System.Collections.Generic.List[object]]::new()
     $regConfigs = @(
         @{ Hive = [Microsoft.Win32.Registry]::LocalMachine; SubKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';             Prefix = 'ARP\Machine\X64\' },
@@ -6997,8 +7405,15 @@ function Get-LocalInstalledEntries {
                     $sysComp = $subKey.GetValue('SystemComponent', 0)
                     if ($sysComp -eq 1) { continue }
                     $relType = [string]$subKey.GetValue('ReleaseType', '')
-                    if (-not [string]::IsNullOrWhiteSpace($relType)) { continue }
+                    if (-not [string]::IsNullOrWhiteSpace($relType) -and $relType -match '(?i)Update|Hotfix') { continue }
                     if ($dispName -match 'Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack') { continue }
+
+                    $uninstStr  = [string]$subKey.GetValue('UninstallString', '')
+                    $installLoc = [string]$subKey.GetValue('InstallLocation', '')
+                    $dispIcon   = [string]$subKey.GetValue('DisplayIcon', '')
+                    if (Test-RegistryEntryIsBrokenOrphan -UninstallString $uninstStr -InstallLocation $installLoc -DisplayIcon $dispIcon) {
+                        continue
+                    }
 
                     $dispVer = [string]$subKey.GetValue('DisplayVersion', '')
                     $localItems.Add([PSCustomObject]@{
@@ -7008,6 +7423,7 @@ function Get-LocalInstalledEntries {
                         Available = ""
                         HasUpdate = $false
                         CleanName = (Get-CleanAppName $dispName)
+                        Source    = "local"
                     })
                 } catch {} finally {
                     if ($null -ne $subKey) { $subKey.Dispose() }
@@ -7018,138 +7434,196 @@ function Get-LocalInstalledEntries {
         }
     }
 
-    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
     try {
-        foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
-            if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
-            $pkgName = [string]$pkg.Name
-            $localItems.Add([PSCustomObject]@{
-                Name      = $pkgName
-                ID        = "MSIX\" + [string]$pkg.PackageFullName
-                Version   = [string]$pkg.Version
-                Available = ""
-                HasUpdate = $false
-                CleanName = (Get-CleanAppName $pkgName)
-            })
+        $ndpKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full', $false)
+        if ($ndpKey) {
+            try {
+                $release = [int]$ndpKey.GetValue('Release', 0)
+                $ndpVer  = [string]$ndpKey.GetValue('Version', '4.8.1')
+                if ($release -ge 533320) {
+                    $localItems.Add([PSCustomObject]@{
+                        Name      = "Microsoft .NET Framework 4.8.1 Runtime"
+                        ID        = "Microsoft.DotNet.Framework.Runtime"
+                        Version   = $ndpVer
+                        Available = ""
+                        HasUpdate = $false
+                        CleanName = "microsoft .net framework 4.8.1 runtime"
+                        Source    = "local"
+                    })
+                }
+            } finally {
+                $ndpKey.Dispose()
+            }
         }
     } catch {}
 
-    return $localItems
-}
-
-function Scan-And-ColorizeApps {
-    if ($script:isScanningApps) {
-        Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
-        return
-    }
-
-    $script:isScanningApps = $true
-    try {
-        Log-Text "[SCAN] Đang quét nhận diện ứng dụng & kiểm tra cập nhật..."
-        if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra phiên bản app..." }
-        if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-
-        $wingetItems = [System.Collections.Generic.List[object]]::new()
-        $wingetOk = $false
-        $wingetMissing = $false
-
-        try {
-            $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
-            if (-not $primary.Available) {
-                $wingetMissing = $true
-                Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry & Appx."
-            } else {
-                $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
-                if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
-                    $wingetItems = $parsedPrimary.Items
-                    $wingetOk = $true
-                } else {
-                    if ($primary.TimedOut) {
-                        Log-Text "[WARN] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
-                    } else {
-                        Log-Text "[WARN] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
-                        if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
-                            Log-Text "[stderr] $($primary.StdErr.Trim())"
+    $dotnetSharedConfigs = @(
+        @{ Path = "C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App";       Suffix = "";     ArchLabel = "(x64)" },
+        @{ Path = "C:\Program Files (x86)\dotnet\shared\Microsoft.WindowsDesktop.App"; Suffix = ".x86"; ArchLabel = "(x86)" }
+    )
+    foreach ($dnCfg in $dotnetSharedConfigs) {
+        if ([System.IO.Directory]::Exists($dnCfg.Path)) {
+            try {
+                $verDirs = [System.IO.Directory]::GetDirectories($dnCfg.Path)
+                $byMajor = @{}
+                foreach ($vd in $verDirs) {
+                    $vName = [System.IO.Path]::GetFileName($vd)
+                    if ($vName -match '^(\d+)\.(\d+)\.') {
+                        $maj = $Matches[1]
+                        $min = $Matches[2]
+                        $trackKey = if ($maj -eq "3" -and $min -eq "1") { "3_1" } elseif ($vName -match 'preview|rc|alpha|beta') { "Preview" } else { $maj }
+                        if (-not $byMajor.ContainsKey($trackKey) -or (Compare-AppVersions $vName $byMajor[$trackKey]) -gt 0) {
+                            $byMajor[$trackKey] = $vName
                         }
                     }
-
-                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
-                    $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
-
-                    if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
-                        $wingetItems = $parsedFallback.Items
-                        $wingetOk = $true
-                    } elseif ($parsedPrimary.HasTable -and $parsedPrimary.Items.Count -gt $parsedFallback.Items.Count) {
-                        $wingetItems = $parsedPrimary.Items
-                        $wingetOk = $true
-                    } elseif ($parsedFallback.HasTable -and $parsedFallback.Items.Count -gt 0) {
-                        $wingetItems = $parsedFallback.Items
-                        $wingetOk = $true
-                    }
                 }
-            }
-        } catch {
-            Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
-        }
-
-        $idMap         = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $nameMap       = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $cleanNameMap  = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $installedList = [System.Collections.Generic.List[object]]::new()
-
-        foreach ($itemObj in $wingetItems) {
-            $installedList.Add($itemObj)
-            Set-PreferredMapEntry $idMap $itemObj.ID $itemObj
-            Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj
-            if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
-        }
-
-        if (-not $idMap.ContainsKey("LegacyLauncher.LegacyLauncher")) {
-            $llPaths = @(
-                (Join-Path $env:APPDATA ".tlauncher\legacy\Minecraft\TL.exe"),
-                (Join-Path $env:APPDATA ".tlauncher\legacy"),
-                (Join-Path $env:APPDATA ".minecraft\LLauncher.exe"),
-                (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Legacy Launcher.lnk")
-            )
-            foreach ($lp in $llPaths) {
-                if ($lp -and [System.IO.File]::Exists($lp) -or ($lp -and [System.IO.Directory]::Exists($lp))) {
-                    $llObj = [PSCustomObject]@{
-                        ID        = "LegacyLauncher.LegacyLauncher"
-                        Name      = "Legacy Launcher"
-                        CleanName = "legacylauncher"
-                        Version   = "Installed"
+                foreach ($tk in $byMajor.Keys) {
+                    if ($dnCfg.Suffix -eq ".x86" -and $tk -notin @("6", "7", "8")) { continue }
+                    $bestV = $byMajor[$tk]
+                    $synId = "Microsoft.DotNet.DesktopRuntime.$tk$($dnCfg.Suffix)"
+                    $localItems.Add([PSCustomObject]@{
+                        Name      = "Microsoft Windows Desktop Runtime - $bestV $($dnCfg.ArchLabel)"
+                        ID        = $synId
+                        Version   = $bestV
                         Available = ""
                         HasUpdate = $false
+                        CleanName = "microsoft windows runtime $bestV"
                         Source    = "local"
-                    }
-                    $installedList.Add($llObj)
-                    Set-PreferredMapEntry $idMap $llObj.ID $llObj
-                    Set-PreferredMapEntry $nameMap $llObj.Name $llObj
+                    })
+                }
+            } catch {}
+        }
+    }
+
+    $pathDirs = [System.Collections.Generic.List[string]]::new()
+    foreach ($rawDir in ($env:PATH -split ';')) {
+        if (-not [string]::IsNullOrWhiteSpace($rawDir)) {
+            $cleanD = $rawDir.Trim().Trim('"')
+            if ($cleanD.Length -gt 2 -and [System.IO.Directory]::Exists($cleanD)) {
+                $pathDirs.Add($cleanD)
+            }
+        }
+    }
+
+    $cliProbes = @(
+        @{ ID = "Google.AntigravityCLI";     Name = "Antigravity CLI";       Cmd = "agy.exe";         Paths = @("$env:LOCALAPPDATA\agy\bin\agy.exe") },
+        @{ ID = "astral-sh.uv";              Name = "uv (Python Manager)";   Cmd = "uv.exe";          Paths = @("$env:USERPROFILE\.local\bin\uv.exe", "$env:USERPROFILE\.cargo\bin\uv.exe") },
+        @{ ID = "yt-dlp.yt-dlp";             Name = "yt-dlp";                Cmd = "yt-dlp.exe";      Paths = @("$env:LOCALAPPDATA\Programs\Python\Python313\Scripts\yt-dlp.exe", "$env:LOCALAPPDATA\Programs\Python\Python312\Scripts\yt-dlp.exe") },
+        @{ ID = "Gyan.FFmpeg";               Name = "FFmpeg";                Cmd = "ffmpeg.exe";      Paths = @() },
+        @{ ID = "aria2.aria2";               Name = "aria2";                 Cmd = "aria2c.exe";      Paths = @() },
+        @{ ID = "Rclone.Rclone";             Name = "Rclone";                Cmd = "rclone.exe";      Paths = @() },
+        @{ ID = "Oven-sh.Bun";               Name = "Bun";                   Cmd = "bun.exe";         Paths = @("$env:USERPROFILE\.bun\bin\bun.exe") },
+        @{ ID = "pnpm.pnpm";                 Name = "pnpm";                  Cmd = "pnpm.exe";        Paths = @("$env:LOCALAPPDATA\pnpm\pnpm.exe", "$env:APPDATA\npm\pnpm.cmd") },
+        @{ ID = "Yarn.Yarn";                 Name = "Yarn";                  Cmd = "yarn.cmd";        Paths = @("$env:APPDATA\npm\yarn.cmd") },
+        @{ ID = "Fastfetch-cli.Fastfetch";   Name = "Fastfetch";             Cmd = "fastfetch.exe";   Paths = @() },
+        @{ ID = "JanDeDobbeleer.OhMyPosh";   Name = "Oh My Posh";            Cmd = "oh-my-posh.exe";  Paths = @("$env:LOCALAPPDATA\Programs\oh-my-posh\bin\oh-my-posh.exe") },
+        @{ ID = "Neovim.Neovim";             Name = "Neovim";                Cmd = "nvim.exe";        Paths = @("C:\Program Files\Neovim\bin\nvim.exe") },
+        @{ ID = "Google.PlatformTools";      Name = "ADB & Fastboot";        Cmd = "adb.exe";         Paths = @("$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe") },
+        @{ ID = "Gitleaks.Gitleaks";         Name = "Gitleaks";              Cmd = "gitleaks.exe";    Paths = @() }
+    )
+    foreach ($probe in $cliProbes) {
+        $foundBin = ""
+        foreach ($fixedP in $probe.Paths) {
+            if (-not [string]::IsNullOrWhiteSpace($fixedP) -and [System.IO.File]::Exists($fixedP)) {
+                $foundBin = $fixedP
+                break
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($foundBin)) {
+            foreach ($pd in $pathDirs) {
+                $candP = Join-Path $pd $probe.Cmd
+                if ([System.IO.File]::Exists($candP)) {
+                    $foundBin = $candP
                     break
                 }
             }
         }
-
-        if (-not $wingetOk -or $wingetItems.Count -lt 5) {
-            $localItems = Get-LocalInstalledEntries
-            foreach ($locObj in $localItems) {
-                $installedList.Add($locObj)
-                Set-PreferredMapEntry $idMap $locObj.ID $locObj
-                Set-PreferredMapEntry $nameMap $locObj.Name $locObj
-                if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
-            }
+        if (-not [string]::IsNullOrWhiteSpace($foundBin)) {
+            $binVer = Get-ExecutableCleanVersion -FilePath $foundBin
+            $localItems.Add([PSCustomObject]@{
+                Name      = $probe.Name
+                ID        = $probe.ID
+                Version   = $binVer
+                Available = ""
+                HasUpdate = $false
+                CleanName = (Get-CleanAppName $probe.Name)
+                Source    = "local"
+            })
         }
+    }
 
-        if ($installedList.Count -eq 0 -and -not $wingetOk) {
-            Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
-            if ($txtStatus -and -not $script:hasCompletedAppScan) {
-                $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Get Installed lại" }
-            }
-            return
+    $llPaths = @(
+        (Join-Path $env:APPDATA ".tlauncher\legacy\Minecraft\TL.exe"),
+        (Join-Path $env:APPDATA ".tlauncher\legacy"),
+        (Join-Path $env:APPDATA ".minecraft\LLauncher.exe"),
+        (Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Legacy Launcher.lnk")
+    )
+    foreach ($lp in $llPaths) {
+        if (($lp -and [System.IO.File]::Exists($lp)) -or ($lp -and [System.IO.Directory]::Exists($lp))) {
+            $localItems.Add([PSCustomObject]@{
+                Name      = "Legacy Launcher"
+                ID        = "LegacyLauncher.LegacyLauncher"
+                Version   = "Installed"
+                Available = ""
+                HasUpdate = $false
+                CleanName = "legacylauncher"
+                Source    = "local"
+            })
+            break
         }
+    }
+
+    if (-not $SkipAppx) {
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        try {
+            foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
+                if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
+                $pkgName = [string]$pkg.Name
+                if ($pkgName -match '^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.Services\.Store)') {
+                    continue
+                }
+                $localItems.Add([PSCustomObject]@{
+                    Name      = $pkgName
+                    ID        = "MSIX\" + [string]$pkg.PackageFullName
+                    Version   = [string]$pkg.Version
+                    Available = ""
+                    HasUpdate = $false
+                    CleanName = (Get-CleanAppName $pkgName)
+                    Source    = "local"
+                })
+            }
+        } catch {}
+    }
+
+    return $localItems
+}
+
+function Apply-InstalledDatabaseToRows {
+    param(
+        $IdMap,
+        $NameMap,
+        $CleanNameMap,
+        $InstalledList
+    )
 
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $tokenIndex  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[object]]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($instItem in $InstalledList) {
+        $rawText = "$($instItem.ID) $($instItem.Name) $($instItem.CleanName)"
+        $tokens = [System.Text.RegularExpressions.Regex]::Split($rawText, '[^a-zA-Z0-9+]+')
+        $seenTokens = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($tk in $tokens) {
+            if ($tk.Length -ge 3 -and $seenTokens.Add($tk)) {
+                $bucket = $null
+                if (-not $tokenIndex.TryGetValue($tk, [ref]$bucket)) {
+                    $bucket = [System.Collections.Generic.List[object]]::new()
+                    $tokenIndex[$tk] = $bucket
+                }
+                $bucket.Add($instItem)
+            }
+        }
+    }
 
     function Find-InstalledAppFast {
         param($targetApp)
@@ -7161,12 +7635,7 @@ function Scan-And-ColorizeApps {
         }
 
         $match = $null
-        if ($idMap.TryGetValue($targetId, [ref]$match)) {
-            $lookupCache[$targetId] = $match
-            return $match
-        }
-
-        if ($targetApp.Name -and $nameMap.TryGetValue($targetApp.Name, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+        if ($IdMap.TryGetValue($targetId, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
@@ -7174,16 +7643,27 @@ function Scan-And-ColorizeApps {
         if ($targetApp.Aliases) {
             foreach ($alias in $targetApp.Aliases) {
                 if ([string]::IsNullOrWhiteSpace($alias)) { continue }
-                if ($idMap.TryGetValue($alias, [ref]$match)) {
+                if ($IdMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
-                if ($nameMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+            }
+        }
+
+        if ($targetApp.Name -and $NameMap.TryGetValue($targetApp.Name, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+            $lookupCache[$targetId] = $match
+            return $match
+        }
+
+        if ($targetApp.Aliases) {
+            foreach ($alias in $targetApp.Aliases) {
+                if ([string]::IsNullOrWhiteSpace($alias)) { continue }
+                if ($NameMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
                 $cleanAlias = Get-CleanAppName $alias
-                if ($cleanAlias.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+                if ($cleanAlias.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                     $lookupCache[$targetId] = $match
                     return $match
                 }
@@ -7191,39 +7671,95 @@ function Scan-And-ColorizeApps {
         }
 
         $cleanTarget = Get-CleanAppName $targetApp.Name
-        if ($cleanTarget.Length -ge 3 -and $cleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+        if ($cleanTarget.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
+        $candidatePool = [System.Collections.Generic.List[object]]::new()
+        $seenCand = [System.Collections.Generic.HashSet[object]]::new()
+        $queryPhrases = [System.Collections.Generic.List[string]]::new()
+        if ($cleanTarget.Length -ge 4) { $queryPhrases.Add($cleanTarget) }
         if ($targetApp.Aliases) {
-            foreach ($alias in $targetApp.Aliases) {
-                if ([string]::IsNullOrWhiteSpace($alias) -or $alias.Length -lt 4) { continue }
-                $pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
-                foreach ($item in $installedList) {
-                    if (($item.ID -match $pattern -or $item.Name -match $pattern) -and (Test-MatchCompatible $targetApp $item)) {
-                        $lookupCache[$targetId] = $item
-                        return $item
+            foreach ($al in $targetApp.Aliases) {
+                if (-not [string]::IsNullOrWhiteSpace($al) -and $al.Length -ge 4) {
+                    $queryPhrases.Add($al)
+                }
+            }
+        }
+
+        foreach ($qp in $queryPhrases) {
+            $qTokens = [System.Text.RegularExpressions.Regex]::Split($qp, '[^a-zA-Z0-9+]+')
+            foreach ($qt in $qTokens) {
+                if ($qt.Length -ge 3 -and $qt -notin @("microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server", "edition", "community")) {
+                    $bucket = $null
+                    if ($tokenIndex.TryGetValue($qt, [ref]$bucket)) {
+                        foreach ($bItem in $bucket) {
+                            if ($seenCand.Add($bItem)) {
+                                $candidatePool.Add($bItem)
+                            }
+                        }
                     }
                 }
             }
         }
 
-        if ($cleanTarget.Length -ge 4) {
-            $patternClean = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
-            foreach ($item in $installedList) {
-                if ($item.CleanName -match $patternClean -and (Test-MatchCompatible $targetApp $item)) {
-                    $lookupCache[$targetId] = $item
-                    return $item
+        if ($candidatePool.Count -eq 0) {
+            $lookupCache[$targetId] = $null
+            return $null
+        }
+
+        $bestCandidate = $null
+        $bestScore = 0
+
+        $aliasEntries = [System.Collections.Generic.List[hashtable]]::new()
+        if ($targetApp.Aliases) {
+            foreach ($alias in $targetApp.Aliases) {
+                if (-not [string]::IsNullOrWhiteSpace($alias) -and $alias.Length -ge 4) {
+                    $aliasEntries.Add(@{
+                        Raw     = $alias
+                        Pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
+                    })
+                }
+            }
+        }
+        $patternClean = if ($cleanTarget.Length -ge 4) {
+            "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
+        } else { "" }
+
+        foreach ($item in $candidatePool) {
+            if (-not (Test-MatchCompatible $targetApp $item)) { continue }
+            $score = 0
+            foreach ($ae in $aliasEntries) {
+                $rawAl = $ae.Raw
+                if ($item.ID.IndexOf($rawAl, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -and $item.ID -match $ae.Pattern) {
+                    $score = 780
+                    break
+                }
+                if ($item.Name.IndexOf($rawAl, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -and $item.Name -match $ae.Pattern) {
+                    $lenRatio = [Math]::Min(40, [int](($cleanTarget.Length * 40) / [Math]::Max(1, $item.Name.Length)))
+                    $candScore = 700 + $lenRatio
+                    if ($candScore -gt $score) { $score = $candScore }
+                }
+            }
+            if ($score -eq 0 -and $patternClean -and $item.CleanName.IndexOf($cleanTarget, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -and $item.CleanName -match $patternClean) {
+                $lenRatio = [Math]::Min(40, [int](($cleanTarget.Length * 40) / [Math]::Max(1, $item.CleanName.Length)))
+                $score = 650 + $lenRatio
+            }
+            if ($score -gt 0) {
+                if ($item.HasUpdate) { $score += 15 }
+                if ($item.ID -notmatch '^(ARP|MSIX|LOCAL)\\') { $score += 10 }
+                if ($score -gt $bestScore) {
+                    $bestScore = $score
+                    $bestCandidate = $item
                 }
             }
         }
 
-        $lookupCache[$targetId] = $null
-        return $null
+        $lookupCache[$targetId] = $bestCandidate
+        return $bestCandidate
     }
 
-    if ($progressBar) { $progressBar.IsIndeterminate = $false }
     $countInstalled = 0
     $countLatest = 0
     $countOutdated = 0
@@ -7281,12 +7817,131 @@ function Scan-And-ColorizeApps {
         }
     }
 
+    return [PSCustomObject]@{
+        Installed = $countInstalled
+        Latest    = $countLatest
+        Outdated  = $countOutdated
+    }
+}
+
+function Scan-And-ColorizeApps {
+    if ($script:isScanningApps) {
+        Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
+        return
+    }
+
+    $script:isScanningApps = $true
+    try {
+        Log-Text "[SCAN] Đang quét đa tầng (Registry, Runtimes, CLI/PATH & WinGet)..."
+        if ($txtStatus) { $txtStatus.Text = "Đang quét nhanh hệ thống..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+
+        $localItems = Get-LocalInstalledEntries -SkipAppx
+        $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $installedList = [System.Collections.Generic.List[object]]::new()
+
+        foreach ($locObj in $localItems) {
+            $installedList.Add($locObj)
+            Set-PreferredMapEntry $idMap $locObj.ID $locObj
+            Set-PreferredMapEntry $nameMap $locObj.Name $locObj
+            if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+        }
+
+        if ($allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
+            $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
+            if ($txtStatus) {
+                $txtStatus.Text = "Phát hiện nhanh $($preStats.Installed) app | Đang kiểm tra bản cập nhật..."
+            }
+            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        }
+
+        $wingetItems = [System.Collections.Generic.List[object]]::new()
+        $wingetOk = $false
+        $wingetMissing = $false
+
+        try {
+            $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
+            if (-not $primary.Available) {
+                $wingetMissing = $true
+                Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry, Runtimes & Appx."
+            } else {
+                $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
+                if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
+                    $wingetItems = $parsedPrimary.Items
+                    $wingetOk = $true
+                } else {
+                    if ($primary.TimedOut) {
+                        Log-Text "[WARN] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                    } else {
+                        Log-Text "[WARN] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
+                            Log-Text "[stderr] $($primary.StdErr.Trim())"
+                        }
+                    }
+
+                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
+                    $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
+
+                    if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
+                        $wingetItems = $parsedFallback.Items
+                        $wingetOk = $true
+                    } elseif ($parsedPrimary.HasTable -and $parsedPrimary.Items.Count -gt $parsedFallback.Items.Count) {
+                        $wingetItems = $parsedPrimary.Items
+                        $wingetOk = $true
+                    } elseif ($parsedFallback.HasTable -and $parsedFallback.Items.Count -gt 0) {
+                        $wingetItems = $parsedFallback.Items
+                        $wingetOk = $true
+                    }
+                }
+            }
+        } catch {
+            Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
+        }
+
+        if (-not $wingetOk -or $wingetItems.Count -lt 5) {
+            $appxItems = Get-LocalInstalledEntries
+            foreach ($ax in $appxItems) {
+                $installedList.Add($ax)
+                Set-PreferredMapEntry $idMap $ax.ID $ax
+                Set-PreferredMapEntry $nameMap $ax.Name $ax
+                if ($ax.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $ax.CleanName $ax }
+            }
+        }
+
+        foreach ($itemObj in $wingetItems) {
+            if ($itemObj.ID -eq "Microsoft.VisualStudioCode" -and $itemObj.Name -match '\(User\)' -and -not [System.IO.Directory]::Exists("$env:LOCALAPPDATA\Programs\Microsoft VS Code")) {
+                continue
+            }
+            $installedList.Add($itemObj)
+            Set-PreferredMapEntry $idMap $itemObj.ID $itemObj
+            Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj
+            if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+
+            if ($itemObj.ID -eq "Microsoft.VisualStudio.Community.Insiders") {
+                Set-PreferredMapEntry $idMap "Microsoft.VisualStudio.2022.Community" $itemObj
+            }
+        }
+
+        if ($installedList.Count -eq 0 -and -not $wingetOk) {
+            Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
+            if ($txtStatus -and -not $script:hasCompletedAppScan) {
+                $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Quét lại máy" }
+            }
+            return
+        }
+
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
+
         $script:hasCompletedAppScan = $true
         $modeTag = if (-not $wingetOk) { " [Chế độ dự phòng Registry/Appx]" } else { "" }
-        $summary = "Đã quét xong: $countInstalled app đã cài ($countLatest bản mới nhất [XANH], $countOutdated bản cũ [ĐỎ])$modeTag"
+        $summary = "Đã quét xong: $($finalStats.Installed) app đã cài ($($finalStats.Latest) bản mới nhất [XANH], $($finalStats.Outdated) bản cũ [ĐỎ])$modeTag"
         Log-Text "[OK] $summary"
         if ($txtStatus) {
-            $txtStatus.Text = "$countInstalled app đã cài ($countLatest mới / $countOutdated cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
+            $txtStatus.Text = "$($finalStats.Installed) app đã cài ($($finalStats.Latest) mới / $($finalStats.Outdated) cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
         }
     } finally {
         $script:isScanningApps = $false
