@@ -870,5 +870,132 @@ namespace DuckUtil
                 return false;
             }
         }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes)
+        {
+            if (string.IsNullOrWhiteSpace(sourceDir) || string.IsNullOrWhiteSpace(backupDir))
+                return 0L;
+            try
+            {
+                if (!Directory.Exists(sourceDir)) return 0L;
+            }
+            catch { return 0L; }
+
+            if (maxTotalBytes <= 0) maxTotalBytes = 104857600L;
+
+            var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk"
+            };
+
+            long totalBytes = 0L;
+            int srcLen = sourceDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { sourceDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string ext = Path.GetExtension(file);
+                                if (!string.IsNullOrEmpty(ext) && skipExts.Contains(ext))
+                                    continue;
+
+                                var fi = new FileInfo(file);
+                                if (fi.Length > 20971520L) continue;
+                                if (totalBytes + fi.Length > maxTotalBytes) continue;
+
+                                string relPath = file.Substring(srcLen).TrimStart('\\');
+                                string destFile = Path.Combine(backupDir, relPath);
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, true);
+                                totalBytes += fi.Length;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalBytes;
+        }
+
+        public static int RestoreDirectorySnapshot(string backupDir, string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(backupDir) || string.IsNullOrWhiteSpace(targetDir))
+                return 0;
+            try
+            {
+                if (!Directory.Exists(backupDir)) return 0;
+            }
+            catch { return 0; }
+
+            int restoredCount = 0;
+            int bkpLen = backupDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { backupDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string relPath = file.Substring(bkpLen).TrimStart('\\');
+                                string destFile = Path.Combine(targetDir, relPath);
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, true);
+                                restoredCount++;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return restoredCount;
+        }
     }
 }

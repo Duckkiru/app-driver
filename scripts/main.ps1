@@ -1377,81 +1377,183 @@ function Invoke-SmartAppUpgrade {
         }
     }
 
-    $existingLoc = if ($regMatch -and -not [string]::IsNullOrWhiteSpace($regMatch.InstallLocation) -and (Test-Path -LiteralPath $regMatch.InstallLocation)) {
-        $regMatch.InstallLocation
-    } else {
-        $null
+    $existingLoc = $null
+    if ($regMatch -and -not [string]::IsNullOrWhiteSpace($regMatch.InstallLocation) -and (Test-Path -LiteralPath $regMatch.InstallLocation)) {
+        $existingLoc = $regMatch.InstallLocation.Trim().TrimEnd('\')
     }
 
-    $backupDir = $null
-    if ($existingLoc) {
-        try {
-            $targetSubDirs = @("", "config", "data", "settings", "profiles", "portable")
-            $patterns = @("*.ini", "*.cfg", "*.json", "*.xml", "*.yaml", "*.yml", "*.db", "*.sqlite", "*.conf", "*.properties")
-            $filesToBackup = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
-            $totalBackupBytes = 0L
-
-            foreach ($sub in $targetSubDirs) {
-                $scanFolder = if ([string]::IsNullOrEmpty($sub)) { $existingLoc } else { Join-Path $existingLoc $sub }
-                if (Test-Path -LiteralPath $scanFolder) {
-                    foreach ($pat in $patterns) {
-                        $found = Get-ChildItem -LiteralPath $scanFolder -Filter $pat -File -ErrorAction SilentlyContinue
-                        foreach ($f in $found) {
-                            if (($totalBackupBytes + $f.Length) -le (50 * 1024 * 1024)) {
-                                $filesToBackup.Add($f)
-                                $totalBackupBytes += $f.Length
-                            }
-                        }
-                    }
+    if (-not $existingLoc -and $regMatch) {
+        $uCmd = if ($regMatch.QuietUninstallString) { $regMatch.QuietUninstallString } else { $regMatch.UninstallString }
+        if ($uCmd) {
+            $uExe = if ($uCmd.StartsWith('"')) {
+                $q2 = $uCmd.IndexOf('"', 1)
+                if ($q2 -gt 1) { $uCmd.Substring(1, $q2 - 1) } else { $uCmd.Trim('"') }
+            } else {
+                ($uCmd -split '\s+')[0]
+            }
+            if ($uExe -and (Test-Path -LiteralPath $uExe)) {
+                $pDir = [System.IO.Path]::GetDirectoryName($uExe)
+                if ($pDir -and (Test-Path -LiteralPath $pDir)) {
+                    $existingLoc = $pDir
                 }
             }
+        }
+    }
 
-            if ($filesToBackup.Count -gt 0) {
-                $backupDir = Join-Path $env:TEMP "AppDriver_UpgradeGuard\$($app.ID)"
-                if (Test-Path -LiteralPath $backupDir) {
-                    Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
-                }
-                New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-                foreach ($f in $filesToBackup) {
-                    $relPath = $f.FullName.Substring($existingLoc.Length).TrimStart('\', '/')
-                    $destFile = Join-Path $backupDir $relPath
-                    $destFolder = [System.IO.Path]::GetDirectoryName($destFile)
-                    if (-not (Test-Path -LiteralPath $destFolder)) {
-                        New-Item -ItemType Directory -Path $destFolder -Force | Out-Null
-                    }
-                    Copy-Item -LiteralPath $f.FullName -Destination $destFile -Force -ErrorAction SilentlyContinue
-                }
+    if (-not $existingLoc) {
+        $stdCandidates = @(
+            (Join-Path $env:LOCALAPPDATA "Programs\$($app.Name)"),
+            (Join-Path $env:ProgramFiles $app.Name),
+            (Join-Path ${env:ProgramFiles(x86)} $app.Name)
+        )
+        foreach ($sc in $stdCandidates) {
+            if ($sc -and (Test-Path -LiteralPath $sc)) {
+                $existingLoc = $sc
+                break
+            }
+        }
+    }
+
+    $scope = ""
+    if ($regMatch -and $regMatch.Scope -eq "User") {
+        $scope = "user"
+    } elseif ($existingLoc -and $existingLoc.StartsWith($env:USERPROFILE, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $scope = "user"
+    }
+
+    $nameVariations = [System.Collections.Generic.List[string]]::new()
+    $nameVariations.Add($app.Name)
+    $nameVariations.Add($app.ID)
+    if ($app.Aliases) {
+        foreach ($al in $app.Aliases) {
+            if (-not [string]::IsNullOrWhiteSpace($al) -and -not $nameVariations.Contains($al)) {
+                $nameVariations.Add($al)
+            }
+        }
+    }
+    if ($regMatch -and $regMatch.Publisher) {
+        $pub = $regMatch.Publisher.Trim()
+        if ($pub -and -not ($pub -match 'Microsoft|Windows|Corporation')) {
+            $nameVariations.Add((Join-Path $pub $app.Name))
+        }
+    }
+
+    $targetAppDataDirs = [System.Collections.Generic.List[string]]::new()
+    foreach ($nv in $nameVariations) {
+        if ([string]::IsNullOrWhiteSpace($nv)) { continue }
+        $rPath = Join-Path $env:APPDATA $nv
+        if ((Test-Path -LiteralPath $rPath) -and -not $targetAppDataDirs.Contains($rPath)) {
+            $targetAppDataDirs.Add($rPath)
+        }
+        $lPath = Join-Path $env:LOCALAPPDATA $nv
+        if ((Test-Path -LiteralPath $lPath) -and -not $targetAppDataDirs.Contains($lPath)) {
+            $targetAppDataDirs.Add($lPath)
+        }
+    }
+
+    $hkcuKeys = [System.Collections.Generic.List[string]]::new()
+    foreach ($nv in $nameVariations) {
+        if ([string]::IsNullOrWhiteSpace($nv)) { continue }
+        $rk = "HKCU:\Software\$nv"
+        if ((Test-Path -LiteralPath $rk) -and -not $hkcuKeys.Contains($rk)) {
+            $hkcuKeys.Add($rk)
+        }
+    }
+
+    $backupRoot = Join-Path $env:TEMP "AppDriver_UpgradeGuard\$($app.ID)"
+    if (Test-Path -LiteralPath $backupRoot) {
+        Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+
+    $hasSnapshots = $false
+    $locBkp = Join-Path $backupRoot "InstallLocation"
+    if ($existingLoc -and (Test-Path -LiteralPath $existingLoc) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+        $bytes = [DuckUtil.DeepUninstallerEngine]::BackupDirectorySnapshot($existingLoc, $locBkp, 104857600L)
+        if ($bytes -gt 0) { $hasSnapshots = $true }
+    }
+
+    $appDataBkps = [System.Collections.Generic.List[object]]::new()
+    $adIdx = 0
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        foreach ($adDir in $targetAppDataDirs) {
+            $adIdx++
+            $adBkpDir = Join-Path $backupRoot "AppData_$adIdx"
+            $b = [DuckUtil.DeepUninstallerEngine]::BackupDirectorySnapshot($adDir, $adBkpDir, 104857600L)
+            if ($b -gt 0) {
+                $hasSnapshots = $true
+                $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
+            }
+        }
+    }
+
+    $regFiles = [System.Collections.Generic.List[object]]::new()
+    $rkIdx = 0
+    foreach ($rk in $hkcuKeys) {
+        $rkIdx++
+        $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
+        $rawHkcu = $rk -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
+        try {
+            $pReg = Start-Process "reg.exe" -ArgumentList "export `"$rawHkcu`" `"$rf`" /y" -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+            if ($pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $rf)) {
+                $hasSnapshots = $true
+                $regFiles.Add([PSCustomObject]@{ Key = $rawHkcu; File = $rf })
             }
         } catch {}
+    }
+
+    if ($hasSnapshots) {
+        Log-Text "[*] Đã kích hoạt UpgradeDataGuard: Chụp snapshot dữ liệu cá nhân & cấu hình trước khi nâng cấp."
     }
 
     $upArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
     if ($existingLoc) {
         $upArgs += " --location `"$existingLoc`""
     }
-    $code = Run-CliStream "winget" $upArgs
+    if ($scope) {
+        $upArgs += " --scope $scope"
+    }
 
-    if ($backupDir -and (Test-Path -LiteralPath $backupDir) -and $existingLoc -and (Test-Path -LiteralPath $existingLoc)) {
-        try {
-            $backupFiles = Get-ChildItem -LiteralPath $backupDir -Recurse -File -ErrorAction SilentlyContinue
-            foreach ($bf in $backupFiles) {
-                $rel = $bf.FullName.Substring($backupDir.Length).TrimStart('\', '/')
-                $targetFile = Join-Path $existingLoc $rel
-                if (-not (Test-Path -LiteralPath $targetFile)) {
-                    $targetDir = [System.IO.Path]::GetDirectoryName($targetFile)
-                    if (-not (Test-Path -LiteralPath $targetDir)) {
-                        New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+    $code = Run-CliStream "winget" $upArgs
+    if ($code -ne 0 -and $scope) {
+        Log-Text "[!] Nâng cấp theo scope '$scope' không thành công (Code: $code), đang thử lại chế độ tự do..."
+        $upArgsRetry = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
+        if ($existingLoc) {
+            $upArgsRetry += " --location `"$existingLoc`""
+        }
+        $code = Run-CliStream "winget" $upArgsRetry
+    }
+
+    if ($hasSnapshots) {
+        if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+            $restoredLoc = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($locBkp, $existingLoc)
+            if ($restoredLoc -gt 0) {
+                Log-Text "[OK] UpgradeDataGuard: Đã bảo toàn $restoredLoc tệp dữ liệu cá nhân trong thư mục cài đặt."
+            }
+        }
+
+        if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+            foreach ($item in $appDataBkps) {
+                if (Test-Path -LiteralPath $item.Backup) {
+                    $resAd = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($item.Backup, $item.Source)
+                    if ($resAd -gt 0) {
+                        Log-Text "[OK] UpgradeDataGuard: Đã bảo toàn $resAd tệp dữ liệu/profile trong: $($item.Source)"
                     }
-                    Copy-Item -LiteralPath $bf.FullName -Destination $targetFile -Force -ErrorAction SilentlyContinue
                 }
             }
-        } catch {}
+        }
+
+        foreach ($rfItem in $regFiles) {
+            if (Test-Path -LiteralPath $rfItem.File) {
+                try {
+                    Start-Process "reg.exe" -ArgumentList "import `"$($rfItem.File)`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
+                } catch {}
+            }
+        }
+
         try {
-            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
-        } catch {}
-    } elseif ($backupDir -and (Test-Path -LiteralPath $backupDir)) {
-        try {
-            Remove-Item -LiteralPath $backupDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
         } catch {}
     }
 
@@ -1609,7 +1711,27 @@ Register-Click "btnUpgradeAll" {
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
         try {
-            Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+            $outdatedRows = @($allItemBorders | Where-Object { $_.Tag -and $_.Tag.Status -eq "OUTDATED" })
+            if ($outdatedRows.Count -gt 0) {
+                $totalOut = $outdatedRows.Count
+                $idxOut = 0
+                foreach ($row in $outdatedRows) {
+                    $idxOut++
+                    $tagOut = $row.Tag
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..." }
+                    Log-Text "[$idxOut/$totalOut] Đang nâng cấp bảo toàn dữ liệu: $($tagOut.App.Name)..."
+                    $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut
+                    if ($codeOut -eq 0) {
+                        Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($tagOut.App.Name)"
+                        if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
+                    } else {
+                        Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                    }
+                }
+            } else {
+                Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+            }
         } finally {
             Clear-WinGetTempInstallers
         }
