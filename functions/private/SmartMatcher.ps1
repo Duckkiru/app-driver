@@ -7,9 +7,24 @@ $script:brushOutdatedFg.Freeze()
 $script:brushLatestFg.Freeze()
 $script:brushNoneFg.Freeze()
 
+$script:cleanNameCache     = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:versionNumCache    = [System.Collections.Generic.Dictionary[string, long[]]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:targetAppMetaCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:stopWordSet        = [System.Collections.Generic.HashSet[string]]::new([string[]]@("microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server", "edition", "community", "x64", "x86", "arm64", "arp", "msix", "machine", "user", "app", "pro", "free", "jdk", "jre", "lts", "cli", "ide", "gui", "vpn", "bit"), [System.StringComparer]::OrdinalIgnoreCase)
+$script:preSpawnedWinget   = $null
+
 function Get-CleanAppName {
     param([string]$RawName)
     if ([string]::IsNullOrWhiteSpace($RawName)) { return "" }
+    $cached = $null
+    if ($script:cleanNameCache.TryGetValue($RawName, [ref]$cached)) {
+        return $cached
+    }
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        $clean = [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($RawName)
+        $script:cleanNameCache[$RawName] = $clean
+        return $clean
+    }
     $clean = ($RawName -replace '\((?!x64|x86|arm64).*?\)', '').Replace('(', '').Replace(')', '').Trim().ToLowerInvariant()
     $clean = $clean -replace '\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*', ''
     $clean = $clean -replace '\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b', ''
@@ -18,16 +33,30 @@ function Get-CleanAppName {
         $clean = $clean.Replace($term, "")
     }
     $clean = ($clean -replace '\s+', ' ').Trim()
+    $script:cleanNameCache[$RawName] = $clean
     return $clean
 }
 
 function Get-VersionNumbers {
     param([string]$VerStr)
-    if ([string]::IsNullOrWhiteSpace($VerStr)) { return @() }
+    if ([string]::IsNullOrWhiteSpace($VerStr)) { return [long[]]@() }
+    $cached = $null
+    if ($script:versionNumCache.TryGetValue($VerStr, [ref]$cached)) {
+        return $cached
+    }
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        $arr = [DuckUtil.DeepUninstallerEngine]::GetVersionNumbers($VerStr)
+        $script:versionNumCache[$VerStr] = $arr
+        return $arr
+    }
     $s = $VerStr.Trim()
     if ($s.StartsWith("<")) { $s = $s.Substring(1).Trim() }
     $m = [System.Text.RegularExpressions.Regex]::Match($s, '\d+(?:[.+_-]\d+)*')
-    if (-not $m.Success) { return @() }
+    if (-not $m.Success) {
+        $empty = [long[]]@()
+        $script:versionNumCache[$VerStr] = $empty
+        return $empty
+    }
     $parts = $m.Value -split '[.+_-]'
     $nums = [System.Collections.Generic.List[long]]::new()
     foreach ($p in $parts) {
@@ -36,11 +65,16 @@ function Get-VersionNumbers {
             $nums.Add($v)
         }
     }
-    return $nums.ToArray()
+    $arr = $nums.ToArray()
+    $script:versionNumCache[$VerStr] = $arr
+    return $arr
 }
 
 function Compare-AppVersions {
     param([string]$VerA, [string]$VerB)
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        return [DuckUtil.DeepUninstallerEngine]::CompareAppVersions($VerA, $VerB)
+    }
     $a = @(Get-VersionNumbers $VerA)
     $b = @(Get-VersionNumbers $VerB)
     if ($a.Count -eq 0 -and $b.Count -eq 0) { return 0 }
@@ -59,6 +93,9 @@ function Compare-AppVersions {
 
 function Test-AppUpdateGenuine {
     param([string]$InstalledVer, [string]$AvailableVer)
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        return [DuckUtil.DeepUninstallerEngine]::TestAppUpdateGenuine($InstalledVer, $AvailableVer)
+    }
     if ([string]::IsNullOrWhiteSpace($AvailableVer)) { return $false }
     $av = $AvailableVer.Trim()
     if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown") { return $false }
@@ -195,98 +232,80 @@ function Set-PreferredMapEntry {
     }
 }
 
-function Test-MatchCompatible {
-    param($TargetApp, $Item)
-    if (-not $TargetApp -or -not $Item) { return $false }
+function Get-TargetAppMeta {
+    param($TargetApp)
+    $tId = [string]$TargetApp.ID
+    $meta = $null
+    if ($script:targetAppMetaCache.TryGetValue($tId, [ref]$meta)) {
+        return $meta
+    }
 
     $tName = [string]$TargetApp.Name
-    $tId   = [string]$TargetApp.ID
-    $iName = [string]$Item.Name
-    $iId   = [string]$Item.ID
+    $hasCsClean = ($null -ne ("DuckUtil.DeepUninstallerEngine" -as [type]))
+    $cleanTarget = ""
+    if (-not [string]::IsNullOrWhiteSpace($tName)) {
+        if (-not $script:cleanNameCache.TryGetValue($tName, [ref]$cleanTarget)) {
+            $cleanTarget = if ($hasCsClean) { [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($tName) } else { Get-CleanAppName $tName }
+            $script:cleanNameCache[$tName] = $cleanTarget
+        }
+    }
+    $aliasEntries = [System.Collections.Generic.List[hashtable]]::new()
+    $cleanAliases = [System.Collections.Generic.List[hashtable]]::new()
+    $queryTokens  = [System.Collections.Generic.List[string]]::new()
+    $seenTokens   = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer)' -or
-        $iId   -match '(?i)(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)') {
-        if ($tName -notmatch '(?i)(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)') {
-            return $false
+    if ($cleanTarget.Length -ge 4) {
+        foreach ($qt in ([System.Text.RegularExpressions.Regex]::Split($cleanTarget, '[^a-zA-Z0-9+]+'))) {
+            if ($qt.Length -ge 3 -and (-not $script:stopWordSet.Contains($qt)) -and $seenTokens.Add($qt)) {
+                $queryTokens.Add($qt)
+            }
         }
     }
 
-    if ($iId -eq 'Python.Launcher' -or $iName -match '^Python Launcher\b') {
-        if ($tId -ne 'Python.Launcher') { return $false }
+    if ($TargetApp.Aliases) {
+        foreach ($alias in $TargetApp.Aliases) {
+            if ([string]::IsNullOrWhiteSpace($alias)) { continue }
+            $cAl = ""
+            if (-not $script:cleanNameCache.TryGetValue($alias, [ref]$cAl)) {
+                $cAl = if ($hasCsClean) { [DuckUtil.DeepUninstallerEngine]::CleanCatalogAppName($alias) } else { Get-CleanAppName $alias }
+                $script:cleanNameCache[$alias] = $cAl
+            }
+            $cleanAliases.Add(@{ Raw = $alias; Clean = $cAl })
+            if ($alias.Length -ge 4) {
+                $aliasEntries.Add(@{
+                    Raw     = $alias
+                    Pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
+                })
+                foreach ($qt in ([System.Text.RegularExpressions.Regex]::Split($alias, '[^a-zA-Z0-9+]+'))) {
+                    if ($qt.Length -ge 3 -and (-not $script:stopWordSet.Contains($qt)) -and $seenTokens.Add($qt)) {
+                        $queryTokens.Add($qt)
+                    }
+                }
+            }
+        }
     }
 
-    $tPrev = ($tName -match 'Preview') -or ($tId -match 'Preview')
-    $iPrev = ($iName -match 'Preview') -or ($iId -match 'Preview')
-    if ($tPrev -ne $iPrev -and $tId -ne 'Microsoft.PowerToys') { return $false }
+    $patternClean = if ($cleanTarget.Length -ge 4) {
+        "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
+    } else { "" }
 
-    if (($tId -match 'VCRedist' -or $tName -match 'VC\+\+') -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
-        return $false
-    }
-
-    $tComm = ($tName -match '\bCommunity\b') -or ($tId -match '\.Community\b')
-    $tPro  = ($tName -match '\b(Ultimate|Professional)\b') -or ($tId -match '\.(Ultimate|Professional)\b')
-    $iComm = ($iName -match '\bCommunity\b') -or ($iId -match '\.Community\b')
-    $iPro  = ($iName -match '\b(Ultimate|Professional)\b') -or ($iId -match '\.(Ultimate|Professional)\b')
-    if (($tComm -and $iPro) -or ($tPro -and $iComm)) { return $false }
-
-    $tIde = ($tName -match '\bIDE\b') -or ($tId -match 'IDE$')
-    $iIde = ($iName -match '\bIDE\b') -or ($iId -match 'IDE$')
-    if ($tIde -ne $iIde -and ($tId -match 'Antigravity' -or $iId -match 'Antigravity')) { return $false }
-
-    $tCli = ($tName -match '\bCLI\b') -or ($tId -match '(\.cli|CLI)$')
-    $iCli = ($iName -match '\bCLI\b') -or ($iId -match '(\.cli|CLI)$')
-    if ($tCli -ne $iCli) { return $false }
-
-    $tBt = ($tName -match 'Build Tools') -or ($tId -match 'BuildTools')
-    $iBt = ($iName -match 'Build Tools') -or ($iId -match 'BuildTools')
-    if ($tBt -ne $iBt) { return $false }
-
-    $tVsc = ($tId -match 'VisualStudioCode') -or ($tName -match 'VS Code|Visual Studio Code')
-    $iVsc = ($iId -match 'VisualStudioCode') -or ($iName -match 'VS Code|Visual Studio Code')
-    if ($tVsc -ne $iVsc -and ($tId -match 'VisualStudio' -or $iId -match 'VisualStudio')) { return $false }
-
-    $tEtb = ($tId -match 'EverythingToolbar') -or ($tName -match 'EverythingToolbar')
-    $iEtb = ($iId -match 'EverythingToolbar') -or ($iName -match 'EverythingToolbar')
-    if ($tEtb -ne $iEtb) { return $false }
-
-    if ($tId -match 'Temurin' -and ($iId -match 'Oracle|Corretto' -or $iName -match 'Corretto|^Java \d+ Update')) { return $false }
-    if ($tId -match 'Oracle\.Java' -and ($iId -match 'Temurin|Corretto' -or $iName -match 'Temurin|Corretto')) { return $false }
-    if ($tId -match 'Corretto' -and ($iId -match 'Temurin|Oracle' -or $iName -match 'Temurin|^Java \d+ Update')) { return $false }
-
-    $tJdk = ($tName -match '\bJDK\b') -or ($tId -match '\.JDK$')
-    $tJre = ($tName -match '\bJRE\b') -or ($tId -match '\.(JRE|JavaRuntimeEnvironment)$')
-    if ($tJdk -or $tJre) {
-        $iJdk = ($iName -match '\bJDK\b') -or ($iId -match '\.JDK$')
-        $iJre = ($iName -match '\bJRE\b|^Java \d+ Update') -or ($iId -match '\.(JRE|JavaRuntimeEnvironment)$')
-        if (($tJdk -and $iJre -and -not $iJdk) -or ($tJre -and $iJdk -and -not $iJre)) { return $false }
-    }
-
+    $reqPy = ""
     if ($tId -match '^Python\.Python\.(\d+\.\d+)$') {
         $reqPy = [regex]::Escape($Matches[1])
-        if ($iId -notmatch $reqPy -and $iName -notmatch $reqPy -and [string]$Item.Version -notmatch "^$reqPy(\.|$)") {
-            return $false
-        }
     }
-
+    $reqJava = ""
     if ($tId -match '\.(Temurin|Corretto)\.(\d+)\.') {
         $reqJava = $Matches[2]
-        if ($iId -notmatch "\b$reqJava\b" -and $iName -notmatch "\b$reqJava\b" -and [string]$Item.Version -notmatch "^$reqJava(\.|$)") {
-            return $false
-        }
     }
-
+    $reqDnRaw = ""
+    $reqDnEsc = ""
     if ($tId -match '^Microsoft\.DotNet\.DesktopRuntime\.(\d+(?:_\d+)?)(?:\.|$)') {
-        $reqDn = $Matches[1].Replace('_', '\.')
-        if ($iId -notmatch "DesktopRuntime\.$($Matches[1])(\.|$)" -and $iName -notmatch "\b$reqDn(\.\d+|\b)" -and [string]$Item.Version -notmatch "^$reqDn(\.|$)") {
-            return $false
-        }
+        $reqDnRaw = $Matches[1]
+        $reqDnEsc = $Matches[1].Replace('_', '\.')
     }
-
+    $reqYear = ""
     if ($tId -match '^Microsoft\.VCRedist\.(\d{4})\.') {
         $reqYear = $Matches[1]
-        if ($iId -notmatch $reqYear -and $iName -notmatch $reqYear) {
-            return $false
-        }
     }
 
     $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
@@ -295,13 +314,138 @@ function Test-MatchCompatible {
              elseif ([Environment]::Is64BitOperatingSystem -and $TargetApp.Category -eq '.NET Runtimes' -and $tId -match 'DesktopRuntime') { "x64" }
              else { "" }
 
-    if ($tArch) {
+    $meta = [PSCustomObject]@{
+        ID             = $tId
+        Name           = $tName
+        CleanTarget    = $cleanTarget
+        CleanAliases   = $cleanAliases
+        AliasEntries   = $aliasEntries
+        PatternClean   = $patternClean
+        QueryTokens    = $queryTokens
+        AllowNoise     = ($tName -match '(?i)(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)')
+        IsPrev         = (($tName -match 'Preview') -or ($tId -match 'Preview'))
+        IsVcRedist     = (($tId -match 'VCRedist') -or ($tName -match 'VC\+\+'))
+        IsComm         = (($tName -match '\bCommunity\b') -or ($tId -match '\.Community\b'))
+        IsPro          = (($tName -match '\b(Ultimate|Professional)\b') -or ($tId -match '\.(Ultimate|Professional)\b'))
+        IsIde          = (($tName -match '\bIDE\b') -or ($tId -match 'IDE$'))
+        IsAntigravity  = ($tId -match 'Antigravity')
+        IsCli          = (($tName -match '\bCLI\b') -or ($tId -match '(\.cli|CLI)$'))
+        IsBt           = (($tName -match 'Build Tools') -or ($tId -match 'BuildTools'))
+        IsVsc          = (($tId -match 'VisualStudioCode') -or ($tName -match 'VS Code|Visual Studio Code'))
+        IsVsAny        = ($tId -match 'VisualStudio')
+        IsEtb          = (($tId -match 'EverythingToolbar') -or ($tName -match 'EverythingToolbar'))
+        IsTemurin      = ($tId -match 'Temurin')
+        IsOracleJava   = ($tId -match 'Oracle\.Java')
+        IsCorretto     = ($tId -match 'Corretto')
+        IsJdk          = (($tName -match '\bJDK\b') -or ($tId -match '\.JDK$'))
+        IsJre          = (($tName -match '\bJRE\b') -or ($tId -match '\.(JRE|JavaRuntimeEnvironment)$'))
+        ReqPy          = $reqPy
+        ReqJava        = $reqJava
+        ReqDnRaw       = $reqDnRaw
+        ReqDnEsc       = $reqDnEsc
+        ReqYear        = $reqYear
+        Arch           = $tArch
+    }
+    $script:targetAppMetaCache[$tId] = $meta
+    return $meta
+}
+
+function Test-MatchCompatible {
+    param($TargetApp, $Item)
+    if (-not $TargetApp -or -not $Item) { return $false }
+
+    $meta  = Get-TargetAppMeta $TargetApp
+    $tId   = $meta.ID
+    $iName = [string]$Item.Name
+    $iId   = [string]$Item.ID
+
+    if (-not $meta.AllowNoise) {
+        if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer)' -or
+            $iId   -match '(?i)(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)') {
+            return $false
+        }
+    }
+
+    if ($iId -eq 'Python.Launcher' -or $iName -match '^Python Launcher\b') {
+        if ($tId -ne 'Python.Launcher') { return $false }
+    }
+
+    $iPrev = ($iName.IndexOf('Preview', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($iId.IndexOf('Preview', [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
+    if ($meta.IsPrev -ne $iPrev -and $tId -ne 'Microsoft.PowerToys') { return $false }
+
+    if ($meta.IsVcRedist -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
+        return $false
+    }
+
+    if ($meta.IsComm -or $meta.IsPro) {
+        $iComm = ($iName -match '\bCommunity\b') -or ($iId -match '\.Community\b')
+        $iPro  = ($iName -match '\b(Ultimate|Professional)\b') -or ($iId -match '\.(Ultimate|Professional)\b')
+        if (($meta.IsComm -and $iPro) -or ($meta.IsPro -and $iComm)) { return $false }
+    }
+
+    if ($meta.IsAntigravity -or $iId.IndexOf('Antigravity', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        $iIde = ($iName -match '\bIDE\b') -or ($iId -match 'IDE$')
+        if ($meta.IsIde -ne $iIde) { return $false }
+    }
+
+    $iCli = ($iName -match '\bCLI\b') -or ($iId -match '(\.cli|CLI)$')
+    if ($meta.IsCli -ne $iCli) { return $false }
+
+    $iBt = ($iName.IndexOf('Build Tools', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($iId.IndexOf('BuildTools', [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
+    if ($meta.IsBt -ne $iBt) { return $false }
+
+    if ($meta.IsVsAny -or $iId.IndexOf('VisualStudio', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        $iVsc = ($iId -match 'VisualStudioCode') -or ($iName -match 'VS Code|Visual Studio Code')
+        if ($meta.IsVsc -ne $iVsc) { return $false }
+    }
+
+    $iEtb = ($iId.IndexOf('EverythingToolbar', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($iName.IndexOf('EverythingToolbar', [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
+    if ($meta.IsEtb -ne $iEtb) { return $false }
+
+    if ($meta.IsTemurin -and ($iId -match 'Oracle|Corretto' -or $iName -match 'Corretto|^Java \d+ Update')) { return $false }
+    if ($meta.IsOracleJava -and ($iId -match 'Temurin|Corretto' -or $iName -match 'Temurin|Corretto')) { return $false }
+    if ($meta.IsCorretto -and ($iId -match 'Temurin|Oracle' -or $iName -match 'Temurin|^Java \d+ Update')) { return $false }
+
+    if ($meta.IsJdk -or $meta.IsJre) {
+        $iJdk = ($iName -match '\bJDK\b') -or ($iId -match '\.JDK$')
+        $iJre = ($iName -match '\bJRE\b|^Java \d+ Update') -or ($iId -match '\.(JRE|JavaRuntimeEnvironment)$')
+        if (($meta.IsJdk -and $iJre -and -not $iJdk) -or ($meta.IsJre -and $iJdk -and -not $iJre)) { return $false }
+    }
+
+    if ($meta.ReqPy) {
+        $reqPy = $meta.ReqPy
+        if ($iId -notmatch $reqPy -and $iName -notmatch $reqPy -and [string]$Item.Version -notmatch "^$reqPy(\.|$)") {
+            return $false
+        }
+    }
+
+    if ($meta.ReqJava) {
+        $reqJava = $meta.ReqJava
+        if ($iId -notmatch "\b$reqJava\b" -and $iName -notmatch "\b$reqJava\b" -and [string]$Item.Version -notmatch "^$reqJava(\.|$)") {
+            return $false
+        }
+    }
+
+    if ($meta.ReqDnRaw) {
+        $reqDn = $meta.ReqDnEsc
+        if ($iId -notmatch "DesktopRuntime\.$($meta.ReqDnRaw)(\.|$)" -and $iName -notmatch "\b$reqDn(\.\d+|\b)" -and [string]$Item.Version -notmatch "^$reqDn(\.|$)") {
+            return $false
+        }
+    }
+
+    if ($meta.ReqYear) {
+        if ($iId.IndexOf($meta.ReqYear, [System.StringComparison]::OrdinalIgnoreCase) -lt 0 -and $iName.IndexOf($meta.ReqYear, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
+            return $false
+        }
+    }
+
+    if ($meta.Arch) {
         $idForArch = if ($iId -match '^(ARP|MSIX|LOCAL)\\') { "" } else { $iId }
         $iArch = if ($iName -match '(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x64$') { "x64" }
                  elseif ($iName -match '(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])' -or $idForArch -match '\.x86$') { "x86" }
                  elseif ($iName -match '(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])' -or $idForArch -match '\.arm64$') { "arm64" }
                  else { "" }
-        if ($iArch -and $iArch -ne $tArch) { return $false }
+        if ($iArch -and $iArch -ne $meta.Arch) { return $false }
     }
 
     return $true
@@ -310,20 +454,80 @@ function Test-MatchCompatible {
 $script:isScanningApps = $false
 $script:hasCompletedAppScan = $false
 
+function Start-WingetBackgroundPreScan {
+    if ($null -ne $script:preSpawnedWinget) { return }
+    try {
+        if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) { return }
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = "winget"
+        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.RedirectStandardError = $true
+        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.UseShellExecute = $false
+        $pinfo.CreateNoWindow = $true
+        $p = [System.Diagnostics.Process]::Start($pinfo)
+        if ($null -ne $p) {
+            $script:preSpawnedWinget = [PSCustomObject]@{
+                Process   = $p
+                ReadTask  = $p.StandardOutput.ReadToEndAsync()
+                ErrTask   = $p.StandardError.ReadToEndAsync()
+                Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+                Arguments = "list --disable-interactivity --accept-source-agreements"
+            }
+        }
+    } catch {
+        $script:preSpawnedWinget = $null
+    }
+}
+
 function Invoke-WingetListCapture {
     param(
         [string]$Arguments = "list --disable-interactivity --accept-source-agreements",
         [int]$TimeoutSeconds = 35
     )
 
-    if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
-        return [PSCustomObject]@{
-            Available = $false
-            TimedOut  = $false
-            ExitCode  = -1
-            StdOut    = ""
-            StdErr    = ""
+    $p = $null
+    $readTask = $null
+    $errTask = $null
+    $sw = $null
+
+    if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
+        $job = $script:preSpawnedWinget
+        $script:preSpawnedWinget = $null
+        $p = $job.Process
+        $readTask = $job.ReadTask
+        $errTask = $job.ErrTask
+        $sw = $job.Stopwatch
+    } else {
+        if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+            return [PSCustomObject]@{
+                Available = $false
+                TimedOut  = $false
+                ExitCode  = -1
+                StdOut    = ""
+                StdErr    = ""
+            }
         }
+
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = "winget"
+        $pinfo.Arguments = $Arguments
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.RedirectStandardError = $true
+        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+        $pinfo.UseShellExecute = $false
+        $pinfo.CreateNoWindow = $true
+
+        $p = [System.Diagnostics.Process]::Start($pinfo)
+        if ($null -eq $p) {
+            throw "Không thể khởi động tiến trình winget."
+        }
+        $readTask = $p.StandardOutput.ReadToEndAsync()
+        $errTask  = $p.StandardError.ReadToEndAsync()
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
     }
 
     $rawList = ""
@@ -331,24 +535,6 @@ function Invoke-WingetListCapture {
     $timedOut = $false
     $exitCode = -1
 
-    $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-    $pinfo.FileName = "winget"
-    $pinfo.Arguments = $Arguments
-    $pinfo.RedirectStandardOutput = $true
-    $pinfo.RedirectStandardError = $true
-    $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-    $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-    $pinfo.UseShellExecute = $false
-    $pinfo.CreateNoWindow = $true
-
-    $p = [System.Diagnostics.Process]::Start($pinfo)
-    if ($null -eq $p) {
-        throw "Không thể khởi động tiến trình winget."
-    }
-
-    $readTask = $p.StandardOutput.ReadToEndAsync()
-    $errTask  = $p.StandardError.ReadToEndAsync()
-    $sw = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
         if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
             $timedOut = $true
@@ -384,10 +570,17 @@ function ConvertFrom-WingetListOutput {
         [bool]$AllowHeaderless = $false
     )
 
-    $parsed = [System.Collections.Generic.List[object]]::new()
     if ([string]::IsNullOrWhiteSpace($RawText)) {
-        return [PSCustomObject]@{ HasTable = $false; Items = $parsed }
+        return [PSCustomObject]@{ HasTable = $false; Items = [System.Collections.Generic.List[object]]::new() }
     }
+
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        $hasTable = $false
+        $items = [DuckUtil.DeepUninstallerEngine]::ParseWingetListOutput($RawText, $AllowHeaderless, [ref]$hasTable)
+        return [PSCustomObject]@{ HasTable = $hasTable; Items = $items }
+    }
+
+    $parsed = [System.Collections.Generic.List[object]]::new()
 
     $rawLines = $RawText -split "`n"
     $lines = [System.Collections.Generic.List[string]]::new($rawLines.Count)
@@ -551,6 +744,12 @@ function Get-ExecutableCleanVersion {
 
 function Get-LocalInstalledEntries {
     param([switch]$SkipAppx)
+    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        try {
+            return [DuckUtil.DeepUninstallerEngine]::ScanCatalogSensors()
+        } catch {}
+    }
+
     $localItems = [System.Collections.Generic.List[object]]::new()
     $regConfigs = @(
         @{ Hive = [Microsoft.Win32.Registry]::LocalMachine; SubKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall';             Prefix = 'ARP\Machine\X64\' },
@@ -803,19 +1002,18 @@ function Apply-InstalledDatabaseToRows {
             return $cachedMatch
         }
 
+        $meta = Get-TargetAppMeta $targetApp
         $match = $null
         if ($IdMap.TryGetValue($targetId, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
 
-        if ($targetApp.Aliases) {
-            foreach ($alias in $targetApp.Aliases) {
-                if ([string]::IsNullOrWhiteSpace($alias)) { continue }
-                if ($IdMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
-                    $lookupCache[$targetId] = $match
-                    return $match
-                }
+        foreach ($alPair in $meta.CleanAliases) {
+            $alias = $alPair.Raw
+            if ($IdMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+                $lookupCache[$targetId] = $match
+                return $match
             }
         }
 
@@ -824,22 +1022,20 @@ function Apply-InstalledDatabaseToRows {
             return $match
         }
 
-        if ($targetApp.Aliases) {
-            foreach ($alias in $targetApp.Aliases) {
-                if ([string]::IsNullOrWhiteSpace($alias)) { continue }
-                if ($NameMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
-                    $lookupCache[$targetId] = $match
-                    return $match
-                }
-                $cleanAlias = Get-CleanAppName $alias
-                if ($cleanAlias.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
-                    $lookupCache[$targetId] = $match
-                    return $match
-                }
+        foreach ($alPair in $meta.CleanAliases) {
+            $alias = $alPair.Raw
+            if ($NameMap.TryGetValue($alias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+                $lookupCache[$targetId] = $match
+                return $match
+            }
+            $cleanAlias = $alPair.Clean
+            if ($cleanAlias.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+                $lookupCache[$targetId] = $match
+                return $match
             }
         }
 
-        $cleanTarget = Get-CleanAppName $targetApp.Name
+        $cleanTarget = $meta.CleanTarget
         if ($cleanTarget.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
@@ -847,27 +1043,13 @@ function Apply-InstalledDatabaseToRows {
 
         $candidatePool = [System.Collections.Generic.List[object]]::new()
         $seenCand = [System.Collections.Generic.HashSet[object]]::new()
-        $queryPhrases = [System.Collections.Generic.List[string]]::new()
-        if ($cleanTarget.Length -ge 4) { $queryPhrases.Add($cleanTarget) }
-        if ($targetApp.Aliases) {
-            foreach ($al in $targetApp.Aliases) {
-                if (-not [string]::IsNullOrWhiteSpace($al) -and $al.Length -ge 4) {
-                    $queryPhrases.Add($al)
-                }
-            }
-        }
 
-        foreach ($qp in $queryPhrases) {
-            $qTokens = [System.Text.RegularExpressions.Regex]::Split($qp, '[^a-zA-Z0-9+]+')
-            foreach ($qt in $qTokens) {
-                if ($qt.Length -ge 3 -and $qt -notin @("microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server", "edition", "community")) {
-                    $bucket = $null
-                    if ($tokenIndex.TryGetValue($qt, [ref]$bucket)) {
-                        foreach ($bItem in $bucket) {
-                            if ($seenCand.Add($bItem)) {
-                                $candidatePool.Add($bItem)
-                            }
-                        }
+        foreach ($qt in $meta.QueryTokens) {
+            $bucket = $null
+            if ($tokenIndex.TryGetValue($qt, [ref]$bucket)) {
+                foreach ($bItem in $bucket) {
+                    if ($seenCand.Add($bItem)) {
+                        $candidatePool.Add($bItem)
                     }
                 }
             }
@@ -880,24 +1062,10 @@ function Apply-InstalledDatabaseToRows {
 
         $bestCandidate = $null
         $bestScore = 0
-
-        $aliasEntries = [System.Collections.Generic.List[hashtable]]::new()
-        if ($targetApp.Aliases) {
-            foreach ($alias in $targetApp.Aliases) {
-                if (-not [string]::IsNullOrWhiteSpace($alias) -and $alias.Length -ge 4) {
-                    $aliasEntries.Add(@{
-                        Raw     = $alias
-                        Pattern = "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($alias) + "(?![a-zA-Z0-9])"
-                    })
-                }
-            }
-        }
-        $patternClean = if ($cleanTarget.Length -ge 4) {
-            "(?<![a-zA-Z0-9])" + [System.Text.RegularExpressions.Regex]::Escape($cleanTarget) + "(?![a-zA-Z0-9])"
-        } else { "" }
+        $aliasEntries = $meta.AliasEntries
+        $patternClean = $meta.PatternClean
 
         foreach ($item in $candidatePool) {
-            if (-not (Test-MatchCompatible $targetApp $item)) { continue }
             $score = 0
             foreach ($ae in $aliasEntries) {
                 $rawAl = $ae.Raw
@@ -918,7 +1086,7 @@ function Apply-InstalledDatabaseToRows {
             if ($score -gt 0) {
                 if ($item.HasUpdate) { $score += 15 }
                 if ($item.ID -notmatch '^(ARP|MSIX|LOCAL)\\') { $score += 10 }
-                if ($score -gt $bestScore) {
+                if ($score -gt $bestScore -and (Test-MatchCompatible $targetApp $item)) {
                     $bestScore = $score
                     $bestCandidate = $item
                 }
@@ -1014,9 +1182,11 @@ function Scan-And-ColorizeApps {
 
         foreach ($locObj in $localItems) {
             $installedList.Add($locObj)
-            Set-PreferredMapEntry $idMap $locObj.ID $locObj
-            Set-PreferredMapEntry $nameMap $locObj.Name $locObj
-            if ($locObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+            if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
+            if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
+            if ($locObj.CleanName.Length -ge 3) {
+                if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+            }
         }
 
         if ($allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
@@ -1085,9 +1255,11 @@ function Scan-And-ColorizeApps {
                 continue
             }
             $installedList.Add($itemObj)
-            Set-PreferredMapEntry $idMap $itemObj.ID $itemObj
-            Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj
-            if ($itemObj.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+            if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
+            if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
+            if ($itemObj.CleanName.Length -ge 3) {
+                if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+            }
 
             if ($itemObj.ID -eq "Microsoft.VisualStudio.Community.Insiders") {
                 Set-PreferredMapEntry $idMap "Microsoft.VisualStudio.2022.Community" $itemObj

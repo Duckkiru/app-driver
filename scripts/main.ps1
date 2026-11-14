@@ -1,4 +1,7 @@
 ﻿Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
+    Start-WingetBackgroundPreScan
+}
 
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
@@ -1708,13 +1711,15 @@ function Invoke-SmartAppUpgrade {
     $app = $Tag.App
     if (-not $app) { return 1 }
 
-    $upgradeId = if ($Tag.DetectedId -and -not ($Tag.DetectedId.StartsWith("ARP\") -or $Tag.DetectedId.StartsWith("MSIX\"))) {
+    $upgradeId = if ($Tag.DetectedId -and -not ($Tag.DetectedId.StartsWith("ARP\") -or $Tag.DetectedId.StartsWith("MSIX\") -or $Tag.DetectedId.StartsWith("LOCAL\"))) {
         $Tag.DetectedId
     } else {
         $app.ID
     }
 
-    $instApps = if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    $instApps = if ($script:allUninstallerApps -and $script:allUninstallerApps.Count -gt 0) {
+        $script:allUninstallerApps
+    } elseif ("DuckUtil.DeepUninstallerEngine" -as [type]) {
         [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
     } else {
         @()
