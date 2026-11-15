@@ -250,6 +250,38 @@ if ($Host -and $Host.UI -and $Host.UI.RawUI) {
     }
 }
 
+try {
+    if (-not ('DuckUtil.ConsoleHelper' -as [type])) {
+        Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+namespace DuckUtil {
+    public static class ConsoleHelper {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        public static void DisableQuickEdit() {
+            IntPtr h = GetStdHandle(-10);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+            uint mode;
+            if (GetConsoleMode(h, out mode)) {
+                uint next = (mode & ~0x0040u) | 0x0080u;
+                if (next != mode) SetConsoleMode(h, next);
+            }
+        }
+    }
+}
+"@ -ErrorAction SilentlyContinue
+    }
+    if ('DuckUtil.ConsoleHelper' -as [type]) {
+        [DuckUtil.ConsoleHelper]::DisableQuickEdit()
+    }
+} catch {
+}
+
 try { Clear-Host } catch {}
 Write-Host "==========================================================================" -ForegroundColor Cyan
 Write-Host "   ___                ____       _                " -ForegroundColor Cyan

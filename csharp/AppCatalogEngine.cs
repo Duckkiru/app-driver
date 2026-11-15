@@ -949,16 +949,25 @@ namespace DuckUtil
 
         private static bool HasValidAuthenticodeCert(string filePath)
         {
+            object cert = null;
             try
             {
                 MethodInfo m = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
                 if (m == null) return false;
-                object cert = m.Invoke(null, new object[] { filePath });
+                cert = m.Invoke(null, new object[] { filePath });
                 return cert != null;
             }
             catch
             {
                 return false;
+            }
+            finally
+            {
+                IDisposable disp = cert as IDisposable;
+                if (disp != null)
+                {
+                    try { disp.Dispose(); } catch {}
+                }
             }
         }
 

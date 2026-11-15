@@ -1,16 +1,39 @@
-﻿$script:activeChildProcess = $null
-$script:isWindowClosing    = $false
+﻿$script:activeChildProcess   = $null
+$script:activeChildProcesses = [System.Collections.Generic.List[object]]::new()
+$script:isWindowClosing      = $false
+
+function Stop-ChildProcessTree {
+    param([object]$Proc)
+    if ($null -eq $Proc) { return }
+    try {
+        $hasExited = try { $Proc.HasExited } catch { $true }
+        if (-not $hasExited) {
+            $pidToKill = try { $Proc.Id } catch { 0 }
+            if ($pidToKill -gt 0) {
+                try {
+                    Start-Process "taskkill.exe" -ArgumentList "/F /T /PID $pidToKill" -NoNewWindow -Wait -ErrorAction SilentlyContinue
+                } catch {}
+            }
+            try { $Proc.Kill() } catch {}
+        }
+    } catch {}
+}
 
 function Stop-ActiveChildProcess {
     try {
-        if ($script:activeChildProcess -and -not $script:activeChildProcess.HasExited) {
-            $pidToKill = $script:activeChildProcess.Id
-            try {
-                Start-Process "taskkill.exe" -ArgumentList "/F /T /PID $pidToKill" -NoNewWindow -Wait -ErrorAction SilentlyContinue
-            } catch {}
-            try {
-                $script:activeChildProcess.Kill()
-            } catch {}
+        $targets = [System.Collections.Generic.List[object]]::new()
+        if ($null -ne $script:activeChildProcesses) {
+            foreach ($proc in @($script:activeChildProcesses)) {
+                if ($null -ne $proc -and -not $targets.Contains($proc)) {
+                    $targets.Add($proc)
+                }
+            }
+        }
+        if ($null -ne $script:activeChildProcess -and -not $targets.Contains($script:activeChildProcess)) {
+            $targets.Add($script:activeChildProcess)
+        }
+        foreach ($t in $targets) {
+            Stop-ChildProcessTree $t
         }
     } catch {}
 }
@@ -69,6 +92,10 @@ function Run-CliStream {
         [string]$Args = ""
     )
 
+    if ($script:isWindowClosing) {
+        return -1
+    }
+
     try {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
         try {
@@ -89,23 +116,44 @@ function Run-CliStream {
             return -1
         }
 
+        $prevActiveChild = $script:activeChildProcess
+        $script:activeChildProcesses.Add($p) | Out-Null
         $script:activeChildProcess = $p
         try {
-            while (-not $p.HasExited) {
+            while ($true) {
+                $stillRunning = try { -not $p.HasExited } catch { $false }
+                if (-not $stillRunning) { break }
                 if ($script:isWindowClosing) {
-                    Stop-ActiveChildProcess
+                    Stop-ChildProcessTree $p
                     break
                 }
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                if ($script:isWindowClosing) {
+                    Stop-ChildProcessTree $p
+                    break
+                }
                 Start-Sleep -Milliseconds 25
             }
 
-            try { [void]$p.WaitForExit(1000) } catch {}
-            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-            $exitCode = try { $p.ExitCode } catch { -1 }
+            if (-not $script:isWindowClosing) {
+                try { [void]$p.WaitForExit(1000) } catch {}
+                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+            }
+            $exitCode = try {
+                if ($p.HasExited) { $p.ExitCode } else { -1 }
+            } catch { -1 }
             return $exitCode
         } finally {
-            $script:activeChildProcess = $null
+            try { [void]$script:activeChildProcesses.Remove($p) } catch {}
+            $restored = $null
+            if ($null -ne $prevActiveChild) {
+                $prevAlive = try { $script:activeChildProcesses.Contains($prevActiveChild) -or (-not $prevActiveChild.HasExited) } catch { $false }
+                if ($prevAlive) { $restored = $prevActiveChild }
+            }
+            if ($null -eq $restored -and $script:activeChildProcesses.Count -gt 0) {
+                $restored = $script:activeChildProcesses[$script:activeChildProcesses.Count - 1]
+            }
+            $script:activeChildProcess = $restored
             try { $p.Dispose() } catch {}
         }
     } catch {

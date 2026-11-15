@@ -1289,48 +1289,7 @@ namespace DuckUtil
 
         public static long GetDirectorySizeFast(string rootPath, int maxDepth)
         {
-            if (string.IsNullOrEmpty(rootPath)) return 0L;
-            try
-            {
-                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
-            }
-            catch { return 0L; }
-
-            long totalSize = 0L;
-            var currentLevel = new List<string> { rootPath };
-
-            for (int depth = 0; depth <= maxDepth; depth++)
-            {
-                var nextLevel = new List<string>();
-                foreach (var dir in currentLevel)
-                {
-                    try
-                    {
-                        foreach (var file in Directory.EnumerateFiles(dir))
-                        {
-                            try
-                            {
-                                var fi = new FileInfo(file);
-                                totalSize += fi.Length;
-                            }
-                            catch {}
-                        }
-
-                        if (depth < maxDepth)
-                        {
-                            foreach (var sub in Directory.EnumerateDirectories(dir))
-                            {
-                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
-                            }
-                        }
-                    }
-                    catch {}
-                }
-                if (nextLevel.Count == 0) break;
-                currentLevel = nextLevel;
-            }
-
-            return totalSize;
+            return GetDirectorySizeCapped(rootPath, maxDepth, 10000);
         }
 
         private static List<string> EnumerateFilesSafe(string rootDir, string pattern, int maxDepth)
@@ -1414,12 +1373,13 @@ namespace DuckUtil
         private static string GetSignerSubject(string filePath)
         {
             if (string.IsNullOrEmpty(filePath)) return "";
+            object cert = null;
             try
             {
                 MethodInfo method = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
                 if (method != null)
                 {
-                    object cert = method.Invoke(null, new object[] { filePath });
+                    cert = method.Invoke(null, new object[] { filePath });
                     if (cert != null)
                     {
                         PropertyInfo prop = cert.GetType().GetProperty("Subject");
@@ -1431,6 +1391,14 @@ namespace DuckUtil
                 }
             }
             catch {}
+            finally
+            {
+                IDisposable disp = cert as IDisposable;
+                if (disp != null)
+                {
+                    try { disp.Dispose(); } catch {}
+                }
+            }
             return "";
         }
 

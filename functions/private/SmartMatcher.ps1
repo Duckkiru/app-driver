@@ -484,8 +484,20 @@ function Test-MatchCompatible {
 $script:isScanningApps = $false
 $script:hasCompletedAppScan = $false
 
+function Stop-PreSpawnedWinget {
+    $job = $script:preSpawnedWinget
+    $script:preSpawnedWinget = $null
+    if ($null -ne $job -and $null -ne $job.Process) {
+        try {
+            $hasExited = try { $job.Process.HasExited } catch { $true }
+            if (-not $hasExited) { $job.Process.Kill() }
+        } catch {}
+        try { $job.Process.Dispose() } catch {}
+    }
+}
+
 function Start-WingetBackgroundPreScan {
-    if ($null -ne $script:preSpawnedWinget) { return }
+    if ($script:isWindowClosing -or $null -ne $script:preSpawnedWinget) { return }
     try {
         if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) { return }
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
@@ -518,72 +530,112 @@ function Invoke-WingetListCapture {
         [int]$TimeoutSeconds = 35
     )
 
+    if ($script:isWindowClosing) {
+        Stop-PreSpawnedWinget
+        return [PSCustomObject]@{
+            Available = $true
+            TimedOut  = $true
+            ExitCode  = -1
+            StdOut    = ""
+            StdErr    = ""
+        }
+    }
+
     $p = $null
     $readTask = $null
     $errTask = $null
     $sw = $null
-
-    if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
-        $job = $script:preSpawnedWinget
-        $script:preSpawnedWinget = $null
-        $p = $job.Process
-        $readTask = $job.ReadTask
-        $errTask = $job.ErrTask
-        $sw = $job.Stopwatch
-    } else {
-        if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
-            return [PSCustomObject]@{
-                Available = $false
-                TimedOut  = $false
-                ExitCode  = -1
-                StdOut    = ""
-                StdErr    = ""
-            }
-        }
-
-        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
-        $pinfo.FileName = "winget"
-        $pinfo.Arguments = $Arguments
-        $pinfo.RedirectStandardOutput = $true
-        $pinfo.RedirectStandardError = $true
-        $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-        $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-        $pinfo.UseShellExecute = $false
-        $pinfo.CreateNoWindow = $true
-
-        $p = [System.Diagnostics.Process]::Start($pinfo)
-        if ($null -eq $p) {
-            throw "Không thể khởi động tiến trình winget."
-        }
-        $readTask = $p.StandardOutput.ReadToEndAsync()
-        $errTask  = $p.StandardError.ReadToEndAsync()
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    }
-
     $rawList = ""
     $errList = ""
     $timedOut = $false
     $exitCode = -1
 
-    while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-        if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
-            $timedOut = $true
-            try { if (-not $p.HasExited) { $p.Kill() } } catch {}
-            break
-        }
-        try {
-            if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
-                Flush-PendingIconCache
+    try {
+        if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
+            $job = $script:preSpawnedWinget
+            $script:preSpawnedWinget = $null
+            $p = $job.Process
+            $readTask = $job.ReadTask
+            $errTask = $job.ErrTask
+            $sw = $job.Stopwatch
+        } else {
+            if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -ge 30) {
+                Stop-PreSpawnedWinget
             }
-            [System.Windows.Forms.Application]::DoEvents()
-        } catch {}
-        Start-Sleep -Milliseconds 10
-    }
+            if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+                return [PSCustomObject]@{
+                    Available = $false
+                    TimedOut  = $false
+                    ExitCode  = -1
+                    StdOut    = ""
+                    StdErr    = ""
+                }
+            }
 
-    try { if (-not $p.HasExited) { $p.WaitForExit(1000) | Out-Null } } catch {}
-    if ($readTask.IsCompleted) { $rawList = $readTask.Result }
-    if ($errTask.IsCompleted)  { $errList = $errTask.Result }
-    if ($p.HasExited) { $exitCode = $p.ExitCode }
+            $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+            $pinfo.FileName = "winget"
+            $pinfo.Arguments = $Arguments
+            $pinfo.RedirectStandardOutput = $true
+            $pinfo.RedirectStandardError = $true
+            $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+            $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+            $pinfo.UseShellExecute = $false
+            $pinfo.CreateNoWindow = $true
+
+            $p = [System.Diagnostics.Process]::Start($pinfo)
+            if ($null -eq $p) {
+                throw "Không thể khởi động tiến trình winget."
+            }
+            $readTask = $p.StandardOutput.ReadToEndAsync()
+            $errTask  = $p.StandardError.ReadToEndAsync()
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        }
+
+        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+            if ($script:isWindowClosing) {
+                $timedOut = $true
+                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                break
+            }
+            if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                $timedOut = $true
+                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                break
+            }
+            try {
+                if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
+                    Flush-PendingIconCache
+                }
+                [System.Windows.Forms.Application]::DoEvents()
+            } catch {}
+            if ($script:isWindowClosing) {
+                $timedOut = $true
+                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                break
+            }
+            Start-Sleep -Milliseconds 10
+        }
+
+        if (-not $script:isWindowClosing) {
+            try {
+                if ($null -ne $p -and -not $p.HasExited) { $p.WaitForExit(1000) | Out-Null }
+            } catch {}
+        }
+        if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            $rawList = $readTask.Result
+        }
+        if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            $errList = $errTask.Result
+        }
+        $hasExited = try { $null -ne $p -and $p.HasExited } catch { $false }
+        if ($hasExited) {
+            $exitCode = try { $p.ExitCode } catch { -1 }
+        }
+    } finally {
+        if ($null -ne $p) {
+            try { $p.Dispose() } catch {}
+        }
+    }
 
     return [PSCustomObject]@{
         Available = $true
@@ -973,7 +1025,9 @@ function Get-LocalInstalledEntries {
     }
 
     if (-not $SkipAppx) {
+        if ($script:isWindowClosing) { return [object[]]@($localItems.ToArray()) }
         try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        if ($script:isWindowClosing) { return [object[]]@($localItems.ToArray()) }
         try {
             foreach ($pkg in (Get-AppxPackage -ErrorAction SilentlyContinue)) {
                 if ($pkg.IsFramework -or [string]::IsNullOrWhiteSpace($pkg.Name)) { continue }
@@ -1150,37 +1204,43 @@ function Apply-InstalledDatabaseToRows {
             if ($info.HasUpdate -eq $true) {
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
-                $tb.Foreground = $script:brushOutdatedFg
-                $tb.Text = $app.Name
-                $tb.TextDecorations = $null
+                if ($tb) {
+                    $tb.Foreground = $script:brushOutdatedFg
+                    $tb.Text = $app.Name
+                    $tb.TextDecorations = $null
+                }
                 if ($updateBadge -and $updateText) {
                     $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                 }
                 $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
-                $tb.ToolTip = $tip
+                if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             } else {
                 $countLatest++
                 $row.Tag.Status = "LATEST"
-                $tb.Foreground = $script:brushLatestFg
-                $tb.Text = $app.Name
-                $tb.TextDecorations = $null
+                if ($tb) {
+                    $tb.Foreground = $script:brushLatestFg
+                    $tb.Text = $app.Name
+                    $tb.TextDecorations = $null
+                }
                 if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
                 $tip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
-                $tb.ToolTip = $tip
+                if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             }
         } else {
             $row.Tag.Status = "NONE"
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null
-            $tb.Foreground = $script:brushNoneFg
-            $tb.Text = $app.Name
-            $tb.TextDecorations = $null
+            if ($tb) {
+                $tb.Foreground = $script:brushNoneFg
+                $tb.Text = $app.Name
+                $tb.TextDecorations = $null
+            }
             if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
             $tip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
-            $tb.ToolTip = $tip
+            if ($tb) { $tb.ToolTip = $tip }
             $row.ToolTip = $tip
         }
     }
@@ -1193,6 +1253,7 @@ function Apply-InstalledDatabaseToRows {
 }
 
 function Scan-And-ColorizeApps {
+    if ($script:isWindowClosing) { return }
     if ($script:isScanningApps) {
         Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
         return
@@ -1204,8 +1265,10 @@ function Scan-And-ColorizeApps {
         if ($txtStatus) { $txtStatus.Text = "Đang quét nhanh hệ thống..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+        if ($script:isWindowClosing) { return }
 
         $localItems = Get-LocalInstalledEntries -SkipAppx
+        if ($script:isWindowClosing) { return }
         $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
         $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
         $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -1226,6 +1289,7 @@ function Scan-And-ColorizeApps {
                 $txtStatus.Text = "Phát hiện nhanh $($preStats.Installed) app | Đang kiểm tra bản cập nhật..."
             }
             try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+            if ($script:isWindowClosing) { return }
         }
 
         $wingetItems = [System.Collections.Generic.List[object]]::new()
@@ -1234,6 +1298,7 @@ function Scan-And-ColorizeApps {
 
         try {
             $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
+            if ($script:isWindowClosing) { return }
             if (-not $primary.Available) {
                 $wingetMissing = $true
                 Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry, Runtimes & Appx."
@@ -1252,7 +1317,9 @@ function Scan-And-ColorizeApps {
                         }
                     }
 
+                    if ($script:isWindowClosing) { return }
                     $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
+                    if ($script:isWindowClosing) { return }
                     $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
 
                     if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
@@ -1271,8 +1338,11 @@ function Scan-And-ColorizeApps {
             Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
         }
 
+        if ($script:isWindowClosing) { return }
+
         if (-not $wingetOk -or $wingetItems.Count -lt 5) {
             $appxItems = Get-LocalInstalledEntries
+            if ($script:isWindowClosing) { return }
             foreach ($ax in $appxItems) {
                 $installedList.Add($ax)
                 Set-PreferredMapEntry $idMap $ax.ID $ax
@@ -1305,6 +1375,7 @@ function Scan-And-ColorizeApps {
             return
         }
 
+        if ($script:isWindowClosing) { return }
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
 
@@ -1318,7 +1389,7 @@ function Scan-And-ColorizeApps {
     } finally {
         $script:isScanningApps = $false
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
+        if (-not $script:isWindowClosing -and (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue)) {
             Flush-PendingIconCache
         }
     }

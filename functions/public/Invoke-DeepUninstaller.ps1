@@ -17,6 +17,59 @@ if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
     } catch {}
 }
 
+function Resolve-PathSafe {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
+    try {
+        return (Resolve-Path -LiteralPath $Path -ErrorAction Stop).Path.TrimEnd('\')
+    } catch {
+        return $null
+    }
+}
+
+function Get-DirectoriesSafe {
+    param([string]$RootPath)
+    if ([string]::IsNullOrWhiteSpace($RootPath)) { return @() }
+    try {
+        return [System.IO.Directory]::GetDirectories($RootPath)
+    } catch {
+        return @()
+    }
+}
+
+function Get-FilesRecursiveSafe {
+    param(
+        [string]$RootPath,
+        [string]$SearchPattern = "*"
+    )
+    $results = [System.Collections.Generic.List[string]]::new()
+    if ([string]::IsNullOrWhiteSpace($RootPath) -or -not (Test-Path -LiteralPath $RootPath)) {
+        return @()
+    }
+    $queue = [System.Collections.Generic.Queue[string]]::new()
+    $queue.Enqueue($RootPath)
+    while ($queue.Count -gt 0) {
+        if ($script:isWindowClosing) { break }
+        $dir = $queue.Dequeue()
+        try {
+            foreach ($f in [System.IO.Directory]::GetFiles($dir, $SearchPattern, [System.IO.SearchOption]::TopDirectoryOnly)) {
+                $results.Add($f)
+            }
+        } catch {}
+        try {
+            foreach ($sub in [System.IO.Directory]::GetDirectories($dir)) {
+                $isReparse = try {
+                    ([System.IO.File]::GetAttributes($sub) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0
+                } catch { $true }
+                if (-not $isReparse) {
+                    $queue.Enqueue($sub)
+                }
+            }
+        } catch {}
+    }
+    return @($results)
+}
+
 function Get-SystemInstalledAppsFast {
     $apps = [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
     return @($apps | Sort-Object -Property @{ Expression = { $_.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.DisplayName }; Descending = $false })
@@ -413,13 +466,16 @@ function Find-AppLeftovers {
     }
 
     foreach ($root in $folderRoots) {
+        if ($script:isWindowClosing) { break }
         if (-not (Test-Path -LiteralPath $root)) { continue }
         foreach ($kw in $nameKeywords) {
+            if ($script:isWindowClosing) { break }
             if ($genericStopWords.Contains($kw)) { continue }
             if (Test-PathClaimedByActiveApp -CandidateName $kw -ActiveApps $activeApps) { continue }
             $candidatePath = Join-Path $root $kw
             if (Test-Path -LiteralPath $candidatePath) {
-                $fullPath = (Resolve-Path -LiteralPath $candidatePath).Path.TrimEnd('\')
+                $fullPath = Resolve-PathSafe -Path $candidatePath
+                if (-not $fullPath) { continue }
                 $isSafe = $true
                 foreach ($ex in $exclusions) {
                     if ($fullPath -like "*\$ex\*" -or $fullPath -like "*\$ex") { $isSafe = $false; break }
@@ -476,8 +532,9 @@ function Find-AppLeftovers {
         $wsh = New-Object -ComObject WScript.Shell
         $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
         foreach ($sDir in $shortcutDirs) {
+            if ($script:isWindowClosing) { break }
             if (-not $sDir -or -not (Test-Path -LiteralPath $sDir)) { continue }
-            $lnks = [System.IO.Directory]::GetFiles($sDir, "*.lnk", [System.IO.SearchOption]::AllDirectories)
+            $lnks = Get-FilesRecursiveSafe -RootPath $sDir -SearchPattern "*.lnk"
             foreach ($lnk in $lnks) {
                 try {
                     $lnkName = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
@@ -706,8 +763,9 @@ function Find-SystemOrphanLeftovers {
     }
 
     foreach ($pRoot in $programRoots) {
+        if ($script:isWindowClosing) { break }
         if (-not (Test-Path -LiteralPath $pRoot)) { continue }
-        $subDirs = [System.IO.Directory]::GetDirectories($pRoot)
+        $subDirs = Get-DirectoriesSafe -RootPath $pRoot
         foreach ($sd in $subDirs) {
             $dirName = [System.IO.Path]::GetFileName($sd)
             $isExcluded = $false
@@ -811,9 +869,11 @@ function Find-SystemOrphanLeftovers {
             }
             if (-not $isInstalled) {
                 foreach ($ar in $appDataRoots) {
+                    if ($script:isWindowClosing) { break }
                     $cand = Join-Path $ar $catName
                     if (Test-Path -LiteralPath $cand) {
-                        $full = (Resolve-Path -LiteralPath $cand).Path
+                        $full = Resolve-PathSafe -Path $cand
+                        if (-not $full) { continue }
                         if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
                             continue
                         }
@@ -847,8 +907,9 @@ function Find-SystemOrphanLeftovers {
     try {
         $wsh = New-Object -ComObject WScript.Shell
         foreach ($dp in $desktopPaths) {
+            if ($script:isWindowClosing) { break }
             if (-not (Test-Path -LiteralPath $dp)) { continue }
-            $lnks = [System.IO.Directory]::GetFiles($dp, "*.lnk", [System.IO.SearchOption]::AllDirectories)
+            $lnks = Get-FilesRecursiveSafe -RootPath $dp -SearchPattern "*.lnk"
             foreach ($lnk in $lnks) {
                 try {
                     $sc = $wsh.CreateShortcut($lnk)
@@ -889,7 +950,7 @@ function Show-LeftoverReviewDialog {
         [Parameter(Mandatory = $false)][string]$Title = "Duy$([char]0x1EC7)t & D$([char]0x1ECD)n S$([char]0x1EA1)ch R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)"
     )
 
-    if ($null -eq $Items -or $Items.Count -eq 0) {
+    if ($script:isWindowClosing -or $null -eq $Items -or $Items.Count -eq 0) {
         return [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L }
     }
 
@@ -899,11 +960,30 @@ function Show-LeftoverReviewDialog {
     $dialog.Height = 580
     $dialog.MinWidth = 760
     $dialog.MinHeight = 440
-    if ($OwnerWindow -and ($OwnerWindow -is [System.Windows.Window]) -and $OwnerWindow.IsLoaded) {
-        $dialog.Owner = $OwnerWindow
-        $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
-    } else {
-        $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    $canAttachOwner = $false
+    if ($OwnerWindow -and ($OwnerWindow -is [System.Windows.Window]) -and -not $script:isWindowClosing) {
+        try {
+            if ($OwnerWindow.IsLoaded -and $OwnerWindow.IsVisible) {
+                $src = [System.Windows.PresentationSource]::FromVisual($OwnerWindow)
+                $hwndSrc = $src -as [System.Windows.Interop.HwndSource]
+                $ownerHwnd = (New-Object System.Windows.Interop.WindowInteropHelper($OwnerWindow)).Handle
+                if ($null -ne $hwndSrc -and (-not $hwndSrc.IsDisposed) -and $ownerHwnd -ne [IntPtr]::Zero) {
+                    $canAttachOwner = $true
+                }
+            }
+        } catch {
+            $canAttachOwner = $false
+        }
+    }
+    if ($canAttachOwner) {
+        try {
+            $dialog.Owner = $OwnerWindow
+            $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+        } catch {
+            try { $dialog.Owner = $null } catch {}
+            $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+        }
     }
     $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0A0E15")
     $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
@@ -1042,7 +1122,8 @@ function Show-LeftoverReviewDialog {
             $sizeBlock.Text = "Registry"
             $sizeBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
         } else {
-            $sizeBlock.Text = "$([string]::Format('{0:N2}', $item.SizeMB)) MB"
+            $safeSizeMb = if ($null -ne $item.SizeMB) { try { [double]$item.SizeMB } catch { 0.0 } } else { 0.0 }
+            $sizeBlock.Text = "$([string]::Format('{0:N2}', $safeSizeMb)) MB"
             $sizeBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
         }
         [System.Windows.Controls.Grid]::SetColumn($sizeBlock, 3)
@@ -1193,71 +1274,77 @@ function Show-LeftoverReviewDialog {
         $freed = 0L
         $rebootTotal = 0
 
-        foreach ($ci in $checkedItems) {
-            try {
-                if ($ci.IsRegistry) {
-                    if ($ci.RegistryValueName) {
-                        if (Test-Path -LiteralPath $ci.Path) {
-                            Remove-ItemProperty -LiteralPath $ci.Path -Name $ci.RegistryValueName -Force -ErrorAction Stop
+        $btnDelete.IsEnabled = $false
+        try {
+            foreach ($ci in $checkedItems) {
+                if ($script:isWindowClosing) { break }
+                try {
+                    if ($ci.IsRegistry) {
+                        if ($ci.RegistryValueName) {
+                            if (Test-Path -LiteralPath $ci.Path) {
+                                Remove-ItemProperty -LiteralPath $ci.Path -Name $ci.RegistryValueName -Force -ErrorAction Stop
+                                $removed++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Startup Registry: $($ci.Path) [$($ci.RegistryValueName)]"
+                                }
+                            }
+                        } elseif (Test-Path -LiteralPath $ci.Path) {
+                            Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
                             $removed++
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Startup Registry: $($ci.Path) [$($ci.RegistryValueName)]"
+                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry: $($ci.Path)"
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
-                        Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
-                        $removed++
-                        if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                            Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry: $($ci.Path)"
-                        }
-                    }
-                } elseif (Test-Path -LiteralPath $ci.Path) {
-                    $deletedOk = $false
-                    if ($useRecycle) {
-                        try {
-                            $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
-                            if ($itemObj.PSIsContainer) {
-                                [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($ci.Path) | Out-Null
-                                [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
-                            } else {
-                                [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                        $deletedOk = $false
+                        if ($useRecycle) {
+                            try {
+                                $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
+                                if ($itemObj.PSIsContainer) {
+                                    [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($ci.Path) | Out-Null
+                                    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                                } else {
+                                    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                                }
+                                $deletedOk = $true
+                            } catch {
+                                $deletedOk = $false
                             }
-                            $deletedOk = $true
-                        } catch {
-                            $deletedOk = $false
+                        }
+
+                        if (-not $deletedOk) {
+                            $rbCount = 0
+                            $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                            $rebootTotal += $rbCount
+                        }
+
+                        if ($deletedOk) {
+                            $removed++
+                            $freed += $ci.SizeBytes
+                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch: $($ci.Type) - $($ci.Path)"
+                            }
                         }
                     }
-
-                    if (-not $deletedOk) {
-                        $rbCount = 0
-                        $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
-                        $rebootTotal += $rbCount
+                } catch {
+                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                        Log-Text "[!] L$([char]0x1ED7)i khi x$([char]0x00F3)a $($ci.Path): $($_.Exception.Message)"
                     }
-
-                    if ($deletedOk) {
-                        $removed++
-                        $freed += $ci.SizeBytes
-                        if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                            Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch: $($ci.Type) - $($ci.Path)"
-                        }
-                    }
-                }
-            } catch {
-                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[!] L$([char]0x1ED7)i khi x$([char]0x00F3)a $($ci.Path): $($_.Exception.Message)"
                 }
             }
-        }
 
-        if ($rebootTotal -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
-            Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1ECB)ch x$([char]0x00F3)a $rebootTotal file $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a ngay khi Windows kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i (MoveFileEx)."
-        }
+            if ($rebootTotal -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1ECB)ch x$([char]0x00F3)a $rebootTotal file $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a ngay khi Windows kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i (MoveFileEx)."
+            }
 
-        $dialogResult.Confirmed = $true
-        $dialogResult.RemovedCount = $removed
-        $dialogResult.FreedBytes = $freed
-        $dialogResult.RebootScheduled = $rebootTotal
-        $dialog.Close()
+            $dialogResult.Confirmed = $true
+            $dialogResult.RemovedCount = $removed
+            $dialogResult.FreedBytes = $freed
+            $dialogResult.RebootScheduled = $rebootTotal
+            $dialog.Close()
+        } finally {
+            $btnDelete.IsEnabled = $true
+        }
     })
     $btnStack.Children.Add($btnDelete) | Out-Null
 
@@ -1269,7 +1356,13 @@ function Show-LeftoverReviewDialog {
     $rootGrid.Children.Add($bottomBar) | Out-Null
 
     $dialog.Content = $rootGrid
-    $null = $dialog.ShowDialog()
+    if (-not $script:isWindowClosing) {
+        try {
+            $null = $dialog.ShowDialog()
+        } catch {} finally {
+            try { $dialog.Owner = $null } catch {}
+        }
+    }
 
     return $dialogResult
 }
@@ -1364,7 +1457,9 @@ function Invoke-DeepAppUninstall {
         }
     }
 
+    if ($script:isWindowClosing) { return }
     Start-Sleep -Milliseconds 800
+    if ($script:isWindowClosing) { return }
 
     if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
         [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($safeLoc) | Out-Null
@@ -1373,6 +1468,7 @@ function Invoke-DeepAppUninstall {
     }
 
     $leftovers = Find-AppLeftovers -AppEntry $AppEntry -AllInstalledApps $allInstalledNow
+    if ($script:isWindowClosing) { return }
     if ($leftovers.Count -gt 0) {
         if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
             Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c / Registry c$([char]0x00F2)n s$([char]0x00F3)t l$([char]0x1EA1)i sau khi g$([char]0x1EE1) b$([char]0x1ECF)."
