@@ -104,7 +104,7 @@ $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $deepUninstCs = @' + $q)) | Out-Null
 $sb.AppendLine($deepCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "RestoreDirectorySnapshot"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "ResolveConfigDataLocation"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null

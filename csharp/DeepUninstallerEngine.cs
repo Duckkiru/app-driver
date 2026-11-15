@@ -19,6 +19,7 @@ namespace DuckUtil
         public string Publisher { get; set; }
         public string InstallDate { get; set; }
         public string InstallLocation { get; set; }
+        public string DataLocation { get; set; }
         public string DisplayIcon { get; set; }
         public string IconSourcePath { get; set; }
         public string UninstallString { get; set; }
@@ -284,6 +285,7 @@ namespace DuckUtil
                                     info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
                                     info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
                                     info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    info.DataLocation = ResolveExternalDataLocation(appKey, info.InstallLocation);
                                     info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
                                     info.DisplayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
@@ -407,6 +409,7 @@ namespace DuckUtil
                                         Publisher = publisher,
                                         InstallDate = "",
                                         InstallLocation = rootFolder,
+                                        DataLocation = "",
                                         DisplayIcon = "",
                                         UninstallString = uninstCmd,
                                         QuietUninstallString = uninstCmd,
@@ -430,10 +433,30 @@ namespace DuckUtil
                 try
                 {
                     info.InstallLocation = InferInstallLocation(info.Id, info.DisplayName, info.InstallLocation, info.UninstallString, info.DisplayIcon, dirIndex);
-                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
-                    if (info.SizeBytes == 0 && !string.IsNullOrEmpty(info.InstallLocation))
+                    if (string.IsNullOrEmpty(info.DataLocation) && !string.IsNullOrEmpty(info.InstallLocation))
                     {
-                        info.SizeBytes = GetDirectorySizeCapped(info.InstallLocation, 2, 350);
+                        info.DataLocation = ResolveConfigDataLocation(info.InstallLocation);
+                    }
+                    if (!string.IsNullOrEmpty(info.DataLocation) && !string.IsNullOrEmpty(info.InstallLocation) &&
+                        info.DataLocation.Equals(info.InstallLocation.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        info.DataLocation = "";
+                    }
+                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
+                    if (!string.IsNullOrEmpty(info.InstallLocation))
+                    {
+                        long instDiskSize = GetDirectorySizeCapped(info.InstallLocation, 4, 2500);
+                        if (instDiskSize > info.SizeBytes) info.SizeBytes = instDiskSize;
+                    }
+                    if (!string.IsNullOrEmpty(info.DataLocation))
+                    {
+                        bool isSubOfInstall = !string.IsNullOrEmpty(info.InstallLocation) &&
+                            info.DataLocation.StartsWith(info.InstallLocation.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase);
+                        if (!isSubOfInstall)
+                        {
+                            long dataDiskSize = GetDirectorySizeCapped(info.DataLocation, 4, 2500);
+                            if (dataDiskSize > 0) info.SizeBytes += dataDiskSize;
+                        }
                     }
                     info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
                 }
@@ -441,6 +464,87 @@ namespace DuckUtil
             });
 
             return list;
+        }
+
+        private static bool IsValidExternalDataPath(string candidate, string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(candidate)) return false;
+            try
+            {
+                string cleaned = Environment.ExpandEnvironmentVariables(candidate).Trim().Trim('\"', '\'', ' ').TrimEnd('\\');
+                if (cleaned.Length <= 3) return false;
+                if (!Regex.IsMatch(cleaned, @"^[a-zA-Z]:\\[^<>|""?*]+$")) return false;
+                if (!string.IsNullOrEmpty(installLocation) && cleaned.Equals(installLocation.Trim().TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                string leaf = Path.GetFileName(cleaned) ?? "";
+                if (string.IsNullOrEmpty(leaf)) return false;
+                var genericRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Windows", "System32", "SysWOW64", "Program Files", "Program Files (x86)",
+                    "ProgramData", "Users", "AppData", "Local", "Roaming", "LocalLow", "Games", "Game", "Programs"
+                };
+                if (genericRoots.Contains(leaf)) return false;
+                return Directory.Exists(cleaned);
+            }
+            catch { return false; }
+        }
+
+        private static string ResolveExternalDataLocation(RegistryKey appKey, string installLocation)
+        {
+            if (appKey == null) return "";
+            string[] valueNames = new string[]
+            {
+                "GameInstallPath", "GamePath", "DataPath", "ResourcePath", "InstallPath", "AppPath", "TargetDir"
+            };
+            foreach (string vn in valueNames)
+            {
+                try
+                {
+                    string raw = appKey.GetValue(vn) as string;
+                    if (!string.IsNullOrWhiteSpace(raw) && IsValidExternalDataPath(raw, installLocation))
+                    {
+                        return Environment.ExpandEnvironmentVariables(raw).Trim().Trim('\"', '\'', ' ').TrimEnd('\\');
+                    }
+                }
+                catch {}
+            }
+            return "";
+        }
+
+        public static string ResolveConfigDataLocation(string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(installLocation)) return "";
+            try
+            {
+                if (!Directory.Exists(installLocation)) return "";
+            }
+            catch { return ""; }
+
+            string[] cfgNames = new string[] { "config.ini", "config.json", "launcher_config.ini", "settings.json" };
+            foreach (string cfg in cfgNames)
+            {
+                try
+                {
+                    string cfgPath = Path.Combine(installLocation, cfg);
+                    if (!File.Exists(cfgPath)) continue;
+                    var fi = new FileInfo(cfgPath);
+                    if (fi.Length <= 0 || fi.Length > 262144L) continue;
+                    string txt = File.ReadAllText(cfgPath);
+                    MatchCollection matches = Regex.Matches(txt, @"(?:game_install_path|install_path|game_path|data_path|resource_path|game_biz_path)\s*[=:]\s*[""']?([A-Za-z]:\\(?:\\\\|[^""'\r\n,;}])+)", RegexOptions.IgnoreCase);
+                    foreach (Match m in matches)
+                    {
+                        if (m.Groups.Count < 2) continue;
+                        string cand = m.Groups[1].Value.Replace("\\\\", "\\").Trim('\"', '\'', ' ').TrimEnd('\\');
+                        if (IsValidExternalDataPath(cand, installLocation))
+                        {
+                            return cand;
+                        }
+                    }
+                }
+                catch {}
+            }
+            return "";
         }
 
         private static string InferInstallLocation(string subKeyName, string displayName, string installLocation, string uninstallString, string displayIcon, Dictionary<string, string> dirIndex)

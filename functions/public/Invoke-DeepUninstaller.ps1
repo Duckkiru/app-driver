@@ -76,6 +76,12 @@ function Test-SafeAppDirectoryForCleanup {
                 $matchedOwner = $true
             }
         }
+        if (-not $matchedOwner -and $AppEntry.PSObject.Properties['DataLocation'] -and $AppEntry.DataLocation) {
+            $dataRegLoc = $AppEntry.DataLocation.Trim().TrimEnd('\')
+            if ($dataRegLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -and $parts.Count -ge 2) {
+                $matchedOwner = $true
+            }
+        }
         if (-not $matchedOwner) { return $false }
     }
 
@@ -88,6 +94,13 @@ function Test-SafeAppDirectoryForCleanup {
             if ($otherLoc) {
                 if ($otherLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -or
                     $otherLoc.StartsWith($normWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    return $false
+                }
+            }
+            $otherDataLoc = if ($other.PSObject.Properties['DataLocation'] -and $other.DataLocation) { $other.DataLocation.Trim().TrimEnd('\') } else { "" }
+            if ($otherDataLoc) {
+                if ($otherDataLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -or
+                    $otherDataLoc.StartsWith($normWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
                     return $false
                 }
             }
@@ -325,8 +338,32 @@ function Find-AppLeftovers {
         }
     }
 
+    if ($AppEntry.PSObject.Properties['DataLocation'] -and $AppEntry.DataLocation -and (Test-Path -LiteralPath $AppEntry.DataLocation)) {
+        $dataLoc = try { (Resolve-Path -LiteralPath $AppEntry.DataLocation).Path.TrimEnd('\') } catch { $AppEntry.DataLocation.Trim().TrimEnd('\') }
+        $isDataSafe = $true
+        foreach ($ex in $exclusions) {
+            if ($dataLoc -like "*\$ex\*" -or $dataLoc -like "*\$ex") { $isDataSafe = $false; break }
+        }
+        if ($isDataSafe -and (Test-SafeAppDirectoryForCleanup -Path $dataLoc -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)) {
+            if ($seenPaths.Add($dataLoc)) {
+                $dataSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($dataLoc, 4)
+                $leftovers.Add([PSCustomObject]@{
+                    Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c d$([char]0x1EEF) li$([char]0x1EC7)u Game/App"
+                    Confidence        = "An to$([char]0x00E0)n 100%"
+                    AppName           = $AppEntry.DisplayName
+                    Path              = $dataLoc
+                    SizeBytes         = [long]$dataSize
+                    SizeMB            = [math]::Round($dataSize / 1MB, 2)
+                    IsRegistry        = $false
+                    RegistryValueName = ""
+                })
+            }
+        }
+    }
+
+    $localLowRoot = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE "AppData\LocalLow" } else { "" }
     $folderRoots = [System.Collections.Generic.List[string]]::new()
-    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
+    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
         if ($baseRoot -and (Test-Path -LiteralPath $baseRoot)) {
             $folderRoots.Add($baseRoot)
         }
@@ -338,7 +375,7 @@ function Find-AppLeftovers {
         }
     }
     foreach ($vf in ($vendorFolders | Select-Object -Unique)) {
-        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, "C:\ProgramData")) {
+        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, "C:\ProgramData")) {
             if ($baseRoot) {
                 $pubSub = Join-Path $baseRoot $vf
                 if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
@@ -629,8 +666,13 @@ function Find-SystemOrphanLeftovers {
 
     $activeInstallLocs = [System.Collections.Generic.List[string]]::new()
     foreach ($ia in $InstalledApps) {
-        if (-not $ia.IsBrokenOrphan -and -not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
-            $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
+        if (-not $ia.IsBrokenOrphan) {
+            if (-not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
+                $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
+            }
+            if ($ia.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($ia.DataLocation)) {
+                $activeInstallLocs.Add($ia.DataLocation.Trim().TrimEnd('\'))
+            }
         }
     }
 

@@ -4852,13 +4852,23 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0" Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
-                                                Background="#1E293B" Foreground="#38BDF8"/>
-                                        <Button Name="btnFilterUninstBroken" Content="Xóa sai cách / Lỗi" Style="{StaticResource FilterTabButton}"/>
-                                    </StackPanel>
-                                </Border>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
+                                                    Background="#1E293B" Foreground="#38BDF8"/>
+                                            <Button Name="btnFilterUninstBroken" Content="Xóa sai cách / Lỗi" Style="{StaticResource FilterTabButton}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Text="Sắp xếp:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                    <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Name="btnSortUninstName" Content="Theo tên (A-Z)" Style="{StaticResource FilterTabButton}"
+                                                    Background="#1E293B" Foreground="#38BDF8"/>
+                                            <Button Name="btnSortUninstSize" Content="Theo dung lượng" Style="{StaticResource FilterTabButton}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
 
                                 <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Chưa tải danh sách"
                                            Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -4877,10 +4887,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <ColumnDefinition Width="115"/>
                                 <ColumnDefinition Width="48"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Text="TÊN ỨNG DỤNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG ▲" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
                             <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="DUNG LƯỢNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="0,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
                             <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#475569" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#475569" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
@@ -6399,6 +6409,7 @@ namespace DuckUtil
         public string Publisher { get; set; }
         public string InstallDate { get; set; }
         public string InstallLocation { get; set; }
+        public string DataLocation { get; set; }
         public string DisplayIcon { get; set; }
         public string IconSourcePath { get; set; }
         public string UninstallString { get; set; }
@@ -6664,6 +6675,7 @@ namespace DuckUtil
                                     info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
                                     info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
                                     info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    info.DataLocation = ResolveExternalDataLocation(appKey, info.InstallLocation);
                                     info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
                                     info.DisplayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
@@ -6787,6 +6799,7 @@ namespace DuckUtil
                                         Publisher = publisher,
                                         InstallDate = "",
                                         InstallLocation = rootFolder,
+                                        DataLocation = "",
                                         DisplayIcon = "",
                                         UninstallString = uninstCmd,
                                         QuietUninstallString = uninstCmd,
@@ -6810,10 +6823,30 @@ namespace DuckUtil
                 try
                 {
                     info.InstallLocation = InferInstallLocation(info.Id, info.DisplayName, info.InstallLocation, info.UninstallString, info.DisplayIcon, dirIndex);
-                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
-                    if (info.SizeBytes == 0 && !string.IsNullOrEmpty(info.InstallLocation))
+                    if (string.IsNullOrEmpty(info.DataLocation) && !string.IsNullOrEmpty(info.InstallLocation))
                     {
-                        info.SizeBytes = GetDirectorySizeCapped(info.InstallLocation, 2, 350);
+                        info.DataLocation = ResolveConfigDataLocation(info.InstallLocation);
+                    }
+                    if (!string.IsNullOrEmpty(info.DataLocation) && !string.IsNullOrEmpty(info.InstallLocation) &&
+                        info.DataLocation.Equals(info.InstallLocation.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        info.DataLocation = "";
+                    }
+                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
+                    if (!string.IsNullOrEmpty(info.InstallLocation))
+                    {
+                        long instDiskSize = GetDirectorySizeCapped(info.InstallLocation, 4, 2500);
+                        if (instDiskSize > info.SizeBytes) info.SizeBytes = instDiskSize;
+                    }
+                    if (!string.IsNullOrEmpty(info.DataLocation))
+                    {
+                        bool isSubOfInstall = !string.IsNullOrEmpty(info.InstallLocation) &&
+                            info.DataLocation.StartsWith(info.InstallLocation.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase);
+                        if (!isSubOfInstall)
+                        {
+                            long dataDiskSize = GetDirectorySizeCapped(info.DataLocation, 4, 2500);
+                            if (dataDiskSize > 0) info.SizeBytes += dataDiskSize;
+                        }
                     }
                     info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
                 }
@@ -6821,6 +6854,87 @@ namespace DuckUtil
             });
 
             return list;
+        }
+
+        private static bool IsValidExternalDataPath(string candidate, string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(candidate)) return false;
+            try
+            {
+                string cleaned = Environment.ExpandEnvironmentVariables(candidate).Trim().Trim('\"', '\'', ' ').TrimEnd('\\');
+                if (cleaned.Length <= 3) return false;
+                if (!Regex.IsMatch(cleaned, @"^[a-zA-Z]:\\[^<>|""?*]+$")) return false;
+                if (!string.IsNullOrEmpty(installLocation) && cleaned.Equals(installLocation.Trim().TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                string leaf = Path.GetFileName(cleaned) ?? "";
+                if (string.IsNullOrEmpty(leaf)) return false;
+                var genericRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Windows", "System32", "SysWOW64", "Program Files", "Program Files (x86)",
+                    "ProgramData", "Users", "AppData", "Local", "Roaming", "LocalLow", "Games", "Game", "Programs"
+                };
+                if (genericRoots.Contains(leaf)) return false;
+                return Directory.Exists(cleaned);
+            }
+            catch { return false; }
+        }
+
+        private static string ResolveExternalDataLocation(RegistryKey appKey, string installLocation)
+        {
+            if (appKey == null) return "";
+            string[] valueNames = new string[]
+            {
+                "GameInstallPath", "GamePath", "DataPath", "ResourcePath", "InstallPath", "AppPath", "TargetDir"
+            };
+            foreach (string vn in valueNames)
+            {
+                try
+                {
+                    string raw = appKey.GetValue(vn) as string;
+                    if (!string.IsNullOrWhiteSpace(raw) && IsValidExternalDataPath(raw, installLocation))
+                    {
+                        return Environment.ExpandEnvironmentVariables(raw).Trim().Trim('\"', '\'', ' ').TrimEnd('\\');
+                    }
+                }
+                catch {}
+            }
+            return "";
+        }
+
+        public static string ResolveConfigDataLocation(string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(installLocation)) return "";
+            try
+            {
+                if (!Directory.Exists(installLocation)) return "";
+            }
+            catch { return ""; }
+
+            string[] cfgNames = new string[] { "config.ini", "config.json", "launcher_config.ini", "settings.json" };
+            foreach (string cfg in cfgNames)
+            {
+                try
+                {
+                    string cfgPath = Path.Combine(installLocation, cfg);
+                    if (!File.Exists(cfgPath)) continue;
+                    var fi = new FileInfo(cfgPath);
+                    if (fi.Length <= 0 || fi.Length > 262144L) continue;
+                    string txt = File.ReadAllText(cfgPath);
+                    MatchCollection matches = Regex.Matches(txt, @"(?:game_install_path|install_path|game_path|data_path|resource_path|game_biz_path)\s*[=:]\s*[""']?([A-Za-z]:\\(?:\\\\|[^""'\r\n,;}])+)", RegexOptions.IgnoreCase);
+                    foreach (Match m in matches)
+                    {
+                        if (m.Groups.Count < 2) continue;
+                        string cand = m.Groups[1].Value.Replace("\\\\", "\\").Trim('\"', '\'', ' ').TrimEnd('\\');
+                        if (IsValidExternalDataPath(cand, installLocation))
+                        {
+                            return cand;
+                        }
+                    }
+                }
+                catch {}
+            }
+            return "";
         }
 
         private static string InferInstallLocation(string subKeyName, string displayName, string installLocation, string uninstallString, string displayIcon, Dictionary<string, string> dirIndex)
@@ -8122,7 +8236,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "RestoreDirectorySnapshot"
+        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "ResolveConfigDataLocation"
     } catch {}
 }
 
@@ -9638,6 +9752,12 @@ function Test-SafeAppDirectoryForCleanup {
                 $matchedOwner = $true
             }
         }
+        if (-not $matchedOwner -and $AppEntry.PSObject.Properties['DataLocation'] -and $AppEntry.DataLocation) {
+            $dataRegLoc = $AppEntry.DataLocation.Trim().TrimEnd('\')
+            if ($dataRegLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -and $parts.Count -ge 2) {
+                $matchedOwner = $true
+            }
+        }
         if (-not $matchedOwner) { return $false }
     }
 
@@ -9650,6 +9770,13 @@ function Test-SafeAppDirectoryForCleanup {
             if ($otherLoc) {
                 if ($otherLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -or
                     $otherLoc.StartsWith($normWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    return $false
+                }
+            }
+            $otherDataLoc = if ($other.PSObject.Properties['DataLocation'] -and $other.DataLocation) { $other.DataLocation.Trim().TrimEnd('\') } else { "" }
+            if ($otherDataLoc) {
+                if ($otherDataLoc.Equals($norm, [System.StringComparison]::OrdinalIgnoreCase) -or
+                    $otherDataLoc.StartsWith($normWithSlash, [System.StringComparison]::OrdinalIgnoreCase)) {
                     return $false
                 }
             }
@@ -9887,8 +10014,32 @@ function Find-AppLeftovers {
         }
     }
 
+    if ($AppEntry.PSObject.Properties['DataLocation'] -and $AppEntry.DataLocation -and (Test-Path -LiteralPath $AppEntry.DataLocation)) {
+        $dataLoc = try { (Resolve-Path -LiteralPath $AppEntry.DataLocation).Path.TrimEnd('\') } catch { $AppEntry.DataLocation.Trim().TrimEnd('\') }
+        $isDataSafe = $true
+        foreach ($ex in $exclusions) {
+            if ($dataLoc -like "*\$ex\*" -or $dataLoc -like "*\$ex") { $isDataSafe = $false; break }
+        }
+        if ($isDataSafe -and (Test-SafeAppDirectoryForCleanup -Path $dataLoc -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)) {
+            if ($seenPaths.Add($dataLoc)) {
+                $dataSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($dataLoc, 4)
+                $leftovers.Add([PSCustomObject]@{
+                    Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c d$([char]0x1EEF) li$([char]0x1EC7)u Game/App"
+                    Confidence        = "An to$([char]0x00E0)n 100%"
+                    AppName           = $AppEntry.DisplayName
+                    Path              = $dataLoc
+                    SizeBytes         = [long]$dataSize
+                    SizeMB            = [math]::Round($dataSize / 1MB, 2)
+                    IsRegistry        = $false
+                    RegistryValueName = ""
+                })
+            }
+        }
+    }
+
+    $localLowRoot = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE "AppData\LocalLow" } else { "" }
     $folderRoots = [System.Collections.Generic.List[string]]::new()
-    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
+    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
         if ($baseRoot -and (Test-Path -LiteralPath $baseRoot)) {
             $folderRoots.Add($baseRoot)
         }
@@ -9900,7 +10051,7 @@ function Find-AppLeftovers {
         }
     }
     foreach ($vf in ($vendorFolders | Select-Object -Unique)) {
-        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, "C:\ProgramData")) {
+        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, "C:\ProgramData")) {
             if ($baseRoot) {
                 $pubSub = Join-Path $baseRoot $vf
                 if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
@@ -10191,8 +10342,13 @@ function Find-SystemOrphanLeftovers {
 
     $activeInstallLocs = [System.Collections.Generic.List[string]]::new()
     foreach ($ia in $InstalledApps) {
-        if (-not $ia.IsBrokenOrphan -and -not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
-            $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
+        if (-not $ia.IsBrokenOrphan) {
+            if (-not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
+                $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
+            }
+            if ($ia.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($ia.DataLocation)) {
+                $activeInstallLocs.Add($ia.DataLocation.Trim().TrimEnd('\'))
+            }
         }
     }
 
@@ -11619,6 +11775,10 @@ $btnScanOrphans          = $window.FindName("btnScanOrphans")
 $btnRefreshUninstaller   = $window.FindName("btnRefreshUninstaller")
 $btnFilterUninstAll      = $window.FindName("btnFilterUninstAll")
 $btnFilterUninstBroken   = $window.FindName("btnFilterUninstBroken")
+$btnSortUninstName       = $window.FindName("btnSortUninstName")
+$btnSortUninstSize       = $window.FindName("btnSortUninstSize")
+$hdrUninstName           = $window.FindName("hdrUninstName")
+$hdrUninstSize           = $window.FindName("hdrUninstSize")
 $txtUninstallSearch      = $window.FindName("txtUninstallSearch")
 $btnClearUninstallSearch = $window.FindName("btnClearUninstallSearch")
 $btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
@@ -11629,6 +11789,7 @@ $uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
 $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
 $script:uninstallerFilterMode = "All"
+$script:uninstallerSortMode   = "Name"
 $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, System.Windows.Media.ImageSource]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
@@ -11653,6 +11814,9 @@ $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
 $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFolderBg.Freeze()
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushUninstFolderBorder.Freeze()
+$script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
+$script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
+$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x47, 0x55, 0x69)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:catalogIconLookup = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 if ($AppCatalog) {
@@ -11857,6 +12021,7 @@ function Apply-UninstallerFilter {
     $q = if ($txtUninstallSearch) { $txtUninstallSearch.Text.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $brokenCount = 0
+    [long]$visibleBytes = 0
 
     foreach ($entry in $script:uninstallerRowEntries) {
         $app = $entry.App
@@ -11868,6 +12033,9 @@ function Apply-UninstallerFilter {
         if ($matchSearch -and $matchFilter) {
             $entry.Row.Visibility = [System.Windows.Visibility]::Visible
             $visibleCount++
+            if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
+                $visibleBytes += [long]$app.SizeBytes
+            }
         } else {
             $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
         }
@@ -11875,9 +12043,68 @@ function Apply-UninstallerFilter {
 
     if ($txtUninstallerSummary) {
         $total = $script:cachedUninstallerApps.Count
-        $txtUninstallerSummary.Text = "Đang hiển thị $visibleCount / $total ứng dụng ($brokenCount ứng dụng lỗi/mồ côi)"
+        $vMb = [double]$visibleBytes / 1MB
+        $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
+        $txtUninstallerSummary.Text = "Đang hiển thị $visibleCount / $total ứng dụng (Tổng: $totalSizeStr • $brokenCount lỗi/mồ côi)"
     }
     Update-UninstallerSelectionCount
+}
+
+function Set-UninstallerSortMode {
+    param([string]$Mode)
+    if ([string]::IsNullOrWhiteSpace($Mode)) { $Mode = "Name" }
+    $script:uninstallerSortMode = $Mode
+
+    if ($Mode -eq "Size") {
+        if ($btnSortUninstSize) {
+            $btnSortUninstSize.Background = $script:brushUninstFilterActiveBg
+            $btnSortUninstSize.Foreground = $script:brushUninstFilterActiveFg
+        }
+        if ($btnSortUninstName) {
+            $btnSortUninstName.Background = $script:brushTransparent
+            $btnSortUninstName.Foreground = $script:brushUninstDark
+        }
+        if ($hdrUninstName) {
+            $hdrUninstName.Text = "TÊN ỨNG DỤNG"
+            $hdrUninstName.Foreground = $script:brushUninstHeaderInactiveFg
+        }
+        if ($hdrUninstSize) {
+            $hdrUninstSize.Text = "DUNG LƯỢNG ▼"
+            $hdrUninstSize.Foreground = $script:brushUninstFilterActiveFg
+        }
+    } else {
+        if ($btnSortUninstName) {
+            $btnSortUninstName.Background = $script:brushUninstFilterActiveBg
+            $btnSortUninstName.Foreground = $script:brushUninstFilterActiveFg
+        }
+        if ($btnSortUninstSize) {
+            $btnSortUninstSize.Background = $script:brushTransparent
+            $btnSortUninstSize.Foreground = $script:brushUninstDark
+        }
+        if ($hdrUninstName) {
+            $hdrUninstName.Text = "TÊN ỨNG DỤNG ▲"
+            $hdrUninstName.Foreground = $script:brushUninstFilterActiveFg
+        }
+        if ($hdrUninstSize) {
+            $hdrUninstSize.Text = "DUNG LƯỢNG"
+            $hdrUninstSize.Foreground = $script:brushUninstHeaderInactiveFg
+        }
+    }
+
+    if ($uninstallerRowsPanel -and $script:uninstallerRowEntries -and $script:uninstallerRowEntries.Count -gt 0) {
+        $sortedEntries = if ($Mode -eq "Size") {
+            @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [long]$_.App.SizeBytes }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
+        } else {
+            @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
+        }
+        $script:uninstallerRowEntries.Clear()
+        $uninstallerRowsPanel.Children.Clear()
+        foreach ($entry in $sortedEntries) {
+            [void]$script:uninstallerRowEntries.Add($entry)
+            [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+        }
+    }
+    Apply-UninstallerFilter
 }
 
 $script:uninstCbCheckedHandler = [System.Windows.RoutedEventHandler]{
@@ -12084,7 +12311,8 @@ function Update-UninstallerList {
         [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
         [void]$nameGrid.Children.Add($nameTb)
 
-        $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)`nLệnh gỡ: $($app.UninstallString)"
+        $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
+        $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
 
         [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
         [void]$rowGrid.Children.Add($nameGrid)
@@ -12168,11 +12396,17 @@ function Update-UninstallerList {
         $folderIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $folderBtn.Child = $folderIcon
 
-        $hasLoc = (-not [string]::IsNullOrWhiteSpace($app.InstallLocation)) -and (Test-Path -LiteralPath $app.InstallLocation)
-        if ($hasLoc) {
+        $targetFolder = if (-not [string]::IsNullOrWhiteSpace($app.InstallLocation) -and (Test-Path -LiteralPath $app.InstallLocation)) {
+            $app.InstallLocation
+        } elseif ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation) -and (Test-Path -LiteralPath $app.DataLocation)) {
+            $app.DataLocation
+        } else {
+            ""
+        }
+        if (-not [string]::IsNullOrWhiteSpace($targetFolder)) {
             $folderBtn.Cursor = [System.Windows.Input.Cursors]::Hand
-            $folderBtn.Tag = $app.InstallLocation
-            $folderBtn.ToolTip = "Mở thư mục cài đặt: $($app.InstallLocation)"
+            $folderBtn.Tag = $targetFolder
+            $folderBtn.ToolTip = "Mở thư mục: $targetFolder"
             $folderBtn.Add_MouseLeftButtonUp($script:uninstFolderClickHandler)
         } else {
             $folderBtn.Opacity = 0.25
@@ -12198,10 +12432,26 @@ function Update-UninstallerList {
         [void]$uninstallerRowsPanel.Children.Add($rowBorder)
     }
 
-    Apply-UninstallerFilter
+    Set-UninstallerSortMode $script:uninstallerSortMode
     if ($script:pendingUninstIcons.Count -gt 0) {
         $script:uninstIconTimer.Start()
     }
+}
+
+if ($btnSortUninstName) {
+    $btnSortUninstName.Add_Click({ Set-UninstallerSortMode "Name" })
+}
+
+if ($btnSortUninstSize) {
+    $btnSortUninstSize.Add_Click({ Set-UninstallerSortMode "Size" })
+}
+
+if ($hdrUninstName) {
+    $hdrUninstName.Add_MouseLeftButtonUp({ Set-UninstallerSortMode "Name" })
+}
+
+if ($hdrUninstSize) {
+    $hdrUninstSize.Add_MouseLeftButtonUp({ Set-UninstallerSortMode "Size" })
 }
 
 if ($btnFilterUninstAll) {

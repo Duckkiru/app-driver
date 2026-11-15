@@ -477,6 +477,10 @@ $btnScanOrphans          = $window.FindName("btnScanOrphans")
 $btnRefreshUninstaller   = $window.FindName("btnRefreshUninstaller")
 $btnFilterUninstAll      = $window.FindName("btnFilterUninstAll")
 $btnFilterUninstBroken   = $window.FindName("btnFilterUninstBroken")
+$btnSortUninstName       = $window.FindName("btnSortUninstName")
+$btnSortUninstSize       = $window.FindName("btnSortUninstSize")
+$hdrUninstName           = $window.FindName("hdrUninstName")
+$hdrUninstSize           = $window.FindName("hdrUninstSize")
 $txtUninstallSearch      = $window.FindName("txtUninstallSearch")
 $btnClearUninstallSearch = $window.FindName("btnClearUninstallSearch")
 $btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
@@ -487,6 +491,7 @@ $uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
 $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
 $script:uninstallerFilterMode = "All"
+$script:uninstallerSortMode   = "Name"
 $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, System.Windows.Media.ImageSource]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
@@ -511,6 +516,9 @@ $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
 $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFolderBg.Freeze()
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushUninstFolderBorder.Freeze()
+$script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
+$script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
+$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x47, 0x55, 0x69)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:catalogIconLookup = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 if ($AppCatalog) {
@@ -715,6 +723,7 @@ function Apply-UninstallerFilter {
     $q = if ($txtUninstallSearch) { $txtUninstallSearch.Text.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $brokenCount = 0
+    [long]$visibleBytes = 0
 
     foreach ($entry in $script:uninstallerRowEntries) {
         $app = $entry.App
@@ -726,6 +735,9 @@ function Apply-UninstallerFilter {
         if ($matchSearch -and $matchFilter) {
             $entry.Row.Visibility = [System.Windows.Visibility]::Visible
             $visibleCount++
+            if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
+                $visibleBytes += [long]$app.SizeBytes
+            }
         } else {
             $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
         }
@@ -733,9 +745,68 @@ function Apply-UninstallerFilter {
 
     if ($txtUninstallerSummary) {
         $total = $script:cachedUninstallerApps.Count
-        $txtUninstallerSummary.Text = "Đang hiển thị $visibleCount / $total ứng dụng ($brokenCount ứng dụng lỗi/mồ côi)"
+        $vMb = [double]$visibleBytes / 1MB
+        $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
+        $txtUninstallerSummary.Text = "Đang hiển thị $visibleCount / $total ứng dụng (Tổng: $totalSizeStr • $brokenCount lỗi/mồ côi)"
     }
     Update-UninstallerSelectionCount
+}
+
+function Set-UninstallerSortMode {
+    param([string]$Mode)
+    if ([string]::IsNullOrWhiteSpace($Mode)) { $Mode = "Name" }
+    $script:uninstallerSortMode = $Mode
+
+    if ($Mode -eq "Size") {
+        if ($btnSortUninstSize) {
+            $btnSortUninstSize.Background = $script:brushUninstFilterActiveBg
+            $btnSortUninstSize.Foreground = $script:brushUninstFilterActiveFg
+        }
+        if ($btnSortUninstName) {
+            $btnSortUninstName.Background = $script:brushTransparent
+            $btnSortUninstName.Foreground = $script:brushUninstDark
+        }
+        if ($hdrUninstName) {
+            $hdrUninstName.Text = "TÊN ỨNG DỤNG"
+            $hdrUninstName.Foreground = $script:brushUninstHeaderInactiveFg
+        }
+        if ($hdrUninstSize) {
+            $hdrUninstSize.Text = "DUNG LƯỢNG ▼"
+            $hdrUninstSize.Foreground = $script:brushUninstFilterActiveFg
+        }
+    } else {
+        if ($btnSortUninstName) {
+            $btnSortUninstName.Background = $script:brushUninstFilterActiveBg
+            $btnSortUninstName.Foreground = $script:brushUninstFilterActiveFg
+        }
+        if ($btnSortUninstSize) {
+            $btnSortUninstSize.Background = $script:brushTransparent
+            $btnSortUninstSize.Foreground = $script:brushUninstDark
+        }
+        if ($hdrUninstName) {
+            $hdrUninstName.Text = "TÊN ỨNG DỤNG ▲"
+            $hdrUninstName.Foreground = $script:brushUninstFilterActiveFg
+        }
+        if ($hdrUninstSize) {
+            $hdrUninstSize.Text = "DUNG LƯỢNG"
+            $hdrUninstSize.Foreground = $script:brushUninstHeaderInactiveFg
+        }
+    }
+
+    if ($uninstallerRowsPanel -and $script:uninstallerRowEntries -and $script:uninstallerRowEntries.Count -gt 0) {
+        $sortedEntries = if ($Mode -eq "Size") {
+            @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [long]$_.App.SizeBytes }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
+        } else {
+            @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
+        }
+        $script:uninstallerRowEntries.Clear()
+        $uninstallerRowsPanel.Children.Clear()
+        foreach ($entry in $sortedEntries) {
+            [void]$script:uninstallerRowEntries.Add($entry)
+            [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+        }
+    }
+    Apply-UninstallerFilter
 }
 
 $script:uninstCbCheckedHandler = [System.Windows.RoutedEventHandler]{
@@ -942,7 +1013,8 @@ function Update-UninstallerList {
         [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
         [void]$nameGrid.Children.Add($nameTb)
 
-        $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)`nLệnh gỡ: $($app.UninstallString)"
+        $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
+        $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
 
         [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
         [void]$rowGrid.Children.Add($nameGrid)
@@ -1026,11 +1098,17 @@ function Update-UninstallerList {
         $folderIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $folderBtn.Child = $folderIcon
 
-        $hasLoc = (-not [string]::IsNullOrWhiteSpace($app.InstallLocation)) -and (Test-Path -LiteralPath $app.InstallLocation)
-        if ($hasLoc) {
+        $targetFolder = if (-not [string]::IsNullOrWhiteSpace($app.InstallLocation) -and (Test-Path -LiteralPath $app.InstallLocation)) {
+            $app.InstallLocation
+        } elseif ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation) -and (Test-Path -LiteralPath $app.DataLocation)) {
+            $app.DataLocation
+        } else {
+            ""
+        }
+        if (-not [string]::IsNullOrWhiteSpace($targetFolder)) {
             $folderBtn.Cursor = [System.Windows.Input.Cursors]::Hand
-            $folderBtn.Tag = $app.InstallLocation
-            $folderBtn.ToolTip = "Mở thư mục cài đặt: $($app.InstallLocation)"
+            $folderBtn.Tag = $targetFolder
+            $folderBtn.ToolTip = "Mở thư mục: $targetFolder"
             $folderBtn.Add_MouseLeftButtonUp($script:uninstFolderClickHandler)
         } else {
             $folderBtn.Opacity = 0.25
@@ -1056,10 +1134,26 @@ function Update-UninstallerList {
         [void]$uninstallerRowsPanel.Children.Add($rowBorder)
     }
 
-    Apply-UninstallerFilter
+    Set-UninstallerSortMode $script:uninstallerSortMode
     if ($script:pendingUninstIcons.Count -gt 0) {
         $script:uninstIconTimer.Start()
     }
+}
+
+if ($btnSortUninstName) {
+    $btnSortUninstName.Add_Click({ Set-UninstallerSortMode "Name" })
+}
+
+if ($btnSortUninstSize) {
+    $btnSortUninstSize.Add_Click({ Set-UninstallerSortMode "Size" })
+}
+
+if ($hdrUninstName) {
+    $hdrUninstName.Add_MouseLeftButtonUp({ Set-UninstallerSortMode "Name" })
+}
+
+if ($hdrUninstSize) {
+    $hdrUninstSize.Add_MouseLeftButtonUp({ Set-UninstallerSortMode "Size" })
 }
 
 if ($btnFilterUninstAll) {
