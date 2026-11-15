@@ -4879,7 +4879,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <Border Grid.Row="1" Name="UninstallerHeaderBorder" Background="#090D14" Height="34"
                             Margin="16,8,0,0" HorizontalAlignment="Left"
                             Width="{Binding ActualWidth, ElementName=UninstallerRowsPanel}"
-                            BorderBrush="#26FFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
+                            BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
                         <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="38"/>
@@ -4890,17 +4890,17 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <ColumnDefinition Width="115"/>
                                 <ColumnDefinition Width="54"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
-                            <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
-                            <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
-                            <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
-                            <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
@@ -11957,16 +11957,9 @@ $script:uninstallerSortMode   = "Name"
 $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, System.Windows.Media.ImageSource]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
-$script:brushUninstRowBg              = [System.Windows.Media.LinearGradientBrush]::new(
-    [System.Windows.Media.Color]::FromArgb(255, 0x10, 0x16, 0x22),
-    [System.Windows.Media.Color]::FromArgb(255, 0x0B, 0x0F, 0x18),
-    [System.Windows.Point]::new(0, 0),
-    [System.Windows.Point]::new(0, 1)
-); $script:brushUninstRowBg.Freeze()
-$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x1C, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowBorder.Freeze()
-$script:brushUninstColDivider         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x1C, 0xFF, 0xFF, 0xFF)); $script:brushUninstColDivider.Freeze()
-$script:brushUninstRowDarkSeam        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x05, 0x07, 0x0C)); $script:brushUninstRowDarkSeam.Freeze()
-$script:brushUninstRowTopHighlight    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x09, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowTopHighlight.Freeze()
+$script:brushUninstRowBg              = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0E, 0x13, 0x1D)); $script:brushUninstRowBg.Freeze()
+$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x13, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowBorder.Freeze()
+$script:brushUninstColDivider         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x11, 0xFF, 0xFF, 0xFF)); $script:brushUninstColDivider.Freeze()
 $script:brushUninstRowHover           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushUninstRowHover.Freeze()
 $script:brushUninstRowCheckedBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x24, 0x3A)); $script:brushUninstRowCheckedBg.Freeze()
 $script:brushUninstRowCheckedBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushUninstRowCheckedBorder.Freeze()
@@ -12342,7 +12335,7 @@ $glUninstCol6 = New-Object System.Windows.GridLength(54, [System.Windows.GridUni
 $glUninstNameIcon = New-Object System.Windows.GridLength(28, [System.Windows.GridUnitType]::Pixel)
 
 $cornerUninstRow    = New-Object System.Windows.CornerRadius(0)
-$thicknessTableRow  = New-Object System.Windows.Thickness(1, 0, 1, 0)
+$thicknessTableRow  = New-Object System.Windows.Thickness(1, 0, 1, 1)
 $marginUninstName   = New-Object System.Windows.Thickness(10, 0, 10, 0)
 $marginUninstCol    = New-Object System.Windows.Thickness(10, 0, 10, 0)
 $marginUninstSize   = New-Object System.Windows.Thickness(8, 0, 12, 0)
@@ -12396,24 +12389,6 @@ function Update-UninstallerList {
         [void]$rowGrid.ColumnDefinitions.Add($c4)
         [void]$rowGrid.ColumnDefinitions.Add($c5)
         [void]$rowGrid.ColumnDefinitions.Add($c6)
-
-        $topLip = New-Object System.Windows.Controls.Border
-        $topLip.Height = 1
-        $topLip.Background = $script:brushUninstRowTopHighlight
-        $topLip.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
-        $topLip.SnapsToDevicePixels = $true
-        $topLip.IsHitTestVisible = $false
-        [System.Windows.Controls.Grid]::SetColumnSpan($topLip, 7)
-        [void]$rowGrid.Children.Add($topLip)
-
-        $bottomSeam = New-Object System.Windows.Controls.Border
-        $bottomSeam.Height = 2
-        $bottomSeam.Background = $script:brushUninstRowDarkSeam
-        $bottomSeam.VerticalAlignment = [System.Windows.VerticalAlignment]::Bottom
-        $bottomSeam.SnapsToDevicePixels = $true
-        $bottomSeam.IsHitTestVisible = $false
-        [System.Windows.Controls.Grid]::SetColumnSpan($bottomSeam, 7)
-        [void]$rowGrid.Children.Add($bottomSeam)
 
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
