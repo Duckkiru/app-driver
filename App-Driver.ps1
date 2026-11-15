@@ -1104,6 +1104,7 @@ $appsRawJson = @'
     "Category":  "Development",
     "Url":  "https://zed.dev/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=zed.dev\u0026sz=128",
+    "IconBg":  "light",
     "IDn":  64
   },
   {
@@ -11511,7 +11512,7 @@ $script:brushLinkBtnHoverBdr  = [System.Windows.Media.SolidColorBrush]::new([Sys
 $script:brushLinkBtnHoverFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushLinkBtnHoverFg.Freeze()
 
 $script:brushIconBadgeBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(14, 255, 255, 255)); $script:brushIconBadgeBg.Freeze()
-$script:brushIconBadgeLightBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(245, 255, 255, 255)); $script:brushIconBadgeLightBg.Freeze()
+$script:brushIconBadgeLightBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(240, 0xE8, 0xEE, 0xF5)); $script:brushIconBadgeLightBg.Freeze()
 $script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
 
 $script:styleAppRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
@@ -11688,7 +11689,7 @@ function Flush-PendingIconCache {
             }
         }
         if ($hasLocalFile -or ($script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($entry.CacheKey))) {
-            if ($decodedCount -ge 80) { continue }
+            if ($decodedCount -ge 350) { continue }
             $bmp = Import-LocalIconBitmap -Path $entry.DestPath -CacheKey $entry.CacheKey
             if ($bmp -and $bmp.PixelWidth -gt 0) {
                 $decodedCount++
@@ -11701,6 +11702,9 @@ function Flush-PendingIconCache {
                 }
                 if ($entry.Fallback) {
                     $entry.Fallback.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                if ($entry.UseLight -and $entry.Badge) {
+                    $entry.Badge.Background = $script:brushIconBadgeLightBg
                 }
             }
         }
@@ -13011,7 +13015,7 @@ foreach ($cat in $categories) {
         $iconBadge.Width = 20
         $iconBadge.Height = 20
         $iconBadge.CornerRadius = $script:cornerIconBadge
-        $iconBadge.Background = if ($useLightBadge) { $script:brushIconBadgeLightBg } else { $script:brushIconBadgeBg }
+        $iconBadge.Background = $script:brushIconBadgeBg
         $iconBadge.BorderBrush = $script:brushIconBadgeBorder
         $iconBadge.BorderThickness = $thicknessZero
         $iconBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
@@ -13057,6 +13061,7 @@ foreach ($cat in $categories) {
                 $img.Source = $cachedBmp
                 $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
                 $img.Visibility = [System.Windows.Visibility]::Visible
+                if ($useLightBadge) { $iconBadge.Background = $script:brushIconBadgeLightBg }
             }
         } elseif ($remoteIconTarget -or [System.IO.File]::Exists($localIconPath)) {
             $script:pendingIconSaves.Add(@{
@@ -13066,6 +13071,8 @@ foreach ($cat in $categories) {
                 DownloadInfo = $null
                 Img          = $img
                 Fallback     = $fallbackGlyph
+                Badge        = $iconBadge
+                UseLight     = $useLightBadge
             })
         }
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)

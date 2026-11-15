@@ -835,6 +835,7 @@
     "Category":  "Development",
     "Url":  "https://zed.dev/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=zed.dev\u0026sz=128",
+    "IconBg":  "light",
     "IDn":  64
   },
   {
