@@ -29,6 +29,7 @@ namespace DuckUtil
         private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
         private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
 
         public static string CleanCatalogAppName(string name)
@@ -96,7 +97,108 @@ namespace DuckUtil
             bool hasIvDigit = false;
             foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
             if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
-            return CompareAppVersions(av, iv) > 0;
+            int cmp = CompareAppVersions(av, iv);
+            if (cmp > 0) return true;
+            if (cmp == 0 && _rxPrerelease.IsMatch(iv) && !_rxPrerelease.IsMatch(av)) return true;
+            return false;
+        }
+
+        private static int GetDisplayWidthUpToIndex(string s, int charIdx)
+        {
+            if (string.IsNullOrEmpty(s) || charIdx <= 0) return 0;
+            int limit = Math.Min(charIdx, s.Length);
+            int w = 0;
+            for (int i = 0; i < limit; i++)
+            {
+                char ch = s[i];
+                if (char.IsHighSurrogate(ch) && (i + 1) < limit && char.IsLowSurrogate(s[i + 1]))
+                {
+                    int cp = char.ConvertToUtf32(ch, s[i + 1]);
+                    w += GetCharDisplayWidth(cp);
+                    i++;
+                }
+                else
+                {
+                    w += GetCharDisplayWidth((int)ch);
+                }
+            }
+            return w;
+        }
+
+        private static int SnapWingetColumnBoundary(string line, int pos, int minPos)
+        {
+            if (string.IsNullOrEmpty(line) || pos <= minPos || pos >= line.Length) return pos;
+            if (char.IsWhiteSpace(line[pos]) || char.IsWhiteSpace(line[pos - 1])) return pos;
+
+            int leftCandidate = -1;
+            int minLeft = Math.Max(minPos + 1, pos - 10);
+            for (int j = pos - 1; j >= minLeft; j--)
+            {
+                if (char.IsWhiteSpace(line[j]))
+                {
+                    leftCandidate = j + 1;
+                    break;
+                }
+            }
+
+            int rightCandidate = -1;
+            int maxRight = Math.Min(line.Length - 1, pos + 10);
+            for (int j = pos + 1; j <= maxRight; j++)
+            {
+                if (char.IsWhiteSpace(line[j]))
+                {
+                    int k = j;
+                    while (k < line.Length && char.IsWhiteSpace(line[k])) k++;
+                    if (k < line.Length) rightCandidate = k;
+                    break;
+                }
+            }
+
+            if (leftCandidate >= 0 && rightCandidate >= 0)
+            {
+                return (pos - leftCandidate) <= (rightCandidate - pos) ? leftCandidate : rightCandidate;
+            }
+            if (leftCandidate >= 0) return leftCandidate;
+            if (rightCandidate >= 0) return rightCandidate;
+            return pos;
+        }
+
+        private static string[] SliceRowColumnsByPositions(string line, int cId, int cVer, int cAvail, int cSrc)
+        {
+            string appName = "", appId = "", version = "", avail = "";
+            if (cId > 0 && line.Length > cId)
+            {
+                cId = SnapWingetColumnBoundary(line, cId, 0);
+                appName = line.Substring(0, cId).Trim();
+                if (cVer > cId && line.Length > cVer)
+                {
+                    cVer = SnapWingetColumnBoundary(line, cVer, cId);
+                    appId = line.Substring(cId, cVer - cId).Trim();
+                    if (cAvail > cVer && line.Length > cAvail)
+                    {
+                        cAvail = SnapWingetColumnBoundary(line, cAvail, cVer);
+                        version = line.Substring(cVer, cAvail - cVer).Trim();
+                        if (cSrc > cAvail && line.Length > cSrc)
+                        {
+                            cSrc = SnapWingetColumnBoundary(line, cSrc, cAvail);
+                            avail = line.Substring(cAvail, cSrc - cAvail).Trim();
+                        }
+                        else
+                        {
+                            avail = line.Substring(cAvail).Trim();
+                        }
+                    }
+                    else
+                    {
+                        version = line.Substring(cVer).Trim();
+                    }
+                }
+                else
+                {
+                    appId = line.Substring(cId).Trim();
+                }
+            }
+            return new string[] { appName, appId, version, avail };
         }
 
         private static int GetCharDisplayWidth(int code)
@@ -158,36 +260,7 @@ namespace DuckUtil
             int cAvail = charPos[2];
             int cSrc = charPos[3];
 
-            string appName = "", appId = "", version = "", avail = "";
-            if (cId > 0 && line.Length > cId)
-            {
-                appName = line.Substring(0, cId).Trim();
-                if (cVer > cId && line.Length > cVer)
-                {
-                    appId = line.Substring(cId, cVer - cId).Trim();
-                    if (cAvail > cVer && line.Length > cAvail)
-                    {
-                        version = line.Substring(cVer, cAvail - cVer).Trim();
-                        if (cSrc > cAvail && line.Length > cSrc)
-                        {
-                            avail = line.Substring(cAvail, cSrc - cAvail).Trim();
-                        }
-                        else
-                        {
-                            avail = line.Substring(cAvail).Trim();
-                        }
-                    }
-                    else
-                    {
-                        version = line.Substring(cVer).Trim();
-                    }
-                }
-                else
-                {
-                    appId = line.Substring(cId).Trim();
-                }
-            }
-            return new string[] { appName, appId, version, avail };
+            return SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
         }
 
         public static List<CatalogSensorItem> ParseWingetListOutput(string rawText, bool allowHeaderless, out bool hasTable)
@@ -235,7 +308,7 @@ namespace DuckUtil
                 {
                     MatchCollection matches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
                     colOffsetsList = new List<int>(matches.Count);
-                    foreach (Match m in matches) colOffsetsList.Add(m.Index);
+                    foreach (Match m in matches) colOffsetsList.Add(GetDisplayWidthUpToIndex(headerLine, m.Index));
                 }
                 int[] colOffsets = colOffsetsList.ToArray();
 
@@ -258,27 +331,11 @@ namespace DuckUtil
                             int cVer = colOffsets[2];
                             int cAvail = colOffsets.Length >= 4 ? colOffsets[3] : -1;
                             int cSrc = colOffsets.Length >= 5 ? colOffsets[4] : -1;
-                            if (cId > 0 && line.Length > cId)
-                            {
-                                appName = line.Substring(0, cId).Trim();
-                                if (cVer > cId && line.Length > cVer)
-                                {
-                                    appId = line.Substring(cId, cVer - cId).Trim();
-                                    if (cAvail > cVer && line.Length > cAvail)
-                                    {
-                                        version = line.Substring(cVer, cAvail - cVer).Trim();
-                                        avail = (cSrc > cAvail && line.Length > cSrc) ? line.Substring(cAvail, cSrc - cAvail).Trim() : line.Substring(cAvail).Trim();
-                                    }
-                                    else
-                                    {
-                                        version = line.Substring(cVer).Trim();
-                                    }
-                                }
-                                else
-                                {
-                                    appId = line.Substring(cId).Trim();
-                                }
-                            }
+                            string[] sliced = SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
+                            appName = sliced[0];
+                            appId = sliced[1];
+                            version = sliced[2];
+                            avail = sliced[3];
                         }
                         else
                         {
@@ -557,13 +614,14 @@ namespace DuckUtil
                                         continue;
                                     }
 
-                                    if (dn.IndexOf("Visual Studio Code (User)", StringComparison.OrdinalIgnoreCase) >= 0 && !vsCodeUserExists)
+                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
+
+                                    if (dn.IndexOf("Visual Studio Code (User)", StringComparison.OrdinalIgnoreCase) >= 0 && !vsCodeUserExists && string.IsNullOrEmpty(loc) && string.IsNullOrEmpty(uStr))
                                     {
                                         continue;
                                     }
 
-                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
-                                    string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
                                     if (IsBrokenRegistryEntry(uStr, loc)) continue;
 
                                     string ver = (sk.GetValue("DisplayVersion") as string ?? "Installed").Trim();
@@ -648,6 +706,7 @@ namespace DuckUtil
                             else if (pkgPrefix.IndexOf("DirectXRuntime", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "Microsoft.DirectX";
                             else if (pkgPrefix.IndexOf("TranslucentTB", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "CharlesMilette.TranslucentTB";
                             else if (pkgPrefix.IndexOf("MicrosoftPCManager", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "9PM860492SZD"; dispName = "Microsoft PC Manager"; }
+                            else if (pkgPrefix.IndexOf("WhatsAppDesktop", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "9NKSQGP7F2NH"; dispName = "WhatsApp"; }
                             else if (pkgPrefix.IndexOf("KaliLinux", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "OffSec.KaliLinux";
 
                             items.Add(new CatalogSensorItem
@@ -713,11 +772,15 @@ namespace DuckUtil
             }
             catch {}
 
-            var dotnetShares = new Tuple<string, string>[]
-            {
-                Tuple.Create(@"C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App", "x64"),
-                Tuple.Create(@"C:\Program Files (x86)\dotnet\shared\Microsoft.WindowsDesktop.App", "x86")
-            };
+            string pf64Root = Environment.GetEnvironmentVariable("ProgramW6432");
+            if (string.IsNullOrEmpty(pf64Root)) pf64Root = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string pf86Root = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            if (string.IsNullOrEmpty(pf86Root)) pf86Root = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            var dotnetSharesList = new List<Tuple<string, string>>();
+            if (!string.IsNullOrEmpty(pf64Root)) dotnetSharesList.Add(Tuple.Create(Path.Combine(pf64Root, @"dotnet\shared\Microsoft.WindowsDesktop.App"), "x64"));
+            if (!string.IsNullOrEmpty(pf86Root)) dotnetSharesList.Add(Tuple.Create(Path.Combine(pf86Root, @"dotnet\shared\Microsoft.WindowsDesktop.App"), "x86"));
+            var dotnetShares = dotnetSharesList.ToArray();
 
             foreach (var ds in dotnetShares)
             {
@@ -899,12 +962,22 @@ namespace DuckUtil
             }
         }
 
+        private static bool IsReparsePoint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch { return false; }
+        }
+
         public static bool HasCrackOrPatchIndicators(string installDir)
         {
             if (string.IsNullOrWhiteSpace(installDir)) return false;
             try
             {
-                if (!Directory.Exists(installDir)) return false;
+                if (!Directory.Exists(installDir) || IsReparsePoint(installDir)) return false;
             }
             catch { return false; }
 
@@ -963,6 +1036,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                if (IsReparsePoint(sub)) continue;
                                 string subName = Path.GetFileName(sub) ?? "";
                                 if (skipScanDirs.Contains(subName)) continue;
                                 nextLevel.Add(sub);
@@ -989,7 +1063,7 @@ namespace DuckUtil
                 return 0L;
             try
             {
-                if (!Directory.Exists(sourceDir)) return 0L;
+                if (!Directory.Exists(sourceDir) || IsReparsePoint(sourceDir)) return 0L;
             }
             catch { return 0L; }
 
@@ -1075,6 +1149,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                if (IsReparsePoint(sub)) continue;
                                 string subName = Path.GetFileName(sub) ?? "";
                                 if (skipDirs.Contains(subName)) continue;
                                 if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;

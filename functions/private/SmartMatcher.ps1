@@ -127,7 +127,11 @@ function Test-AppUpdateGenuine {
     $iv = $InstalledVer.Trim()
     if ($iv.StartsWith("<")) { return $true }
     if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $true }
-    return ((Compare-AppVersions $av $iv) -gt 0)
+    $cmp = Compare-AppVersions $av $iv
+    if ($cmp -gt 0) { return $true }
+    $rxPre = '(?i)(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])'
+    if ($cmp -eq 0 -and ($iv -match $rxPre) -and ($av -notmatch $rxPre)) { return $true }
+    return $false
 }
 
 function Get-CharDisplayWidth {
@@ -383,7 +387,7 @@ function Test-MatchCompatible {
     $iId   = [string]$Item.ID
 
     if (-not $meta.AllowNoise) {
-        if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer)' -or
+        if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)' -or
             $iId   -match '(?i)(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)') {
             return $false
         }
@@ -450,6 +454,9 @@ function Test-MatchCompatible {
     }
 
     if ($meta.ReqDnRaw) {
+        if ($iId -notmatch 'DesktopRuntime' -and $iName -notmatch '(?i)Desktop') {
+            return $false
+        }
         $reqDn = $meta.ReqDnEsc
         if ($iId -notmatch "DesktopRuntime\.$($meta.ReqDnRaw)(\.|$)" -and $iName -notmatch "\b$reqDn(\.\d+|\b)" -and [string]$Item.Version -notmatch "^$reqDn(\.|$)") {
             return $false
@@ -848,10 +855,11 @@ function Get-LocalInstalledEntries {
         }
     } catch {}
 
-    $dotnetSharedConfigs = @(
-        @{ Path = "C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App";       Suffix = "";     ArchLabel = "(x64)" },
-        @{ Path = "C:\Program Files (x86)\dotnet\shared\Microsoft.WindowsDesktop.App"; Suffix = ".x86"; ArchLabel = "(x86)" }
-    )
+    $pf64Dn = if ($env:ProgramW6432) { $env:ProgramW6432 } else { [Environment]::GetFolderPath('ProgramFiles') }
+    $pf86Dn = if (${env:ProgramFiles(x86)}) { ${env:ProgramFiles(x86)} } else { [Environment]::GetFolderPath('ProgramFilesX86') }
+    $dotnetSharedConfigs = @()
+    if ($pf64Dn) { $dotnetSharedConfigs += @{ Path = (Join-Path $pf64Dn "dotnet\shared\Microsoft.WindowsDesktop.App"); Suffix = ""; ArchLabel = "(x64)" } }
+    if ($pf86Dn) { $dotnetSharedConfigs += @{ Path = (Join-Path $pf86Dn "dotnet\shared\Microsoft.WindowsDesktop.App"); Suffix = ".x86"; ArchLabel = "(x86)" } }
     foreach ($dnCfg in $dotnetSharedConfigs) {
         if ([System.IO.Directory]::Exists($dnCfg.Path)) {
             try {
@@ -1059,7 +1067,7 @@ function Apply-InstalledDatabaseToRows {
         }
 
         $cleanTarget = $meta.CleanTarget
-        if ($cleanTarget.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+        if ($cleanTarget.Length -ge 2 -and $CleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }

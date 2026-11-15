@@ -293,6 +293,12 @@ namespace DuckUtil
 
                                     string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
                                     string fullSub = target.SubKey + @"\" + subKeyName;
+                                    if (target.Hive == RegistryHive.LocalMachine && target.View == RegistryView.Registry32 &&
+                                        fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                                        fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                                    {
+                                        fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                                    }
                                     info.RegistryPath = hivePrefix + fullSub;
                                     info.RawRegPath = (target.Hive == RegistryHive.LocalMachine ? "HKEY_LOCAL_MACHINE\\" : "HKEY_CURRENT_USER\\") + fullSub;
 
@@ -391,6 +397,11 @@ namespace DuckUtil
                                         friendlyName = "NVIDIA Control Panel";
                                         publisher = "NVIDIA Corporation";
                                     }
+                                    else if (pkgIdPrefix.IndexOf("WhatsAppDesktop", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "WhatsApp";
+                                        publisher = "WhatsApp Inc.";
+                                    }
                                     else if (string.IsNullOrWhiteSpace(friendlyName) || friendlyName.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))
                                     {
                                         continue;
@@ -400,7 +411,8 @@ namespace DuckUtil
                                     if (seenCleanNames.Contains(normClean)) continue;
                                     seenCleanNames.Add(normClean);
 
-                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Get-AppxPackage -Name '*" + pkgIdPrefix + "*' | Remove-AppxPackage\"";
+                                    string escapedPkg = pkgFull.Replace("'", "''");
+                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Remove-AppxPackage -Package '" + escapedPkg + "'\"";
                                     var msixInfo = new InstalledAppInfo
                                     {
                                         Id = "MSIX\\" + pkgFull,
@@ -1162,12 +1174,22 @@ namespace DuckUtil
             return raw.Trim('\"', ' ');
         }
 
+        private static bool IsReparsePoint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch { return false; }
+        }
+
         public static long GetHollowDirectorySize(string rootPath, int maxDepth, long maxSizeLimit)
         {
             if (string.IsNullOrEmpty(rootPath)) return -1L;
             try
             {
-                if (!Directory.Exists(rootPath)) return -1L;
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return -1L;
             }
             catch { return -1L; }
 
@@ -1203,7 +1225,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -1221,7 +1243,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath)) return 0L;
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
             }
             catch { return 0L; }
 
@@ -1252,7 +1274,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -1270,7 +1292,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath)) return 0L;
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
             }
             catch { return 0L; }
 
@@ -1298,7 +1320,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -1317,7 +1339,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootDir)) return results;
             try
             {
-                if (!Directory.Exists(rootDir)) return results;
+                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
             }
             catch { return results; }
 
@@ -1339,7 +1361,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -1358,7 +1380,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootDir)) return results;
             try
             {
-                if (!Directory.Exists(rootDir)) return results;
+                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
             }
             catch { return results; }
 
@@ -1374,7 +1396,7 @@ namespace DuckUtil
                         foreach (var sub in Directory.EnumerateDirectories(dir))
                         {
                             results.Add(sub);
-                            if (depth < maxDepth)
+                            if (depth < maxDepth && !IsReparsePoint(sub))
                             {
                                 nextLevel.Add(sub);
                             }
@@ -1757,6 +1779,24 @@ namespace DuckUtil
 
             if (!Directory.Exists(norm)) return true;
 
+            if (IsReparsePoint(norm))
+            {
+                try
+                {
+                    Directory.Delete(norm, false);
+                    return true;
+                }
+                catch
+                {
+                    if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                    {
+                        rebootScheduledCount++;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
             DisableAndRemoveServicesInDirectory(norm);
             RemoveScheduledTasksInDirectory(norm);
             StopProcessesInDirectory(norm);
@@ -1801,8 +1841,15 @@ namespace DuckUtil
                 {
                     try
                     {
-                        File.SetAttributes(sd, FileAttributes.Normal);
-                        Directory.Delete(sd, true);
+                        if (IsReparsePoint(sd))
+                        {
+                            Directory.Delete(sd, false);
+                        }
+                        else
+                        {
+                            File.SetAttributes(sd, FileAttributes.Normal);
+                            Directory.Delete(sd, false);
+                        }
                     }
                     catch
                     {
@@ -1815,7 +1862,7 @@ namespace DuckUtil
             try
             {
                 File.SetAttributes(norm, FileAttributes.Normal);
-                Directory.Delete(norm, true);
+                Directory.Delete(norm, false);
                 return true;
             }
             catch
@@ -1840,7 +1887,7 @@ namespace DuckUtil
                 return 0L;
             try
             {
-                if (!Directory.Exists(sourceDir)) return 0L;
+                if (!Directory.Exists(sourceDir) || IsReparsePoint(sourceDir)) return 0L;
             }
             catch { return 0L; }
 
@@ -1926,6 +1973,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                if (IsReparsePoint(sub)) continue;
                                 string subName = Path.GetFileName(sub) ?? "";
                                 if (skipDirs.Contains(subName)) continue;
                                 if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;

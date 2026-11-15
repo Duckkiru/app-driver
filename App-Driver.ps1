@@ -5270,6 +5270,7 @@ namespace DuckUtil
         private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
         private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
 
         public static string CleanCatalogAppName(string name)
@@ -5337,7 +5338,108 @@ namespace DuckUtil
             bool hasIvDigit = false;
             foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
             if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
-            return CompareAppVersions(av, iv) > 0;
+            int cmp = CompareAppVersions(av, iv);
+            if (cmp > 0) return true;
+            if (cmp == 0 && _rxPrerelease.IsMatch(iv) && !_rxPrerelease.IsMatch(av)) return true;
+            return false;
+        }
+
+        private static int GetDisplayWidthUpToIndex(string s, int charIdx)
+        {
+            if (string.IsNullOrEmpty(s) || charIdx <= 0) return 0;
+            int limit = Math.Min(charIdx, s.Length);
+            int w = 0;
+            for (int i = 0; i < limit; i++)
+            {
+                char ch = s[i];
+                if (char.IsHighSurrogate(ch) && (i + 1) < limit && char.IsLowSurrogate(s[i + 1]))
+                {
+                    int cp = char.ConvertToUtf32(ch, s[i + 1]);
+                    w += GetCharDisplayWidth(cp);
+                    i++;
+                }
+                else
+                {
+                    w += GetCharDisplayWidth((int)ch);
+                }
+            }
+            return w;
+        }
+
+        private static int SnapWingetColumnBoundary(string line, int pos, int minPos)
+        {
+            if (string.IsNullOrEmpty(line) || pos <= minPos || pos >= line.Length) return pos;
+            if (char.IsWhiteSpace(line[pos]) || char.IsWhiteSpace(line[pos - 1])) return pos;
+
+            int leftCandidate = -1;
+            int minLeft = Math.Max(minPos + 1, pos - 10);
+            for (int j = pos - 1; j >= minLeft; j--)
+            {
+                if (char.IsWhiteSpace(line[j]))
+                {
+                    leftCandidate = j + 1;
+                    break;
+                }
+            }
+
+            int rightCandidate = -1;
+            int maxRight = Math.Min(line.Length - 1, pos + 10);
+            for (int j = pos + 1; j <= maxRight; j++)
+            {
+                if (char.IsWhiteSpace(line[j]))
+                {
+                    int k = j;
+                    while (k < line.Length && char.IsWhiteSpace(line[k])) k++;
+                    if (k < line.Length) rightCandidate = k;
+                    break;
+                }
+            }
+
+            if (leftCandidate >= 0 && rightCandidate >= 0)
+            {
+                return (pos - leftCandidate) <= (rightCandidate - pos) ? leftCandidate : rightCandidate;
+            }
+            if (leftCandidate >= 0) return leftCandidate;
+            if (rightCandidate >= 0) return rightCandidate;
+            return pos;
+        }
+
+        private static string[] SliceRowColumnsByPositions(string line, int cId, int cVer, int cAvail, int cSrc)
+        {
+            string appName = "", appId = "", version = "", avail = "";
+            if (cId > 0 && line.Length > cId)
+            {
+                cId = SnapWingetColumnBoundary(line, cId, 0);
+                appName = line.Substring(0, cId).Trim();
+                if (cVer > cId && line.Length > cVer)
+                {
+                    cVer = SnapWingetColumnBoundary(line, cVer, cId);
+                    appId = line.Substring(cId, cVer - cId).Trim();
+                    if (cAvail > cVer && line.Length > cAvail)
+                    {
+                        cAvail = SnapWingetColumnBoundary(line, cAvail, cVer);
+                        version = line.Substring(cVer, cAvail - cVer).Trim();
+                        if (cSrc > cAvail && line.Length > cSrc)
+                        {
+                            cSrc = SnapWingetColumnBoundary(line, cSrc, cAvail);
+                            avail = line.Substring(cAvail, cSrc - cAvail).Trim();
+                        }
+                        else
+                        {
+                            avail = line.Substring(cAvail).Trim();
+                        }
+                    }
+                    else
+                    {
+                        version = line.Substring(cVer).Trim();
+                    }
+                }
+                else
+                {
+                    appId = line.Substring(cId).Trim();
+                }
+            }
+            return new string[] { appName, appId, version, avail };
         }
 
         private static int GetCharDisplayWidth(int code)
@@ -5399,36 +5501,7 @@ namespace DuckUtil
             int cAvail = charPos[2];
             int cSrc = charPos[3];
 
-            string appName = "", appId = "", version = "", avail = "";
-            if (cId > 0 && line.Length > cId)
-            {
-                appName = line.Substring(0, cId).Trim();
-                if (cVer > cId && line.Length > cVer)
-                {
-                    appId = line.Substring(cId, cVer - cId).Trim();
-                    if (cAvail > cVer && line.Length > cAvail)
-                    {
-                        version = line.Substring(cVer, cAvail - cVer).Trim();
-                        if (cSrc > cAvail && line.Length > cSrc)
-                        {
-                            avail = line.Substring(cAvail, cSrc - cAvail).Trim();
-                        }
-                        else
-                        {
-                            avail = line.Substring(cAvail).Trim();
-                        }
-                    }
-                    else
-                    {
-                        version = line.Substring(cVer).Trim();
-                    }
-                }
-                else
-                {
-                    appId = line.Substring(cId).Trim();
-                }
-            }
-            return new string[] { appName, appId, version, avail };
+            return SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
         }
 
         public static List<CatalogSensorItem> ParseWingetListOutput(string rawText, bool allowHeaderless, out bool hasTable)
@@ -5476,7 +5549,7 @@ namespace DuckUtil
                 {
                     MatchCollection matches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
                     colOffsetsList = new List<int>(matches.Count);
-                    foreach (Match m in matches) colOffsetsList.Add(m.Index);
+                    foreach (Match m in matches) colOffsetsList.Add(GetDisplayWidthUpToIndex(headerLine, m.Index));
                 }
                 int[] colOffsets = colOffsetsList.ToArray();
 
@@ -5499,27 +5572,11 @@ namespace DuckUtil
                             int cVer = colOffsets[2];
                             int cAvail = colOffsets.Length >= 4 ? colOffsets[3] : -1;
                             int cSrc = colOffsets.Length >= 5 ? colOffsets[4] : -1;
-                            if (cId > 0 && line.Length > cId)
-                            {
-                                appName = line.Substring(0, cId).Trim();
-                                if (cVer > cId && line.Length > cVer)
-                                {
-                                    appId = line.Substring(cId, cVer - cId).Trim();
-                                    if (cAvail > cVer && line.Length > cAvail)
-                                    {
-                                        version = line.Substring(cVer, cAvail - cVer).Trim();
-                                        avail = (cSrc > cAvail && line.Length > cSrc) ? line.Substring(cAvail, cSrc - cAvail).Trim() : line.Substring(cAvail).Trim();
-                                    }
-                                    else
-                                    {
-                                        version = line.Substring(cVer).Trim();
-                                    }
-                                }
-                                else
-                                {
-                                    appId = line.Substring(cId).Trim();
-                                }
-                            }
+                            string[] sliced = SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
+                            appName = sliced[0];
+                            appId = sliced[1];
+                            version = sliced[2];
+                            avail = sliced[3];
                         }
                         else
                         {
@@ -5798,13 +5855,14 @@ namespace DuckUtil
                                         continue;
                                     }
 
-                                    if (dn.IndexOf("Visual Studio Code (User)", StringComparison.OrdinalIgnoreCase) >= 0 && !vsCodeUserExists)
+                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
+
+                                    if (dn.IndexOf("Visual Studio Code (User)", StringComparison.OrdinalIgnoreCase) >= 0 && !vsCodeUserExists && string.IsNullOrEmpty(loc) && string.IsNullOrEmpty(uStr))
                                     {
                                         continue;
                                     }
 
-                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
-                                    string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
                                     if (IsBrokenRegistryEntry(uStr, loc)) continue;
 
                                     string ver = (sk.GetValue("DisplayVersion") as string ?? "Installed").Trim();
@@ -5889,6 +5947,7 @@ namespace DuckUtil
                             else if (pkgPrefix.IndexOf("DirectXRuntime", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "Microsoft.DirectX";
                             else if (pkgPrefix.IndexOf("TranslucentTB", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "CharlesMilette.TranslucentTB";
                             else if (pkgPrefix.IndexOf("MicrosoftPCManager", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "9PM860492SZD"; dispName = "Microsoft PC Manager"; }
+                            else if (pkgPrefix.IndexOf("WhatsAppDesktop", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "9NKSQGP7F2NH"; dispName = "WhatsApp"; }
                             else if (pkgPrefix.IndexOf("KaliLinux", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "OffSec.KaliLinux";
 
                             items.Add(new CatalogSensorItem
@@ -5954,11 +6013,15 @@ namespace DuckUtil
             }
             catch {}
 
-            var dotnetShares = new Tuple<string, string>[]
-            {
-                Tuple.Create(@"C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App", "x64"),
-                Tuple.Create(@"C:\Program Files (x86)\dotnet\shared\Microsoft.WindowsDesktop.App", "x86")
-            };
+            string pf64Root = Environment.GetEnvironmentVariable("ProgramW6432");
+            if (string.IsNullOrEmpty(pf64Root)) pf64Root = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string pf86Root = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            if (string.IsNullOrEmpty(pf86Root)) pf86Root = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            var dotnetSharesList = new List<Tuple<string, string>>();
+            if (!string.IsNullOrEmpty(pf64Root)) dotnetSharesList.Add(Tuple.Create(Path.Combine(pf64Root, @"dotnet\shared\Microsoft.WindowsDesktop.App"), "x64"));
+            if (!string.IsNullOrEmpty(pf86Root)) dotnetSharesList.Add(Tuple.Create(Path.Combine(pf86Root, @"dotnet\shared\Microsoft.WindowsDesktop.App"), "x86"));
+            var dotnetShares = dotnetSharesList.ToArray();
 
             foreach (var ds in dotnetShares)
             {
@@ -6140,12 +6203,22 @@ namespace DuckUtil
             }
         }
 
+        private static bool IsReparsePoint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch { return false; }
+        }
+
         public static bool HasCrackOrPatchIndicators(string installDir)
         {
             if (string.IsNullOrWhiteSpace(installDir)) return false;
             try
             {
-                if (!Directory.Exists(installDir)) return false;
+                if (!Directory.Exists(installDir) || IsReparsePoint(installDir)) return false;
             }
             catch { return false; }
 
@@ -6204,6 +6277,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                if (IsReparsePoint(sub)) continue;
                                 string subName = Path.GetFileName(sub) ?? "";
                                 if (skipScanDirs.Contains(subName)) continue;
                                 nextLevel.Add(sub);
@@ -6230,7 +6304,7 @@ namespace DuckUtil
                 return 0L;
             try
             {
-                if (!Directory.Exists(sourceDir)) return 0L;
+                if (!Directory.Exists(sourceDir) || IsReparsePoint(sourceDir)) return 0L;
             }
             catch { return 0L; }
 
@@ -6316,6 +6390,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                if (IsReparsePoint(sub)) continue;
                                 string subName = Path.GetFileName(sub) ?? "";
                                 if (skipDirs.Contains(subName)) continue;
                                 if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
@@ -6693,6 +6768,12 @@ namespace DuckUtil
 
                                     string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
                                     string fullSub = target.SubKey + @"\" + subKeyName;
+                                    if (target.Hive == RegistryHive.LocalMachine && target.View == RegistryView.Registry32 &&
+                                        fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                                        fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                                    {
+                                        fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                                    }
                                     info.RegistryPath = hivePrefix + fullSub;
                                     info.RawRegPath = (target.Hive == RegistryHive.LocalMachine ? "HKEY_LOCAL_MACHINE\\" : "HKEY_CURRENT_USER\\") + fullSub;
 
@@ -6791,6 +6872,11 @@ namespace DuckUtil
                                         friendlyName = "NVIDIA Control Panel";
                                         publisher = "NVIDIA Corporation";
                                     }
+                                    else if (pkgIdPrefix.IndexOf("WhatsAppDesktop", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "WhatsApp";
+                                        publisher = "WhatsApp Inc.";
+                                    }
                                     else if (string.IsNullOrWhiteSpace(friendlyName) || friendlyName.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))
                                     {
                                         continue;
@@ -6800,7 +6886,8 @@ namespace DuckUtil
                                     if (seenCleanNames.Contains(normClean)) continue;
                                     seenCleanNames.Add(normClean);
 
-                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Get-AppxPackage -Name '*" + pkgIdPrefix + "*' | Remove-AppxPackage\"";
+                                    string escapedPkg = pkgFull.Replace("'", "''");
+                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Remove-AppxPackage -Package '" + escapedPkg + "'\"";
                                     var msixInfo = new InstalledAppInfo
                                     {
                                         Id = "MSIX\\" + pkgFull,
@@ -7562,12 +7649,22 @@ namespace DuckUtil
             return raw.Trim('\"', ' ');
         }
 
+        private static bool IsReparsePoint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch { return false; }
+        }
+
         public static long GetHollowDirectorySize(string rootPath, int maxDepth, long maxSizeLimit)
         {
             if (string.IsNullOrEmpty(rootPath)) return -1L;
             try
             {
-                if (!Directory.Exists(rootPath)) return -1L;
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return -1L;
             }
             catch { return -1L; }
 
@@ -7603,7 +7700,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -7621,7 +7718,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath)) return 0L;
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
             }
             catch { return 0L; }
 
@@ -7652,7 +7749,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -7670,7 +7767,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath)) return 0L;
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
             }
             catch { return 0L; }
 
@@ -7698,7 +7795,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -7717,7 +7814,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootDir)) return results;
             try
             {
-                if (!Directory.Exists(rootDir)) return results;
+                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
             }
             catch { return results; }
 
@@ -7739,7 +7836,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
                             }
                         }
                     }
@@ -7758,7 +7855,7 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootDir)) return results;
             try
             {
-                if (!Directory.Exists(rootDir)) return results;
+                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
             }
             catch { return results; }
 
@@ -7774,7 +7871,7 @@ namespace DuckUtil
                         foreach (var sub in Directory.EnumerateDirectories(dir))
                         {
                             results.Add(sub);
-                            if (depth < maxDepth)
+                            if (depth < maxDepth && !IsReparsePoint(sub))
                             {
                                 nextLevel.Add(sub);
                             }
@@ -8157,6 +8254,24 @@ namespace DuckUtil
 
             if (!Directory.Exists(norm)) return true;
 
+            if (IsReparsePoint(norm))
+            {
+                try
+                {
+                    Directory.Delete(norm, false);
+                    return true;
+                }
+                catch
+                {
+                    if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                    {
+                        rebootScheduledCount++;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
             DisableAndRemoveServicesInDirectory(norm);
             RemoveScheduledTasksInDirectory(norm);
             StopProcessesInDirectory(norm);
@@ -8201,8 +8316,15 @@ namespace DuckUtil
                 {
                     try
                     {
-                        File.SetAttributes(sd, FileAttributes.Normal);
-                        Directory.Delete(sd, true);
+                        if (IsReparsePoint(sd))
+                        {
+                            Directory.Delete(sd, false);
+                        }
+                        else
+                        {
+                            File.SetAttributes(sd, FileAttributes.Normal);
+                            Directory.Delete(sd, false);
+                        }
                     }
                     catch
                     {
@@ -8215,7 +8337,7 @@ namespace DuckUtil
             try
             {
                 File.SetAttributes(norm, FileAttributes.Normal);
-                Directory.Delete(norm, true);
+                Directory.Delete(norm, false);
                 return true;
             }
             catch
@@ -8240,7 +8362,7 @@ namespace DuckUtil
                 return 0L;
             try
             {
-                if (!Directory.Exists(sourceDir)) return 0L;
+                if (!Directory.Exists(sourceDir) || IsReparsePoint(sourceDir)) return 0L;
             }
             catch { return 0L; }
 
@@ -8326,6 +8448,7 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
+                                if (IsReparsePoint(sub)) continue;
                                 string subName = Path.GetFileName(sub) ?? "";
                                 if (skipDirs.Contains(subName)) continue;
                                 if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
@@ -8521,6 +8644,82 @@ function Run-CliStream {
     }
 }
 
+function Split-CommandLineExecutableAndArgs {
+    param([string]$CommandLine)
+
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) {
+        return [PSCustomObject]@{ Exe = ""; Args = "" }
+    }
+
+    $expanded = [System.Environment]::ExpandEnvironmentVariables($CommandLine).Trim()
+    if ($expanded.StartsWith('"')) {
+        $qIdx = $expanded.IndexOf('"', 1)
+        if ($qIdx -gt 1) {
+            return [PSCustomObject]@{
+                Exe  = $expanded.Substring(1, $qIdx - 1).Trim()
+                Args = $expanded.Substring($qIdx + 1).Trim()
+            }
+        }
+        return [PSCustomObject]@{ Exe = $expanded.Trim('"'); Args = "" }
+    }
+
+    if ($expanded.StartsWith("'")) {
+        $sqIdx = $expanded.IndexOf("'", 1)
+        if ($sqIdx -gt 1) {
+            return [PSCustomObject]@{
+                Exe  = $expanded.Substring(1, $sqIdx - 1).Trim()
+                Args = $expanded.Substring($sqIdx + 1).Trim()
+            }
+        }
+        return [PSCustomObject]@{ Exe = $expanded.Trim("'"); Args = "" }
+    }
+
+    $extMatches = [System.Text.RegularExpressions.Regex]::Matches($expanded, '\.(?:exe|com|cmd|bat)(?=\s|$)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    if ($extMatches.Count -gt 0) {
+        $firstCand = $null
+        foreach ($em in $extMatches) {
+            $splitPos = $em.Index + $em.Length
+            $candExe  = $expanded.Substring(0, $splitPos).Trim()
+            $candArgs = $expanded.Substring($splitPos).Trim()
+            if ($null -eq $firstCand) {
+                $firstCand = [PSCustomObject]@{ Exe = $candExe; Args = $candArgs }
+            }
+            try {
+                if ([System.IO.File]::Exists($candExe)) {
+                    return [PSCustomObject]@{ Exe = $candExe; Args = $candArgs }
+                }
+            } catch {}
+        }
+        return $firstCand
+    }
+
+    $parts = $expanded -split '\s+', 2
+    return [PSCustomObject]@{
+        Exe  = $parts[0]
+        Args = if ($parts.Count -gt 1) { $parts[1] } else { "" }
+    }
+}
+
+function Get-MsiProductCodeFromCommand {
+    param(
+        [string]$UninstallCommand,
+        [string]$FallbackId = ""
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($UninstallCommand)) {
+        $m = [System.Text.RegularExpressions.Regex]::Match($UninstallCommand, '\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}')
+        if ($m.Success) { return $m.Value }
+        $mLoose = [System.Text.RegularExpressions.Regex]::Match($UninstallCommand, '\{[0-9A-Fa-f\-]{32,38}\}')
+        if ($mLoose.Success) { return $mLoose.Value }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($FallbackId)) {
+        $fb = $FallbackId.Trim()
+        if ($fb -match '^\{[0-9A-Fa-f\-]{32,38}\}$') { return $fb }
+        return $fb
+    }
+    return ""
+}
+
 if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
     Add-Type -AssemblyName PresentationCore -ErrorAction SilentlyContinue
 }
@@ -8650,7 +8849,11 @@ function Test-AppUpdateGenuine {
     $iv = $InstalledVer.Trim()
     if ($iv.StartsWith("<")) { return $true }
     if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $true }
-    return ((Compare-AppVersions $av $iv) -gt 0)
+    $cmp = Compare-AppVersions $av $iv
+    if ($cmp -gt 0) { return $true }
+    $rxPre = '(?i)(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])'
+    if ($cmp -eq 0 -and ($iv -match $rxPre) -and ($av -notmatch $rxPre)) { return $true }
+    return $false
 }
 
 function Get-CharDisplayWidth {
@@ -8906,7 +9109,7 @@ function Test-MatchCompatible {
     $iId   = [string]$Item.ID
 
     if (-not $meta.AllowNoise) {
-        if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer)' -or
+        if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)' -or
             $iId   -match '(?i)(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)') {
             return $false
         }
@@ -8973,6 +9176,9 @@ function Test-MatchCompatible {
     }
 
     if ($meta.ReqDnRaw) {
+        if ($iId -notmatch 'DesktopRuntime' -and $iName -notmatch '(?i)Desktop') {
+            return $false
+        }
         $reqDn = $meta.ReqDnEsc
         if ($iId -notmatch "DesktopRuntime\.$($meta.ReqDnRaw)(\.|$)" -and $iName -notmatch "\b$reqDn(\.\d+|\b)" -and [string]$Item.Version -notmatch "^$reqDn(\.|$)") {
             return $false
@@ -9371,10 +9577,11 @@ function Get-LocalInstalledEntries {
         }
     } catch {}
 
-    $dotnetSharedConfigs = @(
-        @{ Path = "C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App";       Suffix = "";     ArchLabel = "(x64)" },
-        @{ Path = "C:\Program Files (x86)\dotnet\shared\Microsoft.WindowsDesktop.App"; Suffix = ".x86"; ArchLabel = "(x86)" }
-    )
+    $pf64Dn = if ($env:ProgramW6432) { $env:ProgramW6432 } else { [Environment]::GetFolderPath('ProgramFiles') }
+    $pf86Dn = if (${env:ProgramFiles(x86)}) { ${env:ProgramFiles(x86)} } else { [Environment]::GetFolderPath('ProgramFilesX86') }
+    $dotnetSharedConfigs = @()
+    if ($pf64Dn) { $dotnetSharedConfigs += @{ Path = (Join-Path $pf64Dn "dotnet\shared\Microsoft.WindowsDesktop.App"); Suffix = ""; ArchLabel = "(x64)" } }
+    if ($pf86Dn) { $dotnetSharedConfigs += @{ Path = (Join-Path $pf86Dn "dotnet\shared\Microsoft.WindowsDesktop.App"); Suffix = ".x86"; ArchLabel = "(x86)" } }
     foreach ($dnCfg in $dotnetSharedConfigs) {
         if ([System.IO.Directory]::Exists($dnCfg.Path)) {
             try {
@@ -9582,7 +9789,7 @@ function Apply-InstalledDatabaseToRows {
         }
 
         $cleanTarget = $meta.CleanTarget
-        if ($cleanTarget.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+        if ($cleanTarget.Length -ge 2 -and $CleanNameMap.TryGetValue($cleanTarget, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
             $lookupCache[$targetId] = $match
             return $match
         }
@@ -9872,15 +10079,41 @@ function Test-SafeAppDirectoryForCleanup {
     )
 
     if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
-    $norm = $Path.Trim().TrimEnd('\')
+    $rawTrim = $Path.Trim()
+    if ($rawTrim.StartsWith("\\")) { return $false }
+    if ($rawTrim -notmatch '^[A-Za-z]:\\') { return $false }
+    $norm = try { [System.IO.Path]::GetFullPath($rawTrim).TrimEnd('\') } catch { return $false }
     if ($norm -match '^[A-Za-z]:$') { return $false }
+    if ($norm -match '^[A-Za-z]:\\Users\\[^\\]+$') { return $false }
+
+    $protectedRaw = @(
+        $env:USERPROFILE,
+        $env:PUBLIC,
+        (Join-Path $env:SystemDrive "Users\Default"),
+        $env:LOCALAPPDATA,
+        $env:APPDATA,
+        $env:ProgramData,
+        $(if ($env:ProgramData) { Join-Path $env:ProgramData "Microsoft" } else { "" }),
+        $env:SystemRoot,
+        $env:ProgramFiles,
+        ${env:ProgramFiles(x86)},
+        ${env:CommonProgramFiles},
+        ${env:CommonProgramFiles(x86)},
+        $env:TEMP
+    )
+    foreach ($pr in $protectedRaw) {
+        if (-not [string]::IsNullOrWhiteSpace($pr)) {
+            $prNorm = try { [System.IO.Path]::GetFullPath($pr).TrimEnd('\') } catch { $pr.Trim().TrimEnd('\') }
+            if ($norm.Equals($prNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $false }
+        }
+    }
 
     $parts = @($norm -split '\\' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     if ($parts.Count -lt 2) { return $false }
 
     $genericContainers = @(
         'Windows', 'System32', 'SysWOW64', 'Program Files', 'Program Files (x86)',
-        'ProgramData', 'Programs', 'Users', 'AppData', 'Local', 'Roaming', 'LocalLow',
+        'ProgramData', 'Programs', 'Users', 'Public', 'Default', 'Microsoft', 'AppData', 'Local', 'Roaming', 'LocalLow',
         'Common Files', 'WindowsApps', 'ModifiableWindowsApps', 'Package Cache', 'Packages',
         'Temp', 'Apps', 'Applications', 'Games', 'Game', 'Software', 'Softwares', 'Tools',
         'Downloads', 'Desktop', 'Documents', 'Pictures', 'Music', 'Videos', 'OneDrive',
@@ -9974,7 +10207,7 @@ function Test-PathClaimedByActiveApp {
         $actNorm = Get-NormalizedAppIdentity $act.DisplayName
         if ($candNorm -and $actNorm) {
             if ($actNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
-            if ($candNorm.Length -ge 4 -and $actNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
+            if ($candNorm.Length -ge 3 -and $actNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
         }
         if ($act.InstallLocation) {
             $actLocLeaf = [System.IO.Path]::GetFileName($act.InstallLocation.Trim().TrimEnd('\'))
@@ -9982,7 +10215,10 @@ function Test-PathClaimedByActiveApp {
         }
         if ($act.Publisher) {
             $pubNorm = Get-NormalizedAppIdentity $act.Publisher
-            if ($candNorm -and $pubNorm -and $pubNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+            if ($candNorm -and $pubNorm) {
+                if ($pubNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+                if ($candNorm.Length -ge 3 -and $pubNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
+            }
         }
     }
     return $false
@@ -11130,38 +11366,47 @@ function Invoke-DeepAppUninstall {
         if (-not [string]::IsNullOrWhiteSpace($uninstCmd)) {
             $uninstCmd = $uninstCmd.Trim()
             if ($uninstCmd.IndexOf("msiexec", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                $msiId = if (Get-Command Get-MsiProductCodeFromCommand -ErrorAction SilentlyContinue) {
+                    Get-MsiProductCodeFromCommand -UninstallCommand $uninstCmd -FallbackId $AppEntry.Id
+                } else {
+                    $AppEntry.Id
+                }
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName)..."
+                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($msiId)..."
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    Run-CliStream "msiexec.exe" "/x `"$($AppEntry.Id)`" /qn /norestart"
-                } else {
-                    Start-Process "msiexec.exe" -ArgumentList "/x `"$($AppEntry.Id)`" /qn /norestart" -Wait -NoNewWindow
-                }
-            } else {
-                $exe = ""
-                $args = ""
-                if ($uninstCmd.StartsWith('"')) {
-                    $nextQ = $uninstCmd.IndexOf('"', 1)
-                    if ($nextQ -gt 1) {
-                        $exe = $uninstCmd.Substring(1, $nextQ - 1)
-                        $args = $uninstCmd.Substring($nextQ + 1).Trim()
-                    } else {
-                        $exe = $uninstCmd.Trim('"')
+                    $msiCode = Run-CliStream "msiexec.exe" "/x `"$msiId`" /qn /norestart"
+                    if ($msiCode -eq 1618) {
+                        Start-Sleep -Seconds 3
+                        $null = Run-CliStream "msiexec.exe" "/x `"$msiId`" /qn /norestart"
                     }
                 } else {
-                    $parts = $uninstCmd -split '\s+', 2
-                    $exe = $parts[0]
-                    if ($parts.Count -gt 1) { $args = $parts[1] }
+                    Start-Process "msiexec.exe" -ArgumentList "/x `"$msiId`" /qn /norestart" -Wait -NoNewWindow
                 }
-
-                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $exe $args"
-                }
-                if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    Run-CliStream $exe $args
+            } else {
+                $cmdParts = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
+                    Split-CommandLineExecutableAndArgs -CommandLine $uninstCmd
                 } else {
-                    Start-Process $exe -ArgumentList $args -Wait -NoNewWindow
+                    $spParts = $uninstCmd -split '\s+', 2
+                    [PSCustomObject]@{ Exe = $spParts[0].Trim('"'); Args = if ($spParts.Count -gt 1) { $spParts[1] } else { "" } }
+                }
+                $exe  = $cmdParts.Exe
+                $args = $cmdParts.Args
+
+                $missingExe = ($exe -match '^[A-Za-z]:\\') -and (-not [System.IO.File]::Exists($exe))
+                if ($missingExe) {
+                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                        Log-Text "[!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c t$([char]0x1EA1)i '$exe' - chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t d$([char]0x1ECD)n s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
+                    }
+                } else {
+                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                        Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $exe $args"
+                    }
+                    if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
+                        $null = Run-CliStream $exe $args
+                    } else {
+                        Start-Process $exe -ArgumentList $args -Wait -NoNewWindow
+                    }
                 }
             }
         }
@@ -13359,6 +13604,88 @@ function Wait-SquirrelUpdatersSettle {
     }
 }
 
+function Find-RegistryMatchForCatalogApp {
+    param(
+        $App,
+        $InstalledList,
+        [string]$DetectedId = ""
+    )
+
+    if (-not $App -or -not $InstalledList) { return $null }
+
+    foreach ($inst in $InstalledList) {
+        if ($null -eq $inst) { continue }
+        if ($inst.Id -and ($inst.Id -ieq $App.ID -or ($DetectedId -and $inst.Id -ieq $DetectedId))) {
+            return $inst
+        }
+    }
+
+    $exactNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($App.Name) { [void]$exactNames.Add($App.Name) }
+    if ($App.ID) { [void]$exactNames.Add($App.ID) }
+    if ($App.Aliases) {
+        foreach ($al in $App.Aliases) {
+            if (-not [string]::IsNullOrWhiteSpace($al)) { [void]$exactNames.Add($al) }
+        }
+    }
+
+    foreach ($inst in $InstalledList) {
+        if ($null -eq $inst -or -not $inst.DisplayName) { continue }
+        if ($exactNames.Contains($inst.DisplayName)) {
+            return $inst
+        }
+    }
+
+    $getClean = {
+        param([string]$s)
+        if ([string]::IsNullOrWhiteSpace($s)) { return "" }
+        if (Get-Command Get-CleanAppName -ErrorAction SilentlyContinue) { return (Get-CleanAppName $s) }
+        if ("DuckUtil.AppCatalogEngine" -as [type]) { return [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($s) }
+        return $s.Trim().ToLowerInvariant()
+    }
+
+    $cleanTargets = [System.Collections.Generic.List[string]]::new()
+    foreach ($n in $exactNames) {
+        $cn = & $getClean $n
+        if ($cn -and $cn.Length -ge 2 -and -not $cleanTargets.Contains($cn)) {
+            $cleanTargets.Add($cn)
+        }
+    }
+
+    $hasCompat = [bool](Get-Command Test-MatchCompatible -ErrorAction SilentlyContinue)
+    $bestCand = $null
+    $bestScore = 0
+
+    foreach ($inst in $InstalledList) {
+        if ($null -eq $inst -or -not $inst.DisplayName) { continue }
+        $cleanInst = & $getClean $inst.DisplayName
+        if ([string]::IsNullOrWhiteSpace($cleanInst)) { continue }
+
+        $score = 0
+        foreach ($ct in $cleanTargets) {
+            if ($cleanInst.Equals($ct, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $score = [Math]::Max($score, 900)
+                break
+            }
+            if ($ct.Length -ge 4 -and $cleanInst -match ("(?<![a-zA-Z0-9])" + [regex]::Escape($ct) + "(?![a-zA-Z0-9])")) {
+                $score = [Math]::Max($score, 700 + $ct.Length)
+            }
+        }
+
+        if ($score -gt $bestScore) {
+            if ($hasCompat) {
+                $verProp = if ($inst.PSObject.Properties['DisplayVersion']) { [string]$inst.DisplayVersion } else { "" }
+                $probe = [PSCustomObject]@{ Name = [string]$inst.DisplayName; ID = [string]$inst.Id; Version = $verProp }
+                if (-not (Test-MatchCompatible $App $probe)) { continue }
+            }
+            $bestScore = $score
+            $bestCand = $inst
+        }
+    }
+
+    return $bestCand
+}
+
 function Invoke-SmartAppUpgrade {
     param($Tag, [switch]$IsBulkUpgrade)
     if (-not $Tag) { return 1 }
@@ -13379,14 +13706,7 @@ function Invoke-SmartAppUpgrade {
         @()
     }
 
-    $regMatch = $null
-    foreach ($inst in $instApps) {
-        if (($inst.Id -and ($inst.Id -eq $app.ID -or $inst.Id -eq $Tag.DetectedId)) -or
-            ($inst.DisplayName -and ($inst.DisplayName -eq $app.Name -or $inst.DisplayName -eq $app.ID))) {
-            $regMatch = $inst
-            break
-        }
-    }
+    $regMatch = Find-RegistryMatchForCatalogApp -App $app -InstalledList $instApps -DetectedId $Tag.DetectedId
 
     $existingLoc = $null
     if ($regMatch -and -not [string]::IsNullOrWhiteSpace($regMatch.InstallLocation) -and (Test-Path -LiteralPath $regMatch.InstallLocation)) {
@@ -13396,7 +13716,9 @@ function Invoke-SmartAppUpgrade {
     if (-not $existingLoc -and $regMatch) {
         $uCmd = if ($regMatch.QuietUninstallString) { $regMatch.QuietUninstallString } else { $regMatch.UninstallString }
         if ($uCmd) {
-            $uExe = if ($uCmd.StartsWith('"')) {
+            $uExe = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
+                (Split-CommandLineExecutableAndArgs -CommandLine $uCmd).Exe
+            } elseif ($uCmd.StartsWith('"')) {
                 $q2 = $uCmd.IndexOf('"', 1)
                 if ($q2 -gt 1) { $uCmd.Substring(1, $q2 - 1) } else { $uCmd.Trim('"') }
             } else {
@@ -13596,8 +13918,14 @@ function Invoke-SmartAppUpgrade {
                     Log-Text "[OK] $($app.Name) hiện đã ở phiên bản mới nhất ($($probeItem.Version))."
                 } elseif ($probeItem -and $probeItem.HasUpdate) {
                     Log-Text "[*] Phát hiện bản mới $($probeItem.Available) nhưng khác scope cài đặt; đang nâng cấp trực tiếp (--force)..."
-                    $forceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
+                    $baseForceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
+                    $forceArgs = $baseForceArgs
+                    if ($existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
+                    if ($scope) { $forceArgs += " --scope $scope" }
                     $code = Invoke-WinGetWithMsiRetry -Arguments $forceArgs
+                    if ($code -ne 0 -and ($existingLoc -or $scope)) {
+                        $code = Invoke-WinGetWithMsiRetry -Arguments $baseForceArgs
+                    }
                 }
             }
         } catch {}

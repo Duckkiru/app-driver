@@ -31,15 +31,41 @@ function Test-SafeAppDirectoryForCleanup {
     )
 
     if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
-    $norm = $Path.Trim().TrimEnd('\')
+    $rawTrim = $Path.Trim()
+    if ($rawTrim.StartsWith("\\")) { return $false }
+    if ($rawTrim -notmatch '^[A-Za-z]:\\') { return $false }
+    $norm = try { [System.IO.Path]::GetFullPath($rawTrim).TrimEnd('\') } catch { return $false }
     if ($norm -match '^[A-Za-z]:$') { return $false }
+    if ($norm -match '^[A-Za-z]:\\Users\\[^\\]+$') { return $false }
+
+    $protectedRaw = @(
+        $env:USERPROFILE,
+        $env:PUBLIC,
+        (Join-Path $env:SystemDrive "Users\Default"),
+        $env:LOCALAPPDATA,
+        $env:APPDATA,
+        $env:ProgramData,
+        $(if ($env:ProgramData) { Join-Path $env:ProgramData "Microsoft" } else { "" }),
+        $env:SystemRoot,
+        $env:ProgramFiles,
+        ${env:ProgramFiles(x86)},
+        ${env:CommonProgramFiles},
+        ${env:CommonProgramFiles(x86)},
+        $env:TEMP
+    )
+    foreach ($pr in $protectedRaw) {
+        if (-not [string]::IsNullOrWhiteSpace($pr)) {
+            $prNorm = try { [System.IO.Path]::GetFullPath($pr).TrimEnd('\') } catch { $pr.Trim().TrimEnd('\') }
+            if ($norm.Equals($prNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $false }
+        }
+    }
 
     $parts = @($norm -split '\\' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     if ($parts.Count -lt 2) { return $false }
 
     $genericContainers = @(
         'Windows', 'System32', 'SysWOW64', 'Program Files', 'Program Files (x86)',
-        'ProgramData', 'Programs', 'Users', 'AppData', 'Local', 'Roaming', 'LocalLow',
+        'ProgramData', 'Programs', 'Users', 'Public', 'Default', 'Microsoft', 'AppData', 'Local', 'Roaming', 'LocalLow',
         'Common Files', 'WindowsApps', 'ModifiableWindowsApps', 'Package Cache', 'Packages',
         'Temp', 'Apps', 'Applications', 'Games', 'Game', 'Software', 'Softwares', 'Tools',
         'Downloads', 'Desktop', 'Documents', 'Pictures', 'Music', 'Videos', 'OneDrive',
@@ -133,7 +159,7 @@ function Test-PathClaimedByActiveApp {
         $actNorm = Get-NormalizedAppIdentity $act.DisplayName
         if ($candNorm -and $actNorm) {
             if ($actNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
-            if ($candNorm.Length -ge 4 -and $actNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
+            if ($candNorm.Length -ge 3 -and $actNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
         }
         if ($act.InstallLocation) {
             $actLocLeaf = [System.IO.Path]::GetFileName($act.InstallLocation.Trim().TrimEnd('\'))
@@ -141,7 +167,10 @@ function Test-PathClaimedByActiveApp {
         }
         if ($act.Publisher) {
             $pubNorm = Get-NormalizedAppIdentity $act.Publisher
-            if ($candNorm -and $pubNorm -and $pubNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+            if ($candNorm -and $pubNorm) {
+                if ($pubNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+                if ($candNorm.Length -ge 3 -and $pubNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
+            }
         }
     }
     return $false
@@ -1289,38 +1318,47 @@ function Invoke-DeepAppUninstall {
         if (-not [string]::IsNullOrWhiteSpace($uninstCmd)) {
             $uninstCmd = $uninstCmd.Trim()
             if ($uninstCmd.IndexOf("msiexec", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                $msiId = if (Get-Command Get-MsiProductCodeFromCommand -ErrorAction SilentlyContinue) {
+                    Get-MsiProductCodeFromCommand -UninstallCommand $uninstCmd -FallbackId $AppEntry.Id
+                } else {
+                    $AppEntry.Id
+                }
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName)..."
+                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($msiId)..."
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    Run-CliStream "msiexec.exe" "/x `"$($AppEntry.Id)`" /qn /norestart"
-                } else {
-                    Start-Process "msiexec.exe" -ArgumentList "/x `"$($AppEntry.Id)`" /qn /norestart" -Wait -NoNewWindow
-                }
-            } else {
-                $exe = ""
-                $args = ""
-                if ($uninstCmd.StartsWith('"')) {
-                    $nextQ = $uninstCmd.IndexOf('"', 1)
-                    if ($nextQ -gt 1) {
-                        $exe = $uninstCmd.Substring(1, $nextQ - 1)
-                        $args = $uninstCmd.Substring($nextQ + 1).Trim()
-                    } else {
-                        $exe = $uninstCmd.Trim('"')
+                    $msiCode = Run-CliStream "msiexec.exe" "/x `"$msiId`" /qn /norestart"
+                    if ($msiCode -eq 1618) {
+                        Start-Sleep -Seconds 3
+                        $null = Run-CliStream "msiexec.exe" "/x `"$msiId`" /qn /norestart"
                     }
                 } else {
-                    $parts = $uninstCmd -split '\s+', 2
-                    $exe = $parts[0]
-                    if ($parts.Count -gt 1) { $args = $parts[1] }
+                    Start-Process "msiexec.exe" -ArgumentList "/x `"$msiId`" /qn /norestart" -Wait -NoNewWindow
                 }
-
-                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $exe $args"
-                }
-                if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    Run-CliStream $exe $args
+            } else {
+                $cmdParts = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
+                    Split-CommandLineExecutableAndArgs -CommandLine $uninstCmd
                 } else {
-                    Start-Process $exe -ArgumentList $args -Wait -NoNewWindow
+                    $spParts = $uninstCmd -split '\s+', 2
+                    [PSCustomObject]@{ Exe = $spParts[0].Trim('"'); Args = if ($spParts.Count -gt 1) { $spParts[1] } else { "" } }
+                }
+                $exe  = $cmdParts.Exe
+                $args = $cmdParts.Args
+
+                $missingExe = ($exe -match '^[A-Za-z]:\\') -and (-not [System.IO.File]::Exists($exe))
+                if ($missingExe) {
+                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                        Log-Text "[!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c t$([char]0x1EA1)i '$exe' - chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t d$([char]0x1ECD)n s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
+                    }
+                } else {
+                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                        Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $exe $args"
+                    }
+                    if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
+                        $null = Run-CliStream $exe $args
+                    } else {
+                        Start-Process $exe -ArgumentList $args -Wait -NoNewWindow
+                    }
                 }
             }
         }

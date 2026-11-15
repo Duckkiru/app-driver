@@ -1896,6 +1896,88 @@ function Wait-SquirrelUpdatersSettle {
     }
 }
 
+function Find-RegistryMatchForCatalogApp {
+    param(
+        $App,
+        $InstalledList,
+        [string]$DetectedId = ""
+    )
+
+    if (-not $App -or -not $InstalledList) { return $null }
+
+    foreach ($inst in $InstalledList) {
+        if ($null -eq $inst) { continue }
+        if ($inst.Id -and ($inst.Id -ieq $App.ID -or ($DetectedId -and $inst.Id -ieq $DetectedId))) {
+            return $inst
+        }
+    }
+
+    $exactNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($App.Name) { [void]$exactNames.Add($App.Name) }
+    if ($App.ID) { [void]$exactNames.Add($App.ID) }
+    if ($App.Aliases) {
+        foreach ($al in $App.Aliases) {
+            if (-not [string]::IsNullOrWhiteSpace($al)) { [void]$exactNames.Add($al) }
+        }
+    }
+
+    foreach ($inst in $InstalledList) {
+        if ($null -eq $inst -or -not $inst.DisplayName) { continue }
+        if ($exactNames.Contains($inst.DisplayName)) {
+            return $inst
+        }
+    }
+
+    $getClean = {
+        param([string]$s)
+        if ([string]::IsNullOrWhiteSpace($s)) { return "" }
+        if (Get-Command Get-CleanAppName -ErrorAction SilentlyContinue) { return (Get-CleanAppName $s) }
+        if ("DuckUtil.AppCatalogEngine" -as [type]) { return [DuckUtil.AppCatalogEngine]::CleanCatalogAppName($s) }
+        return $s.Trim().ToLowerInvariant()
+    }
+
+    $cleanTargets = [System.Collections.Generic.List[string]]::new()
+    foreach ($n in $exactNames) {
+        $cn = & $getClean $n
+        if ($cn -and $cn.Length -ge 2 -and -not $cleanTargets.Contains($cn)) {
+            $cleanTargets.Add($cn)
+        }
+    }
+
+    $hasCompat = [bool](Get-Command Test-MatchCompatible -ErrorAction SilentlyContinue)
+    $bestCand = $null
+    $bestScore = 0
+
+    foreach ($inst in $InstalledList) {
+        if ($null -eq $inst -or -not $inst.DisplayName) { continue }
+        $cleanInst = & $getClean $inst.DisplayName
+        if ([string]::IsNullOrWhiteSpace($cleanInst)) { continue }
+
+        $score = 0
+        foreach ($ct in $cleanTargets) {
+            if ($cleanInst.Equals($ct, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $score = [Math]::Max($score, 900)
+                break
+            }
+            if ($ct.Length -ge 4 -and $cleanInst -match ("(?<![a-zA-Z0-9])" + [regex]::Escape($ct) + "(?![a-zA-Z0-9])")) {
+                $score = [Math]::Max($score, 700 + $ct.Length)
+            }
+        }
+
+        if ($score -gt $bestScore) {
+            if ($hasCompat) {
+                $verProp = if ($inst.PSObject.Properties['DisplayVersion']) { [string]$inst.DisplayVersion } else { "" }
+                $probe = [PSCustomObject]@{ Name = [string]$inst.DisplayName; ID = [string]$inst.Id; Version = $verProp }
+                if (-not (Test-MatchCompatible $App $probe)) { continue }
+            }
+            $bestScore = $score
+            $bestCand = $inst
+        }
+    }
+
+    return $bestCand
+}
+
 function Invoke-SmartAppUpgrade {
     param($Tag, [switch]$IsBulkUpgrade)
     if (-not $Tag) { return 1 }
@@ -1916,14 +1998,7 @@ function Invoke-SmartAppUpgrade {
         @()
     }
 
-    $regMatch = $null
-    foreach ($inst in $instApps) {
-        if (($inst.Id -and ($inst.Id -eq $app.ID -or $inst.Id -eq $Tag.DetectedId)) -or
-            ($inst.DisplayName -and ($inst.DisplayName -eq $app.Name -or $inst.DisplayName -eq $app.ID))) {
-            $regMatch = $inst
-            break
-        }
-    }
+    $regMatch = Find-RegistryMatchForCatalogApp -App $app -InstalledList $instApps -DetectedId $Tag.DetectedId
 
     $existingLoc = $null
     if ($regMatch -and -not [string]::IsNullOrWhiteSpace($regMatch.InstallLocation) -and (Test-Path -LiteralPath $regMatch.InstallLocation)) {
@@ -1933,7 +2008,9 @@ function Invoke-SmartAppUpgrade {
     if (-not $existingLoc -and $regMatch) {
         $uCmd = if ($regMatch.QuietUninstallString) { $regMatch.QuietUninstallString } else { $regMatch.UninstallString }
         if ($uCmd) {
-            $uExe = if ($uCmd.StartsWith('"')) {
+            $uExe = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
+                (Split-CommandLineExecutableAndArgs -CommandLine $uCmd).Exe
+            } elseif ($uCmd.StartsWith('"')) {
                 $q2 = $uCmd.IndexOf('"', 1)
                 if ($q2 -gt 1) { $uCmd.Substring(1, $q2 - 1) } else { $uCmd.Trim('"') }
             } else {
@@ -2133,8 +2210,14 @@ function Invoke-SmartAppUpgrade {
                     Log-Text "[OK] $($app.Name) hiện đã ở phiên bản mới nhất ($($probeItem.Version))."
                 } elseif ($probeItem -and $probeItem.HasUpdate) {
                     Log-Text "[*] Phát hiện bản mới $($probeItem.Available) nhưng khác scope cài đặt; đang nâng cấp trực tiếp (--force)..."
-                    $forceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
+                    $baseForceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
+                    $forceArgs = $baseForceArgs
+                    if ($existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
+                    if ($scope) { $forceArgs += " --scope $scope" }
                     $code = Invoke-WinGetWithMsiRetry -Arguments $forceArgs
+                    if ($code -ne 0 -and ($existingLoc -or $scope)) {
+                        $code = Invoke-WinGetWithMsiRetry -Arguments $baseForceArgs
+                    }
                 }
             }
         } catch {}

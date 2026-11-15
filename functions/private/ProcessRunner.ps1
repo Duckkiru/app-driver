@@ -113,3 +113,79 @@ function Run-CliStream {
         return -1
     }
 }
+
+function Split-CommandLineExecutableAndArgs {
+    param([string]$CommandLine)
+
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) {
+        return [PSCustomObject]@{ Exe = ""; Args = "" }
+    }
+
+    $expanded = [System.Environment]::ExpandEnvironmentVariables($CommandLine).Trim()
+    if ($expanded.StartsWith('"')) {
+        $qIdx = $expanded.IndexOf('"', 1)
+        if ($qIdx -gt 1) {
+            return [PSCustomObject]@{
+                Exe  = $expanded.Substring(1, $qIdx - 1).Trim()
+                Args = $expanded.Substring($qIdx + 1).Trim()
+            }
+        }
+        return [PSCustomObject]@{ Exe = $expanded.Trim('"'); Args = "" }
+    }
+
+    if ($expanded.StartsWith("'")) {
+        $sqIdx = $expanded.IndexOf("'", 1)
+        if ($sqIdx -gt 1) {
+            return [PSCustomObject]@{
+                Exe  = $expanded.Substring(1, $sqIdx - 1).Trim()
+                Args = $expanded.Substring($sqIdx + 1).Trim()
+            }
+        }
+        return [PSCustomObject]@{ Exe = $expanded.Trim("'"); Args = "" }
+    }
+
+    $extMatches = [System.Text.RegularExpressions.Regex]::Matches($expanded, '\.(?:exe|com|cmd|bat)(?=\s|$)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    if ($extMatches.Count -gt 0) {
+        $firstCand = $null
+        foreach ($em in $extMatches) {
+            $splitPos = $em.Index + $em.Length
+            $candExe  = $expanded.Substring(0, $splitPos).Trim()
+            $candArgs = $expanded.Substring($splitPos).Trim()
+            if ($null -eq $firstCand) {
+                $firstCand = [PSCustomObject]@{ Exe = $candExe; Args = $candArgs }
+            }
+            try {
+                if ([System.IO.File]::Exists($candExe)) {
+                    return [PSCustomObject]@{ Exe = $candExe; Args = $candArgs }
+                }
+            } catch {}
+        }
+        return $firstCand
+    }
+
+    $parts = $expanded -split '\s+', 2
+    return [PSCustomObject]@{
+        Exe  = $parts[0]
+        Args = if ($parts.Count -gt 1) { $parts[1] } else { "" }
+    }
+}
+
+function Get-MsiProductCodeFromCommand {
+    param(
+        [string]$UninstallCommand,
+        [string]$FallbackId = ""
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($UninstallCommand)) {
+        $m = [System.Text.RegularExpressions.Regex]::Match($UninstallCommand, '\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}')
+        if ($m.Success) { return $m.Value }
+        $mLoose = [System.Text.RegularExpressions.Regex]::Match($UninstallCommand, '\{[0-9A-Fa-f\-]{32,38}\}')
+        if ($mLoose.Success) { return $mLoose.Value }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($FallbackId)) {
+        $fb = $FallbackId.Trim()
+        if ($fb -match '^\{[0-9A-Fa-f\-]{32,38}\}$') { return $fb }
+        return $fb
+    }
+    return ""
+}
