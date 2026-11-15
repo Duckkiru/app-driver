@@ -482,7 +482,7 @@
                     <Border Grid.Row="1" Name="UninstallerHeaderBorder" Background="#090D14" Height="34"
                             Margin="16,8,0,0" HorizontalAlignment="Left"
                             Width="{Binding ActualWidth, ElementName=UninstallerRowsPanel}"
-                            BorderBrush="#28FFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
+                            BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
                         <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="38"/>
@@ -493,17 +493,17 @@
                                 <ColumnDefinition Width="115"/>
                                 <ColumnDefinition Width="54"/>
                             </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
-                            <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
-                            <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
-                            <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
-                            <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#1FFFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>

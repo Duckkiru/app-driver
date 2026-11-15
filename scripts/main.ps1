@@ -496,8 +496,8 @@ $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, S
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
 $script:brushUninstRowBg              = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0E, 0x13, 0x1D)); $script:brushUninstRowBg.Freeze()
-$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x1E, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowBorder.Freeze()
-$script:brushUninstColDivider         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x1B, 0xFF, 0xFF, 0xFF)); $script:brushUninstColDivider.Freeze()
+$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x13, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowBorder.Freeze()
+$script:brushUninstColDivider         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x11, 0xFF, 0xFF, 0xFF)); $script:brushUninstColDivider.Freeze()
 $script:brushUninstRowHover           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushUninstRowHover.Freeze()
 $script:brushUninstRowCheckedBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x24, 0x3A)); $script:brushUninstRowCheckedBg.Freeze()
 $script:brushUninstRowCheckedBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushUninstRowCheckedBorder.Freeze()
