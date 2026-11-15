@@ -30,8 +30,9 @@ $sb.AppendLine(($dq + '@')) | Out-Null
 $sb.AppendLine() | Out-Null
 
 $sb.AppendLine('function Import-CachedCSharpType {') | Out-Null
-$sb.AppendLine('    param([string]$TypeName, [string]$SourceCode, [string]$Prefix, [string[]]$ReferencedAssemblies = @())') | Out-Null
-$sb.AppendLine('    if ($TypeName -as [type]) { return }') | Out-Null
+$sb.AppendLine('    param([string]$TypeName, [string]$SourceCode, [string]$Prefix, [string[]]$ReferencedAssemblies = @(), [string]$RequiredMethod = "")') | Out-Null
+$sb.AppendLine('    $existingType = $TypeName -as [type]') | Out-Null
+$sb.AppendLine('    if ($existingType -and ([string]::IsNullOrWhiteSpace($RequiredMethod) -or $null -ne $existingType.GetMethod($RequiredMethod))) { return }') | Out-Null
 $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine('        $cacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Cache"') | Out-Null
 $sb.AppendLine('        if (-not [System.IO.Directory]::Exists($cacheDir)) { [System.IO.Directory]::CreateDirectory($cacheDir) | Out-Null }') | Out-Null
@@ -39,11 +40,21 @@ $sb.AppendLine('        $sha = [System.Security.Cryptography.SHA256]::Create()')
 $sb.AppendLine('        $hashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($SourceCode + "|" + $PSVersionTable.PSVersion.ToString()))') | Out-Null
 $sb.AppendLine('        $sha.Dispose()') | Out-Null
 $sb.AppendLine('        $hashHex = ([System.BitConverter]::ToString($hashBytes)).Replace("-", "").Substring(0, 16)') | Out-Null
-$sb.AppendLine('        $dllPath = Join-Path $cacheDir "${Prefix}_${hashHex}.dll"') | Out-Null
+$sb.AppendLine('        $dllName = "${Prefix}_${hashHex}.dll"') | Out-Null
+$sb.AppendLine('        $dllPath = Join-Path $cacheDir $dllName') | Out-Null
+$sb.AppendLine('        try {') | Out-Null
+$sb.AppendLine('            foreach ($oldDll in [System.IO.Directory]::GetFiles($cacheDir, "${Prefix}_*.dll")) {') | Out-Null
+$sb.AppendLine('                if (-not [System.IO.Path]::GetFileName($oldDll).Equals($dllName, [System.StringComparison]::OrdinalIgnoreCase)) {') | Out-Null
+$sb.AppendLine('                    try { [System.IO.File]::Delete($oldDll) } catch {}') | Out-Null
+$sb.AppendLine('                }') | Out-Null
+$sb.AppendLine('            }') | Out-Null
+$sb.AppendLine('        } catch {}') | Out-Null
 $sb.AppendLine('        if ([System.IO.File]::Exists($dllPath)) {') | Out-Null
 $sb.AppendLine('            try {') | Out-Null
 $sb.AppendLine('                [System.Reflection.Assembly]::LoadFrom($dllPath) | Out-Null') | Out-Null
-$sb.AppendLine('                if ($TypeName -as [type]) { return }') | Out-Null
+$sb.AppendLine('                $loadedType = $TypeName -as [type]') | Out-Null
+$sb.AppendLine('                if ($loadedType -and ([string]::IsNullOrWhiteSpace($RequiredMethod) -or $null -ne $loadedType.GetMethod($RequiredMethod))) { return }') | Out-Null
+$sb.AppendLine('                try { [System.IO.File]::Delete($dllPath) } catch {}') | Out-Null
 $sb.AppendLine('            } catch {}') | Out-Null
 $sb.AppendLine('        }') | Out-Null
 $sb.AppendLine('        $addParams = @{ TypeDefinition = $SourceCode; OutputAssembly = $dllPath; ErrorAction = "Stop" }') | Out-Null
@@ -75,7 +86,7 @@ $sb.AppendLine('        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_)
 $sb.AppendLine(('        $smoothScrollCs = @' + $q)) | Out-Null
 $sb.AppendLine($smoothCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "Attach"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
@@ -84,7 +95,7 @@ $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $appCatalogCs = @' + $q)) | Out-Null
 $sb.AppendLine($appCatalogCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "HasCrackOrPatchIndicators"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
@@ -93,7 +104,7 @@ $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $deepUninstCs = @' + $q)) | Out-Null
 $sb.AppendLine($deepCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "RestoreDirectorySnapshot"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null

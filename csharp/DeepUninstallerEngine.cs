@@ -842,11 +842,13 @@ namespace DuckUtil
         private static bool CheckIsBrokenOrphan(string uninstallString, string installLocation)
         {
             if (string.IsNullOrWhiteSpace(uninstallString)) return false;
-            string u = uninstallString.Trim();
+            string u = Environment.ExpandEnvironmentVariables(uninstallString).Trim();
             if (u.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
 
             string exePath = ExtractExePath(u);
             if (string.IsNullOrEmpty(exePath)) return false;
+            exePath = exePath.Trim('\"', ' ');
+            if (!Regex.IsMatch(exePath, @"^[a-zA-Z]:\\")) return false;
 
             bool exeExists = false;
             try { exeExists = File.Exists(exePath); } catch {}
@@ -856,9 +858,13 @@ namespace DuckUtil
                 bool locExists = false;
                 try
                 {
-                    if (!string.IsNullOrEmpty(installLocation) && Directory.Exists(installLocation))
+                    if (!string.IsNullOrWhiteSpace(installLocation))
                     {
-                        locExists = true;
+                        string expLoc = Environment.ExpandEnvironmentVariables(installLocation).Trim('\"', ' ');
+                        if (!string.IsNullOrEmpty(expLoc) && Directory.Exists(expLoc))
+                        {
+                            locExists = true;
+                        }
                     }
                 }
                 catch {}
@@ -872,7 +878,7 @@ namespace DuckUtil
         private static string ExtractExePath(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return null;
-            raw = raw.Trim();
+            raw = Environment.ExpandEnvironmentVariables(raw).Trim();
             if (raw.StartsWith("\""))
             {
                 int nextQuote = raw.IndexOf('\"', 1);
@@ -1566,6 +1572,11 @@ namespace DuckUtil
 
         public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes)
         {
+            return BackupDirectorySnapshot(sourceDir, backupDir, maxTotalBytes, false);
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes, bool isInstallDir)
+        {
             if (string.IsNullOrWhiteSpace(sourceDir) || string.IsNullOrWhiteSpace(backupDir))
                 return 0L;
             try
@@ -1578,14 +1589,26 @@ namespace DuckUtil
 
             var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab"
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab", ".manifest", ".cat", ".mum"
+            };
+            var skipFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "icudtl.dat", "v8_context_snapshot.bin", "snapshot_blob.bin",
+                "chrome_100_percent.pak", "chrome_200_percent.pak", "resources.pak",
+                "package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"
+            };
+            var installAllowExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".ini", ".cfg", ".conf", ".config", ".toml", ".yaml", ".yml",
+                ".lic", ".license", ".key", ".reg", ".db", ".sqlite", ".sqlite3",
+                ".json", ".xml", ".txt", ".dat", ".bin", ".properties", ".prefs"
             };
             var skipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
                 "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
                 "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
-                "locales", "swiftshader", "Dictionaries"
+                "locales", "swiftshader", "Dictionaries", "node_modules"
             };
 
             long totalBytes = 0L;
@@ -1603,9 +1626,24 @@ namespace DuckUtil
                         {
                             try
                             {
+                                string fn = Path.GetFileName(file) ?? "";
+                                if (skipFileNames.Contains(fn)) continue;
+                                if (fn.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.dev.json", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+
                                 string ext = Path.GetExtension(file);
                                 if (!string.IsNullOrEmpty(ext) && skipExts.Contains(ext))
                                     continue;
+
+                                if (isInstallDir)
+                                {
+                                    if (string.IsNullOrEmpty(ext) || !installAllowExts.Contains(ext))
+                                        continue;
+                                }
 
                                 var fi = new FileInfo(file);
                                 if (fi.Length > 20971520L) continue;

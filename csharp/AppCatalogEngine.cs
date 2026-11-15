@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
@@ -91,7 +93,9 @@ namespace DuckUtil
             if (string.IsNullOrWhiteSpace(installedVer)) return true;
             string iv = installedVer.Trim();
             if (iv.StartsWith("<")) return true;
-            if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase)) return true;
+            bool hasIvDigit = false;
+            foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
+            if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
             return CompareAppVersions(av, iv) > 0;
         }
 
@@ -219,10 +223,20 @@ namespace DuckUtil
             if (separatorIndex > 0)
             {
                 hasTable = true;
+                string separatorLine = lines[separatorIndex];
                 string headerLine = lines[separatorIndex - 1];
-                MatchCollection matches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
-                var colOffsetsList = new List<int>(matches.Count);
-                foreach (Match m in matches) colOffsetsList.Add(m.Index);
+                var colOffsetsList = new List<int>();
+                if (Regex.IsMatch(separatorLine, @"---+\s+---+"))
+                {
+                    MatchCollection dashMatches = Regex.Matches(separatorLine, @"-+");
+                    foreach (Match dm in dashMatches) colOffsetsList.Add(dm.Index);
+                }
+                else if (!string.IsNullOrEmpty(headerLine))
+                {
+                    MatchCollection matches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
+                    colOffsetsList = new List<int>(matches.Count);
+                    foreach (Match m in matches) colOffsetsList.Add(m.Index);
+                }
                 int[] colOffsets = colOffsetsList.ToArray();
 
                 for (int i = separatorIndex + 1; i < lines.Count; i++)
@@ -301,6 +315,39 @@ namespace DuckUtil
                             CleanName = CleanCatalogAppName(appName),
                             Source = "winget"
                         });
+                    }
+                }
+            }
+            else if (allowHeaderless)
+            {
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    string line = lines[i];
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    string trimmed = line.Trim();
+                    if (trimmed.StartsWith("---")) continue;
+                    string[] cols = Regex.Split(trimmed, @"\s{2,}");
+                    if (cols.Length >= 2)
+                    {
+                        string appName = cols[0].Trim();
+                        string appId = cols[1].Trim();
+                        if (!Regex.IsMatch(appId, @"^(ARP|MSIX)\\|\S+\.\S+")) continue;
+                        string version = cols.Length >= 3 ? cols[2].Trim() : "";
+                        string avail = cols.Length >= 4 ? cols[3].Trim() : "";
+                        if (!string.IsNullOrEmpty(appName) && !string.IsNullOrEmpty(appId))
+                        {
+                            bool hasUpdate = TestAppUpdateGenuine(version, avail);
+                            parsed.Add(new CatalogSensorItem
+                            {
+                                Name = appName,
+                                ID = appId,
+                                Version = version,
+                                Available = hasUpdate ? avail : "",
+                                HasUpdate = hasUpdate,
+                                CleanName = CleanCatalogAppName(appName),
+                                Source = "winget"
+                            });
+                        }
                     }
                 }
             }
@@ -396,7 +443,7 @@ namespace DuckUtil
         private static string ExtractExePath(string cmd)
         {
             if (string.IsNullOrWhiteSpace(cmd)) return null;
-            string raw = cmd.Trim();
+            string raw = Environment.ExpandEnvironmentVariables(cmd).Trim();
             if (raw.StartsWith("\""))
             {
                 int nextQuote = raw.IndexOf('\"', 1);
@@ -424,11 +471,13 @@ namespace DuckUtil
         private static bool IsBrokenRegistryEntry(string uninstallString, string installLocation)
         {
             if (string.IsNullOrWhiteSpace(uninstallString)) return false;
-            string u = uninstallString.Trim();
+            string u = Environment.ExpandEnvironmentVariables(uninstallString).Trim();
             if (u.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
 
             string exePath = ExtractExePath(u);
             if (string.IsNullOrEmpty(exePath)) return false;
+            exePath = exePath.Trim('\"', ' ');
+            if (!Regex.IsMatch(exePath, @"^[a-zA-Z]:\\")) return false;
 
             bool exeExists = false;
             try { exeExists = File.Exists(exePath); } catch {}
@@ -438,9 +487,13 @@ namespace DuckUtil
                 bool locExists = false;
                 try
                 {
-                    if (!string.IsNullOrEmpty(installLocation) && Directory.Exists(installLocation))
+                    if (!string.IsNullOrWhiteSpace(installLocation))
                     {
-                        locExists = true;
+                        string expLoc = Environment.ExpandEnvironmentVariables(installLocation).Trim('\"', ' ');
+                        if (!string.IsNullOrEmpty(expLoc) && Directory.Exists(expLoc))
+                        {
+                            locExists = true;
+                        }
                     }
                 }
                 catch {}
@@ -459,7 +512,8 @@ namespace DuckUtil
             {
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X64\"),
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X86\"),
-                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\")
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\"),
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
             };
 
             string vsCodeUserDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Microsoft VS Code");
@@ -498,12 +552,17 @@ namespace DuckUtil
                                         }
                                     }
 
+                                    if (Regex.IsMatch(dn, @"Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack", RegexOptions.IgnoreCase))
+                                    {
+                                        continue;
+                                    }
+
                                     if (dn.IndexOf("Visual Studio Code (User)", StringComparison.OrdinalIgnoreCase) >= 0 && !vsCodeUserExists)
                                     {
                                         continue;
                                     }
 
-                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim();
+                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
                                     string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
                                     if (IsBrokenRegistryEntry(uStr, loc)) continue;
 
@@ -665,6 +724,7 @@ namespace DuckUtil
                 if (!Directory.Exists(ds.Item1)) continue;
                 try
                 {
+                    var byMajor = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     foreach (string verDir in Directory.GetDirectories(ds.Item1))
                     {
                         string verName = Path.GetFileName(verDir);
@@ -672,16 +732,29 @@ namespace DuckUtil
                         if (!m.Success) continue;
                         string maj = m.Groups[1].Value;
                         string min = m.Groups[2].Value;
+                        bool isPre = Regex.IsMatch(verName, @"preview|rc|alpha|beta", RegexOptions.IgnoreCase);
+                        string trackKey = (maj == "3" && min == "1") ? "3_1" : (isPre ? "Preview" : maj);
+                        string existing;
+                        if (!byMajor.TryGetValue(trackKey, out existing) || CompareAppVersions(verName, existing) > 0)
+                        {
+                            byMajor[trackKey] = verName;
+                        }
+                    }
+
+                    foreach (var kv in byMajor)
+                    {
+                        string tk = kv.Key;
+                        if (ds.Item2 == "x86" && tk != "6" && tk != "7" && tk != "8") continue;
+                        string bestV = kv.Value;
                         string archSuffix = ds.Item2 == "x86" ? ".x86" : "";
                         string archLabel = ds.Item2 == "x86" ? " (x86)" : " (x64)";
-                        string idBand = (maj == "3" && min == "1") ? "3_1" : (maj == "11" ? "Preview" : maj);
-                        string wingetId = "Microsoft.DotNet.DesktopRuntime." + idBand + archSuffix;
-                        string disp = "Microsoft Windows Desktop Runtime - " + verName + archLabel;
+                        string wingetId = "Microsoft.DotNet.DesktopRuntime." + tk + archSuffix;
+                        string disp = "Microsoft Windows Desktop Runtime - " + bestV + archLabel;
                         items.Add(new CatalogSensorItem
                         {
                             Name = disp,
                             ID = wingetId,
-                            Version = verName,
+                            Version = bestV,
                             Available = "",
                             HasUpdate = false,
                             CleanName = CleanCatalogAppName(disp),
@@ -716,7 +789,14 @@ namespace DuckUtil
                 Path.Combine(userProfile, @"scoop\shims"),
                 Path.Combine(appData, "npm"),
                 Path.Combine(localAppData, @"Programs\Ollama"),
-                Path.Combine(localAppData, @"Microsoft\WinGet\Links")
+                Path.Combine(localAppData, @"Microsoft\WinGet\Links"),
+                Path.Combine(localAppData, @"Programs\Python\Python313\Scripts"),
+                Path.Combine(localAppData, @"Programs\Python\Python312\Scripts"),
+                Path.Combine(userProfile, @".bun\bin"),
+                Path.Combine(localAppData, @"pnpm"),
+                Path.Combine(localAppData, @"Programs\oh-my-posh\bin"),
+                @"C:\Program Files\Neovim\bin",
+                Path.Combine(localAppData, @"Android\Sdk\platform-tools")
             };
             foreach (string ed in extraDirs)
             {
@@ -736,6 +816,7 @@ namespace DuckUtil
                 Tuple.Create("rclone.exe", "Rclone.Rclone", "Rclone", "rclone"),
                 Tuple.Create("bun.exe", "Oven-sh.Bun", "Bun", "bun"),
                 Tuple.Create("pnpm.exe", "pnpm.pnpm", "pnpm", "pnpm"),
+                Tuple.Create("pnpm.cmd", "pnpm.pnpm", "pnpm", "pnpm"),
                 Tuple.Create("yarn.cmd", "Yarn.Yarn", "Yarn", "yarn"),
                 Tuple.Create("fastfetch.exe", "Fastfetch-cli.Fastfetch", "Fastfetch", "fastfetch"),
                 Tuple.Create("oh-my-posh.exe", "JanDeDobbeleer.OhMyPosh", "Oh My Posh", "oh-my-posh"),
@@ -744,8 +825,10 @@ namespace DuckUtil
                 Tuple.Create("gitleaks.exe", "Gitleaks.Gitleaks", "Gitleaks", "gitleaks")
             };
 
+            var seenCliIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var probe in cliProbes)
             {
+                if (seenCliIds.Contains(probe.Item2)) continue;
                 string foundExe = null;
                 foreach (string pd in pathDirs)
                 {
@@ -758,6 +841,7 @@ namespace DuckUtil
                 }
                 if (foundExe != null)
                 {
+                    seenCliIds.Add(probe.Item2);
                     string exeVer = ResolveCliExactVersion(foundExe, probe.Item4);
                     items.Add(new CatalogSensorItem
                     {
@@ -772,7 +856,296 @@ namespace DuckUtil
                 }
             }
 
+            string[] legacyPaths = new string[]
+            {
+                Path.Combine(appData, @".tlauncher\legacy\Minecraft\TL.exe"),
+                Path.Combine(appData, @".tlauncher\legacy"),
+                Path.Combine(appData, @".minecraft\LLauncher.exe"),
+                Path.Combine(appData, @"Microsoft\Windows\Start Menu\Programs\Legacy Launcher.lnk")
+            };
+            foreach (string lp in legacyPaths)
+            {
+                if (!string.IsNullOrEmpty(lp) && (File.Exists(lp) || Directory.Exists(lp)))
+                {
+                    items.Add(new CatalogSensorItem
+                    {
+                        Name = "Legacy Launcher",
+                        ID = "LegacyLauncher.LegacyLauncher",
+                        Version = "Installed",
+                        Available = "",
+                        HasUpdate = false,
+                        CleanName = "legacylauncher",
+                        Source = "local"
+                    });
+                    break;
+                }
+            }
+
             return items;
+        }
+
+        private static bool HasValidAuthenticodeCert(string filePath)
+        {
+            try
+            {
+                MethodInfo m = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
+                if (m == null) return false;
+                object cert = m.Invoke(null, new object[] { filePath });
+                return cert != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool HasCrackOrPatchIndicators(string installDir)
+        {
+            if (string.IsNullOrWhiteSpace(installDir)) return false;
+            try
+            {
+                if (!Directory.Exists(installDir)) return false;
+            }
+            catch { return false; }
+
+            var indicatorFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "steam_emu.ini", "codex.ini", "flt.ini", "goldberg.ini", "tenoke.ini",
+                "rune.ini", "skidrow.ini", "cpy.ini", "rld.ini", "ali213.ini",
+                "3dmgame.ini", "cream_api.ini", "koalageddon.json", "smoke_api.json",
+                "smokeapi.config.json", "patcher.exe", "keygen.exe", "activator.exe",
+                "crack.txt", "readme_crack.txt"
+            };
+
+            var proxyDllNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "version.dll", "winmm.dll", "winhttp.dll", "dsound.dll", "dbghelp.dll",
+                "dinput8.dll", "dxgi.dll", "msimg32.dll", "wtsapi32.dll", "iphlpapi.dll",
+                "uxtheme.dll", "cryptsp.dll", "userenv.dll", "bink2w64.dll",
+                "steam_api64.dll", "steam_api.dll", "galaxy64.dll", "eossdk-win64-shipping.dll"
+            };
+
+            var skipScanDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries", "node_modules"
+            };
+
+            var currentLevel = new List<string> { installDir };
+            for (int depth = 0; depth <= 1; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        bool hasExe = false;
+                        var candidateProxies = new List<string>();
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            string fn = Path.GetFileName(file) ?? "";
+                            if (indicatorFiles.Contains(fn)) return true;
+                            if (fn.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) hasExe = true;
+                            if (proxyDllNames.Contains(fn)) candidateProxies.Add(file);
+                        }
+
+                        if (hasExe && candidateProxies.Count > 0)
+                        {
+                            foreach (var proxyFile in candidateProxies)
+                            {
+                                if (!HasValidAuthenticodeCert(proxyFile)) return true;
+                            }
+                        }
+
+                        if (depth < 1)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipScanDirs.Contains(subName)) continue;
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return false;
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes)
+        {
+            return BackupDirectorySnapshot(sourceDir, backupDir, maxTotalBytes, false);
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes, bool isInstallDir)
+        {
+            if (string.IsNullOrWhiteSpace(sourceDir) || string.IsNullOrWhiteSpace(backupDir))
+                return 0L;
+            try
+            {
+                if (!Directory.Exists(sourceDir)) return 0L;
+            }
+            catch { return 0L; }
+
+            if (maxTotalBytes <= 0) maxTotalBytes = 104857600L;
+
+            var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab", ".manifest", ".cat", ".mum"
+            };
+            var skipFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "icudtl.dat", "v8_context_snapshot.bin", "snapshot_blob.bin",
+                "chrome_100_percent.pak", "chrome_200_percent.pak", "resources.pak",
+                "package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"
+            };
+            var installAllowExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".ini", ".cfg", ".conf", ".config", ".toml", ".yaml", ".yml",
+                ".lic", ".license", ".key", ".reg", ".db", ".sqlite", ".sqlite3",
+                ".json", ".xml", ".txt", ".dat", ".bin", ".properties", ".prefs"
+            };
+            var skipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries", "node_modules"
+            };
+
+            long totalBytes = 0L;
+            int srcLen = sourceDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { sourceDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string fn = Path.GetFileName(file) ?? "";
+                                if (skipFileNames.Contains(fn)) continue;
+                                if (fn.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.dev.json", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+
+                                string ext = Path.GetExtension(file);
+                                if (!string.IsNullOrEmpty(ext) && skipExts.Contains(ext))
+                                    continue;
+
+                                if (isInstallDir)
+                                {
+                                    if (string.IsNullOrEmpty(ext) || !installAllowExts.Contains(ext))
+                                        continue;
+                                }
+
+                                var fi = new FileInfo(file);
+                                if (fi.Length > 20971520L) continue;
+                                if (totalBytes + fi.Length > maxTotalBytes) continue;
+
+                                string relPath = file.Substring(srcLen).TrimStart('\\');
+                                string destFile = Path.Combine(backupDir, relPath);
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, true);
+                                totalBytes += fi.Length;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipDirs.Contains(subName)) continue;
+                                if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalBytes;
+        }
+
+        public static int RestoreDirectorySnapshot(string backupDir, string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(backupDir) || string.IsNullOrWhiteSpace(targetDir))
+                return 0;
+            try
+            {
+                if (!Directory.Exists(backupDir)) return 0;
+            }
+            catch { return 0; }
+
+            int restoredCount = 0;
+            int bkpLen = backupDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { backupDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string relPath = file.Substring(bkpLen).TrimStart('\\');
+                                string destFile = Path.Combine(targetDir, relPath);
+                                if (File.Exists(destFile)) continue;
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, false);
+                                restoredCount++;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return restoredCount;
         }
     }
 }

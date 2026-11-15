@@ -1778,7 +1778,7 @@ function Wait-SquirrelUpdatersSettle {
 }
 
 function Invoke-SmartAppUpgrade {
-    param($Tag)
+    param($Tag, [switch]$IsBulkUpgrade)
     if (-not $Tag) { return 1 }
     $app = $Tag.App
     if (-not $app) { return 1 }
@@ -1789,8 +1789,8 @@ function Invoke-SmartAppUpgrade {
         $app.ID
     }
 
-    $instApps = if ($script:allUninstallerApps -and $script:allUninstallerApps.Count -gt 0) {
-        $script:allUninstallerApps
+    $instApps = if ($script:cachedUninstallerApps -and $script:cachedUninstallerApps.Count -gt 0) {
+        $script:cachedUninstallerApps
     } elseif ("DuckUtil.DeepUninstallerEngine" -as [type]) {
         [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
     } else {
@@ -1839,6 +1839,26 @@ function Invoke-SmartAppUpgrade {
             if ($sc -and (Test-Path -LiteralPath $sc)) {
                 $existingLoc = $sc
                 break
+            }
+        }
+    }
+
+    if ($existingLoc -and ("DuckUtil.AppCatalogEngine" -as [type])) {
+        if ([DuckUtil.AppCatalogEngine]::HasCrackOrPatchIndicators($existingLoc)) {
+            if ($IsBulkUpgrade) {
+                Log-Text "[!] Phát hiện dấu hiệu file Crack/Patch tại '$existingLoc' - Tự động bỏ qua $($app.Name) để bảo vệ bản patch."
+                return 2
+            } else {
+                $ansCrack = [System.Windows.Forms.MessageBox]::Show(
+                    "Phát hiện tệp nghi ngờ là Crack/Patch hoặc loader không chính thức trong thư mục cài đặt của $($app.Name):`n$existingLoc`n`nNâng cấp qua WinGet có thể ghi đè file patch hoặc làm hỏng crack.`nBạn vẫn muốn tiếp tục nâng cấp?",
+                    "Cảnh báo bảo vệ Crack / Patch",
+                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                    [System.Windows.Forms.MessageBoxIcon]::Warning
+                )
+                if ($ansCrack -ne [System.Windows.Forms.DialogResult]::Yes) {
+                    Log-Text "[!] Người dùng đã hủy nâng cấp $($app.Name) để giữ nguyên file Crack/Patch."
+                    return 2
+                }
             }
         }
     }
@@ -1909,20 +1929,26 @@ function Invoke-SmartAppUpgrade {
     }
     New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 
+    $snapshotType = if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        [DuckUtil.AppCatalogEngine]
+    } elseif ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+        [DuckUtil.DeepUninstallerEngine]
+    } else { $null }
+
     $hasSnapshots = $false
     $locBkp = Join-Path $backupRoot "InstallLocation"
-    if ($existingLoc -and (Test-Path -LiteralPath $existingLoc) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
-        $bytes = [DuckUtil.DeepUninstallerEngine]::BackupDirectorySnapshot($existingLoc, $locBkp, 104857600L)
+    if ($existingLoc -and (Test-Path -LiteralPath $existingLoc) -and $snapshotType) {
+        $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 104857600L, $true)
         if ($bytes -gt 0) { $hasSnapshots = $true }
     }
 
     $appDataBkps = [System.Collections.Generic.List[object]]::new()
     $adIdx = 0
-    if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    if ($snapshotType) {
         foreach ($adDir in $targetAppDataDirs) {
             $adIdx++
             $adBkpDir = Join-Path $backupRoot "AppData_$adIdx"
-            $b = [DuckUtil.DeepUninstallerEngine]::BackupDirectorySnapshot($adDir, $adBkpDir, 104857600L)
+            $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 104857600L, $false)
             if ($b -gt 0) {
                 $hasSnapshots = $true
                 $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
@@ -1998,17 +2024,17 @@ function Invoke-SmartAppUpgrade {
     $preInstallerAborted = $alreadyLatest -or ($code -in @(-1978335189, -1978335212, -1978335191, -1978334974, 1618))
     if ($hasSnapshots) {
         if (-not $preInstallerAborted) {
-            if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
-                $restoredLoc = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($locBkp, $existingLoc)
+            if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
+                $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
                 if ($restoredLoc -gt 0) {
                     Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
                 }
             }
 
-            if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+            if ($snapshotType) {
                 foreach ($item in $appDataBkps) {
                     if (Test-Path -LiteralPath $item.Backup) {
-                        $resAd = [DuckUtil.DeepUninstallerEngine]::RestoreDirectorySnapshot($item.Backup, $item.Source)
+                        $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
                         if ($resAd -gt 0) {
                             Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
                         }
@@ -2073,7 +2099,7 @@ Register-Click "btnInstall" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
 
-                if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED" -or ($script:installedMap -and $script:installedMap.ContainsKey($app.ID))) {
+                if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED") {
                     Log-Text "[SKIP] $($app.Name) đã có trên máy (dùng 'Cập nhật mục chọn' nếu muốn nâng cấp)."
                     if ($tag.Status -ne "OUTDATED" -and $tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
@@ -2155,7 +2181,7 @@ Register-Click "btnUpgradeSelected" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
 
-                if ($tag.Status -eq "NOT_INSTALLED" -or (-not $tag.Status -and -not ($script:installedMap -and $script:installedMap.ContainsKey($app.ID)))) {
+                if ($tag.Status -eq "NONE" -or $tag.Status -eq "NOT_INSTALLED" -or [string]::IsNullOrWhiteSpace($tag.Status)) {
                     Log-Text "[SKIP] $($app.Name) chưa có trên máy (dùng 'Cài đặt mục chọn' để cài mới)."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
@@ -2171,6 +2197,9 @@ Register-Click "btnUpgradeSelected" {
                 $code = Invoke-SmartAppUpgrade -Tag $tag
                 if ($code -eq 0) {
                     Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($app.Name)"
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                } elseif ($code -eq 2) {
+                    Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($app.Name) để giữ nguyên file patch."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                 } else {
                     Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($app.Name) (Exit Code: $code)"
@@ -2206,9 +2235,12 @@ Register-Click "btnUpgradeAll" {
                     if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
                     if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..." }
                     Log-Text "[$idxOut/$totalOut] Đang nâng cấp bảo toàn dữ liệu: $($tagOut.App.Name)..."
-                    $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut
+                    $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut -IsBulkUpgrade
                     if ($codeOut -eq 0) {
                         Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($tagOut.App.Name)"
+                        if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
+                    } elseif ($codeOut -eq 2) {
+                        Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($tagOut.App.Name) để giữ nguyên file patch."
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } else {
                         Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($tagOut.App.Name) (Exit Code: $codeOut)"

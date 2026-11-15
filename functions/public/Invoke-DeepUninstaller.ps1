@@ -97,6 +97,43 @@ function Test-SafeAppDirectoryForCleanup {
     return $true
 }
 
+function Get-NormalizedAppIdentity {
+    param([string]$Name)
+    if ([string]::IsNullOrWhiteSpace($Name)) { return "" }
+    $s = $Name -replace '\((?i:user|system|machine|64-bit|32-bit|x64|x86|arm64|lts|preview|portable)[^)]*\)', ''
+    $s = $s -replace '\b(?i:x64|x86|arm64|64-bit|32-bit|user\s+installer|system\s+installer)\b', ''
+    $s = $s -replace '\b\d+(?:\.\d+)+\b', ''
+    $s = ($s -replace '[^a-zA-Z0-9\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]+', ' ').Trim().ToLowerInvariant()
+    return $s
+}
+
+function Test-PathClaimedByActiveApp {
+    param(
+        [string]$CandidateName,
+        $ActiveApps
+    )
+    if ([string]::IsNullOrWhiteSpace($CandidateName) -or -not $ActiveApps) { return $false }
+    $candNorm = Get-NormalizedAppIdentity $CandidateName
+    $candTrim = $CandidateName.Trim()
+    foreach ($act in $ActiveApps) {
+        if ($null -eq $act) { continue }
+        $actNorm = Get-NormalizedAppIdentity $act.DisplayName
+        if ($candNorm -and $actNorm) {
+            if ($actNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+            if ($candNorm.Length -ge 4 -and $actNorm -match ('(?i)(?:^|\s)' + [regex]::Escape($candNorm) + '(?:\s|$)')) { return $true }
+        }
+        if ($act.InstallLocation) {
+            $actLocLeaf = [System.IO.Path]::GetFileName($act.InstallLocation.Trim().TrimEnd('\'))
+            if ($actLocLeaf -and $actLocLeaf.Equals($candTrim, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+        }
+        if ($act.Publisher) {
+            $pubNorm = Get-NormalizedAppIdentity $act.Publisher
+            if ($candNorm -and $pubNorm -and $pubNorm.Equals($candNorm, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+        }
+    }
+    return $false
+}
+
 function Find-AppLeftovers {
     param(
         [Parameter(Mandatory = $true)]$AppEntry,
@@ -113,6 +150,57 @@ function Find-AppLeftovers {
 
     $rawName = $AppEntry.DisplayName
     if ([string]::IsNullOrWhiteSpace($rawName)) { return @() }
+
+    $selfNorm = Get-NormalizedAppIdentity $rawName
+    $activeApps = [System.Collections.Generic.List[object]]::new()
+    $hasActiveSameIdentity = $false
+    if ($AllInstalledApps) {
+        foreach ($other in $AllInstalledApps) {
+            if ($null -eq $other -or $other.IsBrokenOrphan) { continue }
+            if ($other.Id -eq $AppEntry.Id -and $other.RegistryPath -eq $AppEntry.RegistryPath) { continue }
+            $activeApps.Add($other)
+            $otherNorm = Get-NormalizedAppIdentity $other.DisplayName
+            if ($selfNorm -and $otherNorm -and $selfNorm.Equals($otherNorm, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $hasActiveSameIdentity = $true
+            }
+        }
+    }
+
+    if ($hasActiveSameIdentity) {
+        if ($AppEntry.RegistryPath -and (Test-Path -LiteralPath $AppEntry.RegistryPath)) {
+            if ($seenPaths.Add($AppEntry.RegistryPath)) {
+                $leftovers.Add([PSCustomObject]@{
+                    Type              = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
+                    Confidence        = "An to$([char]0x00E0)n 100%"
+                    AppName           = $AppEntry.DisplayName
+                    Path              = $AppEntry.RegistryPath
+                    SizeBytes         = 0L
+                    SizeMB            = 0.0
+                    IsRegistry        = $true
+                    RegistryValueName = ""
+                })
+            }
+        }
+        return @($leftovers)
+    }
+
+    $genericStopWords = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($sw in @(
+        'visual', 'studio', 'code', 'desktop', 'client', 'server', 'runtime', 'manager',
+        'player', 'viewer', 'editor', 'reader', 'writer', 'updater', 'helper', 'launcher',
+        'installer', 'setup', 'portable', 'pro', 'plus', 'lite', 'home', 'enterprise',
+        'community', 'edition', 'ultimate', 'express', 'standard', 'core', 'tool', 'tools',
+        'app', 'apps', 'program', 'programs', 'software', 'game', 'games', 'system',
+        'windows', 'microsoft', 'google', 'adobe', 'apple', 'intel', 'nvidia', 'oracle',
+        'python', 'java', 'dotnet', 'assistant', 'companion', 'service', 'services',
+        'driver', 'drivers', 'agent', 'remote', 'connect', 'sync', 'cloud', 'workplace',
+        'browser', 'terminal', 'console', 'shell', 'data', 'files', 'media', 'audio',
+        'video', 'photo', 'image', 'chat', 'mail', 'note', 'notes', 'office', 'suite',
+        'free', 'open', 'auto', 'smart', 'fast', 'easy', 'mini', 'super', 'ultra', 'mega',
+        'beta', 'alpha', 'preview', 'nightly', 'user', 'machine', '64-bit', '32-bit', 'x64', 'x86'
+    )) {
+        $genericStopWords.Add($sw) | Out-Null
+    }
 
     $cleanName = ($rawName -replace '\(.*?\)', '').Trim()
     $cleanName = ($cleanName -replace '[0-9]+(\.[0-9]+)+', '').Trim()
@@ -145,15 +233,22 @@ function Find-AppLeftovers {
     }
 
     $candidateTokens = [System.Collections.Generic.List[string]]::new()
-    foreach ($tk in ($cleanName -split '\s+')) {
-        $isCjk = $tk -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
-        if (($isCjk -and $tk.Length -ge 2) -or ((-not $isCjk) -and $tk.Length -ge 4)) {
-            if ($exclusions -notcontains $tk) { $candidateTokens.Add($tk) }
-        }
-    }
     $isFullCjk = $cleanName -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
     if (($isFullCjk -and $cleanName.Length -ge 2) -or ((-not $isFullCjk) -and $cleanName.Length -ge 4)) {
-        if ($exclusions -notcontains $cleanName) { $candidateTokens.Add($cleanName) }
+        if ($exclusions -notcontains $cleanName -and -not $genericStopWords.Contains($cleanName)) {
+            $candidateTokens.Add($cleanName)
+        }
+    }
+    $rawSubTokens = @($cleanName -split '\s+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($rawSubTokens.Count -gt 1) {
+        foreach ($tk in $rawSubTokens) {
+            $isCjk = $tk -match '[\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF]'
+            if (($isCjk -and $tk.Length -ge 2) -or ((-not $isCjk) -and $tk.Length -ge 5)) {
+                if ($exclusions -notcontains $tk -and -not $genericStopWords.Contains($tk)) {
+                    $candidateTokens.Add($tk)
+                }
+            }
+        }
     }
 
     if ($AppEntry.Id -and $AppEntry.Id -notmatch '^\{?[0-9A-Fa-f\-]{12,}\}?$' -and $AppEntry.Id -notmatch '^MSI') {
@@ -254,6 +349,8 @@ function Find-AppLeftovers {
     foreach ($root in $folderRoots) {
         if (-not (Test-Path -LiteralPath $root)) { continue }
         foreach ($kw in $nameKeywords) {
+            if ($genericStopWords.Contains($kw)) { continue }
+            if (Test-PathClaimedByActiveApp -CandidateName $kw -ActiveApps $activeApps) { continue }
             $candidatePath = Join-Path $root $kw
             if (Test-Path -LiteralPath $candidatePath) {
                 $fullPath = (Resolve-Path -LiteralPath $candidatePath).Path.TrimEnd('\')
@@ -397,6 +494,8 @@ function Find-AppLeftovers {
     foreach ($regRoot in $regRoots) {
         if (-not (Test-Path -LiteralPath $regRoot)) { continue }
         foreach ($kw in $nameKeywords) {
+            if ($genericStopWords.Contains($kw)) { continue }
+            if (Test-PathClaimedByActiveApp -CandidateName $kw -ActiveApps $activeApps) { continue }
             $regPath = Join-Path $regRoot $kw
             if (Test-Path -LiteralPath $regPath) {
                 $isSafe = $true
@@ -459,6 +558,16 @@ function Find-SystemOrphanLeftovers {
         'Packages', 'Temp', 'System32', 'Uninstall Information'
     )
 
+    $activeApps = [System.Collections.Generic.List[object]]::new()
+    $activeNormIdentities = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($ia in $InstalledApps) {
+        if (-not $ia.IsBrokenOrphan) {
+            $activeApps.Add($ia)
+            $normIa = Get-NormalizedAppIdentity $ia.DisplayName
+            if ($normIa) { $activeNormIdentities.Add($normIa) | Out-Null }
+        }
+    }
+
     foreach ($app in $InstalledApps) {
         if ($app.IsBrokenOrphan) {
             if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
@@ -474,6 +583,11 @@ function Find-SystemOrphanLeftovers {
                         RegistryValueName = ""
                     })
                 }
+            }
+
+            $brokenNorm = Get-NormalizedAppIdentity $app.DisplayName
+            if ($brokenNorm -and $activeNormIdentities.Contains($brokenNorm)) {
+                continue
             }
 
             $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps
@@ -562,26 +676,76 @@ function Find-SystemOrphanLeftovers {
 
     if ($CatalogApps) {
         $installedNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $installedIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
         foreach ($ia in $InstalledApps) {
-            $installedNames.Add($ia.DisplayName) | Out-Null
+            if (-not $ia.IsBrokenOrphan) {
+                $installedNames.Add($ia.DisplayName) | Out-Null
+                if ($ia.Id) { $installedIds.Add($ia.Id) | Out-Null }
+            }
+        }
+
+        $catalogInstalledIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $uiBorders = Get-Variable -Name allItemBorders -Scope Script -ValueOnly -ErrorAction SilentlyContinue
+        if ($uiBorders) {
+            foreach ($b in $uiBorders) {
+                if ($b.Tag -and $b.Tag.Status -in @("LATEST", "OUTDATED") -and $b.Tag.App) {
+                    if ($b.Tag.App.ID) { $catalogInstalledIds.Add($b.Tag.App.ID) | Out-Null }
+                    if ($b.Tag.DetectedId) { $catalogInstalledIds.Add($b.Tag.DetectedId) | Out-Null }
+                }
+            }
         }
 
         $appDataRoots = @($env:APPDATA, $env:LOCALAPPDATA)
         foreach ($catApp in $CatalogApps) {
+            if ($catApp.ID -and $catalogInstalledIds.Contains($catApp.ID)) { continue }
+
             $catName = ($catApp.Name -replace '\(.*?\)', '').Trim()
             if ($catName.Length -lt 5) { continue }
+            $catNorm = Get-NormalizedAppIdentity $catApp.Name
             $isInstalled = $false
-            foreach ($inName in $installedNames) {
-                if ($inName.IndexOf($catName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                    $isInstalled = $true
-                    break
+            if ($catNorm -and $activeNormIdentities.Contains($catNorm)) { $isInstalled = $true }
+            if (-not $isInstalled -and $catApp.ID -and $installedIds.Contains($catApp.ID)) { $isInstalled = $true }
+            if (-not $isInstalled) {
+                foreach ($inName in $installedNames) {
+                    if ($inName.IndexOf($catName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                        $isInstalled = $true
+                        break
+                    }
+                    $inNorm = Get-NormalizedAppIdentity $inName
+                    if ($catNorm -and $inNorm -and $inNorm.Equals($catNorm, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $isInstalled = $true
+                        break
+                    }
                 }
+            }
+            if (-not $isInstalled -and $catApp.Aliases) {
+                foreach ($al in $catApp.Aliases) {
+                    if ([string]::IsNullOrWhiteSpace($al)) { continue }
+                    $alNorm = Get-NormalizedAppIdentity $al
+                    if ($alNorm -and $activeNormIdentities.Contains($alNorm)) {
+                        $isInstalled = $true
+                        break
+                    }
+                    foreach ($inName in $installedNames) {
+                        if ($inName.IndexOf($al, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                            $isInstalled = $true
+                            break
+                        }
+                    }
+                    if ($isInstalled) { break }
+                }
+            }
+            if (-not $isInstalled -and (Test-PathClaimedByActiveApp -CandidateName $catName -ActiveApps $activeApps)) {
+                $isInstalled = $true
             }
             if (-not $isInstalled) {
                 foreach ($ar in $appDataRoots) {
                     $cand = Join-Path $ar $catName
                     if (Test-Path -LiteralPath $cand) {
                         $full = (Resolve-Path -LiteralPath $cand).Path
+                        if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
+                            continue
+                        }
                         if ($seenPaths.Add($full)) {
                             $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
                             $orphans.Add([PSCustomObject]@{
