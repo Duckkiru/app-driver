@@ -443,6 +443,10 @@ namespace DuckUtil
                         info.DataLocation = "";
                     }
                     info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
+                    if (string.IsNullOrWhiteSpace(info.Publisher))
+                    {
+                        info.Publisher = InferPublisher(info);
+                    }
                     if (!string.IsNullOrEmpty(info.InstallLocation))
                     {
                         long instDiskSize = GetDirectorySizeCapped(info.InstallLocation, 4, 2500);
@@ -938,6 +942,157 @@ namespace DuckUtil
                     catch {}
                     return uExe;
                 }
+            }
+
+            return "";
+        }
+
+        private static bool IsUsablePublisherCandidate(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            string s = raw.Trim().Trim('\"', ' ');
+            if (s.Length < 2 || s.Length > 100) return false;
+            string lower = s.ToLowerInvariant();
+            string[] invalid = new string[]
+            {
+                "n/a", "none", "null", "unknown", "default", "todo", "company",
+                "my company", "my company, inc.", "your company", "your company name",
+                "publisher", "author", "developer", "vendor", "jordan russell",
+                "inno setup", "nullsoft", "nsis", "localhost", "test"
+            };
+            foreach (string inv in invalid)
+            {
+                if (lower == inv) return false;
+            }
+            return true;
+        }
+
+        private static string ExtractOrganizationFromCertSubject(string subject)
+        {
+            if (string.IsNullOrWhiteSpace(subject)) return "";
+            string org = "";
+            string cn = "";
+            try
+            {
+                MatchCollection matches = Regex.Matches(subject, @"(?:^|,\s*)(?<k>O|CN)=(?:""(?<vq>[^""]+)""|(?<vp>[^,]+))", RegexOptions.IgnoreCase);
+                foreach (Match m in matches)
+                {
+                    string k = m.Groups["k"].Value.ToUpperInvariant();
+                    string v = (m.Groups["vq"].Success ? m.Groups["vq"].Value : m.Groups["vp"].Value).Trim();
+                    if (!IsUsablePublisherCandidate(v)) continue;
+                    if (k == "O" && string.IsNullOrEmpty(org)) org = v;
+                    else if (k == "CN" && string.IsNullOrEmpty(cn)) cn = v;
+                }
+            }
+            catch {}
+            return !string.IsNullOrEmpty(org) ? org : cn;
+        }
+
+        public static string InferPublisher(InstalledAppInfo info)
+        {
+            if (info == null) return "";
+            if (!string.IsNullOrWhiteSpace(info.Publisher)) return info.Publisher.Trim();
+
+            if (!string.IsNullOrWhiteSpace(info.Id) && info.Id.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(info.Id);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var propKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed + @"\InstallProperties"))
+                        {
+                            if (propKey != null)
+                            {
+                                string msiPub = (propKey.GetValue("Publisher") as string ?? "").Trim();
+                                if (IsUsablePublisherCandidate(msiPub)) return msiPub;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            var candidateExes = new List<string>();
+            var seenExes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            string iconExe = CleanIconFilePath(info.IconSourcePath);
+            if (!string.IsNullOrEmpty(iconExe) && iconExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(iconExe))
+            {
+                candidateExes.Add(iconExe);
+            }
+
+            string dispExe = CleanIconFilePath(info.DisplayIcon);
+            if (!string.IsNullOrEmpty(dispExe) && dispExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(dispExe))
+            {
+                candidateExes.Add(dispExe);
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.InstallLocation))
+            {
+                try
+                {
+                    if (Directory.Exists(info.InstallLocation))
+                    {
+                        int count = 0;
+                        foreach (string exe in Directory.EnumerateFiles(info.InstallLocation, "*.exe", SearchOption.TopDirectoryOnly))
+                        {
+                            string fn = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant();
+                            if (fn.Contains("unins") || fn.Contains("uninst") || fn.Contains("setup") ||
+                                fn.Contains("repair") || fn.Contains("crash") || fn.Contains("update"))
+                            {
+                                continue;
+                            }
+                            if (seenExes.Add(exe))
+                            {
+                                candidateExes.Add(exe);
+                                count++;
+                                if (count >= 10) break;
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.UninstallString) &&
+                info.UninstallString.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                string uninstExe = CleanIconFilePath(info.UninstallString);
+                if (!string.IsNullOrEmpty(uninstExe) && uninstExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(uninstExe))
+                {
+                    candidateExes.Add(uninstExe);
+                }
+            }
+
+            foreach (string exe in candidateExes)
+            {
+                try
+                {
+                    if (!File.Exists(exe)) continue;
+                    FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exe);
+                    string company = (fvi.CompanyName ?? "").Trim();
+                    if (IsUsablePublisherCandidate(company)) return company;
+                }
+                catch {}
+            }
+
+            foreach (string exe in candidateExes)
+            {
+                try
+                {
+                    if (!File.Exists(exe)) continue;
+                    string certOrg = ExtractOrganizationFromCertSubject(GetSignerSubject(exe));
+                    if (IsUsablePublisherCandidate(certOrg)) return certOrg;
+                }
+                catch {}
+            }
+
+            if ((!string.IsNullOrWhiteSpace(info.Id) && info.Id.Equals("Rustup", StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(info.DisplayName) && info.DisplayName.StartsWith("Rustup", StringComparison.OrdinalIgnoreCase)))
+            {
+                return "The Rust Project Developers";
             }
 
             return "";

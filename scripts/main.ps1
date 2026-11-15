@@ -496,9 +496,10 @@ $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, S
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
 $script:brushUninstRowBg              = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0E, 0x13, 0x1D)); $script:brushUninstRowBg.Freeze()
-$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x17, 0x20, 0x30)); $script:brushUninstRowBorder.Freeze()
+$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x36, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowBorder.Freeze()
+$script:brushUninstColDivider         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x33, 0xFF, 0xFF, 0xFF)); $script:brushUninstColDivider.Freeze()
 $script:brushUninstRowHover           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushUninstRowHover.Freeze()
-$script:brushUninstRowCheckedBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x20, 0x33)); $script:brushUninstRowCheckedBg.Freeze()
+$script:brushUninstRowCheckedBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x24, 0x3A)); $script:brushUninstRowCheckedBg.Freeze()
 $script:brushUninstRowCheckedBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushUninstRowCheckedBorder.Freeze()
 $script:brushUninstTitle              = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushUninstTitle.Freeze()
 $script:brushUninstTitleBroken        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUninstTitleBroken.Freeze()
@@ -518,7 +519,7 @@ $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushUninstFolderBorder.Freeze()
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
-$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x47, 0x55, 0x69)); $script:brushUninstHeaderInactiveFg.Freeze()
+$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:catalogIconLookup = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 if ($AppCatalog) {
@@ -814,7 +815,6 @@ $script:uninstCbCheckedHandler = [System.Windows.RoutedEventHandler]{
     $p = $s.Tag
     if ($p) {
         $p.Background = $script:brushUninstRowCheckedBg
-        $p.BorderBrush = $script:brushUninstRowCheckedBorder
     }
     Update-UninstallerSelectionCount
 }
@@ -823,7 +823,6 @@ $script:uninstCbUncheckedHandler = [System.Windows.RoutedEventHandler]{
     $p = $s.Tag
     if ($p) {
         $p.Background = $script:brushUninstRowBg
-        $p.BorderBrush = $script:brushUninstRowBorder
     }
     Update-UninstallerSelectionCount
 }
@@ -864,22 +863,20 @@ $script:uninstFolderClickHandler = [System.Windows.Input.MouseButtonEventHandler
     }
 }
 
-$glUninstCol0 = New-Object System.Windows.GridLength(32, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol0 = New-Object System.Windows.GridLength(38, [System.Windows.GridUnitType]::Pixel)
 $glUninstCol1 = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
 $glUninstCol2 = New-Object System.Windows.GridLength(130, [System.Windows.GridUnitType]::Pixel)
-$glUninstCol3 = New-Object System.Windows.GridLength(200, [System.Windows.GridUnitType]::Pixel)
-$glUninstCol4 = New-Object System.Windows.GridLength(100, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol3 = New-Object System.Windows.GridLength(220, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol4 = New-Object System.Windows.GridLength(105, [System.Windows.GridUnitType]::Pixel)
 $glUninstCol5 = New-Object System.Windows.GridLength(115, [System.Windows.GridUnitType]::Pixel)
-$glUninstCol6 = New-Object System.Windows.GridLength(48, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol6 = New-Object System.Windows.GridLength(54, [System.Windows.GridUnitType]::Pixel)
 $glUninstNameIcon = New-Object System.Windows.GridLength(28, [System.Windows.GridUnitType]::Pixel)
 
-$cornerUninstRow    = New-Object System.Windows.CornerRadius(6)
-$paddingUninstRow   = New-Object System.Windows.Thickness(12, 0, 12, 0)
-$marginUninstRow    = New-Object System.Windows.Thickness(0, 2, 0, 2)
-$marginUninstCb     = New-Object System.Windows.Thickness(2, 0, 0, 0)
-$marginUninstName   = New-Object System.Windows.Thickness(0, 0, 10, 0)
-$marginUninstCol    = New-Object System.Windows.Thickness(6, 0, 8, 0)
-$marginUninstSize   = New-Object System.Windows.Thickness(0, 0, 12, 0)
+$cornerUninstRow    = New-Object System.Windows.CornerRadius(0)
+$thicknessTableRow  = New-Object System.Windows.Thickness(1, 0, 1, 1)
+$marginUninstName   = New-Object System.Windows.Thickness(10, 0, 10, 0)
+$marginUninstCol    = New-Object System.Windows.Thickness(10, 0, 10, 0)
+$marginUninstSize   = New-Object System.Windows.Thickness(8, 0, 12, 0)
 $paddingUninstBadge = New-Object System.Windows.Thickness(8, 2, 8, 2)
 $strFolderEmoji     = [char]::ConvertFromUtf32(0x1F4C1)
 
@@ -901,17 +898,19 @@ function Update-UninstallerList {
 
     foreach ($app in $script:cachedUninstallerApps) {
         $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.Height = 40
+        $rowBorder.Height = 38
         $rowBorder.CornerRadius = $cornerUninstRow
-        $rowBorder.Padding = $paddingUninstRow
-        $rowBorder.Margin = $marginUninstRow
+        $rowBorder.Padding = $thicknessZero
+        $rowBorder.Margin = $thicknessZero
         $rowBorder.Background = $script:brushUninstRowBg
         $rowBorder.BorderBrush = $script:brushUninstRowBorder
-        $rowBorder.BorderThickness = $thicknessOne
+        $rowBorder.BorderThickness = $thicknessTableRow
+        $rowBorder.SnapsToDevicePixels = $true
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
         $rowGrid = New-Object System.Windows.Controls.Grid
-        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+        $rowGrid.SnapsToDevicePixels = $true
 
         $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = $glUninstCol0
         $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = $glUninstCol1
@@ -931,8 +930,8 @@ function Update-UninstallerList {
 
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-        $cb.Margin = $marginUninstCb
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $cb.Margin = $thicknessZero
         $cb.Tag = $rowBorder
         $cb.Add_Checked($script:uninstCbCheckedHandler)
         $cb.Add_Unchecked($script:uninstCbUncheckedHandler)
@@ -942,6 +941,7 @@ function Update-UninstallerList {
 
         $nameGrid = New-Object System.Windows.Controls.Grid
         $nameGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameGrid.Margin = $marginUninstName
         $ng0 = New-Object System.Windows.Controls.ColumnDefinition; $ng0.Width = $glUninstNameIcon
         $ng1 = New-Object System.Windows.Controls.ColumnDefinition; $ng1.Width = $glUninstCol1
         [void]$nameGrid.ColumnDefinitions.Add($ng0)
@@ -1009,7 +1009,7 @@ function Update-UninstallerList {
         $nameTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstTitleBroken } else { $script:brushUninstTitle }
         $nameTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $nameTb.Margin = $marginUninstName
+        $nameTb.Margin = $thicknessZero
         [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
         [void]$nameGrid.Children.Add($nameTb)
 
@@ -1032,7 +1032,7 @@ function Update-UninstallerList {
         $pubTb = New-Object System.Windows.Controls.TextBlock
         $pubTb.Text = if ($app.Publisher) { $app.Publisher } else { "--" }
         $pubTb.FontSize = 11.5
-        $pubTb.Foreground = $script:brushUninstDark
+        $pubTb.Foreground = $script:brushUninstMuted
         $pubTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $pubTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $pubTb.Margin = $marginUninstCol
@@ -1117,6 +1117,18 @@ function Update-UninstallerList {
         }
         [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
         [void]$rowGrid.Children.Add($folderBtn)
+
+        for ($divCol = 0; $divCol -lt 6; $divCol++) {
+            $colDiv = New-Object System.Windows.Controls.Border
+            $colDiv.Width = 1
+            $colDiv.Background = $script:brushUninstColDivider
+            $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+            $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+            $colDiv.SnapsToDevicePixels = $true
+            $colDiv.IsHitTestVisible = $false
+            [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
+            [void]$rowGrid.Children.Add($colDiv)
+        }
 
         $rowBorder.Child = $rowGrid
         $rowBorder.Add_MouseEnter($script:uninstRowEnterHandler)

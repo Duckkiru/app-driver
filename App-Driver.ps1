@@ -4876,29 +4876,38 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         </Grid>
                     </Border>
 
-                    <Border Grid.Row="1" Background="#090D14" Padding="0,8" BorderBrush="#192130" BorderThickness="0,0,0,1">
-                        <Grid Margin="28,0,34,0">
+                    <Border Grid.Row="1" Name="UninstallerHeaderBorder" Background="#090D14" Height="34"
+                            Margin="16,8,0,0" HorizontalAlignment="Left"
+                            Width="{Binding ActualWidth, ElementName=UninstallerRowsPanel}"
+                            BorderBrush="#4DFFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
+                        <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="38"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="105"/>
                                 <ColumnDefinition Width="115"/>
-                                <ColumnDefinition Width="48"/>
+                                <ColumnDefinition Width="54"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG ▲" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
-                            <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="0,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
-                            <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#475569" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#475569" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG ▲" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
+                            <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
+                            <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
                     <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                        <StackPanel Name="UninstallerRowsPanel" Margin="16,6,16,14"/>
+                        <StackPanel Name="UninstallerRowsPanel" Margin="16,0,16,12"/>
                     </ScrollViewer>
             </Grid>
 
@@ -6833,6 +6842,10 @@ namespace DuckUtil
                         info.DataLocation = "";
                     }
                     info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
+                    if (string.IsNullOrWhiteSpace(info.Publisher))
+                    {
+                        info.Publisher = InferPublisher(info);
+                    }
                     if (!string.IsNullOrEmpty(info.InstallLocation))
                     {
                         long instDiskSize = GetDirectorySizeCapped(info.InstallLocation, 4, 2500);
@@ -7328,6 +7341,157 @@ namespace DuckUtil
                     catch {}
                     return uExe;
                 }
+            }
+
+            return "";
+        }
+
+        private static bool IsUsablePublisherCandidate(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            string s = raw.Trim().Trim('\"', ' ');
+            if (s.Length < 2 || s.Length > 100) return false;
+            string lower = s.ToLowerInvariant();
+            string[] invalid = new string[]
+            {
+                "n/a", "none", "null", "unknown", "default", "todo", "company",
+                "my company", "my company, inc.", "your company", "your company name",
+                "publisher", "author", "developer", "vendor", "jordan russell",
+                "inno setup", "nullsoft", "nsis", "localhost", "test"
+            };
+            foreach (string inv in invalid)
+            {
+                if (lower == inv) return false;
+            }
+            return true;
+        }
+
+        private static string ExtractOrganizationFromCertSubject(string subject)
+        {
+            if (string.IsNullOrWhiteSpace(subject)) return "";
+            string org = "";
+            string cn = "";
+            try
+            {
+                MatchCollection matches = Regex.Matches(subject, @"(?:^|,\s*)(?<k>O|CN)=(?:""(?<vq>[^""]+)""|(?<vp>[^,]+))", RegexOptions.IgnoreCase);
+                foreach (Match m in matches)
+                {
+                    string k = m.Groups["k"].Value.ToUpperInvariant();
+                    string v = (m.Groups["vq"].Success ? m.Groups["vq"].Value : m.Groups["vp"].Value).Trim();
+                    if (!IsUsablePublisherCandidate(v)) continue;
+                    if (k == "O" && string.IsNullOrEmpty(org)) org = v;
+                    else if (k == "CN" && string.IsNullOrEmpty(cn)) cn = v;
+                }
+            }
+            catch {}
+            return !string.IsNullOrEmpty(org) ? org : cn;
+        }
+
+        public static string InferPublisher(InstalledAppInfo info)
+        {
+            if (info == null) return "";
+            if (!string.IsNullOrWhiteSpace(info.Publisher)) return info.Publisher.Trim();
+
+            if (!string.IsNullOrWhiteSpace(info.Id) && info.Id.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(info.Id);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var propKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed + @"\InstallProperties"))
+                        {
+                            if (propKey != null)
+                            {
+                                string msiPub = (propKey.GetValue("Publisher") as string ?? "").Trim();
+                                if (IsUsablePublisherCandidate(msiPub)) return msiPub;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            var candidateExes = new List<string>();
+            var seenExes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            string iconExe = CleanIconFilePath(info.IconSourcePath);
+            if (!string.IsNullOrEmpty(iconExe) && iconExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(iconExe))
+            {
+                candidateExes.Add(iconExe);
+            }
+
+            string dispExe = CleanIconFilePath(info.DisplayIcon);
+            if (!string.IsNullOrEmpty(dispExe) && dispExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(dispExe))
+            {
+                candidateExes.Add(dispExe);
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.InstallLocation))
+            {
+                try
+                {
+                    if (Directory.Exists(info.InstallLocation))
+                    {
+                        int count = 0;
+                        foreach (string exe in Directory.EnumerateFiles(info.InstallLocation, "*.exe", SearchOption.TopDirectoryOnly))
+                        {
+                            string fn = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant();
+                            if (fn.Contains("unins") || fn.Contains("uninst") || fn.Contains("setup") ||
+                                fn.Contains("repair") || fn.Contains("crash") || fn.Contains("update"))
+                            {
+                                continue;
+                            }
+                            if (seenExes.Add(exe))
+                            {
+                                candidateExes.Add(exe);
+                                count++;
+                                if (count >= 10) break;
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.UninstallString) &&
+                info.UninstallString.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                string uninstExe = CleanIconFilePath(info.UninstallString);
+                if (!string.IsNullOrEmpty(uninstExe) && uninstExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(uninstExe))
+                {
+                    candidateExes.Add(uninstExe);
+                }
+            }
+
+            foreach (string exe in candidateExes)
+            {
+                try
+                {
+                    if (!File.Exists(exe)) continue;
+                    FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exe);
+                    string company = (fvi.CompanyName ?? "").Trim();
+                    if (IsUsablePublisherCandidate(company)) return company;
+                }
+                catch {}
+            }
+
+            foreach (string exe in candidateExes)
+            {
+                try
+                {
+                    if (!File.Exists(exe)) continue;
+                    string certOrg = ExtractOrganizationFromCertSubject(GetSignerSubject(exe));
+                    if (IsUsablePublisherCandidate(certOrg)) return certOrg;
+                }
+                catch {}
+            }
+
+            if ((!string.IsNullOrWhiteSpace(info.Id) && info.Id.Equals("Rustup", StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(info.DisplayName) && info.DisplayName.StartsWith("Rustup", StringComparison.OrdinalIgnoreCase)))
+            {
+                return "The Rust Project Developers";
             }
 
             return "";
@@ -8236,7 +8400,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "ResolveConfigDataLocation"
+        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "InferPublisher"
     } catch {}
 }
 
@@ -11794,9 +11958,10 @@ $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, S
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
 $script:brushUninstRowBg              = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0E, 0x13, 0x1D)); $script:brushUninstRowBg.Freeze()
-$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x17, 0x20, 0x30)); $script:brushUninstRowBorder.Freeze()
+$script:brushUninstRowBorder          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x36, 0xFF, 0xFF, 0xFF)); $script:brushUninstRowBorder.Freeze()
+$script:brushUninstColDivider         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x33, 0xFF, 0xFF, 0xFF)); $script:brushUninstColDivider.Freeze()
 $script:brushUninstRowHover           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushUninstRowHover.Freeze()
-$script:brushUninstRowCheckedBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x20, 0x33)); $script:brushUninstRowCheckedBg.Freeze()
+$script:brushUninstRowCheckedBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x24, 0x3A)); $script:brushUninstRowCheckedBg.Freeze()
 $script:brushUninstRowCheckedBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushUninstRowCheckedBorder.Freeze()
 $script:brushUninstTitle              = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushUninstTitle.Freeze()
 $script:brushUninstTitleBroken        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUninstTitleBroken.Freeze()
@@ -11816,7 +11981,7 @@ $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushUninstFolderBorder.Freeze()
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
-$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x47, 0x55, 0x69)); $script:brushUninstHeaderInactiveFg.Freeze()
+$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:catalogIconLookup = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 if ($AppCatalog) {
@@ -12112,7 +12277,6 @@ $script:uninstCbCheckedHandler = [System.Windows.RoutedEventHandler]{
     $p = $s.Tag
     if ($p) {
         $p.Background = $script:brushUninstRowCheckedBg
-        $p.BorderBrush = $script:brushUninstRowCheckedBorder
     }
     Update-UninstallerSelectionCount
 }
@@ -12121,7 +12285,6 @@ $script:uninstCbUncheckedHandler = [System.Windows.RoutedEventHandler]{
     $p = $s.Tag
     if ($p) {
         $p.Background = $script:brushUninstRowBg
-        $p.BorderBrush = $script:brushUninstRowBorder
     }
     Update-UninstallerSelectionCount
 }
@@ -12162,22 +12325,20 @@ $script:uninstFolderClickHandler = [System.Windows.Input.MouseButtonEventHandler
     }
 }
 
-$glUninstCol0 = New-Object System.Windows.GridLength(32, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol0 = New-Object System.Windows.GridLength(38, [System.Windows.GridUnitType]::Pixel)
 $glUninstCol1 = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
 $glUninstCol2 = New-Object System.Windows.GridLength(130, [System.Windows.GridUnitType]::Pixel)
-$glUninstCol3 = New-Object System.Windows.GridLength(200, [System.Windows.GridUnitType]::Pixel)
-$glUninstCol4 = New-Object System.Windows.GridLength(100, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol3 = New-Object System.Windows.GridLength(220, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol4 = New-Object System.Windows.GridLength(105, [System.Windows.GridUnitType]::Pixel)
 $glUninstCol5 = New-Object System.Windows.GridLength(115, [System.Windows.GridUnitType]::Pixel)
-$glUninstCol6 = New-Object System.Windows.GridLength(48, [System.Windows.GridUnitType]::Pixel)
+$glUninstCol6 = New-Object System.Windows.GridLength(54, [System.Windows.GridUnitType]::Pixel)
 $glUninstNameIcon = New-Object System.Windows.GridLength(28, [System.Windows.GridUnitType]::Pixel)
 
-$cornerUninstRow    = New-Object System.Windows.CornerRadius(6)
-$paddingUninstRow   = New-Object System.Windows.Thickness(12, 0, 12, 0)
-$marginUninstRow    = New-Object System.Windows.Thickness(0, 2, 0, 2)
-$marginUninstCb     = New-Object System.Windows.Thickness(2, 0, 0, 0)
-$marginUninstName   = New-Object System.Windows.Thickness(0, 0, 10, 0)
-$marginUninstCol    = New-Object System.Windows.Thickness(6, 0, 8, 0)
-$marginUninstSize   = New-Object System.Windows.Thickness(0, 0, 12, 0)
+$cornerUninstRow    = New-Object System.Windows.CornerRadius(0)
+$thicknessTableRow  = New-Object System.Windows.Thickness(1, 0, 1, 1)
+$marginUninstName   = New-Object System.Windows.Thickness(10, 0, 10, 0)
+$marginUninstCol    = New-Object System.Windows.Thickness(10, 0, 10, 0)
+$marginUninstSize   = New-Object System.Windows.Thickness(8, 0, 12, 0)
 $paddingUninstBadge = New-Object System.Windows.Thickness(8, 2, 8, 2)
 $strFolderEmoji     = [char]::ConvertFromUtf32(0x1F4C1)
 
@@ -12199,17 +12360,19 @@ function Update-UninstallerList {
 
     foreach ($app in $script:cachedUninstallerApps) {
         $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.Height = 40
+        $rowBorder.Height = 38
         $rowBorder.CornerRadius = $cornerUninstRow
-        $rowBorder.Padding = $paddingUninstRow
-        $rowBorder.Margin = $marginUninstRow
+        $rowBorder.Padding = $thicknessZero
+        $rowBorder.Margin = $thicknessZero
         $rowBorder.Background = $script:brushUninstRowBg
         $rowBorder.BorderBrush = $script:brushUninstRowBorder
-        $rowBorder.BorderThickness = $thicknessOne
+        $rowBorder.BorderThickness = $thicknessTableRow
+        $rowBorder.SnapsToDevicePixels = $true
         $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
         $rowGrid = New-Object System.Windows.Controls.Grid
-        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+        $rowGrid.SnapsToDevicePixels = $true
 
         $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = $glUninstCol0
         $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = $glUninstCol1
@@ -12229,8 +12392,8 @@ function Update-UninstallerList {
 
         $cb = New-Object System.Windows.Controls.CheckBox
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-        $cb.Margin = $marginUninstCb
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $cb.Margin = $thicknessZero
         $cb.Tag = $rowBorder
         $cb.Add_Checked($script:uninstCbCheckedHandler)
         $cb.Add_Unchecked($script:uninstCbUncheckedHandler)
@@ -12240,6 +12403,7 @@ function Update-UninstallerList {
 
         $nameGrid = New-Object System.Windows.Controls.Grid
         $nameGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $nameGrid.Margin = $marginUninstName
         $ng0 = New-Object System.Windows.Controls.ColumnDefinition; $ng0.Width = $glUninstNameIcon
         $ng1 = New-Object System.Windows.Controls.ColumnDefinition; $ng1.Width = $glUninstCol1
         [void]$nameGrid.ColumnDefinitions.Add($ng0)
@@ -12307,7 +12471,7 @@ function Update-UninstallerList {
         $nameTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstTitleBroken } else { $script:brushUninstTitle }
         $nameTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $nameTb.Margin = $marginUninstName
+        $nameTb.Margin = $thicknessZero
         [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
         [void]$nameGrid.Children.Add($nameTb)
 
@@ -12330,7 +12494,7 @@ function Update-UninstallerList {
         $pubTb = New-Object System.Windows.Controls.TextBlock
         $pubTb.Text = if ($app.Publisher) { $app.Publisher } else { "--" }
         $pubTb.FontSize = 11.5
-        $pubTb.Foreground = $script:brushUninstDark
+        $pubTb.Foreground = $script:brushUninstMuted
         $pubTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $pubTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $pubTb.Margin = $marginUninstCol
@@ -12415,6 +12579,18 @@ function Update-UninstallerList {
         }
         [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
         [void]$rowGrid.Children.Add($folderBtn)
+
+        for ($divCol = 0; $divCol -lt 6; $divCol++) {
+            $colDiv = New-Object System.Windows.Controls.Border
+            $colDiv.Width = 1
+            $colDiv.Background = $script:brushUninstColDivider
+            $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+            $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+            $colDiv.SnapsToDevicePixels = $true
+            $colDiv.IsHitTestVisible = $false
+            [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
+            [void]$rowGrid.Children.Add($colDiv)
+        }
 
         $rowBorder.Child = $rowGrid
         $rowBorder.Add_MouseEnter($script:uninstRowEnterHandler)

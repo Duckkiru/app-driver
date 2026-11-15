@@ -479,29 +479,38 @@
                         </Grid>
                     </Border>
 
-                    <Border Grid.Row="1" Background="#090D14" Padding="0,8" BorderBrush="#192130" BorderThickness="0,0,0,1">
-                        <Grid Margin="28,0,34,0">
+                    <Border Grid.Row="1" Name="UninstallerHeaderBorder" Background="#090D14" Height="34"
+                            Margin="16,8,0,0" HorizontalAlignment="Left"
+                            Width="{Binding ActualWidth, ElementName=UninstallerRowsPanel}"
+                            BorderBrush="#4DFFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
+                        <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="38"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="105"/>
                                 <ColumnDefinition Width="115"/>
-                                <ColumnDefinition Width="48"/>
+                                <ColumnDefinition Width="54"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG ▲" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
-                            <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#475569" FontSize="10.5" FontWeight="Bold" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#475569" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="0,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
-                            <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#475569" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#475569" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG ▲" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
+                            <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
+                            <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#40FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                            <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
                     <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                        <StackPanel Name="UninstallerRowsPanel" Margin="16,6,16,14"/>
+                        <StackPanel Name="UninstallerRowsPanel" Margin="16,0,16,12"/>
                     </ScrollViewer>
             </Grid>
 
