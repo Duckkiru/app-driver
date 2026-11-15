@@ -4712,9 +4712,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                     <Button Name="navBtnUninstaller" Content="Gỡ cài đặt" Style="{StaticResource NavTabButton}"/>
                     <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
+                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
                     <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True"/>
+                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
                 </StackPanel>
                 <TextBlock Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
@@ -4835,9 +4835,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             <TextBlock Text="🔍" Foreground="#475569" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
                                             <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="Tìm kiếm theo tên ứng dụng, nhà phát hành hoặc phiên bản..."/>
+                                                     ToolTip="Tìm kiếm theo tên ứng dụng, nhà phát hành hoặc phiên bản..." ToolTipService.InitialShowDelay="5000"/>
                                             <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="✕" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="Xóa bộ lọc"/>
+                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="Xóa bộ lọc" ToolTipService.InitialShowDelay="5000"/>
                                         </Grid>
                                     </Border>
                                     <Button Name="btnUninstallSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
@@ -4891,13 +4891,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <ColumnDefinition Width="54"/>
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)"/>
+                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)" ToolTipService.InitialShowDelay="5000"/>
                             <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                             <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                             <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)"/>
+                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)" ToolTipService.InitialShowDelay="5000"/>
                             <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
@@ -12477,6 +12477,7 @@ function Update-UninstallerList {
 
         $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
         $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
 
         [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
         [void]$rowGrid.Children.Add($nameGrid)
@@ -12577,6 +12578,7 @@ function Update-UninstallerList {
             $folderBtn.Cursor = [System.Windows.Input.Cursors]::Arrow
             $folderBtn.ToolTip = "Không tìm thấy thư mục cài đặt"
         }
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($folderBtn, 5000)
         [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
         [void]$rowGrid.Children.Add($folderBtn)
 
@@ -13084,6 +13086,8 @@ foreach ($cat in $categories) {
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
         $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
         $rowBorder.ToolTip = $nameText.ToolTip
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($nameText, 5000)
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
         [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
         [void]$nameAreaGrid.Children.Add($nameText)
 
@@ -13131,6 +13135,7 @@ foreach ($cat in $categories) {
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = $thicknessZero
         $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($linkBtn, 5000)
         $linkBtn.Tag = @{ Url = $targetPageUrl; Row = $rowBorder }
 
         $linkIcon = [System.Windows.Controls.TextBlock]::new()

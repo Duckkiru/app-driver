@@ -1015,6 +1015,7 @@ function Update-UninstallerList {
 
         $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
         $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
 
         [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
         [void]$rowGrid.Children.Add($nameGrid)
@@ -1115,6 +1116,7 @@ function Update-UninstallerList {
             $folderBtn.Cursor = [System.Windows.Input.Cursors]::Arrow
             $folderBtn.ToolTip = "Không tìm thấy thư mục cài đặt"
         }
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($folderBtn, 5000)
         [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
         [void]$rowGrid.Children.Add($folderBtn)
 
@@ -1622,6 +1624,8 @@ foreach ($cat in $categories) {
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
         $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
         $rowBorder.ToolTip = $nameText.ToolTip
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($nameText, 5000)
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
         [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
         [void]$nameAreaGrid.Children.Add($nameText)
 
@@ -1669,6 +1673,7 @@ foreach ($cat in $categories) {
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = $thicknessZero
         $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
+        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($linkBtn, 5000)
         $linkBtn.Tag = @{ Url = $targetPageUrl; Row = $rowBorder }
 
         $linkIcon = [System.Windows.Controls.TextBlock]::new()
