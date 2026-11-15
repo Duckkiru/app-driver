@@ -4419,8 +4419,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type CheckBox}">
                         <Grid Background="Transparent" Width="16" Height="16">
-                            <Border x:Name="box" Width="15" Height="15" CornerRadius="4"
-                                    Background="#131B29" BorderBrush="#334155" BorderThickness="1.2"
+                            <Border x:Name="box" Width="15" Height="15" CornerRadius="1"
+                                    Background="#131B29" BorderBrush="#42536D" BorderThickness="1"
                                     HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Path x:Name="checkMark" Visibility="Collapsed"
                                       Data="M 2.2,6.2 L 5.2,9.2 L 10.8,3.2"
@@ -4463,7 +4463,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Border Name="thumbBorder" Background="#253147" CornerRadius="3" Margin="2,0"/>
+                        <Border Name="thumbBorder" Background="#2D3C56" CornerRadius="1" Margin="2,0"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="thumbBorder" Property="Background" Value="#38BDF8"/>
@@ -4533,7 +4533,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             <Thumb Style="{StaticResource ModernScrollThumb}">
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border Name="hThumbBorder" Background="#253147" CornerRadius="3" Margin="0,2"/>
+                                                        <Border Name="hThumbBorder" Background="#2D3C56" CornerRadius="1" Margin="0,2"/>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter TargetName="hThumbBorder" Property="Background" Value="#38BDF8"/>
@@ -4566,14 +4566,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#24FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#3EFFFFFF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                CornerRadius="2" Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"/>
@@ -4581,7 +4581,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="btnBorder" Property="Opacity" Value="0.90"/>
-                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#55FFFFFF"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#80FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="btnBorder" Property="Opacity" Value="0.72"/>
@@ -4596,14 +4596,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
         </Style>
 
         <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#141B29"/>
+            <Setter Property="Background" Value="#121826"/>
             <Setter Property="Foreground" Value="#CBD5E1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="13,7"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#212B3F"/>
+            <Setter Property="BorderBrush" Value="#2F3E57"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Template">
@@ -4612,7 +4612,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                CornerRadius="2" Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"/>
@@ -4684,7 +4684,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="filterBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                                CornerRadius="1" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -4705,7 +4705,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <RowDefinition Height="Auto"/> 
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#192130" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#27344A" BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
@@ -4728,7 +4728,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -4746,11 +4746,11 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Button Name="btnInstall" Content="Cài đặt mục chọn" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="15,7"/>
                                     <Button Name="btnUpgradeSelected" Content="Cập nhật mục chọn" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#A78BFA" BorderBrush="#2E234E"/>
+                                            Foreground="#A78BFA" BorderBrush="#49387D"/>
                                     <Button Name="btnUpgradeAll" Content="Cập nhật tất cả" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#FBBF24" BorderBrush="#3B311B"/>
+                                            Foreground="#FBBF24" BorderBrush="#614F27"/>
                                     <Button Name="btnScanInstalled" Content="Làm mới" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#38BDF8" BorderBrush="#1D3652"/>
+                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
@@ -4801,7 +4801,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -4825,7 +4825,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101520" CornerRadius="6" BorderBrush="#1E283A" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
+                                    <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
                                         <Grid Width="240">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -4853,7 +4853,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
@@ -4861,7 +4861,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                         </StackPanel>
                                     </Border>
                                     <TextBlock Text="Sắp xếp:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
-                                    <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnSortUninstName" Content="Theo tên (A-Z)" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
@@ -4879,7 +4879,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <Border Grid.Row="1" Name="UninstallerHeaderBorder" Background="#090D14" Height="34"
                             Margin="16,8,0,0" HorizontalAlignment="Left"
                             Width="{Binding ActualWidth, ElementName=UninstallerRowsPanel}"
-                            BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
+                            BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="2,2,0,0" SnapsToDevicePixels="True">
                         <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="38"/>
@@ -4912,7 +4912,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </Grid>
 
             <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
-                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Gỡ lỗi &amp; Hệ thống hiện đang được khóa để tập trung ổn định trình cài đặt và cập nhật ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
@@ -4920,10 +4920,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
                         <UniformGrid Columns="2" VerticalAlignment="Top">
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#12263A" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#12263A" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="Bold" Foreground="#38BDF8"/>
                                     </Border>
                                     <TextBlock Text="Sửa chữa file hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -4936,10 +4936,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#2A1F12" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#2A1F12" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
                                     <TextBlock Text="Gỡ lỗi Windows Update" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -4952,10 +4952,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#0E2920" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#0E2920" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
                                     <TextBlock Text="Sửa lỗi Mạng &amp; Kết nối" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -4967,10 +4967,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#1F1936" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#1F1936" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="Bold" Foreground="#A78BFA"/>
                                     </Border>
                                     <TextBlock Text="Bảo trì &amp; Dọn dẹp hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -4987,7 +4987,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </DockPanel>
 
             <DockPanel Name="TabPage3" Visibility="Collapsed" IsHitTestVisible="False">
-                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Quản lý Driver hiện đang được khóa để đảm bảo an toàn hệ thống và tập trung quản lý ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
@@ -4995,10 +4995,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
                         <UniformGrid Columns="3" VerticalAlignment="Top">
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#2D141D" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#2D141D" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="Bold" Foreground="#FB7185"/>
                                     </Border>
                                     <TextBlock Text="Chẩn đoán phần cứng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -5011,10 +5011,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#2A1F12" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#2A1F12" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
                                     <TextBlock Text="Gỡ lỗi cập nhật Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -5027,10 +5027,10 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#0E2920" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#0E2920" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
                                     <TextBlock Text="Sao lưu &amp; Bảo vệ Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -5046,7 +5046,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             </DockPanel>
         </Grid>
 
-        <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#192130" BorderThickness="0,1,0,0">
+        <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#27344A" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -11490,11 +11490,11 @@ $script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
 $script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x17, 0x22)); $script:brushCardBg.Freeze()
-$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x36)); $script:brushCardBorder.Freeze()
+$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x39, 0x4F)); $script:brushCardBorder.Freeze()
 $script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7D, 0xD3, 0xFC)); $script:brushHeaderFg.Freeze()
-$script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x1E, 0x2E)); $script:brushHeaderCntBg.Freeze()
-$script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushHeaderCntFg.Freeze()
-$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1A, 0x22, 0x32)); $script:brushSeparator.Freeze()
+$script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x18, 0x22, 0x34)); $script:brushHeaderCntBg.Freeze()
+$script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x8A, 0x9E, 0xB8)); $script:brushHeaderCntFg.Freeze()
+$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x27, 0x34, 0x4A)); $script:brushSeparator.Freeze()
 
 $script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x19, 0x22, 0x34)); $script:brushRowHover.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
@@ -11534,7 +11534,7 @@ $trigLinkHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Con
 $script:styleLinkBtn.Triggers.Add($trigLinkHover)
 $script:styleLinkBtn.Seal()
 
-$script:brushCardHoverBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x45, 0x68)); $script:brushCardHoverBorder.Freeze()
+$script:brushCardHoverBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0x74, 0xB8)); $script:brushCardHoverBorder.Freeze()
 $script:styleCategoryCard = New-Object System.Windows.Style([System.Windows.Controls.Border])
 $script:styleCategoryCard.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushCardBorder)))
 $trigCardHover = New-Object System.Windows.Trigger
@@ -11707,7 +11707,7 @@ function Flush-PendingIconCache {
         $script:pendingIconSaves.RemoveAt($idx)
     }
 }
-$script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
+$script:cornerIconBadge         = New-Object System.Windows.CornerRadius(1)
 $script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(28, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
 $script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(85, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
 $script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
@@ -11719,8 +11719,8 @@ $marginSeparator  = New-Object System.Windows.Thickness(0, 1, 0, 5)
 $marginRowBorder  = New-Object System.Windows.Thickness(0, 1, 0, 1)
 $paddingRow       = New-Object System.Windows.Thickness(5, 0, 4, 0)
 $marginIcon       = New-Object System.Windows.Thickness(7, 0, 8, 0)
-$cornerCard       = New-Object System.Windows.CornerRadius(8)
-$cornerRow        = New-Object System.Windows.CornerRadius(5)
+$cornerCard       = New-Object System.Windows.CornerRadius(2)
+$cornerRow        = New-Object System.Windows.CornerRadius(1)
 $thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
@@ -11978,7 +11978,7 @@ $script:brushUninstStatusOkBg         = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushUninstStatusOkBorder.Freeze()
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
 $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFolderBg.Freeze()
-$script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushUninstFolderBorder.Freeze()
+$script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x42, 0x54, 0x6E)); $script:brushUninstFolderBorder.Freeze()
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
@@ -12862,7 +12862,7 @@ $marginNameText     = [System.Windows.Thickness]::new(5, 0, 4, 0)
 $paddingUpdateBadge = [System.Windows.Thickness]::new(5, 1, 5, 1)
 $marginUpdateBadge  = [System.Windows.Thickness]::new(2, 0, 4, 0)
 $marginLinkIcon     = [System.Windows.Thickness]::new(0, -1, 0, 0)
-$cornerFour         = [System.Windows.CornerRadius]::new(4)
+$cornerFour         = [System.Windows.CornerRadius]::new(1)
 $strOpenLinkGlyph   = [string][char]0x2197
 
 $script:cbChangedHandler = [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
@@ -12943,6 +12943,8 @@ foreach ($cat in $categories) {
 
     $headerCountBadge = [System.Windows.Controls.Border]::new()
     $headerCountBadge.Background = $script:brushHeaderCntBg
+    $headerCountBadge.BorderBrush = $script:brushCardBorder
+    $headerCountBadge.BorderThickness = $thicknessOne
     $headerCountBadge.CornerRadius = $cornerFour
     $headerCountBadge.Padding = $paddingHeaderCnt
     $headerCountBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right

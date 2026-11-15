@@ -22,8 +22,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type CheckBox}">
                         <Grid Background="Transparent" Width="16" Height="16">
-                            <Border x:Name="box" Width="15" Height="15" CornerRadius="4"
-                                    Background="#131B29" BorderBrush="#334155" BorderThickness="1.2"
+                            <Border x:Name="box" Width="15" Height="15" CornerRadius="1"
+                                    Background="#131B29" BorderBrush="#42536D" BorderThickness="1"
                                     HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Path x:Name="checkMark" Visibility="Collapsed"
                                       Data="M 2.2,6.2 L 5.2,9.2 L 10.8,3.2"
@@ -66,7 +66,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Border Name="thumbBorder" Background="#253147" CornerRadius="3" Margin="2,0"/>
+                        <Border Name="thumbBorder" Background="#2D3C56" CornerRadius="1" Margin="2,0"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="thumbBorder" Property="Background" Value="#38BDF8"/>
@@ -136,7 +136,7 @@
                                             <Thumb Style="{StaticResource ModernScrollThumb}">
                                                 <Thumb.Template>
                                                     <ControlTemplate TargetType="{x:Type Thumb}">
-                                                        <Border Name="hThumbBorder" Background="#253147" CornerRadius="3" Margin="0,2"/>
+                                                        <Border Name="hThumbBorder" Background="#2D3C56" CornerRadius="1" Margin="0,2"/>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter TargetName="hThumbBorder" Property="Background" Value="#38BDF8"/>
@@ -169,14 +169,14 @@
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#24FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#3EFFFFFF"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                CornerRadius="2" Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"/>
@@ -184,7 +184,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="btnBorder" Property="Opacity" Value="0.90"/>
-                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#55FFFFFF"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#80FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="btnBorder" Property="Opacity" Value="0.72"/>
@@ -199,14 +199,14 @@
         </Style>
 
         <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#141B29"/>
+            <Setter Property="Background" Value="#121826"/>
             <Setter Property="Foreground" Value="#CBD5E1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="13,7"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#212B3F"/>
+            <Setter Property="BorderBrush" Value="#2F3E57"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Template">
@@ -215,7 +215,7 @@
                         <Border Name="btnBorder" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                CornerRadius="2" Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"/>
@@ -287,7 +287,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="filterBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                                CornerRadius="1" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -308,7 +308,7 @@
             <RowDefinition Height="Auto"/> 
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#192130" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#27344A" BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
@@ -331,7 +331,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -349,11 +349,11 @@
                                     <Button Name="btnInstall" Content="Cài đặt mục chọn" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="15,7"/>
                                     <Button Name="btnUpgradeSelected" Content="Cập nhật mục chọn" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#A78BFA" BorderBrush="#2E234E"/>
+                                            Foreground="#A78BFA" BorderBrush="#49387D"/>
                                     <Button Name="btnUpgradeAll" Content="Cập nhật tất cả" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#FBBF24" BorderBrush="#3B311B"/>
+                                            Foreground="#FBBF24" BorderBrush="#614F27"/>
                                     <Button Name="btnScanInstalled" Content="Làm mới" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#38BDF8" BorderBrush="#1D3652"/>
+                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
@@ -404,7 +404,7 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#192130" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -428,7 +428,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101520" CornerRadius="6" BorderBrush="#1E283A" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
+                                    <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
                                         <Grid Width="240">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -456,7 +456,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
@@ -464,7 +464,7 @@
                                         </StackPanel>
                                     </Border>
                                     <TextBlock Text="Sắp xếp:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
-                                    <Border Background="#101623" BorderBrush="#1C2638" BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnSortUninstName" Content="Theo tên (A-Z)" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
@@ -482,7 +482,7 @@
                     <Border Grid.Row="1" Name="UninstallerHeaderBorder" Background="#090D14" Height="34"
                             Margin="16,8,0,0" HorizontalAlignment="Left"
                             Width="{Binding ActualWidth, ElementName=UninstallerRowsPanel}"
-                            BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="6,6,0,0" SnapsToDevicePixels="True">
+                            BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="2,2,0,0" SnapsToDevicePixels="True">
                         <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="38"/>
@@ -515,7 +515,7 @@
             </Grid>
 
             <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
-                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Gỡ lỗi &amp; Hệ thống hiện đang được khóa để tập trung ổn định trình cài đặt và cập nhật ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
@@ -523,10 +523,10 @@
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
                         <UniformGrid Columns="2" VerticalAlignment="Top">
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#12263A" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#12263A" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="Bold" Foreground="#38BDF8"/>
                                     </Border>
                                     <TextBlock Text="Sửa chữa file hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -539,10 +539,10 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#2A1F12" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#2A1F12" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
                                     <TextBlock Text="Gỡ lỗi Windows Update" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -555,10 +555,10 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#0E2920" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#0E2920" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
                                     <TextBlock Text="Sửa lỗi Mạng &amp; Kết nối" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -570,10 +570,10 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#1F1936" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#1F1936" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="Bold" Foreground="#A78BFA"/>
                                     </Border>
                                     <TextBlock Text="Bảo trì &amp; Dọn dẹp hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -590,7 +590,7 @@
             </DockPanel>
 
             <DockPanel Name="TabPage3" Visibility="Collapsed" IsHitTestVisible="False">
-                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#92400E" BorderThickness="1" CornerRadius="6" Margin="16,14,16,0" Padding="14,10">
+                    <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Quản lý Driver hiện đang được khóa để đảm bảo an toàn hệ thống và tập trung quản lý ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
@@ -598,10 +598,10 @@
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
                         <UniformGrid Columns="3" VerticalAlignment="Top">
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#2D141D" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#2D141D" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="Bold" Foreground="#FB7185"/>
                                     </Border>
                                     <TextBlock Text="Chẩn đoán phần cứng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -614,10 +614,10 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#2A1F12" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#2A1F12" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
                                     <TextBlock Text="Gỡ lỗi cập nhật Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -630,10 +630,10 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#111722" BorderBrush="#1C2536" BorderThickness="1" CornerRadius="8" Margin="6" Padding="18">
+                        <Border Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="2" Margin="6" Padding="18">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Border Background="#0E2920" CornerRadius="4" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border Background="#0E2920" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
                                     <TextBlock Text="Sao lưu &amp; Bảo vệ Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
@@ -649,7 +649,7 @@
             </DockPanel>
         </Grid>
 
-        <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#192130" BorderThickness="0,1,0,0">
+        <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#27344A" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

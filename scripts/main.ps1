@@ -28,11 +28,11 @@ $script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
 $script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x17, 0x22)); $script:brushCardBg.Freeze()
-$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x25, 0x36)); $script:brushCardBorder.Freeze()
+$script:brushCardBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x39, 0x4F)); $script:brushCardBorder.Freeze()
 $script:brushHeaderFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7D, 0xD3, 0xFC)); $script:brushHeaderFg.Freeze()
-$script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x1E, 0x2E)); $script:brushHeaderCntBg.Freeze()
-$script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushHeaderCntFg.Freeze()
-$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1A, 0x22, 0x32)); $script:brushSeparator.Freeze()
+$script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x18, 0x22, 0x34)); $script:brushHeaderCntBg.Freeze()
+$script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x8A, 0x9E, 0xB8)); $script:brushHeaderCntFg.Freeze()
+$script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x27, 0x34, 0x4A)); $script:brushSeparator.Freeze()
 
 $script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x19, 0x22, 0x34)); $script:brushRowHover.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
@@ -72,7 +72,7 @@ $trigLinkHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Con
 $script:styleLinkBtn.Triggers.Add($trigLinkHover)
 $script:styleLinkBtn.Seal()
 
-$script:brushCardHoverBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x45, 0x68)); $script:brushCardHoverBorder.Freeze()
+$script:brushCardHoverBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0x74, 0xB8)); $script:brushCardHoverBorder.Freeze()
 $script:styleCategoryCard = New-Object System.Windows.Style([System.Windows.Controls.Border])
 $script:styleCategoryCard.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushCardBorder)))
 $trigCardHover = New-Object System.Windows.Trigger
@@ -245,7 +245,7 @@ function Flush-PendingIconCache {
         $script:pendingIconSaves.RemoveAt($idx)
     }
 }
-$script:cornerIconBadge         = New-Object System.Windows.CornerRadius(5)
+$script:cornerIconBadge         = New-Object System.Windows.CornerRadius(1)
 $script:brushUpdateBadgeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(28, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBg.Freeze()
 $script:brushUpdateBadgeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(85, 0xF8, 0x71, 0x71)); $script:brushUpdateBadgeBorder.Freeze()
 $script:brushUpdateBadgeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUpdateBadgeFg.Freeze()
@@ -257,8 +257,8 @@ $marginSeparator  = New-Object System.Windows.Thickness(0, 1, 0, 5)
 $marginRowBorder  = New-Object System.Windows.Thickness(0, 1, 0, 1)
 $paddingRow       = New-Object System.Windows.Thickness(5, 0, 4, 0)
 $marginIcon       = New-Object System.Windows.Thickness(7, 0, 8, 0)
-$cornerCard       = New-Object System.Windows.CornerRadius(8)
-$cornerRow        = New-Object System.Windows.CornerRadius(5)
+$cornerCard       = New-Object System.Windows.CornerRadius(2)
+$cornerRow        = New-Object System.Windows.CornerRadius(1)
 $thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
@@ -516,7 +516,7 @@ $script:brushUninstStatusOkBg         = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushUninstStatusOkBorder.Freeze()
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
 $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFolderBg.Freeze()
-$script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushUninstFolderBorder.Freeze()
+$script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x42, 0x54, 0x6E)); $script:brushUninstFolderBorder.Freeze()
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
@@ -1400,7 +1400,7 @@ $marginNameText     = [System.Windows.Thickness]::new(5, 0, 4, 0)
 $paddingUpdateBadge = [System.Windows.Thickness]::new(5, 1, 5, 1)
 $marginUpdateBadge  = [System.Windows.Thickness]::new(2, 0, 4, 0)
 $marginLinkIcon     = [System.Windows.Thickness]::new(0, -1, 0, 0)
-$cornerFour         = [System.Windows.CornerRadius]::new(4)
+$cornerFour         = [System.Windows.CornerRadius]::new(1)
 $strOpenLinkGlyph   = [string][char]0x2197
 
 $script:cbChangedHandler = [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
@@ -1481,6 +1481,8 @@ foreach ($cat in $categories) {
 
     $headerCountBadge = [System.Windows.Controls.Border]::new()
     $headerCountBadge.Background = $script:brushHeaderCntBg
+    $headerCountBadge.BorderBrush = $script:brushCardBorder
+    $headerCountBadge.BorderThickness = $thicknessOne
     $headerCountBadge.CornerRadius = $cornerFour
     $headerCountBadge.Padding = $paddingHeaderCnt
     $headerCountBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
