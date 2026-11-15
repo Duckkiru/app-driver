@@ -9,3 +9,4 @@ irm is.gd/appdriver | iex
 ```powershell
 irm https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1 | iex
 ```
+Hệ điều hành: Windows 10 / Windows 11
