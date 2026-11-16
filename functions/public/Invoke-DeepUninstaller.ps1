@@ -1028,7 +1028,7 @@ function Show-LeftoverReviewDialog {
         $itemBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#101520")
         $itemBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
         $itemBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-        $itemBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $itemBorder.CornerRadius = New-Object System.Windows.CornerRadius(2)
         $itemBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
         $itemBorder.Padding = New-Object System.Windows.Thickness(10, 8, 10, 8)
 
@@ -1270,7 +1270,11 @@ function Show-LeftoverReviewDialog {
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
         if ($checkedItems.Count -eq 0) {
-            [System.Windows.MessageBox]::Show($dialog, "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            if (Get-Command "Show-OwnedMessageBox" -ErrorAction SilentlyContinue) {
+                Show-OwnedMessageBox -Text "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch." -Caption "Th$([char]0x00F4)ng b$([char]0x00E1)o" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) -OwnerWindowOverride $dialog | Out-Null
+            } else {
+                [System.Windows.MessageBox]::Show($dialog, "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            }
             return
         }
 

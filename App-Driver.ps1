@@ -11436,7 +11436,7 @@ function Show-LeftoverReviewDialog {
         $itemBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#101520")
         $itemBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
         $itemBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-        $itemBorder.CornerRadius = New-Object System.Windows.CornerRadius(6)
+        $itemBorder.CornerRadius = New-Object System.Windows.CornerRadius(2)
         $itemBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
         $itemBorder.Padding = New-Object System.Windows.Thickness(10, 8, 10, 8)
 
@@ -11678,7 +11678,11 @@ function Show-LeftoverReviewDialog {
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
         if ($checkedItems.Count -eq 0) {
-            [System.Windows.MessageBox]::Show($dialog, "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            if (Get-Command "Show-OwnedMessageBox" -ErrorAction SilentlyContinue) {
+                Show-OwnedMessageBox -Text "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch." -Caption "Th$([char]0x00F4)ng b$([char]0x00E1)o" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) -OwnerWindowOverride $dialog | Out-Null
+            } else {
+                [System.Windows.MessageBox]::Show($dialog, "B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) d$([char]0x1ECD)n s$([char]0x1EA1)ch.", "Th$([char]0x00F4)ng b$([char]0x00E1)o", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            }
             return
         }
 
@@ -12715,16 +12719,321 @@ function Show-OwnedMessageBox {
         [Parameter(Mandatory = $true)][string]$Text,
         [Parameter(Mandatory = $true)][string]$Caption,
         [System.Windows.Forms.MessageBoxButtons]$Buttons = [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]$Icon = [System.Windows.Forms.MessageBoxIcon]::Information
+        [System.Windows.Forms.MessageBoxIcon]$Icon = [System.Windows.Forms.MessageBoxIcon]::Information,
+        [string]$PrimaryText = "",
+        [string]$SecondaryText = "",
+        [string[]]$DetailItems = @(),
+        [string]$ModeBadgeText = "",
+        [string]$ModeBadgeKind = "Info",
+        $OwnerWindowOverride = $null
     )
     if ($script:isWindowClosing) {
         return [System.Windows.Forms.DialogResult]::Cancel
     }
-    $ownerWin = Get-WpfOwnerWin32Window
-    if ($ownerWin) {
-        return [System.Windows.Forms.MessageBox]::Show($ownerWin, $Text, $Caption, $Buttons, $Icon)
+
+    $targetOwner = if ($OwnerWindowOverride -is [System.Windows.Window]) { $OwnerWindowOverride } else { $window }
+    $canAttachOwner = $false
+    if ($targetOwner -and ($targetOwner -is [System.Windows.Window])) {
+        try {
+            if ($targetOwner.IsLoaded -and $targetOwner.IsVisible) {
+                $src = [System.Windows.PresentationSource]::FromVisual($targetOwner)
+                $hwndSrc = $src -as [System.Windows.Interop.HwndSource]
+                $ownerHwnd = (New-Object System.Windows.Interop.WindowInteropHelper($targetOwner)).Handle
+                if ($null -ne $hwndSrc -and (-not $hwndSrc.IsDisposed) -and $ownerHwnd -ne [IntPtr]::Zero) {
+                    $canAttachOwner = $true
+                }
+            }
+        } catch {
+            $canAttachOwner = $false
+        }
     }
-    return [System.Windows.Forms.MessageBox]::Show($Text, $Caption, $Buttons, $Icon)
+
+    $dlgXaml = @'
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    WindowStyle="None"
+    ResizeMode="NoResize"
+    SizeToContent="WidthAndHeight"
+    MinWidth="430"
+    MaxWidth="560"
+    ShowInTaskbar="False"
+    Background="#0C1018"
+    Foreground="#E2E8F0"
+    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    TextOptions.TextFormattingMode="Display"
+    TextOptions.TextRenderingMode="ClearType"
+    UseLayoutRounding="True"
+    SnapsToDevicePixels="True">
+    <Window.Resources>
+        <Style x:Key="DlgActionBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="16,7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#3EFFFFFF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Opacity" Value="0.90"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#80FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Opacity" Value="0.72"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DlgSecondaryBtn" TargetType="Button">
+            <Setter Property="Background" Value="#121826"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="15,7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#2F3E57"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#1B2538"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#161E2E"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#0EA5E9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DlgCloseBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="b" Background="{TemplateBinding Background}" CornerRadius="2" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Border Name="dlgOuterBorder" Background="#0C1018" BorderBrush="#334155" BorderThickness="1" CornerRadius="2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Name="dlgHeader" Grid.Row="0" Background="#090D14" BorderBrush="#27344A" BorderThickness="0,0,0,1" Padding="14,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Name="dlgIconBox" Grid.Column="0" Width="22" Height="22" CornerRadius="2" BorderThickness="1" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <TextBlock Name="dlgIconGlyph" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Name="dlgTitleText" Grid.Column="1" Foreground="#F1F5F9" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    <Button Name="dlgBtnCloseX" Grid.Column="2" Content="✕" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="1" Margin="18,16,18,16">
+                <TextBlock Name="dlgMessageText" Foreground="#E2E8F0" FontSize="12.5" LineHeight="19" TextWrapping="Wrap"/>
+                <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Left">
+                    <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold"/>
+                </Border>
+                <Border Name="dlgListBorder" Visibility="Collapsed" Background="#090D14" BorderBrush="#233044" BorderThickness="1" CornerRadius="2" Margin="0,10,0,0" Padding="10,8" MaxHeight="180">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Name="dlgDetailList"/>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+
+            <Border Grid.Row="2" Background="#090D14" BorderBrush="#27344A" BorderThickness="0,1,0,0" Padding="16,11">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Name="dlgBtnSecondary" Style="{StaticResource DlgSecondaryBtn}" Margin="0,0,8,0"/>
+                    <Button Name="dlgBtnPrimary" Style="{StaticResource DlgActionBtn}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
+'@
+
+    $dlg = $null
+    try {
+        $dlg = [System.Windows.Markup.XamlReader]::Parse($dlgXaml)
+    } catch {
+        $ownerWin = Get-WpfOwnerWin32Window
+        if ($ownerWin) { return [System.Windows.Forms.MessageBox]::Show($ownerWin, $Text, $Caption, $Buttons, $Icon) }
+        return [System.Windows.Forms.MessageBox]::Show($Text, $Caption, $Buttons, $Icon)
+    }
+
+    if ($canAttachOwner) {
+        try {
+            $dlg.Owner = $targetOwner
+            $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+        } catch {
+            try { $dlg.Owner = $null } catch {}
+            $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+        }
+    } else {
+        $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
+    }
+
+    $bc = [System.Windows.Media.BrushConverter]::new()
+    $dlgOuterBorder   = $dlg.FindName("dlgOuterBorder")
+    $dlgHeader        = $dlg.FindName("dlgHeader")
+    $dlgIconBox       = $dlg.FindName("dlgIconBox")
+    $dlgIconGlyph     = $dlg.FindName("dlgIconGlyph")
+    $dlgTitleText     = $dlg.FindName("dlgTitleText")
+    $dlgBtnCloseX     = $dlg.FindName("dlgBtnCloseX")
+    $dlgMessageText   = $dlg.FindName("dlgMessageText")
+    $dlgModeBadge     = $dlg.FindName("dlgModeBadge")
+    $dlgModeBadgeText = $dlg.FindName("dlgModeBadgeText")
+    $dlgListBorder    = $dlg.FindName("dlgListBorder")
+    $dlgDetailList    = $dlg.FindName("dlgDetailList")
+    $dlgBtnSecondary  = $dlg.FindName("dlgBtnSecondary")
+    $dlgBtnPrimary    = $dlg.FindName("dlgBtnPrimary")
+
+    $dlgTitleText.Text = $Caption
+    $dlgMessageText.Text = $Text
+
+    $isWarning = ($Icon -eq [System.Windows.Forms.MessageBoxIcon]::Warning) -or ($Icon -eq [System.Windows.Forms.MessageBoxIcon]::Error)
+    if ($isWarning) {
+        $dlgOuterBorder.BorderBrush = $bc.ConvertFromString("#47262A")
+        $dlgIconBox.Background      = $bc.ConvertFromString("#2A1519")
+        $dlgIconBox.BorderBrush     = $bc.ConvertFromString("#7F1D1D")
+        $dlgIconGlyph.Foreground    = $bc.ConvertFromString("#F87171")
+        $dlgIconGlyph.Text          = "!"
+        $dlgBtnPrimary.Background   = $bc.ConvertFromString("#991B1B")
+        $dlgBtnPrimary.BorderBrush  = $bc.ConvertFromString("#DC2626")
+    } else {
+        $dlgOuterBorder.BorderBrush = $bc.ConvertFromString("#2B3B52")
+        $dlgIconBox.Background      = $bc.ConvertFromString("#102438")
+        $dlgIconBox.BorderBrush     = $bc.ConvertFromString("#1D4E78")
+        $dlgIconGlyph.Foreground    = $bc.ConvertFromString("#38BDF8")
+        $dlgIconGlyph.Text          = "i"
+        $dlgBtnPrimary.Background   = $bc.ConvertFromString("#0284C7")
+        $dlgBtnPrimary.BorderBrush  = $bc.ConvertFromString("#38BDF8")
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ModeBadgeText)) {
+        $dlgModeBadge.Visibility = [System.Windows.Visibility]::Visible
+        $dlgModeBadgeText.Text = $ModeBadgeText
+        if ($ModeBadgeKind -eq "Danger") {
+            $dlgModeBadge.Background   = $bc.ConvertFromString("#281317")
+            $dlgModeBadge.BorderBrush  = $bc.ConvertFromString("#7F1D1D")
+            $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#FCA5A5")
+        } else {
+            $dlgModeBadge.Background   = $bc.ConvertFromString("#0D2134")
+            $dlgModeBadge.BorderBrush  = $bc.ConvertFromString("#1D4E78")
+            $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#7DD3FC")
+        }
+    }
+
+    if ($DetailItems -and $DetailItems.Count -gt 0) {
+        $dlgListBorder.Visibility = [System.Windows.Visibility]::Visible
+        $itemFg = $bc.ConvertFromString("#CBD5E1")
+        foreach ($dLine in $DetailItems) {
+            if ([string]::IsNullOrWhiteSpace($dLine)) { continue }
+            $tb = [System.Windows.Controls.TextBlock]::new()
+            $tb.Text = $dLine
+            $tb.Foreground = $itemFg
+            $tb.FontSize = 11.5
+            $tb.Margin = [System.Windows.Thickness]::new(0, 1.5, 0, 1.5)
+            $tb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+            [void]$dlgDetailList.Children.Add($tb)
+        }
+    }
+
+    $isYesNo = ($Buttons -eq [System.Windows.Forms.MessageBoxButtons]::YesNo) -or ($Buttons -eq [System.Windows.Forms.MessageBoxButtons]::YesNoCancel)
+    $isOkCancel = ($Buttons -eq [System.Windows.Forms.MessageBoxButtons]::OKCancel)
+    if ($isYesNo) {
+        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "Đồng ý" } else { $PrimaryText }
+        $dlgBtnSecondary.Content = if ([string]::IsNullOrWhiteSpace($SecondaryText)) { "Hủy bỏ" } else { $SecondaryText }
+    } elseif ($isOkCancel) {
+        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "OK" } else { $PrimaryText }
+        $dlgBtnSecondary.Content = if ([string]::IsNullOrWhiteSpace($SecondaryText)) { "Hủy bỏ" } else { $SecondaryText }
+    } else {
+        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "Đóng" } else { $PrimaryText }
+        $dlgBtnSecondary.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    $dlgState = @{
+        Outcome = if ($isYesNo) { [System.Windows.Forms.DialogResult]::No } else { [System.Windows.Forms.DialogResult]::Cancel }
+    }
+
+    $dlgHeader.Add_MouseLeftButtonDown({
+        param($s, $e)
+        if ($e.LeftButton -eq [System.Windows.Input.MouseButtonState]::Pressed) {
+            try { $dlg.DragMove() } catch {}
+        }
+    }.GetNewClosure())
+
+    $dlgBtnPrimary.Add_Click({
+        $dlgState.Outcome = if ($isYesNo) { [System.Windows.Forms.DialogResult]::Yes } else { [System.Windows.Forms.DialogResult]::OK }
+        $dlg.Close()
+    }.GetNewClosure())
+
+    $dlgBtnSecondary.Add_Click({
+        $dlgState.Outcome = if ($isYesNo) { [System.Windows.Forms.DialogResult]::No } else { [System.Windows.Forms.DialogResult]::Cancel }
+        $dlg.Close()
+    }.GetNewClosure())
+
+    $dlgBtnCloseX.Add_Click({
+        $dlgState.Outcome = if ($isYesNo) { [System.Windows.Forms.DialogResult]::No } elseif ($isOkCancel) { [System.Windows.Forms.DialogResult]::Cancel } else { [System.Windows.Forms.DialogResult]::OK }
+        $dlg.Close()
+    }.GetNewClosure())
+
+    $dlg.Add_KeyDown({
+        param($s, $e)
+        if ($e.Key -eq [System.Windows.Input.Key]::Escape) {
+            $dlgState.Outcome = if ($isYesNo) { [System.Windows.Forms.DialogResult]::No } elseif ($isOkCancel) { [System.Windows.Forms.DialogResult]::Cancel } else { [System.Windows.Forms.DialogResult]::OK }
+            $dlg.Close()
+        }
+    }.GetNewClosure())
+
+    try {
+        [void]$dlg.ShowDialog()
+    } finally {
+        try { $dlg.Owner = $null } catch {}
+    }
+    return $dlgState.Outcome
 }
 
 $script:activeWaitFrames = [System.Collections.Generic.List[object]]::new()
@@ -13838,12 +14147,22 @@ if ($btnDeepUninstall) {
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
-            $modeNote = if ($skipVendor) { "`n(Chế độ: Bỏ qua trình gỡ hãng — ép tắt service/tiến trình và dọn sạch trực tiếp)" } else { "" }
+            $appLines = @($selectedItems | ForEach-Object {
+                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
+                "• $($_.DisplayName)$vPart"
+            })
+            $modeBadge = if ($skipVendor) { "Bỏ qua trình gỡ hãng — Ép xóa trực tiếp" } else { "Tự động gắn cờ gỡ im lặng theo bộ cài" }
+            $modeKind = if ($skipVendor) { "Danger" } else { "Info" }
             $confirm = Show-OwnedMessageBox `
-                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?$modeNote" `
+                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?" `
                 -Caption "Xác nhận Gỡ Tận Gốc" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
+                -SecondaryText "Hủy bỏ" `
+                -DetailItems $appLines `
+                -ModeBadgeText $modeBadge `
+                -ModeBadgeKind $modeKind
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
             foreach ($item in $selectedItems) {
