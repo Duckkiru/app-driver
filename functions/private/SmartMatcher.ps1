@@ -1271,8 +1271,8 @@ function Scan-And-ColorizeApps {
 
     $script:isScanningApps = $true
     try {
-        Log-Text "[SCAN] Đang quét đa tầng (Registry, Runtimes, CLI/PATH & WinGet)..."
-        if ($txtStatus) { $txtStatus.Text = "Đang quét nhanh hệ thống..." }
+        Log-Text "[SCAN] Đang quét hệ thống (Registry, Runtimes, CLI & WinGet)..."
+        if ($txtStatus) { $txtStatus.Text = "Đang quét hệ thống..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         try { [System.Windows.Forms.Application]::DoEvents() } catch {}
         if ($script:isWindowClosing) { return }
@@ -1296,7 +1296,7 @@ function Scan-And-ColorizeApps {
         if ($allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
             $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
             if ($txtStatus) {
-                $txtStatus.Text = "Phát hiện nhanh $($preStats.Installed) app | Đang kiểm tra bản cập nhật..."
+                $txtStatus.Text = "Tìm thấy $($preStats.Installed) ứng dụng • đang kiểm tra cập nhật..."
             }
             try { [System.Windows.Forms.Application]::DoEvents() } catch {}
             if ($script:isWindowClosing) { return }
@@ -1390,11 +1390,11 @@ function Scan-And-ColorizeApps {
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
 
         $script:hasCompletedAppScan = $true
-        $modeTag = if (-not $wingetOk) { " [Chế độ dự phòng Registry/Appx]" } else { "" }
-        $summary = "Đã quét xong: $($finalStats.Installed) app đã cài ($($finalStats.Latest) bản mới nhất [XANH], $($finalStats.Outdated) bản cũ [ĐỎ])$modeTag"
+        $modeTag = if (-not $wingetOk) { " [Dự phòng Registry/Appx]" } else { "" }
+        $summary = "Đã quét xong: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
         Log-Text "[OK] $summary"
         if ($txtStatus) {
-            $txtStatus.Text = "$($finalStats.Installed) app đã cài ($($finalStats.Latest) mới / $($finalStats.Outdated) cũ)" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
+            $txtStatus.Text = "$($finalStats.Installed) đã cài • $($finalStats.Latest) mới nhất • $($finalStats.Outdated) cần cập nhật" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
         }
     } finally {
         $script:isScanningApps = $false

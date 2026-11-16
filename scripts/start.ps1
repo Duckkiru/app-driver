@@ -290,7 +290,7 @@ Write-Host " / __ |/ _ \/ _ \___/ /_/ / __/ / | / / -_) __/   " -ForegroundColor
 Write-Host "/_/ |_/ .__/ .__/  /_____/_/ /_/|___/\__/_/      " -ForegroundColor Cyan
 Write-Host "     /_/  /_/      Windows Software & Driver Suite" -ForegroundColor DarkCyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
-Write-Host "[!] Vui lòng KHÔNG đóng cửa sổ Terminal này khi đang sử dụng giao diện App-Driver.`n" -ForegroundColor Yellow
+Write-Host "[!] Không đóng cửa sổ Terminal này khi App-Driver đang chạy.`n" -ForegroundColor Yellow
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore

@@ -3074,7 +3074,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
-        Log-Text "[OK] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
+        Log-Text "[OK] Sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
         Flush-PendingIconCache -MaxDecode 10
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
