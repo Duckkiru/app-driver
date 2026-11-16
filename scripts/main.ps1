@@ -1017,6 +1017,7 @@ Register-Click "navBtnDrivers"     -LockGroup "Quản lý Driver"    { Set-Activ
 Set-ActiveTab 0 $navBtnApps
 
 $btnDeepUninstall        = $window.FindName("btnDeepUninstall")
+$btnForceStopUninstall   = $window.FindName("btnForceStopUninstall")
 $btnScanOrphans          = $window.FindName("btnScanOrphans")
 $btnRefreshUninstaller   = $window.FindName("btnRefreshUninstaller")
 $btnFilterUninstAll      = $window.FindName("btnFilterUninstAll")
@@ -1285,6 +1286,10 @@ function Update-UninstallerSelectionCount {
     if ($btnDeepUninstall) {
         $btnDeepUninstall.Content = "Gỡ cài đặt ($count)"
         $btnDeepUninstall.IsEnabled = ($count -gt 0)
+    }
+    if ($btnForceStopUninstall) {
+        $btnForceStopUninstall.Content = "Buộc dừng & Xóa ($count)"
+        $btnForceStopUninstall.IsEnabled = ($count -gt 0)
     }
 }
 
@@ -1954,6 +1959,41 @@ if ($btnDeepUninstall) {
                 if ($script:isWindowClosing) { break }
                 if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
                     Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor -AutoSilent:$useAutoSilent
+                }
+            }
+            if (-not $script:isWindowClosing) {
+                Update-UninstallerList -Force
+            }
+        }
+    })
+}
+
+if ($btnForceStopUninstall) {
+    $btnForceStopUninstall.Add_Click({
+        Invoke-GuardedAction "Buộc dừng & Xóa ứng dụng" -DeferExpand {
+            $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
+
+            $appLines = @($selectedItems | ForEach-Object {
+                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
+                "• $($_.DisplayName)$vPart"
+            })
+            $confirm = Show-OwnedMessageBox `
+                -Text "Buộc dừng toàn bộ tiến trình/dịch vụ đang giữ tệp của $($selectedItems.Count) ứng dụng đã chọn và xóa trực tiếp không qua trình gỡ hãng?" `
+                -Caption "Xác nhận Buộc dừng & Xóa" `
+                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                -PrimaryText "Buộc dừng & Xóa ($($selectedItems.Count))" `
+                -SecondaryText "Hủy bỏ" `
+                -DetailItems $appLines `
+                -ModeBadgeText "Restart Manager + NtSuspend + Kill Tree + MoveFileEx (bỏ qua trình gỡ hãng)" `
+                -ModeBadgeKind "Danger"
+            if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+
+            foreach ($item in $selectedItems) {
+                if ($script:isWindowClosing) { break }
+                if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
+                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$true -AutoSilent:$false -ForceStopAndDelete
                 }
             }
             if (-not $script:isWindowClosing) {

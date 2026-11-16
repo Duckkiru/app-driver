@@ -421,6 +421,9 @@
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnDeepUninstall" Content="Gỡ cài đặt (0)" Style="{StaticResource ActionButton}"
                                             Background="#991B1B" Foreground="#FEE2E2" Padding="14,7"/>
+                                    <Button Name="btnForceStopUninstall" Content="Buộc dừng &amp; Xóa (0)" Style="{StaticResource ActionButton}"
+                                            Background="#B45309" Foreground="#FEF3C7" Padding="13,7"
+                                            ToolTip="Buộc dừng toàn bộ tiến trình, service, task và handle đang khóa tệp rồi xóa trực tiếp không qua trình gỡ hãng." ToolTipService.InitialShowDelay="500"/>
                                     <Button Name="btnScanOrphans" Content="Quét Rác &amp; App Lỗi" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
                                     <Button Name="btnRefreshUninstaller" Content="Làm mới" Style="{StaticResource SecondaryButton}"
@@ -429,7 +432,7 @@
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
-                                        <Grid Width="240">
+                                        <Grid Width="200">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>

@@ -1,16 +1,35 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace DuckUtil
 {
+    public class ForceStopReport
+    {
+        public int KilledCount { get; set; }
+        public int ServicesStoppedCount { get; set; }
+        public int TasksRemovedCount { get; set; }
+        public int AccessDeniedCount { get; set; }
+        public string[] KilledNames { get; set; }
+        public string[] AccessDeniedNames { get; set; }
+        public string[] SkippedSystemLockers { get; set; }
+
+        public ForceStopReport()
+        {
+            KilledNames = new string[0];
+            AccessDeniedNames = new string[0];
+            SkippedSystemLockers = new string[0];
+        }
+    }
     public class InstalledAppInfo
     {
         public string Id { get; set; }
@@ -51,6 +70,86 @@ namespace DuckUtil
     public static class DeepUninstallerEngine
     {
         private const int MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
+        private const int ERROR_MORE_DATA = 234;
+        private const int FO_DELETE = 0x0003;
+        private const ushort FOF_SILENT = 0x0004;
+        private const ushort FOF_NOCONFIRMATION = 0x0010;
+        private const ushort FOF_ALLOWUNDO = 0x0040;
+        private const ushort FOF_NOERRORUI = 0x0400;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct RM_UNIQUE_PROCESS
+        {
+            public int dwProcessId;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ProcessStartTime;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct RM_PROCESS_INFO
+        {
+            public RM_UNIQUE_PROCESS Process;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            public string strAppName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+            public string strServiceShortName;
+            public int ApplicationType;
+            public uint AppStatus;
+            public uint TSSessionId;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool bRestartable;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]
+        private struct SHFILEOPSTRUCT_X86
+        {
+            public IntPtr hwnd;
+            public uint wFunc;
+            public string pFrom;
+            public string pTo;
+            public ushort fFlags;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fAnyOperationsAborted;
+            public IntPtr hNameMappings;
+            public string lpszProgressTitle;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct SHFILEOPSTRUCT_X64
+        {
+            public IntPtr hwnd;
+            public uint wFunc;
+            public string pFrom;
+            public string pTo;
+            public ushort fFlags;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fAnyOperationsAborted;
+            public IntPtr hNameMappings;
+            public string lpszProgressTitle;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
+
+        [DllImport("ntdll.dll", SetLastError = true)]
+        private static extern int NtSuspendProcess(IntPtr processHandle);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        private static extern int RmStartSession(out uint pSessionHandle, int dwSessionFlags, string strSessionKey);
+
+        [DllImport("rstrtmgr.dll")]
+        private static extern int RmEndSession(uint pSessionHandle);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        private static extern int RmRegisterResources(uint pSessionHandle, uint nFiles, string[] rgsFilenames, uint nApplications, [In] RM_UNIQUE_PROCESS[] rgApplications, uint nServices, string[] rgsServiceNames);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        private static extern int RmGetList(uint dwSessionHandle, out uint pnProcInfoNeeded, ref uint pnProcInfo, [In, Out] RM_PROCESS_INFO[] rgAffectedApps, ref uint lpdwRebootReasons);
+
+        [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+        private static extern int SHFileOperationX86(ref SHFILEOPSTRUCT_X86 lpFileOp);
+
+        [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+        private static extern int SHFileOperationX64(ref SHFILEOPSTRUCT_X64 lpFileOp);
         private static Dictionary<string, string> _cachedDirIndex;
         private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
         private static readonly object _dirIndexLock = new object();
@@ -58,12 +157,6 @@ namespace DuckUtil
             @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
         );
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
-
-        [DllImport("ntdll.dll", SetLastError = true)]
-        private static extern int NtSuspendProcess(IntPtr processHandle);
 
         private static Dictionary<string, string> BuildInstallDirectoryIndex()
         {
@@ -1426,66 +1519,487 @@ namespace DuckUtil
             return "";
         }
 
-        public static int StopProcessesInDirectory(string targetDir)
+        private static readonly HashSet<string> _protectedSystemProcNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
-            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
-            if (prefix.Length <= 4) return 0;
+            "system", "idle", "registry", "memory compression", "vmmem", "vmmemwsl",
+            "smss", "csrss", "wininit", "services", "lsass", "lsm", "winlogon",
+            "dwm", "fontdrvhost", "audiodg", "sihost", "ctfmon", "spoolsv", "msdtc",
+            "svchost", "explorer", "conhost", "openconsole", "windowsterminal",
+            "cmd", "powershell", "pwsh", "code", "antigravity"
+        };
 
-            Process[] procs = null;
-            try { procs = Process.GetProcesses(); } catch { return 0; }
-
-            var matched = new List<Process>();
-            foreach (Process p in procs)
+        private static bool IsProtectedSystemOrHostProcess(int pid, string procName)
+        {
+            if (pid <= 4) return true;
+            try
             {
-                try
-                {
-                    if (p.Id <= 4) { p.Dispose(); continue; }
-                    string fileName = null;
-                    try
-                    {
-                        if (p.MainModule != null) fileName = p.MainModule.FileName;
-                    }
-                    catch {}
+                if (pid == Process.GetCurrentProcess().Id) return true;
+            }
+            catch {}
+            if (string.IsNullOrWhiteSpace(procName)) return false;
+            return _protectedSystemProcNames.Contains(procName.Trim());
+        }
 
-                    if (!string.IsNullOrEmpty(fileName) &&
-                        fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        private static bool IsSafeLockTargetDirectory(string norm)
+        {
+            if (string.IsNullOrWhiteSpace(norm) || norm.Length <= 3) return false;
+            try
+            {
+                string full = Path.GetFullPath(norm).TrimEnd('\\');
+                if (full.Length <= 3) return false;
+                var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                string[] envPaths = new string[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    Environment.GetFolderPath(Environment.SpecialFolder.SystemX86),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    Environment.GetEnvironmentVariable("ProgramW6432"),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+                };
+                foreach (string ep in envPaths)
+                {
+                    if (!string.IsNullOrWhiteSpace(ep))
                     {
-                        try
-                        {
-                            IntPtr h = p.Handle;
-                            NtSuspendProcess(h);
-                        }
-                        catch {}
-                        matched.Add(p);
-                    }
-                    else
-                    {
-                        p.Dispose();
+                        blocked.Add(ep.Trim().TrimEnd('\\'));
                     }
                 }
-                catch
+                string localProg = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrWhiteSpace(localProg))
                 {
-                    try { p.Dispose(); } catch {}
+                    blocked.Add(Path.Combine(localProg, "Programs").TrimEnd('\\'));
+                }
+                string sysDrive = Path.GetPathRoot(full);
+                if (!string.IsNullOrWhiteSpace(sysDrive))
+                {
+                    blocked.Add(Path.Combine(sysDrive, "Users").TrimEnd('\\'));
+                }
+                return !blocked.Contains(full);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static Dictionary<int, string> GetRestartManagerLockingPids(string targetPath)
+        {
+            var result = new Dictionary<int, string>();
+            if (string.IsNullOrWhiteSpace(targetPath)) return result;
+
+            var filesToCheck = new List<string>();
+            if (File.Exists(targetPath))
+            {
+                filesToCheck.Add(targetPath);
+            }
+            else if (Directory.Exists(targetPath))
+            {
+                var secondary = new List<string>();
+                try
+                {
+                    foreach (string f in EnumerateFilesSafe(targetPath, "*", 6))
+                    {
+                        string ext = Path.GetExtension(f) ?? "";
+                        if (string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".sys", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".ocx", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".db", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".sqlite", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".dat", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".lock", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".log", StringComparison.OrdinalIgnoreCase))
+                        {
+                            filesToCheck.Add(f);
+                            if (filesToCheck.Count >= 80) break;
+                        }
+                        else if (secondary.Count < 40)
+                        {
+                            secondary.Add(f);
+                        }
+                    }
+                }
+                catch {}
+
+                foreach (string sf in secondary)
+                {
+                    if (filesToCheck.Count >= 80) break;
+                    filesToCheck.Add(sf);
                 }
             }
 
-            int killed = 0;
-            foreach (Process mp in matched)
+            if (filesToCheck.Count == 0) return result;
+
+            uint session = 0;
+            bool sessionStarted = false;
+            try
             {
+                string key = Guid.NewGuid().ToString("N");
+                if (RmStartSession(out session, 0, key) != 0)
+                {
+                    return result;
+                }
+                sessionStarted = true;
+
+                string[] arr = filesToCheck.ToArray();
+                if (RmRegisterResources(session, (uint)arr.Length, arr, 0, null, 0, null) != 0)
+                {
+                    return result;
+                }
+
+                uint procInfoNeeded = 0;
+                uint procInfo = 0;
+                uint rebootReasons = 0;
+                int rmRes = RmGetList(session, out procInfoNeeded, ref procInfo, null, ref rebootReasons);
+                if (rmRes == ERROR_MORE_DATA && procInfoNeeded > 0)
+                {
+                    RM_PROCESS_INFO[] infos = new RM_PROCESS_INFO[procInfoNeeded];
+                    procInfo = procInfoNeeded;
+                    rmRes = RmGetList(session, out procInfoNeeded, ref procInfo, infos, ref rebootReasons);
+                    if (rmRes == 0)
+                    {
+                        for (int i = 0; i < (int)procInfo && i < infos.Length; i++)
+                        {
+                            int pid = infos[i].Process.dwProcessId;
+                            if (pid > 4 && !result.ContainsKey(pid))
+                            {
+                                result[pid] = infos[i].strAppName ?? "";
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+            finally
+            {
+                if (sessionStarted)
+                {
+                    try { RmEndSession(session); } catch {}
+                }
+            }
+            return result;
+        }
+
+        private static HashSet<string> CollectExeBaseNamesInDirectory(string dir)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var genericNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "setup", "install", "installer", "uninstall", "uninst", "unins000", "unins001",
+                "update", "updater", "helper", "launcher", "crashhandler", "reporter", "service"
+            };
+            try
+            {
+                int seen = 0;
+                foreach (string exeFile in EnumerateFilesSafe(dir, "*.exe", 4))
+                {
+                    string bn = Path.GetFileNameWithoutExtension(exeFile);
+                    if (!string.IsNullOrWhiteSpace(bn) && bn.Length >= 3 && !genericNames.Contains(bn))
+                    {
+                        names.Add(bn);
+                    }
+                    seen++;
+                    if (seen >= 40) break;
+                }
+            }
+            catch {}
+            return names;
+        }
+
+        private static bool TryTaskkillPidTree(int pid)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("taskkill.exe", "/F /T /PID " + pid.ToString());
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var tp = Process.Start(psi))
+                {
+                    if (tp != null)
+                    {
+                        tp.WaitForExit(2500);
+                        if (tp.ExitCode == 0) return true;
+                    }
+                }
+            }
+            catch {}
+            try
+            {
+                using (Process checkP = Process.GetProcessById(pid))
+                {
+                    return checkP.HasExited;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        public static bool MoveToRecycleBinSilently(string targetPath)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath)) return false;
+            string norm = targetPath.Trim().TrimEnd('\\');
+            if (norm.Length <= 3) return false;
+            if (!File.Exists(norm) && !Directory.Exists(norm)) return true;
+
+            try
+            {
+                ushort flags = (ushort)(FOF_SILENT | FOF_NOCONFIRMATION | FOF_ALLOWUNDO | FOF_NOERRORUI);
+                string doubleNullFrom = norm + "\0\0";
+                int res;
+                bool aborted;
+
+                if (IntPtr.Size == 8)
+                {
+                    var op64 = new SHFILEOPSTRUCT_X64();
+                    op64.hwnd = IntPtr.Zero;
+                    op64.wFunc = FO_DELETE;
+                    op64.pFrom = doubleNullFrom;
+                    op64.pTo = null;
+                    op64.fFlags = flags;
+                    op64.fAnyOperationsAborted = false;
+                    op64.hNameMappings = IntPtr.Zero;
+                    op64.lpszProgressTitle = null;
+                    res = SHFileOperationX64(ref op64);
+                    aborted = op64.fAnyOperationsAborted;
+                }
+                else
+                {
+                    var op86 = new SHFILEOPSTRUCT_X86();
+                    op86.hwnd = IntPtr.Zero;
+                    op86.wFunc = FO_DELETE;
+                    op86.pFrom = doubleNullFrom;
+                    op86.pTo = null;
+                    op86.fFlags = flags;
+                    op86.fAnyOperationsAborted = false;
+                    op86.hNameMappings = IntPtr.Zero;
+                    op86.lpszProgressTitle = null;
+                    res = SHFileOperationX86(ref op86);
+                    aborted = op86.fAnyOperationsAborted;
+                }
+
+                return (res == 0 && !aborted && !File.Exists(norm) && !Directory.Exists(norm));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static ForceStopReport ForceStopDirectoryLockers(string targetPath)
+        {
+            return ForceStopDirectoryLockers(targetPath, true);
+        }
+
+        public static ForceStopReport ForceStopDirectoryLockers(string targetPath, bool includeServicesAndTasks)
+        {
+            var report = new ForceStopReport();
+            if (string.IsNullOrWhiteSpace(targetPath)) return report;
+
+            string norm = targetPath.Trim().TrimEnd('\\');
+            if (norm.Length <= 3) return report;
+
+            bool isSingleFile = File.Exists(norm);
+            bool isDirectory = !isSingleFile && Directory.Exists(norm);
+            if (!isSingleFile && !isDirectory) return report;
+
+            if (isDirectory && !IsSafeLockTargetDirectory(norm)) return report;
+
+            string prefix = isDirectory ? (norm + "\\") : "";
+            if (includeServicesAndTasks && isDirectory)
+            {
+                report.ServicesStoppedCount = DisableAndRemoveServicesInDirectory(norm);
+                report.TasksRemovedCount = RemoveScheduledTasksInDirectory(norm);
+            }
+
+            Dictionary<int, string> rmLockers = GetRestartManagerLockingPids(norm);
+            HashSet<string> dirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var killedList = new List<string>();
+            var deniedList = new List<string>();
+            var skippedSystem = new List<string>();
+            var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetProcs = new Dictionary<int, Process>();
+
+            Process[] procs = null;
+            try { procs = Process.GetProcesses(); } catch { procs = new Process[0]; }
+
+            foreach (Process p in procs)
+            {
+                bool keepProc = false;
                 try
                 {
-                    mp.Kill();
-                    mp.WaitForExit(1500);
-                    killed++;
+                    int pid = p.Id;
+                    string pName = "";
+                    try { pName = p.ProcessName ?? ""; } catch {}
+
+                    if (pid <= 4) { p.Dispose(); continue; }
+
+                    bool rmMatched = rmLockers.ContainsKey(pid);
+                    if (IsProtectedSystemOrHostProcess(pid, pName))
+                    {
+                        if (rmMatched && (string.Equals(pName, "explorer", StringComparison.OrdinalIgnoreCase) || string.Equals(pName, "svchost", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            string desc = pName + " (PID " + pid.ToString() + ")";
+                            if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
+                        }
+                        else if (isDirectory && !rmMatched)
+                        {
+                            try
+                            {
+                                foreach (ProcessModule pm in p.Modules)
+                                {
+                                    string modPath = pm.FileName ?? "";
+                                    if (modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        string desc = pName + " (" + Path.GetFileName(modPath) + ")";
+                                        if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
+                                        break;
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                        p.Dispose();
+                        continue;
+                    }
+
+                    bool isMatch = rmMatched;
+                    bool mainModAccessDenied = false;
+
+                    if (!isMatch)
+                    {
+                        try
+                        {
+                            if (p.MainModule != null)
+                            {
+                                string mainPath = p.MainModule.FileName ?? "";
+                                if (isSingleFile)
+                                {
+                                    isMatch = string.Equals(mainPath, norm, StringComparison.OrdinalIgnoreCase);
+                                }
+                                else if (isDirectory)
+                                {
+                                    isMatch = mainPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+                                }
+                            }
+                        }
+                        catch (Win32Exception)
+                        {
+                            mainModAccessDenied = true;
+                        }
+                        catch {}
+                    }
+
+                    if (!isMatch && isDirectory && !mainModAccessDenied)
+                    {
+                        try
+                        {
+                            foreach (ProcessModule pm in p.Modules)
+                            {
+                                string modPath = pm.FileName ?? "";
+                                if (modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    isMatch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+
+                    if (!isMatch && mainModAccessDenied && isDirectory && dirExeNames.Count > 0 && dirExeNames.Contains(pName))
+                    {
+                        isMatch = true;
+                    }
+
+                    if (isMatch && !targetProcs.ContainsKey(pid))
+                    {
+                        targetProcs[pid] = p;
+                        keepProc = true;
+                    }
                 }
                 catch {}
                 finally
                 {
-                    try { mp.Dispose(); } catch {}
+                    if (!keepProc)
+                    {
+                        try { p.Dispose(); } catch {}
+                    }
                 }
             }
-            return killed;
+
+            foreach (KeyValuePair<int, Process> kvp in targetProcs)
+            {
+                int pid = kvp.Key;
+                Process mp = kvp.Value;
+                string pLabel = "PID " + pid.ToString();
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(mp.ProcessName))
+                    {
+                        pLabel = mp.ProcessName + ".exe (PID " + pid.ToString() + ")";
+                    }
+                }
+                catch {}
+
+                bool terminated = false;
+                try
+                {
+                    try
+                    {
+                        IntPtr h = mp.Handle;
+                        NtSuspendProcess(h);
+                    }
+                    catch {}
+
+                    mp.Kill();
+                    mp.WaitForExit(1500);
+                    terminated = true;
+                }
+                catch
+                {
+                    terminated = TryTaskkillPidTree(pid);
+                }
+                finally
+                {
+                    try { mp.Dispose(); } catch {}
+                }
+
+                if (terminated)
+                {
+                    report.KilledCount++;
+                    if (seenNames.Add("K:" + pLabel)) killedList.Add(pLabel);
+                }
+                else
+                {
+                    report.AccessDeniedCount++;
+                    if (seenNames.Add("D:" + pLabel)) deniedList.Add(pLabel);
+                }
+            }
+
+            if (report.KilledCount > 0 || report.ServicesStoppedCount > 0)
+            {
+                try { Thread.Sleep(180); } catch {}
+            }
+
+            report.KilledNames = killedList.ToArray();
+            report.AccessDeniedNames = deniedList.ToArray();
+            report.SkippedSystemLockers = skippedSystem.ToArray();
+            return report;
+        }
+
+        public static int StopProcessesInDirectory(string targetDir)
+        {
+            ForceStopReport rpt = ForceStopDirectoryLockers(targetDir, false);
+            return rpt.KilledCount;
         }
 
         public static int DisableAndRemoveServicesInDirectory(string targetDir)
@@ -1760,12 +2274,22 @@ namespace DuckUtil
                 }
                 catch
                 {
-                    if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                    ForceStopDirectoryLockers(norm, false);
+                    try
                     {
-                        rebootScheduledCount++;
+                        File.SetAttributes(norm, FileAttributes.Normal);
+                        File.Delete(norm);
                         return true;
                     }
-                    return false;
+                    catch
+                    {
+                        if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                        {
+                            rebootScheduledCount++;
+                            return true;
+                        }
+                        return false;
+                    }
                 }
             }
 
@@ -1789,9 +2313,7 @@ namespace DuckUtil
                 }
             }
 
-            DisableAndRemoveServicesInDirectory(norm);
-            RemoveScheduledTasksInDirectory(norm);
-            StopProcessesInDirectory(norm);
+            ForceStopDirectoryLockers(norm, true);
 
             try
             {

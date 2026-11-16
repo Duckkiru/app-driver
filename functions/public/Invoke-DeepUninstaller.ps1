@@ -948,23 +948,78 @@ function Find-SystemOrphanLeftovers {
     return @($orphans)
 }
 
+function Invoke-ForceStopPathLockers {
+    param(
+        [Parameter(Mandatory = $true)][string]$TargetPath,
+        [bool]$IncludeServicesAndTasks = $true
+    )
+
+    $resObj = [PSCustomObject]@{
+        KilledCount          = 0
+        ServicesStoppedCount = 0
+        TasksRemovedCount    = 0
+        AccessDeniedCount    = 0
+        KilledNames          = @()
+        AccessDeniedNames    = @()
+        SkippedSystemLockers = @()
+    }
+    if ([string]::IsNullOrWhiteSpace($TargetPath)) { return $resObj }
+
+    $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+    if (-not $deepType) { return $resObj }
+
+    $hasForceStop = @($deepType.GetMethods() | Where-Object { $_.Name -eq "ForceStopDirectoryLockers" -and $_.GetParameters().Count -eq 2 }).Count -gt 0
+    if ($hasForceStop) {
+        $rpt = $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
+        if ($rpt) {
+            $resObj.KilledCount          = [int]$rpt.KilledCount
+            $resObj.ServicesStoppedCount = [int]$rpt.ServicesStoppedCount
+            $resObj.TasksRemovedCount    = [int]$rpt.TasksRemovedCount
+            $resObj.AccessDeniedCount    = [int]$rpt.AccessDeniedCount
+            $resObj.KilledNames          = @($rpt.KilledNames)
+            $resObj.AccessDeniedNames    = @($rpt.AccessDeniedNames)
+            $resObj.SkippedSystemLockers = @($rpt.SkippedSystemLockers)
+        }
+    } else {
+        if ($IncludeServicesAndTasks) {
+            $resObj.ServicesStoppedCount = [int]$deepType::DisableAndRemoveServicesInDirectory($TargetPath)
+            $resObj.TasksRemovedCount    = [int]$deepType::RemoveScheduledTasksInDirectory($TargetPath)
+        }
+        $resObj.KilledCount = [int]$deepType::StopProcessesInDirectory($TargetPath)
+    }
+
+    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+        if ($resObj.KilledCount -gt 0 -or $resObj.ServicesStoppedCount -gt 0 -or $resObj.TasksRemovedCount -gt 0) {
+            Log-Text "[FORCE-STOP] $([char]0x0110)$([char]0x00E3) bu$([char]0x1ED9)c d$([char]0x1EEB)ng $($resObj.KilledCount) ti$([char]0x1EBF)n tr$([char]0x00EC)nh $([char]0x0111)ang kh$([char]0x00F3)a, $($resObj.ServicesStoppedCount) d$([char]0x1ECB)ch v$([char]0x1EE5), $($resObj.TasksRemovedCount) t$([char]0x00E1)c v$([char]0x1EE5) t$([char]0x1EA1)i: $TargetPath"
+        }
+        if ($resObj.AccessDeniedCount -gt 0) {
+            Log-Text "[!] T$([char]0x1EEB) ch$([char]0x1ED1)i quy$([char]0x1EC1)n (Self-Defense / Driver b$([char]0x1EA3)o v$([char]0x1EC7)): $($resObj.AccessDeniedNames -join ', ')"
+        }
+        if ($resObj.SkippedSystemLockers.Count -gt 0) {
+            Log-Text "[!] H$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)ang gi$([char]0x1EEF) handle: $($resObj.SkippedSystemLockers -join ', ')"
+        }
+    }
+    return $resObj
+}
+
 function Show-LeftoverReviewDialog {
     param(
         [Parameter(Mandatory = $false)]$OwnerWindow,
         [Parameter(Mandatory = $true)][object[]]$Items,
-        [Parameter(Mandatory = $false)][string]$Title = "Duy$([char]0x1EC7)t & D$([char]0x1ECD)n S$([char]0x1EA1)ch R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)"
+        [Parameter(Mandatory = $false)][string]$Title = "Duy$([char]0x1EC7)t & D$([char]0x1ECD)n S$([char]0x1EA1)ch R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)",
+        [bool]$ForceStopByDefault = $true
     )
 
     if ($script:isWindowClosing -or $null -eq $Items -or $Items.Count -eq 0) {
-        return [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L }
+        return [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0 }
     }
 
     $dialog = New-Object System.Windows.Window
     $dialog.Title = $Title
     $dialog.Width = 920
-    $dialog.Height = 580
+    $dialog.Height = 590
     $dialog.MinWidth = 760
-    $dialog.MinHeight = 440
+    $dialog.MinHeight = 460
     $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
     $canAttachOwner = $false
     if ($OwnerWindow -and ($OwnerWindow -is [System.Windows.Window]) -and -not $script:isWindowClosing) {
@@ -995,6 +1050,72 @@ function Show-LeftoverReviewDialog {
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
+
+    try {
+        $rdXaml = @'
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <StackPanel Orientation="Horizontal" Background="Transparent" VerticalAlignment="Center">
+                        <Border x:Name="box" Width="15" Height="15" CornerRadius="1" Background="#131B29" BorderBrush="#42536D" BorderThickness="1" VerticalAlignment="Center">
+                            <Path x:Name="checkMark" Visibility="Collapsed" Data="M 2.2,6.2 L 5.2,9.2 L 10.8,3.2" Stroke="#FFFFFF" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ContentPresenter x:Name="cp" Visibility="Collapsed" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasContent" Value="True">
+                            <Setter TargetName="cp" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="box" Property="BorderBrush" Value="#38BDF8"/>
+                            <Setter TargetName="box" Property="Background" Value="#192335"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="box" Property="Background" Value="#0284C7"/>
+                            <Setter TargetName="box" Property="BorderBrush" Value="#38BDF8"/>
+                            <Setter TargetName="checkMark" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="{x:Type Button}">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#2F3E57"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="b" Property="Opacity" Value="0.88"/>
+                            <Setter TargetName="b" Property="BorderBrush" Value="#38BDF8"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="b" Property="Opacity" Value="0.72"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="b" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
+'@
+        $dialog.Resources = [System.Windows.Markup.XamlReader]::Parse($rdXaml)
+    } catch {}
 
     $rootGrid = New-Object System.Windows.Controls.Grid
     $rowTop = New-Object System.Windows.Controls.RowDefinition; $rowTop.Height = [System.Windows.GridLength]::Auto
@@ -1195,12 +1316,21 @@ function Show-LeftoverReviewDialog {
 
     $chkRecycleBin = New-Object System.Windows.Controls.CheckBox
     $chkRecycleBin.IsChecked = $true
-    $chkRecycleBin.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
+    $chkRecycleBin.Margin = New-Object System.Windows.Thickness(0, 5, 0, 0)
     $chkRecycleBin.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $chkRecycleBin.FontSize = 11.5
     $chkRecycleBin.Content = "Chuy$([char]0x1EC3)n file/th$([char]0x01B0) m$([char]0x1EE5)c v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c Windows (An to$([char]0x00E0)n, kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c n$([char]0x1EBF)u c$([char]0x1EA7)n)"
+
+    $chkForceStop = New-Object System.Windows.Controls.CheckBox
+    $chkForceStop.IsChecked = [bool]$ForceStopByDefault
+    $chkForceStop.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
+    $chkForceStop.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FBBF24")
+    $chkForceStop.FontSize = 11.5
+    $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a (kh$([char]0x00F4)ng hi$([char]0x1EC7)n popup Windows)"
 
     $leftBottomStack.Children.Add($summaryText) | Out-Null
     $leftBottomStack.Children.Add($chkRecycleBin) | Out-Null
+    $leftBottomStack.Children.Add($chkForceStop) | Out-Null
 
     $updateSummary = {
         $selCount = 0
@@ -1259,13 +1389,14 @@ function Show-LeftoverReviewDialog {
     $btnCancel.Add_Click({ $dialog.Close() })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
-    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0 }
+    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0 }
 
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "X$([char]0x00F3)a S$([char]0x1EA1)ch M$([char]0x1EE5)c $([char]0x0110)$([char]0x00E3) Ch$([char]0x1ECD)n"
     $btnDelete.Padding = New-Object System.Windows.Thickness(14, 6, 14, 6)
     $btnDelete.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#991B1B")
     $btnDelete.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FEE2E2")
+    $btnDelete.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#DC2626")
     $btnDelete.FontWeight = [System.Windows.FontWeights]::Bold
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
@@ -1279,12 +1410,16 @@ function Show-LeftoverReviewDialog {
         }
 
         $useRecycle = [bool]$chkRecycleBin.IsChecked
+        $useForceStop = [bool]$chkForceStop.IsChecked
         $removed = 0
         $freed = 0L
         $rebootTotal = 0
+        $accessDeniedTotal = 0
 
         $btnDelete.IsEnabled = $false
         try {
+            $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+            $hasSilentRecycle = ($null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilently"))
             foreach ($ci in $checkedItems) {
                 if ($script:isWindowClosing) { break }
                 try {
@@ -1305,19 +1440,27 @@ function Show-LeftoverReviewDialog {
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
+                        if ($useForceStop) {
+                            $stopInfo = Invoke-ForceStopPathLockers -TargetPath $ci.Path -IncludeServicesAndTasks:$true
+                            $accessDeniedTotal += [int]$stopInfo.AccessDeniedCount
+                        }
+
                         $deletedOk = $false
                         if ($useRecycle) {
-                            try {
-                                $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
-                                if ($itemObj.PSIsContainer) {
-                                    [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($ci.Path) | Out-Null
-                                    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
-                                } else {
-                                    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                            if ($hasSilentRecycle) {
+                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
+                            } elseif (-not $useForceStop) {
+                                try {
+                                    $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
+                                    if ($itemObj.PSIsContainer) {
+                                        [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                                    } else {
+                                        [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
+                                    }
+                                    $deletedOk = $true
+                                } catch {
+                                    $deletedOk = $false
                                 }
-                                $deletedOk = $true
-                            } catch {
-                                $deletedOk = $false
                             }
                         }
 
@@ -1345,11 +1488,15 @@ function Show-LeftoverReviewDialog {
             if ($rebootTotal -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
                 Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1ECB)ch x$([char]0x00F3)a $rebootTotal file $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a ngay khi Windows kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i (MoveFileEx)."
             }
+            if (($accessDeniedTotal -gt 0 -or $rebootTotal -gt 0) -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
+                Log-Text "[!] L$([char]0x01B0)u $([char]0x00FD): T$([char]0x1EC7)p b$([char]0x1ECB) kh$([char]0x00F3)a b$([char]0x1EDF)i driver b$([char]0x1EA3)o v$([char]0x1EC7) c$([char]0x1EA5)p nh$([char]0x00E2)n (nh$([char]0x01B0) 360) kh$([char]0x00F4)ng th$([char]0x1EC3) t$([char]0x1EAF)t t$([char]0x1EEB) Windows th$([char]0x01B0)$([char]0x1EDD)ng; h$([char]0x00E3)y t$([char]0x1EAF)t T$([char]0x1EF1) b$([char]0x1EA3)o v$([char]0x1EC7) trong app, ch$([char]0x1EA1)y l$([char]0x1EA1)i trong Safe Mode ho$([char]0x1EB7)c kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i $([char]0x0111)$([char]0x1EC3) MoveFileEx d$([char]0x1ECD)n."
+            }
 
             $dialogResult.Confirmed = $true
             $dialogResult.RemovedCount = $removed
             $dialogResult.FreedBytes = $freed
             $dialogResult.RebootScheduled = $rebootTotal
+            $dialogResult.AccessDeniedCount = $accessDeniedTotal
             $dialog.Close()
         } finally {
             $btnDelete.IsEnabled = $true
@@ -1570,12 +1717,21 @@ function Invoke-DeepAppUninstall {
         [Parameter(Mandatory = $true)]$AppEntry,
         [Parameter(Mandatory = $false)]$OwnerWindow,
         [switch]$SkipVendorUninstaller,
+        [switch]$ForceStopAndDelete,
         [bool]$AutoSilent = $true
     )
 
+    if ($ForceStopAndDelete) {
+        $SkipVendorUninstaller = $true
+    }
+
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
         Log-Text "=========================================================="
-        Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U G$([char]0x1EE0) C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T: $($AppEntry.DisplayName)"
+        if ($ForceStopAndDelete) {
+            Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U BU$([char]0x1ED8)C D$([char]0x1EEA)NG & X$([char]0x00D3)A TR$([char]0x1EF0)C TI$([char]0x1EBE)P: $($AppEntry.DisplayName)"
+        } else {
+            Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U G$([char]0x1EE0) C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T: $($AppEntry.DisplayName)"
+        }
         Log-Text "=========================================================="
     }
 
@@ -1586,18 +1742,7 @@ function Invoke-DeepAppUninstall {
         $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             $safeLoc = $loc
-            $svcCount = [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($loc)
-            if ($svcCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
-                Log-Text "[*] $([char]0x0110)$([char]0x00E3) v$([char]0x00F4) hi$([char]0x1EC7)u h$([char]0x00F3)a & g$([char]0x1EE1) $svcCount Service / Kernel Driver ng$([char]0x1EA7)m trong: $loc"
-            }
-            $taskCount = [DuckUtil.DeepUninstallerEngine]::RemoveScheduledTasksInDirectory($loc)
-            if ($taskCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
-                Log-Text "[*] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a $taskCount Scheduled Task t$([char]0x1EF1) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i trong: $loc"
-            }
-            $killedCount = [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($loc)
-            if ($killedCount -gt 0 -and (Get-Command Log-Text -ErrorAction SilentlyContinue)) {
-                Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x00F3)ng b$([char]0x0103)ng (NtSuspendProcess) & t$([char]0x1EAF)t $killedCount ti$([char]0x1EBF)n tr$([char]0x00EC)nh trong: $loc"
-            }
+            [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true)
         }
     }
 
@@ -1661,9 +1806,7 @@ function Invoke-DeepAppUninstall {
     if ($script:isWindowClosing) { return }
 
     if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
-        [DuckUtil.DeepUninstallerEngine]::DisableAndRemoveServicesInDirectory($safeLoc) | Out-Null
-        [DuckUtil.DeepUninstallerEngine]::RemoveScheduledTasksInDirectory($safeLoc) | Out-Null
-        [DuckUtil.DeepUninstallerEngine]::StopProcessesInDirectory($safeLoc) | Out-Null
+        [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true)
     }
 
     $leftovers = Find-AppLeftovers -AppEntry $AppEntry -AllInstalledApps $allInstalledNow
@@ -1673,7 +1816,7 @@ function Invoke-DeepAppUninstall {
             Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c / Registry c$([char]0x00F2)n s$([char]0x00F3)t l$([char]0x1EA1)i sau khi g$([char]0x1EE1) b$([char]0x1ECF)."
         }
         $dialogTitle = "D$([char]0x1ECD)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) sau khi g$([char]0x1EE1): $($AppEntry.DisplayName)"
-        $res = Show-LeftoverReviewDialog -OwnerWindow $OwnerWindow -Items $leftovers -Title $dialogTitle
+        $res = Show-LeftoverReviewDialog -OwnerWindow $OwnerWindow -Items $leftovers -Title $dialogTitle -ForceStopByDefault:$true
         if ($res.Confirmed) {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                 $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
