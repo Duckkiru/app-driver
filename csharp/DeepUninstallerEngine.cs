@@ -29,6 +29,8 @@ namespace DuckUtil
         public string Scope { get; set; }
         public long SizeBytes { get; set; }
         public bool IsBrokenOrphan { get; set; }
+        public string TargetFolder { get; set; }
+        public string SearchIndex { get; set; }
     }
 
     public struct ScanTarget
@@ -52,6 +54,10 @@ namespace DuckUtil
         private static Dictionary<string, string> _cachedDirIndex;
         private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
         private static readonly object _dirIndexLock = new object();
+        private static readonly Regex _ignoredAppxRegex = new Regex(
+            @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
@@ -334,7 +340,7 @@ namespace DuckUtil
                         foreach (string pkgFull in pkgRoot.GetSubKeyNames())
                         {
                             if (string.IsNullOrWhiteSpace(pkgFull)) continue;
-                            if (Regex.IsMatch(pkgFull, @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)", RegexOptions.IgnoreCase))
+                            if (_ignoredAppxRegex.IsMatch(pkgFull))
                             {
                                 continue;
                             }
@@ -475,11 +481,29 @@ namespace DuckUtil
                         }
                     }
                     info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
+                    if (!string.IsNullOrEmpty(info.InstallLocation) && Directory.Exists(info.InstallLocation))
+                    {
+                        info.TargetFolder = info.InstallLocation;
+                    }
+                    else if (!string.IsNullOrEmpty(info.DataLocation) && Directory.Exists(info.DataLocation))
+                    {
+                        info.TargetFolder = info.DataLocation;
+                    }
+                    else
+                    {
+                        info.TargetFolder = "";
+                    }
+                    info.SearchIndex = ((info.DisplayName ?? "") + " " + (info.Publisher ?? "") + " " + (info.DisplayVersion ?? "")).ToLowerInvariant();
                 }
                 catch {}
             });
 
             return list;
+        }
+
+        public static Task<List<InstalledAppInfo>> GetInstalledAppsAsync()
+        {
+            return Task.Run(() => GetInstalledApps());
         }
 
         private static bool IsValidExternalDataPath(string candidate, string installLocation)

@@ -826,10 +826,23 @@ function Find-SystemOrphanLeftovers {
 
         $appDataRoots = @($env:APPDATA, $env:LOCALAPPDATA)
         foreach ($catApp in $CatalogApps) {
+            if ($script:isWindowClosing) { break }
             if ($catApp.ID -and $catalogInstalledIds.Contains($catApp.ID)) { continue }
 
             $catName = ($catApp.Name -replace '\(.*?\)', '').Trim()
             if ($catName.Length -lt 5) { continue }
+
+            $candidateDirs = $null
+            foreach ($ar in $appDataRoots) {
+                if ([string]::IsNullOrWhiteSpace($ar)) { continue }
+                $cand = [System.IO.Path]::Combine($ar, $catName)
+                if ([System.IO.Directory]::Exists($cand)) {
+                    if ($null -eq $candidateDirs) { $candidateDirs = [System.Collections.Generic.List[string]]::new() }
+                    $candidateDirs.Add($cand)
+                }
+            }
+            if ($null -eq $candidateDirs) { continue }
+
             $catNorm = Get-NormalizedAppIdentity $catApp.Name
             $isInstalled = $false
             if ($catNorm -and $activeNormIdentities.Contains($catNorm)) { $isInstalled = $true }
@@ -837,11 +850,6 @@ function Find-SystemOrphanLeftovers {
             if (-not $isInstalled) {
                 foreach ($inName in $installedNames) {
                     if ($inName.IndexOf($catName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                        $isInstalled = $true
-                        break
-                    }
-                    $inNorm = Get-NormalizedAppIdentity $inName
-                    if ($catNorm -and $inNorm -and $inNorm.Equals($catNorm, [System.StringComparison]::OrdinalIgnoreCase)) {
                         $isInstalled = $true
                         break
                     }
@@ -868,28 +876,25 @@ function Find-SystemOrphanLeftovers {
                 $isInstalled = $true
             }
             if (-not $isInstalled) {
-                foreach ($ar in $appDataRoots) {
+                foreach ($cand in $candidateDirs) {
                     if ($script:isWindowClosing) { break }
-                    $cand = Join-Path $ar $catName
-                    if (Test-Path -LiteralPath $cand) {
-                        $full = Resolve-PathSafe -Path $cand
-                        if (-not $full) { continue }
-                        if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
-                            continue
-                        }
-                        if ($seenPaths.Add($full)) {
-                            $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
-                            $orphans.Add([PSCustomObject]@{
-                                Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                                Confidence        = "An to$([char]0x00E0)n 100%"
-                                AppName           = $catApp.Name
-                                Path              = $full
-                                SizeBytes         = [long]$dirSize
-                                SizeMB            = [math]::Round($dirSize / 1MB, 2)
-                                IsRegistry        = $false
-                                RegistryValueName = ""
-                            })
-                        }
+                    $full = Resolve-PathSafe -Path $cand
+                    if (-not $full) { continue }
+                    if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
+                        continue
+                    }
+                    if ($seenPaths.Add($full)) {
+                        $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
+                        $orphans.Add([PSCustomObject]@{
+                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $catApp.Name
+                            Path              = $full
+                            SizeBytes         = [long]$dirSize
+                            SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                            IsRegistry        = $false
+                            RegistryValueName = ""
+                        })
                     }
                 }
             }
@@ -908,14 +913,14 @@ function Find-SystemOrphanLeftovers {
         $wsh = New-Object -ComObject WScript.Shell
         foreach ($dp in $desktopPaths) {
             if ($script:isWindowClosing) { break }
-            if (-not (Test-Path -LiteralPath $dp)) { continue }
+            if ([string]::IsNullOrWhiteSpace($dp) -or -not [System.IO.Directory]::Exists($dp)) { continue }
             $lnks = Get-FilesRecursiveSafe -RootPath $dp -SearchPattern "*.lnk"
             foreach ($lnk in $lnks) {
                 try {
                     $sc = $wsh.CreateShortcut($lnk)
                     $target = $sc.TargetPath
                     if ($target -and $target -match '^[A-Za-z]:\\' -and $target.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-                        if (-not (Test-Path -LiteralPath $target)) {
+                        if (-not [System.IO.File]::Exists($target)) {
                             if ($seenPaths.Add($lnk)) {
                                 $orphans.Add([PSCustomObject]@{
                                     Type              = "[Shortcut ch$([char]0x1EBF)t]"

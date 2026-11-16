@@ -86,7 +86,7 @@ $sb.AppendLine('        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_)
 $sb.AppendLine(('        $smoothScrollCs = @' + $q)) | Out-Null
 $sb.AppendLine($smoothCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "Attach"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "AttachFrameWake"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
@@ -95,7 +95,7 @@ $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $appCatalogCs = @' + $q)) | Out-Null
 $sb.AppendLine($appCatalogCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "HasCrackOrPatchIndicators"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "ScanCatalogSensorsAsync"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
@@ -104,7 +104,7 @@ $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $deepUninstCs = @' + $q)) | Out-Null
 $sb.AppendLine($deepCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "InferPublisher"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "GetInstalledAppsAsync"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null

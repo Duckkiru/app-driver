@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace DuckUtil
@@ -1230,6 +1231,11 @@ namespace DuckUtil
             }
 
             return restoredCount;
+        }
+
+        public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
+        {
+            return Task.Run(() => ScanCatalogSensors());
         }
     }
 }

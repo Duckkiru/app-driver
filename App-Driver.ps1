@@ -5165,10 +5165,12 @@ if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
         $smoothScrollCs = @'
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace DuckUtil {
     public sealed class SmoothScrollController {
@@ -5196,6 +5198,19 @@ namespace DuckUtil {
         public static SmoothScrollController Attach(ScrollViewer sv) {
             if (sv == null) return null;
             return new SmoothScrollController(sv);
+        }
+
+        public static void AttachFrameWake(Task task, Dispatcher dispatcher, DispatcherFrame frame) {
+            if (task == null || frame == null) return;
+            task.ContinueWith(_ => {
+                try {
+                    if (dispatcher != null && !dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished) {
+                        dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => { frame.Continue = false; }));
+                    } else {
+                        frame.Continue = false;
+                    }
+                } catch {}
+            }, TaskScheduler.Default);
         }
 
         private bool IsActiveAndVisible() {
@@ -5277,7 +5292,8 @@ namespace DuckUtil {
             double nowSec = _sw.Elapsed.TotalSeconds;
             double dt = nowSec - _lastTimeSec;
             _lastTimeSec = nowSec;
-            if (double.IsNaN(dt) || double.IsInfinity(dt) || dt <= 0.0 || dt > 0.1) dt = 0.016;
+            if (double.IsNaN(dt) || double.IsInfinity(dt) || dt <= 0.0) dt = 0.016;
+            else if (dt > 0.05) dt = 0.05;
 
             double maxScroll = _sv.ScrollableHeight;
             if (double.IsNaN(maxScroll) || double.IsInfinity(maxScroll) || maxScroll < 0.0) maxScroll = 0.0;
@@ -5290,7 +5306,7 @@ namespace DuckUtil {
                 return;
             }
 
-            if (Math.Abs(diff) < 0.25) {
+            if (Math.Abs(diff) < 0.35) {
                 _currentOffset = _targetOffset;
                 _lastAppliedOffset = _currentOffset;
                 _pendingLayoutSyncFrames = 0;
@@ -5299,7 +5315,7 @@ namespace DuckUtil {
                 return;
             }
 
-            double factor = 1.0 - Math.Exp(-17.0 * dt);
+            double factor = 1.0 - Math.Exp(-20.0 * dt);
             _currentOffset += diff * factor;
             if (_pendingLayoutSyncFrames == 0) {
                 _preApplySvOffset = svOffset;
@@ -5332,7 +5348,7 @@ namespace DuckUtil {
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "Attach"
+        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "AttachFrameWake"
     } catch {}
 }
 
@@ -5346,6 +5362,7 @@ using System.IO;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace DuckUtil
@@ -6572,10 +6589,15 @@ namespace DuckUtil
 
             return restoredCount;
         }
+
+        public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
+        {
+            return Task.Run(() => ScanCatalogSensors());
+        }
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "HasCrackOrPatchIndicators"
+        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "ScanCatalogSensorsAsync"
     } catch {}
 }
 
@@ -6613,6 +6635,8 @@ namespace DuckUtil
         public string Scope { get; set; }
         public long SizeBytes { get; set; }
         public bool IsBrokenOrphan { get; set; }
+        public string TargetFolder { get; set; }
+        public string SearchIndex { get; set; }
     }
 
     public struct ScanTarget
@@ -6636,6 +6660,10 @@ namespace DuckUtil
         private static Dictionary<string, string> _cachedDirIndex;
         private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
         private static readonly object _dirIndexLock = new object();
+        private static readonly Regex _ignoredAppxRegex = new Regex(
+            @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
@@ -6918,7 +6946,7 @@ namespace DuckUtil
                         foreach (string pkgFull in pkgRoot.GetSubKeyNames())
                         {
                             if (string.IsNullOrWhiteSpace(pkgFull)) continue;
-                            if (Regex.IsMatch(pkgFull, @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)", RegexOptions.IgnoreCase))
+                            if (_ignoredAppxRegex.IsMatch(pkgFull))
                             {
                                 continue;
                             }
@@ -7059,11 +7087,29 @@ namespace DuckUtil
                         }
                     }
                     info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
+                    if (!string.IsNullOrEmpty(info.InstallLocation) && Directory.Exists(info.InstallLocation))
+                    {
+                        info.TargetFolder = info.InstallLocation;
+                    }
+                    else if (!string.IsNullOrEmpty(info.DataLocation) && Directory.Exists(info.DataLocation))
+                    {
+                        info.TargetFolder = info.DataLocation;
+                    }
+                    else
+                    {
+                        info.TargetFolder = "";
+                    }
+                    info.SearchIndex = ((info.DisplayName ?? "") + " " + (info.Publisher ?? "") + " " + (info.DisplayVersion ?? "")).ToLowerInvariant();
                 }
                 catch {}
             });
 
             return list;
+        }
+
+        public static Task<List<InstalledAppInfo>> GetInstalledAppsAsync()
+        {
+            return Task.Run(() => GetInstalledApps());
         }
 
         private static bool IsValidExternalDataPath(string candidate, string installLocation)
@@ -8601,7 +8647,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "InferPublisher"
+        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "GetInstalledAppsAsync"
     } catch {}
 }
 
@@ -9438,29 +9484,29 @@ function Invoke-WingetListCapture {
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
         }
 
-        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-            if ($script:isWindowClosing) {
+        if ((Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $null -ne $readTask -and $null -ne $errTask) {
+            $bothTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]](@($readTask, $errTask)))
+            $remSec = [Math]::Max(0.1, ($TimeoutSeconds - $sw.Elapsed.TotalSeconds))
+            $completedOk = Wait-TaskNonBlocking -Task $bothTask -TimeoutSeconds $remSec
+            if (-not $completedOk -or $script:isWindowClosing -or -not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
                 $timedOut = $true
                 try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                break
             }
-            if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
-                $timedOut = $true
-                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                break
-            }
-            try {
-                if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
-                    Flush-PendingIconCache
+        } else {
+            while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+                if ($script:isWindowClosing -or $sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                    $timedOut = $true
+                    try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                    break
                 }
-                [System.Windows.Forms.Application]::DoEvents()
-            } catch {}
-            if ($script:isWindowClosing) {
-                $timedOut = $true
-                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                break
+                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                if ($script:isWindowClosing) {
+                    $timedOut = $true
+                    try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                    break
+                }
+                Start-Sleep -Milliseconds 15
             }
-            Start-Sleep -Milliseconds 10
         }
 
         if (-not $script:isWindowClosing) {
@@ -9675,6 +9721,16 @@ function Get-LocalInstalledEntries {
     param([switch]$SkipAppx)
     if ("DuckUtil.AppCatalogEngine" -as [type]) {
         try {
+            $csType = [DuckUtil.AppCatalogEngine]
+            if ($null -ne $csType.GetMethod("ScanCatalogSensorsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                $scanTask = $csType::ScanCatalogSensorsAsync()
+                if (Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 30) {
+                    if ($scanTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        return $scanTask.Result
+                    }
+                }
+                if ($script:isWindowClosing) { return @() }
+            }
             return [DuckUtil.AppCatalogEngine]::ScanCatalogSensors()
         } catch {}
     }
@@ -11070,10 +11126,23 @@ function Find-SystemOrphanLeftovers {
 
         $appDataRoots = @($env:APPDATA, $env:LOCALAPPDATA)
         foreach ($catApp in $CatalogApps) {
+            if ($script:isWindowClosing) { break }
             if ($catApp.ID -and $catalogInstalledIds.Contains($catApp.ID)) { continue }
 
             $catName = ($catApp.Name -replace '\(.*?\)', '').Trim()
             if ($catName.Length -lt 5) { continue }
+
+            $candidateDirs = $null
+            foreach ($ar in $appDataRoots) {
+                if ([string]::IsNullOrWhiteSpace($ar)) { continue }
+                $cand = [System.IO.Path]::Combine($ar, $catName)
+                if ([System.IO.Directory]::Exists($cand)) {
+                    if ($null -eq $candidateDirs) { $candidateDirs = [System.Collections.Generic.List[string]]::new() }
+                    $candidateDirs.Add($cand)
+                }
+            }
+            if ($null -eq $candidateDirs) { continue }
+
             $catNorm = Get-NormalizedAppIdentity $catApp.Name
             $isInstalled = $false
             if ($catNorm -and $activeNormIdentities.Contains($catNorm)) { $isInstalled = $true }
@@ -11081,11 +11150,6 @@ function Find-SystemOrphanLeftovers {
             if (-not $isInstalled) {
                 foreach ($inName in $installedNames) {
                     if ($inName.IndexOf($catName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                        $isInstalled = $true
-                        break
-                    }
-                    $inNorm = Get-NormalizedAppIdentity $inName
-                    if ($catNorm -and $inNorm -and $inNorm.Equals($catNorm, [System.StringComparison]::OrdinalIgnoreCase)) {
                         $isInstalled = $true
                         break
                     }
@@ -11112,28 +11176,25 @@ function Find-SystemOrphanLeftovers {
                 $isInstalled = $true
             }
             if (-not $isInstalled) {
-                foreach ($ar in $appDataRoots) {
+                foreach ($cand in $candidateDirs) {
                     if ($script:isWindowClosing) { break }
-                    $cand = Join-Path $ar $catName
-                    if (Test-Path -LiteralPath $cand) {
-                        $full = Resolve-PathSafe -Path $cand
-                        if (-not $full) { continue }
-                        if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
-                            continue
-                        }
-                        if ($seenPaths.Add($full)) {
-                            $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
-                            $orphans.Add([PSCustomObject]@{
-                                Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                                Confidence        = "An to$([char]0x00E0)n 100%"
-                                AppName           = $catApp.Name
-                                Path              = $full
-                                SizeBytes         = [long]$dirSize
-                                SizeMB            = [math]::Round($dirSize / 1MB, 2)
-                                IsRegistry        = $false
-                                RegistryValueName = ""
-                            })
-                        }
+                    $full = Resolve-PathSafe -Path $cand
+                    if (-not $full) { continue }
+                    if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
+                        continue
+                    }
+                    if ($seenPaths.Add($full)) {
+                        $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
+                        $orphans.Add([PSCustomObject]@{
+                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $catApp.Name
+                            Path              = $full
+                            SizeBytes         = [long]$dirSize
+                            SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                            IsRegistry        = $false
+                            RegistryValueName = ""
+                        })
                     }
                 }
             }
@@ -11152,14 +11213,14 @@ function Find-SystemOrphanLeftovers {
         $wsh = New-Object -ComObject WScript.Shell
         foreach ($dp in $desktopPaths) {
             if ($script:isWindowClosing) { break }
-            if (-not (Test-Path -LiteralPath $dp)) { continue }
+            if ([string]::IsNullOrWhiteSpace($dp) -or -not [System.IO.Directory]::Exists($dp)) { continue }
             $lnks = Get-FilesRecursiveSafe -RootPath $dp -SearchPattern "*.lnk"
             foreach ($lnk in $lnks) {
                 try {
                     $sc = $wsh.CreateShortcut($lnk)
                     $target = $sc.TargetPath
                     if ($target -and $target -match '^[A-Za-z]:\\' -and $target.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-                        if (-not (Test-Path -LiteralPath $target)) {
+                        if (-not [System.IO.File]::Exists($target)) {
                             if ($seenPaths.Add($lnk)) {
                                 $orphans.Add([PSCustomObject]@{
                                     Type              = "[Shortcut ch$([char]0x1EBF)t]"
@@ -12190,6 +12251,7 @@ function Start-BackgroundIconDownload {
 }
 
 function Flush-PendingIconCache {
+    param([int]$MaxDecode = 8)
     if (-not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) { return }
     if ($script:isActionRunning) { return }
     $inFlightCount = 0
@@ -12226,7 +12288,7 @@ function Flush-PendingIconCache {
             }
         }
         if ($hasLocalFile -or ($script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($entry.CacheKey))) {
-            if ($decodedCount -ge 350) { continue }
+            if ($decodedCount -ge $MaxDecode) { continue }
             $bmp = Import-LocalIconBitmap -Path $entry.DestPath -CacheKey $entry.CacheKey
             if ($bmp -and $bmp.PixelWidth -gt 0) {
                 $decodedCount++
@@ -12397,6 +12459,62 @@ function Show-OwnedMessageBox {
     return [System.Windows.Forms.MessageBox]::Show($Text, $Caption, $Buttons, $Icon)
 }
 
+$script:activeWaitFrames = [System.Collections.Generic.List[object]]::new()
+
+function Stop-ActiveWaitFrames {
+    if (-not $script:activeWaitFrames -or $script:activeWaitFrames.Count -eq 0) { return }
+    foreach ($fr in @($script:activeWaitFrames)) {
+        try { if ($fr) { $fr.Continue = $false } } catch {}
+    }
+}
+
+function Wait-TaskNonBlocking {
+    param(
+        [Parameter(Mandatory = $true)][System.Threading.Tasks.Task]$Task,
+        [double]$TimeoutSeconds = 60
+    )
+    if ($null -eq $Task) { return $true }
+    if ($Task.IsCompleted) { return $true }
+    if ($script:isWindowClosing) { return $false }
+
+    if ($window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
+        $frame = [System.Windows.Threading.DispatcherFrame]::new()
+        [void]$script:activeWaitFrames.Add($frame)
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $disp = $window.Dispatcher
+
+        $guardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+        $guardTimer.Interval = [TimeSpan]::FromMilliseconds(40)
+        $guardTimer.Add_Tick({
+            if ($Task.IsCompleted -or $script:isWindowClosing -or $sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+                $frame.Continue = $false
+            }
+        }.GetNewClosure())
+
+        try {
+            $smoothType = "DuckUtil.SmoothScrollController" -as [type]
+            if ($smoothType -and $null -ne $smoothType.GetMethod("AttachFrameWake")) {
+                $smoothType::AttachFrameWake($Task, $disp, $frame)
+            }
+            if (-not $Task.IsCompleted -and -not $script:isWindowClosing) {
+                $guardTimer.Start()
+                [System.Windows.Threading.Dispatcher]::PushFrame($frame)
+            }
+        } finally {
+            try { $guardTimer.Stop() } catch {}
+            try { [void]$script:activeWaitFrames.Remove($frame) } catch {}
+        }
+        return $Task.IsCompleted
+    }
+
+    $swFallback = [System.Diagnostics.Stopwatch]::StartNew()
+    while (-not $Task.IsCompleted) {
+        if ($script:isWindowClosing -or $swFallback.Elapsed.TotalSeconds -ge $TimeoutSeconds) { break }
+        try { [void]$Task.Wait(25) } catch {}
+    }
+    return $Task.IsCompleted
+}
+
 function Invoke-GuardedAction {
     param(
         [string]$ActionName,
@@ -12426,8 +12544,10 @@ function Invoke-GuardedAction {
             try { $progressBar.IsIndeterminate = $false } catch {}
         }
         if (-not $script:isWindowClosing) {
-            try { Flush-PendingIconCache } catch {}
-            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+            try { Flush-PendingIconCache -MaxDecode 6 } catch {}
+            if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0 -and $script:iconSyncTimer) {
+                try { $script:iconSyncTimer.Start() } catch {}
+            }
             if (-not $script:uninstallerLoadedOnce -and ($script:deferredUninstallerLoad -or ($script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible))) {
                 $script:deferredUninstallerLoad = $false
                 if ($window -and $window.Dispatcher) {
@@ -12513,9 +12633,6 @@ function Set-ActiveTab {
         if ($ti -eq $index) {
             $tp.Visibility = [System.Windows.Visibility]::Visible
             $tp.IsHitTestVisible = $true
-        } elseif ($ti -le 1) {
-            $tp.Visibility = [System.Windows.Visibility]::Hidden
-            $tp.IsHitTestVisible = $false
         } else {
             $tp.Visibility = [System.Windows.Visibility]::Collapsed
             $tp.IsHitTestVisible = $false
@@ -12772,8 +12889,8 @@ function ConvertTo-UninstallerBitmapSource {
     return $resultBmp
 }
 
-$script:uninstIconTimer = New-Object System.Windows.Threading.DispatcherTimer
-$script:uninstIconTimer.Interval = [TimeSpan]::FromMilliseconds(18)
+$script:uninstIconTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:uninstIconTimer.Interval = [TimeSpan]::FromMilliseconds(25)
 $script:uninstIconTimer.Add_Tick({
     if ($script:isWindowClosing) {
         $script:uninstIconTimer.Stop()
@@ -12785,7 +12902,7 @@ $script:uninstIconTimer.Add_Tick({
         return
     }
     $batch = 0
-    while (-not $script:isWindowClosing -and -not $script:isUpdatingUninstaller -and $script:pendingUninstIcons.Count -gt 0 -and $batch -lt 18) {
+    while (-not $script:isWindowClosing -and -not $script:isUpdatingUninstaller -and $script:pendingUninstIcons.Count -gt 0 -and $batch -lt 4) {
         $item = $script:pendingUninstIcons[0]
         $script:pendingUninstIcons.RemoveAt(0)
         $batch++
@@ -12850,7 +12967,10 @@ function Apply-UninstallerFilter {
 }
 
 function Set-UninstallerSortMode {
-    param([string]$Mode)
+    param(
+        [string]$Mode,
+        [switch]$HeadersOnly
+    )
     if ($script:isWindowClosing -or $script:isSortingUninstaller) { return }
     $script:isSortingUninstaller = $true
     try {
@@ -12893,17 +13013,23 @@ function Set-UninstallerSortMode {
             }
         }
 
-        if ($uninstallerRowsPanel -and $script:uninstallerRowEntries -and $script:uninstallerRowEntries.Count -gt 0) {
+        if (-not $HeadersOnly -and $uninstallerRowsPanel -and $script:uninstallerRowEntries -and $script:uninstallerRowEntries.Count -gt 0) {
             $sortedEntries = if ($Mode -eq "Size") {
                 @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [long]$_.App.SizeBytes }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
             } else {
                 @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
             }
-            $script:uninstallerRowEntries.Clear()
-            $uninstallerRowsPanel.Children.Clear()
-            foreach ($entry in $sortedEntries) {
-                [void]$script:uninstallerRowEntries.Add($entry)
-                [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+            $prevVis = $uninstallerRowsPanel.Visibility
+            $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
+            try {
+                $script:uninstallerRowEntries.Clear()
+                $uninstallerRowsPanel.Children.Clear()
+                foreach ($entry in $sortedEntries) {
+                    [void]$script:uninstallerRowEntries.Add($entry)
+                    [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+                }
+            } finally {
+                $uninstallerRowsPanel.Visibility = $prevVis
             }
         }
         Apply-UninstallerFilter
@@ -13003,277 +13129,307 @@ function Update-UninstallerList {
         $script:uninstIconTimer.Stop()
         $script:pendingUninstIcons.Clear()
 
-        if (Get-Command "Get-SystemInstalledAppsFast" -ErrorAction SilentlyContinue) {
+        $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+        if ($deepType -and $null -ne $deepType.GetMethod("GetInstalledAppsAsync")) {
+            $scanTask = $deepType::GetInstalledAppsAsync()
+            [void](Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 45)
+            if ($script:isWindowClosing) { return }
+            if ($scanTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $script:cachedUninstallerApps = @($scanTask.Result)
+            } elseif (Get-Command "Get-SystemInstalledAppsFast" -ErrorAction SilentlyContinue) {
+                $script:cachedUninstallerApps = @(Get-SystemInstalledAppsFast)
+            } else {
+                $script:cachedUninstallerApps = @()
+            }
+        } elseif (Get-Command "Get-SystemInstalledAppsFast" -ErrorAction SilentlyContinue) {
             $script:cachedUninstallerApps = @(Get-SystemInstalledAppsFast)
         } else {
             $script:cachedUninstallerApps = @()
         }
         if ($script:isWindowClosing) { return }
 
-        $uninstallerRowsPanel.Children.Clear()
-        $script:uninstallerRowEntries.Clear()
+        $sortedApps = if ($script:uninstallerSortMode -eq "Size") {
+            @($script:cachedUninstallerApps | Sort-Object -Property @{ Expression = { [long]$_.SizeBytes }; Descending = $true }, @{ Expression = { $_.DisplayName }; Descending = $false })
+        } else {
+            @($script:cachedUninstallerApps | Sort-Object -Property @{ Expression = { [bool]$_.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.DisplayName }; Descending = $false })
+        }
 
-        foreach ($app in $script:cachedUninstallerApps) {
-            if ($script:isWindowClosing) { return }
-        $rowBorder = New-Object System.Windows.Controls.Border
-        $rowBorder.Height = 38
-        $rowBorder.CornerRadius = $cornerUninstRow
-        $rowBorder.Padding = $thicknessZero
-        $rowBorder.Margin = $thicknessZero
-        $rowBorder.Background = $script:brushUninstRowBg
-        $rowBorder.BorderBrush = $script:brushUninstRowBorder
-        $rowBorder.BorderThickness = $thicknessTableRow
-        $rowBorder.SnapsToDevicePixels = $true
-        $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
+        $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
+        try {
+            $uninstallerRowsPanel.Children.Clear()
+            $script:uninstallerRowEntries.Clear()
 
-        $rowGrid = New-Object System.Windows.Controls.Grid
-        $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
-        $rowGrid.SnapsToDevicePixels = $true
+            foreach ($app in $sortedApps) {
+                if ($script:isWindowClosing) { return }
+                $rowBorder = [System.Windows.Controls.Border]::new()
+                $rowBorder.Height = 38
+                $rowBorder.CornerRadius = $cornerUninstRow
+                $rowBorder.Padding = $thicknessZero
+                $rowBorder.Margin = $thicknessZero
+                $rowBorder.Background = $script:brushUninstRowBg
+                $rowBorder.BorderBrush = $script:brushUninstRowBorder
+                $rowBorder.BorderThickness = $thicknessTableRow
+                $rowBorder.SnapsToDevicePixels = $true
+                $rowBorder.Cursor = [System.Windows.Input.Cursors]::Hand
 
-        $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = $glUninstCol0
-        $c1 = New-Object System.Windows.Controls.ColumnDefinition; $c1.Width = $glUninstCol1
-        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = $glUninstCol2
-        $c3 = New-Object System.Windows.Controls.ColumnDefinition; $c3.Width = $glUninstCol3
-        $c4 = New-Object System.Windows.Controls.ColumnDefinition; $c4.Width = $glUninstCol4
-        $c5 = New-Object System.Windows.Controls.ColumnDefinition; $c5.Width = $glUninstCol5
-        $c6 = New-Object System.Windows.Controls.ColumnDefinition; $c6.Width = $glUninstCol6
+                $rowGrid = [System.Windows.Controls.Grid]::new()
+                $rowGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+                $rowGrid.SnapsToDevicePixels = $true
 
-        [void]$rowGrid.ColumnDefinitions.Add($c0)
-        [void]$rowGrid.ColumnDefinitions.Add($c1)
-        [void]$rowGrid.ColumnDefinitions.Add($c2)
-        [void]$rowGrid.ColumnDefinitions.Add($c3)
-        [void]$rowGrid.ColumnDefinitions.Add($c4)
-        [void]$rowGrid.ColumnDefinitions.Add($c5)
-        [void]$rowGrid.ColumnDefinitions.Add($c6)
+                $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = $glUninstCol0
+                $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = $glUninstCol1
+                $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = $glUninstCol2
+                $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = $glUninstCol3
+                $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = $glUninstCol4
+                $c5 = [System.Windows.Controls.ColumnDefinition]::new(); $c5.Width = $glUninstCol5
+                $c6 = [System.Windows.Controls.ColumnDefinition]::new(); $c6.Width = $glUninstCol6
 
-        $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $cb.Margin = $thicknessZero
-        $cb.Tag = $rowBorder
-        $cb.Add_Checked($script:uninstCbCheckedHandler)
-        $cb.Add_Unchecked($script:uninstCbUncheckedHandler)
+                [void]$rowGrid.ColumnDefinitions.Add($c0)
+                [void]$rowGrid.ColumnDefinitions.Add($c1)
+                [void]$rowGrid.ColumnDefinitions.Add($c2)
+                [void]$rowGrid.ColumnDefinitions.Add($c3)
+                [void]$rowGrid.ColumnDefinitions.Add($c4)
+                [void]$rowGrid.ColumnDefinitions.Add($c5)
+                [void]$rowGrid.ColumnDefinitions.Add($c6)
 
-        [System.Windows.Controls.Grid]::SetColumn($cb, 0)
-        [void]$rowGrid.Children.Add($cb)
+                $cb = [System.Windows.Controls.CheckBox]::new()
+                $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $cb.Margin = $thicknessZero
+                $cb.Tag = $rowBorder
+                $cb.Add_Checked($script:uninstCbCheckedHandler)
+                $cb.Add_Unchecked($script:uninstCbUncheckedHandler)
 
-        $nameGrid = New-Object System.Windows.Controls.Grid
-        $nameGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $nameGrid.Margin = $marginUninstName
-        $ng0 = New-Object System.Windows.Controls.ColumnDefinition; $ng0.Width = $glUninstNameIcon
-        $ng1 = New-Object System.Windows.Controls.ColumnDefinition; $ng1.Width = $glUninstCol1
-        [void]$nameGrid.ColumnDefinitions.Add($ng0)
-        [void]$nameGrid.ColumnDefinitions.Add($ng1)
+                [System.Windows.Controls.Grid]::SetColumn($cb, 0)
+                [void]$rowGrid.Children.Add($cb)
 
-        $iconSlotGrid = New-Object System.Windows.Controls.Grid
-        $iconSlotGrid.Width = 20
-        $iconSlotGrid.Height = 20
-        $iconSlotGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $iconSlotGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+                $nameGrid = [System.Windows.Controls.Grid]::new()
+                $nameGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $nameGrid.Margin = $marginUninstName
+                $ng0 = [System.Windows.Controls.ColumnDefinition]::new(); $ng0.Width = $glUninstNameIcon
+                $ng1 = [System.Windows.Controls.ColumnDefinition]::new(); $ng1.Width = $glUninstCol1
+                [void]$nameGrid.ColumnDefinitions.Add($ng0)
+                [void]$nameGrid.ColumnDefinitions.Add($ng1)
 
-        $fallbackBadge = New-Object System.Windows.Controls.Border
-        $fallbackBadge.Width = 20
-        $fallbackBadge.Height = 20
-        $fallbackBadge.CornerRadius = $cornerFour
-        $fallbackBadge.Background = if ($app.IsBrokenOrphan) { $script:brushUninstBadgeBrokenBg } else { $script:brushUninstBadgeBg }
-        $fallbackBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $fallbackBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $iconSlotGrid = [System.Windows.Controls.Grid]::new()
+                $iconSlotGrid.Width = 20
+                $iconSlotGrid.Height = 20
+                $iconSlotGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $iconSlotGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
 
-        $badgeTb = New-Object System.Windows.Controls.TextBlock
-        $dispTrim = if ($app.DisplayName) { $app.DisplayName.Trim() } else { "A" }
-        $badgeTb.Text = if ($app.IsBrokenOrphan) { "!" } elseif ($dispTrim.Length -gt 0) { [string]$dispTrim.Substring(0, 1).ToUpper() } else { "•" }
-        $badgeTb.FontSize = 10.5
-        $badgeTb.FontWeight = [System.Windows.FontWeights]::Bold
-        $badgeTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstBadgeBrokenFg } else { $script:brushUninstBadgeFg }
-        $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $badgeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $fallbackBadge.Child = $badgeTb
+                $fallbackBadge = [System.Windows.Controls.Border]::new()
+                $fallbackBadge.Width = 20
+                $fallbackBadge.Height = 20
+                $fallbackBadge.CornerRadius = $cornerFour
+                $fallbackBadge.Background = if ($app.IsBrokenOrphan) { $script:brushUninstBadgeBrokenBg } else { $script:brushUninstBadgeBg }
+                $fallbackBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $fallbackBadge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
 
-        $img = New-Object System.Windows.Controls.Image
-        $img.Width = 20
-        $img.Height = 20
-        $img.Stretch = [System.Windows.Media.Stretch]::Uniform
-        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
-        $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $img.Visibility = [System.Windows.Visibility]::Collapsed
+                $badgeTb = [System.Windows.Controls.TextBlock]::new()
+                $dispTrim = if ($app.DisplayName) { $app.DisplayName.Trim() } else { "A" }
+                $badgeTb.Text = if ($app.IsBrokenOrphan) { "!" } elseif ($dispTrim.Length -gt 0) { [string]$dispTrim.Substring(0, 1).ToUpper() } else { "•" }
+                $badgeTb.FontSize = 10.5
+                $badgeTb.FontWeight = [System.Windows.FontWeights]::Bold
+                $badgeTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstBadgeBrokenFg } else { $script:brushUninstBadgeFg }
+                $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $badgeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $fallbackBadge.Child = $badgeTb
 
-        [void]$iconSlotGrid.Children.Add($fallbackBadge)
-        [void]$iconSlotGrid.Children.Add($img)
+                $img = [System.Windows.Controls.Image]::new()
+                $img.Width = 20
+                $img.Height = 20
+                $img.Stretch = [System.Windows.Media.Stretch]::Uniform
+                [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::LowQuality)
+                $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $img.Visibility = [System.Windows.Visibility]::Collapsed
 
-        $bestTarget = Get-UninstallerBestIconTarget -App $app
-        if (-not [string]::IsNullOrWhiteSpace($bestTarget)) {
-            $cachedBmp = $null
-            if ($script:uninstallerIconCache.TryGetValue($bestTarget, [ref]$cachedBmp) -and $cachedBmp) {
-                $img.Source = $cachedBmp
-                $img.Visibility = [System.Windows.Visibility]::Visible
-                $fallbackBadge.Visibility = [System.Windows.Visibility]::Collapsed
-            } else {
-                $script:pendingUninstIcons.Add(@{
-                    Target   = $bestTarget
-                    Img      = $img
-                    Fallback = $fallbackBadge
-                })
+                [void]$iconSlotGrid.Children.Add($fallbackBadge)
+                [void]$iconSlotGrid.Children.Add($img)
+
+                $bestTarget = Get-UninstallerBestIconTarget -App $app
+                if (-not [string]::IsNullOrWhiteSpace($bestTarget)) {
+                    $cachedBmp = $null
+                    if ($script:uninstallerIconCache.TryGetValue($bestTarget, [ref]$cachedBmp) -and $cachedBmp) {
+                        $img.Source = $cachedBmp
+                        $img.Visibility = [System.Windows.Visibility]::Visible
+                        $fallbackBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                    } else {
+                        $script:pendingUninstIcons.Add(@{
+                            Target   = $bestTarget
+                            Img      = $img
+                            Fallback = $fallbackBadge
+                        })
+                    }
+                }
+
+                [System.Windows.Controls.Grid]::SetColumn($iconSlotGrid, 0)
+                [void]$nameGrid.Children.Add($iconSlotGrid)
+
+                $nameTb = [System.Windows.Controls.TextBlock]::new()
+                $nameTb.Text = $app.DisplayName
+                $nameTb.FontSize = 12
+                $nameTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $nameTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstTitleBroken } else { $script:brushUninstTitle }
+                $nameTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+                $nameTb.Margin = $thicknessZero
+                [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
+                [void]$nameGrid.Children.Add($nameTb)
+
+                $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
+                $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
+                [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
+
+                [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
+                [void]$rowGrid.Children.Add($nameGrid)
+
+                $verTb = [System.Windows.Controls.TextBlock]::new()
+                $verTb.Text = if ($app.DisplayVersion) { $app.DisplayVersion } else { "--" }
+                $verTb.FontSize = 11.5
+                $verTb.Foreground = $script:brushUninstMuted
+                $verTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $verTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+                $verTb.Margin = $marginUninstCol
+                [System.Windows.Controls.Grid]::SetColumn($verTb, 2)
+                [void]$rowGrid.Children.Add($verTb)
+
+                $pubTb = [System.Windows.Controls.TextBlock]::new()
+                $pubTb.Text = if ($app.Publisher) { $app.Publisher } else { "--" }
+                $pubTb.FontSize = 11.5
+                $pubTb.Foreground = $script:brushUninstMuted
+                $pubTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $pubTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+                $pubTb.Margin = $marginUninstCol
+                [System.Windows.Controls.Grid]::SetColumn($pubTb, 3)
+                [void]$rowGrid.Children.Add($pubTb)
+
+                $sizeText = if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
+                    $mb = [double]$app.SizeBytes / 1MB
+                    if ($mb -ge 1024) { "{0:N2} GB" -f ($mb / 1024.0) } else { "{0:N1} MB" -f $mb }
+                } else {
+                    "--"
+                }
+                $sizeTb = [System.Windows.Controls.TextBlock]::new()
+                $sizeTb.Text = $sizeText
+                $sizeTb.FontSize = 11.5
+                $sizeTb.Foreground = $script:brushUninstLight
+                $sizeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $sizeTb.TextAlignment = [System.Windows.TextAlignment]::Right
+                $sizeTb.Margin = $marginUninstSize
+                [System.Windows.Controls.Grid]::SetColumn($sizeTb, 4)
+                [void]$rowGrid.Children.Add($sizeTb)
+
+                $statusBorder = [System.Windows.Controls.Border]::new()
+                $statusBorder.CornerRadius = $cornerFour
+                $statusBorder.Padding = $paddingUninstBadge
+                $statusBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $statusBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $statusBorder.BorderThickness = $thicknessOne
+
+                $statusTb = [System.Windows.Controls.TextBlock]::new()
+                $statusTb.FontSize = 10.5
+                $statusTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+
+                if ($app.IsBrokenOrphan) {
+                    $statusBorder.Background = $script:brushUninstStatusBrokenBg
+                    $statusBorder.BorderBrush = $script:brushUninstStatusBrokenBorder
+                    $statusTb.Text = "Xóa sai cách"
+                    $statusTb.Foreground = $script:brushUninstBadgeBrokenFg
+                } else {
+                    $statusBorder.Background = $script:brushUninstStatusOkBg
+                    $statusBorder.BorderBrush = $script:brushUninstStatusOkBorder
+                    $statusTb.Text = "Bình thường"
+                    $statusTb.Foreground = $script:brushUninstStatusOkFg
+                }
+                $statusBorder.Child = $statusTb
+                [System.Windows.Controls.Grid]::SetColumn($statusBorder, 5)
+                [void]$rowGrid.Children.Add($statusBorder)
+
+                $folderBtn = [System.Windows.Controls.Border]::new()
+                $folderBtn.Width = 26
+                $folderBtn.Height = 24
+                $folderBtn.CornerRadius = $cornerFour
+                $folderBtn.Background = $script:brushUninstFolderBg
+                $folderBtn.BorderBrush = $script:brushUninstFolderBorder
+                $folderBtn.BorderThickness = $thicknessOne
+                $folderBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $folderBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+                $folderIcon = [System.Windows.Controls.TextBlock]::new()
+                $folderIcon.Text = $strFolderEmoji
+                $folderIcon.FontSize = 10.5
+                $folderIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $folderIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $folderBtn.Child = $folderIcon
+
+                $targetFolder = if ($app.PSObject.Properties['TargetFolder'] -and $null -ne $app.TargetFolder) {
+                    $app.TargetFolder
+                } elseif (-not [string]::IsNullOrWhiteSpace($app.InstallLocation) -and [System.IO.Directory]::Exists($app.InstallLocation)) {
+                    $app.InstallLocation
+                } elseif ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation) -and [System.IO.Directory]::Exists($app.DataLocation)) {
+                    $app.DataLocation
+                } else {
+                    ""
+                }
+                if (-not [string]::IsNullOrWhiteSpace($targetFolder)) {
+                    $folderBtn.Cursor = [System.Windows.Input.Cursors]::Hand
+                    $folderBtn.Tag = $targetFolder
+                    $folderBtn.ToolTip = "Mở thư mục: $targetFolder"
+                    $folderBtn.Add_MouseLeftButtonUp($script:uninstFolderClickHandler)
+                } else {
+                    $folderBtn.Opacity = 0.25
+                    $folderBtn.Cursor = [System.Windows.Input.Cursors]::Arrow
+                    $folderBtn.ToolTip = "Không tìm thấy thư mục cài đặt"
+                }
+                [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($folderBtn, 5000)
+                [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
+                [void]$rowGrid.Children.Add($folderBtn)
+
+                for ($divCol = 0; $divCol -lt 6; $divCol++) {
+                    $colDiv = [System.Windows.Controls.Border]::new()
+                    $colDiv.Width = 1
+                    $colDiv.Background = $script:brushUninstColDivider
+                    $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+                    $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+                    $colDiv.SnapsToDevicePixels = $true
+                    $colDiv.IsHitTestVisible = $false
+                    [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
+                    [void]$rowGrid.Children.Add($colDiv)
+                }
+
+                $rowBorder.Child = $rowGrid
+                $rowBorder.Add_MouseEnter($script:uninstRowEnterHandler)
+                $rowBorder.Add_MouseLeave($script:uninstRowLeaveHandler)
+                $rowBorder.Add_MouseLeftButtonUp($script:uninstRowClickHandler)
+
+                $searchIdx = if ($app.PSObject.Properties['SearchIndex'] -and -not [string]::IsNullOrEmpty($app.SearchIndex)) {
+                    $app.SearchIndex
+                } else {
+                    "$($app.DisplayName) $($app.Publisher) $($app.DisplayVersion)".ToLowerInvariant()
+                }
+                $entry = @{
+                    Row = $rowBorder
+                    App = $app
+                    CheckBox = $cb
+                    SearchText = $searchIdx
+                }
+                $rowBorder.Tag = $entry
+                [void]$script:uninstallerRowEntries.Add($entry)
+                [void]$uninstallerRowsPanel.Children.Add($rowBorder)
             }
+        } finally {
+            $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Visible
         }
+        if ($script:isWindowClosing) { return }
 
-        [System.Windows.Controls.Grid]::SetColumn($iconSlotGrid, 0)
-        [void]$nameGrid.Children.Add($iconSlotGrid)
-
-        $nameTb = New-Object System.Windows.Controls.TextBlock
-        $nameTb.Text = $app.DisplayName
-        $nameTb.FontSize = 12
-        $nameTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $nameTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstTitleBroken } else { $script:brushUninstTitle }
-        $nameTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $nameTb.Margin = $thicknessZero
-        [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
-        [void]$nameGrid.Children.Add($nameTb)
-
-        $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
-        $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
-        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
-
-        [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
-        [void]$rowGrid.Children.Add($nameGrid)
-
-        $verTb = New-Object System.Windows.Controls.TextBlock
-        $verTb.Text = if ($app.DisplayVersion) { $app.DisplayVersion } else { "--" }
-        $verTb.FontSize = 11.5
-        $verTb.Foreground = $script:brushUninstMuted
-        $verTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $verTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $verTb.Margin = $marginUninstCol
-        [System.Windows.Controls.Grid]::SetColumn($verTb, 2)
-        [void]$rowGrid.Children.Add($verTb)
-
-        $pubTb = New-Object System.Windows.Controls.TextBlock
-        $pubTb.Text = if ($app.Publisher) { $app.Publisher } else { "--" }
-        $pubTb.FontSize = 11.5
-        $pubTb.Foreground = $script:brushUninstMuted
-        $pubTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $pubTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-        $pubTb.Margin = $marginUninstCol
-        [System.Windows.Controls.Grid]::SetColumn($pubTb, 3)
-        [void]$rowGrid.Children.Add($pubTb)
-
-        $sizeText = if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
-            $mb = [double]$app.SizeBytes / 1MB
-            if ($mb -ge 1024) { "{0:N2} GB" -f ($mb / 1024.0) } else { "{0:N1} MB" -f $mb }
-        } else {
-            "--"
+        $script:uninstallerLoadedOnce = $true
+        $script:deferredUninstallerLoad = $false
+        $script:uninstallerLoadQueued = $false
+        Set-UninstallerSortMode $script:uninstallerSortMode -HeadersOnly
+        if (-not $script:isWindowClosing -and $script:pendingUninstIcons.Count -gt 0) {
+            $script:uninstIconTimer.Start()
         }
-        $sizeTb = New-Object System.Windows.Controls.TextBlock
-        $sizeTb.Text = $sizeText
-        $sizeTb.FontSize = 11.5
-        $sizeTb.Foreground = $script:brushUninstLight
-        $sizeTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $sizeTb.TextAlignment = [System.Windows.TextAlignment]::Right
-        $sizeTb.Margin = $marginUninstSize
-        [System.Windows.Controls.Grid]::SetColumn($sizeTb, 4)
-        [void]$rowGrid.Children.Add($sizeTb)
-
-        $statusBorder = New-Object System.Windows.Controls.Border
-        $statusBorder.CornerRadius = $cornerFour
-        $statusBorder.Padding = $paddingUninstBadge
-        $statusBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $statusBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $statusBorder.BorderThickness = $thicknessOne
-
-        $statusTb = New-Object System.Windows.Controls.TextBlock
-        $statusTb.FontSize = 10.5
-        $statusTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-
-        if ($app.IsBrokenOrphan) {
-            $statusBorder.Background = $script:brushUninstStatusBrokenBg
-            $statusBorder.BorderBrush = $script:brushUninstStatusBrokenBorder
-            $statusTb.Text = "Xóa sai cách"
-            $statusTb.Foreground = $script:brushUninstBadgeBrokenFg
-        } else {
-            $statusBorder.Background = $script:brushUninstStatusOkBg
-            $statusBorder.BorderBrush = $script:brushUninstStatusOkBorder
-            $statusTb.Text = "Bình thường"
-            $statusTb.Foreground = $script:brushUninstStatusOkFg
-        }
-        $statusBorder.Child = $statusTb
-        [System.Windows.Controls.Grid]::SetColumn($statusBorder, 5)
-        [void]$rowGrid.Children.Add($statusBorder)
-
-        $folderBtn = New-Object System.Windows.Controls.Border
-        $folderBtn.Width = 26
-        $folderBtn.Height = 24
-        $folderBtn.CornerRadius = $cornerFour
-        $folderBtn.Background = $script:brushUninstFolderBg
-        $folderBtn.BorderBrush = $script:brushUninstFolderBorder
-        $folderBtn.BorderThickness = $thicknessOne
-        $folderBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $folderBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-        $folderIcon = New-Object System.Windows.Controls.TextBlock
-        $folderIcon.Text = $strFolderEmoji
-        $folderIcon.FontSize = 10.5
-        $folderIcon.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $folderIcon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $folderBtn.Child = $folderIcon
-
-        $targetFolder = if (-not [string]::IsNullOrWhiteSpace($app.InstallLocation) -and (Test-Path -LiteralPath $app.InstallLocation)) {
-            $app.InstallLocation
-        } elseif ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation) -and (Test-Path -LiteralPath $app.DataLocation)) {
-            $app.DataLocation
-        } else {
-            ""
-        }
-        if (-not [string]::IsNullOrWhiteSpace($targetFolder)) {
-            $folderBtn.Cursor = [System.Windows.Input.Cursors]::Hand
-            $folderBtn.Tag = $targetFolder
-            $folderBtn.ToolTip = "Mở thư mục: $targetFolder"
-            $folderBtn.Add_MouseLeftButtonUp($script:uninstFolderClickHandler)
-        } else {
-            $folderBtn.Opacity = 0.25
-            $folderBtn.Cursor = [System.Windows.Input.Cursors]::Arrow
-            $folderBtn.ToolTip = "Không tìm thấy thư mục cài đặt"
-        }
-        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($folderBtn, 5000)
-        [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
-        [void]$rowGrid.Children.Add($folderBtn)
-
-        for ($divCol = 0; $divCol -lt 6; $divCol++) {
-            $colDiv = New-Object System.Windows.Controls.Border
-            $colDiv.Width = 1
-            $colDiv.Background = $script:brushUninstColDivider
-            $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-            $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
-            $colDiv.SnapsToDevicePixels = $true
-            $colDiv.IsHitTestVisible = $false
-            [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
-            [void]$rowGrid.Children.Add($colDiv)
-        }
-
-        $rowBorder.Child = $rowGrid
-        $rowBorder.Add_MouseEnter($script:uninstRowEnterHandler)
-        $rowBorder.Add_MouseLeave($script:uninstRowLeaveHandler)
-        $rowBorder.Add_MouseLeftButtonUp($script:uninstRowClickHandler)
-
-        $entry = @{
-            Row = $rowBorder
-            App = $app
-            CheckBox = $cb
-            SearchText = "$($app.DisplayName) $($app.Publisher) $($app.DisplayVersion)".ToLowerInvariant()
-        }
-        $rowBorder.Tag = $entry
-        $script:uninstallerRowEntries.Add($entry)
-        [void]$uninstallerRowsPanel.Children.Add($rowBorder)
-    }
-    if ($script:isWindowClosing) { return }
-
-    $script:uninstallerLoadedOnce = $true
-    $script:deferredUninstallerLoad = $false
-    $script:uninstallerLoadQueued = $false
-    Set-UninstallerSortMode $script:uninstallerSortMode
-    if (-not $script:isWindowClosing -and $script:pendingUninstIcons.Count -gt 0) {
-        $script:uninstIconTimer.Start()
-    }
     } finally {
         $script:suppressUninstallerSelectionCount = $false
         $script:isUpdatingUninstaller = $false
@@ -13621,6 +13777,12 @@ foreach ($item in $AppCatalog) {
     $appsByCategory[$item.Category].Add($item)
 }
 
+$script:sharedCardCache = [System.Windows.Media.BitmapCache]::new()
+$script:sharedCardCache.EnableClearType = $true
+$script:sharedCardCache.RenderAtScale = 1.0
+$script:sharedCardCache.Freeze()
+$script:defaultFallbackGlyph = [char]::ConvertFromUtf32(0x1F4E6)
+
 foreach ($cat in $categories) {
     $cardBorder = [System.Windows.Controls.Border]::new()
     $cardBorder.Background = $script:brushCardBg
@@ -13631,6 +13793,7 @@ foreach ($cat in $categories) {
     $cardBorder.Padding = $paddingCard
     $cardBorder.Height = [double]::NaN
     $cardBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $cardBorder.CacheMode = $script:sharedCardCache
 
     $cardStack = [System.Windows.Controls.StackPanel]::new()
     $appsInCat = $appsByCategory[$cat]
@@ -13727,8 +13890,20 @@ foreach ($cat in $categories) {
         $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
+        $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
+            $app.IconUrl
+        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
+        } else {
+            $null
+        }
+        $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
+        $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, "$($app.ID).png")
+        $hasCachedInMem = $script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($iconCacheKey)
+        $hasLocalCachedFile = $hasCachedInMem -or [System.IO.File]::Exists($localIconPath)
+
         $fallbackGlyph = [System.Windows.Controls.TextBlock]::new()
-        $fallbackGlyph.Text = Get-AppFallbackGlyph -AppName $app.Name -Category $cat
+        $fallbackGlyph.Text = if ($hasLocalCachedFile) { $script:defaultFallbackGlyph } else { Get-AppFallbackGlyph -AppName $app.Name -Category $cat }
         $fallbackGlyph.FontFamily = $script:fontSegoeEmoji
         $fallbackGlyph.FontSize = 10
         $fallbackGlyph.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
@@ -13739,7 +13914,7 @@ foreach ($cat in $categories) {
         $imgDim = if ($useLightBadge) { 15 } else { 17 }
         $img.Width = $imgDim; $img.Height = $imgDim
         $img.Stretch = [System.Windows.Media.Stretch]::Uniform
-        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::HighQuality)
+        [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($img, [System.Windows.Media.BitmapScalingMode]::LowQuality)
         $img.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $img.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $img.Visibility = [System.Windows.Visibility]::Collapsed
@@ -13747,17 +13922,7 @@ foreach ($cat in $categories) {
         [void]$iconInnerGrid.Children.Add($img)
         $iconBadge.Child = $iconInnerGrid
 
-        $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
-            $app.IconUrl
-        } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
-            "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
-        } else {
-            $null
-        }
-        $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
-        $localIconPath = Join-Path $iconsCacheDir "$($app.ID).png"
-
-        if ($script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($iconCacheKey)) {
+        if ($hasCachedInMem) {
             $cachedBmp = $script:remoteBmpCache[$iconCacheKey]
             if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
                 $img.Source = $cachedBmp
@@ -13765,7 +13930,7 @@ foreach ($cat in $categories) {
                 $img.Visibility = [System.Windows.Visibility]::Visible
                 if ($useLightBadge) { $iconBadge.Background = $script:brushIconBadgeLightBg }
             }
-        } elseif ($remoteIconTarget -or [System.IO.File]::Exists($localIconPath)) {
+        } elseif ($remoteIconTarget -or $hasLocalCachedFile) {
             $script:pendingIconSaves.Add(@{
                 Url          = $remoteIconTarget
                 CacheKey     = $iconCacheKey
@@ -14910,6 +15075,7 @@ Register-Click "btnOpenBackupFolder" -LockGroup "Quản lý Driver" {
 
 function Stop-AllBackgroundWork {
     $script:isWindowClosing = $true
+    try { Stop-ActiveWaitFrames } catch {}
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
     try {
@@ -14951,7 +15117,7 @@ if ($window -and $window.Dispatcher) {
     })
 }
 
-$script:iconSyncTimer = New-Object System.Windows.Threading.DispatcherTimer
+$script:iconSyncTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
 $script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(35)
 $script:iconSyncTimer.Add_Tick({
     if ($script:isWindowClosing) {
@@ -14959,7 +15125,7 @@ $script:iconSyncTimer.Add_Tick({
         return
     }
     if ($script:isActionRunning) { return }
-    Flush-PendingIconCache
+    Flush-PendingIconCache -MaxDecode 8
     if ($script:isWindowClosing -or -not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) {
         $script:iconSyncTimer.Stop()
     }
@@ -14970,7 +15136,7 @@ $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
         Log-Text "[OK] Giao diện App-Driver đã sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
-        Flush-PendingIconCache
+        Flush-PendingIconCache -MaxDecode 10
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
         }

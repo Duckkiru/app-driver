@@ -591,29 +591,29 @@ function Invoke-WingetListCapture {
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
         }
 
-        while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-            if ($script:isWindowClosing) {
+        if ((Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $null -ne $readTask -and $null -ne $errTask) {
+            $bothTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]](@($readTask, $errTask)))
+            $remSec = [Math]::Max(0.1, ($TimeoutSeconds - $sw.Elapsed.TotalSeconds))
+            $completedOk = Wait-TaskNonBlocking -Task $bothTask -TimeoutSeconds $remSec
+            if (-not $completedOk -or $script:isWindowClosing -or -not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
                 $timedOut = $true
                 try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                break
             }
-            if ($sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
-                $timedOut = $true
-                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                break
-            }
-            try {
-                if (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue) {
-                    Flush-PendingIconCache
+        } else {
+            while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+                if ($script:isWindowClosing -or $sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                    $timedOut = $true
+                    try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                    break
                 }
-                [System.Windows.Forms.Application]::DoEvents()
-            } catch {}
-            if ($script:isWindowClosing) {
-                $timedOut = $true
-                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                break
+                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                if ($script:isWindowClosing) {
+                    $timedOut = $true
+                    try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+                    break
+                }
+                Start-Sleep -Milliseconds 15
             }
-            Start-Sleep -Milliseconds 10
         }
 
         if (-not $script:isWindowClosing) {
@@ -828,6 +828,16 @@ function Get-LocalInstalledEntries {
     param([switch]$SkipAppx)
     if ("DuckUtil.AppCatalogEngine" -as [type]) {
         try {
+            $csType = [DuckUtil.AppCatalogEngine]
+            if ($null -ne $csType.GetMethod("ScanCatalogSensorsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                $scanTask = $csType::ScanCatalogSensorsAsync()
+                if (Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 30) {
+                    if ($scanTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        return $scanTask.Result
+                    }
+                }
+                if ($script:isWindowClosing) { return @() }
+            }
             return [DuckUtil.AppCatalogEngine]::ScanCatalogSensors()
         } catch {}
     }

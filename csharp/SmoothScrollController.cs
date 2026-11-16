@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace DuckUtil {
     public sealed class SmoothScrollController {
@@ -31,6 +33,19 @@ namespace DuckUtil {
         public static SmoothScrollController Attach(ScrollViewer sv) {
             if (sv == null) return null;
             return new SmoothScrollController(sv);
+        }
+
+        public static void AttachFrameWake(Task task, Dispatcher dispatcher, DispatcherFrame frame) {
+            if (task == null || frame == null) return;
+            task.ContinueWith(_ => {
+                try {
+                    if (dispatcher != null && !dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished) {
+                        dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => { frame.Continue = false; }));
+                    } else {
+                        frame.Continue = false;
+                    }
+                } catch {}
+            }, TaskScheduler.Default);
         }
 
         private bool IsActiveAndVisible() {
@@ -112,7 +127,8 @@ namespace DuckUtil {
             double nowSec = _sw.Elapsed.TotalSeconds;
             double dt = nowSec - _lastTimeSec;
             _lastTimeSec = nowSec;
-            if (double.IsNaN(dt) || double.IsInfinity(dt) || dt <= 0.0 || dt > 0.1) dt = 0.016;
+            if (double.IsNaN(dt) || double.IsInfinity(dt) || dt <= 0.0) dt = 0.016;
+            else if (dt > 0.05) dt = 0.05;
 
             double maxScroll = _sv.ScrollableHeight;
             if (double.IsNaN(maxScroll) || double.IsInfinity(maxScroll) || maxScroll < 0.0) maxScroll = 0.0;
@@ -125,7 +141,7 @@ namespace DuckUtil {
                 return;
             }
 
-            if (Math.Abs(diff) < 0.25) {
+            if (Math.Abs(diff) < 0.35) {
                 _currentOffset = _targetOffset;
                 _lastAppliedOffset = _currentOffset;
                 _pendingLayoutSyncFrames = 0;
@@ -134,7 +150,7 @@ namespace DuckUtil {
                 return;
             }
 
-            double factor = 1.0 - Math.Exp(-17.0 * dt);
+            double factor = 1.0 - Math.Exp(-20.0 * dt);
             _currentOffset += diff * factor;
             if (_pendingLayoutSyncFrames == 0) {
                 _preApplySvOffset = svOffset;
