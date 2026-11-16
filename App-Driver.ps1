@@ -11935,6 +11935,40 @@ function Invoke-ForceStopPathLockers {
     return $resObj
 }
 
+function Restart-WindowsExplorerForUnlock {
+    param([scriptblock]$OnUnlockedCallback = $null)
+
+    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+        Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i nhanh Windows Explorer $([char]0x0111)$([char]0x1EC3) nh$([char]0x1EA3) kh$([char]0x00F3)a t$([char]0x1EC7)p..."
+    }
+    try {
+        Get-Process -Name "explorer" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 350
+        if ($null -ne $OnUnlockedCallback) {
+            & $OnUnlockedCallback
+        }
+    } finally {
+        $waitDeadline = [DateTime]::UtcNow.AddMilliseconds(1500)
+        $explorerBack = $false
+        while ([DateTime]::UtcNow -lt $waitDeadline) {
+            $exProcs = @(Get-Process -Name "explorer" -ErrorAction SilentlyContinue)
+            if ($exProcs.Count -gt 0) {
+                $explorerBack = $true
+                break
+            }
+            Start-Sleep -Milliseconds 150
+        }
+        if (-not $explorerBack) {
+            try {
+                Start-Process (Join-Path $env:WINDIR "explorer.exe") | Out-Null
+            } catch {}
+        }
+    }
+    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+        Log-Text "[OK] Windows Explorer $([char]0x0111)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i; ti$([char]0x1EBF)p t$([char]0x1EE5)c x$([char]0x00F3)a m$([char]0x1EE5)c $([char]0x0111)ang gi$([char]0x1EEF) kh$([char]0x00F3)a..."
+    }
+}
+
 function Show-LeftoverReviewDialog {
     param(
         [Parameter(Mandatory = $false)]$OwnerWindow,
@@ -12353,6 +12387,7 @@ function Show-LeftoverReviewDialog {
         try {
             $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
             $hasSilentRecycle = ($null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilently"))
+            $explorerRestartDecision = $null
             foreach ($ci in $checkedItems) {
                 if ($script:isWindowClosing) { break }
                 try {
@@ -12373,11 +12408,13 @@ function Show-LeftoverReviewDialog {
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
+                        $stopInfo = $null
                         if ($useForceStop) {
                             $stopInfo = Invoke-ForceStopPathLockers -TargetPath $ci.Path -IncludeServicesAndTasks:$true
                             $accessDeniedTotal += [int]$stopInfo.AccessDeniedCount
                         }
 
+                        $hasExplorerLock = ($null -ne $stopInfo -and @($stopInfo.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
                         $deletedOk = $false
                         if ($useRecycle) {
                             if ($hasSilentRecycle) {
@@ -12394,6 +12431,46 @@ function Show-LeftoverReviewDialog {
                                 } catch {
                                     $deletedOk = $false
                                 }
+                            }
+                        }
+
+                        $shouldTryExplorerRestart = $useForceStop -and $hasExplorerLock -and (-not $deletedOk)
+                        if ($shouldTryExplorerRestart) {
+                            if ($null -eq $explorerRestartDecision) {
+                                $msgPrompt = "Windows Explorer $([char]0x0111)ang n$([char]0x1EA1)p t$([char]0x1EC7)p m$([char]0x1EDF) r$([char]0x1ED9)ng (Shell Extension DLL) trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x1EA7)n x$([char]0x00F3)a:`n$($ci.Path)`n`nB$([char]0x1EA1)n c$([char]0x00F3) mu$([char]0x1ED1)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i nhanh Windows Explorer (~1 gi$([char]0x00E2)y) $([char]0x0111)$([char]0x1EC3) nh$([char]0x1EA3) kh$([char]0x00F3)a v$([char]0x00E0) x$([char]0x00F3)a s$([char]0x1EA1)ch ngay m$([char]0x00E0) kh$([char]0x00F4)ng c$([char]0x1EA7)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y?"
+                                $capPrompt = "Windows Explorer $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p"
+                                if (Get-Command "Show-OwnedMessageBox" -ErrorAction SilentlyContinue) {
+                                    $ansExp = Show-OwnedMessageBox `
+                                        -Text $msgPrompt `
+                                        -Caption $capPrompt `
+                                        -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                                        -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                                        -PrimaryText "Kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i Explorer" `
+                                        -SecondaryText "B$([char]0x1ECF) qua ($([char]0x0110)$([char]0x1EB7)t l$([char]0x1ECB)ch MoveFileEx)" `
+                                        -ModeBadgeText "$([char]0x0110)$([char]0x00F3)ng & m$([char]0x1EDF) l$([char]0x1EA1)i nhanh Taskbar/Desktop $([char]0x0111)$([char]0x1EC3) nh$([char]0x1EA3) kh$([char]0x00F3)a DLL" `
+                                        -ModeBadgeKind "Info" `
+                                        -OwnerWindowOverride $dialog
+                                    $explorerRestartDecision = ($ansExp -eq [System.Windows.Forms.DialogResult]::Yes)
+                                } else {
+                                    $ansWpf = [System.Windows.MessageBox]::Show($dialog, $msgPrompt, $capPrompt, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+                                    $explorerRestartDecision = ($ansWpf -eq [System.Windows.MessageBoxResult]::Yes)
+                                }
+                            }
+
+                            if ($explorerRestartDecision) {
+                                $unlockState = @{ Deleted = $false; RebootCount = 0 }
+                                Restart-WindowsExplorerForUnlock -OnUnlockedCallback {
+                                    if ($useRecycle -and $hasSilentRecycle) {
+                                        $unlockState.Deleted = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
+                                    }
+                                    if (-not $unlockState.Deleted) {
+                                        $rbInner = 0
+                                        $unlockState.Deleted = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbInner)
+                                        $unlockState.RebootCount = $rbInner
+                                    }
+                                }.GetNewClosure()
+                                $deletedOk = [bool]$unlockState.Deleted
+                                $rebootTotal += [int]$unlockState.RebootCount
                             }
                         }
 
@@ -13628,7 +13705,7 @@ function Show-OwnedMessageBox {
             <StackPanel Grid.Row="1" Margin="18,16,18,16">
                 <TextBlock Name="dlgMessageText" Foreground="#E2E8F0" FontSize="12.5" LineHeight="19" TextWrapping="Wrap"/>
                 <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Stretch">
-                    <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold"/>
+                    <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 </Border>
                 <ToggleButton Name="dlgModeToggle" Visibility="Collapsed" Style="{StaticResource DlgModeToggleBtn}" Margin="0,10,0,0" HorizontalAlignment="Stretch">
                     <StackPanel VerticalAlignment="Center">

@@ -597,7 +597,7 @@ function Show-OwnedMessageBox {
             <StackPanel Grid.Row="1" Margin="18,16,18,16">
                 <TextBlock Name="dlgMessageText" Foreground="#E2E8F0" FontSize="12.5" LineHeight="19" TextWrapping="Wrap"/>
                 <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Stretch">
-                    <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold"/>
+                    <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 </Border>
                 <ToggleButton Name="dlgModeToggle" Visibility="Collapsed" Style="{StaticResource DlgModeToggleBtn}" Margin="0,10,0,0" HorizontalAlignment="Stretch">
                     <StackPanel VerticalAlignment="Center">
