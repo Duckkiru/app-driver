@@ -471,6 +471,16 @@
                                             <Button Name="btnSortUninstSize" Content="Theo dung lượng" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
+                                    <Border Name="pnlSkipVendorUninstaller" Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2"
+                                            Padding="8,4" Margin="12,0,0,0" VerticalAlignment="Center" Cursor="Hand"
+                                            ToolTip="Mặc định App-Driver tự nhận diện bộ cài (Inno, NSIS, WiX, MSI, Squirrel) để ép cờ gỡ im lặng. Bật tùy chọn này nếu muốn bỏ qua hẳn trình gỡ cài đặt của hãng (chuyên trị app hay hiện bảng hỏi lừa giữ chân như 360), tắt tiến trình/service và xóa sạch trực tiếp."
+                                            ToolTipService.InitialShowDelay="5000">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <CheckBox Name="cbSkipVendorUninstaller" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Bỏ qua trình gỡ hãng" Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold"
+                                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
 
                                 <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Chưa tải danh sách"

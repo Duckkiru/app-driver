@@ -4901,6 +4901,16 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             <Button Name="btnSortUninstSize" Content="Theo dung lượng" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
+                                    <Border Name="pnlSkipVendorUninstaller" Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2"
+                                            Padding="8,4" Margin="12,0,0,0" VerticalAlignment="Center" Cursor="Hand"
+                                            ToolTip="Mặc định App-Driver tự nhận diện bộ cài (Inno, NSIS, WiX, MSI, Squirrel) để ép cờ gỡ im lặng. Bật tùy chọn này nếu muốn bỏ qua hẳn trình gỡ cài đặt của hãng (chuyên trị app hay hiện bảng hỏi lừa giữ chân như 360), tắt tiến trình/service và xóa sạch trực tiếp."
+                                            ToolTipService.InitialShowDelay="5000">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <CheckBox Name="cbSkipVendorUninstaller" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Bỏ qua trình gỡ hãng" Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold"
+                                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
 
                                 <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Chưa tải danh sách"
@@ -8644,10 +8654,108 @@ namespace DuckUtil
 
             return restoredCount;
         }
+
+        public static string DetectInstallerFramework(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath)) return "";
+            try
+            {
+                if (!File.Exists(exePath)) return "";
+
+                try
+                {
+                    string datPath = Path.ChangeExtension(exePath, ".dat");
+                    if (!string.IsNullOrEmpty(datPath) && File.Exists(datPath))
+                    {
+                        using (var dfs = new FileStream(datPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                            byte[] hdr = new byte[(int)Math.Min(64L, dfs.Length)];
+                            int read = dfs.Read(hdr, 0, hdr.Length);
+                            if (read > 0)
+                            {
+                                string hdrAscii = System.Text.Encoding.ASCII.GetString(hdr, 0, read);
+                                if (hdrAscii.IndexOf("Inno Setup Uninstall Log", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    return "InnoSetup";
+                            }
+                        }
+                    }
+                }
+                catch {}
+
+                string fileName = Path.GetFileName(exePath) ?? "";
+                if (fileName.Equals("Update.exe", StringComparison.OrdinalIgnoreCase))
+                    return "Squirrel";
+
+                using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    int headLen = (int)Math.Min(1048576L, fs.Length);
+                    byte[] headBuf = new byte[headLen];
+                    int headRead = fs.Read(headBuf, 0, headLen);
+                    string matched = DetectFrameworkFromBuffer(headBuf, headRead);
+                    if (!string.IsNullOrEmpty(matched)) return matched;
+
+                    if (fs.Length > 1048576L)
+                    {
+                        int tailLen = (int)Math.Min(524288L, fs.Length - headLen);
+                        if (tailLen > 0)
+                        {
+                            fs.Seek(-tailLen, SeekOrigin.End);
+                            byte[] tailBuf = new byte[tailLen];
+                            int tailRead = fs.Read(tailBuf, 0, tailLen);
+                            matched = DetectFrameworkFromBuffer(tailBuf, tailRead);
+                            if (!string.IsNullOrEmpty(matched)) return matched;
+                        }
+                    }
+                }
+
+                try
+                {
+                    var fvi = FileVersionInfo.GetVersionInfo(exePath);
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "");
+                    if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "InnoSetup";
+                }
+                catch {}
+            }
+            catch {}
+            return "";
+        }
+
+        private static string DetectFrameworkFromBuffer(byte[] buf, int len)
+        {
+            if (buf == null || len <= 0) return "";
+            string ascii = System.Text.Encoding.ASCII.GetString(buf, 0, len);
+            string uni = System.Text.Encoding.Unicode.GetString(buf, 0, len);
+
+            if (ascii.IndexOf("NullsoftInst", StringComparison.Ordinal) >= 0 ||
+                ascii.IndexOf("Nullsoft Install System", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Nullsoft Install System", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "NSIS";
+            }
+            if (ascii.IndexOf(".wixburn", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("WiX Toolset", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("WiX Toolset", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "WiX";
+            }
+            if (ascii.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "BitRock";
+            }
+            if (ascii.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("InnoSetup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "InnoSetup";
+            }
+            return "";
+        }
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "GetInstalledAppsAsync"
+        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "DetectInstallerFramework"
     } catch {}
 }
 
@@ -11672,10 +11780,177 @@ function Show-LeftoverReviewDialog {
     return $dialogResult
 }
 
+function Resolve-SilentUninstallPlan {
+    param([Parameter(Mandatory = $true)]$AppEntry)
+
+    $hasExplicitQuiet = -not [string]::IsNullOrWhiteSpace($AppEntry.QuietUninstallString)
+    $rawCmd = if ($hasExplicitQuiet) {
+        $AppEntry.QuietUninstallString.Trim()
+    } elseif (-not [string]::IsNullOrWhiteSpace($AppEntry.UninstallString)) {
+        $AppEntry.UninstallString.Trim()
+    } else {
+        ""
+    }
+
+    if ([string]::IsNullOrWhiteSpace($rawCmd)) {
+        return [PSCustomObject]@{
+            Mode                = "None"
+            Exe                 = ""
+            Args                = ""
+            Framework           = ""
+            AddedSilentFlags    = $false
+            IsSilent            = $false
+            IsLikelyDarkPattern = $false
+        }
+    }
+
+    if ($rawCmd.IndexOf("msiexec", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        $msiId = if (Get-Command Get-MsiProductCodeFromCommand -ErrorAction SilentlyContinue) {
+            Get-MsiProductCodeFromCommand -UninstallCommand $rawCmd -FallbackId $AppEntry.Id
+        } else {
+            $AppEntry.Id
+        }
+        return [PSCustomObject]@{
+            Mode                = "MSI"
+            Exe                 = "msiexec.exe"
+            Args                = "/x `"$msiId`" /qn /norestart"
+            MsiId               = $msiId
+            Framework           = "MSI"
+            AddedSilentFlags    = $true
+            IsSilent            = $true
+            IsLikelyDarkPattern = $false
+        }
+    }
+
+    $cmdParts = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
+        Split-CommandLineExecutableAndArgs -CommandLine $rawCmd
+    } else {
+        $spParts = $rawCmd -split '\s+', 2
+        [PSCustomObject]@{ Exe = $spParts[0].Trim('"'); Args = if ($spParts.Count -gt 1) { $spParts[1] } else { "" } }
+    }
+
+    $exe = [string]$cmdParts.Exe
+    $origArgs = if ($null -eq $cmdParts.Args) { "" } else { ([string]$cmdParts.Args).Trim() }
+    $missingExe = ($exe -match '^[A-Za-z]:\\') -and (-not [System.IO.File]::Exists($exe))
+    if ($missingExe) {
+        return [PSCustomObject]@{
+            Mode                = "MissingExe"
+            Exe                 = $exe
+            Args                = $origArgs
+            Framework           = ""
+            AddedSilentFlags    = $false
+            IsSilent            = $false
+            IsLikelyDarkPattern = $false
+        }
+    }
+
+    $framework = ""
+    $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+    if ($deepType -and $null -ne $deepType.GetMethod("DetectInstallerFramework")) {
+        $framework = [string]$deepType::DetectInstallerFramework($exe)
+    }
+
+    $newArgs = $origArgs
+    $addedFlags = $false
+    $isSilent = $false
+
+    switch ($framework) {
+        "InnoSetup" {
+            if ($newArgs -match '(?i)(^|\s)/VERYSILENT(\s|$)') {
+                $isSilent = $true
+            } elseif ($newArgs -match '(?i)(^|\s)/SILENT(\s|$)') {
+                $newArgs = [regex]::Replace($newArgs, '(?i)(?<=^|\s)/SILENT(?=\s|$)', '/VERYSILENT')
+                $addedFlags = $true
+                $isSilent = $true
+            } else {
+                $newArgs = "$newArgs /VERYSILENT".Trim()
+                $addedFlags = $true
+                $isSilent = $true
+            }
+            if ($newArgs -notmatch '(?i)(^|\s)/SUPPRESSMSGBOXES(\s|$)') {
+                $newArgs = "$newArgs /SUPPRESSMSGBOXES".Trim()
+                $addedFlags = $true
+            }
+            if ($newArgs -notmatch '(?i)(^|\s)/NORESTART(\s|$)') {
+                $newArgs = "$newArgs /NORESTART".Trim()
+                $addedFlags = $true
+            }
+        }
+        "NSIS" {
+            if ($newArgs -cmatch '(^|\s)/S(\s|$)' -or $newArgs -match '(?i)(^|\s)(--silent|/silent)(\s|$)') {
+                $isSilent = $true
+            } elseif ($newArgs -cmatch '(^|\s)/s(\s|$)') {
+                $newArgs = [regex]::Replace($newArgs, '(?<=^|\s)/s(?=\s|$)', '/S')
+                $addedFlags = $true
+                $isSilent = $true
+            } else {
+                $newArgs = "$newArgs /S".Trim()
+                $addedFlags = $true
+                $isSilent = $true
+            }
+        }
+        "WiX" {
+            if ($newArgs -match '(?i)(^|\s)(/q|/quiet|/silent|/passive)(\s|$)') {
+                $isSilent = $true
+            } else {
+                if ($newArgs -notmatch '(?i)(^|\s)(/uninstall|/x)(\s|$)') {
+                    $newArgs = "$newArgs /uninstall".Trim()
+                }
+                $newArgs = "$newArgs /quiet /norestart".Trim()
+                $addedFlags = $true
+                $isSilent = $true
+            }
+        }
+        "BitRock" {
+            if ($newArgs -match '(?i)(^|\s)--mode(\s|=)(unattended|minimal)(\s|$)') {
+                $isSilent = $true
+            } elseif ($newArgs -notmatch '(?i)(^|\s)--mode(\s|=|$)') {
+                $newArgs = "$newArgs --mode unattended".Trim()
+                $addedFlags = $true
+                $isSilent = $true
+            }
+        }
+        "Squirrel" {
+            if ($newArgs -match '(?i)(^|\s)(-s|--silent)(\s|$)') {
+                $isSilent = $true
+            } elseif ($newArgs -match '(?i)--uninstall') {
+                $newArgs = "$newArgs -s".Trim()
+                $addedFlags = $true
+                $isSilent = $true
+            }
+        }
+        default {
+            $exeBase = [System.IO.Path]::GetFileName($exe)
+            if ($exeBase -ieq "setup.exe" -and $newArgs -match '(?i)--uninstall' -and $newArgs -notmatch '(?i)--force-uninstall') {
+                $framework = "ChromiumSetup"
+                $newArgs = "$newArgs --force-uninstall".Trim()
+                $addedFlags = $true
+                $isSilent = $true
+            } elseif ($hasExplicitQuiet -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
+                $isSilent = $true
+            }
+        }
+    }
+
+    $hintMeta = "$($AppEntry.DisplayName) $($AppEntry.Publisher) $exe"
+    $isDark = ($hintMeta -match '(?i)\b(360Safe|360 Total|Qihu|2345|Kingsoft|Sogou|Baidu|Driver Booster|IObit)\b')
+
+    return [PSCustomObject]@{
+        Mode                = "Exe"
+        Exe                 = $exe
+        Args                = $newArgs
+        Framework           = $framework
+        AddedSilentFlags    = $addedFlags
+        IsSilent            = $isSilent
+        IsLikelyDarkPattern = $isDark
+    }
+}
+
 function Invoke-DeepAppUninstall {
     param(
         [Parameter(Mandatory = $true)]$AppEntry,
-        [Parameter(Mandatory = $false)]$OwnerWindow
+        [Parameter(Mandatory = $false)]$OwnerWindow,
+        [switch]$SkipVendorUninstaller
     )
 
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
@@ -11707,56 +11982,49 @@ function Invoke-DeepAppUninstall {
     }
 
     if (-not $AppEntry.IsBrokenOrphan) {
-        $uninstCmd = if (-not [string]::IsNullOrWhiteSpace($AppEntry.QuietUninstallString)) {
-            $AppEntry.QuietUninstallString
+        if ($SkipVendorUninstaller) {
+            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                Log-Text "[FORCE] B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) c$([char]0x1EE7)a h$([char]0x00E3)ng ($([char]0x0111)$([char]0x00E3) t$([char]0x1EAF)t service/ti$([char]0x1EBF)n tr$([char]0x00EC)nh) -> qu$([char]0x00E9)t x$([char]0x00F3)a s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
+            }
         } else {
-            $AppEntry.UninstallString
-        }
-
-        if (-not [string]::IsNullOrWhiteSpace($uninstCmd)) {
-            $uninstCmd = $uninstCmd.Trim()
-            if ($uninstCmd.IndexOf("msiexec", [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                $msiId = if (Get-Command Get-MsiProductCodeFromCommand -ErrorAction SilentlyContinue) {
-                    Get-MsiProductCodeFromCommand -UninstallCommand $uninstCmd -FallbackId $AppEntry.Id
-                } else {
-                    $AppEntry.Id
-                }
+            $plan = Resolve-SilentUninstallPlan -AppEntry $AppEntry
+            if ($plan.Mode -eq "MSI") {
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($msiId)..."
+                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($($plan.MsiId))..."
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    $msiCode = Run-CliStream "msiexec.exe" "/x `"$msiId`" /qn /norestart"
+                    $msiCode = Run-CliStream "msiexec.exe" $plan.Args
                     if ($msiCode -eq 1618) {
                         Start-Sleep -Seconds 3
-                        $null = Run-CliStream "msiexec.exe" "/x `"$msiId`" /qn /norestart"
+                        $null = Run-CliStream "msiexec.exe" $plan.Args
                     }
                 } else {
-                    Start-Process "msiexec.exe" -ArgumentList "/x `"$msiId`" /qn /norestart" -Wait -NoNewWindow
+                    Start-Process "msiexec.exe" -ArgumentList $plan.Args -Wait -NoNewWindow
                 }
-            } else {
-                $cmdParts = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
-                    Split-CommandLineExecutableAndArgs -CommandLine $uninstCmd
-                } else {
-                    $spParts = $uninstCmd -split '\s+', 2
-                    [PSCustomObject]@{ Exe = $spParts[0].Trim('"'); Args = if ($spParts.Count -gt 1) { $spParts[1] } else { "" } }
+            } elseif ($plan.Mode -eq "MissingExe") {
+                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                    Log-Text "[!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c t$([char]0x1EA1)i '$($plan.Exe)' - chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t d$([char]0x1ECD)n s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
                 }
-                $exe  = $cmdParts.Exe
-                $args = $cmdParts.Args
-
-                $missingExe = ($exe -match '^[A-Za-z]:\\') -and (-not [System.IO.File]::Exists($exe))
-                if ($missingExe) {
-                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                        Log-Text "[!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c t$([char]0x1EA1)i '$exe' - chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t d$([char]0x1ECD)n s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
-                    }
-                } else {
-                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                        Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $exe $args"
-                    }
-                    if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                        $null = Run-CliStream $exe $args
+            } elseif ($plan.Mode -eq "Exe") {
+                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                    if ($plan.AddedSilentFlags) {
+                        Log-Text "[SILENT] Nh$([char]0x1EAD)n di$([char]0x1EC7)n [$($plan.Framework)], $([char]0x0111)$([char]0x00E3) g$([char]0x1EAF)n c$([char]0x1EDD) g$([char]0x1EE1) im l$([char]0x1EB7)ng: $($plan.Exe) $($plan.Args)"
                     } else {
-                        Start-Process $exe -ArgumentList $args -Wait -NoNewWindow
+                        Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($plan.Exe) $($plan.Args)"
+                        if (-not $plan.IsSilent) {
+                            $hintText = if ($plan.IsLikelyDarkPattern) {
+                                "[!] $([char]0x1EE8)ng d$([char]0x1EE5)ng n$([char]0x00E0)y hay c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i gi$([char]0x1EEF) ch$([char]0x00E2)n; n$([char]0x1EBF)u popup hi$([char]0x1EC7)n l$([char]0x00EA)n, l$([char]0x1EA7)n sau h$([char]0x00E3)y t$([char]0x00ED)ch 'B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng'."
+                            } else {
+                                "[!] Kh$([char]0x00F4)ng r$([char]0x00F5) c$([char]0x1EDD) im l$([char]0x1EB7)ng chu$([char]0x1EA9)n cho tr$([char]0x00EC)nh g$([char]0x1EE1) n$([char]0x00E0)y; n$([char]0x1EBF)u c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i l$([char]0x00E0)m phi$([char]0x1EC1)n, c$([char]0x00F3) th$([char]0x1EC3) t$([char]0x00ED)ch 'B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng'."
+                            }
+                            Log-Text $hintText
+                        }
                     }
+                }
+                if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
+                    $null = Run-CliStream $plan.Exe $plan.Args
+                } else {
+                    Start-Process $plan.Exe -ArgumentList $plan.Args -Wait -NoNewWindow
                 }
             }
         }
@@ -12691,8 +12959,25 @@ $txtUninstallSearch      = $window.FindName("txtUninstallSearch")
 $btnClearUninstallSearch = $window.FindName("btnClearUninstallSearch")
 $btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
 $btnUninstallDeselectAll = $window.FindName("btnUninstallDeselectAll")
+$pnlSkipVendorUninst     = $window.FindName("pnlSkipVendorUninstaller")
+$cbSkipVendorUninst      = $window.FindName("cbSkipVendorUninstaller")
 $txtUninstallerSummary   = $window.FindName("txtUninstallerSummary")
 $uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
+
+if ($pnlSkipVendorUninst -and $cbSkipVendorUninst) {
+    $pnlSkipVendorUninst.Add_MouseLeftButtonUp({
+        param($s, $e)
+        if ($script:isWindowClosing -or $script:isActionRunning) { return }
+        $node = $e.OriginalSource
+        while ($node -ne $null -and $node -ne $s) {
+            if ($node -is [System.Windows.Controls.CheckBox]) { return }
+            if ($node -is [System.Windows.Media.Visual]) {
+                $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+            } else { break }
+        }
+        $cbSkipVendorUninst.IsChecked = -not ($cbSkipVendorUninst.IsChecked -eq $true)
+    })
+}
 
 $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
@@ -13552,8 +13837,10 @@ if ($btnDeepUninstall) {
             $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
+            $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
+            $modeNote = if ($skipVendor) { "`n(Chế độ: Bỏ qua trình gỡ hãng — ép tắt service/tiến trình và dọn sạch trực tiếp)" } else { "" }
             $confirm = Show-OwnedMessageBox `
-                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?" `
+                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?$modeNote" `
                 -Caption "Xác nhận Gỡ Tận Gốc" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
@@ -13562,7 +13849,7 @@ if ($btnDeepUninstall) {
             foreach ($item in $selectedItems) {
                 if ($script:isWindowClosing) { break }
                 if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
-                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window
+                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor
                 }
             }
             if (-not $script:isWindowClosing) {

@@ -630,8 +630,25 @@ $txtUninstallSearch      = $window.FindName("txtUninstallSearch")
 $btnClearUninstallSearch = $window.FindName("btnClearUninstallSearch")
 $btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
 $btnUninstallDeselectAll = $window.FindName("btnUninstallDeselectAll")
+$pnlSkipVendorUninst     = $window.FindName("pnlSkipVendorUninstaller")
+$cbSkipVendorUninst      = $window.FindName("cbSkipVendorUninstaller")
 $txtUninstallerSummary   = $window.FindName("txtUninstallerSummary")
 $uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
+
+if ($pnlSkipVendorUninst -and $cbSkipVendorUninst) {
+    $pnlSkipVendorUninst.Add_MouseLeftButtonUp({
+        param($s, $e)
+        if ($script:isWindowClosing -or $script:isActionRunning) { return }
+        $node = $e.OriginalSource
+        while ($node -ne $null -and $node -ne $s) {
+            if ($node -is [System.Windows.Controls.CheckBox]) { return }
+            if ($node -is [System.Windows.Media.Visual]) {
+                $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+            } else { break }
+        }
+        $cbSkipVendorUninst.IsChecked = -not ($cbSkipVendorUninst.IsChecked -eq $true)
+    })
+}
 
 $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
@@ -1491,8 +1508,10 @@ if ($btnDeepUninstall) {
             $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
+            $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
+            $modeNote = if ($skipVendor) { "`n(Chế độ: Bỏ qua trình gỡ hãng — ép tắt service/tiến trình và dọn sạch trực tiếp)" } else { "" }
             $confirm = Show-OwnedMessageBox `
-                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?" `
+                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?$modeNote" `
                 -Caption "Xác nhận Gỡ Tận Gốc" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
@@ -1501,7 +1520,7 @@ if ($btnDeepUninstall) {
             foreach ($item in $selectedItems) {
                 if ($script:isWindowClosing) { break }
                 if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
-                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window
+                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor
                 }
             }
             if (-not $script:isWindowClosing) {

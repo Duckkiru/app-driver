@@ -2038,5 +2038,103 @@ namespace DuckUtil
 
             return restoredCount;
         }
+
+        public static string DetectInstallerFramework(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath)) return "";
+            try
+            {
+                if (!File.Exists(exePath)) return "";
+
+                try
+                {
+                    string datPath = Path.ChangeExtension(exePath, ".dat");
+                    if (!string.IsNullOrEmpty(datPath) && File.Exists(datPath))
+                    {
+                        using (var dfs = new FileStream(datPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                            byte[] hdr = new byte[(int)Math.Min(64L, dfs.Length)];
+                            int read = dfs.Read(hdr, 0, hdr.Length);
+                            if (read > 0)
+                            {
+                                string hdrAscii = System.Text.Encoding.ASCII.GetString(hdr, 0, read);
+                                if (hdrAscii.IndexOf("Inno Setup Uninstall Log", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    return "InnoSetup";
+                            }
+                        }
+                    }
+                }
+                catch {}
+
+                string fileName = Path.GetFileName(exePath) ?? "";
+                if (fileName.Equals("Update.exe", StringComparison.OrdinalIgnoreCase))
+                    return "Squirrel";
+
+                using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    int headLen = (int)Math.Min(1048576L, fs.Length);
+                    byte[] headBuf = new byte[headLen];
+                    int headRead = fs.Read(headBuf, 0, headLen);
+                    string matched = DetectFrameworkFromBuffer(headBuf, headRead);
+                    if (!string.IsNullOrEmpty(matched)) return matched;
+
+                    if (fs.Length > 1048576L)
+                    {
+                        int tailLen = (int)Math.Min(524288L, fs.Length - headLen);
+                        if (tailLen > 0)
+                        {
+                            fs.Seek(-tailLen, SeekOrigin.End);
+                            byte[] tailBuf = new byte[tailLen];
+                            int tailRead = fs.Read(tailBuf, 0, tailLen);
+                            matched = DetectFrameworkFromBuffer(tailBuf, tailRead);
+                            if (!string.IsNullOrEmpty(matched)) return matched;
+                        }
+                    }
+                }
+
+                try
+                {
+                    var fvi = FileVersionInfo.GetVersionInfo(exePath);
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "");
+                    if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "InnoSetup";
+                }
+                catch {}
+            }
+            catch {}
+            return "";
+        }
+
+        private static string DetectFrameworkFromBuffer(byte[] buf, int len)
+        {
+            if (buf == null || len <= 0) return "";
+            string ascii = System.Text.Encoding.ASCII.GetString(buf, 0, len);
+            string uni = System.Text.Encoding.Unicode.GetString(buf, 0, len);
+
+            if (ascii.IndexOf("NullsoftInst", StringComparison.Ordinal) >= 0 ||
+                ascii.IndexOf("Nullsoft Install System", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Nullsoft Install System", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "NSIS";
+            }
+            if (ascii.IndexOf(".wixburn", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("WiX Toolset", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("WiX Toolset", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "WiX";
+            }
+            if (ascii.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "BitRock";
+            }
+            if (ascii.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("InnoSetup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "InnoSetup";
+            }
+            return "";
+        }
     }
 }
