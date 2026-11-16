@@ -1377,15 +1377,31 @@ function Show-LeftoverReviewDialog {
 }
 
 function Resolve-SilentUninstallPlan {
-    param([Parameter(Mandatory = $true)]$AppEntry)
+    param(
+        [Parameter(Mandatory = $true)]$AppEntry,
+        [bool]$AutoSilent = $true
+    )
 
     $hasExplicitQuiet = -not [string]::IsNullOrWhiteSpace($AppEntry.QuietUninstallString)
-    $rawCmd = if ($hasExplicitQuiet) {
-        $AppEntry.QuietUninstallString.Trim()
-    } elseif (-not [string]::IsNullOrWhiteSpace($AppEntry.UninstallString)) {
-        $AppEntry.UninstallString.Trim()
+    $hasStandardUninstall = -not [string]::IsNullOrWhiteSpace($AppEntry.UninstallString)
+    $usedExplicitQuietFallback = $false
+    $rawCmd = if ($AutoSilent) {
+        if ($hasExplicitQuiet) {
+            $AppEntry.QuietUninstallString.Trim()
+        } elseif ($hasStandardUninstall) {
+            $AppEntry.UninstallString.Trim()
+        } else {
+            ""
+        }
     } else {
-        ""
+        if ($hasStandardUninstall) {
+            $AppEntry.UninstallString.Trim()
+        } elseif ($hasExplicitQuiet) {
+            $usedExplicitQuietFallback = $true
+            $AppEntry.QuietUninstallString.Trim()
+        } else {
+            ""
+        }
     }
 
     if ([string]::IsNullOrWhiteSpace($rawCmd)) {
@@ -1406,14 +1422,15 @@ function Resolve-SilentUninstallPlan {
         } else {
             $AppEntry.Id
         }
+        $msiArgs = if ($AutoSilent) { "/x `"$msiId`" /qn /norestart" } else { "/x `"$msiId`"" }
         return [PSCustomObject]@{
             Mode                = "MSI"
             Exe                 = "msiexec.exe"
-            Args                = "/x `"$msiId`" /qn /norestart"
+            Args                = $msiArgs
             MsiId               = $msiId
             Framework           = "MSI"
-            AddedSilentFlags    = $true
-            IsSilent            = $true
+            AddedSilentFlags    = [bool]$AutoSilent
+            IsSilent            = [bool]$AutoSilent
             IsLikelyDarkPattern = $false
         }
     }
@@ -1441,90 +1458,96 @@ function Resolve-SilentUninstallPlan {
     }
 
     $framework = ""
-    $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
-    if ($deepType -and $null -ne $deepType.GetMethod("DetectInstallerFramework")) {
-        $framework = [string]$deepType::DetectInstallerFramework($exe)
-    }
-
     $newArgs = $origArgs
     $addedFlags = $false
     $isSilent = $false
 
-    switch ($framework) {
-        "InnoSetup" {
-            if ($newArgs -match '(?i)(^|\s)/VERYSILENT(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -match '(?i)(^|\s)/SILENT(\s|$)') {
-                $newArgs = [regex]::Replace($newArgs, '(?i)(?<=^|\s)/SILENT(?=\s|$)', '/VERYSILENT')
-                $addedFlags = $true
-                $isSilent = $true
-            } else {
-                $newArgs = "$newArgs /VERYSILENT".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-            if ($newArgs -notmatch '(?i)(^|\s)/SUPPRESSMSGBOXES(\s|$)') {
-                $newArgs = "$newArgs /SUPPRESSMSGBOXES".Trim()
-                $addedFlags = $true
-            }
-            if ($newArgs -notmatch '(?i)(^|\s)/NORESTART(\s|$)') {
-                $newArgs = "$newArgs /NORESTART".Trim()
-                $addedFlags = $true
-            }
+    if ($AutoSilent) {
+        $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+        if ($deepType -and $null -ne $deepType.GetMethod("DetectInstallerFramework")) {
+            $framework = [string]$deepType::DetectInstallerFramework($exe)
         }
-        "NSIS" {
-            if ($newArgs -cmatch '(^|\s)/S(\s|$)' -or $newArgs -match '(?i)(^|\s)(--silent|/silent)(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -cmatch '(^|\s)/s(\s|$)') {
-                $newArgs = [regex]::Replace($newArgs, '(?<=^|\s)/s(?=\s|$)', '/S')
-                $addedFlags = $true
-                $isSilent = $true
-            } else {
-                $newArgs = "$newArgs /S".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-        }
-        "WiX" {
-            if ($newArgs -match '(?i)(^|\s)(/q|/quiet|/silent|/passive)(\s|$)') {
-                $isSilent = $true
-            } else {
-                if ($newArgs -notmatch '(?i)(^|\s)(/uninstall|/x)(\s|$)') {
-                    $newArgs = "$newArgs /uninstall".Trim()
+
+        switch ($framework) {
+            "InnoSetup" {
+                if ($newArgs -match '(?i)(^|\s)/VERYSILENT(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -match '(?i)(^|\s)/SILENT(\s|$)') {
+                    $newArgs = [regex]::Replace($newArgs, '(?i)(?<=^|\s)/SILENT(?=\s|$)', '/VERYSILENT')
+                    $addedFlags = $true
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /VERYSILENT".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
                 }
-                $newArgs = "$newArgs /quiet /norestart".Trim()
-                $addedFlags = $true
-                $isSilent = $true
+                if ($newArgs -notmatch '(?i)(^|\s)/SUPPRESSMSGBOXES(\s|$)') {
+                    $newArgs = "$newArgs /SUPPRESSMSGBOXES".Trim()
+                    $addedFlags = $true
+                }
+                if ($newArgs -notmatch '(?i)(^|\s)/NORESTART(\s|$)') {
+                    $newArgs = "$newArgs /NORESTART".Trim()
+                    $addedFlags = $true
+                }
+            }
+            "NSIS" {
+                if ($newArgs -cmatch '(^|\s)/S(\s|$)' -or $newArgs -match '(?i)(^|\s)(--silent|/silent)(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -cmatch '(^|\s)/s(\s|$)') {
+                    $newArgs = [regex]::Replace($newArgs, '(?<=^|\s)/s(?=\s|$)', '/S')
+                    $addedFlags = $true
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /S".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "WiX" {
+                if ($newArgs -match '(?i)(^|\s)(/q|/quiet|/silent|/passive)(\s|$)') {
+                    $isSilent = $true
+                } else {
+                    if ($newArgs -notmatch '(?i)(^|\s)(/uninstall|/x)(\s|$)') {
+                        $newArgs = "$newArgs /uninstall".Trim()
+                    }
+                    $newArgs = "$newArgs /quiet /norestart".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "BitRock" {
+                if ($newArgs -match '(?i)(^|\s)--mode(\s|=)(unattended|minimal)(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -notmatch '(?i)(^|\s)--mode(\s|=|$)') {
+                    $newArgs = "$newArgs --mode unattended".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "Squirrel" {
+                if ($newArgs -match '(?i)(^|\s)(-s|--silent)(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -match '(?i)--uninstall') {
+                    $newArgs = "$newArgs -s".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            default {
+                $exeBase = [System.IO.Path]::GetFileName($exe)
+                if ($exeBase -ieq "setup.exe" -and $newArgs -match '(?i)--uninstall' -and $newArgs -notmatch '(?i)--force-uninstall') {
+                    $framework = "ChromiumSetup"
+                    $newArgs = "$newArgs --force-uninstall".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                } elseif ($hasExplicitQuiet -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
+                    $isSilent = $true
+                }
             }
         }
-        "BitRock" {
-            if ($newArgs -match '(?i)(^|\s)--mode(\s|=)(unattended|minimal)(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -notmatch '(?i)(^|\s)--mode(\s|=|$)') {
-                $newArgs = "$newArgs --mode unattended".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-        }
-        "Squirrel" {
-            if ($newArgs -match '(?i)(^|\s)(-s|--silent)(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -match '(?i)--uninstall') {
-                $newArgs = "$newArgs -s".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-        }
-        default {
-            $exeBase = [System.IO.Path]::GetFileName($exe)
-            if ($exeBase -ieq "setup.exe" -and $newArgs -match '(?i)--uninstall' -and $newArgs -notmatch '(?i)--force-uninstall') {
-                $framework = "ChromiumSetup"
-                $newArgs = "$newArgs --force-uninstall".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            } elseif ($hasExplicitQuiet -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
-                $isSilent = $true
-            }
+    } else {
+        if ($usedExplicitQuietFallback -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
+            $isSilent = $true
         }
     }
 
@@ -1546,12 +1569,13 @@ function Invoke-DeepAppUninstall {
     param(
         [Parameter(Mandatory = $true)]$AppEntry,
         [Parameter(Mandatory = $false)]$OwnerWindow,
-        [switch]$SkipVendorUninstaller
+        [switch]$SkipVendorUninstaller,
+        [bool]$AutoSilent = $true
     )
 
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
         Log-Text "=========================================================="
-        Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U G$([char]0x1EE0) C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T T$([char]0x1EAC)N G$([char]0x1ED0)C: $($AppEntry.DisplayName)"
+        Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U G$([char]0x1EE0) C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T: $($AppEntry.DisplayName)"
         Log-Text "=========================================================="
     }
 
@@ -1583,10 +1607,14 @@ function Invoke-DeepAppUninstall {
                 Log-Text "[FORCE] B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) c$([char]0x1EE7)a h$([char]0x00E3)ng ($([char]0x0111)$([char]0x00E3) t$([char]0x1EAF)t service/ti$([char]0x1EBF)n tr$([char]0x00EC)nh) -> qu$([char]0x00E9)t x$([char]0x00F3)a s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
             }
         } else {
-            $plan = Resolve-SilentUninstallPlan -AppEntry $AppEntry
+            $plan = Resolve-SilentUninstallPlan -AppEntry $AppEntry -AutoSilent:$AutoSilent
             if ($plan.Mode -eq "MSI") {
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($($plan.MsiId))..."
+                    if ($AutoSilent) {
+                        Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($($plan.MsiId))..."
+                    } else {
+                        Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI (giao di$([char]0x1EC7)n chu$([char]0x1EA9)n): $($AppEntry.DisplayName) ($($plan.MsiId))..."
+                    }
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
                     $msiCode = Run-CliStream "msiexec.exe" $plan.Args
@@ -1603,8 +1631,10 @@ function Invoke-DeepAppUninstall {
                 }
             } elseif ($plan.Mode -eq "Exe") {
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    if ($plan.AddedSilentFlags) {
+                    if ($AutoSilent -and $plan.AddedSilentFlags) {
                         Log-Text "[SILENT] Nh$([char]0x1EAD)n di$([char]0x1EC7)n [$($plan.Framework)], $([char]0x0111)$([char]0x00E3) g$([char]0x1EAF)n c$([char]0x1EDD) g$([char]0x1EE1) im l$([char]0x1EB7)ng: $($plan.Exe) $($plan.Args)"
+                    } elseif (-not $AutoSilent) {
+                        Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c (t$([char]0x1EAF)t t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng g$([char]0x1EAF)n c$([char]0x1EDD) im l$([char]0x1EB7)ng): $($plan.Exe) $($plan.Args)"
                     } else {
                         Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($plan.Exe) $($plan.Args)"
                         if (-not $plan.IsSilent) {

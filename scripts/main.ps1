@@ -392,6 +392,7 @@ function Show-OwnedMessageBox {
         [string[]]$DetailItems = @(),
         [string]$ModeBadgeText = "",
         [string]$ModeBadgeKind = "Info",
+        [hashtable]$ToggleState = $null,
         $OwnerWindowOverride = $null
     )
     if ($script:isWindowClosing) {
@@ -422,7 +423,7 @@ function Show-OwnedMessageBox {
     WindowStyle="None"
     ResizeMode="NoResize"
     SizeToContent="WidthAndHeight"
-    MinWidth="430"
+    MinWidth="445"
     MaxWidth="560"
     ShowInTaskbar="False"
     Background="#0C1018"
@@ -433,6 +434,61 @@ function Show-OwnedMessageBox {
     UseLayoutRounding="True"
     SnapsToDevicePixels="True">
     <Window.Resources>
+        <Style x:Key="DlgModeToggleBtn" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="#101623"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#27344A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="500"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border Name="tBox" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Border Name="tStatePill" Grid.Column="1" Background="#141C2B" BorderBrush="#2F3E57" BorderThickness="1" CornerRadius="2" Padding="6,2" Margin="12,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Name="tStateText" Text="T&#x1EAE;T" Foreground="#94A3B8" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                                <Border Name="tTrack" Grid.Column="2" Width="34" Height="18" Background="#0B111C" BorderBrush="#334155" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Border Name="tThumb" Width="12" Height="12" Background="#64748B" CornerRadius="1" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="tBox" Property="Background" Value="#0D2134"/>
+                                <Setter TargetName="tBox" Property="BorderBrush" Value="#1D4E78"/>
+                                <Setter Property="Foreground" Value="#BAE6FD"/>
+                                <Setter TargetName="tStatePill" Property="Background" Value="#0B2E48"/>
+                                <Setter TargetName="tStatePill" Property="BorderBrush" Value="#0284C7"/>
+                                <Setter TargetName="tStateText" Property="Text" Value="B&#x1EAC;T"/>
+                                <Setter TargetName="tStateText" Property="Foreground" Value="#38BDF8"/>
+                                <Setter TargetName="tTrack" Property="Background" Value="#0369A1"/>
+                                <Setter TargetName="tTrack" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="tThumb" Property="Background" Value="#F0F9FF"/>
+                                <Setter TargetName="tThumb" Property="HorizontalAlignment" Value="Right"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="tBox" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="tBox" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="DlgActionBtn" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
@@ -540,9 +596,15 @@ function Show-OwnedMessageBox {
 
             <StackPanel Grid.Row="1" Margin="18,16,18,16">
                 <TextBlock Name="dlgMessageText" Foreground="#E2E8F0" FontSize="12.5" LineHeight="19" TextWrapping="Wrap"/>
-                <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Left">
+                <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Stretch">
                     <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold"/>
                 </Border>
+                <ToggleButton Name="dlgModeToggle" Visibility="Collapsed" Style="{StaticResource DlgModeToggleBtn}" Margin="0,10,0,0" HorizontalAlignment="Stretch">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Name="dlgToggleLabel" FontSize="11.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Name="dlgToggleSub" Visibility="Collapsed" FontSize="10.5" Foreground="#64748B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </ToggleButton>
                 <Border Name="dlgListBorder" Visibility="Collapsed" Background="#090D14" BorderBrush="#233044" BorderThickness="1" CornerRadius="2" Margin="0,10,0,0" Padding="10,8" MaxHeight="180">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Name="dlgDetailList"/>
@@ -592,6 +654,9 @@ function Show-OwnedMessageBox {
     $dlgMessageText   = $dlg.FindName("dlgMessageText")
     $dlgModeBadge     = $dlg.FindName("dlgModeBadge")
     $dlgModeBadgeText = $dlg.FindName("dlgModeBadgeText")
+    $dlgModeToggle    = $dlg.FindName("dlgModeToggle")
+    $dlgToggleLabel   = $dlg.FindName("dlgToggleLabel")
+    $dlgToggleSub     = $dlg.FindName("dlgToggleSub")
     $dlgListBorder    = $dlg.FindName("dlgListBorder")
     $dlgDetailList    = $dlg.FindName("dlgDetailList")
     $dlgBtnSecondary  = $dlg.FindName("dlgBtnSecondary")
@@ -631,6 +696,35 @@ function Show-OwnedMessageBox {
             $dlgModeBadge.BorderBrush  = $bc.ConvertFromString("#1D4E78")
             $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#7DD3FC")
         }
+    }
+
+    if ($null -ne $ToggleState -and $dlgModeToggle -and $dlgToggleLabel) {
+        $dlgModeToggle.Visibility = [System.Windows.Visibility]::Visible
+        $dlgToggleLabel.Text = if ($ToggleState.Label) { [string]$ToggleState.Label } else { "" }
+        $tSubOnFg  = $bc.ConvertFromString("#7FA6C9")
+        $tSubOffFg = $bc.ConvertFromString("#64748B")
+        $tHintOn   = if ($ToggleState.HintOn)  { [string]$ToggleState.HintOn }  else { "" }
+        $tHintOff  = if ($ToggleState.HintOff) { [string]$ToggleState.HintOff } else { "" }
+
+        $syncToggleUi = {
+            $isOn = ($dlgModeToggle.IsChecked -eq $true)
+            $ToggleState.Checked = $isOn
+            if ($dlgToggleSub) {
+                $subMsg = if ($isOn) { $tHintOn } else { $tHintOff }
+                if ([string]::IsNullOrWhiteSpace($subMsg)) {
+                    $dlgToggleSub.Visibility = [System.Windows.Visibility]::Collapsed
+                } else {
+                    $dlgToggleSub.Text = $subMsg
+                    $dlgToggleSub.Foreground = if ($isOn) { $tSubOnFg } else { $tSubOffFg }
+                    $dlgToggleSub.Visibility = [System.Windows.Visibility]::Visible
+                }
+            }
+        }.GetNewClosure()
+
+        $dlgModeToggle.IsChecked = [bool]$ToggleState.Checked
+        & $syncToggleUi
+        $dlgModeToggle.Add_Checked($syncToggleUi)
+        $dlgModeToggle.Add_Unchecked($syncToggleUi)
     }
 
     if ($DetailItems -and $DetailItems.Count -gt 0) {
@@ -959,6 +1053,7 @@ $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
 $script:uninstallerFilterMode = "All"
 $script:uninstallerSortMode   = "Name"
+$script:autoSilentUninstall   = $true
 $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, System.Windows.Media.ImageSource]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
@@ -1188,7 +1283,7 @@ function Update-UninstallerSelectionCount {
         }
     }
     if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = "Gỡ Tận Gốc ($count)"
+        $btnDeepUninstall.Content = "Gỡ cài đặt ($count)"
         $btnDeepUninstall.IsEnabled = ($count -gt 0)
     }
 }
@@ -1809,7 +1904,7 @@ if ($btnRefreshUninstaller) {
 
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
-        Invoke-GuardedAction "Gỡ tận gốc ứng dụng" -DeferExpand {
+        Invoke-GuardedAction "Gỡ cài đặt ứng dụng" -DeferExpand {
             $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
@@ -1818,24 +1913,47 @@ if ($btnDeepUninstall) {
                 $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
                 "• $($_.DisplayName)$vPart"
             })
-            $modeBadge = if ($skipVendor) { "Bỏ qua trình gỡ hãng — Ép xóa trực tiếp" } else { "Tự động gắn cờ gỡ im lặng theo bộ cài" }
-            $modeKind = if ($skipVendor) { "Danger" } else { "Info" }
-            $confirm = Show-OwnedMessageBox `
-                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?" `
-                -Caption "Xác nhận Gỡ Tận Gốc" `
-                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
-                -SecondaryText "Hủy bỏ" `
-                -DetailItems $appLines `
-                -ModeBadgeText $modeBadge `
-                -ModeBadgeKind $modeKind
+
+            if ($skipVendor) {
+                $confirm = Show-OwnedMessageBox `
+                    -Text "Bạn có chắc chắn muốn gỡ cài đặt $($selectedItems.Count) ứng dụng đã chọn?" `
+                    -Caption "Xác nhận Gỡ cài đặt" `
+                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                    -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
+                    -SecondaryText "Hủy bỏ" `
+                    -DetailItems $appLines `
+                    -ModeBadgeText "Bỏ qua trình gỡ hãng — Ép xóa trực tiếp" `
+                    -ModeBadgeKind "Danger"
+                $useAutoSilent = $false
+            } else {
+                $toggleState = @{
+                    Checked = [bool]$script:autoSilentUninstall
+                    Label   = "Tự động gắn cờ gỡ im lặng theo bộ cài"
+                    HintOn  = "Tự nhận diện bộ cài (Inno, NSIS, WiX, MSI...) và gắn cờ chạy ngầm"
+                    HintOff = "Mở trình gỡ gốc của hãng như bình thường (tắt gắn cờ im lặng)"
+                }
+                $confirm = Show-OwnedMessageBox `
+                    -Text "Bạn có chắc chắn muốn gỡ cài đặt $($selectedItems.Count) ứng dụng đã chọn?" `
+                    -Caption "Xác nhận Gỡ cài đặt" `
+                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                    -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
+                    -SecondaryText "Hủy bỏ" `
+                    -DetailItems $appLines `
+                    -ToggleState $toggleState
+                if (-not $script:isWindowClosing) {
+                    $script:autoSilentUninstall = [bool]$toggleState.Checked
+                }
+                $useAutoSilent = [bool]$toggleState.Checked
+            }
+
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
             foreach ($item in $selectedItems) {
                 if ($script:isWindowClosing) { break }
                 if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
-                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor
+                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor -AutoSilent:$useAutoSilent
                 }
             }
             if (-not $script:isWindowClosing) {

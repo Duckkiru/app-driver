@@ -4849,7 +4849,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnDeepUninstall" Content="Gỡ Tận Gốc (0)" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnDeepUninstall" Content="Gỡ cài đặt (0)" Style="{StaticResource ActionButton}"
                                             Background="#991B1B" Foreground="#FEE2E2" Padding="14,7"/>
                                     <Button Name="btnScanOrphans" Content="Quét Rác &amp; App Lỗi" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
@@ -11785,15 +11785,31 @@ function Show-LeftoverReviewDialog {
 }
 
 function Resolve-SilentUninstallPlan {
-    param([Parameter(Mandatory = $true)]$AppEntry)
+    param(
+        [Parameter(Mandatory = $true)]$AppEntry,
+        [bool]$AutoSilent = $true
+    )
 
     $hasExplicitQuiet = -not [string]::IsNullOrWhiteSpace($AppEntry.QuietUninstallString)
-    $rawCmd = if ($hasExplicitQuiet) {
-        $AppEntry.QuietUninstallString.Trim()
-    } elseif (-not [string]::IsNullOrWhiteSpace($AppEntry.UninstallString)) {
-        $AppEntry.UninstallString.Trim()
+    $hasStandardUninstall = -not [string]::IsNullOrWhiteSpace($AppEntry.UninstallString)
+    $usedExplicitQuietFallback = $false
+    $rawCmd = if ($AutoSilent) {
+        if ($hasExplicitQuiet) {
+            $AppEntry.QuietUninstallString.Trim()
+        } elseif ($hasStandardUninstall) {
+            $AppEntry.UninstallString.Trim()
+        } else {
+            ""
+        }
     } else {
-        ""
+        if ($hasStandardUninstall) {
+            $AppEntry.UninstallString.Trim()
+        } elseif ($hasExplicitQuiet) {
+            $usedExplicitQuietFallback = $true
+            $AppEntry.QuietUninstallString.Trim()
+        } else {
+            ""
+        }
     }
 
     if ([string]::IsNullOrWhiteSpace($rawCmd)) {
@@ -11814,14 +11830,15 @@ function Resolve-SilentUninstallPlan {
         } else {
             $AppEntry.Id
         }
+        $msiArgs = if ($AutoSilent) { "/x `"$msiId`" /qn /norestart" } else { "/x `"$msiId`"" }
         return [PSCustomObject]@{
             Mode                = "MSI"
             Exe                 = "msiexec.exe"
-            Args                = "/x `"$msiId`" /qn /norestart"
+            Args                = $msiArgs
             MsiId               = $msiId
             Framework           = "MSI"
-            AddedSilentFlags    = $true
-            IsSilent            = $true
+            AddedSilentFlags    = [bool]$AutoSilent
+            IsSilent            = [bool]$AutoSilent
             IsLikelyDarkPattern = $false
         }
     }
@@ -11849,90 +11866,96 @@ function Resolve-SilentUninstallPlan {
     }
 
     $framework = ""
-    $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
-    if ($deepType -and $null -ne $deepType.GetMethod("DetectInstallerFramework")) {
-        $framework = [string]$deepType::DetectInstallerFramework($exe)
-    }
-
     $newArgs = $origArgs
     $addedFlags = $false
     $isSilent = $false
 
-    switch ($framework) {
-        "InnoSetup" {
-            if ($newArgs -match '(?i)(^|\s)/VERYSILENT(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -match '(?i)(^|\s)/SILENT(\s|$)') {
-                $newArgs = [regex]::Replace($newArgs, '(?i)(?<=^|\s)/SILENT(?=\s|$)', '/VERYSILENT')
-                $addedFlags = $true
-                $isSilent = $true
-            } else {
-                $newArgs = "$newArgs /VERYSILENT".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-            if ($newArgs -notmatch '(?i)(^|\s)/SUPPRESSMSGBOXES(\s|$)') {
-                $newArgs = "$newArgs /SUPPRESSMSGBOXES".Trim()
-                $addedFlags = $true
-            }
-            if ($newArgs -notmatch '(?i)(^|\s)/NORESTART(\s|$)') {
-                $newArgs = "$newArgs /NORESTART".Trim()
-                $addedFlags = $true
-            }
+    if ($AutoSilent) {
+        $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+        if ($deepType -and $null -ne $deepType.GetMethod("DetectInstallerFramework")) {
+            $framework = [string]$deepType::DetectInstallerFramework($exe)
         }
-        "NSIS" {
-            if ($newArgs -cmatch '(^|\s)/S(\s|$)' -or $newArgs -match '(?i)(^|\s)(--silent|/silent)(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -cmatch '(^|\s)/s(\s|$)') {
-                $newArgs = [regex]::Replace($newArgs, '(?<=^|\s)/s(?=\s|$)', '/S')
-                $addedFlags = $true
-                $isSilent = $true
-            } else {
-                $newArgs = "$newArgs /S".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-        }
-        "WiX" {
-            if ($newArgs -match '(?i)(^|\s)(/q|/quiet|/silent|/passive)(\s|$)') {
-                $isSilent = $true
-            } else {
-                if ($newArgs -notmatch '(?i)(^|\s)(/uninstall|/x)(\s|$)') {
-                    $newArgs = "$newArgs /uninstall".Trim()
+
+        switch ($framework) {
+            "InnoSetup" {
+                if ($newArgs -match '(?i)(^|\s)/VERYSILENT(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -match '(?i)(^|\s)/SILENT(\s|$)') {
+                    $newArgs = [regex]::Replace($newArgs, '(?i)(?<=^|\s)/SILENT(?=\s|$)', '/VERYSILENT')
+                    $addedFlags = $true
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /VERYSILENT".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
                 }
-                $newArgs = "$newArgs /quiet /norestart".Trim()
-                $addedFlags = $true
-                $isSilent = $true
+                if ($newArgs -notmatch '(?i)(^|\s)/SUPPRESSMSGBOXES(\s|$)') {
+                    $newArgs = "$newArgs /SUPPRESSMSGBOXES".Trim()
+                    $addedFlags = $true
+                }
+                if ($newArgs -notmatch '(?i)(^|\s)/NORESTART(\s|$)') {
+                    $newArgs = "$newArgs /NORESTART".Trim()
+                    $addedFlags = $true
+                }
+            }
+            "NSIS" {
+                if ($newArgs -cmatch '(^|\s)/S(\s|$)' -or $newArgs -match '(?i)(^|\s)(--silent|/silent)(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -cmatch '(^|\s)/s(\s|$)') {
+                    $newArgs = [regex]::Replace($newArgs, '(?<=^|\s)/s(?=\s|$)', '/S')
+                    $addedFlags = $true
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /S".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "WiX" {
+                if ($newArgs -match '(?i)(^|\s)(/q|/quiet|/silent|/passive)(\s|$)') {
+                    $isSilent = $true
+                } else {
+                    if ($newArgs -notmatch '(?i)(^|\s)(/uninstall|/x)(\s|$)') {
+                        $newArgs = "$newArgs /uninstall".Trim()
+                    }
+                    $newArgs = "$newArgs /quiet /norestart".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "BitRock" {
+                if ($newArgs -match '(?i)(^|\s)--mode(\s|=)(unattended|minimal)(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -notmatch '(?i)(^|\s)--mode(\s|=|$)') {
+                    $newArgs = "$newArgs --mode unattended".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "Squirrel" {
+                if ($newArgs -match '(?i)(^|\s)(-s|--silent)(\s|$)') {
+                    $isSilent = $true
+                } elseif ($newArgs -match '(?i)--uninstall') {
+                    $newArgs = "$newArgs -s".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            default {
+                $exeBase = [System.IO.Path]::GetFileName($exe)
+                if ($exeBase -ieq "setup.exe" -and $newArgs -match '(?i)--uninstall' -and $newArgs -notmatch '(?i)--force-uninstall') {
+                    $framework = "ChromiumSetup"
+                    $newArgs = "$newArgs --force-uninstall".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                } elseif ($hasExplicitQuiet -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
+                    $isSilent = $true
+                }
             }
         }
-        "BitRock" {
-            if ($newArgs -match '(?i)(^|\s)--mode(\s|=)(unattended|minimal)(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -notmatch '(?i)(^|\s)--mode(\s|=|$)') {
-                $newArgs = "$newArgs --mode unattended".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-        }
-        "Squirrel" {
-            if ($newArgs -match '(?i)(^|\s)(-s|--silent)(\s|$)') {
-                $isSilent = $true
-            } elseif ($newArgs -match '(?i)--uninstall') {
-                $newArgs = "$newArgs -s".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            }
-        }
-        default {
-            $exeBase = [System.IO.Path]::GetFileName($exe)
-            if ($exeBase -ieq "setup.exe" -and $newArgs -match '(?i)--uninstall' -and $newArgs -notmatch '(?i)--force-uninstall') {
-                $framework = "ChromiumSetup"
-                $newArgs = "$newArgs --force-uninstall".Trim()
-                $addedFlags = $true
-                $isSilent = $true
-            } elseif ($hasExplicitQuiet -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
-                $isSilent = $true
-            }
+    } else {
+        if ($usedExplicitQuietFallback -or ($newArgs -match '(?i)(^|\s)(/s|/silent|/verysilent|/quiet|/qn|--silent|--quiet|-silent|-s)(\s|$)')) {
+            $isSilent = $true
         }
     }
 
@@ -11954,12 +11977,13 @@ function Invoke-DeepAppUninstall {
     param(
         [Parameter(Mandatory = $true)]$AppEntry,
         [Parameter(Mandatory = $false)]$OwnerWindow,
-        [switch]$SkipVendorUninstaller
+        [switch]$SkipVendorUninstaller,
+        [bool]$AutoSilent = $true
     )
 
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
         Log-Text "=========================================================="
-        Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U G$([char]0x1EE0) C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T T$([char]0x1EAC)N G$([char]0x1ED0)C: $($AppEntry.DisplayName)"
+        Log-Text "B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U G$([char]0x1EE0) C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T: $($AppEntry.DisplayName)"
         Log-Text "=========================================================="
     }
 
@@ -11991,10 +12015,14 @@ function Invoke-DeepAppUninstall {
                 Log-Text "[FORCE] B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) c$([char]0x1EE7)a h$([char]0x00E3)ng ($([char]0x0111)$([char]0x00E3) t$([char]0x1EAF)t service/ti$([char]0x1EBF)n tr$([char]0x00EC)nh) -> qu$([char]0x00E9)t x$([char]0x00F3)a s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
             }
         } else {
-            $plan = Resolve-SilentUninstallPlan -AppEntry $AppEntry
+            $plan = Resolve-SilentUninstallPlan -AppEntry $AppEntry -AutoSilent:$AutoSilent
             if ($plan.Mode -eq "MSI") {
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($($plan.MsiId))..."
+                    if ($AutoSilent) {
+                        Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI: $($AppEntry.DisplayName) ($($plan.MsiId))..."
+                    } else {
+                        Log-Text "[*] $([char]0x0110)ang g$([char]0x1ECD)i Windows Installer g$([char]0x1EE1) b$([char]0x1ECF) g$([char]0x00F3)i MSI (giao di$([char]0x1EC7)n chu$([char]0x1EA9)n): $($AppEntry.DisplayName) ($($plan.MsiId))..."
+                    }
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
                     $msiCode = Run-CliStream "msiexec.exe" $plan.Args
@@ -12011,8 +12039,10 @@ function Invoke-DeepAppUninstall {
                 }
             } elseif ($plan.Mode -eq "Exe") {
                 if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                    if ($plan.AddedSilentFlags) {
+                    if ($AutoSilent -and $plan.AddedSilentFlags) {
                         Log-Text "[SILENT] Nh$([char]0x1EAD)n di$([char]0x1EC7)n [$($plan.Framework)], $([char]0x0111)$([char]0x00E3) g$([char]0x1EAF)n c$([char]0x1EDD) g$([char]0x1EE1) im l$([char]0x1EB7)ng: $($plan.Exe) $($plan.Args)"
+                    } elseif (-not $AutoSilent) {
+                        Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c (t$([char]0x1EAF)t t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng g$([char]0x1EAF)n c$([char]0x1EDD) im l$([char]0x1EB7)ng): $($plan.Exe) $($plan.Args)"
                     } else {
                         Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($plan.Exe) $($plan.Args)"
                         if (-not $plan.IsSilent) {
@@ -12725,6 +12755,7 @@ function Show-OwnedMessageBox {
         [string[]]$DetailItems = @(),
         [string]$ModeBadgeText = "",
         [string]$ModeBadgeKind = "Info",
+        [hashtable]$ToggleState = $null,
         $OwnerWindowOverride = $null
     )
     if ($script:isWindowClosing) {
@@ -12755,7 +12786,7 @@ function Show-OwnedMessageBox {
     WindowStyle="None"
     ResizeMode="NoResize"
     SizeToContent="WidthAndHeight"
-    MinWidth="430"
+    MinWidth="445"
     MaxWidth="560"
     ShowInTaskbar="False"
     Background="#0C1018"
@@ -12766,6 +12797,61 @@ function Show-OwnedMessageBox {
     UseLayoutRounding="True"
     SnapsToDevicePixels="True">
     <Window.Resources>
+        <Style x:Key="DlgModeToggleBtn" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="#101623"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#27344A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="500"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border Name="tBox" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Border Name="tStatePill" Grid.Column="1" Background="#141C2B" BorderBrush="#2F3E57" BorderThickness="1" CornerRadius="2" Padding="6,2" Margin="12,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Name="tStateText" Text="T&#x1EAE;T" Foreground="#94A3B8" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                                <Border Name="tTrack" Grid.Column="2" Width="34" Height="18" Background="#0B111C" BorderBrush="#334155" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Border Name="tThumb" Width="12" Height="12" Background="#64748B" CornerRadius="1" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="tBox" Property="Background" Value="#0D2134"/>
+                                <Setter TargetName="tBox" Property="BorderBrush" Value="#1D4E78"/>
+                                <Setter Property="Foreground" Value="#BAE6FD"/>
+                                <Setter TargetName="tStatePill" Property="Background" Value="#0B2E48"/>
+                                <Setter TargetName="tStatePill" Property="BorderBrush" Value="#0284C7"/>
+                                <Setter TargetName="tStateText" Property="Text" Value="B&#x1EAC;T"/>
+                                <Setter TargetName="tStateText" Property="Foreground" Value="#38BDF8"/>
+                                <Setter TargetName="tTrack" Property="Background" Value="#0369A1"/>
+                                <Setter TargetName="tTrack" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="tThumb" Property="Background" Value="#F0F9FF"/>
+                                <Setter TargetName="tThumb" Property="HorizontalAlignment" Value="Right"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="tBox" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="tBox" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="DlgActionBtn" TargetType="Button">
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="12"/>
@@ -12873,9 +12959,15 @@ function Show-OwnedMessageBox {
 
             <StackPanel Grid.Row="1" Margin="18,16,18,16">
                 <TextBlock Name="dlgMessageText" Foreground="#E2E8F0" FontSize="12.5" LineHeight="19" TextWrapping="Wrap"/>
-                <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Left">
+                <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Stretch">
                     <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold"/>
                 </Border>
+                <ToggleButton Name="dlgModeToggle" Visibility="Collapsed" Style="{StaticResource DlgModeToggleBtn}" Margin="0,10,0,0" HorizontalAlignment="Stretch">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Name="dlgToggleLabel" FontSize="11.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Name="dlgToggleSub" Visibility="Collapsed" FontSize="10.5" Foreground="#64748B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </ToggleButton>
                 <Border Name="dlgListBorder" Visibility="Collapsed" Background="#090D14" BorderBrush="#233044" BorderThickness="1" CornerRadius="2" Margin="0,10,0,0" Padding="10,8" MaxHeight="180">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Name="dlgDetailList"/>
@@ -12925,6 +13017,9 @@ function Show-OwnedMessageBox {
     $dlgMessageText   = $dlg.FindName("dlgMessageText")
     $dlgModeBadge     = $dlg.FindName("dlgModeBadge")
     $dlgModeBadgeText = $dlg.FindName("dlgModeBadgeText")
+    $dlgModeToggle    = $dlg.FindName("dlgModeToggle")
+    $dlgToggleLabel   = $dlg.FindName("dlgToggleLabel")
+    $dlgToggleSub     = $dlg.FindName("dlgToggleSub")
     $dlgListBorder    = $dlg.FindName("dlgListBorder")
     $dlgDetailList    = $dlg.FindName("dlgDetailList")
     $dlgBtnSecondary  = $dlg.FindName("dlgBtnSecondary")
@@ -12964,6 +13059,35 @@ function Show-OwnedMessageBox {
             $dlgModeBadge.BorderBrush  = $bc.ConvertFromString("#1D4E78")
             $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#7DD3FC")
         }
+    }
+
+    if ($null -ne $ToggleState -and $dlgModeToggle -and $dlgToggleLabel) {
+        $dlgModeToggle.Visibility = [System.Windows.Visibility]::Visible
+        $dlgToggleLabel.Text = if ($ToggleState.Label) { [string]$ToggleState.Label } else { "" }
+        $tSubOnFg  = $bc.ConvertFromString("#7FA6C9")
+        $tSubOffFg = $bc.ConvertFromString("#64748B")
+        $tHintOn   = if ($ToggleState.HintOn)  { [string]$ToggleState.HintOn }  else { "" }
+        $tHintOff  = if ($ToggleState.HintOff) { [string]$ToggleState.HintOff } else { "" }
+
+        $syncToggleUi = {
+            $isOn = ($dlgModeToggle.IsChecked -eq $true)
+            $ToggleState.Checked = $isOn
+            if ($dlgToggleSub) {
+                $subMsg = if ($isOn) { $tHintOn } else { $tHintOff }
+                if ([string]::IsNullOrWhiteSpace($subMsg)) {
+                    $dlgToggleSub.Visibility = [System.Windows.Visibility]::Collapsed
+                } else {
+                    $dlgToggleSub.Text = $subMsg
+                    $dlgToggleSub.Foreground = if ($isOn) { $tSubOnFg } else { $tSubOffFg }
+                    $dlgToggleSub.Visibility = [System.Windows.Visibility]::Visible
+                }
+            }
+        }.GetNewClosure()
+
+        $dlgModeToggle.IsChecked = [bool]$ToggleState.Checked
+        & $syncToggleUi
+        $dlgModeToggle.Add_Checked($syncToggleUi)
+        $dlgModeToggle.Add_Unchecked($syncToggleUi)
     }
 
     if ($DetailItems -and $DetailItems.Count -gt 0) {
@@ -13292,6 +13416,7 @@ $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
 $script:uninstallerFilterMode = "All"
 $script:uninstallerSortMode   = "Name"
+$script:autoSilentUninstall   = $true
 $script:uninstallerIconCache  = [System.Collections.Generic.Dictionary[string, System.Windows.Media.ImageSource]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:pendingUninstIcons    = [System.Collections.Generic.List[hashtable]]::new()
 
@@ -13521,7 +13646,7 @@ function Update-UninstallerSelectionCount {
         }
     }
     if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = "Gỡ Tận Gốc ($count)"
+        $btnDeepUninstall.Content = "Gỡ cài đặt ($count)"
         $btnDeepUninstall.IsEnabled = ($count -gt 0)
     }
 }
@@ -14142,7 +14267,7 @@ if ($btnRefreshUninstaller) {
 
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
-        Invoke-GuardedAction "Gỡ tận gốc ứng dụng" -DeferExpand {
+        Invoke-GuardedAction "Gỡ cài đặt ứng dụng" -DeferExpand {
             $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
@@ -14151,24 +14276,47 @@ if ($btnDeepUninstall) {
                 $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
                 "• $($_.DisplayName)$vPart"
             })
-            $modeBadge = if ($skipVendor) { "Bỏ qua trình gỡ hãng — Ép xóa trực tiếp" } else { "Tự động gắn cờ gỡ im lặng theo bộ cài" }
-            $modeKind = if ($skipVendor) { "Danger" } else { "Info" }
-            $confirm = Show-OwnedMessageBox `
-                -Text "Bạn có chắc chắn muốn gỡ tận gốc $($selectedItems.Count) ứng dụng đã chọn?" `
-                -Caption "Xác nhận Gỡ Tận Gốc" `
-                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
-                -SecondaryText "Hủy bỏ" `
-                -DetailItems $appLines `
-                -ModeBadgeText $modeBadge `
-                -ModeBadgeKind $modeKind
+
+            if ($skipVendor) {
+                $confirm = Show-OwnedMessageBox `
+                    -Text "Bạn có chắc chắn muốn gỡ cài đặt $($selectedItems.Count) ứng dụng đã chọn?" `
+                    -Caption "Xác nhận Gỡ cài đặt" `
+                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                    -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
+                    -SecondaryText "Hủy bỏ" `
+                    -DetailItems $appLines `
+                    -ModeBadgeText "Bỏ qua trình gỡ hãng — Ép xóa trực tiếp" `
+                    -ModeBadgeKind "Danger"
+                $useAutoSilent = $false
+            } else {
+                $toggleState = @{
+                    Checked = [bool]$script:autoSilentUninstall
+                    Label   = "Tự động gắn cờ gỡ im lặng theo bộ cài"
+                    HintOn  = "Tự nhận diện bộ cài (Inno, NSIS, WiX, MSI...) và gắn cờ chạy ngầm"
+                    HintOff = "Mở trình gỡ gốc của hãng như bình thường (tắt gắn cờ im lặng)"
+                }
+                $confirm = Show-OwnedMessageBox `
+                    -Text "Bạn có chắc chắn muốn gỡ cài đặt $($selectedItems.Count) ứng dụng đã chọn?" `
+                    -Caption "Xác nhận Gỡ cài đặt" `
+                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                    -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
+                    -SecondaryText "Hủy bỏ" `
+                    -DetailItems $appLines `
+                    -ToggleState $toggleState
+                if (-not $script:isWindowClosing) {
+                    $script:autoSilentUninstall = [bool]$toggleState.Checked
+                }
+                $useAutoSilent = [bool]$toggleState.Checked
+            }
+
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
             foreach ($item in $selectedItems) {
                 if ($script:isWindowClosing) { break }
                 if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
-                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor
+                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor -AutoSilent:$useAutoSilent
                 }
             }
             if (-not $script:isWindowClosing) {

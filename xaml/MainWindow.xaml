@@ -419,7 +419,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnDeepUninstall" Content="Gỡ Tận Gốc (0)" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnDeepUninstall" Content="Gỡ cài đặt (0)" Style="{StaticResource ActionButton}"
                                             Background="#991B1B" Foreground="#FEE2E2" Padding="14,7"/>
                                     <Button Name="btnScanOrphans" Content="Quét Rác &amp; App Lỗi" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
