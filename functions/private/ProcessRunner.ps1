@@ -89,7 +89,8 @@ function Run-CliStream {
         [Parameter(Mandatory = $true)]
         [string]$FileName,
         [Parameter(Mandatory = $false)]
-        [string]$Args = ""
+        [Alias("Args")]
+        [string]$Arguments = ""
     )
 
     if ($script:isWindowClosing) {
@@ -99,12 +100,12 @@ function Run-CliStream {
     try {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
         try {
-            Write-Host "[$timestamp] > $FileName $Args" -ForegroundColor DarkGray
+            Write-Host "[$timestamp] > $FileName $Arguments" -ForegroundColor DarkGray
         } catch {}
 
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = $FileName
-        $pinfo.Arguments = $Args
+        $pinfo.Arguments = $Arguments
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $false
         $pinfo.RedirectStandardOutput = $false
@@ -157,7 +158,7 @@ function Run-CliStream {
             try { $p.Dispose() } catch {}
         }
     } catch {
-        Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Args]: $($_.Exception.Message)"
+        Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Arguments]: $($_.Exception.Message)"
         return -1
     }
 }

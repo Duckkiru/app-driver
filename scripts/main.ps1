@@ -215,7 +215,7 @@ function Flush-PendingIconCache {
                 if ($dlInfo.Task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                     try {
                         $data = $dlInfo.Task.Result
-                        if ($data -and $data.Length -gt 64 -and -not [System.IO.File]::Exists($entry.DestPath)) {
+                        if ($data -and $data.Length -gt 230 -and $data.Length -ne 588 -and -not [System.IO.File]::Exists($entry.DestPath)) {
                             $tmpFile = "$($entry.DestPath).$([guid]::NewGuid().ToString('N')).tmp"
                             [System.IO.File]::WriteAllBytes($tmpFile, $data)
                             Move-Item -LiteralPath $tmpFile -Destination $entry.DestPath -Force -ErrorAction SilentlyContinue
@@ -224,6 +224,12 @@ function Flush-PendingIconCache {
                     } catch {}
                 }
                 try { if ($dlInfo.Client) { $dlInfo.Client.Dispose() } } catch {}
+                if (-not $hasLocalFile -and -not [string]::IsNullOrWhiteSpace($entry.FallbackUrl)) {
+                    $entry.Url = $entry.FallbackUrl
+                    $entry.FallbackUrl = $null
+                    $entry.DownloadInfo = $null
+                    continue
+                }
             }
         }
         if ($hasLocalFile -or ($script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($entry.CacheKey))) {
@@ -2321,12 +2327,20 @@ foreach ($cat in $categories) {
         $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
+        $fallbackIconUrl = if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            "https://icons.duckduckgo.com/ip3/$($app.Domain).ico"
+        } else {
+            $null
+        }
         $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
             $app.IconUrl
         } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
             "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
         } else {
             $null
+        }
+        if ($remoteIconTarget -and $fallbackIconUrl -and $remoteIconTarget -eq $fallbackIconUrl) {
+            $fallbackIconUrl = $null
         }
         $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
         $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, "$($app.ID).png")
@@ -2364,6 +2378,7 @@ foreach ($cat in $categories) {
         } elseif ($remoteIconTarget -or $hasLocalCachedFile) {
             $script:pendingIconSaves.Add(@{
                 Url          = $remoteIconTarget
+                FallbackUrl  = $fallbackIconUrl
                 CacheKey     = $iconCacheKey
                 DestPath     = $localIconPath
                 DownloadInfo = $null

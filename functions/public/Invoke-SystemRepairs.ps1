@@ -1,6 +1,6 @@
 ﻿function Reset-WindowsUpdateEngine {
-    Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS, DoSvc & TrustedInstaller..."
-    $services = @("wuauserv", "bits", "cryptsvc", "dosvc", "trustedinstaller")
+    Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS & DoSvc..."
+    $services = @("wuauserv", "bits", "cryptsvc", "dosvc")
     foreach ($s in $services) {
         Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
     }
@@ -8,10 +8,15 @@
     Start-Sleep -Milliseconds 1500
 
     Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
+    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
     $sdPath = "C:\Windows\SoftwareDistribution"
     $sdRenamed = $true
     if (Test-Path -LiteralPath $sdPath) {
-        $backupSD = "SoftwareDistribution.bak_$(Get-Random)"
+        Get-ChildItem -LiteralPath "C:\Windows" -Filter "SoftwareDistribution.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $backupSD = "SoftwareDistribution.bak_$stamp"
         Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $sdPath) {
             $sdRenamed = $false
@@ -22,7 +27,10 @@
     $crPath = "C:\Windows\System32\catroot2"
     $crRenamed = $true
     if (Test-Path -LiteralPath $crPath) {
-        $backupCR = "catroot2.bak_$(Get-Random)"
+        Get-ChildItem -LiteralPath "C:\Windows\System32" -Filter "catroot2.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $backupCR = "catroot2.bak_$stamp"
         Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $crPath) {
             $crRenamed = $false

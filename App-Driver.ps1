@@ -9375,7 +9375,8 @@ function Run-CliStream {
         [Parameter(Mandatory = $true)]
         [string]$FileName,
         [Parameter(Mandatory = $false)]
-        [string]$Args = ""
+        [Alias("Args")]
+        [string]$Arguments = ""
     )
 
     if ($script:isWindowClosing) {
@@ -9385,12 +9386,12 @@ function Run-CliStream {
     try {
         $timestamp = (Get-Date).ToString("HH:mm:ss")
         try {
-            Write-Host "[$timestamp] > $FileName $Args" -ForegroundColor DarkGray
+            Write-Host "[$timestamp] > $FileName $Arguments" -ForegroundColor DarkGray
         } catch {}
 
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = $FileName
-        $pinfo.Arguments = $Args
+        $pinfo.Arguments = $Arguments
         $pinfo.UseShellExecute = $false
         $pinfo.CreateNoWindow = $false
         $pinfo.RedirectStandardOutput = $false
@@ -9443,7 +9444,7 @@ function Run-CliStream {
             try { $p.Dispose() } catch {}
         }
     } catch {
-        Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Args]: $($_.Exception.Message)"
+        Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Arguments]: $($_.Exception.Message)"
         return -1
     }
 }
@@ -12983,8 +12984,8 @@ function Export-SystemDriversBackup {
 }
 
 function Reset-WindowsUpdateEngine {
-    Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS, DoSvc & TrustedInstaller..."
-    $services = @("wuauserv", "bits", "cryptsvc", "dosvc", "trustedinstaller")
+    Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS & DoSvc..."
+    $services = @("wuauserv", "bits", "cryptsvc", "dosvc")
     foreach ($s in $services) {
         Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
     }
@@ -12992,10 +12993,15 @@ function Reset-WindowsUpdateEngine {
     Start-Sleep -Milliseconds 1500
 
     Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
+    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
     $sdPath = "C:\Windows\SoftwareDistribution"
     $sdRenamed = $true
     if (Test-Path -LiteralPath $sdPath) {
-        $backupSD = "SoftwareDistribution.bak_$(Get-Random)"
+        Get-ChildItem -LiteralPath "C:\Windows" -Filter "SoftwareDistribution.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $backupSD = "SoftwareDistribution.bak_$stamp"
         Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $sdPath) {
             $sdRenamed = $false
@@ -13006,7 +13012,10 @@ function Reset-WindowsUpdateEngine {
     $crPath = "C:\Windows\System32\catroot2"
     $crRenamed = $true
     if (Test-Path -LiteralPath $crPath) {
-        $backupCR = "catroot2.bak_$(Get-Random)"
+        Get-ChildItem -LiteralPath "C:\Windows\System32" -Filter "catroot2.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $backupCR = "catroot2.bak_$stamp"
         Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $crPath) {
             $crRenamed = $false
@@ -13323,7 +13332,7 @@ function Flush-PendingIconCache {
                 if ($dlInfo.Task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                     try {
                         $data = $dlInfo.Task.Result
-                        if ($data -and $data.Length -gt 64 -and -not [System.IO.File]::Exists($entry.DestPath)) {
+                        if ($data -and $data.Length -gt 230 -and $data.Length -ne 588 -and -not [System.IO.File]::Exists($entry.DestPath)) {
                             $tmpFile = "$($entry.DestPath).$([guid]::NewGuid().ToString('N')).tmp"
                             [System.IO.File]::WriteAllBytes($tmpFile, $data)
                             Move-Item -LiteralPath $tmpFile -Destination $entry.DestPath -Force -ErrorAction SilentlyContinue
@@ -13332,6 +13341,12 @@ function Flush-PendingIconCache {
                     } catch {}
                 }
                 try { if ($dlInfo.Client) { $dlInfo.Client.Dispose() } } catch {}
+                if (-not $hasLocalFile -and -not [string]::IsNullOrWhiteSpace($entry.FallbackUrl)) {
+                    $entry.Url = $entry.FallbackUrl
+                    $entry.FallbackUrl = $null
+                    $entry.DownloadInfo = $null
+                    continue
+                }
             }
         }
         if ($hasLocalFile -or ($script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($entry.CacheKey))) {
@@ -15429,12 +15444,20 @@ foreach ($cat in $categories) {
         $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
+        $fallbackIconUrl = if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+            "https://icons.duckduckgo.com/ip3/$($app.Domain).ico"
+        } else {
+            $null
+        }
         $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
             $app.IconUrl
         } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
             "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
         } else {
             $null
+        }
+        if ($remoteIconTarget -and $fallbackIconUrl -and $remoteIconTarget -eq $fallbackIconUrl) {
+            $fallbackIconUrl = $null
         }
         $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
         $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, "$($app.ID).png")
@@ -15472,6 +15495,7 @@ foreach ($cat in $categories) {
         } elseif ($remoteIconTarget -or $hasLocalCachedFile) {
             $script:pendingIconSaves.Add(@{
                 Url          = $remoteIconTarget
+                FallbackUrl  = $fallbackIconUrl
                 CacheKey     = $iconCacheKey
                 DestPath     = $localIconPath
                 DownloadInfo = $null
