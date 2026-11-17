@@ -19,15 +19,18 @@ namespace DuckUtil
         public int ServicesStoppedCount { get; set; }
         public int TasksRemovedCount { get; set; }
         public int AccessDeniedCount { get; set; }
+        public int ClosedHandlesCount { get; set; }
         public string[] KilledNames { get; set; }
         public string[] AccessDeniedNames { get; set; }
         public string[] SkippedSystemLockers { get; set; }
+        public string[] ClosedHandleNames { get; set; }
 
         public ForceStopReport()
         {
             KilledNames = new string[0];
             AccessDeniedNames = new string[0];
             SkippedSystemLockers = new string[0];
+            ClosedHandleNames = new string[0];
         }
     }
     public class InstalledAppInfo
@@ -76,6 +79,40 @@ namespace DuckUtil
         private const ushort FOF_NOCONFIRMATION = 0x0010;
         private const ushort FOF_ALLOWUNDO = 0x0040;
         private const ushort FOF_NOERRORUI = 0x0400;
+        private const int SystemExtendedHandleInformation = 64;
+        private const int STATUS_INFO_LENGTH_MISMATCH = unchecked((int)0xC0000004);
+        private const uint PROCESS_DUP_HANDLE = 0x0040;
+        private const uint PROCESS_QUERY_INFORMATION = 0x0400;
+        private const uint PROCESS_VM_READ = 0x0010;
+        private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        private const uint DUPLICATE_CLOSE_SOURCE = 0x00000001;
+        private const uint DUPLICATE_SAME_ACCESS = 0x00000002;
+        private const uint FILE_TYPE_DISK = 1;
+        private const uint MEM_COMMIT = 0x1000;
+        private const uint MEM_MAPPED = 0x40000;
+        private const uint MEM_IMAGE = 0x1000000;
+        private const int SE_FILE_OBJECT = 1;
+        private const uint OWNER_SECURITY_INFORMATION = 0x00000001;
+        private const uint DACL_SECURITY_INFORMATION = 0x00000004;
+        private const uint PROTECTED_DACL_SECURITY_INFORMATION = 0x80000000;
+        private const uint GENERIC_ALL = 0x10000000;
+        private const uint SET_ACCESS = 2;
+        private const uint NO_INHERITANCE = 0;
+        private const uint SUB_CONTAINERS_AND_OBJECTS_INHERIT = 3;
+        private const uint TRUSTEE_IS_SID = 0;
+        private const uint TRUSTEE_IS_GROUP = 2;
+        private const uint TRUSTEE_IS_USER = 1;
+        private const uint SC_MANAGER_CONNECT = 0x0001;
+        private const uint SC_MANAGER_ENUMERATE_SERVICE = 0x0004;
+        private const uint SERVICE_QUERY_STATUS = 0x0004;
+        private const uint SERVICE_ENUMERATE_DEPENDENTS = 0x0008;
+        private const uint SERVICE_STOP = 0x0020;
+        private const uint DELETE_ACCESS = 0x00010000;
+        private const uint SERVICE_ACTIVE = 0x00000001;
+        private const uint SERVICE_CONTROL_STOP = 0x00000001;
+        private const uint SERVICE_STOPPED = 0x00000001;
+        private static readonly object _privLock = new object();
+        private static bool _privilegesEnabled = false;
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct RM_UNIQUE_PROCESS
@@ -127,11 +164,212 @@ namespace DuckUtil
             public string lpszProgressTitle;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SID_IDENTIFIER_AUTHORITY
+        {
+            public byte Value0;
+            public byte Value1;
+            public byte Value2;
+            public byte Value3;
+            public byte Value4;
+            public byte Value5;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TRUSTEE
+        {
+            public IntPtr pMultipleTrustee;
+            public uint MultipleTrusteeOperation;
+            public uint TrusteeForm;
+            public uint TrusteeType;
+            public IntPtr ptstrName;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct EXPLICIT_ACCESS
+        {
+            public uint grfAccessPermissions;
+            public uint grfAccessMode;
+            public uint grfInheritance;
+            public TRUSTEE Trustee;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        private struct TOKEN_PRIVILEGES_1
+        {
+            public uint PrivilegeCount;
+            public long Luid;
+            public uint Attributes;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORY_BASIC_INFORMATION_X64
+        {
+            public IntPtr BaseAddress;
+            public IntPtr AllocationBase;
+            public uint AllocationProtect;
+            public ushort PartitionId;
+            public IntPtr RegionSize;
+            public uint State;
+            public uint Protect;
+            public uint Type;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORY_BASIC_INFORMATION_X86
+        {
+            public IntPtr BaseAddress;
+            public IntPtr AllocationBase;
+            public uint AllocationProtect;
+            public IntPtr RegionSize;
+            public uint State;
+            public uint Protect;
+            public uint Type;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SERVICE_STATUS
+        {
+            public uint dwServiceType;
+            public uint dwCurrentState;
+            public uint dwControlsAccepted;
+            public uint dwWin32ExitCode;
+            public uint dwServiceSpecificExitCode;
+            public uint dwCheckPoint;
+            public uint dwWaitHint;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct ENUM_SERVICE_STATUS
+        {
+            public IntPtr lpServiceName;
+            public IntPtr lpDisplayName;
+            public SERVICE_STATUS ServiceStatus;
+        }
+
+        private class MatchedRemoteHandle
+        {
+            public IntPtr RemoteHandle;
+            public string DosPath;
+            public uint GrantedAccess;
+        }
+
+        private class HandleWorkerState
+        {
+            public AutoResetEvent WorkEv = new AutoResetEvent(false);
+            public AutoResetEvent DoneEv = new AutoResetEvent(false);
+            public volatile IntPtr PendingHandle = IntPtr.Zero;
+            public volatile string PendingPath = null;
+            public volatile bool StopRequested = false;
+            public volatile uint ThreadId = 0;
+            public IntPtr ThreadHandle = IntPtr.Zero;
+        }
+
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
 
         [DllImport("ntdll.dll", SetLastError = true)]
         private static extern int NtSuspendProcess(IntPtr processHandle);
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtQuerySystemInformation(int SystemInformationClass, IntPtr SystemInformation, int SystemInformationLength, out int ReturnLength);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateFileW(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle, uint dwDesiredAccess, bool bInheritHandle, uint dwOptions);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern uint GetFileType(IntPtr hFile);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetFinalPathNameByHandleW(IntPtr hFile, System.Text.StringBuilder lpszFilePath, uint cchFilePath, uint dwFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenThread(uint dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CancelSynchronousIo(IntPtr hThread);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint QueryDosDeviceW(string lpDeviceName, System.Text.StringBuilder lpTargetPath, uint ucchMax);
+
+        [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx", SetLastError = true)]
+        private static extern IntPtr VirtualQueryEx64(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION_X64 lpBuffer, IntPtr dwLength);
+
+        [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx", SetLastError = true)]
+        private static extern IntPtr VirtualQueryEx86(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION_X86 lpBuffer, IntPtr dwLength);
+
+        [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetMappedFileNameW(IntPtr hProcess, IntPtr lpv, System.Text.StringBuilder lpFilename, uint nSize);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool LookupPrivilegeValueW(string lpSystemName, string lpName, out long lpLuid);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref TOKEN_PRIVILEGES_1 NewState, uint BufferLength, IntPtr PreviousState, IntPtr ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool GetTokenInformation(IntPtr TokenHandle, int TokenInformationClass, IntPtr TokenInformation, uint TokenInformationLength, out uint ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool AllocateAndInitializeSid(
+            ref SID_IDENTIFIER_AUTHORITY pIdentifierAuthority,
+            byte nSubAuthorityCount,
+            uint nSubAuthority0, uint nSubAuthority1,
+            uint nSubAuthority2, uint nSubAuthority3,
+            uint nSubAuthority4, uint nSubAuthority5,
+            uint nSubAuthority6, uint nSubAuthority7,
+            out IntPtr pSid);
+
+        [DllImport("advapi32.dll")]
+        private static extern IntPtr FreeSid(IntPtr pSid);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        private static extern uint SetEntriesInAclW(uint cCountOfExplicitEntries, ref EXPLICIT_ACCESS pListOfExplicitEntries, IntPtr OldAcl, out IntPtr NewAcl);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        private static extern uint SetNamedSecurityInfoW(string pObjectName, int ObjectType, uint SecurityInfo, IntPtr psidOwner, IntPtr psidGroup, IntPtr pDacl, IntPtr pSacl);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr OpenSCManagerW(string lpMachineName, string lpDatabaseName, uint dwDesiredAccess);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr OpenServiceW(IntPtr hSCManager, string lpServiceName, uint dwDesiredAccess);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool EnumDependentServicesW(IntPtr hService, uint dwServiceState, IntPtr lpServices, uint cbBufSize, out uint pcbBytesNeeded, out uint lpServicesReturned);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool ControlService(IntPtr hService, uint dwControl, out SERVICE_STATUS lpServiceStatus);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool QueryServiceStatus(IntPtr hService, out SERVICE_STATUS lpServiceStatus);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool DeleteService(IntPtr hService);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool CloseServiceHandle(IntPtr hSCObject);
 
         [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
         private static extern int RmStartSession(out uint pSessionHandle, int dwSessionFlags, string strSessionKey);
@@ -1519,6 +1757,13 @@ namespace DuckUtil
             return "";
         }
 
+        private static readonly HashSet<string> _kernelCriticalProcNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "system", "idle", "registry", "memory compression", "vmmem", "vmmemwsl",
+            "smss", "csrss", "wininit", "services", "lsass", "lsm", "winlogon",
+            "dwm", "fontdrvhost", "audiodg"
+        };
+
         private static readonly HashSet<string> _protectedSystemProcNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "system", "idle", "registry", "memory compression", "vmmem", "vmmemwsl",
@@ -1527,6 +1772,18 @@ namespace DuckUtil
             "svchost", "explorer", "conhost", "openconsole", "windowsterminal",
             "cmd", "powershell", "pwsh", "code", "antigravity"
         };
+
+        private static bool IsKernelCriticalProcess(int pid, string procName)
+        {
+            if (pid <= 4) return true;
+            try
+            {
+                if (pid == Process.GetCurrentProcess().Id) return true;
+            }
+            catch {}
+            if (string.IsNullOrWhiteSpace(procName)) return false;
+            return _kernelCriticalProcNames.Contains(procName.Trim());
+        }
 
         private static bool IsProtectedSystemOrHostProcess(int pid, string procName)
         {
@@ -1538,6 +1795,531 @@ namespace DuckUtil
             catch {}
             if (string.IsNullOrWhiteSpace(procName)) return false;
             return _protectedSystemProcNames.Contains(procName.Trim());
+        }
+
+        private static void EnsureUnlockPrivileges()
+        {
+            lock (_privLock)
+            {
+                if (_privilegesEnabled) return;
+                IntPtr hTok;
+                if (OpenProcessToken(GetCurrentProcess(), 0x0028, out hTok))
+                {
+                    try
+                    {
+                        string[] privs = new string[]
+                        {
+                            "SeDebugPrivilege",
+                            "SeBackupPrivilege",
+                            "SeRestorePrivilege",
+                            "SeTakeOwnershipPrivilege",
+                            "SeSecurityPrivilege"
+                        };
+                        foreach (string priv in privs)
+                        {
+                            long luid;
+                            if (LookupPrivilegeValueW(null, priv, out luid))
+                            {
+                                var tp = new TOKEN_PRIVILEGES_1();
+                                tp.PrivilegeCount = 1;
+                                tp.Luid = luid;
+                                tp.Attributes = 2;
+                                AdjustTokenPrivileges(hTok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+                            }
+                        }
+                    }
+                    catch {}
+                    finally
+                    {
+                        CloseHandle(hTok);
+                    }
+                }
+                _privilegesEnabled = true;
+            }
+        }
+
+        private static string NormalizeDosOrNtPath(string rawPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawPath)) return "";
+            string p = rawPath.Trim();
+            if (p.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+            {
+                p = @"\\" + p.Substring(8);
+            }
+            else if (p.StartsWith(@"\\?\", StringComparison.OrdinalIgnoreCase) || p.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
+            {
+                p = p.Substring(4);
+            }
+            return p.TrimEnd('\\');
+        }
+
+        private static Dictionary<string, string> BuildDosDeviceMap()
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var sb = new System.Text.StringBuilder(512);
+                foreach (string driveRoot in Directory.GetLogicalDrives())
+                {
+                    if (string.IsNullOrEmpty(driveRoot) || driveRoot.Length < 2) continue;
+                    string dosName = driveRoot.Substring(0, 2);
+                    sb.Length = 0;
+                    uint res = QueryDosDeviceW(dosName, sb, (uint)sb.Capacity);
+                    if (res > 0)
+                    {
+                        string target = sb.ToString();
+                        int nul = target.IndexOf('\0');
+                        if (nul >= 0) target = target.Substring(0, nul);
+                        target = target.TrimEnd('\\');
+                        if (!string.IsNullOrEmpty(target) && !map.ContainsKey(target))
+                        {
+                            map[target] = dosName;
+                        }
+                    }
+                }
+            }
+            catch {}
+            return map;
+        }
+
+        private static string TranslateDevicePathToDos(string devicePath, Dictionary<string, string> dosMap)
+        {
+            if (string.IsNullOrWhiteSpace(devicePath)) return "";
+            string p = devicePath.Trim();
+            if (p.StartsWith(@"\Device\Mup\", StringComparison.OrdinalIgnoreCase))
+            {
+                return @"\\" + p.Substring(12);
+            }
+            if (dosMap != null)
+            {
+                foreach (KeyValuePair<string, string> kv in dosMap)
+                {
+                    if (p.StartsWith(kv.Key + "\\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return kv.Value + p.Substring(kv.Key.Length);
+                    }
+                    if (string.Equals(p, kv.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return kv.Value;
+                    }
+                }
+            }
+            return NormalizeDosOrNtPath(p);
+        }
+
+        private static bool CollectProcessMappedFiles(int pid, string prefix, string exactNorm, bool isDirectory, Dictionary<string, string> dosMap, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
+            bool anyMatch = false;
+            IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+            if (hProc == IntPtr.Zero) return false;
+            try
+            {
+                IntPtr addr = IntPtr.Zero;
+                IntPtr mbiSz = new IntPtr(IntPtr.Size == 8 ? Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION_X64)) : Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION_X86)));
+                var seenAlloc = new HashSet<long>();
+                var sb = new System.Text.StringBuilder(1024);
+                int regions = 0;
+                while (regions < 4096)
+                {
+                    regions++;
+                    IntPtr baseAddr;
+                    IntPtr allocBase;
+                    IntPtr regionSize;
+                    uint state;
+                    uint memType;
+                    if (IntPtr.Size == 8)
+                    {
+                        MEMORY_BASIC_INFORMATION_X64 m64;
+                        if (VirtualQueryEx64(hProc, addr, out m64, mbiSz) == IntPtr.Zero) break;
+                        baseAddr = m64.BaseAddress;
+                        allocBase = m64.AllocationBase;
+                        regionSize = m64.RegionSize;
+                        state = m64.State;
+                        memType = m64.Type;
+                    }
+                    else
+                    {
+                        MEMORY_BASIC_INFORMATION_X86 m86;
+                        if (VirtualQueryEx86(hProc, addr, out m86, mbiSz) == IntPtr.Zero) break;
+                        baseAddr = m86.BaseAddress;
+                        allocBase = m86.AllocationBase;
+                        regionSize = m86.RegionSize;
+                        state = m86.State;
+                        memType = m86.Type;
+                    }
+
+                    if (state == MEM_COMMIT && (memType == MEM_IMAGE || memType == MEM_MAPPED))
+                    {
+                        long ab = allocBase.ToInt64();
+                        if (seenAlloc.Add(ab))
+                        {
+                            sb.Length = 0;
+                            uint n = GetMappedFileNameW(hProc, baseAddr, sb, (uint)sb.Capacity);
+                            if (n > 0 && n < (uint)sb.Capacity)
+                            {
+                                string dos = TranslateDevicePathToDos(sb.ToString(), dosMap);
+                                if (!string.IsNullOrEmpty(dos))
+                                {
+                                    bool hit = isDirectory
+                                        ? (dos.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || string.Equals(dos, exactNorm, StringComparison.OrdinalIgnoreCase))
+                                        : string.Equals(dos, exactNorm, StringComparison.OrdinalIgnoreCase);
+                                    if (hit)
+                                    {
+                                        anyMatch = true;
+                                        if (memType == MEM_IMAGE && matchedImagesOut != null) matchedImagesOut.Add(dos);
+                                        if (memType == MEM_MAPPED && matchedDataMappedOut != null) matchedDataMappedOut.Add(dos);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    long nextAddr = unchecked(baseAddr.ToInt64() + regionSize.ToInt64());
+                    if (nextAddr <= addr.ToInt64()) break;
+                    addr = new IntPtr(nextAddr);
+                }
+            }
+            catch {}
+            finally
+            {
+                CloseHandle(hProc);
+            }
+            return anyMatch;
+        }
+
+        private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTarget(string normTarget, string prefix, bool isDirectory)
+        {
+            var result = new Dictionary<int, List<MatchedRemoteHandle>>();
+            if (string.IsNullOrWhiteSpace(normTarget)) return result;
+
+            EnsureUnlockPrivileges();
+
+            string probePath = isDirectory ? normTarget : Environment.SystemDirectory;
+            IntPtr hProbe = CreateFileW(probePath, 0x00100001, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
+            if (hProbe == IntPtr.Zero || hProbe == new IntPtr(-1))
+            {
+                hProbe = CreateFileW(Environment.SystemDirectory, 0x00100001, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
+            }
+            if (hProbe == IntPtr.Zero || hProbe == new IntPtr(-1)) return result;
+
+            int size = 4 * 1024 * 1024;
+            IntPtr buf = Marshal.AllocHGlobal(size);
+            try
+            {
+                int retLen = 0;
+                int status;
+                while ((status = NtQuerySystemInformation(SystemExtendedHandleInformation, buf, size, out retLen)) == STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    Marshal.FreeHGlobal(buf);
+                    size = Math.Max(size * 2, retLen + 65536);
+                    if (size > 128 * 1024 * 1024) return result;
+                    buf = Marshal.AllocHGlobal(size);
+                }
+                if (status != 0) return result;
+
+                long count = (IntPtr.Size == 8) ? Marshal.ReadInt64(buf, 0) : Marshal.ReadInt32(buf, 0);
+                int headerSize = IntPtr.Size * 2;
+                int entrySize = (IntPtr.Size == 8) ? 40 : 28;
+                int pidOff = IntPtr.Size;
+                int hOff = IntPtr.Size * 2;
+                int accOff = IntPtr.Size * 3;
+                int typeOff = accOff + 6;
+                int myPid = Process.GetCurrentProcess().Id;
+                ulong myProbeVal = unchecked((ulong)hProbe.ToInt64());
+                ushort fileTypeIndex = 0;
+                bool foundFileType = false;
+
+                for (long i = 0; i < count; i++)
+                {
+                    long baseAddr = buf.ToInt64() + headerSize + i * entrySize;
+                    int p = (int)((IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + pidOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + pidOff)));
+                    if (p == myPid)
+                    {
+                        ulong hv = unchecked((ulong)((IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + hOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + hOff))));
+                        if (hv == myProbeVal)
+                        {
+                            fileTypeIndex = unchecked((ushort)Marshal.ReadInt16(new IntPtr(baseAddr + typeOff)));
+                            foundFileType = true;
+                            break;
+                        }
+                    }
+                }
+                if (!foundFileType) return result;
+
+                var byPid = new Dictionary<int, List<MatchedRemoteHandle>>();
+                for (long i = 0; i < count; i++)
+                {
+                    long baseAddr = buf.ToInt64() + headerSize + i * entrySize;
+                    ushort ot = unchecked((ushort)Marshal.ReadInt16(new IntPtr(baseAddr + typeOff)));
+                    if (ot != fileTypeIndex) continue;
+
+                    int p = (int)((IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + pidOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + pidOff)));
+                    if (p <= 4 || p == myPid) continue;
+
+                    uint acc = unchecked((uint)Marshal.ReadInt32(new IntPtr(baseAddr + accOff)));
+
+                    long hv = (IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + hOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + hOff));
+                    List<MatchedRemoteHandle> hList;
+                    if (!byPid.TryGetValue(p, out hList))
+                    {
+                        hList = new List<MatchedRemoteHandle>();
+                        byPid[p] = hList;
+                    }
+                    hList.Add(new MatchedRemoteHandle { RemoteHandle = new IntPtr(hv), GrantedAccess = acc });
+                }
+
+                IntPtr curProc = GetCurrentProcess();
+                HandleWorkerState ws = StartHandleQueryWorker();
+                int timeouts = 0;
+
+                foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in byPid)
+                {
+                    IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_QUERY_LIMITED_INFORMATION, false, kv.Key);
+                    if (hp == IntPtr.Zero) continue;
+                    try
+                    {
+                        foreach (MatchedRemoteHandle mh in kv.Value)
+                        {
+                            IntPtr hDup;
+                            if (!DuplicateHandle(hp, mh.RemoteHandle, curProc, out hDup, 0, false, DUPLICATE_SAME_ACCESS)) continue;
+                            bool handleOrphaned = false;
+                            try
+                            {
+                                ws.PendingPath = null;
+                                ws.PendingHandle = hDup;
+                                ws.WorkEv.Set();
+                                if (ws.DoneEv.WaitOne(12))
+                                {
+                                    string resolvedPath = ws.PendingPath;
+                                    if (!string.IsNullOrEmpty(resolvedPath))
+                                    {
+                                        bool hit = isDirectory
+                                            ? (resolvedPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || string.Equals(resolvedPath, normTarget, StringComparison.OrdinalIgnoreCase))
+                                            : string.Equals(resolvedPath, normTarget, StringComparison.OrdinalIgnoreCase);
+                                        if (hit)
+                                        {
+                                            mh.DosPath = resolvedPath;
+                                            List<MatchedRemoteHandle> hitList;
+                                            if (!result.TryGetValue(kv.Key, out hitList))
+                                            {
+                                                hitList = new List<MatchedRemoteHandle>();
+                                                result[kv.Key] = hitList;
+                                            }
+                                            hitList.Add(mh);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    timeouts++;
+                                    if (ws.ThreadHandle != IntPtr.Zero) CancelSynchronousIo(ws.ThreadHandle);
+                                    if (!ws.DoneEv.WaitOne(10))
+                                    {
+                                        handleOrphaned = true;
+                                        ws.StopRequested = true;
+                                        try { if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle); } catch {}
+                                        ws.ThreadHandle = IntPtr.Zero;
+                                        if (timeouts >= 12) break;
+                                        ws = StartHandleQueryWorker();
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                if (!handleOrphaned)
+                                {
+                                    CloseHandle(hDup);
+                                }
+                            }
+                            if (timeouts >= 12) break;
+                        }
+                    }
+                    finally
+                    {
+                        CloseHandle(hp);
+                    }
+                    if (timeouts >= 12) break;
+                }
+
+                ws.StopRequested = true;
+                ws.WorkEv.Set();
+                if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle);
+            }
+            catch {}
+            finally
+            {
+                Marshal.FreeHGlobal(buf);
+                CloseHandle(hProbe);
+            }
+            return result;
+        }
+
+        private static HandleWorkerState StartHandleQueryWorker()
+        {
+            HandleWorkerState state = new HandleWorkerState();
+            Thread t = new Thread(delegate()
+            {
+                state.ThreadId = GetCurrentThreadId();
+                var sb = new System.Text.StringBuilder(1024);
+                while (!state.StopRequested)
+                {
+                    state.WorkEv.WaitOne();
+                    if (state.StopRequested) break;
+                    IntPtr h = state.PendingHandle;
+                    string resolved = null;
+                    if (h != IntPtr.Zero)
+                    {
+                        try
+                        {
+                            if (GetFileType(h) == FILE_TYPE_DISK)
+                            {
+                                sb.Length = 0;
+                                uint n = GetFinalPathNameByHandleW(h, sb, (uint)sb.Capacity, 0);
+                                if (n > 0 && n < (uint)sb.Capacity)
+                                {
+                                    resolved = NormalizeDosOrNtPath(sb.ToString());
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                    state.PendingPath = resolved;
+                    state.DoneEv.Set();
+                }
+            });
+            t.IsBackground = true;
+            t.Start();
+            while (state.ThreadId == 0) Thread.Sleep(1);
+            state.ThreadHandle = OpenThread(0x0001 | 0x0002, false, state.ThreadId);
+            return state;
+        }
+
+        private static bool TryCloseRemoteFileHandle(int pid, IntPtr remoteHandle)
+        {
+            IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE, false, pid);
+            if (hp == IntPtr.Zero) return false;
+            try
+            {
+                IntPtr hDummy;
+                if (DuplicateHandle(hp, remoteHandle, GetCurrentProcess(), out hDummy, 0, false, DUPLICATE_CLOSE_SOURCE))
+                {
+                    if (hDummy != IntPtr.Zero) CloseHandle(hDummy);
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                CloseHandle(hp);
+            }
+        }
+
+        private static IntPtr GetCurrentTokenUserSidCopy()
+        {
+            IntPtr hTok;
+            if (!OpenProcessToken(GetCurrentProcess(), 0x0008, out hTok)) return IntPtr.Zero;
+            try
+            {
+                uint needed = 0;
+                GetTokenInformation(hTok, 1, IntPtr.Zero, 0, out needed);
+                if (needed == 0) return IntPtr.Zero;
+                IntPtr tokBuf = Marshal.AllocHGlobal((int)needed);
+                try
+                {
+                    if (!GetTokenInformation(hTok, 1, tokBuf, needed, out needed)) return IntPtr.Zero;
+                    IntPtr srcSid = Marshal.ReadIntPtr(tokBuf, 0);
+                    if (srcSid == IntPtr.Zero) return IntPtr.Zero;
+                    int subCount = Marshal.ReadByte(srcSid, 1) & 0xFF;
+                    int sidLen = 8 + subCount * 4;
+                    byte[] raw = new byte[sidLen];
+                    Marshal.Copy(srcSid, raw, 0, sidLen);
+                    IntPtr sidCopy = Marshal.AllocHGlobal(sidLen);
+                    Marshal.Copy(raw, 0, sidCopy, sidLen);
+                    return sidCopy;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(tokBuf);
+                }
+            }
+            finally
+            {
+                CloseHandle(hTok);
+            }
+        }
+
+        public static bool TryTakeOwnershipAndGrantAdminAccess(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string norm = path.Trim().TrimEnd('\\');
+            bool isDir = Directory.Exists(norm);
+            bool isFile = !isDir && File.Exists(norm);
+            if (!isDir && !isFile) return false;
+            if (IsReparsePoint(norm)) return false;
+
+            string checkDir = isDir ? norm : Path.GetDirectoryName(norm);
+            if (!IsSafeLockTargetDirectory(checkDir)) return false;
+
+            EnsureUnlockPrivileges();
+
+            var auth = new SID_IDENTIFIER_AUTHORITY { Value0 = 0, Value1 = 0, Value2 = 0, Value3 = 0, Value4 = 0, Value5 = 5 };
+            IntPtr adminSid = IntPtr.Zero;
+            IntPtr userSid = IntPtr.Zero;
+            IntPtr newAcl = IntPtr.Zero;
+            try
+            {
+                if (!AllocateAndInitializeSid(ref auth, 2, 32, 544, 0, 0, 0, 0, 0, 0, out adminSid))
+                {
+                    return false;
+                }
+
+                IntPtr grantSid = adminSid;
+                uint trusteeType = TRUSTEE_IS_GROUP;
+                uint ownerErr = SetNamedSecurityInfoW(norm, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, adminSid, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                if (ownerErr == 1307)
+                {
+                    userSid = GetCurrentTokenUserSidCopy();
+                    if (userSid != IntPtr.Zero)
+                    {
+                        ownerErr = SetNamedSecurityInfoW(norm, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, userSid, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                        if (ownerErr == 0)
+                        {
+                            grantSid = userSid;
+                            trusteeType = TRUSTEE_IS_USER;
+                        }
+                    }
+                }
+
+                var ea = new EXPLICIT_ACCESS();
+                ea.grfAccessPermissions = GENERIC_ALL;
+                ea.grfAccessMode = SET_ACCESS;
+                ea.grfInheritance = isDir ? SUB_CONTAINERS_AND_OBJECTS_INHERIT : NO_INHERITANCE;
+                ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+                ea.Trustee.TrusteeType = trusteeType;
+                ea.Trustee.ptstrName = grantSid;
+
+                if (SetEntriesInAclW(1, ref ea, IntPtr.Zero, out newAcl) != 0)
+                {
+                    return ownerErr == 0;
+                }
+
+                uint daclErr = SetNamedSecurityInfoW(norm, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, IntPtr.Zero, IntPtr.Zero, newAcl, IntPtr.Zero);
+                return (daclErr == 0);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (newAcl != IntPtr.Zero) LocalFree(newAcl);
+                if (userSid != IntPtr.Zero) Marshal.FreeHGlobal(userSid);
+                if (adminSid != IntPtr.Zero) FreeSid(adminSid);
+            }
         }
 
         private static bool IsSafeLockTargetDirectory(string norm)
@@ -1608,16 +2390,20 @@ namespace DuckUtil
                             string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(ext, ".sys", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(ext, ".ocx", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".cpl", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(ext, ".db", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(ext, ".sqlite", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(ext, ".dat", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(ext, ".lock", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(ext, ".log", StringComparison.OrdinalIgnoreCase))
+                            string.Equals(ext, ".log", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".asar", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".pak", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".ttf", StringComparison.OrdinalIgnoreCase))
                         {
                             filesToCheck.Add(f);
-                            if (filesToCheck.Count >= 80) break;
+                            if (filesToCheck.Count >= 400) break;
                         }
-                        else if (secondary.Count < 40)
+                        else if (secondary.Count < 120)
                         {
                             secondary.Add(f);
                         }
@@ -1627,7 +2413,7 @@ namespace DuckUtil
 
                 foreach (string sf in secondary)
                 {
-                    if (filesToCheck.Count >= 80) break;
+                    if (filesToCheck.Count >= 400) break;
                     filesToCheck.Add(sf);
                 }
             }
@@ -1645,10 +2431,13 @@ namespace DuckUtil
                 }
                 sessionStarted = true;
 
-                string[] arr = filesToCheck.ToArray();
-                if (RmRegisterResources(session, (uint)arr.Length, arr, 0, null, 0, null) != 0)
+                int batchSize = 80;
+                for (int offset = 0; offset < filesToCheck.Count; offset += batchSize)
                 {
-                    return result;
+                    int take = Math.Min(batchSize, filesToCheck.Count - offset);
+                    string[] batch = new string[take];
+                    filesToCheck.CopyTo(offset, batch, 0, take);
+                    RmRegisterResources(session, (uint)batch.Length, batch, 0, null, 0, null);
                 }
 
                 uint procInfoNeeded = 0;
@@ -1804,6 +2593,7 @@ namespace DuckUtil
             if (string.IsNullOrWhiteSpace(targetPath)) return report;
 
             string norm = targetPath.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
             if (norm.Length <= 3) return report;
 
             bool isSingleFile = File.Exists(norm);
@@ -1811,6 +2601,8 @@ namespace DuckUtil
             if (!isSingleFile && !isDirectory) return report;
 
             if (isDirectory && !IsSafeLockTargetDirectory(norm)) return report;
+
+            EnsureUnlockPrivileges();
 
             string prefix = isDirectory ? (norm + "\\") : "";
             if (includeServicesAndTasks && isDirectory)
@@ -1820,11 +2612,14 @@ namespace DuckUtil
             }
 
             Dictionary<int, string> rmLockers = GetRestartManagerLockingPids(norm);
+            Dictionary<int, List<MatchedRemoteHandle>> handleLockers = ScanSystemFileHandlesForTarget(norm, prefix, isDirectory);
+            Dictionary<string, string> dosMap = BuildDosDeviceMap();
             HashSet<string> dirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var killedList = new List<string>();
             var deniedList = new List<string>();
             var skippedSystem = new List<string>();
+            var closedHandleList = new List<string>();
             var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var targetProcs = new Dictionary<int, Process>();
 
@@ -1843,35 +2638,79 @@ namespace DuckUtil
                     if (pid <= 4) { p.Dispose(); continue; }
 
                     bool rmMatched = rmLockers.ContainsKey(pid);
-                    if (IsProtectedSystemOrHostProcess(pid, pName))
+                    List<MatchedRemoteHandle> pidHandles = null;
+                    handleLockers.TryGetValue(pid, out pidHandles);
+
+                    if (IsKernelCriticalProcess(pid, pName))
                     {
-                        if (rmMatched && (string.Equals(pName, "explorer", StringComparison.OrdinalIgnoreCase) || string.Equals(pName, "svchost", StringComparison.OrdinalIgnoreCase)))
+                        if (rmMatched)
                         {
                             string desc = pName + " (PID " + pid.ToString() + ")";
                             if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
-                        }
-                        else if (isDirectory && !rmMatched)
-                        {
-                            try
-                            {
-                                foreach (ProcessModule pm in p.Modules)
-                                {
-                                    string modPath = pm.FileName ?? "";
-                                    if (modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        string desc = pName + " (" + Path.GetFileName(modPath) + ")";
-                                        if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
-                                        break;
-                                    }
-                                }
-                            }
-                            catch {}
                         }
                         p.Dispose();
                         continue;
                     }
 
-                    bool isMatch = rmMatched;
+                    if (IsProtectedSystemOrHostProcess(pid, pName))
+                    {
+                        var loadedImages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var mappedData = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (isDirectory || rmMatched || pidHandles != null)
+                        {
+                            try
+                            {
+                                foreach (ProcessModule pm in p.Modules)
+                                {
+                                    string modPath = NormalizeDosOrNtPath(pm.FileName ?? "");
+                                    if (!string.IsNullOrEmpty(modPath) &&
+                                        (isDirectory ? modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) : string.Equals(modPath, norm, StringComparison.OrdinalIgnoreCase)))
+                                    {
+                                        loadedImages.Add(modPath);
+                                    }
+                                }
+                            }
+                            catch {}
+                            CollectProcessMappedFiles(pid, prefix, norm, isDirectory, dosMap, loadedImages, mappedData);
+                        }
+
+                        int closedForPid = 0;
+                        if (pidHandles != null && pidHandles.Count > 0)
+                        {
+                            foreach (MatchedRemoteHandle mh in pidHandles)
+                            {
+                                if (loadedImages.Contains(mh.DosPath)) continue;
+                                if (TryCloseRemoteFileHandle(pid, mh.RemoteHandle))
+                                {
+                                    closedForPid++;
+                                    report.ClosedHandlesCount++;
+                                    string hLabel = pName + " -> " + (string.IsNullOrEmpty(mh.DosPath) ? norm : Path.GetFileName(mh.DosPath));
+                                    if (seenNames.Add("H:" + hLabel + ":" + mh.RemoteHandle.ToString()))
+                                    {
+                                        if (closedHandleList.Count < 25) closedHandleList.Add(hLabel);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (loadedImages.Count > 0 || mappedData.Count > 0 || (rmMatched && closedForPid == 0 && (string.Equals(pName, "explorer", StringComparison.OrdinalIgnoreCase) || string.Equals(pName, "svchost", StringComparison.OrdinalIgnoreCase))))
+                        {
+                            string firstImg = "";
+                            foreach (string img in loadedImages) { firstImg = img; break; }
+                            if (string.IsNullOrEmpty(firstImg))
+                            {
+                                foreach (string md in mappedData) { firstImg = md; break; }
+                            }
+                            string desc = string.IsNullOrEmpty(firstImg)
+                                ? (pName + " (PID " + pid.ToString() + ")")
+                                : (pName + " (" + Path.GetFileName(firstImg) + ")");
+                            if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
+                        }
+                        p.Dispose();
+                        continue;
+                    }
+
+                    bool isMatch = rmMatched || (pidHandles != null && pidHandles.Count > 0);
                     bool mainModAccessDenied = false;
 
                     if (!isMatch)
@@ -1880,7 +2719,7 @@ namespace DuckUtil
                         {
                             if (p.MainModule != null)
                             {
-                                string mainPath = p.MainModule.FileName ?? "";
+                                string mainPath = NormalizeDosOrNtPath(p.MainModule.FileName ?? "");
                                 if (isSingleFile)
                                 {
                                     isMatch = string.Equals(mainPath, norm, StringComparison.OrdinalIgnoreCase);
@@ -1904,7 +2743,7 @@ namespace DuckUtil
                         {
                             foreach (ProcessModule pm in p.Modules)
                             {
-                                string modPath = pm.FileName ?? "";
+                                string modPath = NormalizeDosOrNtPath(pm.FileName ?? "");
                                 if (modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                                 {
                                     isMatch = true;
@@ -1913,6 +2752,11 @@ namespace DuckUtil
                             }
                         }
                         catch {}
+                    }
+
+                    if (!isMatch && !mainModAccessDenied)
+                    {
+                        isMatch = CollectProcessMappedFiles(pid, prefix, norm, isDirectory, dosMap, null, null);
                     }
 
                     if (!isMatch && mainModAccessDenied && isDirectory && dirExeNames.Count > 0 && dirExeNames.Contains(pName))
@@ -1985,7 +2829,7 @@ namespace DuckUtil
                 }
             }
 
-            if (report.KilledCount > 0 || report.ServicesStoppedCount > 0)
+            if (report.KilledCount > 0 || report.ServicesStoppedCount > 0 || report.ClosedHandlesCount > 0)
             {
                 try { Thread.Sleep(180); } catch {}
             }
@@ -1993,6 +2837,7 @@ namespace DuckUtil
             report.KilledNames = killedList.ToArray();
             report.AccessDeniedNames = deniedList.ToArray();
             report.SkippedSystemLockers = skippedSystem.ToArray();
+            report.ClosedHandleNames = closedHandleList.ToArray();
             return report;
         }
 
@@ -2002,6 +2847,120 @@ namespace DuckUtil
             return rpt.KilledCount;
         }
 
+        private static string NormalizeServiceImagePath(string rawImgPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawImgPath)) return "";
+            string s = rawImgPath.Trim('\"', ' ');
+            if (s.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
+            {
+                s = s.Substring(4);
+            }
+            if (s.StartsWith(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase))
+            {
+                s = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), s.Substring(12));
+            }
+            try { s = Environment.ExpandEnvironmentVariables(s); } catch {}
+            return s.Trim('\"', ' ');
+        }
+
+        private static void StopSingleServiceHandleAndWait(IntPtr hSvc)
+        {
+            if (hSvc == IntPtr.Zero) return;
+            try
+            {
+                SERVICE_STATUS st;
+                ControlService(hSvc, SERVICE_CONTROL_STOP, out st);
+                int waited = 0;
+                while (waited < 1200)
+                {
+                    SERVICE_STATUS cur;
+                    if (!QueryServiceStatus(hSvc, out cur) || cur.dwCurrentState == SERVICE_STOPPED) break;
+                    Thread.Sleep(80);
+                    waited += 80;
+                }
+            }
+            catch {}
+        }
+
+        private static bool TryStopAndDeleteViaScm(IntPtr hScm, string svcName, bool isDriver)
+        {
+            if (isDriver)
+            {
+                RunHiddenProcess("fltmc.exe", "unload \"" + svcName + "\"", 1500);
+            }
+            if (hScm == IntPtr.Zero) return false;
+            IntPtr hSvc = OpenServiceW(hScm, svcName, SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS | DELETE_ACCESS);
+            if (hSvc == IntPtr.Zero)
+            {
+                hSvc = OpenServiceW(hScm, svcName, SERVICE_STOP | SERVICE_QUERY_STATUS | DELETE_ACCESS);
+            }
+            if (hSvc == IntPtr.Zero) return false;
+            try
+            {
+                uint needed = 0;
+                uint depCount = 0;
+                EnumDependentServicesW(hSvc, SERVICE_ACTIVE, IntPtr.Zero, 0, out needed, out depCount);
+                if (needed > 0 && needed < 1048576)
+                {
+                    IntPtr depBuf = Marshal.AllocHGlobal((int)needed);
+                    try
+                    {
+                        if (EnumDependentServicesW(hSvc, SERVICE_ACTIVE, depBuf, needed, out needed, out depCount))
+                        {
+                            int esSz = Marshal.SizeOf(typeof(ENUM_SERVICE_STATUS));
+                            for (int i = 0; i < (int)depCount; i++)
+                            {
+                                ENUM_SERVICE_STATUS ess = (ENUM_SERVICE_STATUS)Marshal.PtrToStructure(new IntPtr(depBuf.ToInt64() + i * esSz), typeof(ENUM_SERVICE_STATUS));
+                                string depName = Marshal.PtrToStringUni(ess.lpServiceName);
+                                if (!string.IsNullOrWhiteSpace(depName))
+                                {
+                                    IntPtr hDep = OpenServiceW(hScm, depName, SERVICE_STOP | SERVICE_QUERY_STATUS);
+                                    if (hDep != IntPtr.Zero)
+                                    {
+                                        try { StopSingleServiceHandleAndWait(hDep); }
+                                        finally { CloseServiceHandle(hDep); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(depBuf);
+                    }
+                }
+
+                StopSingleServiceHandleAndWait(hSvc);
+                DeleteService(hSvc);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                CloseServiceHandle(hSvc);
+            }
+        }
+
+        private static void RunHiddenProcess(string exe, string args, int timeoutMs)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo(exe, args);
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var p = Process.Start(psi))
+                {
+                    if (p != null) p.WaitForExit(timeoutMs);
+                }
+            }
+            catch {}
+        }
+
         public static int DisableAndRemoveServicesInDirectory(string targetDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir)) return 0;
@@ -2009,6 +2968,7 @@ namespace DuckUtil
             if (prefix.Length <= 4) return 0;
 
             int neutralized = 0;
+            IntPtr hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
             try
             {
                 using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
@@ -2020,18 +2980,25 @@ namespace DuckUtil
                         try
                         {
                             bool matches = false;
+                            bool isDriver = false;
                             using (var sk = svcRoot.OpenSubKey(svcName, true))
                             {
                                 if (sk == null) continue;
-                                string imgPath = (sk.GetValue("ImagePath") as string ?? "").Trim('\"', ' ');
+                                string imgPath = NormalizeServiceImagePath(sk.GetValue("ImagePath") as string);
                                 if (string.IsNullOrEmpty(imgPath)) continue;
-                                if (imgPath.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    imgPath = imgPath.Substring(4);
-                                }
                                 if (imgPath.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
                                 {
                                     matches = true;
+                                    try
+                                    {
+                                        object tObj = sk.GetValue("Type");
+                                        if (tObj != null)
+                                        {
+                                            int tVal = Convert.ToInt32(tObj) & 0x0F;
+                                            isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                                        }
+                                    }
+                                    catch {}
                                     try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
                                     try { sk.DeleteValue("FailureActions", false); } catch {}
                                 }
@@ -2040,8 +3007,11 @@ namespace DuckUtil
                             if (matches)
                             {
                                 neutralized++;
-                                RunHiddenSc("stop \"" + svcName + "\"");
-                                RunHiddenSc("delete \"" + svcName + "\"");
+                                if (!TryStopAndDeleteViaScm(hScm, svcName, isDriver))
+                                {
+                                    RunHiddenSc("stop \"" + svcName + "\"");
+                                    RunHiddenSc("delete \"" + svcName + "\"");
+                                }
                             }
                         }
                         catch {}
@@ -2049,6 +3019,10 @@ namespace DuckUtil
                 }
             }
             catch {}
+            finally
+            {
+                if (hScm != IntPtr.Zero) CloseServiceHandle(hScm);
+            }
             return neutralized;
         }
 
@@ -2257,12 +3231,65 @@ namespace DuckUtil
             return results.ToArray();
         }
 
+        private static HashSet<string> LoadPendingRebootDeleteSet()
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var sm = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager", false))
+                {
+                    if (sm != null)
+                    {
+                        string[] ops = sm.GetValue("PendingFileRenameOperations") as string[];
+                        if (ops != null)
+                        {
+                            for (int i = 0; i + 1 < ops.Length; i += 2)
+                            {
+                                string src = ops[i];
+                                string dst = ops[i + 1];
+                                if (!string.IsNullOrEmpty(src) && string.IsNullOrEmpty(dst))
+                                {
+                                    set.Add(NormalizeDosOrNtPath(src));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+            return set;
+        }
+
+        private static bool ScheduleMoveFileExUnique(string path, HashSet<string> existingPending)
+        {
+            string normPath = NormalizeDosOrNtPath(path);
+            if (existingPending != null && existingPending.Contains(normPath))
+            {
+                return false;
+            }
+            if (MoveFileEx(path, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+            {
+                if (existingPending != null) existingPending.Add(normPath);
+                return true;
+            }
+            return false;
+        }
+
         public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)
+        {
+            return ForceDeleteDirectory(targetDir, true, out rebootScheduledCount);
+        }
+
+        public static bool ForceDeleteDirectory(string targetDir, bool runFullLockerStop, out int rebootScheduledCount)
         {
             rebootScheduledCount = 0;
             if (string.IsNullOrWhiteSpace(targetDir)) return false;
             string norm = targetDir.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
             if (norm.Length <= 3) return false;
+
+            HashSet<string> existingPending = LoadPendingRebootDeleteSet();
 
             if (File.Exists(norm))
             {
@@ -2274,7 +3301,20 @@ namespace DuckUtil
                 }
                 catch
                 {
-                    ForceStopDirectoryLockers(norm, false);
+                    if (TryTakeOwnershipAndGrantAdminAccess(norm))
+                    {
+                        try
+                        {
+                            File.SetAttributes(norm, FileAttributes.Normal);
+                            File.Delete(norm);
+                            return true;
+                        }
+                        catch {}
+                    }
+                    if (runFullLockerStop)
+                    {
+                        ForceStopDirectoryLockers(norm, false);
+                    }
                     try
                     {
                         File.SetAttributes(norm, FileAttributes.Normal);
@@ -2283,12 +3323,11 @@ namespace DuckUtil
                     }
                     catch
                     {
-                        if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                        if (ScheduleMoveFileExUnique(norm, existingPending))
                         {
                             rebootScheduledCount++;
-                            return true;
                         }
-                        return false;
+                        return existingPending.Contains(NormalizeDosOrNtPath(norm));
                     }
                 }
             }
@@ -2304,16 +3343,18 @@ namespace DuckUtil
                 }
                 catch
                 {
-                    if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                    if (ScheduleMoveFileExUnique(norm, existingPending))
                     {
                         rebootScheduledCount++;
-                        return true;
                     }
-                    return false;
+                    return existingPending.Contains(NormalizeDosOrNtPath(norm));
                 }
             }
 
-            ForceStopDirectoryLockers(norm, true);
+            if (runFullLockerStop)
+            {
+                ForceStopDirectoryLockers(norm, true);
+            }
 
             try
             {
@@ -2326,20 +3367,43 @@ namespace DuckUtil
                     }
                     catch
                     {
-                        string deadPath = file + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 6);
-                        try
+                        bool recovered = false;
+                        if (TryTakeOwnershipAndGrantAdminAccess(file))
                         {
-                            File.Move(file, deadPath);
-                            if (MoveFileEx(deadPath, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                            try
+                            {
+                                File.SetAttributes(file, FileAttributes.Normal);
+                                File.Delete(file);
+                                recovered = true;
+                            }
+                            catch {}
+                        }
+                        if (recovered) continue;
+
+                        if (file.IndexOf(".dead_", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            if (ScheduleMoveFileExUnique(file, existingPending))
                             {
                                 rebootScheduledCount++;
                             }
                         }
-                        catch
+                        else
                         {
-                            if (MoveFileEx(file, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                            string deadPath = file + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 6);
+                            try
                             {
-                                rebootScheduledCount++;
+                                File.Move(file, deadPath);
+                                if (ScheduleMoveFileExUnique(deadPath, existingPending))
+                                {
+                                    rebootScheduledCount++;
+                                }
+                            }
+                            catch
+                            {
+                                if (ScheduleMoveFileExUnique(file, existingPending))
+                                {
+                                    rebootScheduledCount++;
+                                }
                             }
                         }
                     }
@@ -2367,7 +3431,21 @@ namespace DuckUtil
                     }
                     catch
                     {
-                        MoveFileEx(sd, null, MOVEFILE_DELAY_UNTIL_REBOOT);
+                        bool dirRecovered = false;
+                        if (!IsReparsePoint(sd) && TryTakeOwnershipAndGrantAdminAccess(sd))
+                        {
+                            try
+                            {
+                                File.SetAttributes(sd, FileAttributes.Normal);
+                                Directory.Delete(sd, false);
+                                dirRecovered = true;
+                            }
+                            catch {}
+                        }
+                        if (!dirRecovered)
+                        {
+                            ScheduleMoveFileExUnique(sd, existingPending);
+                        }
                     }
                 }
             }
@@ -2381,12 +3459,22 @@ namespace DuckUtil
             }
             catch
             {
-                if (MoveFileEx(norm, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+                if (TryTakeOwnershipAndGrantAdminAccess(norm))
+                {
+                    try
+                    {
+                        File.SetAttributes(norm, FileAttributes.Normal);
+                        Directory.Delete(norm, false);
+                        return true;
+                    }
+                    catch {}
+                }
+                if (ScheduleMoveFileExUnique(norm, existingPending))
                 {
                     rebootScheduledCount++;
                     return true;
                 }
-                return false;
+                return existingPending.Contains(NormalizeDosOrNtPath(norm));
             }
         }
 

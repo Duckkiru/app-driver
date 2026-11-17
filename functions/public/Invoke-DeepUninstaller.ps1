@@ -959,9 +959,11 @@ function Invoke-ForceStopPathLockers {
         ServicesStoppedCount = 0
         TasksRemovedCount    = 0
         AccessDeniedCount    = 0
+        ClosedHandlesCount   = 0
         KilledNames          = @()
         AccessDeniedNames    = @()
         SkippedSystemLockers = @()
+        ClosedHandleNames    = @()
     }
     if ([string]::IsNullOrWhiteSpace($TargetPath)) { return $resObj }
 
@@ -979,6 +981,12 @@ function Invoke-ForceStopPathLockers {
             $resObj.KilledNames          = @($rpt.KilledNames)
             $resObj.AccessDeniedNames    = @($rpt.AccessDeniedNames)
             $resObj.SkippedSystemLockers = @($rpt.SkippedSystemLockers)
+            if ($rpt.PSObject.Properties["ClosedHandlesCount"]) {
+                $resObj.ClosedHandlesCount = [int]$rpt.ClosedHandlesCount
+            }
+            if ($rpt.PSObject.Properties["ClosedHandleNames"]) {
+                $resObj.ClosedHandleNames = @($rpt.ClosedHandleNames)
+            }
         }
     } else {
         if ($IncludeServicesAndTasks) {
@@ -991,6 +999,9 @@ function Invoke-ForceStopPathLockers {
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
         if ($resObj.KilledCount -gt 0 -or $resObj.ServicesStoppedCount -gt 0 -or $resObj.TasksRemovedCount -gt 0) {
             Log-Text "[FORCE-STOP] $([char]0x0110)$([char]0x00E3) bu$([char]0x1ED9)c d$([char]0x1EEB)ng $($resObj.KilledCount) ti$([char]0x1EBF)n tr$([char]0x00EC)nh $([char]0x0111)ang kh$([char]0x00F3)a, $($resObj.ServicesStoppedCount) d$([char]0x1ECB)ch v$([char]0x1EE5), $($resObj.TasksRemovedCount) t$([char]0x00E1)c v$([char]0x1EE5) t$([char]0x1EA1)i: $TargetPath"
+        }
+        if ($resObj.ClosedHandlesCount -gt 0) {
+            Log-Text "[HANDLE-UNLOCK] $([char]0x0110)$([char]0x00E3) th$([char]0x00E1)o $($resObj.ClosedHandlesCount) handle $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p/th$([char]0x01B0) m$([char]0x1EE5)c t$([char]0x1EEB) xa: $($resObj.ClosedHandleNames -join ', ')"
         }
         if ($resObj.AccessDeniedCount -gt 0) {
             Log-Text "[!] T$([char]0x1EEB) ch$([char]0x1ED1)i quy$([char]0x1EC1)n (Self-Defense / Driver b$([char]0x1EA3)o v$([char]0x1EC7)): $($resObj.AccessDeniedNames -join ', ')"
@@ -1543,7 +1554,12 @@ function Show-LeftoverReviewDialog {
 
                         if (-not $deletedOk) {
                             $rbCount = 0
-                            $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                            $hasFastForceDel = @([DuckUtil.DeepUninstallerEngine].GetMethods() | Where-Object { $_.Name -eq "ForceDeleteDirectory" -and $_.GetParameters().Count -eq 3 }).Count -gt 0
+                            if ($hasFastForceDel) {
+                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, (-not $useForceStop), [ref]$rbCount)
+                            } else {
+                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                            }
                             $rebootTotal += $rbCount
                         }
 
