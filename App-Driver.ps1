@@ -290,7 +290,7 @@ Write-Host " / __ |/ _ \/ _ \___/ /_/ / __/ / | / / -_) __/   " -ForegroundColor
 Write-Host "/_/ |_/ .__/ .__/  /_____/_/ /_/|___/\__/_/      " -ForegroundColor Cyan
 Write-Host "     /_/  /_/      Windows Software & Driver Suite" -ForegroundColor DarkCyan
 Write-Host "==========================================================================" -ForegroundColor Cyan
-Write-Host "[!] Không đóng cửa sổ Terminal này khi App-Driver đang chạy.`n" -ForegroundColor Yellow
+Write-Host "[!] Kh$([char]0x00F4)ng $([char]0x0111)$([char]0x00F3)ng c$([char]0x1EED)a s$([char]0x1ED5) Terminal n$([char]0x00E0)y khi App-Driver $([char]0x0111)ang ch$([char]0x1EA1)y.`n" -ForegroundColor Yellow
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -948,7 +948,7 @@ $appsRawJson = @'
     "Domain":  "microsoft.com",
     "Aliases":  [
             "Windows Terminal",
-            "Bảng điều khiển Windows",
+            "B\u1EA3ng \u0111i\u1EC1u khi\u1EC3n Windows",
             "Microsoft.WindowsTerminal"
           ],
     "IconUrl":  "https://cdn.jsdelivr.net/gh/selfhst/icons/png/windows-terminal.png",
@@ -2568,7 +2568,7 @@ $appsRawJson = @'
   },
   {
     "ID":  "IridiumIO.CompactGUI",
-    "Name":  "CompactGUI (Nén Game)",
+    "Name":  "CompactGUI (N\u00E9n Game)",
     "Domain":  "github.com/IridiumIO/CompactGUI",
     "Aliases":  [
             "CompactGUI",
@@ -4431,7 +4431,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="App-Driver — Windows Software &amp; Driver Suite"
+    Title="App-Driver &#x2014; Windows Software &amp; Driver Suite"
     Width="1260" Height="780"
     MinWidth="980" MinHeight="620"
     WindowStartupLocation="CenterScreen"
@@ -4741,13 +4741,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
         <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#27344A" BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Orientation="Horizontal">
-                    <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
+                    <Button Name="navBtnApps" Content="&#x1EE8;ng d&#x1EE5;ng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
-                    <Button Name="navBtnUninstaller" Content="Gỡ cài đặt" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
-                    <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
+                    <Button Name="navBtnUninstaller" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnRepair" Content="&#x1F512; G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng (&#x0110;ang kh&#x00F3;a)" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
+                    <Button Name="navBtnDrivers" Content="&#x1F512; Qu&#x1EA3;n l&#x00FD; Driver (&#x0110;ang kh&#x00F3;a)" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng Qu&#x1EA3;n l&#x00FD; Driver &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
                 </StackPanel>
                 <TextBlock Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
@@ -4776,35 +4776,35 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Button Name="btnInstall" Content="Cài đặt mục chọn" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnInstall" Content="C&#x00E0;i &#x0111;&#x1EB7;t m&#x1EE5;c ch&#x1ECD;n" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="15,7"/>
-                                    <Button Name="btnUpgradeSelected" Content="Cập nhật mục chọn" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnUpgradeSelected" Content="C&#x1EAD;p nh&#x1EAD;t m&#x1EE5;c ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
                                             Foreground="#A78BFA" BorderBrush="#49387D"/>
-                                    <Button Name="btnUpgradeAll" Content="Cập nhật tất cả" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnUpgradeAll" Content="C&#x1EAD;p nh&#x1EAD;t t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#614F27"/>
-                                    <Button Name="btnScanInstalled" Content="Làm mới" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnScanInstalled" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#29527D"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                    <Button Name="btnSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
-                                    <Button Name="btnDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Margin="0"/>
+                                    <Button Name="btnSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                                    <Button Name="btnDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Margin="0"/>
                                 </StackPanel>
                             </Grid>
 
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
+                                <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
                                     <Ellipse Width="7" Height="7" Fill="#F1F5F9" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Chưa cài đặt" FontSize="11" Foreground="#CBD5E1"/>
+                                    <TextBlock Text="Ch&#x01B0;a c&#x00E0;i &#x0111;&#x1EB7;t" FontSize="11" Foreground="#CBD5E1"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
                                     <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Đã cài (Mới nhất)" FontSize="11" Foreground="#34D399"/>
+                                    <TextBlock Text="&#x0110;&#x00E3; c&#x00E0;i (M&#x1EDB;i nh&#x1EA5;t)" FontSize="11" Foreground="#34D399"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Ellipse Width="7" Height="7" Fill="#F87171" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Bản cũ (Có cập nhật)" FontSize="11" Foreground="#F87171"/>
+                                    <TextBlock Text="B&#x1EA3;n c&#x0169; (C&#x00F3; c&#x1EAD;p nh&#x1EAD;t)" FontSize="11" Foreground="#F87171"/>
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
@@ -4849,14 +4849,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnDeepUninstall" Content="Gỡ cài đặt (0)" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnDeepUninstall" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t (0)" Style="{StaticResource ActionButton}"
                                             Background="#991B1B" Foreground="#FEE2E2" Padding="14,7"/>
-                                    <Button Name="btnForceStopUninstall" Content="Buộc dừng &amp; Xóa (0)" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnForceStopUninstall" Content="Bu&#x1ED9;c d&#x1EEB;ng &amp; X&#x00F3;a (0)" Style="{StaticResource ActionButton}"
                                             Background="#B45309" Foreground="#FEF3C7" Padding="13,7"
-                                            ToolTip="Buộc dừng toàn bộ tiến trình, service, task và handle đang khóa tệp rồi xóa trực tiếp không qua trình gỡ hãng." ToolTipService.InitialShowDelay="500"/>
-                                    <Button Name="btnScanOrphans" Content="Quét Rác &amp; App Lỗi" Style="{StaticResource ActionButton}"
+                                            ToolTip="Bu&#x1ED9;c d&#x1EEB;ng to&#x00E0;n b&#x1ED9; ti&#x1EBF;n tr&#x00EC;nh, service, task v&#x00E0; handle &#x0111;ang kh&#x00F3;a t&#x1EC7;p r&#x1ED3;i x&#x00F3;a tr&#x1EF1;c ti&#x1EBF;p kh&#x00F4;ng qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnScanOrphans" Content="Qu&#x00E9;t R&#x00E1;c &amp; App L&#x1ED7;i" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
-                                    <Button Name="btnRefreshUninstaller" Content="Làm mới" Style="{StaticResource SecondaryButton}"
+                                    <Button Name="btnRefreshUninstaller" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
                                             Background="#1E293B" Foreground="#93C5FD" Padding="14,7"/>
                                 </StackPanel>
 
@@ -4868,16 +4868,16 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="🔍" Foreground="#475569" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                                            <TextBlock Text="&#xD83D;&#xDD0D;" Foreground="#475569" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
                                             <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="Tìm kiếm theo tên ứng dụng, nhà phát hành hoặc phiên bản..." ToolTipService.InitialShowDelay="5000"/>
-                                            <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="✕" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="Xóa bộ lọc" ToolTipService.InitialShowDelay="5000"/>
+                                                     ToolTip="T&#x00EC;m ki&#x1EBF;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c phi&#x00EA;n b&#x1EA3;n..." ToolTipService.InitialShowDelay="5000"/>
+                                            <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
+                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="X&#x00F3;a b&#x1ED9; l&#x1ECD;c" ToolTipService.InitialShowDelay="5000"/>
                                         </Grid>
                                     </Border>
-                                    <Button Name="btnUninstallSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
-                                    <Button Name="btnUninstallDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                    <Button Name="btnUninstallSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                    <Button Name="btnUninstallDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
                                 </StackPanel>
                             </Grid>
 
@@ -4891,32 +4891,32 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
-                                            <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
+                                            <Button Name="btnFilterUninstAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
-                                            <Button Name="btnFilterUninstBroken" Content="Xóa sai cách / Lỗi" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnFilterUninstBroken" Content="X&#x00F3;a sai c&#x00E1;ch / L&#x1ED7;i" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
-                                    <TextBlock Text="Sắp xếp:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                    <TextBlock Text="S&#x1EAF;p x&#x1EBF;p:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
                                     <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
-                                            <Button Name="btnSortUninstName" Content="Theo tên (A-Z)" Style="{StaticResource FilterTabButton}"
+                                            <Button Name="btnSortUninstName" Content="Theo t&#x00EA;n (A-Z)" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
-                                            <Button Name="btnSortUninstSize" Content="Theo dung lượng" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnSortUninstSize" Content="Theo dung l&#x01B0;&#x1EE3;ng" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Name="pnlSkipVendorUninstaller" Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2"
                                             Padding="8,4" Margin="12,0,0,0" VerticalAlignment="Center" Cursor="Hand"
-                                            ToolTip="Mặc định App-Driver tự nhận diện bộ cài (Inno, NSIS, WiX, MSI, Squirrel) để ép cờ gỡ im lặng. Bật tùy chọn này nếu muốn bỏ qua hẳn trình gỡ cài đặt của hãng (chuyên trị app hay hiện bảng hỏi lừa giữ chân như 360), tắt tiến trình/service và xóa sạch trực tiếp."
+                                            ToolTip="M&#x1EB7;c &#x0111;&#x1ECB;nh App-Driver t&#x1EF1; nh&#x1EAD;n di&#x1EC7;n b&#x1ED9; c&#x00E0;i (Inno, NSIS, WiX, MSI, Squirrel) &#x0111;&#x1EC3; &#x00E9;p c&#x1EDD; g&#x1EE1; im l&#x1EB7;ng. B&#x1EAD;t t&#x00F9;y ch&#x1ECD;n n&#x00E0;y n&#x1EBF;u mu&#x1ED1;n b&#x1ECF; qua h&#x1EB3;n tr&#x00EC;nh g&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t c&#x1EE7;a h&#x00E3;ng (chuy&#x00EA;n tr&#x1ECB; app hay hi&#x1EC7;n b&#x1EA3;ng h&#x1ECF;i l&#x1EEB;a gi&#x1EEF; ch&#x00E2;n nh&#x01B0; 360), t&#x1EAF;t ti&#x1EBF;n tr&#x00EC;nh/service v&#x00E0; x&#x00F3;a s&#x1EA1;ch tr&#x1EF1;c ti&#x1EBF;p."
                                             ToolTipService.InitialShowDelay="5000">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <CheckBox Name="cbSkipVendorUninstaller" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Bỏ qua trình gỡ hãng" Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold"
+                                            <TextBlock Text="B&#x1ECF; qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng" Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold"
                                                        Margin="6,0,0,0" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
 
-                                <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Chưa tải danh sách"
+                                <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Ch&#x01B0;a t&#x1EA3;i danh s&#x00E1;ch"
                                            Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </Grid>
                         </Grid>
@@ -4937,17 +4937,17 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 <ColumnDefinition Width="54"/>
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="TÊN ỨNG DỤNG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo tên (A-Z)" ToolTipService.InitialShowDelay="5000"/>
+                            <TextBlock Grid.Column="1" Name="hdrUninstName" Text="T&#x00CA;N &#x1EE8;NG D&#x1EE4;NG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nh&#x1EA5;n &#x0111;&#x1EC3; s&#x1EAF;p x&#x1EBF;p theo t&#x00EA;n (A-Z)" ToolTipService.InitialShowDelay="5000"/>
                             <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="2" Text="PHIÊN BẢN" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="PHI&#x00CA;N B&#x1EA2;N" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                             <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="3" Text="NHÀ PHÁT HÀNH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="NH&#x00C0; PH&#x00C1;T H&#x00C0;NH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                             <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG LƯỢNG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nhấn để sắp xếp theo dung lượng (Lớn → Nhỏ)" ToolTipService.InitialShowDelay="5000"/>
+                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG L&#x01AF;&#x1EE2;NG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nh&#x1EA5;n &#x0111;&#x1EC3; s&#x1EAF;p x&#x1EBF;p theo dung l&#x01B0;&#x1EE3;ng (L&#x1EDB;n &#x2192; Nh&#x1ECF;)" ToolTipService.InitialShowDelay="5000"/>
                             <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="5" Text="TRẠNG THÁI" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="TR&#x1EA0;NG TH&#x00C1;I" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="6" Text="VỊ TRÍ" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="V&#x1ECA; TR&#x00CD;" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
@@ -4960,8 +4960,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Module Gỡ lỗi &amp; Hệ thống hiện đang được khóa để tập trung ổn định trình cài đặt và cập nhật ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#x1F512; T&#x00CD;NH N&#x0102;NG &#x0110;ANG T&#x1EA0;M KH&#x00D3;A" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Module G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng hi&#x1EC7;n &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c kh&#x00F3;a &#x0111;&#x1EC3; t&#x1EAD;p trung &#x1ED5;n &#x0111;&#x1ECB;nh tr&#x00EC;nh c&#x00E0;i &#x0111;&#x1EB7;t v&#x00E0; c&#x1EAD;p nh&#x1EAD;t &#x1EE9;ng d&#x1EE5;ng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
@@ -4972,13 +4972,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#12263A" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="CORE FIX" FontSize="9.5" FontWeight="Bold" Foreground="#38BDF8"/>
                                     </Border>
-                                    <TextBlock Text="Sửa chữa file hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="S&#x1EED;a ch&#x1EEF;a file h&#x1EC7; th&#x1ED1;ng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Quét và tự động sửa các file hệ thống Windows bị hỏng hoặc mất qua SFC và DISM."
+                                <TextBlock Text="Qu&#x00E9;t v&#x00E0; t&#x1EF1; &#x0111;&#x1ED9;ng s&#x1EED;a c&#x00E1;c file h&#x1EC7; th&#x1ED1;ng Windows b&#x1ECB; h&#x1ECF;ng ho&#x1EB7;c m&#x1EA5;t qua SFC v&#x00E0; DISM."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
                                 <Button Name="btnSfcScan" Content="SFC Scan (sfc /scannow)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Phục hồi linh kiện)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnDismCleanup" Content="Dọn Kho Linh Kiện (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnDismRestore" Content="DISM RestoreHealth (Ph&#x1EE5;c h&#x1ED3;i linh ki&#x1EC7;n)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnDismCleanup" Content="D&#x1ECD;n Kho Linh Ki&#x1EC7;n (Component Cleanup)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
@@ -4988,13 +4988,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#2A1F12" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="UPDATE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
-                                    <TextBlock Text="Gỡ lỗi Windows Update" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="G&#x1EE1; l&#x1ED7;i Windows Update" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Khắc phục triệt để lỗi kẹt tải 0%, mã lỗi 0x80070002, 0x8024... khi cập nhật Windows."
+                                <TextBlock Text="Kh&#x1EAF;c ph&#x1EE5;c tri&#x1EC7;t &#x0111;&#x1EC3; l&#x1ED7;i k&#x1EB9;t t&#x1EA3;i 0%, m&#x00E3; l&#x1ED7;i 0x80070002, 0x8024... khi c&#x1EAD;p nh&#x1EAD;t Windows."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnFixWindowsUpdate" Content="Reset Toàn Bộ Cache Update (Triệt để)" Style="{StaticResource ActionButton}" Background="#B45309" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnRestartUpdateServices" Content="Khởi Động Lại Dịch Vụ BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnTriggerScanUpdate" Content="Kích Hoạt Tìm Bản Cập Nhật Mới (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnFixWindowsUpdate" Content="Reset To&#x00E0;n B&#x1ED9; Cache Update (Tri&#x1EC7;t &#x0111;&#x1EC3;)" Style="{StaticResource ActionButton}" Background="#B45309" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnRestartUpdateServices" Content="Kh&#x1EDF;i &#x0110;&#x1ED9;ng L&#x1EA1;i D&#x1ECB;ch V&#x1EE5; BITS &amp; Wuauserv" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnTriggerScanUpdate" Content="K&#x00ED;ch Ho&#x1EA1;t T&#x00EC;m B&#x1EA3;n C&#x1EAD;p Nh&#x1EAD;t M&#x1EDB;i (USOClient)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
@@ -5004,12 +5004,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#0E2920" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="NETWORK" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
-                                    <TextBlock Text="Sửa lỗi Mạng &amp; Kết nối" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="S&#x1EED;a l&#x1ED7;i M&#x1EA1;ng &amp; K&#x1EBF;t n&#x1ED1;i" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Khắc phục sự cố mất kết nối mạng, gián đoạn truy cập web, lỗi DNS và sự cố bộ giao thức."
+                                <TextBlock Text="Kh&#x1EAF;c ph&#x1EE5;c s&#x1EF1; c&#x1ED1; m&#x1EA5;t k&#x1EBF;t n&#x1ED1;i m&#x1EA1;ng, gi&#x00E1;n &#x0111;o&#x1EA1;n truy c&#x1EAD;p web, l&#x1ED7;i DNS v&#x00E0; s&#x1EF1; c&#x1ED1; b&#x1ED9; giao th&#x1EE9;c."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (Làm mới mạng)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnResetTcpIp" Content="Reset Toàn Bộ Ngăn Xếp TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnFlushDnsWinsock" Content="Flush DNS &amp; Reset Winsock (L&#x00E0;m m&#x1EDB;i m&#x1EA1;ng)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnResetTcpIp" Content="Reset To&#x00E0;n B&#x1ED9; Ng&#x0103;n X&#x1EBF;p TCP/IP Stack" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
@@ -5019,13 +5019,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#1F1936" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="MAINTAIN" FontSize="9.5" FontWeight="Bold" Foreground="#A78BFA"/>
                                     </Border>
-                                    <TextBlock Text="Bảo trì &amp; Dọn dẹp hệ thống" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="B&#x1EA3;o tr&#x00EC; &amp; D&#x1ECD;n d&#x1EB9;p h&#x1EC7; th&#x1ED1;ng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Giải phóng dung lượng ổ C bị chiếm dụng bởi tệp tạm, nhật ký sự kiện và nạp lại thanh Taskbar khi bị treo."
+                                <TextBlock Text="Gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; C b&#x1ECB; chi&#x1EBF;m d&#x1EE5;ng b&#x1EDF;i t&#x1EC7;p t&#x1EA1;m, nh&#x1EAD;t k&#x00FD; s&#x1EF1; ki&#x1EC7;n v&#x00E0; n&#x1EA1;p l&#x1EA1;i thanh Taskbar khi b&#x1ECB; treo."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnClearTemp" Content="Dọn Sạch Thư Mục Temp &amp; Cache Rác" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnCleanEventLogs" Content="Dọn Dẹp Windows Event Logs" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnRestartExplorer" Content="Khởi Động Lại Windows Explorer (Fix đơ taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnClearTemp" Content="D&#x1ECD;n S&#x1EA1;ch Th&#x01B0; M&#x1EE5;c Temp &amp; Cache R&#x00E1;c" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnCleanEventLogs" Content="D&#x1ECD;n D&#x1EB9;p Windows Event Logs" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnRestartExplorer" Content="Kh&#x1EDF;i &#x0110;&#x1ED9;ng L&#x1EA1;i Windows Explorer (Fix &#x0111;&#x01A1; taskbar)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
                         </UniformGrid>
@@ -5035,8 +5035,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
             <DockPanel Name="TabPage3" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Module Quản lý Driver hiện đang được khóa để đảm bảo an toàn hệ thống và tập trung quản lý ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#x1F512; T&#x00CD;NH N&#x0102;NG &#x0110;ANG T&#x1EA0;M KH&#x00D3;A" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Module Qu&#x1EA3;n l&#x00FD; Driver hi&#x1EC7;n &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c kh&#x00F3;a &#x0111;&#x1EC3; &#x0111;&#x1EA3;m b&#x1EA3;o an to&#x00E0;n h&#x1EC7; th&#x1ED1;ng v&#x00E0; t&#x1EAD;p trung qu&#x1EA3;n l&#x00FD; &#x1EE9;ng d&#x1EE5;ng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12,16,14" IsEnabled="False" Opacity="0.45">
@@ -5047,13 +5047,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#2D141D" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="HARDWARE" FontSize="9.5" FontWeight="Bold" Foreground="#FB7185"/>
                                     </Border>
-                                    <TextBlock Text="Chẩn đoán phần cứng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Ch&#x1EA9;n &#x0111;o&#x00E1;n ph&#x1EA7;n c&#x1EE9;ng" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Rà soát các thiết bị bị chấm than vàng, thiếu driver hoặc driver bị xung đột crash."
+                                <TextBlock Text="R&#x00E0; so&#x00E1;t c&#x00E1;c thi&#x1EBF;t b&#x1ECB; b&#x1ECB; ch&#x1EA5;m than v&#x00E0;ng, thi&#x1EBF;u driver ho&#x1EB7;c driver b&#x1ECB; xung &#x0111;&#x1ED9;t crash."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnScanFaultyDrivers" Content="Quét Thiết Bị &amp; Driver Bị Lỗi" Style="{StaticResource ActionButton}" Background="#BE123C" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnPnpRescan" Content="Buộc Windows Quét Lại Phần Cứng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnOpenDeviceManager" Content="Mở Trình Quản Lý Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnScanFaultyDrivers" Content="Qu&#x00E9;t Thi&#x1EBF;t B&#x1ECB; &amp; Driver B&#x1ECB; L&#x1ED7;i" Style="{StaticResource ActionButton}" Background="#BE123C" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnPnpRescan" Content="Bu&#x1ED9;c Windows Qu&#x00E9;t L&#x1EA1;i Ph&#x1EA7;n C&#x1EE9;ng (PnP Scan)" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnOpenDeviceManager" Content="M&#x1EDF; Tr&#x00EC;nh Qu&#x1EA3;n L&#x00FD; Device Manager" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
@@ -5063,13 +5063,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#2A1F12" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="RESOLVE" FontSize="9.5" FontWeight="Bold" Foreground="#FBBF24"/>
                                     </Border>
-                                    <TextBlock Text="Gỡ lỗi cập nhật Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="G&#x1EE1; l&#x1ED7;i c&#x1EAD;p nh&#x1EAD;t Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Sửa lỗi Windows Update bị kẹt khi đang cài driver màn hình, âm thanh, touchpad."
+                                <TextBlock Text="S&#x1EED;a l&#x1ED7;i Windows Update b&#x1ECB; k&#x1EB9;t khi &#x0111;ang c&#x00E0;i driver m&#x00E0;n h&#x00EC;nh, &#x00E2;m thanh, touchpad."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnFixDriverUpdate" Content="Sửa Lỗi Kẹt Cập Nhật Driver (Xóa Queue)" Style="{StaticResource ActionButton}" Background="#B45309" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnScanWindowsUpdateDrivers" Content="Kích Hoạt Quét Driver Mới Từ Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnCleanDriverStore" Content="Dọn Dẹp Driver Cũ Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnFixDriverUpdate" Content="S&#x1EED;a L&#x1ED7;i K&#x1EB9;t C&#x1EAD;p Nh&#x1EAD;t Driver (X&#x00F3;a Queue)" Style="{StaticResource ActionButton}" Background="#B45309" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnScanWindowsUpdateDrivers" Content="K&#x00ED;ch Ho&#x1EA1;t Qu&#x00E9;t Driver M&#x1EDB;i T&#x1EEB; Microsoft" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnCleanDriverStore" Content="D&#x1ECD;n D&#x1EB9;p Driver C&#x0169; Trong DriverStore" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
 
@@ -5079,12 +5079,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                     <Border Background="#0E2920" CornerRadius="1" Padding="6,2" Margin="0,0,8,0" VerticalAlignment="Center">
                                         <TextBlock Text="BACKUP" FontSize="9.5" FontWeight="Bold" Foreground="#34D399"/>
                                     </Border>
-                                    <TextBlock Text="Sao lưu &amp; Bảo vệ Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Sao l&#x01B0;u &amp; B&#x1EA3;o v&#x1EC7; Driver" FontWeight="SemiBold" FontSize="13.5" Foreground="#E2E8F0" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Trích xuất toàn bộ driver bên thứ ba để phòng khi cài lại Windows không sợ mất mạng/wifi."
+                                <TextBlock Text="Tr&#x00ED;ch xu&#x1EA5;t to&#x00E0;n b&#x1ED9; driver b&#x00EA;n th&#x1EE9; ba &#x0111;&#x1EC3; ph&#x00F2;ng khi c&#x00E0;i l&#x1EA1;i Windows kh&#x00F4;ng s&#x1EE3; m&#x1EA5;t m&#x1EA1;ng/wifi."
                                            FontSize="11.5" Foreground="#64748B" Margin="0,0,0,12" TextWrapping="Wrap"/>
-                                <Button Name="btnBackupDrivers" Content="Sao Lưu Toàn Bộ Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
-                                <Button Name="btnOpenBackupFolder" Content="Mở Thư Mục Chứa Driver Đã Sao Lưu" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnBackupDrivers" Content="Sao L&#x01B0;u To&#x00E0;n B&#x1ED9; Driver (Ra C:\Backup_Drivers)" Style="{StaticResource ActionButton}" Background="#059669" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
+                                <Button Name="btnOpenBackupFolder" Content="M&#x1EDF; Th&#x01B0; M&#x1EE5;c Ch&#x1EE9;a Driver &#x0110;&#x00E3; Sao L&#x01B0;u" Style="{StaticResource SecondaryButton}" Margin="0,3" HorizontalContentAlignment="Left" Padding="14,9"/>
                             </StackPanel>
                         </Border>
                         </UniformGrid>
@@ -5105,11 +5105,11 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                 <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse Fill="#10B981" Width="7" Height="7" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                    <TextBlock Name="txtStatus" Text="Sẵn sàng"
+                    <TextBlock Name="txtStatus" Text="S&#x1EB5;n s&#x00E0;ng"
                                Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold"/>
                 </StackPanel>
 
-                <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app được chọn"
+                <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n"
                            Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
 
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
@@ -11370,26 +11370,26 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-    $trimmed = $trimmed.Replace("[✓]", "[OK]").Replace("[✓ ", "[OK - ").Replace("✓", "OK")
-    $trimmed = $trimmed.Replace("[❌]", "[ERR]").Replace("[❌ ", "[ERR - ").Replace("❌", "ERR")
-    $trimmed = $trimmed.Replace("[⚠️]", "[WARN]").Replace("[⚠️ ", "[WARN - ").Replace("⚠️", "WARN")
-    $trimmed = $trimmed.Replace("[🔍]", "[SCAN]").Replace("🔍 ", "").Replace("🔍", "")
-    $trimmed = $trimmed.Replace("[↗]", "[WEB]").Replace("↗", "->")
-    $trimmed = $trimmed.Replace("🟢 ", "").Replace("🔴 ", "").Replace("🚀 ", "").Replace("⚡ ", "").Replace("🗑️ ", "")
-    $trimmed = $trimmed.Replace("•", "-").Replace("─", "-")
+    $trimmed = $trimmed.Replace("[$([char]0x2713)]", "[OK]").Replace("[$([char]0x2713) ", "[OK - ").Replace("$([char]0x2713)", "OK")
+    $trimmed = $trimmed.Replace("[$([char]0x274C)]", "[ERR]").Replace("[$([char]0x274C) ", "[ERR - ").Replace("$([char]0x274C)", "ERR")
+    $trimmed = $trimmed.Replace("[$([char]0x26A0)$([char]0xFE0F)]", "[WARN]").Replace("[$([char]0x26A0)$([char]0xFE0F) ", "[WARN - ").Replace("$([char]0x26A0)$([char]0xFE0F)", "WARN")
+    $trimmed = $trimmed.Replace("[$([char]0xD83D)$([char]0xDD0D)]", "[SCAN]").Replace("$([char]0xD83D)$([char]0xDD0D) ", "").Replace("$([char]0xD83D)$([char]0xDD0D)", "")
+    $trimmed = $trimmed.Replace("[$([char]0x2197)]", "[WEB]").Replace("$([char]0x2197)", "->")
+    $trimmed = $trimmed.Replace("$([char]0xD83D)$([char]0xDFE2) ", "").Replace("$([char]0xD83D)$([char]0xDD34) ", "").Replace("$([char]0xD83D)$([char]0xDE80) ", "").Replace("$([char]0x26A1) ", "").Replace("$([char]0xD83D)$([char]0xDDD1)$([char]0xFE0F) ", "")
+    $trimmed = $trimmed.Replace("$([char]0x2022)", "-").Replace("$([char]0x2500)", "-")
 
     $timestamp = (Get-Date).ToString("HH:mm:ss")
     $color = [System.ConsoleColor]::Gray
 
     if ($trimmed -match '^={4,}|^-{4,}|^\s*-{4,}') {
         $color = [System.ConsoleColor]::DarkCyan
-    } elseif ($trimmed -match '\[OK|HOÀN THÀNH|THÀNH CÔNG') {
+    } elseif ($trimmed -match "\[OK|HO$([char]0x00C0)N TH$([char]0x00C0)NH|TH$([char]0x00C0)NH C$([char]0x00D4)NG") {
         $color = [System.ConsoleColor]::Green
-    } elseif ($trimmed -match '\[ERR|\[x\]|LỖI') {
+    } elseif ($trimmed -match "\[ERR|\[x\]|L$([char]0x1ED6)I") {
         $color = [System.ConsoleColor]::Red
     } elseif ($trimmed -match '\[!\]|\[WARN|\[LOCK\]') {
         $color = [System.ConsoleColor]::Yellow
-    } elseif ($trimmed -match '\[SCAN\]|BẮT ĐẦU|ĐANG QUÉT') {
+    } elseif ($trimmed -match "\[SCAN\]|B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U|$([char]0x0110)ANG QU$([char]0x00C9)T") {
         $color = [System.ConsoleColor]::Cyan
     } elseif ($trimmed -match '\[CLEAN\]') {
         $color = [System.ConsoleColor]::Magenta
@@ -11433,7 +11433,7 @@ function Run-CliStream {
 
         $p = [System.Diagnostics.Process]::Start($pinfo)
         if ($null -eq $p) {
-            Log-Text "[!] Không thể khởi động tiến trình: $FileName"
+            Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh: $FileName"
             return -1
         }
 
@@ -11478,7 +11478,7 @@ function Run-CliStream {
             try { $p.Dispose() } catch {}
         }
     } catch {
-        Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Arguments]: $($_.Exception.Message)"
+        Log-Text "[!] L$([char]0x1ED7)i khi th$([char]0x1EF1)c thi l$([char]0x1EC7)nh [$FileName $Arguments]: $($_.Exception.Message)"
         return -1
     }
 }
@@ -12145,7 +12145,7 @@ function Invoke-WingetListCapture {
 
             $p = [System.Diagnostics.Process]::Start($pinfo)
             if ($null -eq $p) {
-                throw "Không thể khởi động tiến trình winget."
+                throw "Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh winget."
             }
             $readTask = $p.StandardOutput.ReadToEndAsync()
             $errTask  = $p.StandardError.ReadToEndAsync()
@@ -12781,10 +12781,10 @@ function Apply-InstalledDatabaseToRows {
                     $tb.TextDecorations = $null
                 }
                 if ($updateBadge -and $updateText) {
-                    $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
+                    $updateText.Text = if ($info.Available) { "$([char]0x2191) $($info.Available)" } else { "$([char]0x2191) M$([char]0x1EDB)i" }
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                 }
-                $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                $tip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $($info.Available)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
                 if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             } else {
@@ -12796,7 +12796,7 @@ function Apply-InstalledDatabaseToRows {
                     $tb.TextDecorations = $null
                 }
                 if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
-                $tip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                $tip = "$idnPrefix$($app.Name)`nPhi$([char]0x00EA)n b$([char]0x1EA3)n: $($info.Version) (M$([char]0x1EDB)i nh$([char]0x1EA5)t)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
                 if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             }
@@ -12810,7 +12810,7 @@ function Apply-InstalledDatabaseToRows {
                 $tb.TextDecorations = $null
             }
             if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
-            $tip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            $tip = "$idnPrefix$($app.Name)`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: Ch$([char]0x01B0)a c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t`nID: $($app.ID)"
             if ($tb) { $tb.ToolTip = $tip }
             $row.ToolTip = $tip
         }
@@ -12826,14 +12826,14 @@ function Apply-InstalledDatabaseToRows {
 function Scan-And-ColorizeApps {
     if ($script:isWindowClosing) { return }
     if ($script:isScanningApps) {
-        Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
+        Log-Text "[!] Ti$([char]0x1EBF)n tr$([char]0x00EC)nh qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang ch$([char]0x1EA1)y, b$([char]0x1ECF) qua y$([char]0x00EA)u c$([char]0x1EA7)u tr$([char]0x00F9)ng l$([char]0x1EB7)p."
         return
     }
 
     $script:isScanningApps = $true
     try {
-        Log-Text "[SCAN] Đang quét hệ thống (Registry, Runtimes, CLI & WinGet)..."
-        if ($txtStatus) { $txtStatus.Text = "Đang quét hệ thống..." }
+        Log-Text "[SCAN] $([char]0x0110)ang qu$([char]0x00E9)t h$([char]0x1EC7) th$([char]0x1ED1)ng (Registry, Runtimes, CLI & WinGet)..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t h$([char]0x1EC7) th$([char]0x1ED1)ng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         try { [System.Windows.Forms.Application]::DoEvents() } catch {}
         if ($script:isWindowClosing) { return }
@@ -12857,7 +12857,7 @@ function Scan-And-ColorizeApps {
         if ($allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
             $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
             if ($txtStatus) {
-                $txtStatus.Text = "Tìm thấy $($preStats.Installed) ứng dụng • đang kiểm tra cập nhật..."
+                $txtStatus.Text = "T$([char]0x00EC)m th$([char]0x1EA5)y $($preStats.Installed) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x2022) $([char]0x0111)ang ki$([char]0x1EC3)m tra c$([char]0x1EAD)p nh$([char]0x1EAD)t..."
             }
             try { [System.Windows.Forms.Application]::DoEvents() } catch {}
             if ($script:isWindowClosing) { return }
@@ -12872,7 +12872,7 @@ function Scan-And-ColorizeApps {
             if ($script:isWindowClosing) { return }
             if (-not $primary.Available) {
                 $wingetMissing = $true
-                Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry, Runtimes & Appx."
+                Log-Text "[WARN] Ch$([char]0x01B0)a c$([char]0x00F3) WinGet; chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t c$([char]0x1EE5)c b$([char]0x1ED9) qua Registry, Runtimes & Appx."
             } else {
                 $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
                 if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
@@ -12880,9 +12880,9 @@ function Scan-And-ColorizeApps {
                     $wingetOk = $true
                 } else {
                     if ($primary.TimedOut) {
-                        Log-Text "[WARN] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                        Log-Text "[WARN] WinGet (t$([char]0x1EA5)t c$([char]0x1EA3) ngu$([char]0x1ED3)n) qu$([char]0x00E1) th$([char]0x1EDD)i gian ch$([char]0x1EDD) (35s); $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i v$([char]0x1EDB)i ngu$([char]0x1ED3)n --source winget..."
                     } else {
-                        Log-Text "[WARN] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        Log-Text "[WARN] WinGet (t$([char]0x1EA5)t c$([char]0x1EA3) ngu$([char]0x1ED3)n) tr$([char]0x1EA3) v$([char]0x1EC1) m$([char]0x00E3) $($primary.ExitCode) ($($parsedPrimary.Items.Count) d$([char]0x00F2)ng); $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i --source winget..."
                         if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
                             Log-Text "[stderr] $($primary.StdErr.Trim())"
                         }
@@ -12906,7 +12906,7 @@ function Scan-And-ColorizeApps {
                 }
             }
         } catch {
-            Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
+            Log-Text "[!] L$([char]0x1ED7)i khi g$([char]0x1ECD)i WinGet: $($_.Exception.Message)"
         }
 
         if ($script:isWindowClosing) { return }
@@ -12939,9 +12939,9 @@ function Scan-And-ColorizeApps {
         }
 
         if ($installedList.Count -eq 0 -and -not $wingetOk) {
-            Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
+            Log-Text "[!] Kh$([char]0x00F4)ng nh$([char]0x1EAD)n $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng t$([char]0x1EEB) c$([char]0x1EA3) WinGet l$([char]0x1EAB)n c$([char]0x1EE5)c b$([char]0x1ED9). Gi$([char]0x1EEF) nguy$([char]0x00EA)n tr$([char]0x1EA1)ng th$([char]0x00E1)i hi$([char]0x1EC7)n t$([char]0x1EA1)i."
             if ($txtStatus -and -not $script:hasCompletedAppScan) {
-                $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Quét lại máy" }
+                $txtStatus.Text = if ($wingetMissing) { "Thi$([char]0x1EBF)u WinGet | Qu$([char]0x00E9)t th$([char]0x1EA5)t b$([char]0x1EA1)i" } else { "L$([char]0x1ED7)i qu$([char]0x00E9)t WinGet | H$([char]0x00E3)y th$([char]0x1EED) Qu$([char]0x00E9)t l$([char]0x1EA1)i m$([char]0x00E1)y" }
             }
             return
         }
@@ -12951,11 +12951,11 @@ function Scan-And-ColorizeApps {
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
 
         $script:hasCompletedAppScan = $true
-        $modeTag = if (-not $wingetOk) { " [Dự phòng Registry/Appx]" } else { "" }
-        $summary = "Đã quét xong: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
+        $modeTag = if (-not $wingetOk) { " [D$([char]0x1EF1) ph$([char]0x00F2)ng Registry/Appx]" } else { "" }
+        $summary = "$([char]0x0110)$([char]0x00E3) qu$([char]0x00E9)t xong: $($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i ($($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t)$modeTag"
         Log-Text "[OK] $summary"
         if ($txtStatus) {
-            $txtStatus.Text = "$($finalStats.Installed) đã cài • $($finalStats.Latest) mới nhất • $($finalStats.Outdated) cần cập nhật" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
+            $txtStatus.Text = "$($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i $([char]0x2022) $($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t $([char]0x2022) $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t" + $(if (-not $wingetOk) { " [D$([char]0x1EF1) ph$([char]0x00F2)ng]" } else { "" })
         }
     } finally {
         $script:isScanningApps = $false
@@ -15072,7 +15072,7 @@ function Find-FaultyPnpDevices {
             $_.Present -eq $true -and ($_.Status -ne 'OK' -or ($null -ne $_.ConfigManagerErrorCode -and $_.ConfigManagerErrorCode -ne 0))
         })
     } catch {
-        Log-Text "[!] Lỗi khi quét danh sách PnpDevice: $($_.Exception.Message)"
+        Log-Text "[!] L$([char]0x1ED7)i khi qu$([char]0x00E9)t danh s$([char]0x00E1)ch PnpDevice: $($_.Exception.Message)"
         return @()
     }
 }
@@ -15080,15 +15080,15 @@ function Find-FaultyPnpDevices {
 function Invoke-PnpDeviceRescan {
     $code = Run-CliStream "pnputil.exe" "/scan-devices"
     if ($code -eq 0) {
-        Log-Text "[OK] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
+        Log-Text "[OK] Qu$([char]0x00E9)t l$([char]0x1EA1)i thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng PnP th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
-        Log-Text "[!] Quét thiết bị phần cứng PnP thất bại hoặc gặp lỗi (ExitCode: $code)."
+        Log-Text "[!] Qu$([char]0x00E9)t thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng PnP th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c g$([char]0x1EB7)p l$([char]0x1ED7)i (ExitCode: $code)."
     }
     return $code
 }
 
 function Invoke-PnpDriverStoreCleanup {
-    Log-Text "[*] Đang phân tích danh sách gói Driver OEM bên thứ ba (pnputil /enum-drivers)..."
+    Log-Text "[*] $([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch danh s$([char]0x00E1)ch g$([char]0x00F3)i Driver OEM b$([char]0x00EA)n th$([char]0x1EE9) ba (pnputil /enum-drivers)..."
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "pnputil.exe"
@@ -15103,15 +15103,15 @@ function Invoke-PnpDriverStoreCleanup {
         $p.WaitForExit()
         $raw = $outTask.Result
 
-        $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?i)(?:Published Name|Tên đã phát hành):\s*(oem\d+\.inf)')
+        $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, "(?i)(?:Published Name|T$([char]0x00EA)n $([char]0x0111)$([char]0x00E3) ph$([char]0x00E1)t h$([char]0x00E0)nh):\s*(oem\d+\.inf)")
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {
-            Log-Text "[OK] Không tìm thấy gói driver OEM nào trong DriverStore."
+            Log-Text "[OK] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y g$([char]0x00F3)i driver OEM n$([char]0x00E0)o trong DriverStore."
             return
         }
 
-        Log-Text "[*] Tìm thấy $($oemList.Count) gói driver OEM. Bắt đầu dọn dẹp an toàn (không xóa driver đang sử dụng)..."
+        Log-Text "[*] T$([char]0x00EC)m th$([char]0x1EA5)y $($oemList.Count) g$([char]0x00F3)i driver OEM. B$([char]0x1EAF)t $([char]0x0111)$([char]0x1EA7)u d$([char]0x1ECD)n d$([char]0x1EB9)p an to$([char]0x00E0)n (kh$([char]0x00F4)ng x$([char]0x00F3)a driver $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng)..."
         $deletedCount = 0
         $inUseCount = 0
         $errorCount = 0
@@ -15135,46 +15135,46 @@ function Invoke-PnpDriverStoreCleanup {
                 $delErr = $delErrTask.Result
                 $combined = ($delOut + "`n" + $delErr).Trim()
 
-                if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
+                if ($delP.ExitCode -eq 0 -or $combined -match "deleted successfully|$([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a th$([char]0x00E0)nh c$([char]0x00F4)ng") {
                     $deletedCount++
-                    Log-Text "   [OK - Đã dọn] $inf"
-                } elseif ($combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối') {
+                    Log-Text "   [OK - $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n] $inf"
+                } elseif ($combined -match "installed using the specified INF|$([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c s$([char]0x1EED) d$([char]0x1EE5)ng|in use|b$([char]0x1ECB) t$([char]0x1EEB) ch$([char]0x1ED1)i") {
                     $inUseCount++
                 } else {
                     $errorCount++
-                    $errDetail = ($combined -split "`r?`n" | Where-Object { $_ -match 'failed|lỗi|error' } | Select-Object -First 1)
+                    $errDetail = ($combined -split "`r?`n" | Where-Object { $_ -match "failed|l$([char]0x1ED7)i|error" } | Select-Object -First 1)
                     if (-not $errDetail) { $errDetail = "ExitCode $($delP.ExitCode)" }
-                    Log-Text "   [WARN - Lỗi gói $inf] $errDetail"
+                    Log-Text "   [WARN - L$([char]0x1ED7)i g$([char]0x00F3)i $inf] $errDetail"
                 }
             } catch {
                 $errorCount++
-                Log-Text "   [!] Lỗi ngoại lệ khi xử lý ${inf}: $($_.Exception.Message)"
+                Log-Text "   [!] L$([char]0x1ED7)i ngo$([char]0x1EA1)i l$([char]0x1EC7) khi x$([char]0x1EED) l$([char]0x00FD) ${inf}: $($_.Exception.Message)"
             }
             [System.Windows.Forms.Application]::DoEvents()
         }
 
         if ($deletedCount -gt 0) {
-            Log-Text "[OK] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
+            Log-Text "[OK] Ho$([char]0x00E0)n t$([char]0x1EA5)t! $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $deletedCount g$([char]0x00F3)i driver OEM c$([char]0x0169) kh$([char]0x00F4)ng c$([char]0x00F2)n s$([char]0x1EED) d$([char]0x1EE5)ng ($inUseCount g$([char]0x00F3)i $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n)."
         } else {
-            Log-Text "[OK] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
+            Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) $($oemList.Count) g$([char]0x00F3)i driver OEM $([char]0x0111)$([char]0x1EC1)u $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n."
         }
         if ($errorCount -gt 0) {
-            Log-Text "[!] Có $errorCount gói driver gặp lỗi trong quá trình xử lý."
+            Log-Text "[!] C$([char]0x00F3) $errorCount g$([char]0x00F3)i driver g$([char]0x1EB7)p l$([char]0x1ED7)i trong qu$([char]0x00E1) tr$([char]0x00EC)nh x$([char]0x1EED) l$([char]0x00FD)."
         }
     } catch {
-        Log-Text "[!] Lỗi khi dọn dẹp DriverStore: $($_.Exception.Message)"
+        Log-Text "[!] L$([char]0x1ED7)i khi d$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore: $($_.Exception.Message)"
     }
 }
 
 function Invoke-DismComponentCleanup {
-    Log-Text "[WARN] CẢNH BÁO: Tùy chọn /ResetBase sẽ xóa vĩnh viễn các bản cập nhật cũ đã bị thay thế trong WinSxS."
-    Log-Text "[*] Sau khi hoàn tất thao tác này, bạn SẼ KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại."
-    Log-Text "[*] Đang tiến hành dọn dẹp và nén kho linh kiện WinSxS qua DISM..."
+    Log-Text "[WARN] C$([char]0x1EA2)NH B$([char]0x00C1)O: T$([char]0x00F9)y ch$([char]0x1ECD)n /ResetBase s$([char]0x1EBD) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n c$([char]0x00E1)c b$([char]0x1EA3)n c$([char]0x1EAD)p nh$([char]0x1EAD)t c$([char]0x0169) $([char]0x0111)$([char]0x00E3) b$([char]0x1ECB) thay th$([char]0x1EBF) trong WinSxS."
+    Log-Text "[*] Sau khi ho$([char]0x00E0)n t$([char]0x1EA5)t thao t$([char]0x00E1)c n$([char]0x00E0)y, b$([char]0x1EA1)n S$([char]0x1EBC) KH$([char]0x00D4)NG TH$([char]0x1EC2) g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t (rollback) c$([char]0x00E1)c b$([char]0x1EA3)n Windows Update hi$([char]0x1EC7)n t$([char]0x1EA1)i."
+    Log-Text "[*] $([char]0x0110)ang ti$([char]0x1EBF)n h$([char]0x00E0)nh d$([char]0x1ECD)n d$([char]0x1EB9)p v$([char]0x00E0) n$([char]0x00E9)n kho linh ki$([char]0x1EC7)n WinSxS qua DISM..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
     if ($code -eq 0) {
-        Log-Text "[OK] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[OK] D$([char]0x1ECD)n d$([char]0x1EB9)p kho linh ki$([char]0x1EC7)n WinSxS ho$([char]0x00E0)n t$([char]0x1EA5)t th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
-        Log-Text "[!] Dọn dẹp kho linh kiện WinSxS thất bại hoặc bị gián đoạn (ExitCode: $code)."
+        Log-Text "[!] D$([char]0x1ECD)n d$([char]0x1EB9)p kho linh ki$([char]0x1EC7)n WinSxS th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c b$([char]0x1ECB) gi$([char]0x00E1)n $([char]0x0111)o$([char]0x1EA1)n (ExitCode: $code)."
     }
     return $code
 }
@@ -15186,30 +15186,30 @@ function Export-SystemDriversBackup {
         try {
             New-Item -ItemType Directory -Path $Destination -Force -ErrorAction Stop | Out-Null
         } catch {
-            Log-Text "[!] Không thể tạo thư mục sao lưu '$Destination': $($_.Exception.Message)"
+            Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) t$([char]0x1EA1)o th$([char]0x01B0) m$([char]0x1EE5)c sao l$([char]0x01B0)u '$Destination': $($_.Exception.Message)"
             return $false
         }
     }
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
-        Log-Text "[OK] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
+        Log-Text "[OK] Sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver th$([char]0x00E0)nh c$([char]0x00F4)ng qua Export-WindowsDriver."
         return $true
     } catch {
-        Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
+        Log-Text "[*] Export-WindowsDriver kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng ho$([char]0x1EB7)c b$([char]0x1ECB) t$([char]0x1EEB) ch$([char]0x1ED1)i, chuy$([char]0x1EC3)n sang pnputil.exe..."
         $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
         if ($exitCode -eq 0) {
-            Log-Text "[OK] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
+            Log-Text "[OK] Sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver th$([char]0x00E0)nh c$([char]0x00F4)ng qua pnputil.exe (ExitCode: 0)."
             return $true
         } else {
-            Log-Text "[!] Sao lưu driver qua pnputil.exe thất bại (ExitCode: $exitCode)."
+            Log-Text "[!] Sao l$([char]0x01B0)u driver qua pnputil.exe th$([char]0x1EA5)t b$([char]0x1EA1)i (ExitCode: $exitCode)."
             return $false
         }
     }
 }
 
 function Reset-WindowsUpdateEngine {
-    Log-Text "[*] Đang dừng các dịch vụ Windows Update, BITS & DoSvc..."
+    Log-Text "[*] $([char]0x0110)ang d$([char]0x1EEB)ng c$([char]0x00E1)c d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update, BITS & DoSvc..."
     $services = @("wuauserv", "bits", "cryptsvc", "dosvc")
     foreach ($s in $services) {
         Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
@@ -15217,7 +15217,7 @@ function Reset-WindowsUpdateEngine {
 
     Start-Sleep -Milliseconds 1500
 
-    Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
+    Log-Text "[*] $([char]0x0110)ang l$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m SoftwareDistribution v$([char]0x00E0) Catroot2..."
     $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
     $sdPath = "C:\Windows\SoftwareDistribution"
@@ -15230,7 +15230,7 @@ function Reset-WindowsUpdateEngine {
         Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $sdPath) {
             $sdRenamed = $false
-            Log-Text "[WARN] Không thể đổi tên SoftwareDistribution (tệp đang bị khóa bởi tiến trình khác)."
+            Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x0111)$([char]0x1ED5)i t$([char]0x00EA)n SoftwareDistribution (t$([char]0x1EC7)p $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a b$([char]0x1EDF)i ti$([char]0x1EBF)n tr$([char]0x00EC)nh kh$([char]0x00E1)c)."
         }
     }
 
@@ -15244,31 +15244,31 @@ function Reset-WindowsUpdateEngine {
         Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $crPath) {
             $crRenamed = $false
-            Log-Text "[WARN] Không thể đổi tên catroot2 (tệp đang bị khóa)."
+            Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x0111)$([char]0x1ED5)i t$([char]0x00EA)n catroot2 (t$([char]0x1EC7)p $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a)."
         }
     }
 
-    Log-Text "[*] Khởi động lại các dịch vụ hệ thống..."
+    Log-Text "[*] Kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i c$([char]0x00E1)c d$([char]0x1ECB)ch v$([char]0x1EE5) h$([char]0x1EC7) th$([char]0x1ED1)ng..."
     Start-Service -Name "cryptsvc" -ErrorAction SilentlyContinue
     Start-Service -Name "bits" -ErrorAction SilentlyContinue
     Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
     Start-Service -Name "dosvc" -ErrorAction SilentlyContinue
 
     if ($sdRenamed -and $crRenamed) {
-        Log-Text "[OK] Đã khởi tạo lại dịch vụ Windows Update và xóa sạch cache thành công!"
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i t$([char]0x1EA1)o l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update v$([char]0x00E0) x$([char]0x00F3)a s$([char]0x1EA1)ch cache th$([char]0x00E0)nh c$([char]0x00F4)ng!"
     } else {
-        Log-Text "[*] Đã đặt lại dịch vụ Windows Update (một số thư mục cache đang được hệ thống bảo vệ)."
+        Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update (m$([char]0x1ED9)t s$([char]0x1ED1) th$([char]0x01B0) m$([char]0x1EE5)c cache $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c h$([char]0x1EC7) th$([char]0x1ED1)ng b$([char]0x1EA3)o v$([char]0x1EC7))."
     }
 }
 
 function Invoke-WindowsUpdateScan {
-    Log-Text "[*] Đang gửi tín hiệu yêu cầu Windows tìm kiếm bản cập nhật mới..."
+    Log-Text "[*] $([char]0x0110)ang g$([char]0x1EED)i t$([char]0x00ED)n hi$([char]0x1EC7)u y$([char]0x00EA)u c$([char]0x1EA7)u Windows t$([char]0x00EC)m ki$([char]0x1EBF)m b$([char]0x1EA3)n c$([char]0x1EAD)p nh$([char]0x1EAD)t m$([char]0x1EDB)i..."
     try {
         $au = New-Object -ComObject Microsoft.Update.AutoUpdate
         $au.DetectNow()
-        Log-Text "[OK] Đã kích hoạt Microsoft.Update.AutoUpdate.DetectNow() thành công."
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t Microsoft.Update.AutoUpdate.DetectNow() th$([char]0x00E0)nh c$([char]0x00F4)ng."
     } catch {
-        Log-Text "[*] COM AutoUpdate không phản hồi, mở trang cập nhật hệ thống..."
+        Log-Text "[*] COM AutoUpdate kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i, m$([char]0x1EDF) trang c$([char]0x1EAD)p nh$([char]0x1EAD)t h$([char]0x1EC7) th$([char]0x1ED1)ng..."
     }
 
     try {
@@ -15277,23 +15277,23 @@ function Invoke-WindowsUpdateScan {
 }
 
 function Invoke-SystemFileCheck {
-    Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)..."
+    Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i ch$([char]0x1EA1)y System File Checker (sfc /scannow)..."
     $code = Run-CliStream "sfc.exe" "/scannow"
     if ($code -eq 0) {
-        Log-Text "[OK] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
+        Log-Text "[OK] SFC Scan ho$([char]0x00E0)n t$([char]0x1EA5)t: To$([char]0x00E0)n v$([char]0x1EB9)n t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)$([char]0x1EA1)t chu$([char]0x1EA9)n (ExitCode: 0)."
     } else {
-        Log-Text "[!] SFC Scan phát hiện lỗi hoặc không thể sửa chữa toàn bộ tệp hệ thống (ExitCode: $code)."
+        Log-Text "[!] SFC Scan ph$([char]0x00E1)t hi$([char]0x1EC7)n l$([char]0x1ED7)i ho$([char]0x1EB7)c kh$([char]0x00F4)ng th$([char]0x1EC3) s$([char]0x1EED)a ch$([char]0x1EEF)a to$([char]0x00E0)n b$([char]0x1ED9) t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng (ExitCode: $code)."
     }
     return $code
 }
 
 function Invoke-DismRestoreHealth {
-    Log-Text "[*] Đang khởi chạy DISM RestoreHealth khôi phục kho linh kiện hệ thống..."
+    Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i ch$([char]0x1EA1)y DISM RestoreHealth kh$([char]0x00F4)i ph$([char]0x1EE5)c kho linh ki$([char]0x1EC7)n h$([char]0x1EC7) th$([char]0x1ED1)ng..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
     if ($code -eq 0) {
-        Log-Text "[OK] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[OK] DISM RestoreHealth ho$([char]0x00E0)n t$([char]0x1EA5)t th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
-        Log-Text "[!] DISM RestoreHealth thất bại hoặc gặp sự cố (ExitCode: $code). Hãy kiểm tra kết nối mạng hoặc nguồn tệp hệ thống."
+        Log-Text "[!] DISM RestoreHealth th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c g$([char]0x1EB7)p s$([char]0x1EF1) c$([char]0x1ED1) (ExitCode: $code). H$([char]0x00E3)y ki$([char]0x1EC3)m tra k$([char]0x1EBF)t n$([char]0x1ED1)i m$([char]0x1EA1)ng ho$([char]0x1EB7)c ngu$([char]0x1ED3)n t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng."
     }
     return $code
 }
@@ -15301,9 +15301,9 @@ function Invoke-DismRestoreHealth {
 function Clear-DnsResolverCache {
     $code = Run-CliStream "ipconfig.exe" "/flushdns"
     if ($code -eq 0) {
-        Log-Text "[OK] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
+        Log-Text "[OK] L$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m DNS th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
-        Log-Text "[!] Làm mới bộ nhớ đệm DNS thất bại (ExitCode: $code)."
+        Log-Text "[!] L$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m DNS th$([char]0x1EA5)t b$([char]0x1EA1)i (ExitCode: $code)."
     }
     return $code
 }
@@ -15312,9 +15312,9 @@ function Reset-NetworkInterfaceStack {
     $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
     $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
     if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
-        Log-Text "[OK] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
+        Log-Text "[OK] $([char]0x0110)$([char]0x1EB7)t l$([char]0x1EA1)i Winsock Catalog v$([char]0x00E0) TCP/IP Stack th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0). Khuy$([char]0x00EA)n b$([char]0x1EA1)n n$([char]0x00EA)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y."
     } else {
-        Log-Text "[!] Đặt lại mạng gặp lỗi (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
+        Log-Text "[!] $([char]0x0110)$([char]0x1EB7)t l$([char]0x1EA1)i m$([char]0x1EA1)ng g$([char]0x1EB7)p l$([char]0x1ED7)i (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
     }
     return ($codeWinsock -eq 0 -and $codeTcpIp -eq 0)
 }
@@ -15331,13 +15331,13 @@ function Clear-SystemTempFiles {
 }
 
 function Clear-SystemEventLogs {
-    Log-Text "[*] Đang quét và dọn sạch nhật ký sự kiện Windows Event Logs..."
+    Log-Text "[*] $([char]0x0110)ang qu$([char]0x00E9)t v$([char]0x00E0) d$([char]0x1ECD)n s$([char]0x1EA1)ch nh$([char]0x1EAD)t k$([char]0x00FD) s$([char]0x1EF1) ki$([char]0x1EC7)n Windows Event Logs..."
     Get-WinEvent -ListLog * -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName)
         } catch {}
     }
-    Log-Text "[OK] Toàn bộ Windows Event Logs đã được làm sạch."
+    Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) Windows Event Logs $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c l$([char]0x00E0)m s$([char]0x1EA1)ch."
 }
 
 Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
@@ -15938,7 +15938,7 @@ function Show-OwnedMessageBox {
                         <TextBlock Name="dlgIconGlyph" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Name="dlgTitleText" Grid.Column="1" Foreground="#F1F5F9" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <Button Name="dlgBtnCloseX" Grid.Column="2" Content="✕" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center"/>
+                    <Button Name="dlgBtnCloseX" Grid.Column="2" Content="&#x2715;" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
@@ -16093,13 +16093,13 @@ function Show-OwnedMessageBox {
     $isYesNo = ($Buttons -eq [System.Windows.Forms.MessageBoxButtons]::YesNo) -or ($Buttons -eq [System.Windows.Forms.MessageBoxButtons]::YesNoCancel)
     $isOkCancel = ($Buttons -eq [System.Windows.Forms.MessageBoxButtons]::OKCancel)
     if ($isYesNo) {
-        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "Đồng ý" } else { $PrimaryText }
-        $dlgBtnSecondary.Content = if ([string]::IsNullOrWhiteSpace($SecondaryText)) { "Hủy bỏ" } else { $SecondaryText }
+        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "$([char]0x0110)$([char]0x1ED3)ng $([char]0x00FD)" } else { $PrimaryText }
+        $dlgBtnSecondary.Content = if ([string]::IsNullOrWhiteSpace($SecondaryText)) { "H$([char]0x1EE7)y b$([char]0x1ECF)" } else { $SecondaryText }
     } elseif ($isOkCancel) {
         $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "OK" } else { $PrimaryText }
-        $dlgBtnSecondary.Content = if ([string]::IsNullOrWhiteSpace($SecondaryText)) { "Hủy bỏ" } else { $SecondaryText }
+        $dlgBtnSecondary.Content = if ([string]::IsNullOrWhiteSpace($SecondaryText)) { "H$([char]0x1EE7)y b$([char]0x1ECF)" } else { $SecondaryText }
     } else {
-        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "Đóng" } else { $PrimaryText }
+        $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "$([char]0x0110)$([char]0x00F3)ng" } else { $PrimaryText }
         $dlgBtnSecondary.Visibility = [System.Windows.Visibility]::Collapsed
     }
 
@@ -16209,7 +16209,7 @@ function Invoke-GuardedAction {
     )
     if ($script:isWindowClosing) { return }
     if ($script:isActionRunning -or $script:isScanningApps -or $script:isUpdatingUninstaller) {
-        Log-Text "[WARN] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
+        Log-Text "[WARN] $([char]0x0110)ang c$([char]0x00F3) m$([char]0x1ED9)t t$([char]0x00E1)c v$([char]0x1EE5) kh$([char]0x00E1)c $([char]0x0111)ang th$([char]0x1EF1)c thi ($ActionName). Vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i!"
         return
     }
     if (-not $DeferExpand) {
@@ -16219,7 +16219,7 @@ function Invoke-GuardedAction {
     try {
         & $Action
     } catch {
-        Log-Text "[!] Lỗi khi thực hiện '$ActionName': $($_.Exception.Message)"
+        Log-Text "[!] L$([char]0x1ED7)i khi th$([char]0x1EF1)c hi$([char]0x1EC7)n '$ActionName': $($_.Exception.Message)"
     } finally {
         $script:isActionRunning = $false
         $script:isScanningApps = $false
@@ -16253,8 +16253,8 @@ $script:LockedButtonActions = [System.Collections.Generic.Dictionary[string, obj
 function Test-MaintenanceFeatureLocked {
     param([string]$FeatureName)
     if ($script:LockMaintenanceTabs) {
-        Log-Text "[LOCK] Tính năng '$FeatureName' hiện đang được tạm khóa."
-        if ($txtStatus) { $txtStatus.Text = "Tính năng '$FeatureName' đang tạm khóa" }
+        Log-Text "[LOCK] T$([char]0x00ED)nh n$([char]0x0103)ng '$FeatureName' hi$([char]0x1EC7)n $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c t$([char]0x1EA1)m kh$([char]0x00F3)a."
+        if ($txtStatus) { $txtStatus.Text = "T$([char]0x00ED)nh n$([char]0x0103)ng '$FeatureName' $([char]0x0111)ang t$([char]0x1EA1)m kh$([char]0x00F3)a" }
         return $true
     }
     return $false
@@ -16286,7 +16286,7 @@ function Register-Click {
             $btn.Add_Click($Action)
         }
     } else {
-        Write-Warning "Không tìm thấy nút trong XAML: $ButtonName"
+        Write-Warning "Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y n$([char]0x00FA)t trong XAML: $ButtonName"
     }
 }
 
@@ -16308,7 +16308,7 @@ function Set-ActiveTab {
     param([int]$index, $activeBtn)
     if ($script:isWindowClosing) { return }
     if ($script:LockMaintenanceTabs -and ($index -eq 2 -or $index -eq 3)) {
-        $feature = if ($index -eq 2) { "Gỡ lỗi & Hệ thống" } else { "Quản lý Driver" }
+        $feature = if ($index -eq 2) { "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" } else { "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" }
         Test-MaintenanceFeatureLocked $feature | Out-Null
         return
     }
@@ -16342,7 +16342,7 @@ function Set-ActiveTab {
         if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller) {
             $script:deferredUninstallerLoad = $true
             if ($txtUninstallerSummary) {
-                $txtUninstallerSummary.Text = "Đang chờ tác vụ hiện tại hoàn tất để tải danh sách ứng dụng..."
+                $txtUninstallerSummary.Text = "$([char]0x0110)ang ch$([char]0x1EDD) t$([char]0x00E1)c v$([char]0x1EE5) hi$([char]0x1EC7)n t$([char]0x1EA1)i ho$([char]0x00E0)n t$([char]0x1EA5)t $([char]0x0111)$([char]0x1EC3) t$([char]0x1EA3)i danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng..."
             }
         } elseif (-not $script:uninstallerLoadQueued -and $window -and $window.Dispatcher) {
             $script:uninstallerLoadQueued = $true
@@ -16359,8 +16359,8 @@ function Set-ActiveTab {
 
 Register-Click "navBtnApps"        { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnUninstaller" { Set-ActiveTab 1 $navBtnUninstaller }
-Register-Click "navBtnRepair"      -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 2 $navBtnRepair }
-Register-Click "navBtnDrivers"     -LockGroup "Quản lý Driver"    { Set-ActiveTab 3 $navBtnDrivers }
+Register-Click "navBtnRepair"      -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" { Set-ActiveTab 2 $navBtnRepair }
+Register-Click "navBtnDrivers"     -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver"    { Set-ActiveTab 3 $navBtnDrivers }
 
 Set-ActiveTab 0 $navBtnApps
 
@@ -16632,11 +16632,11 @@ function Update-UninstallerSelectionCount {
         }
     }
     if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = "Gỡ cài đặt ($count)"
+        $btnDeepUninstall.Content = "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ($count)"
         $btnDeepUninstall.IsEnabled = ($count -gt 0)
     }
     if ($btnForceStopUninstall) {
-        $btnForceStopUninstall.Content = "Buộc dừng & Xóa ($count)"
+        $btnForceStopUninstall.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($count)"
         $btnForceStopUninstall.IsEnabled = ($count -gt 0)
     }
 }
@@ -16670,7 +16670,7 @@ function Apply-UninstallerFilter {
         $total = $script:cachedUninstallerApps.Count
         $vMb = [double]$visibleBytes / 1MB
         $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
-        $txtUninstallerSummary.Text = "Đang hiển thị $visibleCount / $total ứng dụng (Tổng: $totalSizeStr • $brokenCount lỗi/mồ côi)"
+        $txtUninstallerSummary.Text = "$([char]0x0110)ang hi$([char]0x1EC3)n th$([char]0x1ECB) $visibleCount / $total $([char]0x1EE9)ng d$([char]0x1EE5)ng (T$([char]0x1ED5)ng: $totalSizeStr $([char]0x2022) $brokenCount l$([char]0x1ED7)i/m$([char]0x1ED3) c$([char]0x00F4)i)"
     }
     Update-UninstallerSelectionCount
 }
@@ -16696,11 +16696,11 @@ function Set-UninstallerSortMode {
                 $btnSortUninstName.Foreground = $script:brushUninstDark
             }
             if ($hdrUninstName) {
-                $hdrUninstName.Text = "TÊN ỨNG DỤNG"
+                $hdrUninstName.Text = "T$([char]0x00CA)N $([char]0x1EE8)NG D$([char]0x1EE4)NG"
                 $hdrUninstName.Foreground = $script:brushUninstHeaderInactiveFg
             }
             if ($hdrUninstSize) {
-                $hdrUninstSize.Text = "DUNG LƯỢNG"
+                $hdrUninstSize.Text = "DUNG L$([char]0x01AF)$([char]0x1EE2)NG"
                 $hdrUninstSize.Foreground = $script:brushUninstFilterActiveFg
             }
         } else {
@@ -16713,11 +16713,11 @@ function Set-UninstallerSortMode {
                 $btnSortUninstSize.Foreground = $script:brushUninstDark
             }
             if ($hdrUninstName) {
-                $hdrUninstName.Text = "TÊN ỨNG DỤNG"
+                $hdrUninstName.Text = "T$([char]0x00CA)N $([char]0x1EE8)NG D$([char]0x1EE4)NG"
                 $hdrUninstName.Foreground = $script:brushUninstFilterActiveFg
             }
             if ($hdrUninstSize) {
-                $hdrUninstSize.Text = "DUNG LƯỢNG"
+                $hdrUninstSize.Text = "DUNG L$([char]0x01AF)$([char]0x1EE2)NG"
                 $hdrUninstSize.Foreground = $script:brushUninstHeaderInactiveFg
             }
         }
@@ -16823,7 +16823,7 @@ function Update-UninstallerList {
     if (-not $Force -and ($script:isActionRunning -or $script:isScanningApps)) {
         $script:deferredUninstallerLoad = $true
         if ($txtUninstallerSummary -and -not $script:uninstallerLoadedOnce) {
-            $txtUninstallerSummary.Text = "Đang chờ tác vụ hiện tại hoàn tất để tải danh sách ứng dụng..."
+            $txtUninstallerSummary.Text = "$([char]0x0110)ang ch$([char]0x1EDD) t$([char]0x00E1)c v$([char]0x1EE5) hi$([char]0x1EC7)n t$([char]0x1EA1)i ho$([char]0x00E0)n t$([char]0x1EA5)t $([char]0x0111)$([char]0x1EC3) t$([char]0x1EA3)i danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng..."
         }
         return
     }
@@ -16833,7 +16833,7 @@ function Update-UninstallerList {
     $script:isUpdatingUninstaller = $true
     $script:suppressUninstallerSelectionCount = $true
     try {
-        if ($txtUninstallerSummary) { $txtUninstallerSummary.Text = "Đang quét danh sách ứng dụng đã cài..." }
+        if ($txtUninstallerSummary) { $txtUninstallerSummary.Text = "$([char]0x0110)ang qu$([char]0x00E9)t danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i..." }
 
         $script:uninstIconTimer.Stop()
         $script:pendingUninstIcons.Clear()
@@ -16936,7 +16936,7 @@ function Update-UninstallerList {
 
                 $badgeTb = [System.Windows.Controls.TextBlock]::new()
                 $dispTrim = if ($app.DisplayName) { $app.DisplayName.Trim() } else { "A" }
-                $badgeTb.Text = if ($app.IsBrokenOrphan) { "!" } elseif ($dispTrim.Length -gt 0) { [string]$dispTrim.Substring(0, 1).ToUpper() } else { "•" }
+                $badgeTb.Text = if ($app.IsBrokenOrphan) { "!" } elseif ($dispTrim.Length -gt 0) { [string]$dispTrim.Substring(0, 1).ToUpper() } else { "$([char]0x2022)" }
                 $badgeTb.FontSize = 10.5
                 $badgeTb.FontWeight = [System.Windows.FontWeights]::Bold
                 $badgeTb.Foreground = if ($app.IsBrokenOrphan) { $script:brushUninstBadgeBrokenFg } else { $script:brushUninstBadgeFg }
@@ -16986,8 +16986,8 @@ function Update-UninstallerList {
                 [System.Windows.Controls.Grid]::SetColumn($nameTb, 1)
                 [void]$nameGrid.Children.Add($nameTb)
 
-                $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
-                $rowBorder.ToolTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
+                $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu d$([char]0x1EEF) li$([char]0x1EC7)u ri$([char]0x00EA)ng: $($app.DataLocation)" } else { "" }
+                $rowBorder.ToolTip = "$($app.DisplayName)`nPhi$([char]0x00EA)n b$([char]0x1EA3)n: $($app.DisplayVersion)`nNh$([char]0x00E0) ph$([char]0x00E1)t h$([char]0x00E0)nh: $($app.Publisher)`n$([char]0x0110)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n: $($app.InstallLocation)$dataTip`nL$([char]0x1EC7)nh g$([char]0x1EE1): $($app.UninstallString)"
                 [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
 
                 [System.Windows.Controls.Grid]::SetColumn($nameGrid, 1)
@@ -17043,12 +17043,12 @@ function Update-UninstallerList {
                 if ($app.IsBrokenOrphan) {
                     $statusBorder.Background = $script:brushUninstStatusBrokenBg
                     $statusBorder.BorderBrush = $script:brushUninstStatusBrokenBorder
-                    $statusTb.Text = "Xóa sai cách"
+                    $statusTb.Text = "X$([char]0x00F3)a sai c$([char]0x00E1)ch"
                     $statusTb.Foreground = $script:brushUninstBadgeBrokenFg
                 } else {
                     $statusBorder.Background = $script:brushUninstStatusOkBg
                     $statusBorder.BorderBrush = $script:brushUninstStatusOkBorder
-                    $statusTb.Text = "Bình thường"
+                    $statusTb.Text = "B$([char]0x00EC)nh th$([char]0x01B0)$([char]0x1EDD)ng"
                     $statusTb.Foreground = $script:brushUninstStatusOkFg
                 }
                 $statusBorder.Child = $statusTb
@@ -17084,12 +17084,12 @@ function Update-UninstallerList {
                 if (-not [string]::IsNullOrWhiteSpace($targetFolder)) {
                     $folderBtn.Cursor = [System.Windows.Input.Cursors]::Hand
                     $folderBtn.Tag = $targetFolder
-                    $folderBtn.ToolTip = "Mở thư mục: $targetFolder"
+                    $folderBtn.ToolTip = "M$([char]0x1EDF) th$([char]0x01B0) m$([char]0x1EE5)c: $targetFolder"
                     $folderBtn.Add_MouseLeftButtonUp($script:uninstFolderClickHandler)
                 } else {
                     $folderBtn.Opacity = 0.25
                     $folderBtn.Cursor = [System.Windows.Input.Cursors]::Arrow
-                    $folderBtn.ToolTip = "Không tìm thấy thư mục cài đặt"
+                    $folderBtn.ToolTip = "Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t"
                 }
                 [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($folderBtn, 5000)
                 [System.Windows.Controls.Grid]::SetColumn($folderBtn, 6)
@@ -17249,7 +17249,7 @@ if ($btnUninstallDeselectAll) {
 
 if ($btnRefreshUninstaller) {
     $btnRefreshUninstaller.Add_Click({
-        Invoke-GuardedAction "Làm mới danh sách Gỡ cài đặt" -DeferExpand {
+        Invoke-GuardedAction "L$([char]0x00E0)m m$([char]0x1EDB)i danh s$([char]0x00E1)ch G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" -DeferExpand {
             Update-UninstallerList -Force
         }
     })
@@ -17257,42 +17257,42 @@ if ($btnRefreshUninstaller) {
 
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
-        Invoke-GuardedAction "Gỡ cài đặt ứng dụng" -DeferExpand {
+        Invoke-GuardedAction "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
             $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
             $appLines = @($selectedItems | ForEach-Object {
                 $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
-                "• $($_.DisplayName)$vPart"
+                "$([char]0x2022) $($_.DisplayName)$vPart"
             })
 
             if ($skipVendor) {
                 $confirm = Show-OwnedMessageBox `
-                    -Text "Bạn có chắc chắn muốn gỡ cài đặt $($selectedItems.Count) ứng dụng đã chọn?" `
-                    -Caption "Xác nhận Gỡ cài đặt" `
+                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
+                    -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" `
                     -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                     -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                    -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
-                    -SecondaryText "Hủy bỏ" `
+                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedItems.Count))" `
+                    -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
                     -DetailItems $appLines `
-                    -ModeBadgeText "Bỏ qua trình gỡ hãng — Ép xóa trực tiếp" `
+                    -ModeBadgeText "B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng $([char]0x2014) $([char]0x00C9)p x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p" `
                     -ModeBadgeKind "Danger"
                 $useAutoSilent = $false
             } else {
                 $toggleState = @{
                     Checked = [bool]$script:autoSilentUninstall
-                    Label   = "Tự động gắn cờ gỡ im lặng theo bộ cài"
-                    HintOn  = "Tự nhận diện bộ cài (Inno, NSIS, WiX, MSI...) và gắn cờ chạy ngầm"
-                    HintOff = "Mở trình gỡ gốc của hãng như bình thường (tắt gắn cờ im lặng)"
+                    Label   = "T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng g$([char]0x1EAF)n c$([char]0x1EDD) g$([char]0x1EE1) im l$([char]0x1EB7)ng theo b$([char]0x1ED9) c$([char]0x00E0)i"
+                    HintOn  = "T$([char]0x1EF1) nh$([char]0x1EAD)n di$([char]0x1EC7)n b$([char]0x1ED9) c$([char]0x00E0)i (Inno, NSIS, WiX, MSI...) v$([char]0x00E0) g$([char]0x1EAF)n c$([char]0x1EDD) ch$([char]0x1EA1)y ng$([char]0x1EA7)m"
+                    HintOff = "M$([char]0x1EDF) tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c c$([char]0x1EE7)a h$([char]0x00E3)ng nh$([char]0x01B0) b$([char]0x00EC)nh th$([char]0x01B0)$([char]0x1EDD)ng (t$([char]0x1EAF)t g$([char]0x1EAF)n c$([char]0x1EDD) im l$([char]0x1EB7)ng)"
                 }
                 $confirm = Show-OwnedMessageBox `
-                    -Text "Bạn có chắc chắn muốn gỡ cài đặt $($selectedItems.Count) ứng dụng đã chọn?" `
-                    -Caption "Xác nhận Gỡ cài đặt" `
+                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
+                    -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" `
                     -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                     -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                    -PrimaryText "Gỡ ngay ($($selectedItems.Count))" `
-                    -SecondaryText "Hủy bỏ" `
+                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedItems.Count))" `
+                    -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
                     -DetailItems $appLines `
                     -ToggleState $toggleState
                 if (-not $script:isWindowClosing) {
@@ -17318,23 +17318,23 @@ if ($btnDeepUninstall) {
 
 if ($btnForceStopUninstall) {
     $btnForceStopUninstall.Add_Click({
-        Invoke-GuardedAction "Buộc dừng & Xóa ứng dụng" -DeferExpand {
+        Invoke-GuardedAction "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
             $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
             if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $appLines = @($selectedItems | ForEach-Object {
                 $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
-                "• $($_.DisplayName)$vPart"
+                "$([char]0x2022) $($_.DisplayName)$vPart"
             })
             $confirm = Show-OwnedMessageBox `
-                -Text "Buộc dừng toàn bộ tiến trình/dịch vụ đang giữ tệp của $($selectedItems.Count) ứng dụng đã chọn và xóa trực tiếp không qua trình gỡ hãng?" `
-                -Caption "Xác nhận Buộc dừng & Xóa" `
+                -Text "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng to$([char]0x00E0)n b$([char]0x1ED9) ti$([char]0x1EBF)n tr$([char]0x00EC)nh/d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p c$([char]0x1EE7)a $($selectedItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x00E0) x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p kh$([char]0x00F4)ng qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng?" `
+                -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                -PrimaryText "Buộc dừng & Xóa ($($selectedItems.Count))" `
-                -SecondaryText "Hủy bỏ" `
+                -PrimaryText "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($($selectedItems.Count))" `
+                -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
                 -DetailItems $appLines `
-                -ModeBadgeText "Restart Manager + NtSuspend + Kill Tree + MoveFileEx (bỏ qua trình gỡ hãng)" `
+                -ModeBadgeText "Restart Manager + NtSuspend + Kill Tree + MoveFileEx (b$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng)" `
                 -ModeBadgeKind "Danger"
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
@@ -17353,20 +17353,20 @@ if ($btnForceStopUninstall) {
 
 if ($btnScanOrphans) {
     $btnScanOrphans.Add_Click({
-        Invoke-GuardedAction "Quét rác tồn dư & App xóa sai cách" -DeferExpand {
+        Invoke-GuardedAction "Qu$([char]0x00E9)t r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) & App x$([char]0x00F3)a sai c$([char]0x00E1)ch" -DeferExpand {
             if ($script:isWindowClosing) { return }
             if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
                 $orphans = @(Find-SystemOrphanLeftovers -InstalledApps $script:cachedUninstallerApps -CatalogApps $AppCatalog)
                 if ($script:isWindowClosing) { return }
                 if ($orphans.Count -eq 0) {
                     Show-OwnedMessageBox `
-                        -Text "Không phát hiện tệp tin rác hoặc ứng dụng nào bị xóa sai cách trên hệ thống!" `
-                        -Caption "Quét Rác Tồn Dư" `
+                        -Text "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p tin r$([char]0x00E1)c ho$([char]0x1EB7)c $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o b$([char]0x1ECB) x$([char]0x00F3)a sai c$([char]0x00E1)ch tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng!" `
+                        -Caption "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)" `
                         -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
                         -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
                 } else {
                     if (-not $script:isWindowClosing -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
-                        Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Quét Rác Tồn Dư & App Xóa Sai Cách"
+                        Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0) & App X$([char]0x00F3)a Sai C$([char]0x00E1)ch"
                     }
                     if (-not $script:isWindowClosing) {
                         Update-UninstallerList -Force
@@ -17442,21 +17442,21 @@ function Get-AppFallbackGlyph {
     if ($Category -match 'Minecraft|Modding') { return [char]::ConvertFromUtf32(0x26CF) }
     if ($Category -match 'Download') { return [char]::ConvertFromUtf32(0x2B07) }
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
-    if ($Category -match 'Chat|Liên|Communication') { return [char]::ConvertFromUtf32(0x1F4AC) }
+    if ($Category -match "Chat|Li$([char]0x00EA)n|Communication") { return [char]::ConvertFromUtf32(0x1F4AC) }
     if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
-    if ($Category -match 'Dev|Triển|Development') { return [char]::ConvertFromUtf32(0x1F4BB) }
+    if ($Category -match "Dev|Tri$([char]0x1EC3)n|Development") { return [char]::ConvertFromUtf32(0x1F4BB) }
     if ($Category -match 'Java') { return [char]::ConvertFromUtf32(0x2615) }
     if ($Category -match '\.NET') { return [char]::ConvertFromUtf32(0x1F7E3) }
     if ($Category -match 'Hardware|Monitoring') { return [char]::ConvertFromUtf32(0x1F39B) }
     if ($Category -match 'C\+\+|System Runtimes') { return [char]::ConvertFromUtf32(0x2699) }
-    if ($Category -match 'Tiện|Thống|Utilities|Utility') { return [char]::ConvertFromUtf32(0x1F6E0) }
+    if ($Category -match "Ti$([char]0x1EC7)n|Th$([char]0x1ED1)ng|Utilities|Utility") { return [char]::ConvertFromUtf32(0x1F6E0) }
     if ($Category -match 'Graphic|Design') { return [char]::ConvertFromUtf32(0x1F3A8) }
     if ($Category -match 'Audio|Video|Media') { return [char]::ConvertFromUtf32(0x1F3AC) }
-    if ($Category -match 'Phòng|Liệu|Documents|Office') { return [char]::ConvertFromUtf32(0x1F4C4) }
-    if ($Category -match 'Chơi|Game|Launcher') { return [char]::ConvertFromUtf32(0x1F3AE) }
-    if ($Category -match 'Trữ|Tệp|Storage|File|Transfer') { return [char]::ConvertFromUtf32(0x2601) }
-    if ($Category -match 'Security|Bảo Mật|Network|Mạng') { return [char]::ConvertFromUtf32(0x1F6E1) }
-    if ($Category -match 'Core|Runtimes|Thư Viện') { return [char]::ConvertFromUtf32(0x2699) }
+    if ($Category -match "Ph$([char]0x00F2)ng|Li$([char]0x1EC7)u|Documents|Office") { return [char]::ConvertFromUtf32(0x1F4C4) }
+    if ($Category -match "Ch$([char]0x01A1)i|Game|Launcher") { return [char]::ConvertFromUtf32(0x1F3AE) }
+    if ($Category -match "Tr$([char]0x1EEF)|T$([char]0x1EC7)p|Storage|File|Transfer") { return [char]::ConvertFromUtf32(0x2601) }
+    if ($Category -match "Security|B$([char]0x1EA3)o M$([char]0x1EAD)t|Network|M$([char]0x1EA1)ng") { return [char]::ConvertFromUtf32(0x1F6E1) }
+    if ($Category -match "Core|Runtimes|Th$([char]0x01B0) Vi$([char]0x1EC7)n") { return [char]::ConvertFromUtf32(0x2699) }
 
     return [char]::ConvertFromUtf32(0x1F4E6)
 }
@@ -17479,7 +17479,7 @@ function Update-SelectionCount {
         }
     }
     if ($txtSelectionCount) {
-        $txtSelectionCount.Text = "$selectedCount app được chọn"
+        $txtSelectionCount.Text = "$selectedCount app $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
     }
 }
 
@@ -17517,7 +17517,7 @@ $script:linkClickHandler = [System.Windows.Input.MouseButtonEventHandler]{
         try {
             Start-Process $targetUrl
         } catch {
-            Log-Text "[!] Không thể mở trang web: $targetUrl"
+            Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) trang web: $targetUrl"
         }
     }
 }
@@ -17798,7 +17798,7 @@ foreach ($cat in $categories) {
         $linkBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
         $linkBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $linkBtn.Margin = $thicknessZero
-        $linkBtn.ToolTip = "Mở trang chính thức: $targetPageUrl"
+        $linkBtn.ToolTip = "M$([char]0x1EDF) trang ch$([char]0x00ED)nh th$([char]0x1EE9)c: $targetPageUrl"
         [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($linkBtn, 5000)
         $linkBtn.Tag = @{ Url = $targetPageUrl; Row = $rowBorder }
 
@@ -17848,7 +17848,7 @@ foreach ($cat in $categories) {
 }
 
 Register-Click "btnScanInstalled" {
-    Invoke-GuardedAction "Quét ứng dụng" {
+    Invoke-GuardedAction "Qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" {
         Scan-And-ColorizeApps
     }
 }
@@ -17870,15 +17870,15 @@ function Clear-AllCheckBoxes {
 function Invoke-GitHubAssetInstall {
     param($App)
     try {
-        Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
+        Log-Text "   -> $([char]0x0110)ang t$([char]0x00EC)m b$([char]0x1EA3)n ph$([char]0x00E1)t h$([char]0x00E0)nh m$([char]0x1EDB)i nh$([char]0x1EA5)t t$([char]0x1EEB) GitHub ($($App.GitHubRepo))..."
         $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
         $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
         if (-not $asset) {
-            Log-Text "   [!] Không tìm thấy bộ cài phù hợp trên GitHub Release."
+            Log-Text "   [!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1ED9) c$([char]0x00E0)i ph$([char]0x00F9) h$([char]0x1EE3)p tr$([char]0x00EA)n GitHub Release."
             return -1
         }
         $dlPath = Join-Path $env:TEMP $asset.name
-        Log-Text "   -> Đang tải $($asset.name)..."
+        Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $($asset.name)..."
         Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
         try {
             if ($dlPath -match '\.msi$') {
@@ -17890,7 +17890,7 @@ function Invoke-GitHubAssetInstall {
             if (Test-Path -LiteralPath $dlPath) { Remove-Item -LiteralPath $dlPath -Force -ErrorAction SilentlyContinue }
         }
     } catch {
-        Log-Text "   [!] Lỗi tải/cài từ GitHub: $($_.Exception.Message)"
+        Log-Text "   [!] L$([char]0x1ED7)i t$([char]0x1EA3)i/c$([char]0x00E0)i t$([char]0x1EEB) GitHub: $($_.Exception.Message)"
         return -1
     }
 }
@@ -17938,7 +17938,7 @@ function Clear-WinGetTempInstallers {
 
     if ($removedCount -gt 0) {
         $freedMB = [math]::Round($freedBytes / 1MB, 1)
-        Log-Text "[CLEAN] Đã tự động dọn $removedCount thư mục/tệp bộ cài WinGet tồn dư ($freedMB MB)."
+        Log-Text "[CLEAN] $([char]0x0110)$([char]0x00E3) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng d$([char]0x1ECD)n $removedCount th$([char]0x01B0) m$([char]0x1EE5)c/t$([char]0x1EC7)p b$([char]0x1ED9) c$([char]0x00E0)i WinGet t$([char]0x1ED3)n d$([char]0x01B0) ($freedMB MB)."
     }
 }
 
@@ -17977,7 +17977,7 @@ function Wait-WindowsInstallerReady {
             return $true
         }
         if (-not $logged) {
-            Log-Text "[*] Đang chờ tiến trình Windows Installer khác hoàn tất..."
+            Log-Text "[*] $([char]0x0110)ang ch$([char]0x1EDD) ti$([char]0x1EBF)n tr$([char]0x00EC)nh Windows Installer kh$([char]0x00E1)c ho$([char]0x00E0)n t$([char]0x1EA5)t..."
             $logged = $true
         }
         try { [System.Windows.Forms.Application]::DoEvents() } catch {}
@@ -17993,7 +17993,7 @@ function Invoke-WinGetWithMsiRetry {
     if ($script:isWindowClosing) { return -1 }
     $code = Run-CliStream "winget" $Arguments
     if (-not $script:isWindowClosing -and ($code -eq -1978334974 -or $code -eq 1618)) {
-        Log-Text "[!] Windows Installer đang bận (1618), đang chờ giải phóng để thử lại..."
+        Log-Text "[!] Windows Installer $([char]0x0111)ang b$([char]0x1EAD)n (1618), $([char]0x0111)ang ch$([char]0x1EDD) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $([char]0x0111)$([char]0x1EC3) th$([char]0x1EED) l$([char]0x1EA1)i..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
         if ($script:isWindowClosing) { return -1 }
         Start-Sleep -Milliseconds 1200
@@ -18164,17 +18164,17 @@ function Invoke-SmartAppUpgrade {
     if ($existingLoc -and ("DuckUtil.AppCatalogEngine" -as [type])) {
         if ([DuckUtil.AppCatalogEngine]::HasCrackOrPatchIndicators($existingLoc)) {
             if ($IsBulkUpgrade) {
-                Log-Text "[!] Phát hiện dấu hiệu file Crack/Patch tại '$existingLoc' - Tự động bỏ qua $($app.Name) để bảo vệ bản patch."
+                Log-Text "[!] Ph$([char]0x00E1)t hi$([char]0x1EC7)n d$([char]0x1EA5)u hi$([char]0x1EC7)u file Crack/Patch t$([char]0x1EA1)i '$existingLoc' - T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng b$([char]0x1ECF) qua $($app.Name) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA3)o v$([char]0x1EC7) b$([char]0x1EA3)n patch."
                 return 2
             } else {
                 if ($script:isWindowClosing) { return 2 }
                 $ansCrack = Show-OwnedMessageBox `
-                    -Text "Phát hiện tệp nghi ngờ là Crack/Patch hoặc loader không chính thức trong thư mục cài đặt của $($app.Name):`n$existingLoc`n`nNâng cấp qua WinGet có thể ghi đè file patch hoặc làm hỏng crack.`nBạn vẫn muốn tiếp tục nâng cấp?" `
-                    -Caption "Cảnh báo bảo vệ Crack / Patch" `
+                    -Text "Ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p nghi ng$([char]0x1EDD) l$([char]0x00E0) Crack/Patch ho$([char]0x1EB7)c loader kh$([char]0x00F4)ng ch$([char]0x00ED)nh th$([char]0x1EE9)c trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t c$([char]0x1EE7)a $($app.Name):`n$existingLoc`n`nN$([char]0x00E2)ng c$([char]0x1EA5)p qua WinGet c$([char]0x00F3) th$([char]0x1EC3) ghi $([char]0x0111)$([char]0x00E8) file patch ho$([char]0x1EB7)c l$([char]0x00E0)m h$([char]0x1ECF)ng crack.`nB$([char]0x1EA1)n v$([char]0x1EAB)n mu$([char]0x1ED1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c n$([char]0x00E2)ng c$([char]0x1EA5)p?" `
+                    -Caption "C$([char]0x1EA3)nh b$([char]0x00E1)o b$([char]0x1EA3)o v$([char]0x1EC7) Crack / Patch" `
                     -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                     -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
                 if ($ansCrack -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
-                    Log-Text "[!] Người dùng đã hủy nâng cấp $($app.Name) để giữ nguyên file Crack/Patch."
+                    Log-Text "[!] Ng$([char]0x01B0)$([char]0x1EDD)i d$([char]0x00F9)ng $([char]0x0111)$([char]0x00E3) h$([char]0x1EE7)y n$([char]0x00E2)ng c$([char]0x1EA5)p $($app.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file Crack/Patch."
                     return 2
                 }
             }
@@ -18290,7 +18290,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     if ($hasSnapshots) {
-        Log-Text "[*] Đã kích hoạt UpgradeDataGuard: Chụp snapshot dữ liệu cá nhân & cấu hình trước khi nâng cấp."
+        Log-Text "[*] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t UpgradeDataGuard: Ch$([char]0x1EE5)p snapshot d$([char]0x1EEF) li$([char]0x1EC7)u c$([char]0x00E1) nh$([char]0x00E2)n & c$([char]0x1EA5)u h$([char]0x00EC)nh tr$([char]0x01B0)$([char]0x1EDB)c khi n$([char]0x00E2)ng c$([char]0x1EA5)p."
     }
 
     $baseUpArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
@@ -18304,7 +18304,7 @@ function Invoke-SmartAppUpgrade {
 
     $code = Invoke-WinGetWithMsiRetry -Arguments $upArgs
     if ($code -ne 0 -and $scope) {
-        Log-Text "[!] Nâng cấp theo scope '$scope' không thành công (Code: $code), đang thử lại bỏ giới hạn scope..."
+        Log-Text "[!] N$([char]0x00E2)ng c$([char]0x1EA5)p theo scope '$scope' kh$([char]0x00F4)ng th$([char]0x00E0)nh c$([char]0x00F4)ng (Code: $code), $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i b$([char]0x1ECF) gi$([char]0x1EDB)i h$([char]0x1EA1)n scope..."
         $upArgsNoScope = $baseUpArgs
         if ($existingLoc) {
             $upArgsNoScope += " --location `"$existingLoc`""
@@ -18313,7 +18313,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     if ($code -ne 0 -and $existingLoc) {
-        Log-Text "[!] Nâng cấp kèm đường dẫn cố định không khả dụng (Code: $code), đang thử lại cấu hình mặc định..."
+        Log-Text "[!] N$([char]0x00E2)ng c$([char]0x1EA5)p k$([char]0x00E8)m $([char]0x0111)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n c$([char]0x1ED1) $([char]0x0111)$([char]0x1ECB)nh kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng (Code: $code), $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i c$([char]0x1EA5)u h$([char]0x00EC)nh m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh..."
         $code = Invoke-WinGetWithMsiRetry -Arguments $baseUpArgs
     }
 
@@ -18329,9 +18329,9 @@ function Invoke-SmartAppUpgrade {
                 if ($probeItem -and -not $probeItem.HasUpdate) {
                     $alreadyLatest = $true
                     $code = 0
-                    Log-Text "[OK] $($app.Name) hiện đã ở phiên bản mới nhất ($($probeItem.Version))."
+                    Log-Text "[OK] $($app.Name) hi$([char]0x1EC7)n $([char]0x0111)$([char]0x00E3) $([char]0x1EDF) phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t ($($probeItem.Version))."
                 } elseif ($probeItem -and $probeItem.HasUpdate) {
-                    Log-Text "[*] Phát hiện bản mới $($probeItem.Available) nhưng khác scope cài đặt; đang nâng cấp trực tiếp (--force)..."
+                    Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($probeItem.Available) nh$([char]0x01B0)ng kh$([char]0x00E1)c scope c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t; $([char]0x0111)ang n$([char]0x00E2)ng c$([char]0x1EA5)p tr$([char]0x1EF1)c ti$([char]0x1EBF)p (--force)..."
                     $baseForceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
                     $forceArgs = $baseForceArgs
                     if ($existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
@@ -18351,7 +18351,7 @@ function Invoke-SmartAppUpgrade {
             if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
                 $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
                 if ($restoredLoc -gt 0) {
-                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
+                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                 }
             }
 
@@ -18360,7 +18360,7 @@ function Invoke-SmartAppUpgrade {
                     if (Test-Path -LiteralPath $item.Backup) {
                         $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
                         if ($resAd -gt 0) {
-                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
+                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
                         }
                     }
                 }
@@ -18380,7 +18380,7 @@ function Invoke-SmartAppUpgrade {
                     if ($needRegRestore) {
                         try {
                             Start-Process "reg.exe" -ArgumentList "import `"$($rfItem.File)`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
+                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
                         } catch {}
                     }
                 }
@@ -18396,7 +18396,7 @@ function Invoke-SmartAppUpgrade {
 }
 
 Register-Click "btnInstall" {
-    Invoke-GuardedAction "Cài đặt ứng dụng" {
+    Invoke-GuardedAction "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -18405,7 +18405,7 @@ Register-Click "btnInstall" {
         }
 
         if ($selectedTags.Count -eq 0) {
-            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a tick ch$([char]0x1ECD)n $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t!"
             return
         }
 
@@ -18413,7 +18413,7 @@ Register-Click "btnInstall" {
         $idx = 0
         $didAnyInstall = $false
         Log-Text "=========================================================="
-        Log-Text "[INSTALL] BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "[INSTALL] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) $([char]0x0110)$([char]0x00C1)NH D$([char]0x1EA4)U"
         Log-Text "=========================================================="
 
         try {
@@ -18422,24 +18422,24 @@ Register-Click "btnInstall" {
                 $idx++
                 $app = $tag.App
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] $([char]0x0110)ang c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t: $($app.Name)..." }
 
                 if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED") {
-                    Log-Text "[SKIP] $($app.Name) đã có trên máy (dùng 'Cập nhật mục chọn' nếu muốn nâng cấp)."
+                    Log-Text "[SKIP] $($app.Name) $([char]0x0111)$([char]0x00E3) c$([char]0x00F3) tr$([char]0x00EA)n m$([char]0x00E1)y (d$([char]0x00F9)ng 'C$([char]0x1EAD)p nh$([char]0x1EAD)t m$([char]0x1EE5)c ch$([char]0x1ECD)n' n$([char]0x1EBF)u mu$([char]0x1ED1)n n$([char]0x00E2)ng c$([char]0x1EA5)p)."
                     if ($tag.Status -ne "OUTDATED" -and $tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
 
                 $didAnyInstall = $true
-                Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
+                Log-Text "[$idx/$total] $([char]0x0110)ang c$([char]0x00E0)i: $($app.Name) (ID: $($app.ID))..."
 
                 if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                    Log-Text "   [WEB] Đang mở liên kết tải bộ cài chính thức: $($app.FallbackUrl)"
+                    Log-Text "   [WEB] $([char]0x0110)ang m$([char]0x1EDF) li$([char]0x00EA)n k$([char]0x1EBF)t t$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
                     try {
                         Start-Process $app.FallbackUrl
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     } catch {
-                        Log-Text "   [ERR - LỖI] Không thể mở trình duyệt cho $($app.Name)"
+                        Log-Text "   [ERR - L$([char]0x1ED6)I] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) tr$([char]0x00EC)nh duy$([char]0x1EC7)t cho $($app.Name)"
                     }
                     continue
                 }
@@ -18453,12 +18453,12 @@ Register-Click "btnInstall" {
                 }
 
                 if ($code -eq 0) {
-                    Log-Text "   [OK - HOÀN THÀNH] $($app.Name)"
+                    Log-Text "   [OK - HO$([char]0x00C0)N TH$([char]0x00C0)NH] $($app.Name)"
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                 } else {
-                    Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
+                    Log-Text "   [ERR - L$([char]0x1ED6)I] $($app.Name) (Exit Code: $code)"
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                        Log-Text "   [WEB] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
+                        Log-Text "   [WEB] G$([char]0x00F3)i n$([char]0x00E0)y hi$([char]0x1EC7)n kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng qua WinGet. $([char]0x0110)ang m$([char]0x1EDF) trang t$([char]0x1EA3)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
                     }
                 }
@@ -18468,7 +18468,7 @@ Register-Click "btnInstall" {
         }
         if (-not $script:isWindowClosing) {
             Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
+            if ($txtStatus) { $txtStatus.Text = "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
             if ($progressBar) { $progressBar.Value = 100 }
             if ($didAnyInstall) {
                 Wait-SquirrelUpdatersSettle
@@ -18481,7 +18481,7 @@ Register-Click "btnInstall" {
 }
 
 Register-Click "btnUpgradeSelected" {
-    Invoke-GuardedAction "Nâng cấp đã chọn" -DeferExpand {
+    Invoke-GuardedAction "N$([char]0x00E2)ng c$([char]0x1EA5)p $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n" -DeferExpand {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -18491,7 +18491,7 @@ Register-Click "btnUpgradeSelected" {
 
         if ($selectedTags.Count -eq 0) {
             Expand-TerminalLog
-            Log-Text "[!] Bạn chưa chọn ứng dụng nào để nâng cấp!"
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) n$([char]0x00E2)ng c$([char]0x1EA5)p!"
             return
         }
 
@@ -18499,7 +18499,7 @@ Register-Click "btnUpgradeSelected" {
         $total = $selectedTags.Count
         $idx = 0
         Log-Text "=========================================================="
-        Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP $total ỨNG DỤNG ĐÃ CHỌN"
+        Log-Text "[UPGRADE] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U N$([char]0x00C2)NG C$([char]0x1EA4)P $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) CH$([char]0x1ECC)N"
         Log-Text "=========================================================="
 
         try {
@@ -18509,30 +18509,30 @@ Register-Click "btnUpgradeSelected" {
                 $app = $tag.App
 
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $($app.Name)..." }
 
                 if ($tag.Status -eq "NONE" -or $tag.Status -eq "NOT_INSTALLED" -or [string]::IsNullOrWhiteSpace($tag.Status)) {
-                    Log-Text "[SKIP] $($app.Name) chưa có trên máy (dùng 'Cài đặt mục chọn' để cài mới)."
+                    Log-Text "[SKIP] $($app.Name) ch$([char]0x01B0)a c$([char]0x00F3) tr$([char]0x00EA)n m$([char]0x00E1)y (d$([char]0x00F9)ng 'C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t m$([char]0x1EE5)c ch$([char]0x1ECD)n' $([char]0x0111)$([char]0x1EC3) c$([char]0x00E0)i m$([char]0x1EDB)i)."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
 
                 if ($tag.Status -eq "LATEST") {
-                    Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."
+                    Log-Text "[OK] $($app.Name) $([char]0x0111)$([char]0x00E3) l$([char]0x00E0) b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t, b$([char]0x1ECF) qua."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
 
-                Log-Text "[$idx/$total] Đang nâng cấp: $($app.Name)..."
+                Log-Text "[$idx/$total] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $($app.Name)..."
                 $code = Invoke-SmartAppUpgrade -Tag $tag
                 if ($code -eq 0) {
-                    Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($app.Name)"
+                    Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($app.Name)"
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                 } elseif ($code -eq 2) {
-                    Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($app.Name) để giữ nguyên file patch."
+                    Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($app.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                 } else {
-                    Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($app.Name) (Exit Code: $code)"
+                    Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($app.Name) (Exit Code: $code)"
                 }
             }
         } finally {
@@ -18540,7 +18540,7 @@ Register-Click "btnUpgradeSelected" {
         }
         if (-not $script:isWindowClosing) {
             Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
+            if ($txtStatus) { $txtStatus.Text = "N$([char]0x00E2)ng c$([char]0x1EA5)p ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
             if ($progressBar) { $progressBar.Value = 100 }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
@@ -18551,11 +18551,11 @@ Register-Click "btnUpgradeSelected" {
 }
 
 Register-Click "btnUpgradeAll" {
-    Invoke-GuardedAction "Nâng cấp toàn bộ" {
+    Invoke-GuardedAction "N$([char]0x00E2)ng c$([char]0x1EA5)p to$([char]0x00E0)n b$([char]0x1ED9)" {
         Log-Text "=========================================================="
-        Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
+        Log-Text "[UPGRADE] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U N$([char]0x00C2)NG C$([char]0x1EA4)P TO$([char]0x00C0)N B$([char]0x1ED8) PH$([char]0x1EA6)N M$([char]0x1EC0)M TR$([char]0x00CA)N M$([char]0x00C1)Y"
         Log-Text "=========================================================="
-        if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p t$([char]0x1EA5)t c$([char]0x1EA3) $([char]0x1EE9)ng d$([char]0x1EE5)ng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
         try {
@@ -18568,17 +18568,17 @@ Register-Click "btnUpgradeAll" {
                     $idxOut++
                     $tagOut = $row.Tag
                     if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
-                    if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..." }
-                    Log-Text "[$idxOut/$totalOut] Đang nâng cấp bảo toàn dữ liệu: $($tagOut.App.Name)..."
+                    if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..." }
+                    Log-Text "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p b$([char]0x1EA3)o to$([char]0x00E0)n d$([char]0x1EEF) li$([char]0x1EC7)u: $($tagOut.App.Name)..."
                     $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut -IsBulkUpgrade
                     if ($codeOut -eq 0) {
-                        Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($tagOut.App.Name)"
+                        Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($tagOut.App.Name)"
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } elseif ($codeOut -eq 2) {
-                        Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($tagOut.App.Name) để giữ nguyên file patch."
+                        Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($tagOut.App.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } else {
-                        Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                        Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($tagOut.App.Name) (Exit Code: $codeOut)"
                     }
                 }
             } elseif (-not $script:isWindowClosing) {
@@ -18590,8 +18590,8 @@ Register-Click "btnUpgradeAll" {
         }
 
         if (-not $script:isWindowClosing) {
-            if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-            Log-Text "[OK] Toàn bộ ứng dụng đã được nâng cấp lên bản mới nhất."
+            if ($txtStatus) { $txtStatus.Text = "N$([char]0x00E2)ng c$([char]0x1EA5)p ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
+            Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c n$([char]0x00E2)ng c$([char]0x1EA5)p l$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t."
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
                 Scan-And-ColorizeApps
@@ -18621,243 +18621,243 @@ Register-Click "btnDeselectAll" {
     Clear-AllCheckBoxes
 }
 
-Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
+Register-Click "btnSfcScan" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
     Invoke-GuardedAction "SFC Scan" {
-        Log-Text "[*] Đang bắt đầu quét kiểm tra tính toàn vẹn hệ thống (sfc /scannow)..."
-        if ($txtStatus) { $txtStatus.Text = "Đang chạy SFC Scan..." }
+        Log-Text "[*] $([char]0x0110)ang b$([char]0x1EAF)t $([char]0x0111)$([char]0x1EA7)u qu$([char]0x00E9)t ki$([char]0x1EC3)m tra t$([char]0x00ED)nh to$([char]0x00E0)n v$([char]0x1EB9)n h$([char]0x1EC7) th$([char]0x1ED1)ng (sfc /scannow)..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ch$([char]0x1EA1)y SFC Scan..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Invoke-SystemFileCheck
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
-        Log-Text "[OK] Quá trình SFC đã kết thúc."
+        if ($txtStatus) { $txtStatus.Text = "Qu$([char]0x00E9)t SFC ho$([char]0x00E0)n t$([char]0x1EA5)t" }
+        Log-Text "[OK] Qu$([char]0x00E1) tr$([char]0x00EC)nh SFC $([char]0x0111)$([char]0x00E3) k$([char]0x1EBF)t th$([char]0x00FA)c."
     }
 }
 
-Register-Click "btnDismRestore" -LockGroup "Gỡ lỗi & Hệ thống" {
+Register-Click "btnDismRestore" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
     Invoke-GuardedAction "DISM RestoreHealth" {
-        Log-Text "[*] Đang khôi phục kho ảnh hệ thống Windows qua DISM RestoreHealth..."
-        if ($txtStatus) { $txtStatus.Text = "Đang chạy DISM RestoreHealth..." }
+        Log-Text "[*] $([char]0x0110)ang kh$([char]0x00F4)i ph$([char]0x1EE5)c kho $([char]0x1EA3)nh h$([char]0x1EC7) th$([char]0x1ED1)ng Windows qua DISM RestoreHealth..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ch$([char]0x1EA1)y DISM RestoreHealth..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Invoke-DismRestoreHealth
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
-        Log-Text "[OK] DISM RestoreHealth hoàn thành xuất sắc."
+        if ($txtStatus) { $txtStatus.Text = "DISM ho$([char]0x00E0)n t$([char]0x1EA5)t" }
+        Log-Text "[OK] DISM RestoreHealth ho$([char]0x00E0)n th$([char]0x00E0)nh xu$([char]0x1EA5)t s$([char]0x1EAF)c."
     }
 }
 
-Register-Click "btnDismCleanup" -LockGroup "Gỡ lỗi & Hệ thống" {
+Register-Click "btnDismCleanup" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
     Invoke-GuardedAction "DISM Component Cleanup" -DeferExpand {
         $confirm = Show-OwnedMessageBox `
-            -Text "Lệnh DISM /StartComponentCleanup /ResetBase sẽ nén kho WinSxS và KHÔNG THỂ gỡ cài đặt (rollback) các bản Windows Update hiện tại về sau.`n`nBạn có chắc chắn muốn tiếp tục?" `
-            -Caption "Xác nhận dọn kho linh kiện (WinSxS)" `
+            -Text "L$([char]0x1EC7)nh DISM /StartComponentCleanup /ResetBase s$([char]0x1EBD) n$([char]0x00E9)n kho WinSxS v$([char]0x00E0) KH$([char]0x00D4)NG TH$([char]0x1EC2) g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t (rollback) c$([char]0x00E1)c b$([char]0x1EA3)n Windows Update hi$([char]0x1EC7)n t$([char]0x1EA1)i v$([char]0x1EC1) sau.`n`nB$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n kho linh ki$([char]0x1EC7)n (WinSxS)" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
         Expand-TerminalLog
-        Log-Text "[*] Đang dọn dẹp kho linh kiện hệ thống (DISM Component Cleanup)..."
-        if ($txtStatus) { $txtStatus.Text = "Đang dọn kho linh kiện..." }
+        Log-Text "[*] $([char]0x0110)ang d$([char]0x1ECD)n d$([char]0x1EB9)p kho linh ki$([char]0x1EC7)n h$([char]0x1EC7) th$([char]0x1ED1)ng (DISM Component Cleanup)..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1ECD)n kho linh ki$([char]0x1EC7)n..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
-        Log-Text "[OK] Đã giải phóng dung lượng kho linh kiện."
+        if ($txtStatus) { $txtStatus.Text = "D$([char]0x1ECD)n kho linh ki$([char]0x1EC7)n ho$([char]0x00E0)n t$([char]0x1EA5)t" }
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng dung l$([char]0x01B0)$([char]0x1EE3)ng kho linh ki$([char]0x1EC7)n."
     }
 }
 
-Register-Click "btnFixWindowsUpdate" -LockGroup "Gỡ lỗi & Hệ thống" {
-    Invoke-GuardedAction "Khởi tạo lại Windows Update" {
-        Log-Text "[*] Bắt đầu khởi tạo và xóa sạch cache lỗi Windows Update..."
-        if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi Windows Update..." }
+Register-Click "btnFixWindowsUpdate" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
+    Invoke-GuardedAction "Kh$([char]0x1EDF)i t$([char]0x1EA1)o l$([char]0x1EA1)i Windows Update" {
+        Log-Text "[*] B$([char]0x1EAF)t $([char]0x0111)$([char]0x1EA7)u kh$([char]0x1EDF)i t$([char]0x1EA1)o v$([char]0x00E0) x$([char]0x00F3)a s$([char]0x1EA1)ch cache l$([char]0x1ED7)i Windows Update..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang s$([char]0x1EED)a l$([char]0x1ED7)i Windows Update..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Reset-WindowsUpdateEngine
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Đã đặt lại Windows Update" }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1EA1)i Windows Update" }
     }
 }
 
-Register-Click "btnRestartUpdateServices" -LockGroup "Gỡ lỗi & Hệ thống" {
-    Invoke-GuardedAction "Khởi động lại Update Services" {
-        Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
+Register-Click "btnRestartUpdateServices" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
+    Invoke-GuardedAction "Kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i Update Services" {
+        Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
         Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
-        Log-Text "[OK] Đã khởi động lại dịch vụ cập nhật."
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) c$([char]0x1EAD)p nh$([char]0x1EAD)t."
     }
 }
 
-Register-Click "btnTriggerScanUpdate" -LockGroup "Gỡ lỗi & Hệ thống" {
-    Invoke-GuardedAction "Kích hoạt quét cập nhật" {
+Register-Click "btnTriggerScanUpdate" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
+    Invoke-GuardedAction "K$([char]0x00ED)ch ho$([char]0x1EA1)t qu$([char]0x00E9)t c$([char]0x1EAD)p nh$([char]0x1EAD)t" {
         Invoke-WindowsUpdateScan
     }
 }
 
-Register-Click "btnFlushDnsWinsock" -LockGroup "Gỡ lỗi & Hệ thống" {
+Register-Click "btnFlushDnsWinsock" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
     Invoke-GuardedAction "Flush DNS & Reset Winsock" {
-        Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
+        Log-Text "[*] $([char]0x0110)ang x$([char]0x00F3)a s$([char]0x1EA1)ch cache DNS v$([char]0x00E0) reset Winsock Catalog..."
         Clear-DnsResolverCache
         Run-CliStream "netsh.exe" "winsock reset"
-        Log-Text "[OK] Đã làm mới mạng và DNS cache."
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) l$([char]0x00E0)m m$([char]0x1EDB)i m$([char]0x1EA1)ng v$([char]0x00E0) DNS cache."
     }
 }
 
-Register-Click "btnResetTcpIp" -LockGroup "Gỡ lỗi & Hệ thống" {
+Register-Click "btnResetTcpIp" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
     Invoke-GuardedAction "Reset TCP/IP Stack" {
-        Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
+        Log-Text "[*] $([char]0x0110)ang $([char]0x0111)$([char]0x1EB7)t l$([char]0x1EA1)i to$([char]0x00E0)n b$([char]0x1ED9) ng$([char]0x0103)n x$([char]0x1EBF)p giao th$([char]0x1EE9)c m$([char]0x1EA1)ng TCP/IP..."
         Reset-NetworkInterfaceStack
-        Log-Text "[OK] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) reset TCP/IP Stack. Khuy$([char]0x00EA)n b$([char]0x1EA1)n n$([char]0x00EA)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y."
     }
 }
 
-Register-Click "btnClearTemp" -LockGroup "Gỡ lỗi & Hệ thống" {
-    Invoke-GuardedAction "Dọn dẹp Temp" {
-        Log-Text "[*] Đang dọn dẹp các tệp tạm thời trong User Temp và Windows Temp..."
-        if ($txtStatus) { $txtStatus.Text = "Đang dọn tệp rác Temp..." }
+Register-Click "btnClearTemp" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
+    Invoke-GuardedAction "D$([char]0x1ECD)n d$([char]0x1EB9)p Temp" {
+        Log-Text "[*] $([char]0x0110)ang d$([char]0x1ECD)n d$([char]0x1EB9)p c$([char]0x00E1)c t$([char]0x1EC7)p t$([char]0x1EA1)m th$([char]0x1EDD)i trong User Temp v$([char]0x00E0) Windows Temp..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1ECD)n t$([char]0x1EC7)p r$([char]0x00E1)c Temp..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Clear-SystemTempFiles
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
-        Log-Text "[OK] Dọn dẹp bộ nhớ tạm thành công!"
+        if ($txtStatus) { $txtStatus.Text = "D$([char]0x1ECD)n t$([char]0x1EC7)p t$([char]0x1EA1)m ho$([char]0x00E0)n t$([char]0x1EA5)t" }
+        Log-Text "[OK] D$([char]0x1ECD)n d$([char]0x1EB9)p b$([char]0x1ED9) nh$([char]0x1EDB) t$([char]0x1EA1)m th$([char]0x00E0)nh c$([char]0x00F4)ng!"
     }
 }
 
-Register-Click "btnCleanEventLogs" -LockGroup "Gỡ lỗi & Hệ thống" {
-    Invoke-GuardedAction "Dọn dẹp Windows Event Logs" -DeferExpand {
+Register-Click "btnCleanEventLogs" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
+    Invoke-GuardedAction "D$([char]0x1ECD)n d$([char]0x1EB9)p Windows Event Logs" -DeferExpand {
         $confirm = Show-OwnedMessageBox `
-            -Text "Hành động này sẽ xóa toàn bộ nhật ký sự kiện Windows (Application, System, Security...). Bạn có chắc chắn muốn tiếp tục?" `
-            -Caption "Xác nhận dọn dẹp Event Logs" `
+            -Text "H$([char]0x00E0)nh $([char]0x0111)$([char]0x1ED9)ng n$([char]0x00E0)y s$([char]0x1EBD) x$([char]0x00F3)a to$([char]0x00E0)n b$([char]0x1ED9) nh$([char]0x1EAD)t k$([char]0x00FD) s$([char]0x1EF1) ki$([char]0x1EC7)n Windows (Application, System, Security...). B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n d$([char]0x1EB9)p Event Logs" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
         Expand-TerminalLog
-        if ($txtStatus) { $txtStatus.Text = "Đang dọn Event Logs..." }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1ECD)n Event Logs..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Clear-SystemEventLogs
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Dọn Event Logs hoàn tất" }
+        if ($txtStatus) { $txtStatus.Text = "D$([char]0x1ECD)n Event Logs ho$([char]0x00E0)n t$([char]0x1EA5)t" }
     }
 }
 
-Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
-    Invoke-GuardedAction "Khởi động lại Windows Explorer" {
-        Log-Text "[*] Đang khởi động lại tiến trình Windows Explorer (explorer.exe)..."
+Register-Click "btnRestartExplorer" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" {
+    Invoke-GuardedAction "Kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i Windows Explorer" {
+        Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i ti$([char]0x1EBF)n tr$([char]0x00EC)nh Windows Explorer (explorer.exe)..."
         Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 800
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
-        Log-Text "[OK] Đã nạp lại Windows Explorer thành công."
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) n$([char]0x1EA1)p l$([char]0x1EA1)i Windows Explorer th$([char]0x00E0)nh c$([char]0x00F4)ng."
     }
 }
 
-Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
-    Invoke-GuardedAction "Quét Driver lỗi" {
+Register-Click "btnScanFaultyDrivers" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Invoke-GuardedAction "Qu$([char]0x00E9)t Driver l$([char]0x1ED7)i" {
         Log-Text "=========================================================="
-        Log-Text "[SCAN] ĐANG QUÉT TOÀN BỘ THIẾT BỊ PHẦN CỨNG & DRIVER BỊ LỖI..."
+        Log-Text "[SCAN] $([char]0x0110)ANG QU$([char]0x00C9)T TO$([char]0x00C0)N B$([char]0x1ED8) THI$([char]0x1EBE)T B$([char]0x1ECA) PH$([char]0x1EA6)N C$([char]0x1EE8)NG & DRIVER B$([char]0x1ECA) L$([char]0x1ED6)I..."
         Log-Text "=========================================================="
-        if ($txtStatus) { $txtStatus.Text = "Đang quét thiết bị lỗi..." }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t thi$([char]0x1EBF)t b$([char]0x1ECB) l$([char]0x1ED7)i..." }
 
         $faulty = Find-FaultyPnpDevices
 
         if ($faulty.Count -eq 0) {
-            Log-Text "[OK] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
-            if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
+            Log-Text "[OK] Tuy$([char]0x1EC7)t v$([char]0x1EDD)i! Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n thi$([char]0x1EBF)t b$([char]0x1ECB) n$([char]0x00E0)o b$([char]0x1ECB) l$([char]0x1ED7)i ho$([char]0x1EB7)c thi$([char]0x1EBF)u driver tr$([char]0x00EA)n m$([char]0x00E1)y b$([char]0x1EA1)n."
+            if ($txtStatus) { $txtStatus.Text = "T$([char]0x1EA5)t c$([char]0x1EA3) Driver $([char]0x0111)$([char]0x1EC1)u ho$([char]0x1EA1)t $([char]0x0111)$([char]0x1ED9)ng t$([char]0x1ED1)t" }
         } else {
-            Log-Text "[WARN] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
+            Log-Text "[WARN] PH$([char]0x00C1)T HI$([char]0x1EC6)N $($faulty.Count) THI$([char]0x1EBE)T B$([char]0x1ECA) $([char]0x0110)ANG B$([char]0x1ECA) L$([char]0x1ED6)I / THI$([char]0x1EBE)U DRIVER:"
             foreach ($d in $faulty) {
-                Log-Text "   - Tên thiết bị: $($d.FriendlyName)"
-                Log-Text "     Mã phần cứng: $($d.InstanceId)"
-                Log-Text "     Trạng thái: $($d.Status) | ErrorCode: $($d.ConfigManagerErrorCode)"
+                Log-Text "   - T$([char]0x00EA)n thi$([char]0x1EBF)t b$([char]0x1ECB): $($d.FriendlyName)"
+                Log-Text "     M$([char]0x00E3) ph$([char]0x1EA7)n c$([char]0x1EE9)ng: $($d.InstanceId)"
+                Log-Text "     Tr$([char]0x1EA1)ng th$([char]0x00E1)i: $($d.Status) | ErrorCode: $($d.ConfigManagerErrorCode)"
                 Log-Text "   ------------------------------------------------"
             }
-            if ($txtStatus) { $txtStatus.Text = "Phát hiện $($faulty.Count) thiết bị lỗi" }
+            if ($txtStatus) { $txtStatus.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($faulty.Count) thi$([char]0x1EBF)t b$([char]0x1ECB) l$([char]0x1ED7)i" }
         }
     }
 }
 
-Register-Click "btnPnpRescan" -LockGroup "Quản lý Driver" {
-    Invoke-GuardedAction "Quét lại thiết bị PnP" {
-        Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
+Register-Click "btnPnpRescan" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Invoke-GuardedAction "Qu$([char]0x00E9)t l$([char]0x1EA1)i thi$([char]0x1EBF)t b$([char]0x1ECB) PnP" {
+        Log-Text "[*] $([char]0x0110)ang g$([char]0x1EED)i l$([char]0x1EC7)nh qu$([char]0x00E9)t ph$([char]0x1EA7)n c$([char]0x1EE9)ng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
-        Log-Text "[OK] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
+        Log-Text "[OK] Windows $([char]0x0111)$([char]0x00E3) ho$([char]0x00E0)n t$([char]0x1EA5)t qu$([char]0x00E9)t v$([char]0x00E0) ph$([char]0x00E1)t hi$([char]0x1EC7)n l$([char]0x1EA1)i c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng."
     }
 }
 
-Register-Click "btnOpenDeviceManager" -LockGroup "Quản lý Driver" {
-    Log-Text "[*] Đang mở Trình quản lý thiết bị (devmgmt.msc)..."
+Register-Click "btnOpenDeviceManager" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Log-Text "[*] $([char]0x0110)ang m$([char]0x1EDF) Tr$([char]0x00EC)nh qu$([char]0x1EA3)n l$([char]0x00FD) thi$([char]0x1EBF)t b$([char]0x1ECB) (devmgmt.msc)..."
     Start-Process "devmgmt.msc"
 }
 
-Register-Click "btnFixDriverUpdate" -LockGroup "Quản lý Driver" {
-    Invoke-GuardedAction "Gỡ lỗi kẹt driver update" {
-        Log-Text "[*] Đang giải phóng hàng đợi tải driver bị kẹt trong Windows Update..."
-        if ($txtStatus) { $txtStatus.Text = "Đang sửa lỗi kẹt cập nhật driver..." }
+Register-Click "btnFixDriverUpdate" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Invoke-GuardedAction "G$([char]0x1EE1) l$([char]0x1ED7)i k$([char]0x1EB9)t driver update" {
+        Log-Text "[*] $([char]0x0110)ang gi$([char]0x1EA3)i ph$([char]0x00F3)ng h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i t$([char]0x1EA3)i driver b$([char]0x1ECB) k$([char]0x1EB9)t trong Windows Update..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang s$([char]0x1EED)a l$([char]0x1ED7)i k$([char]0x1EB9)t c$([char]0x1EAD)p nh$([char]0x1EAD)t driver..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
         Reset-WindowsUpdateEngine
 
-        Log-Text "   - Đang buộc nhận diện lại các thiết bị phần cứng..."
+        Log-Text "   - $([char]0x0110)ang bu$([char]0x1ED9)c nh$([char]0x1EAD)n di$([char]0x1EC7)n l$([char]0x1EA1)i c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng..."
         Invoke-PnpDeviceRescan
 
-        Log-Text "   - Yêu cầu Windows Update quét tìm driver thay thế mới..."
+        Log-Text "   - Y$([char]0x00EA)u c$([char]0x1EA7)u Windows Update qu$([char]0x00E9)t t$([char]0x00EC)m driver thay th$([char]0x1EBF) m$([char]0x1EDB)i..."
         Invoke-WindowsUpdateScan
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
-        Log-Text "[OK] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) g$([char]0x1EE1) l$([char]0x1ED7)i k$([char]0x1EB9)t driver update" }
+        Log-Text "[OK] Ho$([char]0x00E0)n th$([char]0x00E0)nh! L$([char]0x1ED7)i k$([char]0x1EB9)t t$([char]0x1EA3)i driver $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c d$([char]0x1ECD)n s$([char]0x1EA1)ch."
     }
 }
 
-Register-Click "btnScanWindowsUpdateDrivers" -LockGroup "Quản lý Driver" {
-    Invoke-GuardedAction "Quét driver từ Windows Update" {
+Register-Click "btnScanWindowsUpdateDrivers" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Invoke-GuardedAction "Qu$([char]0x00E9)t driver t$([char]0x1EEB) Windows Update" {
         Invoke-WindowsUpdateScan
     }
 }
 
-Register-Click "btnCleanDriverStore" -LockGroup "Quản lý Driver" {
-    Invoke-GuardedAction "Dọn dẹp DriverStore" -DeferExpand {
+Register-Click "btnCleanDriverStore" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Invoke-GuardedAction "D$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore" -DeferExpand {
         $confirm = Show-OwnedMessageBox `
-            -Text "Hành động này sẽ xóa các gói driver OEM cũ không còn thiết bị sử dụng trong DriverStore.`nBạn có chắc chắn muốn tiếp tục?" `
-            -Caption "Xác nhận dọn dẹp DriverStore" `
+            -Text "H$([char]0x00E0)nh $([char]0x0111)$([char]0x1ED9)ng n$([char]0x00E0)y s$([char]0x1EBD) x$([char]0x00F3)a c$([char]0x00E1)c g$([char]0x00F3)i driver OEM c$([char]0x0169) kh$([char]0x00F4)ng c$([char]0x00F2)n thi$([char]0x1EBF)t b$([char]0x1ECB) s$([char]0x1EED) d$([char]0x1EE5)ng trong DriverStore.`nB$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
         Expand-TerminalLog
-        if ($txtStatus) { $txtStatus.Text = "Đang dọn dẹp DriverStore..." }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         Invoke-PnpDriverStoreCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        if ($txtStatus) { $txtStatus.Text = "Dọn dẹp DriverStore hoàn tất" }
+        if ($txtStatus) { $txtStatus.Text = "D$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore ho$([char]0x00E0)n t$([char]0x1EA5)t" }
     }
 }
 
-Register-Click "btnBackupDrivers" -LockGroup "Quản lý Driver" {
-    Invoke-GuardedAction "Sao lưu Driver" {
+Register-Click "btnBackupDrivers" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
+    Invoke-GuardedAction "Sao l$([char]0x01B0)u Driver" {
         $dest = "C:\Backup_Drivers"
-        Log-Text "[*] Đang sao lưu toàn bộ Driver của máy ra thư mục: '$dest'..."
-        if ($txtStatus) { $txtStatus.Text = "Đang sao lưu driver..." }
+        Log-Text "[*] $([char]0x0110)ang sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) Driver c$([char]0x1EE7)a m$([char]0x00E1)y ra th$([char]0x01B0) m$([char]0x1EE5)c: '$dest'..."
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang sao l$([char]0x01B0)u driver..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
 
         $res = Export-SystemDriversBackup -Destination $dest
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($res) {
-            if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
-            Log-Text "[OK] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+            if ($txtStatus) { $txtStatus.Text = "Sao l$([char]0x01B0)u driver ho$([char]0x00E0)n t$([char]0x1EA5)t" }
+            Log-Text "[OK] TH$([char]0x00C0)NH C$([char]0x00D4)NG! $([char]0x0110)$([char]0x00E3) sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver v$([char]0x00E0)o: $dest"
         } else {
-            if ($txtStatus) { $txtStatus.Text = "Sao lưu driver thất bại" }
-            Log-Text "[ERR] Lỗi trong quá trình sao lưu driver."
+            if ($txtStatus) { $txtStatus.Text = "Sao l$([char]0x01B0)u driver th$([char]0x1EA5)t b$([char]0x1EA1)i" }
+            Log-Text "[ERR] L$([char]0x1ED7)i trong qu$([char]0x00E1) tr$([char]0x00EC)nh sao l$([char]0x01B0)u driver."
         }
     }
 }
 
-Register-Click "btnOpenBackupFolder" -LockGroup "Quản lý Driver" {
+Register-Click "btnOpenBackupFolder" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver" {
     $dest = "C:\Backup_Drivers"
     if (Test-Path -LiteralPath $dest) {
         Start-Process explorer.exe "`"$dest`""
     } else {
-        Log-Text "[!] Thư mục $dest chưa tồn tại. Hãy bấm nút 'Sao Lưu Toàn Bộ Driver' trước."
+        Log-Text "[!] Th$([char]0x01B0) m$([char]0x1EE5)c $dest ch$([char]0x01B0)a t$([char]0x1ED3)n t$([char]0x1EA1)i. H$([char]0x00E3)y b$([char]0x1EA5)m n$([char]0x00FA)t 'Sao L$([char]0x01B0)u To$([char]0x00E0)n B$([char]0x1ED9) Driver' tr$([char]0x01B0)$([char]0x1EDB)c."
     }
 }
 
@@ -18883,8 +18883,8 @@ function Stop-AllBackgroundWork {
 if ($window -and $window.Dispatcher) {
     $window.Dispatcher.add_UnhandledException({
         param($sender, $e)
-        $errMsg = if ($e -and $e.Exception) { $e.Exception.Message } else { "Lỗi giao diện không xác định" }
-        try { Log-Text "[!] Đã chặn lỗi ngoại lệ UI: $errMsg" } catch {}
+        $errMsg = if ($e -and $e.Exception) { $e.Exception.Message } else { "L$([char]0x1ED7)i giao di$([char]0x1EC7)n kh$([char]0x00F4)ng x$([char]0x00E1)c $([char]0x0111)$([char]0x1ECB)nh" }
+        try { Log-Text "[!] $([char]0x0110)$([char]0x00E3) ch$([char]0x1EB7)n l$([char]0x1ED7)i ngo$([char]0x1EA1)i l$([char]0x1EC7) UI: $errMsg" } catch {}
         $script:isActionRunning = $false
         $script:isScanningApps = $false
         $script:isUpdatingUninstaller = $false
@@ -18923,7 +18923,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
-        Log-Text "[OK] Sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
+        Log-Text "[OK] S$([char]0x1EB5)n s$([char]0x00E0)ng ($($allItemBorders.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng / $($categories.Count) danh m$([char]0x1EE5)c)."
         Flush-PendingIconCache -MaxDecode 10
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
             $script:iconSyncTimer.Start()
@@ -18935,7 +18935,7 @@ $window.Add_ContentRendered({
                 try {
                     Scan-And-ColorizeApps
                 } catch {
-                    Log-Text "[!] Lỗi quét ứng dụng khởi động: $($_.Exception.Message)"
+                    Log-Text "[!] L$([char]0x1ED7)i qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng: $($_.Exception.Message)"
                 } finally {
                     $script:isScanningApps = $false
                 }

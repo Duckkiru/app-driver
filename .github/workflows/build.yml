@@ -27,12 +27,26 @@ jobs:
       shell: pwsh
       run: |
         Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
-        $code = Get-Content -Raw -Encoding utf8 ./App-Driver.ps1
+        $bundlePath = (Resolve-Path ./App-Driver.ps1).Path
+        $rawBytes = [System.IO.File]::ReadAllBytes($bundlePath)
+        $nonAscii = @($rawBytes | Where-Object { $_ -gt 127 }).Count
+        if ($nonAscii -gt 0) {
+            Write-Error "App-Driver.ps1 contains $nonAscii non-ASCII bytes!"
+            exit 1
+        }
+        $code = Get-Content -Raw -Encoding utf8 $bundlePath
         $errors = $null
         $tokens = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseInput($code, [ref]$tokens, [ref]$errors)
         if ($errors) {
-            Write-Error "Syntax errors in compiled script!"
+            Write-Error "Syntax errors (ParseInput) in compiled script!"
             exit 1
         }
-        Write-Host "App-Driver Syntax is 100% Valid!" -ForegroundColor Green
+        $fileErrors = $null
+        $fileTokens = $null
+        [void][System.Management.Automation.Language.Parser]::ParseFile($bundlePath, [ref]$fileTokens, [ref]$fileErrors)
+        if ($fileErrors) {
+            Write-Error "Syntax errors (ParseFile) in compiled script!"
+            exit 1
+        }
+        Write-Host "App-Driver Syntax & 7-bit ASCII Validation is 100% Valid!" -ForegroundColor Green

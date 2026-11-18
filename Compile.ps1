@@ -3,10 +3,118 @@ Write-Host "==========================================================" -Foregro
 Write-Host "APP-DRIVER BUNDLER - COMPILING PROJECT ARTIFACTS..." -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-$startCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1")
-$appsJson = Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json")
-$xamlCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml")
-$mainCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1")
+function ConvertTo-AsciiJson {
+    param([string]$JsonText)
+    if ([string]::IsNullOrEmpty($JsonText)) { return "" }
+    $clean = $JsonText.Replace(([char]0xFEFF).ToString(), "")
+    $sb = [System.Text.StringBuilder]::new($clean.Length + 256)
+    foreach ($ch in $clean.ToCharArray()) {
+        $code = [int]$ch
+        if ($code -gt 127) {
+            [void]$sb.AppendFormat("\u{0:X4}", $code)
+        } else {
+            [void]$sb.Append($ch)
+        }
+    }
+    return $sb.ToString()
+}
+
+function ConvertTo-AsciiXml {
+    param([string]$XmlText)
+    if ([string]::IsNullOrEmpty($XmlText)) { return "" }
+    $clean = $XmlText.Replace(([char]0xFEFF).ToString(), "")
+    $sb = [System.Text.StringBuilder]::new($clean.Length + 512)
+    foreach ($ch in $clean.ToCharArray()) {
+        $code = [int]$ch
+        if ($code -gt 127) {
+            [void]$sb.AppendFormat("&#x{0:X4};", $code)
+        } else {
+            [void]$sb.Append($ch)
+        }
+    }
+    return $sb.ToString()
+}
+
+function ConvertTo-AsciiPowerShellCode {
+    param([string]$Code)
+    if ([string]::IsNullOrEmpty($Code)) { return "" }
+    $cleanCode = $Code.Replace(([char]0xFEFF).ToString(), "")
+    $tokens = $null
+    $errors = $null
+    [void][System.Management.Automation.Language.Parser]::ParseInput($cleanCode, [ref]$tokens, [ref]$errors)
+    if ($errors.Count -gt 0) {
+        throw "Source PowerShell code has parse errors: $($errors[0].Message)"
+    }
+
+    $targetTokens = New-Object System.Collections.Generic.List[object]
+    foreach ($t in $tokens) {
+        if ([string]::IsNullOrEmpty($t.Text)) { continue }
+        $hasHi = $false
+        foreach ($ch in $t.Text.ToCharArray()) {
+            if ([int]$ch -gt 127) { $hasHi = $true; break }
+        }
+        if ($hasHi) { $targetTokens.Add($t) }
+    }
+    if ($targetTokens.Count -eq 0) { return $cleanCode }
+
+    $sb = [System.Text.StringBuilder]::new($cleanCode)
+    for ($idx = $targetTokens.Count - 1; $idx -ge 0; $idx--) {
+        $tok = $targetTokens[$idx]
+        $start = $tok.Extent.StartOffset
+        $len   = $tok.Extent.EndOffset - $start
+        $orig  = $tok.Text
+        $repl  = [System.Text.StringBuilder]::new($orig.Length * 2)
+
+        if ($tok.Kind -eq 'HereStringLiteral') {
+            foreach ($ch in $orig.ToCharArray()) {
+                $c = [int]$ch
+                if ($c -gt 127) {
+                    [void]$repl.AppendFormat("&#x{0:X4};", $c)
+                } else {
+                    [void]$repl.Append($ch)
+                }
+            }
+        } elseif ($tok.Kind -eq 'StringLiteral') {
+            $val = $tok.Value
+            [void]$repl.Append('"')
+            foreach ($ch in $val.ToCharArray()) {
+                $c = [int]$ch
+                if ($c -gt 127) {
+                    [void]$repl.AppendFormat("`$([char]0x{0:X4})", $c)
+                } elseif ($ch -eq '"') {
+                    [void]$repl.Append('`"')
+                } elseif ($ch -eq '$') {
+                    [void]$repl.Append('`$')
+                } elseif ($ch -eq '`') {
+                    [void]$repl.Append('``')
+                } else {
+                    [void]$repl.Append($ch)
+                }
+            }
+            [void]$repl.Append('"')
+        } elseif ($tok.Kind -eq 'StringExpandable') {
+            foreach ($ch in $orig.ToCharArray()) {
+                $c = [int]$ch
+                if ($c -gt 127) {
+                    [void]$repl.AppendFormat("`$([char]0x{0:X4})", $c)
+                } else {
+                    [void]$repl.Append($ch)
+                }
+            }
+        } else {
+            throw "Unexpected non-ASCII token kind: $($tok.Kind) at line $($tok.Extent.StartLineNumber)"
+        }
+
+        [void]$sb.Remove($start, $len)
+        [void]$sb.Insert($start, $repl.ToString())
+    }
+    return $sb.ToString()
+}
+
+$startCode = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1"))
+$appsJson  = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json"))
+$xamlCode  = ConvertTo-AsciiXml (Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml"))
+$mainCode  = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1"))
 $smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothScrollController.cs")
 $appCatalogCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\AppCatalogEngine.cs")
 $deepCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\DeepUninstallerEngine.cs")
@@ -114,7 +222,7 @@ foreach ($d in $fnDirs) {
     $fullDir = Join-Path $root $d
     if (Test-Path $fullDir) {
         Get-ChildItem -Path $fullDir -Filter "*.ps1" | Sort-Object Name | ForEach-Object {
-            $fnContent = (Get-Content -Raw -Encoding utf8 $_.FullName).Trim()
+            $fnContent = (ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 $_.FullName)).Trim()
             $sb.AppendLine($fnContent) | Out-Null
             $sb.AppendLine() | Out-Null
         }
@@ -127,10 +235,26 @@ $outPath = Join-Path $root "App-Driver.ps1"
 $finalBundle = $sb.ToString().Replace(([char]0xFEFF).ToString(), "")
 [System.IO.File]::WriteAllText($outPath, $finalBundle, [System.Text.UTF8Encoding]::new($false))
 
+$writtenBytes = [System.IO.File]::ReadAllBytes($outPath)
+$nonAsciiCount = 0
+foreach ($b in $writtenBytes) {
+    if ($b -gt 127) { $nonAsciiCount++ }
+}
+if ($nonAsciiCount -gt 0) {
+    throw "Compiled App-Driver.ps1 contains $nonAsciiCount non-ASCII byte(s); expected pure 7-bit ASCII!"
+}
+$parseTokens = $null
+$parseErrors = $null
+[void][System.Management.Automation.Language.Parser]::ParseFile($outPath, [ref]$parseTokens, [ref]$parseErrors)
+if ($parseErrors -and $parseErrors.Count -gt 0) {
+    throw "Compiled App-Driver.ps1 failed ParseFile validation with $($parseErrors.Count) error(s): $($parseErrors[0].Message)"
+}
+
 $fileInfo = Get-Item $outPath
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "[OK] COMPILATION SUCCESSFUL!" -ForegroundColor Green
 Write-Host "  File output : $outPath" -ForegroundColor Green
 Write-Host "  File size   : $($fileInfo.Length) bytes ($([math]::Round($fileInfo.Length / 1KB, 2)) KB)" -ForegroundColor Green
+Write-Host "  ASCII check : 0 non-ASCII bytes | ParseFile errors = 0" -ForegroundColor Green
 Write-Host "  Ready for   : irm is.gd/appdriver | iex" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
