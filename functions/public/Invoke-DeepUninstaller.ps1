@@ -17,6 +17,37 @@ if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
     } catch {}
 }
 
+if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+    try {
+        $deepEngType = "DuckUtil.DeepUninstallerEngine" -as [type]
+        if ($null -ne $deepEngType.GetField("CustomElevationPidProvider")) {
+            [DuckUtil.DeepUninstallerEngine]::CustomElevationPidProvider = [DuckUtil.DeepUninstallerEngine+ElevationPidProvider]{
+                param([bool]$wantInstaller)
+                try {
+                    if (-not $wantInstaller) {
+                        $sp = Get-Process -Name "winlogon", "spoolsv" -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if ($sp) { return [int]$sp.Id }
+                        return 0
+                    }
+                    $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if (-not $tiProc) {
+                        Start-Service -Name "TrustedInstaller" -ErrorAction SilentlyContinue
+                        $waited = 0
+                        while ($waited -lt 800) {
+                            $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
+                            if ($tiProc) { break }
+                            Start-Sleep -Milliseconds 80
+                            $waited += 80
+                        }
+                    }
+                    if ($tiProc) { return [int]$tiProc.Id }
+                } catch {}
+                return 0
+            }
+        }
+    } catch {}
+}
+
 function Resolve-PathSafe {
     param([string]$Path)
     if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
@@ -776,7 +807,13 @@ function Find-SystemOrphanLeftovers {
             foreach ($lo in $appLeftovers) {
                 $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
                 if ($seenPaths.Add($dedupKey)) {
-                    $badgeType = if ($lo.IsRegistry) { "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]" } else { "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]" }
+                    $badgeType = if ($lo.Type -like "*Driver Ring 0*") {
+                        "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                    } elseif ($lo.IsRegistry) {
+                        "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                    } else {
+                        "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                    }
                     $orphans.Add([PSCustomObject]@{
                         Type              = $badgeType
                         Confidence        = if ($lo.Confidence) { $lo.Confidence } else { "An to$([char]0x00E0)n 100%" }
@@ -1350,6 +1387,7 @@ function Show-LeftoverReviewDialog {
 
         $badgeBorder = New-Object System.Windows.Controls.Border
         $badgeColor = switch -Wildcard ($item.Type) {
+            "*Driver Ring 0*" { "#B91C1C" }
             "*Registry*" { "#DC2626" }
             "*Startup*" { "#E11D48" }
             "*R$([char]0x00E1)c AppData*" { "#D97706" }

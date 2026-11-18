@@ -111,8 +111,22 @@ namespace DuckUtil
         private const uint SERVICE_ACTIVE = 0x00000001;
         private const uint SERVICE_CONTROL_STOP = 0x00000001;
         private const uint SERVICE_STOPPED = 0x00000001;
+        private const uint TOKEN_DUPLICATE = 0x0002;
+        private const uint TOKEN_IMPERSONATE = 0x0004;
+        private const uint TOKEN_QUERY = 0x0008;
+        private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        private const uint MAXIMUM_ALLOWED = 0x02000000;
+        private const int SecurityImpersonation = 2;
+        private const int TokenImpersonation = 2;
         private static readonly object _privLock = new object();
         private static bool _privilegesEnabled = false;
+        private static readonly object _sysinternalsLock = new object();
+        private static bool _sysinternalsChecked = false;
+        private static string _cachedSysinternalsHandleExe = "";
+
+        public delegate void ElevatedAction();
+        public delegate int ElevationPidProvider(bool wantInstaller);
+        public static ElevationPidProvider CustomElevationPidProvider;
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct RM_UNIQUE_PROCESS
@@ -386,6 +400,27 @@ namespace DuckUtil
 
         [DllImport("advapi32.dll", SetLastError = true)]
         private static extern bool CloseServiceHandle(IntPtr hSCObject);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool DuplicateTokenEx(
+            IntPtr hExistingToken,
+            uint dwDesiredAccess,
+            IntPtr lpTokenAttributes,
+            int ImpersonationLevel,
+            int TokenType,
+            out IntPtr phNewToken);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool ImpersonateLoggedOnUser(IntPtr hToken);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool RevertToSelf();
+
+        [DllImport("fltlib.dll", CharSet = CharSet.Unicode)]
+        private static extern int FilterDetach(string lpFilterName, string lpVolumeName, string lpInstanceName);
+
+        [DllImport("fltlib.dll", CharSet = CharSet.Unicode)]
+        private static extern int FilterUnload(string lpFilterName);
 
         [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
         private static extern int RmStartSession(out uint pSessionHandle, int dwSessionFlags, string strSessionKey);
@@ -1813,44 +1848,228 @@ namespace DuckUtil
             return _protectedSystemProcNames.Contains(procName.Trim());
         }
 
+        private static void EnableUnlockPrivilegesOnToken(IntPtr hTok)
+        {
+            if (hTok == IntPtr.Zero) return;
+            try
+            {
+                string[] privs = new string[]
+                {
+                    "SeDebugPrivilege",
+                    "SeBackupPrivilege",
+                    "SeRestorePrivilege",
+                    "SeTakeOwnershipPrivilege",
+                    "SeSecurityPrivilege",
+                    "SeLoadDriverPrivilege",
+                    "SeImpersonatePrivilege",
+                    "SeTcbPrivilege",
+                    "SeAssignPrimaryTokenPrivilege"
+                };
+                foreach (string priv in privs)
+                {
+                    long luid;
+                    if (LookupPrivilegeValueW(null, priv, out luid))
+                    {
+                        var tp = new TOKEN_PRIVILEGES_1();
+                        tp.PrivilegeCount = 1;
+                        tp.Luid = luid;
+                        tp.Attributes = 2;
+                        AdjustTokenPrivileges(hTok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+                    }
+                }
+            }
+            catch {}
+        }
+
         private static void EnsureUnlockPrivileges()
         {
             lock (_privLock)
             {
                 if (_privilegesEnabled) return;
                 IntPtr hTok;
-                if (OpenProcessToken(GetCurrentProcess(), 0x0028, out hTok))
+                if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out hTok))
                 {
                     try
                     {
-                        string[] privs = new string[]
-                        {
-                            "SeDebugPrivilege",
-                            "SeBackupPrivilege",
-                            "SeRestorePrivilege",
-                            "SeTakeOwnershipPrivilege",
-                            "SeSecurityPrivilege"
-                        };
-                        foreach (string priv in privs)
-                        {
-                            long luid;
-                            if (LookupPrivilegeValueW(null, priv, out luid))
-                            {
-                                var tp = new TOKEN_PRIVILEGES_1();
-                                tp.PrivilegeCount = 1;
-                                tp.Luid = luid;
-                                tp.Attributes = 2;
-                                AdjustTokenPrivileges(hTok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
-                            }
-                        }
+                        EnableUnlockPrivilegesOnToken(hTok);
                     }
-                    catch {}
                     finally
                     {
                         CloseHandle(hTok);
                     }
                 }
                 _privilegesEnabled = true;
+            }
+        }
+
+        private static int FindProcessIdByNameFast(string procName)
+        {
+            if (string.IsNullOrWhiteSpace(procName)) return 0;
+            int foundPid = 0;
+            Process[] arr = null;
+            try
+            {
+                arr = Process.GetProcessesByName(procName);
+                if (arr != null)
+                {
+                    for (int i = 0; i < arr.Length; i++)
+                    {
+                        try
+                        {
+                            if (foundPid == 0 && arr[i] != null && arr[i].Id > 4)
+                            {
+                                foundPid = arr[i].Id;
+                            }
+                        }
+                        catch {}
+                        finally
+                        {
+                            try { if (arr[i] != null) arr[i].Dispose(); } catch {}
+                        }
+                    }
+                }
+            }
+            catch {}
+            return foundPid;
+        }
+
+        private static bool TryDuplicateProcessImpersonationToken(int pid, out IntPtr hDupToken)
+        {
+            hDupToken = IntPtr.Zero;
+            if (pid <= 4) return false;
+            IntPtr hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (hProc == IntPtr.Zero)
+            {
+                hProc = OpenProcess(PROCESS_QUERY_INFORMATION, false, pid);
+            }
+            if (hProc == IntPtr.Zero) return false;
+            try
+            {
+                IntPtr hTok;
+                if (!OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_IMPERSONATE | TOKEN_QUERY, out hTok))
+                {
+                    if (!OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_QUERY, out hTok))
+                    {
+                        return false;
+                    }
+                }
+                try
+                {
+                    if (DuplicateTokenEx(hTok, MAXIMUM_ALLOWED, IntPtr.Zero, SecurityImpersonation, TokenImpersonation, out hDupToken) && hDupToken != IntPtr.Zero)
+                    {
+                        EnableUnlockPrivilegesOnToken(hDupToken);
+                        return true;
+                    }
+                    hDupToken = IntPtr.Zero;
+                    return false;
+                }
+                finally
+                {
+                    CloseHandle(hTok);
+                }
+            }
+            catch
+            {
+                hDupToken = IntPtr.Zero;
+                return false;
+            }
+            finally
+            {
+                CloseHandle(hProc);
+            }
+        }
+
+        private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
+        {
+            EnsureUnlockPrivileges();
+            int sysPid = 0;
+            int tiPid = 0;
+            if (CustomElevationPidProvider != null)
+            {
+                try { sysPid = CustomElevationPidProvider(false); } catch {}
+                if (preferTrustedInstaller)
+                {
+                    try { tiPid = CustomElevationPidProvider(true); } catch {}
+                }
+            }
+            if (sysPid <= 4)
+            {
+                sysPid = FindProcessIdByNameFast("spoolsv");
+            }
+            IntPtr hSysToken = IntPtr.Zero;
+            if (sysPid > 4)
+            {
+                TryDuplicateProcessImpersonationToken(sysPid, out hSysToken);
+            }
+
+            if (!preferTrustedInstaller || tiPid <= 4)
+            {
+                return hSysToken;
+            }
+
+            IntPtr hTiToken = IntPtr.Zero;
+            bool tempSysImp = false;
+            try
+            {
+                if (hSysToken != IntPtr.Zero)
+                {
+                    tempSysImp = ImpersonateLoggedOnUser(hSysToken);
+                }
+                if (TryDuplicateProcessImpersonationToken(tiPid, out hTiToken) && hTiToken != IntPtr.Zero)
+                {
+                    if (tempSysImp)
+                    {
+                        try { RevertToSelf(); } catch {}
+                        tempSysImp = false;
+                    }
+                    if (hSysToken != IntPtr.Zero)
+                    {
+                        try { CloseHandle(hSysToken); } catch {}
+                    }
+                    return hTiToken;
+                }
+            }
+            catch {}
+            finally
+            {
+                if (tempSysImp)
+                {
+                    try { RevertToSelf(); } catch {}
+                }
+            }
+
+            return hSysToken;
+        }
+
+        public static bool RunWithSystemOrTrustedInstaller(bool preferTrustedInstaller, ElevatedAction action)
+        {
+            if (action == null) return false;
+            EnsureUnlockPrivileges();
+            IntPtr hImpToken = TryAcquireSystemOrTrustedInstallerToken(preferTrustedInstaller);
+            bool impersonated = false;
+            try
+            {
+                if (hImpToken != IntPtr.Zero)
+                {
+                    impersonated = ImpersonateLoggedOnUser(hImpToken);
+                }
+                action();
+                return impersonated;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (impersonated)
+                {
+                    try { RevertToSelf(); } catch {}
+                }
+                if (hImpToken != IntPtr.Zero)
+                {
+                    try { CloseHandle(hImpToken); } catch {}
+                }
             }
         }
 
@@ -2219,7 +2438,87 @@ namespace DuckUtil
             return state;
         }
 
-        private static bool TryCloseRemoteFileHandle(int pid, IntPtr remoteHandle)
+        private static string ResolveSysinternalsHandleExe()
+        {
+            lock (_sysinternalsLock)
+            {
+                if (_sysinternalsChecked) return _cachedSysinternalsHandleExe;
+                _sysinternalsChecked = true;
+                _cachedSysinternalsHandleExe = "";
+
+                try
+                {
+                    string[] exeNames = (IntPtr.Size == 8)
+                        ? new string[] { "handle64.exe", "handle.exe" }
+                        : new string[] { "handle.exe", "handle64.exe" };
+
+                    string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    if (!string.IsNullOrWhiteSpace(localApp))
+                    {
+                        string toolsDir = Path.Combine(localApp, @"DuckUtil\Tools");
+                        foreach (string fn in exeNames)
+                        {
+                            string cand = Path.Combine(toolsDir, fn);
+                            if (File.Exists(cand))
+                            {
+                                _cachedSysinternalsHandleExe = cand;
+                                return _cachedSysinternalsHandleExe;
+                            }
+                        }
+                    }
+
+                    string pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+                    string[] dirs = pathEnv.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string rawDir in dirs)
+                    {
+                        string d = rawDir.Trim().Trim('\"');
+                        if (string.IsNullOrEmpty(d)) continue;
+                        foreach (string fn in exeNames)
+                        {
+                            try
+                            {
+                                string cand = Path.Combine(d, fn);
+                                if (File.Exists(cand))
+                                {
+                                    _cachedSysinternalsHandleExe = cand;
+                                    return _cachedSysinternalsHandleExe;
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+                return _cachedSysinternalsHandleExe;
+            }
+        }
+
+        private static bool TryCloseHandleViaSysinternals(int pid, IntPtr remoteHandle)
+        {
+            if (pid <= 4 || remoteHandle == IntPtr.Zero) return false;
+            string handleExe = ResolveSysinternalsHandleExe();
+            if (string.IsNullOrEmpty(handleExe)) return false;
+            try
+            {
+                string hexHandle = remoteHandle.ToInt64().ToString("X");
+                var psi = new ProcessStartInfo(handleExe, "-accepteula -nobanner -c " + hexHandle + " -y -p " + pid.ToString());
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var p = Process.Start(psi))
+                {
+                    if (p != null && p.WaitForExit(2000))
+                    {
+                        return (p.ExitCode == 0);
+                    }
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        private static bool TryCloseRemoteFileHandleDirect(int pid, IntPtr remoteHandle)
         {
             IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE, false, pid);
             if (hp == IntPtr.Zero) return false;
@@ -2241,6 +2540,20 @@ namespace DuckUtil
             {
                 CloseHandle(hp);
             }
+        }
+
+        private static bool TryCloseRemoteFileHandle(int pid, IntPtr remoteHandle)
+        {
+            if (TryCloseRemoteFileHandleDirect(pid, remoteHandle)) return true;
+
+            bool closedAsSystem = false;
+            RunWithSystemOrTrustedInstaller(false, delegate()
+            {
+                closedAsSystem = TryCloseRemoteFileHandleDirect(pid, remoteHandle);
+            });
+            if (closedAsSystem) return true;
+
+            return TryCloseHandleViaSysinternals(pid, remoteHandle);
         }
 
         private static IntPtr GetCurrentTokenUserSidCopy()
@@ -2277,20 +2590,8 @@ namespace DuckUtil
             }
         }
 
-        public static bool TryTakeOwnershipAndGrantAdminAccess(string path)
+        private static bool TryTakeOwnershipAndGrantAdminAccessCore(string norm, bool isDir)
         {
-            if (string.IsNullOrWhiteSpace(path)) return false;
-            string norm = path.Trim().TrimEnd('\\');
-            bool isDir = Directory.Exists(norm);
-            bool isFile = !isDir && File.Exists(norm);
-            if (!isDir && !isFile) return false;
-            if (IsReparsePoint(norm)) return false;
-
-            string checkDir = isDir ? norm : Path.GetDirectoryName(norm);
-            if (!IsSafeLockTargetDirectory(checkDir) && !(isFile && IsVerifiedRogueKernelDriverFile(norm))) return false;
-
-            EnsureUnlockPrivileges();
-
             var auth = new SID_IDENTIFIER_AUTHORITY { Value0 = 0, Value1 = 0, Value2 = 0, Value3 = 0, Value4 = 0, Value5 = 5 };
             IntPtr adminSid = IntPtr.Zero;
             IntPtr userSid = IntPtr.Zero;
@@ -2345,6 +2646,33 @@ namespace DuckUtil
                 if (userSid != IntPtr.Zero) Marshal.FreeHGlobal(userSid);
                 if (adminSid != IntPtr.Zero) FreeSid(adminSid);
             }
+        }
+
+        public static bool TryTakeOwnershipAndGrantAdminAccess(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string norm = path.Trim().TrimEnd('\\');
+            bool isDir = Directory.Exists(norm);
+            bool isFile = !isDir && File.Exists(norm);
+            if (!isDir && !isFile) return false;
+            if (IsReparsePoint(norm)) return false;
+
+            string checkDir = isDir ? norm : Path.GetDirectoryName(norm);
+            if (!IsSafeLockTargetDirectory(checkDir) && !(isFile && IsVerifiedRogueKernelDriverFile(norm))) return false;
+
+            EnsureUnlockPrivileges();
+
+            if (TryTakeOwnershipAndGrantAdminAccessCore(norm, isDir))
+            {
+                return true;
+            }
+
+            bool elevatedOk = false;
+            RunWithSystemOrTrustedInstaller(true, delegate()
+            {
+                elevatedOk = TryTakeOwnershipAndGrantAdminAccessCore(norm, isDir);
+            });
+            return elevatedOk;
         }
 
         private static bool IsSafeLockTargetDirectory(string norm)
@@ -3017,27 +3345,137 @@ namespace DuckUtil
             catch {}
         }
 
+        private static readonly HashSet<string> _protectedWindowsFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "FltMgr", "FileInfo", "Wof", "WdFilter", "MsSecFlt", "WinDefend", "Sense",
+            "wcifs", "luafv", "storqosflt", "bindflt", "cldflt", "bfs", "npsvctrig",
+            "FileCrypt", "tbs", "Csc", "dfsc", "mup", "mrxdav", "mrxsmb", "rdbss",
+            "srv2", "namedpipe", "msfs", "ntfs", "fastfat", "exfat", "refs", "volsnap",
+            "fvevol", "iorate", "rdyboost", "mountmgr", "partmgr", "disk", "acpi",
+            "pci", "ksecdd", "cng", "tcpip", "afd", "ndis", "nsiproxy", "sysmondrv", "procmon24"
+        };
+
+        public static bool IsSafeNonMicrosoftFilterTarget(string svcName)
+        {
+            if (string.IsNullOrWhiteSpace(svcName)) return false;
+            string clean = svcName.Trim();
+            if (_protectedWindowsFilters.Contains(clean)) return false;
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var sk = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + clean, false))
+                {
+                    if (sk == null) return false;
+                    string rawImg = sk.GetValue("ImagePath") as string;
+                    string imgPath = NormalizeServiceImagePath(rawImg);
+                    if (string.IsNullOrEmpty(imgPath)) return false;
+
+                    string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
+                    if (imgPath.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                        imgPath.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        imgPath = Path.Combine(winDir, imgPath);
+                    }
+
+                    string fullImg = imgPath;
+                    try { fullImg = Path.GetFullPath(imgPath); } catch {}
+
+                    if (fullImg.StartsWith(winDir + "\\", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(fullImg, winDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return IsVerifiedRogueKernelDriverFile(fullImg);
+                    }
+
+                    string parentDir = Path.GetDirectoryName(fullImg);
+                    if (!IsSafeLockTargetDirectory(parentDir)) return false;
+
+                    if (File.Exists(fullImg))
+                    {
+                        string comp = "";
+                        try { comp = FileVersionInfo.GetVersionInfo(fullImg).CompanyName ?? ""; } catch {}
+                        string cert = GetSignerSubject(fullImg);
+                        if (comp.IndexOf("Microsoft Corporation", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            cert.IndexOf("Microsoft Corporation", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static void DetachMinifilterFromAllVolumes(string svcName)
         {
-            if (string.IsNullOrWhiteSpace(svcName)) return;
+            if (!IsSafeNonMicrosoftFilterTarget(svcName)) return;
+            string clean = svcName.Trim();
+            EnsureUnlockPrivileges();
             try
             {
                 foreach (string drv in Directory.GetLogicalDrives())
                 {
                     if (string.IsNullOrEmpty(drv) || drv.Length < 2) continue;
                     string vol = drv.Substring(0, 2);
-                    RunHiddenProcess("fltmc.exe", "detach \"" + svcName + "\" " + vol, 900);
+                    int hr = -1;
+                    try
+                    {
+                        hr = FilterDetach(clean, vol, null);
+                        if (hr != 0)
+                        {
+                            hr = FilterDetach(clean, drv, null);
+                        }
+                    }
+                    catch {}
+                    if (hr != 0)
+                    {
+                        RunHiddenProcess("fltmc.exe", "detach \"" + clean + "\" " + vol, 900);
+                    }
                 }
             }
             catch {}
+        }
+
+        public static bool TryUnloadMinifilterDirect(string svcName)
+        {
+            if (!IsSafeNonMicrosoftFilterTarget(svcName)) return false;
+            string clean = svcName.Trim();
+            EnsureUnlockPrivileges();
+            DetachMinifilterFromAllVolumes(clean);
+
+            int hr = -1;
+            try
+            {
+                hr = FilterUnload(clean);
+            }
+            catch {}
+
+            if (hr != 0 && hr != unchecked((int)0x801F000F))
+            {
+                RunWithSystemOrTrustedInstaller(true, delegate()
+                {
+                    DetachMinifilterFromAllVolumes(clean);
+                    try { hr = FilterUnload(clean); } catch {}
+                });
+            }
+
+            if (hr != 0 && hr != unchecked((int)0x801F000F))
+            {
+                RunHiddenProcess("fltmc.exe", "unload \"" + clean + "\"", 1500);
+            }
+
+            return (hr == 0 || hr == unchecked((int)0x801F000F));
         }
 
         private static bool TryStopAndDeleteViaScm(IntPtr hScm, string svcName, bool isDriver)
         {
             if (isDriver)
             {
-                DetachMinifilterFromAllVolumes(svcName);
-                RunHiddenProcess("fltmc.exe", "unload \"" + svcName + "\"", 1500);
+                TryUnloadMinifilterDirect(svcName);
             }
             if (hScm == IntPtr.Zero) return false;
             IntPtr hSvc = OpenServiceW(hScm, svcName, SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS | DELETE_ACCESS);
@@ -3082,8 +3520,8 @@ namespace DuckUtil
                 }
 
                 StopSingleServiceHandleAndWait(hSvc);
-                DeleteService(hSvc);
-                return true;
+                bool delOk = DeleteService(hSvc);
+                return delOk;
             }
             catch
             {
@@ -3099,43 +3537,68 @@ namespace DuckUtil
         {
             if (string.IsNullOrWhiteSpace(svcName)) return false;
             string cleanName = svcName.Trim();
+            if (_protectedWindowsFilters.Contains(cleanName)) return false;
             EnsureUnlockPrivileges();
 
             bool isDriver = false;
-            try
+            Action disableInReg = delegate()
             {
-                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                using (var sk = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, true))
+                try
                 {
-                    if (sk != null)
+                    using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (var sk = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, true))
                     {
-                        object tObj = sk.GetValue("Type");
-                        if (tObj != null)
+                        if (sk != null)
                         {
-                            int tVal = Convert.ToInt32(tObj) & 0x0F;
-                            isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                            object tObj = sk.GetValue("Type");
+                            if (tObj != null)
+                            {
+                                int tVal = Convert.ToInt32(tObj) & 0x0F;
+                                isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                            }
+                            try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
+                            try { sk.DeleteValue("FailureActions", false); } catch {}
                         }
-                        try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
-                        try { sk.DeleteValue("FailureActions", false); } catch {}
                     }
                 }
-            }
-            catch {}
+                catch {}
+            };
 
+            disableInReg();
+
+            bool scmOk = false;
             IntPtr hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
             try
             {
-                if (!TryStopAndDeleteViaScm(hScm, cleanName, isDriver))
+                scmOk = TryStopAndDeleteViaScm(hScm, cleanName, isDriver);
+                if (!scmOk)
+                {
+                    RunWithSystemOrTrustedInstaller(true, delegate()
+                    {
+                        disableInReg();
+                        IntPtr hScmElev = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
+                        if (hScmElev != IntPtr.Zero)
+                        {
+                            try
+                            {
+                                scmOk = TryStopAndDeleteViaScm(hScmElev, cleanName, isDriver);
+                            }
+                            finally
+                            {
+                                CloseServiceHandle(hScmElev);
+                            }
+                        }
+                    });
+                }
+                if (!scmOk)
                 {
                     if (isDriver)
                     {
-                        DetachMinifilterFromAllVolumes(cleanName);
-                        RunHiddenProcess("fltmc.exe", "unload \"" + cleanName + "\"", 1500);
+                        TryUnloadMinifilterDirect(cleanName);
                     }
                     RunHiddenSc("stop \"" + cleanName + "\"");
                     RunHiddenSc("delete \"" + cleanName + "\"");
                 }
-                return true;
             }
             catch
             {
@@ -3144,6 +3607,55 @@ namespace DuckUtil
             finally
             {
                 if (hScm != IntPtr.Zero) CloseServiceHandle(hScm);
+            }
+
+            Action deleteSvcKeyTree = delegate()
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", true))
+                    {
+                        if (svcRoot != null)
+                        {
+                            svcRoot.DeleteSubKeyTree(cleanName, false);
+                        }
+                    }
+                }
+                catch {}
+            };
+
+            deleteSvcKeyTree();
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var skCheck = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, false))
+                {
+                    if (skCheck != null)
+                    {
+                        RunWithSystemOrTrustedInstaller(true, delegate()
+                        {
+                            deleteSvcKeyTree();
+                        });
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var skFinal = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, false))
+                {
+                    if (skFinal == null) return true;
+                    object delFlag = skFinal.GetValue("DeleteFlag");
+                    if (delFlag != null && Convert.ToInt32(delFlag) != 0) return true;
+                    return scmOk;
+                }
+            }
+            catch
+            {
+                return scmOk;
             }
         }
 
@@ -3260,13 +3772,7 @@ namespace DuckUtil
                                 neutralized++;
                                 if (!TryStopAndDeleteViaScm(hScm, svcName, isDriver))
                                 {
-                                    if (isDriver)
-                                    {
-                                        DetachMinifilterFromAllVolumes(svcName);
-                                        RunHiddenProcess("fltmc.exe", "unload \"" + svcName + "\"", 1500);
-                                    }
-                                    RunHiddenSc("stop \"" + svcName + "\"");
-                                    RunHiddenSc("delete \"" + svcName + "\"");
+                                    NeutralizeSingleServiceOrDriver(svcName);
                                 }
                                 if (!string.IsNullOrEmpty(resolvedDriverSys) && File.Exists(resolvedDriverSys))
                                 {
@@ -3651,6 +4157,23 @@ namespace DuckUtil
                     catch {}
                     if (TryPosixUnlinkFile(file)) return true;
                 }
+            }
+
+            if (File.Exists(file))
+            {
+                RunWithSystemOrTrustedInstaller(true, delegate()
+                {
+                    TryTakeOwnershipAndGrantAdminAccessCore(file, false);
+                    if (!TryPosixUnlinkFile(file) && File.Exists(file))
+                    {
+                        try
+                        {
+                            File.SetAttributes(file, FileAttributes.Normal);
+                            File.Delete(file);
+                        }
+                        catch {}
+                    }
+                });
             }
             return !File.Exists(file);
         }
