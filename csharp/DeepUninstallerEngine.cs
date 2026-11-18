@@ -2161,30 +2161,39 @@ namespace DuckUtil
             {
                 state.ThreadId = GetCurrentThreadId();
                 var sb = new System.Text.StringBuilder(1024);
-                while (!state.StopRequested)
+                try
                 {
-                    state.WorkEv.WaitOne();
-                    if (state.StopRequested) break;
-                    IntPtr h = state.PendingHandle;
-                    string resolved = null;
-                    if (h != IntPtr.Zero)
+                    while (!state.StopRequested)
                     {
-                        try
+                        state.WorkEv.WaitOne();
+                        if (state.StopRequested) break;
+                        IntPtr h = state.PendingHandle;
+                        string resolved = null;
+                        if (h != IntPtr.Zero)
                         {
-                            if (GetFileType(h) == FILE_TYPE_DISK)
+                            try
                             {
-                                sb.Length = 0;
-                                uint n = GetFinalPathNameByHandleW(h, sb, (uint)sb.Capacity, 0);
-                                if (n > 0 && n < (uint)sb.Capacity)
+                                if (GetFileType(h) == FILE_TYPE_DISK)
                                 {
-                                    resolved = NormalizeDosOrNtPath(sb.ToString());
+                                    sb.Length = 0;
+                                    uint n = GetFinalPathNameByHandleW(h, sb, (uint)sb.Capacity, 0);
+                                    if (n > 0 && n < (uint)sb.Capacity)
+                                    {
+                                        resolved = NormalizeDosOrNtPath(sb.ToString());
+                                    }
                                 }
                             }
+                            catch {}
                         }
-                        catch {}
+                        state.PendingPath = resolved;
+                        state.DoneEv.Set();
                     }
-                    state.PendingPath = resolved;
-                    state.DoneEv.Set();
+                }
+                catch {}
+                finally
+                {
+                    try { state.WorkEv.Close(); } catch {}
+                    try { state.DoneEv.Close(); } catch {}
                 }
             });
             t.IsBackground = true;
@@ -2535,8 +2544,12 @@ namespace DuckUtil
         {
             if (string.IsNullOrWhiteSpace(targetPath)) return false;
             string norm = targetPath.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
             if (norm.Length <= 3) return false;
-            if (!File.Exists(norm) && !Directory.Exists(norm)) return true;
+            bool isDir = Directory.Exists(norm);
+            bool isFile = !isDir && File.Exists(norm);
+            if (!isDir && !isFile) return true;
+            if (!IsSafeLockTargetDirectory(isDir ? norm : Path.GetDirectoryName(norm))) return false;
 
             try
             {
@@ -2964,7 +2977,10 @@ namespace DuckUtil
         public static int DisableAndRemoveServicesInDirectory(string targetDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir)) return 0;
-            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
+            string norm = targetDir.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+            if (!IsSafeLockTargetDirectory(norm)) return 0;
+            string prefix = norm + "\\";
             if (prefix.Length <= 4) return 0;
 
             int neutralized = 0;
@@ -3029,7 +3045,10 @@ namespace DuckUtil
         public static int RemoveScheduledTasksInDirectory(string targetDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir)) return 0;
-            string prefix = targetDir.Trim().TrimEnd('\\') + "\\";
+            string norm = targetDir.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+            if (!IsSafeLockTargetDirectory(norm)) return 0;
+            string prefix = norm + "\\";
             if (prefix.Length <= 4) return 0;
 
             int removed = 0;
@@ -3293,6 +3312,7 @@ namespace DuckUtil
 
             if (File.Exists(norm))
             {
+                if (!IsSafeLockTargetDirectory(Path.GetDirectoryName(norm))) return false;
                 try
                 {
                     File.SetAttributes(norm, FileAttributes.Normal);
@@ -3333,6 +3353,7 @@ namespace DuckUtil
             }
 
             if (!Directory.Exists(norm)) return true;
+            if (!IsSafeLockTargetDirectory(norm)) return false;
 
             if (IsReparsePoint(norm))
             {
@@ -3376,7 +3397,20 @@ namespace DuckUtil
                                 File.Delete(file);
                                 recovered = true;
                             }
-                            catch {}
+                            catch
+                            {
+                                string parentDir = Path.GetDirectoryName(file);
+                                if (!string.IsNullOrEmpty(parentDir) && TryTakeOwnershipAndGrantAdminAccess(parentDir))
+                                {
+                                    try
+                                    {
+                                        File.SetAttributes(file, FileAttributes.Normal);
+                                        File.Delete(file);
+                                        recovered = true;
+                                    }
+                                    catch {}
+                                }
+                            }
                         }
                         if (recovered) continue;
 
@@ -3434,6 +3468,30 @@ namespace DuckUtil
                         bool dirRecovered = false;
                         if (!IsReparsePoint(sd) && TryTakeOwnershipAndGrantAdminAccess(sd))
                         {
+                            try
+                            {
+                                foreach (string innerFile in Directory.GetFiles(sd))
+                                {
+                                    try
+                                    {
+                                        File.SetAttributes(innerFile, FileAttributes.Normal);
+                                        File.Delete(innerFile);
+                                    }
+                                    catch
+                                    {
+                                        if (TryTakeOwnershipAndGrantAdminAccess(innerFile))
+                                        {
+                                            try
+                                            {
+                                                File.SetAttributes(innerFile, FileAttributes.Normal);
+                                                File.Delete(innerFile);
+                                            }
+                                            catch {}
+                                        }
+                                    }
+                                }
+                            }
+                            catch {}
                             try
                             {
                                 File.SetAttributes(sd, FileAttributes.Normal);
