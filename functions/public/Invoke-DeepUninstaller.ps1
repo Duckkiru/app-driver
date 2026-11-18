@@ -1641,14 +1641,19 @@ function Show-LeftoverReviewDialog {
                                 }
                             }
                         } elseif (Test-Path -LiteralPath $ci.Path) {
+                            $neutralizedSvc = $false
                             if ($ci.Path -match '(?i)^HKLM:\\SYSTEM\\CurrentControlSet\\Services\\([^\\]+)$') {
                                 $svcTargetName = $Matches[1]
                                 if ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
-                                    [void]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
+                                    $neutralizedSvc = [bool]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
                                 }
                             }
                             if (Test-Path -LiteralPath $ci.Path) {
-                                Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                                if ($neutralizedSvc) {
+                                    Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction SilentlyContinue
+                                } else {
+                                    Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                                }
                             }
                             $removed++
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {

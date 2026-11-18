@@ -1979,6 +1979,9 @@ namespace DuckUtil
             }
         }
 
+        private static DateTime _lastTiLookupAtUtc = DateTime.MinValue;
+        private static int _cachedTiPid = 0;
+
         private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
         {
             EnsureUnlockPrivileges();
@@ -1989,12 +1992,18 @@ namespace DuckUtil
                 try { sysPid = CustomElevationPidProvider(false); } catch {}
                 if (preferTrustedInstaller)
                 {
-                    try { tiPid = CustomElevationPidProvider(true); } catch {}
+                    if (_cachedTiPid > 4 || (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                    {
+                        _lastTiLookupAtUtc = DateTime.UtcNow;
+                        try { _cachedTiPid = CustomElevationPidProvider(true); } catch { _cachedTiPid = 0; }
+                    }
+                    tiPid = _cachedTiPid;
                 }
             }
             if (sysPid <= 4)
             {
-                sysPid = FindProcessIdByNameFast("spoolsv");
+                sysPid = FindProcessIdByNameFast("winlogon");
+                if (sysPid <= 4) sysPid = FindProcessIdByNameFast("spoolsv");
             }
             IntPtr hSysToken = IntPtr.Zero;
             if (sysPid > 4)
@@ -3537,7 +3546,7 @@ namespace DuckUtil
         {
             if (string.IsNullOrWhiteSpace(svcName)) return false;
             string cleanName = svcName.Trim();
-            if (_protectedWindowsFilters.Contains(cleanName)) return false;
+            if (!IsSafeNonMicrosoftFilterTarget(cleanName)) return false;
             EnsureUnlockPrivileges();
 
             bool isDriver = false;
@@ -4197,6 +4206,37 @@ namespace DuckUtil
             {
                 bool isRogueDrv = IsVerifiedRogueKernelDriverFile(norm);
                 if (!IsSafeLockTargetDirectory(Path.GetDirectoryName(norm)) && !isRogueDrv) return false;
+                if (isRogueDrv)
+                {
+                    try
+                    {
+                        string drvFileName = Path.GetFileName(norm);
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", false))
+                        {
+                            if (svcRoot != null && !string.IsNullOrEmpty(drvFileName))
+                            {
+                                foreach (string sName in svcRoot.GetSubKeyNames())
+                                {
+                                    try
+                                    {
+                                        using (var sk = svcRoot.OpenSubKey(sName, false))
+                                        {
+                                            if (sk == null) continue;
+                                            string img = sk.GetValue("ImagePath") as string ?? "";
+                                            if (img.IndexOf(drvFileName, StringComparison.OrdinalIgnoreCase) >= 0)
+                                            {
+                                                NeutralizeSingleServiceOrDriver(sName);
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
                 if (TryDeleteSingleFileAggressively(norm, !isRogueDrv)) return true;
                 if (runFullLockerStop)
                 {
