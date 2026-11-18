@@ -6884,6 +6884,19 @@ namespace DuckUtil
             public IntPtr ThreadHandle = IntPtr.Zero;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_STATUS_BLOCK
+        {
+            public IntPtr Status;
+            public IntPtr Information;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FILE_DISPOSITION_INFO_EX
+        {
+            public uint Flags;
+        }
+
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
 
@@ -6892,6 +6905,9 @@ namespace DuckUtil
 
         [DllImport("ntdll.dll")]
         private static extern int NtQuerySystemInformation(int SystemInformationClass, IntPtr SystemInformation, int SystemInformationLength, out int ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtSetInformationFile(IntPtr FileHandle, out IO_STATUS_BLOCK IoStatusBlock, ref FILE_DISPOSITION_INFO_EX FileInformation, uint Length, int FileInformationClass);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr CreateFileW(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
@@ -8890,7 +8906,7 @@ namespace DuckUtil
             if (IsReparsePoint(norm)) return false;
 
             string checkDir = isDir ? norm : Path.GetDirectoryName(norm);
-            if (!IsSafeLockTargetDirectory(checkDir)) return false;
+            if (!IsSafeLockTargetDirectory(checkDir) && !(isFile && IsVerifiedRogueKernelDriverFile(norm))) return false;
 
             EnsureUnlockPrivileges();
 
@@ -8983,6 +8999,16 @@ namespace DuckUtil
                 {
                     blocked.Add(Path.Combine(localProg, "Programs").TrimEnd('\\'));
                 }
+                string sys32 = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (!string.IsNullOrWhiteSpace(sys32))
+                {
+                    blocked.Add(Path.Combine(sys32, "drivers").TrimEnd('\\'));
+                }
+                string sys86 = Environment.GetFolderPath(Environment.SpecialFolder.SystemX86);
+                if (!string.IsNullOrWhiteSpace(sys86))
+                {
+                    blocked.Add(Path.Combine(sys86, "drivers").TrimEnd('\\'));
+                }
                 string sysDrive = Path.GetPathRoot(full);
                 if (!string.IsNullOrWhiteSpace(sysDrive))
                 {
@@ -8994,6 +9020,102 @@ namespace DuckUtil
             {
                 return false;
             }
+        }
+
+        public static bool IsVerifiedRogueKernelDriverFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+            try
+            {
+                string full = Path.GetFullPath(filePath.Trim());
+                if (!full.EndsWith(".sys", StringComparison.OrdinalIgnoreCase)) return false;
+                if (!File.Exists(full)) return false;
+
+                string sysDrivers = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers");
+                string dir = Path.GetDirectoryName(full) ?? "";
+                if (!string.Equals(dir.TrimEnd('\\'), sysDrivers.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)) return false;
+
+                string fn = Path.GetFileName(full);
+                string comp = "";
+                string prod = "";
+                string desc = "";
+                try
+                {
+                    FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(full);
+                    comp = fvi.CompanyName ?? "";
+                    prod = fvi.ProductName ?? "";
+                    desc = fvi.FileDescription ?? "";
+                }
+                catch {}
+                string cert = GetSignerSubject(full);
+                string combined = fn + " | " + comp + " | " + prod + " | " + desc + " | " + cert;
+
+                if (combined.IndexOf("Microsoft Corporation", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    combined.IndexOf("360", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Qihu", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Qihoo", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("2345", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Kingsoft", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Baidu", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return false;
+                }
+
+                string[] rogueTokens = new string[]
+                {
+                    "360.cn", "360Total", "360Safe", "360\u5B89\u5168\u536B\u58EB", "Beijing Qihu", "Qihoo 360",
+                    "360FsFlt", "360disproc", "360Box", "360AntiHacker", "360netmon", "360reskit",
+                    "BAPIDRV", "dsark", "360SelfProtection", "360AvFlt", "360Hvm", "360qpesv", "360Camera",
+                    "2345.com", "2345Safe", "Kingsoft", "KWatch", "KisKrnl", "Baidu"
+                };
+                foreach (string tok in rogueTokens)
+                {
+                    if (combined.IndexOf(tok, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool TryPosixUnlinkFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+            string norm = filePath.Trim();
+            if (!File.Exists(norm)) return true;
+
+            EnsureUnlockPrivileges();
+
+            IntPtr h = CreateFileW(norm, DELETE_ACCESS | 0x0100, 0x00000001 | 0x00000002 | 0x00000004, IntPtr.Zero, 3, 0x02000000 | 0x00200000, IntPtr.Zero);
+            if (h == IntPtr.Zero || h == new IntPtr(-1))
+            {
+                h = CreateFileW(norm, DELETE_ACCESS, 0x00000001 | 0x00000002 | 0x00000004, IntPtr.Zero, 3, 0x02000000 | 0x00200000, IntPtr.Zero);
+            }
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return false;
+
+            int st = -1;
+            try
+            {
+                IO_STATUS_BLOCK iosb;
+                var info = new FILE_DISPOSITION_INFO_EX { Flags = 0x00000017 };
+                st = NtSetInformationFile(h, out iosb, ref info, 4, 64);
+                if (st != 0)
+                {
+                    info.Flags = 0x00000013;
+                    st = NtSetInformationFile(h, out iosb, ref info, 4, 64);
+                }
+            }
+            catch {}
+            finally
+            {
+                CloseHandle(h);
+            }
+            return (st == 0 && !File.Exists(norm));
         }
 
         private static Dictionary<int, string> GetRestartManagerLockingPids(string targetPath)
@@ -9514,10 +9636,26 @@ namespace DuckUtil
             catch {}
         }
 
+        private static void DetachMinifilterFromAllVolumes(string svcName)
+        {
+            if (string.IsNullOrWhiteSpace(svcName)) return;
+            try
+            {
+                foreach (string drv in Directory.GetLogicalDrives())
+                {
+                    if (string.IsNullOrEmpty(drv) || drv.Length < 2) continue;
+                    string vol = drv.Substring(0, 2);
+                    RunHiddenProcess("fltmc.exe", "detach \"" + svcName + "\" " + vol, 900);
+                }
+            }
+            catch {}
+        }
+
         private static bool TryStopAndDeleteViaScm(IntPtr hScm, string svcName, bool isDriver)
         {
             if (isDriver)
             {
+                DetachMinifilterFromAllVolumes(svcName);
                 RunHiddenProcess("fltmc.exe", "unload \"" + svcName + "\"", 1500);
             }
             if (hScm == IntPtr.Zero) return false;
@@ -9576,6 +9714,58 @@ namespace DuckUtil
             }
         }
 
+        public static bool NeutralizeSingleServiceOrDriver(string svcName)
+        {
+            if (string.IsNullOrWhiteSpace(svcName)) return false;
+            string cleanName = svcName.Trim();
+            EnsureUnlockPrivileges();
+
+            bool isDriver = false;
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var sk = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, true))
+                {
+                    if (sk != null)
+                    {
+                        object tObj = sk.GetValue("Type");
+                        if (tObj != null)
+                        {
+                            int tVal = Convert.ToInt32(tObj) & 0x0F;
+                            isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                        }
+                        try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
+                        try { sk.DeleteValue("FailureActions", false); } catch {}
+                    }
+                }
+            }
+            catch {}
+
+            IntPtr hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
+            try
+            {
+                if (!TryStopAndDeleteViaScm(hScm, cleanName, isDriver))
+                {
+                    if (isDriver)
+                    {
+                        DetachMinifilterFromAllVolumes(cleanName);
+                        RunHiddenProcess("fltmc.exe", "unload \"" + cleanName + "\"", 1500);
+                    }
+                    RunHiddenSc("stop \"" + cleanName + "\"");
+                    RunHiddenSc("delete \"" + cleanName + "\"");
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (hScm != IntPtr.Zero) CloseServiceHandle(hScm);
+            }
+        }
+
         private static void RunHiddenProcess(string exe, string args, int timeoutMs)
         {
             try
@@ -9593,6 +9783,21 @@ namespace DuckUtil
             catch {}
         }
 
+        private static string DetectRogueVendorFamilyFromPath(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return "";
+            if (targetDir.IndexOf("360", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                targetDir.IndexOf("Qihu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                targetDir.IndexOf("Qihoo", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "360";
+            }
+            if (targetDir.IndexOf("2345", StringComparison.OrdinalIgnoreCase) >= 0) return "2345";
+            if (targetDir.IndexOf("Kingsoft", StringComparison.OrdinalIgnoreCase) >= 0) return "Kingsoft";
+            if (targetDir.IndexOf("Baidu", StringComparison.OrdinalIgnoreCase) >= 0) return "Baidu";
+            return "";
+        }
+
         public static int DisableAndRemoveServicesInDirectory(string targetDir)
         {
             if (string.IsNullOrWhiteSpace(targetDir)) return 0;
@@ -9602,6 +9807,7 @@ namespace DuckUtil
             string prefix = norm + "\\";
             if (prefix.Length <= 4) return 0;
 
+            string vendorFamily = DetectRogueVendorFamilyFromPath(norm);
             int neutralized = 0;
             IntPtr hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
             try
@@ -9616,24 +9822,53 @@ namespace DuckUtil
                         {
                             bool matches = false;
                             bool isDriver = false;
+                            string resolvedDriverSys = "";
                             using (var sk = svcRoot.OpenSubKey(svcName, true))
                             {
                                 if (sk == null) continue;
-                                string imgPath = NormalizeServiceImagePath(sk.GetValue("ImagePath") as string);
+                                string rawImg = sk.GetValue("ImagePath") as string;
+                                string imgPath = NormalizeServiceImagePath(rawImg);
                                 if (string.IsNullOrEmpty(imgPath)) continue;
+
+                                try
+                                {
+                                    object tObj = sk.GetValue("Type");
+                                    if (tObj != null)
+                                    {
+                                        int tVal = Convert.ToInt32(tObj) & 0x0F;
+                                        isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                                    }
+                                }
+                                catch {}
+
                                 if (imgPath.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
                                 {
                                     matches = true;
-                                    try
+                                }
+                                else if (isDriver && !string.IsNullOrEmpty(vendorFamily))
+                                {
+                                    string sysCandidate = imgPath;
+                                    if (sysCandidate.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                                        sysCandidate.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        object tObj = sk.GetValue("Type");
-                                        if (tObj != null)
+                                        sysCandidate = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), sysCandidate);
+                                    }
+                                    if (File.Exists(sysCandidate) && IsVerifiedRogueKernelDriverFile(sysCandidate))
+                                    {
+                                        FileVersionInfo fvi = null;
+                                        try { fvi = FileVersionInfo.GetVersionInfo(sysCandidate); } catch {}
+                                        string meta = Path.GetFileName(sysCandidate) + " " + (fvi != null ? (fvi.CompanyName + " " + fvi.ProductName + " " + fvi.FileDescription) : "") + " " + GetSignerSubject(sysCandidate);
+                                        if (meta.IndexOf(vendorFamily, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            (vendorFamily == "360" && (meta.IndexOf("Qihu", StringComparison.OrdinalIgnoreCase) >= 0 || meta.IndexOf("Qihoo", StringComparison.OrdinalIgnoreCase) >= 0)))
                                         {
-                                            int tVal = Convert.ToInt32(tObj) & 0x0F;
-                                            isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                                            matches = true;
+                                            resolvedDriverSys = sysCandidate;
                                         }
                                     }
-                                    catch {}
+                                }
+
+                                if (matches)
+                                {
                                     try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
                                     try { sk.DeleteValue("FailureActions", false); } catch {}
                                 }
@@ -9644,8 +9879,18 @@ namespace DuckUtil
                                 neutralized++;
                                 if (!TryStopAndDeleteViaScm(hScm, svcName, isDriver))
                                 {
+                                    if (isDriver)
+                                    {
+                                        DetachMinifilterFromAllVolumes(svcName);
+                                        RunHiddenProcess("fltmc.exe", "unload \"" + svcName + "\"", 1500);
+                                    }
                                     RunHiddenSc("stop \"" + svcName + "\"");
                                     RunHiddenSc("delete \"" + svcName + "\"");
+                                }
+                                if (!string.IsNullOrEmpty(resolvedDriverSys) && File.Exists(resolvedDriverSys))
+                                {
+                                    int rbDummy;
+                                    ForceDeleteDirectory(resolvedDriverSys, false, out rbDummy);
                                 }
                             }
                         }
@@ -9914,6 +10159,121 @@ namespace DuckUtil
             return false;
         }
 
+        private static string GetOrCreateGraveyardDirectory(string sourceFilePath, HashSet<string> existingPending)
+        {
+            try
+            {
+                string srcRoot = Path.GetPathRoot(Path.GetFullPath(sourceFilePath)) ?? "";
+                string tmpBase = Path.GetTempPath();
+                string tmpRoot = Path.GetPathRoot(tmpBase) ?? "";
+                string graveDir = string.Equals(srcRoot, tmpRoot, StringComparison.OrdinalIgnoreCase)
+                    ? Path.Combine(tmpBase.TrimEnd('\\'), "DuckUtil_Graveyard")
+                    : Path.Combine(srcRoot, "DuckUtil_Graveyard");
+
+                if (!Directory.Exists(graveDir))
+                {
+                    Directory.CreateDirectory(graveDir);
+                    try
+                    {
+                        File.SetAttributes(graveDir, FileAttributes.Directory | FileAttributes.Hidden);
+                    }
+                    catch {}
+                }
+                else
+                {
+                    try
+                    {
+                        foreach (string oldDead in Directory.GetFiles(graveDir, "*.dead_*"))
+                        {
+                            try
+                            {
+                                if (!TryPosixUnlinkFile(oldDead))
+                                {
+                                    File.SetAttributes(oldDead, FileAttributes.Normal);
+                                    File.Delete(oldDead);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                    catch {}
+                }
+                ScheduleMoveFileExUnique(graveDir, existingPending);
+                return graveDir;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static bool TryEvacuateLockedFileToGraveyard(string filePath, HashSet<string> existingPending, ref int rebootScheduledCount)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) return true;
+            try
+            {
+                string graveDir = GetOrCreateGraveyardDirectory(filePath, existingPending);
+                if (!string.IsNullOrEmpty(graveDir))
+                {
+                    string graveFile = Path.Combine(graveDir, Path.GetFileName(filePath) + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+                    File.Move(filePath, graveFile);
+                    if (!TryPosixUnlinkFile(graveFile) && File.Exists(graveFile))
+                    {
+                        if (ScheduleMoveFileExUnique(graveFile, existingPending))
+                        {
+                            rebootScheduledCount++;
+                        }
+                    }
+                    return !File.Exists(filePath);
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        private static bool TryDeleteSingleFileAggressively(string file, bool allowParentAclUnlock)
+        {
+            if (!File.Exists(file)) return true;
+            try
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+                if (!File.Exists(file)) return true;
+            }
+            catch {}
+
+            if (TryPosixUnlinkFile(file)) return true;
+
+            if (TryTakeOwnershipAndGrantAdminAccess(file))
+            {
+                try
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                    if (!File.Exists(file)) return true;
+                }
+                catch {}
+                if (TryPosixUnlinkFile(file)) return true;
+            }
+
+            if (allowParentAclUnlock)
+            {
+                string parentDir = Path.GetDirectoryName(file);
+                if (!string.IsNullOrEmpty(parentDir) && TryTakeOwnershipAndGrantAdminAccess(parentDir))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                        if (!File.Exists(file)) return true;
+                    }
+                    catch {}
+                    if (TryPosixUnlinkFile(file)) return true;
+                }
+            }
+            return !File.Exists(file);
+        }
+
         public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)
         {
             return ForceDeleteDirectory(targetDir, true, out rebootScheduledCount);
@@ -9931,44 +10291,23 @@ namespace DuckUtil
 
             if (File.Exists(norm))
             {
-                if (!IsSafeLockTargetDirectory(Path.GetDirectoryName(norm))) return false;
-                try
+                bool isRogueDrv = IsVerifiedRogueKernelDriverFile(norm);
+                if (!IsSafeLockTargetDirectory(Path.GetDirectoryName(norm)) && !isRogueDrv) return false;
+                if (TryDeleteSingleFileAggressively(norm, !isRogueDrv)) return true;
+                if (runFullLockerStop)
                 {
-                    File.SetAttributes(norm, FileAttributes.Normal);
-                    File.Delete(norm);
+                    ForceStopDirectoryLockers(norm, false);
+                    if (TryDeleteSingleFileAggressively(norm, !isRogueDrv)) return true;
+                }
+                if (TryEvacuateLockedFileToGraveyard(norm, existingPending, ref rebootScheduledCount))
+                {
                     return true;
                 }
-                catch
+                if (ScheduleMoveFileExUnique(norm, existingPending))
                 {
-                    if (TryTakeOwnershipAndGrantAdminAccess(norm))
-                    {
-                        try
-                        {
-                            File.SetAttributes(norm, FileAttributes.Normal);
-                            File.Delete(norm);
-                            return true;
-                        }
-                        catch {}
-                    }
-                    if (runFullLockerStop)
-                    {
-                        ForceStopDirectoryLockers(norm, false);
-                    }
-                    try
-                    {
-                        File.SetAttributes(norm, FileAttributes.Normal);
-                        File.Delete(norm);
-                        return true;
-                    }
-                    catch
-                    {
-                        if (ScheduleMoveFileExUnique(norm, existingPending))
-                        {
-                            rebootScheduledCount++;
-                        }
-                        return existingPending.Contains(NormalizeDosOrNtPath(norm));
-                    }
+                    rebootScheduledCount++;
                 }
+                return existingPending.Contains(NormalizeDosOrNtPath(norm));
             }
 
             if (!Directory.Exists(norm)) return true;
@@ -10000,63 +10339,36 @@ namespace DuckUtil
             {
                 foreach (string file in EnumerateFilesSafe(norm, "*", 10))
                 {
-                    try
-                    {
-                        File.SetAttributes(file, FileAttributes.Normal);
-                        File.Delete(file);
-                    }
-                    catch
-                    {
-                        bool recovered = false;
-                        if (TryTakeOwnershipAndGrantAdminAccess(file))
-                        {
-                            try
-                            {
-                                File.SetAttributes(file, FileAttributes.Normal);
-                                File.Delete(file);
-                                recovered = true;
-                            }
-                            catch
-                            {
-                                string parentDir = Path.GetDirectoryName(file);
-                                if (!string.IsNullOrEmpty(parentDir) && TryTakeOwnershipAndGrantAdminAccess(parentDir))
-                                {
-                                    try
-                                    {
-                                        File.SetAttributes(file, FileAttributes.Normal);
-                                        File.Delete(file);
-                                        recovered = true;
-                                    }
-                                    catch {}
-                                }
-                            }
-                        }
-                        if (recovered) continue;
+                    if (TryDeleteSingleFileAggressively(file, true)) continue;
 
-                        if (file.IndexOf(".dead_", StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (TryEvacuateLockedFileToGraveyard(file, existingPending, ref rebootScheduledCount))
+                    {
+                        continue;
+                    }
+
+                    if (file.IndexOf(".dead_", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        if (ScheduleMoveFileExUnique(file, existingPending))
                         {
-                            if (ScheduleMoveFileExUnique(file, existingPending))
+                            rebootScheduledCount++;
+                        }
+                    }
+                    else
+                    {
+                        string deadPath = file + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 6);
+                        try
+                        {
+                            File.Move(file, deadPath);
+                            if (ScheduleMoveFileExUnique(deadPath, existingPending))
                             {
                                 rebootScheduledCount++;
                             }
                         }
-                        else
+                        catch
                         {
-                            string deadPath = file + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 6);
-                            try
+                            if (ScheduleMoveFileExUnique(file, existingPending))
                             {
-                                File.Move(file, deadPath);
-                                if (ScheduleMoveFileExUnique(deadPath, existingPending))
-                                {
-                                    rebootScheduledCount++;
-                                }
-                            }
-                            catch
-                            {
-                                if (ScheduleMoveFileExUnique(file, existingPending))
-                                {
-                                    rebootScheduledCount++;
-                                }
+                                rebootScheduledCount++;
                             }
                         }
                     }
@@ -10091,22 +10403,9 @@ namespace DuckUtil
                             {
                                 foreach (string innerFile in Directory.GetFiles(sd))
                                 {
-                                    try
+                                    if (!TryDeleteSingleFileAggressively(innerFile, false))
                                     {
-                                        File.SetAttributes(innerFile, FileAttributes.Normal);
-                                        File.Delete(innerFile);
-                                    }
-                                    catch
-                                    {
-                                        if (TryTakeOwnershipAndGrantAdminAccess(innerFile))
-                                        {
-                                            try
-                                            {
-                                                File.SetAttributes(innerFile, FileAttributes.Normal);
-                                                File.Delete(innerFile);
-                                            }
-                                            catch {}
-                                        }
+                                        TryEvacuateLockedFileToGraveyard(innerFile, existingPending, ref rebootScheduledCount);
                                     }
                                 }
                             }
@@ -10426,7 +10725,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "TryTakeOwnershipAndGrantAdminAccess"
+        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "TryPosixUnlinkFile"
     } catch {}
 }
 
@@ -12736,6 +13035,65 @@ function Find-AppLeftovers {
         }
     }
 
+    $appHint = "$($AppEntry.DisplayName) $($AppEntry.Publisher) $($AppEntry.InstallLocation)"
+    $vendorFam = ""
+    if ($appHint -match '(?i)(360|Qihu|Qihoo|ZhuDong)') { $vendorFam = "360" }
+    elseif ($appHint -match '(?i)2345') { $vendorFam = "2345" }
+    elseif ($appHint -match '(?i)Kingsoft') { $vendorFam = "Kingsoft" }
+    elseif ($appHint -match '(?i)Baidu') { $vendorFam = "Baidu" }
+
+    if ($vendorFam -and ("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
+        try {
+            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
+            foreach ($sk in $svcItems) {
+                try {
+                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
+                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
+                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
+                    if ($tVal -notin @(1, 2, 8)) { continue }
+                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
+                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
+                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
+                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
+                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+                    if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
+                        $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
+                        $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
+                        $isVendorMatch = ($meta.IndexOf($vendorFam, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($vendorFam -eq "360" -and $meta -match '(?i)(Qihu|Qihoo)')
+                        if ($isVendorMatch) {
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            if ($seenPaths.Add($regSvcPath)) {
+                                $leftovers.Add([PSCustomObject]@{
+                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = $AppEntry.DisplayName
+                                    Path              = $regSvcPath
+                                    SizeBytes         = 0L
+                                    SizeMB            = 0.0
+                                    IsRegistry        = $true
+                                    RegistryValueName = ""
+                                })
+                            }
+                            if ($seenPaths.Add($img)) {
+                                $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
+                                $leftovers.Add([PSCustomObject]@{
+                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = $AppEntry.DisplayName
+                                    Path              = $img
+                                    SizeBytes         = [long]$fLen
+                                    SizeMB            = [math]::Round($fLen / 1MB, 2)
+                                    IsRegistry        = $false
+                                    RegistryValueName = ""
+                                })
+                            }
+                        }
+                    }
+                } catch {}
+            }
+        } catch {}
+    }
+
     return @($leftovers)
 }
 
@@ -13023,6 +13381,71 @@ function Find-SystemOrphanLeftovers {
             try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
             $wsh = $null
         }
+    }
+
+    if (("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
+        try {
+            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
+            foreach ($sk in $svcItems) {
+                if ($script:isWindowClosing) { break }
+                try {
+                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
+                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
+                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
+                    if ($tVal -notin @(1, 2, 8)) { continue }
+                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
+                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
+                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
+                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
+                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+                    if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
+                        $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
+                        $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
+                        $drvVendor = "360 Total Security"
+                        $vendorPattern = '(?i)(360|Qihu|Qihoo)'
+                        if ($meta -match '(?i)2345') { $drvVendor = "2345 Security"; $vendorPattern = '(?i)2345' }
+                        elseif ($meta -match '(?i)Kingsoft') { $drvVendor = "Kingsoft"; $vendorPattern = '(?i)Kingsoft' }
+                        elseif ($meta -match '(?i)Baidu') { $drvVendor = "Baidu"; $vendorPattern = '(?i)Baidu' }
+
+                        $vendorStillActive = $false
+                        foreach ($actApp in $activeApps) {
+                            if ("$($actApp.DisplayName) $($actApp.Publisher) $($actApp.InstallLocation)" -match $vendorPattern) {
+                                $vendorStillActive = $true
+                                break
+                            }
+                        }
+                        if (-not $vendorStillActive) {
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            if ($seenPaths.Add($regSvcPath)) {
+                                $orphans.Add([PSCustomObject]@{
+                                    Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = "$drvVendor ($($sk.PSChildName))"
+                                    Path              = $regSvcPath
+                                    SizeBytes         = 0L
+                                    SizeMB            = 0.0
+                                    IsRegistry        = $true
+                                    RegistryValueName = ""
+                                })
+                            }
+                            if ($seenPaths.Add($img)) {
+                                $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
+                                $orphans.Add([PSCustomObject]@{
+                                    Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
+                                    Path              = $img
+                                    SizeBytes         = [long]$fLen
+                                    SizeMB            = [math]::Round($fLen / 1MB, 2)
+                                    IsRegistry        = $false
+                                    RegistryValueName = ""
+                                })
+                            }
+                        }
+                    }
+                } catch {}
+            }
+        } catch {}
     }
 
     return @($orphans)
@@ -13559,7 +13982,15 @@ function Show-LeftoverReviewDialog {
                                 }
                             }
                         } elseif (Test-Path -LiteralPath $ci.Path) {
-                            Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                            if ($ci.Path -match '(?i)^HKLM:\\SYSTEM\\CurrentControlSet\\Services\\([^\\]+)$') {
+                                $svcTargetName = $Matches[1]
+                                if ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
+                                    [void]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
+                                }
+                            }
+                            if (Test-Path -LiteralPath $ci.Path) {
+                                Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                            }
                             $removed++
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                                 Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry: $($ci.Path)"

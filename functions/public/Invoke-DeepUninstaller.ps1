@@ -656,6 +656,65 @@ function Find-AppLeftovers {
         }
     }
 
+    $appHint = "$($AppEntry.DisplayName) $($AppEntry.Publisher) $($AppEntry.InstallLocation)"
+    $vendorFam = ""
+    if ($appHint -match '(?i)(360|Qihu|Qihoo|ZhuDong)') { $vendorFam = "360" }
+    elseif ($appHint -match '(?i)2345') { $vendorFam = "2345" }
+    elseif ($appHint -match '(?i)Kingsoft') { $vendorFam = "Kingsoft" }
+    elseif ($appHint -match '(?i)Baidu') { $vendorFam = "Baidu" }
+
+    if ($vendorFam -and ("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
+        try {
+            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
+            foreach ($sk in $svcItems) {
+                try {
+                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
+                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
+                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
+                    if ($tVal -notin @(1, 2, 8)) { continue }
+                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
+                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
+                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
+                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
+                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+                    if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
+                        $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
+                        $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
+                        $isVendorMatch = ($meta.IndexOf($vendorFam, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($vendorFam -eq "360" -and $meta -match '(?i)(Qihu|Qihoo)')
+                        if ($isVendorMatch) {
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            if ($seenPaths.Add($regSvcPath)) {
+                                $leftovers.Add([PSCustomObject]@{
+                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = $AppEntry.DisplayName
+                                    Path              = $regSvcPath
+                                    SizeBytes         = 0L
+                                    SizeMB            = 0.0
+                                    IsRegistry        = $true
+                                    RegistryValueName = ""
+                                })
+                            }
+                            if ($seenPaths.Add($img)) {
+                                $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
+                                $leftovers.Add([PSCustomObject]@{
+                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = $AppEntry.DisplayName
+                                    Path              = $img
+                                    SizeBytes         = [long]$fLen
+                                    SizeMB            = [math]::Round($fLen / 1MB, 2)
+                                    IsRegistry        = $false
+                                    RegistryValueName = ""
+                                })
+                            }
+                        }
+                    }
+                } catch {}
+            }
+        } catch {}
+    }
+
     return @($leftovers)
 }
 
@@ -943,6 +1002,71 @@ function Find-SystemOrphanLeftovers {
             try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
             $wsh = $null
         }
+    }
+
+    if (("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
+        try {
+            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
+            foreach ($sk in $svcItems) {
+                if ($script:isWindowClosing) { break }
+                try {
+                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
+                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
+                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
+                    if ($tVal -notin @(1, 2, 8)) { continue }
+                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
+                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
+                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
+                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
+                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+                    if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
+                        $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
+                        $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
+                        $drvVendor = "360 Total Security"
+                        $vendorPattern = '(?i)(360|Qihu|Qihoo)'
+                        if ($meta -match '(?i)2345') { $drvVendor = "2345 Security"; $vendorPattern = '(?i)2345' }
+                        elseif ($meta -match '(?i)Kingsoft') { $drvVendor = "Kingsoft"; $vendorPattern = '(?i)Kingsoft' }
+                        elseif ($meta -match '(?i)Baidu') { $drvVendor = "Baidu"; $vendorPattern = '(?i)Baidu' }
+
+                        $vendorStillActive = $false
+                        foreach ($actApp in $activeApps) {
+                            if ("$($actApp.DisplayName) $($actApp.Publisher) $($actApp.InstallLocation)" -match $vendorPattern) {
+                                $vendorStillActive = $true
+                                break
+                            }
+                        }
+                        if (-not $vendorStillActive) {
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            if ($seenPaths.Add($regSvcPath)) {
+                                $orphans.Add([PSCustomObject]@{
+                                    Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = "$drvVendor ($($sk.PSChildName))"
+                                    Path              = $regSvcPath
+                                    SizeBytes         = 0L
+                                    SizeMB            = 0.0
+                                    IsRegistry        = $true
+                                    RegistryValueName = ""
+                                })
+                            }
+                            if ($seenPaths.Add($img)) {
+                                $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
+                                $orphans.Add([PSCustomObject]@{
+                                    Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                    Confidence        = "An to$([char]0x00E0)n 100%"
+                                    AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
+                                    Path              = $img
+                                    SizeBytes         = [long]$fLen
+                                    SizeMB            = [math]::Round($fLen / 1MB, 2)
+                                    IsRegistry        = $false
+                                    RegistryValueName = ""
+                                })
+                            }
+                        }
+                    }
+                } catch {}
+            }
+        } catch {}
     }
 
     return @($orphans)
@@ -1479,7 +1603,15 @@ function Show-LeftoverReviewDialog {
                                 }
                             }
                         } elseif (Test-Path -LiteralPath $ci.Path) {
-                            Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                            if ($ci.Path -match '(?i)^HKLM:\\SYSTEM\\CurrentControlSet\\Services\\([^\\]+)$') {
+                                $svcTargetName = $Matches[1]
+                                if ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
+                                    [void]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
+                                }
+                            }
+                            if (Test-Path -LiteralPath $ci.Path) {
+                                Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                            }
                             $removed++
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                                 Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry: $($ci.Path)"
