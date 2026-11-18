@@ -3380,6 +3380,23 @@ namespace DuckUtil
                     string imgPath = NormalizeServiceImagePath(rawImg);
                     if (string.IsNullOrEmpty(imgPath)) return false;
 
+                    int exePos = imgPath.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+                    if (exePos > 0) imgPath = imgPath.Substring(0, exePos + 4).Trim('\"', ' ');
+                    else
+                    {
+                        int sysPos = imgPath.IndexOf(".sys", StringComparison.OrdinalIgnoreCase);
+                        if (sysPos > 0) imgPath = imgPath.Substring(0, sysPos + 4).Trim('\"', ' ');
+                    }
+
+                    string dispName = ((sk.GetValue("DisplayName") as string) ?? "").Trim();
+                    if (dispName.StartsWith("Microsoft ", StringComparison.OrdinalIgnoreCase) ||
+                        dispName.StartsWith("@%SystemRoot%", StringComparison.OrdinalIgnoreCase) ||
+                        dispName.StartsWith("@%windir%", StringComparison.OrdinalIgnoreCase) ||
+                        dispName.StartsWith("@SystemRoot", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+
                     string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
                     if (imgPath.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
                         imgPath.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase))
@@ -3389,6 +3406,15 @@ namespace DuckUtil
 
                     string fullImg = imgPath;
                     try { fullImg = Path.GetFullPath(imgPath); } catch {}
+
+                    if (fullImg.IndexOf(@"\Microsoft Update Health Tools\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Windows Defender", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Windows Security", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Windows NT\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Microsoft.NET\", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return false;
+                    }
 
                     if (fullImg.StartsWith(winDir + "\\", StringComparison.OrdinalIgnoreCase) ||
                         string.Equals(fullImg, winDir, StringComparison.OrdinalIgnoreCase))
