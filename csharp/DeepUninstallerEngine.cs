@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -32,6 +33,22 @@ namespace DuckUtil
             SkippedSystemLockers = new string[0];
             ClosedHandleNames = new string[0];
         }
+    }
+
+    public class ForceDeleteResult
+    {
+        public bool Deleted { get; set; }
+        public int RebootScheduledCount { get; set; }
+    }
+
+    public class ServiceScanEntry
+    {
+        public string ServiceName { get; set; }
+        public string DisplayName { get; set; }
+        public string ImagePath { get; set; }
+        public string ResolvedImagePath { get; set; }
+        public int ServiceType { get; set; }
+        public bool IsKernelDriver { get; set; }
     }
     public class InstalledAppInfo
     {
@@ -108,6 +125,7 @@ namespace DuckUtil
         private const uint SERVICE_ENUMERATE_DEPENDENTS = 0x0008;
         private const uint SERVICE_STOP = 0x0020;
         private const uint DELETE_ACCESS = 0x00010000;
+        private const uint LIST_MODULES_ALL = 0x03;
         private const uint SERVICE_ACTIVE = 0x00000001;
         private const uint SERVICE_CONTROL_STOP = 0x00000001;
         private const uint SERVICE_STOPPED = 0x00000001;
@@ -345,6 +363,15 @@ namespace DuckUtil
 
         [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern uint GetMappedFileNameW(IntPtr hProcess, IntPtr lpv, System.Text.StringBuilder lpFilename, uint nSize);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool QueryFullProcessImageNameW(IntPtr hProcess, uint dwFlags, System.Text.StringBuilder lpExeName, ref uint lpdwSize);
+
+        [DllImport("psapi.dll", SetLastError = true)]
+        private static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] IntPtr[] lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
+
+        [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetModuleFileNameExW(IntPtr hProcess, IntPtr hModule, System.Text.StringBuilder lpFilename, uint nSize);
 
         [DllImport("kernel32.dll")]
         private static extern IntPtr LocalFree(IntPtr hMem);
@@ -1979,27 +2006,83 @@ namespace DuckUtil
             }
         }
 
+        private static readonly object _tiLock = new object();
         private static DateTime _lastTiLookupAtUtc = DateTime.MinValue;
         private static int _cachedTiPid = 0;
+
+        private static bool IsProcessAliveFast(int pid)
+        {
+            if (pid <= 4) return false;
+            IntPtr hp = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (hp == IntPtr.Zero) return false;
+            CloseHandle(hp);
+            return true;
+        }
+
+        public static void PrewarmElevationCache()
+        {
+            ElevationPidProvider provider = CustomElevationPidProvider;
+            if (provider == null) return;
+            lock (_tiLock)
+            {
+                if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                {
+                    _cachedTiPid = 0;
+                }
+                if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                {
+                    _lastTiLookupAtUtc = DateTime.UtcNow;
+                    try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                }
+            }
+        }
 
         private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
         {
             EnsureUnlockPrivileges();
             int sysPid = 0;
             int tiPid = 0;
-            if (CustomElevationPidProvider != null)
+            bool onThreadPool = false;
+            try { onThreadPool = Thread.CurrentThread.IsThreadPoolThread; } catch {}
+
+            ElevationPidProvider provider = CustomElevationPidProvider;
+            if (!onThreadPool && provider != null)
             {
-                try { sysPid = CustomElevationPidProvider(false); } catch {}
+                try { sysPid = provider(false); } catch {}
                 if (preferTrustedInstaller)
                 {
-                    if (_cachedTiPid > 4 || (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                    lock (_tiLock)
+                    {
+                        if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                        {
+                            _cachedTiPid = 0;
+                        }
+                        if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                        {
+                            _lastTiLookupAtUtc = DateTime.UtcNow;
+                            try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                        }
+                        tiPid = _cachedTiPid;
+                    }
+                }
+            }
+            else if (preferTrustedInstaller)
+            {
+                lock (_tiLock)
+                {
+                    if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                    {
+                        _cachedTiPid = 0;
+                    }
+                    if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
                     {
                         _lastTiLookupAtUtc = DateTime.UtcNow;
-                        try { _cachedTiPid = CustomElevationPidProvider(true); } catch { _cachedTiPid = 0; }
+                        _cachedTiPid = FindProcessIdByNameFast("TrustedInstaller");
                     }
                     tiPid = _cachedTiPid;
                 }
             }
+
             if (sysPid <= 4)
             {
                 sysPid = FindProcessIdByNameFast("winlogon");
@@ -2151,11 +2234,58 @@ namespace DuckUtil
             return NormalizeDosOrNtPath(p);
         }
 
+        private sealed class LockTargetSpec
+        {
+            public string Norm;
+            public string Prefix;
+            public bool IsSingleFile;
+            public bool IsDirectory;
+            public HashSet<string> DirExeNames;
+
+            public bool MatchesPath(string dosPath)
+            {
+                if (string.IsNullOrEmpty(dosPath)) return false;
+                if (IsDirectory)
+                {
+                    return dosPath.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(dosPath, Norm, StringComparison.OrdinalIgnoreCase);
+                }
+                return string.Equals(dosPath, Norm, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         private static bool CollectProcessMappedFiles(int pid, string prefix, string exactNorm, bool isDirectory, Dictionary<string, string> dosMap, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
         {
-            bool anyMatch = false;
+            var singleTarget = new LockTargetSpec
+            {
+                Norm = exactNorm ?? "",
+                Prefix = prefix ?? "",
+                IsSingleFile = !isDirectory,
+                IsDirectory = isDirectory
+            };
+            var list = new List<LockTargetSpec>(1);
+            list.Add(singleTarget);
+            return CollectProcessMappedFilesMulti(pid, list, dosMap, true, matchedImagesOut, matchedDataMappedOut);
+        }
+
+        private static bool CollectProcessMappedFilesMulti(int pid, List<LockTargetSpec> targets, Dictionary<string, string> dosMap, bool includeImages, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
             IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
             if (hProc == IntPtr.Zero) return false;
+            try
+            {
+                return CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, includeImages, matchedImagesOut, matchedDataMappedOut);
+            }
+            finally
+            {
+                CloseHandle(hProc);
+            }
+        }
+
+        private static bool CollectProcessMappedFilesFromHandle(IntPtr hProc, List<LockTargetSpec> targets, Dictionary<string, string> dosMap, bool includeImages, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
+            if (hProc == IntPtr.Zero || targets == null || targets.Count == 0) return false;
+            bool anyMatch = false;
             try
             {
                 IntPtr addr = IntPtr.Zero;
@@ -2163,7 +2293,7 @@ namespace DuckUtil
                 var seenAlloc = new HashSet<long>();
                 var sb = new System.Text.StringBuilder(1024);
                 int regions = 0;
-                while (regions < 4096)
+                while (regions < 32768)
                 {
                     regions++;
                     IntPtr baseAddr;
@@ -2192,7 +2322,8 @@ namespace DuckUtil
                         memType = m86.Type;
                     }
 
-                    if (state == MEM_COMMIT && (memType == MEM_IMAGE || memType == MEM_MAPPED))
+                    bool checkRegion = (state == MEM_COMMIT) && (memType == MEM_MAPPED || (includeImages && memType == MEM_IMAGE));
+                    if (checkRegion)
                     {
                         long ab = allocBase.ToInt64();
                         if (seenAlloc.Add(ab))
@@ -2204,14 +2335,16 @@ namespace DuckUtil
                                 string dos = TranslateDevicePathToDos(sb.ToString(), dosMap);
                                 if (!string.IsNullOrEmpty(dos))
                                 {
-                                    bool hit = isDirectory
-                                        ? (dos.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || string.Equals(dos, exactNorm, StringComparison.OrdinalIgnoreCase))
-                                        : string.Equals(dos, exactNorm, StringComparison.OrdinalIgnoreCase);
-                                    if (hit)
+                                    for (int ti = 0; ti < targets.Count; ti++)
                                     {
-                                        anyMatch = true;
-                                        if (memType == MEM_IMAGE && matchedImagesOut != null) matchedImagesOut.Add(dos);
-                                        if (memType == MEM_MAPPED && matchedDataMappedOut != null) matchedDataMappedOut.Add(dos);
+                                        if (targets[ti].MatchesPath(dos))
+                                        {
+                                            anyMatch = true;
+                                            if (memType == MEM_IMAGE && matchedImagesOut != null) matchedImagesOut.Add(dos);
+                                            if (memType == MEM_MAPPED && matchedDataMappedOut != null) matchedDataMappedOut.Add(dos);
+                                            if (matchedImagesOut == null && matchedDataMappedOut == null) return true;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -2224,21 +2357,40 @@ namespace DuckUtil
                 }
             }
             catch {}
-            finally
-            {
-                CloseHandle(hProc);
-            }
             return anyMatch;
         }
 
         private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTarget(string normTarget, string prefix, bool isDirectory)
         {
+            if (string.IsNullOrWhiteSpace(normTarget)) return new Dictionary<int, List<MatchedRemoteHandle>>();
+            var single = new LockTargetSpec
+            {
+                Norm = normTarget,
+                Prefix = prefix ?? "",
+                IsSingleFile = !isDirectory,
+                IsDirectory = isDirectory
+            };
+            var list = new List<LockTargetSpec>(1);
+            list.Add(single);
+            return ScanSystemFileHandlesForTargets(list);
+        }
+
+        private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTargets(List<LockTargetSpec> targets)
+        {
             var result = new Dictionary<int, List<MatchedRemoteHandle>>();
-            if (string.IsNullOrWhiteSpace(normTarget)) return result;
+            if (targets == null || targets.Count == 0) return result;
 
             EnsureUnlockPrivileges();
 
-            string probePath = isDirectory ? normTarget : Environment.SystemDirectory;
+            string probePath = Environment.SystemDirectory;
+            for (int ti = 0; ti < targets.Count; ti++)
+            {
+                if (targets[ti].IsDirectory && Directory.Exists(targets[ti].Norm))
+                {
+                    probePath = targets[ti].Norm;
+                    break;
+                }
+            }
             IntPtr hProbe = CreateFileW(probePath, 0x00100001, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
             if (hProbe == IntPtr.Zero || hProbe == new IntPtr(-1))
             {
@@ -2312,82 +2464,120 @@ namespace DuckUtil
                     hList.Add(new MatchedRemoteHandle { RemoteHandle = new IntPtr(hv), GrantedAccess = acc });
                 }
 
-                IntPtr curProc = GetCurrentProcess();
-                HandleWorkerState ws = StartHandleQueryWorker();
-                int timeouts = 0;
-
+                var pidItems = new KeyValuePair<int, List<MatchedRemoteHandle>>[byPid.Count];
+                int idxCopy = 0;
                 foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in byPid)
                 {
-                    IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_QUERY_LIMITED_INFORMATION, false, kv.Key);
-                    if (hp == IntPtr.Zero) continue;
-                    try
-                    {
-                        foreach (MatchedRemoteHandle mh in kv.Value)
-                        {
-                            IntPtr hDup;
-                            if (!DuplicateHandle(hp, mh.RemoteHandle, curProc, out hDup, 0, false, DUPLICATE_SAME_ACCESS)) continue;
-                            bool handleOrphaned = false;
-                            try
-                            {
-                                ws.PendingPath = null;
-                                ws.PendingHandle = hDup;
-                                ws.WorkEv.Set();
-                                if (ws.DoneEv.WaitOne(12))
-                                {
-                                    string resolvedPath = ws.PendingPath;
-                                    if (!string.IsNullOrEmpty(resolvedPath))
-                                    {
-                                        bool hit = isDirectory
-                                            ? (resolvedPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || string.Equals(resolvedPath, normTarget, StringComparison.OrdinalIgnoreCase))
-                                            : string.Equals(resolvedPath, normTarget, StringComparison.OrdinalIgnoreCase);
-                                        if (hit)
-                                        {
-                                            mh.DosPath = resolvedPath;
-                                            List<MatchedRemoteHandle> hitList;
-                                            if (!result.TryGetValue(kv.Key, out hitList))
-                                            {
-                                                hitList = new List<MatchedRemoteHandle>();
-                                                result[kv.Key] = hitList;
-                                            }
-                                            hitList.Add(mh);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    timeouts++;
-                                    if (ws.ThreadHandle != IntPtr.Zero) CancelSynchronousIo(ws.ThreadHandle);
-                                    if (!ws.DoneEv.WaitOne(10))
-                                    {
-                                        handleOrphaned = true;
-                                        ws.StopRequested = true;
-                                        try { if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle); } catch {}
-                                        ws.ThreadHandle = IntPtr.Zero;
-                                        if (timeouts >= 12) break;
-                                        ws = StartHandleQueryWorker();
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                if (!handleOrphaned)
-                                {
-                                    CloseHandle(hDup);
-                                }
-                            }
-                            if (timeouts >= 12) break;
-                        }
-                    }
-                    finally
-                    {
-                        CloseHandle(hp);
-                    }
-                    if (timeouts >= 12) break;
+                    pidItems[idxCopy++] = kv;
                 }
 
-                ws.StopRequested = true;
-                ws.WorkEv.Set();
-                if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle);
+                IntPtr curProc = GetCurrentProcess();
+                var concurrentResult = new ConcurrentDictionary<int, List<MatchedRemoteHandle>>();
+                int cursor = -1;
+                int workerCount = Math.Min(4, Math.Max(1, Math.Min(Environment.ProcessorCount, pidItems.Length)));
+                Task[] workers = new Task[workerCount];
+
+                for (int w = 0; w < workerCount; w++)
+                {
+                    workers[w] = Task.Run(delegate()
+                    {
+                        HandleWorkerState ws = StartHandleQueryWorker();
+                        int timeouts = 0;
+                        try
+                        {
+                            while (true)
+                            {
+                                int nextIdx = Interlocked.Increment(ref cursor);
+                                if (nextIdx >= pidItems.Length || timeouts >= 12) break;
+                                KeyValuePair<int, List<MatchedRemoteHandle>> kv = pidItems[nextIdx];
+                                IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_QUERY_LIMITED_INFORMATION, false, kv.Key);
+                                if (hp == IntPtr.Zero) continue;
+                                List<MatchedRemoteHandle> localHits = null;
+                                try
+                                {
+                                    List<MatchedRemoteHandle> list = kv.Value;
+                                    for (int hi = 0; hi < list.Count; hi++)
+                                    {
+                                        if (timeouts >= 12) break;
+                                        MatchedRemoteHandle mh = list[hi];
+                                        IntPtr hDup;
+                                        if (!DuplicateHandle(hp, mh.RemoteHandle, curProc, out hDup, 0, false, DUPLICATE_SAME_ACCESS)) continue;
+                                        bool handleOrphaned = false;
+                                        try
+                                        {
+                                            ws.PendingPath = null;
+                                            ws.PendingHandle = hDup;
+                                            ws.WorkEv.Set();
+                                            if (ws.DoneEv.WaitOne(12))
+                                            {
+                                                string resolvedPath = ws.PendingPath;
+                                                if (!string.IsNullOrEmpty(resolvedPath))
+                                                {
+                                                    bool hit = false;
+                                                    for (int ti = 0; ti < targets.Count; ti++)
+                                                    {
+                                                        if (targets[ti].MatchesPath(resolvedPath))
+                                                        {
+                                                            hit = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (hit)
+                                                    {
+                                                        mh.DosPath = resolvedPath;
+                                                        if (localHits == null) localHits = new List<MatchedRemoteHandle>();
+                                                        localHits.Add(mh);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                timeouts++;
+                                                if (ws.ThreadHandle != IntPtr.Zero) CancelSynchronousIo(ws.ThreadHandle);
+                                                if (!ws.DoneEv.WaitOne(10))
+                                                {
+                                                    handleOrphaned = true;
+                                                    ws.StopRequested = true;
+                                                    try { if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle); } catch {}
+                                                    ws.ThreadHandle = IntPtr.Zero;
+                                                    if (timeouts >= 12) break;
+                                                    ws = StartHandleQueryWorker();
+                                                }
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            if (!handleOrphaned)
+                                            {
+                                                CloseHandle(hDup);
+                                            }
+                                        }
+                                    }
+                                    if (localHits != null && localHits.Count > 0)
+                                    {
+                                        concurrentResult[kv.Key] = localHits;
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hp);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            ws.StopRequested = true;
+                            ws.WorkEv.Set();
+                            if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle);
+                        }
+                    });
+                }
+                Task.WaitAll(workers);
+
+                foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in concurrentResult)
+                {
+                    result[kv.Key] = kv.Value;
+                }
             }
             catch {}
             finally
@@ -3054,6 +3244,24 @@ namespace DuckUtil
             }
         }
 
+        public static Task<bool> MoveToRecycleBinSilentlyAsync(string targetPath)
+        {
+            return Task.Run(delegate() { return MoveToRecycleBinSilently(targetPath); });
+        }
+
+        private sealed class ProcessScanOutcome
+        {
+            public Process Proc;
+            public int Pid;
+            public string ProcName;
+            public bool IsCritical;
+            public bool IsProtectedHost;
+            public bool IsMatch;
+            public bool DidModuleScan;
+            public HashSet<string> LoadedImages;
+            public HashSet<string> MappedData;
+        }
+
         public static ForceStopReport ForceStopDirectoryLockers(string targetPath)
         {
             return ForceStopDirectoryLockers(targetPath, true);
@@ -3061,32 +3269,278 @@ namespace DuckUtil
 
         public static ForceStopReport ForceStopDirectoryLockers(string targetPath, bool includeServicesAndTasks)
         {
+            if (string.IsNullOrWhiteSpace(targetPath)) return new ForceStopReport();
+            return ForceStopPathsLockers(new string[] { targetPath }, includeServicesAndTasks);
+        }
+
+        public static ForceStopReport ForceStopBatchDirectories(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            return ForceStopPathsLockers(targetPaths, includeServicesAndTasks);
+        }
+
+        public static Task<ForceStopReport> ForceStopDirectoryLockersAsync(string targetPath, bool includeServicesAndTasks)
+        {
+            return Task.Run(delegate() { return ForceStopDirectoryLockers(targetPath, includeServicesAndTasks); });
+        }
+
+        public static Task<ForceStopReport> ForceStopBatchDirectoriesAsync(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            return Task.Run(delegate() { return ForceStopBatchDirectories(targetPaths, includeServicesAndTasks); });
+        }
+
+        private static bool ScanProcessModulesNative(IntPtr hProc, List<LockTargetSpec> targets, bool collectAllMatched, HashSet<string> matchedImagesOut, out bool enumSucceeded)
+        {
+            enumSucceeded = false;
+            if (hProc == IntPtr.Zero || targets == null || targets.Count == 0) return false;
+            IntPtr[] hMods = new IntPtr[256];
+            uint cb = (uint)(hMods.Length * IntPtr.Size);
+            uint needed = 0;
+            if (!EnumProcessModulesEx(hProc, hMods, cb, out needed, LIST_MODULES_ALL))
+            {
+                return false;
+            }
+            if (needed > cb)
+            {
+                int countNeed = Math.Min(4096, (int)(needed / (uint)IntPtr.Size) + 16);
+                hMods = new IntPtr[countNeed];
+                cb = (uint)(hMods.Length * IntPtr.Size);
+                if (!EnumProcessModulesEx(hProc, hMods, cb, out needed, LIST_MODULES_ALL))
+                {
+                    return false;
+                }
+            }
+            enumSucceeded = true;
+            int modCount = Math.Min(hMods.Length, (int)(needed / (uint)IntPtr.Size));
+            var sb = new System.Text.StringBuilder(1024);
+            bool anyMatch = false;
+            for (int i = 0; i < modCount; i++)
+            {
+                if (hMods[i] == IntPtr.Zero) continue;
+                sb.Length = 0;
+                uint len = GetModuleFileNameExW(hProc, hMods[i], sb, (uint)sb.Capacity);
+                if (len > 0 && len < (uint)sb.Capacity)
+                {
+                    string modPath = NormalizeDosOrNtPath(sb.ToString());
+                    if (string.IsNullOrEmpty(modPath)) continue;
+                    for (int ti = 0; ti < targets.Count; ti++)
+                    {
+                        if (targets[ti].MatchesPath(modPath))
+                        {
+                            anyMatch = true;
+                            if (matchedImagesOut != null) matchedImagesOut.Add(modPath);
+                            if (!collectAllMatched) return true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return anyMatch;
+        }
+
+        private static ForceStopReport ForceStopPathsLockers(string[] targetPaths, bool includeServicesAndTasks)
+        {
             var report = new ForceStopReport();
-            if (string.IsNullOrWhiteSpace(targetPath)) return report;
+            if (targetPaths == null || targetPaths.Length == 0) return report;
 
-            string norm = targetPath.Trim().TrimEnd('\\');
-            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
-            if (norm.Length <= 3) return report;
+            var targets = new List<LockTargetSpec>();
+            var seenNorms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool hasAnyDirectory = false;
 
-            bool isSingleFile = File.Exists(norm);
-            bool isDirectory = !isSingleFile && Directory.Exists(norm);
-            if (!isSingleFile && !isDirectory) return report;
+            for (int i = 0; i < targetPaths.Length; i++)
+            {
+                string raw = targetPaths[i];
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                string norm = raw.Trim().TrimEnd('\\');
+                try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+                if (norm.Length <= 3 || !seenNorms.Add(norm)) continue;
 
-            if (isDirectory && !IsSafeLockTargetDirectory(norm)) return report;
+                bool isSingleFile = File.Exists(norm);
+                bool isDirectory = !isSingleFile && Directory.Exists(norm);
+                if (!isSingleFile && !isDirectory) continue;
+                if (isDirectory && !IsSafeLockTargetDirectory(norm)) continue;
+
+                if (isDirectory) hasAnyDirectory = true;
+                targets.Add(new LockTargetSpec
+                {
+                    Norm = norm,
+                    Prefix = isDirectory ? (norm + "\\") : "",
+                    IsSingleFile = isSingleFile,
+                    IsDirectory = isDirectory,
+                    DirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                });
+            }
+
+            if (targets.Count == 0) return report;
 
             EnsureUnlockPrivileges();
 
-            string prefix = isDirectory ? (norm + "\\") : "";
-            if (includeServicesAndTasks && isDirectory)
-            {
-                report.ServicesStoppedCount = DisableAndRemoveServicesInDirectory(norm);
-                report.TasksRemovedCount = RemoveScheduledTasksInDirectory(norm);
-            }
-
-            Dictionary<int, string> rmLockers = GetRestartManagerLockingPids(norm);
-            Dictionary<int, List<MatchedRemoteHandle>> handleLockers = ScanSystemFileHandlesForTarget(norm, prefix, isDirectory);
             Dictionary<string, string> dosMap = BuildDosDeviceMap();
-            HashSet<string> dirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var rmLockers = new Dictionary<int, string>();
+            int svcStoppedTotal = 0;
+            int taskRemovedTotal = 0;
+
+            Task leg1ServicesAndRm = Task.Run(delegate()
+            {
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    LockTargetSpec t = targets[i];
+                    if (includeServicesAndTasks && t.IsDirectory)
+                    {
+                        svcStoppedTotal += DisableAndRemoveServicesInDirectory(t.Norm);
+                        taskRemovedTotal += RemoveScheduledTasksInDirectory(t.Norm);
+                    }
+                    Dictionary<int, string> subRm = GetRestartManagerLockingPids(t.Norm);
+                    foreach (KeyValuePair<int, string> kv in subRm)
+                    {
+                        if (!rmLockers.ContainsKey(kv.Key))
+                        {
+                            rmLockers[kv.Key] = kv.Value;
+                        }
+                    }
+                }
+            });
+
+            Dictionary<int, List<MatchedRemoteHandle>> handleLockers = null;
+            Task leg2Handles = Task.Run(delegate()
+            {
+                handleLockers = ScanSystemFileHandlesForTargets(targets);
+            });
+
+            Process[] procs = null;
+            try { procs = Process.GetProcesses(); } catch { procs = new Process[0]; }
+            var outcomes = new ProcessScanOutcome[procs.Length];
+
+            Task leg3Processes = Task.Run(delegate()
+            {
+                Parallel.For(0, procs.Length, delegate(int idx)
+                {
+                    Process p = procs[idx];
+                    if (p == null) return;
+                    var outcome = new ProcessScanOutcome { Proc = p };
+                    try
+                    {
+                        int pid = p.Id;
+                        if (pid <= 4) return;
+                        string pName = "";
+                        try { pName = p.ProcessName ?? ""; } catch {}
+                        outcome.Pid = pid;
+                        outcome.ProcName = pName;
+                        outcome.IsCritical = IsKernelCriticalProcess(pid, pName);
+                        if (outcome.IsCritical)
+                        {
+                            outcomes[idx] = outcome;
+                            return;
+                        }
+                        outcome.IsProtectedHost = IsProtectedSystemOrHostProcess(pid, pName);
+
+                        bool scanModulesHere = !outcome.IsProtectedHost || hasAnyDirectory;
+                        if (scanModulesHere)
+                        {
+                            IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+                            bool hasVmRead = (hProc != IntPtr.Zero);
+                            if (hProc == IntPtr.Zero)
+                            {
+                                hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+                            }
+
+                            if (hProc == IntPtr.Zero)
+                            {
+                                if (!outcome.IsProtectedHost && !string.IsNullOrEmpty(pName))
+                                {
+                                    for (int ti = 0; ti < targets.Count; ti++)
+                                    {
+                                        if (targets[ti].IsDirectory && targets[ti].DirExeNames.Contains(pName))
+                                        {
+                                            outcome.IsMatch = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    outcome.DidModuleScan = true;
+                                    if (outcome.IsProtectedHost)
+                                    {
+                                        var loadedImgs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        var mappedDat = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        bool enumOk = false;
+                                        if (hasVmRead)
+                                        {
+                                            ScanProcessModulesNative(hProc, targets, true, loadedImgs, out enumOk);
+                                            CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, !enumOk, enumOk ? null : loadedImgs, mappedDat);
+                                        }
+                                        outcome.LoadedImages = loadedImgs;
+                                        outcome.MappedData = mappedDat;
+                                    }
+                                    else
+                                    {
+                                        var sbImg = new System.Text.StringBuilder(1024);
+                                        uint sz = (uint)sbImg.Capacity;
+                                        bool gotMain = QueryFullProcessImageNameW(hProc, 0, sbImg, ref sz);
+                                        if (gotMain && sz > 0)
+                                        {
+                                            string mainPath = NormalizeDosOrNtPath(sbImg.ToString(0, (int)sz));
+                                            for (int ti = 0; ti < targets.Count; ti++)
+                                            {
+                                                if (targets[ti].MatchesPath(mainPath))
+                                                {
+                                                    outcome.IsMatch = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (!outcome.IsMatch && hasVmRead && hasAnyDirectory)
+                                        {
+                                            bool enumOk = false;
+                                            if (ScanProcessModulesNative(hProc, targets, false, null, out enumOk))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                            else if (CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, !enumOk, null, null))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                        }
+                                        else if (!outcome.IsMatch && hasVmRead && !hasAnyDirectory)
+                                        {
+                                            if (CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, true, null, null))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                        }
+                                        if (!outcome.IsMatch && !gotMain && !string.IsNullOrEmpty(pName))
+                                        {
+                                            for (int ti = 0; ti < targets.Count; ti++)
+                                            {
+                                                if (targets[ti].IsDirectory && targets[ti].DirExeNames.Contains(pName))
+                                                {
+                                                    outcome.IsMatch = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hProc);
+                                }
+                            }
+                        }
+                        outcomes[idx] = outcome;
+                    }
+                    catch {}
+                });
+            });
+
+            Task.WaitAll(leg1ServicesAndRm, leg2Handles, leg3Processes);
+
+            report.ServicesStoppedCount = svcStoppedTotal;
+            report.TasksRemovedCount = taskRemovedTotal;
+            if (handleLockers == null) handleLockers = new Dictionary<int, List<MatchedRemoteHandle>>();
 
             var killedList = new List<string>();
             var deniedList = new List<string>();
@@ -3095,55 +3549,50 @@ namespace DuckUtil
             var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var targetProcs = new Dictionary<int, Process>();
 
-            Process[] procs = null;
-            try { procs = Process.GetProcesses(); } catch { procs = new Process[0]; }
-
-            foreach (Process p in procs)
+            for (int idx = 0; idx < procs.Length; idx++)
             {
+                Process p = procs[idx];
+                ProcessScanOutcome o = outcomes[idx];
                 bool keepProc = false;
                 try
                 {
-                    int pid = p.Id;
-                    string pName = "";
-                    try { pName = p.ProcessName ?? ""; } catch {}
-
-                    if (pid <= 4) { p.Dispose(); continue; }
-
+                    if (o == null || o.Pid <= 4) continue;
+                    int pid = o.Pid;
+                    string pName = o.ProcName ?? "";
                     bool rmMatched = rmLockers.ContainsKey(pid);
                     List<MatchedRemoteHandle> pidHandles = null;
                     handleLockers.TryGetValue(pid, out pidHandles);
 
-                    if (IsKernelCriticalProcess(pid, pName))
+                    if (o.IsCritical)
                     {
                         if (rmMatched)
                         {
                             string desc = pName + " (PID " + pid.ToString() + ")";
                             if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
                         }
-                        p.Dispose();
                         continue;
                     }
 
-                    if (IsProtectedSystemOrHostProcess(pid, pName))
+                    if (o.IsProtectedHost)
                     {
-                        var loadedImages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        var mappedData = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        if (isDirectory || rmMatched || pidHandles != null)
+                        var loadedImages = o.LoadedImages ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var mappedData = o.MappedData ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (!o.DidModuleScan && (rmMatched || pidHandles != null))
                         {
-                            try
+                            IntPtr hHost = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+                            if (hHost != IntPtr.Zero)
                             {
-                                foreach (ProcessModule pm in p.Modules)
+                                try
                                 {
-                                    string modPath = NormalizeDosOrNtPath(pm.FileName ?? "");
-                                    if (!string.IsNullOrEmpty(modPath) &&
-                                        (isDirectory ? modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) : string.Equals(modPath, norm, StringComparison.OrdinalIgnoreCase)))
-                                    {
-                                        loadedImages.Add(modPath);
-                                    }
+                                    bool enumOk = false;
+                                    ScanProcessModulesNative(hHost, targets, true, loadedImages, out enumOk);
+                                    CollectProcessMappedFilesFromHandle(hHost, targets, dosMap, !enumOk, enumOk ? null : loadedImages, mappedData);
+                                }
+                                finally
+                                {
+                                    CloseHandle(hHost);
                                 }
                             }
-                            catch {}
-                            CollectProcessMappedFiles(pid, prefix, norm, isDirectory, dosMap, loadedImages, mappedData);
                         }
 
                         int closedForPid = 0;
@@ -3156,7 +3605,7 @@ namespace DuckUtil
                                 {
                                     closedForPid++;
                                     report.ClosedHandlesCount++;
-                                    string hLabel = pName + " -> " + (string.IsNullOrEmpty(mh.DosPath) ? norm : Path.GetFileName(mh.DosPath));
+                                    string hLabel = pName + " -> " + (string.IsNullOrEmpty(mh.DosPath) ? targets[0].Norm : Path.GetFileName(mh.DosPath));
                                     if (seenNames.Add("H:" + hLabel + ":" + mh.RemoteHandle.ToString()))
                                     {
                                         if (closedHandleList.Count < 25) closedHandleList.Add(hLabel);
@@ -3178,64 +3627,10 @@ namespace DuckUtil
                                 : (pName + " (" + Path.GetFileName(firstImg) + ")");
                             if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
                         }
-                        p.Dispose();
                         continue;
                     }
 
-                    bool isMatch = rmMatched || (pidHandles != null && pidHandles.Count > 0);
-                    bool mainModAccessDenied = false;
-
-                    if (!isMatch)
-                    {
-                        try
-                        {
-                            if (p.MainModule != null)
-                            {
-                                string mainPath = NormalizeDosOrNtPath(p.MainModule.FileName ?? "");
-                                if (isSingleFile)
-                                {
-                                    isMatch = string.Equals(mainPath, norm, StringComparison.OrdinalIgnoreCase);
-                                }
-                                else if (isDirectory)
-                                {
-                                    isMatch = mainPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
-                                }
-                            }
-                        }
-                        catch (Win32Exception)
-                        {
-                            mainModAccessDenied = true;
-                        }
-                        catch {}
-                    }
-
-                    if (!isMatch && isDirectory && !mainModAccessDenied)
-                    {
-                        try
-                        {
-                            foreach (ProcessModule pm in p.Modules)
-                            {
-                                string modPath = NormalizeDosOrNtPath(pm.FileName ?? "");
-                                if (modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    isMatch = true;
-                                    break;
-                                }
-                            }
-                        }
-                        catch {}
-                    }
-
-                    if (!isMatch && !mainModAccessDenied)
-                    {
-                        isMatch = CollectProcessMappedFiles(pid, prefix, norm, isDirectory, dosMap, null, null);
-                    }
-
-                    if (!isMatch && mainModAccessDenied && isDirectory && dirExeNames.Count > 0 && dirExeNames.Contains(pName))
-                    {
-                        isMatch = true;
-                    }
-
+                    bool isMatch = rmMatched || (pidHandles != null && pidHandles.Count > 0) || o.IsMatch;
                     if (isMatch && !targetProcs.ContainsKey(pid))
                     {
                         targetProcs[pid] = p;
@@ -3245,11 +3640,20 @@ namespace DuckUtil
                 catch {}
                 finally
                 {
-                    if (!keepProc)
+                    if (!keepProc && p != null)
                     {
                         try { p.Dispose(); } catch {}
                     }
                 }
+            }
+
+            foreach (KeyValuePair<int, Process> kvp in targetProcs)
+            {
+                try
+                {
+                    NtSuspendProcess(kvp.Value.Handle);
+                }
+                catch {}
             }
 
             foreach (KeyValuePair<int, Process> kvp in targetProcs)
@@ -3269,13 +3673,6 @@ namespace DuckUtil
                 bool terminated = false;
                 try
                 {
-                    try
-                    {
-                        IntPtr h = mp.Handle;
-                        NtSuspendProcess(h);
-                    }
-                    catch {}
-
                     mp.Kill();
                     mp.WaitForExit(1500);
                     terminated = true;
@@ -3450,6 +3847,9 @@ namespace DuckUtil
             if (!IsSafeNonMicrosoftFilterTarget(svcName)) return;
             string clean = svcName.Trim();
             EnsureUnlockPrivileges();
+            const int FLT_NOT_FOUND = unchecked((int)0x801F000F);
+            const int FLT_VOL_NOT_FOUND = unchecked((int)0x801F0014);
+            const int FLT_INST_NOT_FOUND = unchecked((int)0x801F0015);
             try
             {
                 foreach (string drv in Directory.GetLogicalDrives())
@@ -3460,13 +3860,15 @@ namespace DuckUtil
                     try
                     {
                         hr = FilterDetach(clean, vol, null);
-                        if (hr != 0)
+                        if (hr == FLT_NOT_FOUND) break;
+                        if (hr != 0 && hr != FLT_VOL_NOT_FOUND && hr != FLT_INST_NOT_FOUND)
                         {
                             hr = FilterDetach(clean, drv, null);
+                            if (hr == FLT_NOT_FOUND) break;
                         }
                     }
                     catch {}
-                    if (hr != 0)
+                    if (hr != 0 && hr != FLT_NOT_FOUND && hr != FLT_VOL_NOT_FOUND && hr != FLT_INST_NOT_FOUND)
                     {
                         RunHiddenProcess("fltmc.exe", "detach \"" + clean + "\" " + vol, 900);
                     }
@@ -3566,6 +3968,11 @@ namespace DuckUtil
             {
                 CloseServiceHandle(hSvc);
             }
+        }
+
+        public static Task<bool> NeutralizeSingleServiceOrDriverAsync(string svcName)
+        {
+            return Task.Run(delegate() { return NeutralizeSingleServiceOrDriver(svcName); });
         }
 
         public static bool NeutralizeSingleServiceOrDriver(string svcName)
@@ -4211,6 +4618,113 @@ namespace DuckUtil
                 });
             }
             return !File.Exists(file);
+        }
+
+        public static ForceDeleteResult ForceDeleteDirectoryWithResult(string targetDir, bool runFullLockerStop)
+        {
+            int rb = 0;
+            bool ok = ForceDeleteDirectory(targetDir, runFullLockerStop, out rb);
+            return new ForceDeleteResult { Deleted = ok, RebootScheduledCount = rb };
+        }
+
+        public static Task<ForceDeleteResult> ForceDeleteDirectoryAsync(string targetDir, bool runFullLockerStop)
+        {
+            return Task.Run(delegate() { return ForceDeleteDirectoryWithResult(targetDir, runFullLockerStop); });
+        }
+
+        public static Task<bool> WaitForProcessExitAsync(Process proc)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            if (proc == null)
+            {
+                tcs.TrySetResult(true);
+                return tcs.Task;
+            }
+            EventHandler handler = null;
+            handler = delegate(object s, EventArgs e)
+            {
+                try { proc.Exited -= handler; } catch {}
+                tcs.TrySetResult(true);
+            };
+            try
+            {
+                proc.EnableRaisingEvents = true;
+                proc.Exited += handler;
+                if (proc.HasExited)
+                {
+                    try { proc.Exited -= handler; } catch {}
+                    tcs.TrySetResult(true);
+                }
+            }
+            catch
+            {
+                try { proc.Exited -= handler; } catch {}
+                tcs.TrySetResult(true);
+            }
+            return tcs.Task;
+        }
+
+        public static List<ServiceScanEntry> ScanServicesAndDrivers()
+        {
+            var result = new List<ServiceScanEntry>();
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", false))
+                {
+                    if (svcRoot == null) return result;
+                    string[] names = svcRoot.GetSubKeyNames();
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        string sName = names[i];
+                        try
+                        {
+                            using (var sk = svcRoot.OpenSubKey(sName, false))
+                            {
+                                if (sk == null) continue;
+                                string rawImg = sk.GetValue("ImagePath") as string;
+                                if (string.IsNullOrWhiteSpace(rawImg)) continue;
+                                int sType = 0;
+                                try
+                                {
+                                    object tObj = sk.GetValue("Type");
+                                    if (tObj != null) sType = Convert.ToInt32(tObj);
+                                }
+                                catch {}
+                                int baseType = sType & 0x0F;
+                                bool isDrv = (baseType == 1 || baseType == 2 || baseType == 8);
+                                string normImg = NormalizeServiceImagePath(rawImg);
+                                string resolved = normImg;
+                                if (!string.IsNullOrEmpty(resolved) &&
+                                    (resolved.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                                     resolved.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase)) &&
+                                    !string.IsNullOrEmpty(winDir))
+                                {
+                                    resolved = Path.Combine(winDir, resolved);
+                                }
+                                result.Add(new ServiceScanEntry
+                                {
+                                    ServiceName = sName,
+                                    DisplayName = (sk.GetValue("DisplayName") as string) ?? "",
+                                    ImagePath = rawImg,
+                                    ResolvedImagePath = resolved,
+                                    ServiceType = sType,
+                                    IsKernelDriver = isDrv
+                                });
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return result;
+        }
+
+        public static Task<List<ServiceScanEntry>> ScanServicesAndDriversAsync()
+        {
+            return Task.Run(delegate() { return ScanServicesAndDrivers(); });
         }
 
         public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)

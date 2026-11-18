@@ -32,13 +32,7 @@ if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
                     $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
                     if (-not $tiProc) {
                         Start-Service -Name "TrustedInstaller" -ErrorAction SilentlyContinue
-                        $waited = 0
-                        while ($waited -lt 800) {
-                            $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
-                            if ($tiProc) { break }
-                            Start-Sleep -Milliseconds 80
-                            $waited += 80
-                        }
+                        $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
                     }
                     if ($tiProc) { return [int]$tiProc.Id }
                 } catch {}
@@ -696,24 +690,29 @@ function Find-AppLeftovers {
 
     if ($vendorFam -and ("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
         try {
-            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
-            foreach ($sk in $svcItems) {
-                try {
-                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
-                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
-                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
-                    if ($tVal -notin @(1, 2, 8)) { continue }
-                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
-                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
-                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
-                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
-                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+            $svcList = $null
+            if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+                [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
+                if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $svcList = $svcTask.Result
+                }
+            } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
+                $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
+            }
+
+            if ($null -ne $svcList) {
+                foreach ($se in $svcList) {
+                    if ($script:isWindowClosing) { break }
+                    if (-not $se.IsKernelDriver) { continue }
+                    $img = $se.ResolvedImagePath
+                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
                     if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
                         $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
                         $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
                         $isVendorMatch = ($meta.IndexOf($vendorFam, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($vendorFam -eq "360" -and $meta -match '(?i)(Qihu|Qihoo)')
                         if ($isVendorMatch) {
-                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                             if ($seenPaths.Add($regSvcPath)) {
                                 $leftovers.Add([PSCustomObject]@{
                                     Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
@@ -741,7 +740,7 @@ function Find-AppLeftovers {
                             }
                         }
                     }
-                } catch {}
+                }
             }
         } catch {}
     }
@@ -1043,19 +1042,23 @@ function Find-SystemOrphanLeftovers {
 
     if (("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
         try {
-            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
-            foreach ($sk in $svcItems) {
-                if ($script:isWindowClosing) { break }
-                try {
-                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
-                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
-                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
-                    if ($tVal -notin @(1, 2, 8)) { continue }
-                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
-                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
-                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
-                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
-                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+            $svcList = $null
+            if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+                [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
+                if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $svcList = $svcTask.Result
+                }
+            } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
+                $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
+            }
+
+            if ($null -ne $svcList) {
+                foreach ($se in $svcList) {
+                    if ($script:isWindowClosing) { break }
+                    if (-not $se.IsKernelDriver) { continue }
+                    $img = $se.ResolvedImagePath
+                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
                     if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
                         $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
                         $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
@@ -1073,12 +1076,12 @@ function Find-SystemOrphanLeftovers {
                             }
                         }
                         if (-not $vendorStillActive) {
-                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                             if ($seenPaths.Add($regSvcPath)) {
                                 $orphans.Add([PSCustomObject]@{
                                     Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
                                     Confidence        = "An to$([char]0x00E0)n 100%"
-                                    AppName           = "$drvVendor ($($sk.PSChildName))"
+                                    AppName           = "$drvVendor ($($se.ServiceName))"
                                     Path              = $regSvcPath
                                     SizeBytes         = 0L
                                     SizeMB            = 0.0
@@ -1101,7 +1104,7 @@ function Find-SystemOrphanLeftovers {
                             }
                         }
                     }
-                } catch {}
+                }
             }
         } catch {}
     }
@@ -1131,9 +1134,24 @@ function Invoke-ForceStopPathLockers {
     $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
     if (-not $deepType) { return $resObj }
 
+    if ($null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+        try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
+    }
+
+    $hasForceStopAsync = ($null -ne $deepType.GetMethod("ForceStopDirectoryLockersAsync")) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
     $hasForceStop = @($deepType.GetMethods() | Where-Object { $_.Name -eq "ForceStopDirectoryLockers" -and $_.GetParameters().Count -eq 2 }).Count -gt 0
-    if ($hasForceStop) {
+    if ($hasForceStopAsync) {
+        $fsTask = $deepType::ForceStopDirectoryLockersAsync($TargetPath, $IncludeServicesAndTasks)
+        [void](Wait-TaskNonBlocking -Task $fsTask -TimeoutSeconds 45)
+        $rpt = if ($fsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            $fsTask.Result
+        } elseif ($hasForceStop -and -not $script:isWindowClosing) {
+            $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
+        } else { $null }
+    } elseif ($hasForceStop) {
         $rpt = $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
+    }
+    if ($hasForceStopAsync -or $hasForceStop) {
         if ($rpt) {
             $resObj.KilledCount          = [int]$rpt.KilledCount
             $resObj.ServicesStoppedCount = [int]$rpt.ServicesStoppedCount
@@ -1624,12 +1642,68 @@ function Show-LeftoverReviewDialog {
         $accessDeniedTotal = 0
 
         $btnDelete.IsEnabled = $false
+        if ($btnCancel) { $btnCancel.IsEnabled = $false }
+        if ($btnSelectAll) { $btnSelectAll.IsEnabled = $false }
+        if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $false }
         try {
             $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+            $canWaitAsync = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+            if ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+                try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
+            }
             $hasSilentRecycle = ($null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilently"))
+            $hasSilentRecycleAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilentlyAsync"))
+            $hasNeutralizeAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriverAsync"))
+            $hasForceDelAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteDirectoryAsync"))
+            $hasBatchStopAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceStopBatchDirectoriesAsync"))
+            $hasBatchStopSync = ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceStopBatchDirectories"))
+
+            $batchExplorerLock = $false
+            $usedBatchForceStop = $false
+            if ($useForceStop) {
+                $existingPaths = @($checkedItems | Where-Object { -not $_.IsRegistry -and (Test-Path -LiteralPath $_.Path) } | ForEach-Object { [string]$_.Path } | Select-Object -Unique)
+                if ($existingPaths.Count -gt 0 -and ($hasBatchStopAsync -or $hasBatchStopSync)) {
+                    $usedBatchForceStop = $true
+                    if ($summaryText) {
+                        $summaryText.Text = "$([char]0x0110)ang gi$([char]0x1EA3)i ph$([char]0x00F3)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh/handle kh$([char]0x00F3)a ($($existingPaths.Count) m$([char]0x1EE5)c)..."
+                    }
+                    $batchRpt = $null
+                    if ($hasBatchStopAsync) {
+                        $bTask = $deepType::ForceStopBatchDirectoriesAsync([string[]]$existingPaths, $true)
+                        [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 60)
+                        if ($bTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $batchRpt = $bTask.Result }
+                    } else {
+                        $batchRpt = $deepType::ForceStopBatchDirectories([string[]]$existingPaths, $true)
+                    }
+                    if ($batchRpt) {
+                        $accessDeniedTotal += [int]$batchRpt.AccessDeniedCount
+                        $batchExplorerLock = (@($batchRpt.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
+                        if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                            if ($batchRpt.KilledCount -gt 0 -or $batchRpt.ServicesStoppedCount -gt 0 -or $batchRpt.TasksRemovedCount -gt 0) {
+                                Log-Text "[FORCE-STOP] $([char]0x0110)$([char]0x00E3) bu$([char]0x1ED9)c d$([char]0x1EEB)ng $($batchRpt.KilledCount) ti$([char]0x1EBF)n tr$([char]0x00EC)nh, $($batchRpt.ServicesStoppedCount) d$([char]0x1ECB)ch v$([char]0x1EE5), $($batchRpt.TasksRemovedCount) t$([char]0x00E1)c v$([char]0x1EE5) cho $($existingPaths.Count) m$([char]0x1EE5)c."
+                            }
+                            if ($batchRpt.ClosedHandlesCount -gt 0) {
+                                Log-Text "[HANDLE-UNLOCK] $([char]0x0110)$([char]0x00E3) th$([char]0x00E1)o $($batchRpt.ClosedHandlesCount) handle t$([char]0x1EEB) xa: $($batchRpt.ClosedHandleNames -join ', ')"
+                            }
+                            if ($batchRpt.AccessDeniedCount -gt 0) {
+                                Log-Text "[!] T$([char]0x1EEB) ch$([char]0x1ED1)i quy$([char]0x1EC1)n: $($batchRpt.AccessDeniedNames -join ', ')"
+                            }
+                            if (@($batchRpt.SkippedSystemLockers).Count -gt 0) {
+                                Log-Text "[!] H$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)ang gi$([char]0x1EEF) handle: $($batchRpt.SkippedSystemLockers -join ', ')"
+                            }
+                        }
+                    }
+                }
+            }
+
             $explorerRestartDecision = $null
+            $stepIdx = 0
             foreach ($ci in $checkedItems) {
                 if ($script:isWindowClosing) { break }
+                $stepIdx++
+                if ($summaryText) {
+                    $summaryText.Text = "$([char]0x0110)ang d$([char]0x1ECD)n $stepIdx / $($checkedItems.Count): $($ci.AppName)"
+                }
                 try {
                     if ($ci.IsRegistry) {
                         if ($ci.RegistryValueName) {
@@ -1644,7 +1718,13 @@ function Show-LeftoverReviewDialog {
                             $neutralizedSvc = $false
                             if ($ci.Path -match '(?i)^HKLM:\\SYSTEM\\CurrentControlSet\\Services\\([^\\]+)$') {
                                 $svcTargetName = $Matches[1]
-                                if ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
+                                if ($hasNeutralizeAsync) {
+                                    $nTask = $deepType::NeutralizeSingleServiceOrDriverAsync($svcTargetName)
+                                    [void](Wait-TaskNonBlocking -Task $nTask -TimeoutSeconds 25)
+                                    if ($nTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                        $neutralizedSvc = [bool]$nTask.Result
+                                    }
+                                } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
                                     $neutralizedSvc = [bool]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
                                 }
                             }
@@ -1661,16 +1741,22 @@ function Show-LeftoverReviewDialog {
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
-                        $stopInfo = $null
-                        if ($useForceStop) {
+                        $hasExplorerLock = $batchExplorerLock
+                        if ($useForceStop -and -not $usedBatchForceStop) {
                             $stopInfo = Invoke-ForceStopPathLockers -TargetPath $ci.Path -IncludeServicesAndTasks:$true
                             $accessDeniedTotal += [int]$stopInfo.AccessDeniedCount
+                            $hasExplorerLock = ($null -ne $stopInfo -and @($stopInfo.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
                         }
 
-                        $hasExplorerLock = ($null -ne $stopInfo -and @($stopInfo.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
                         $deletedOk = $false
                         if ($useRecycle) {
-                            if ($hasSilentRecycle) {
+                            if ($hasSilentRecycleAsync) {
+                                $rTask = $deepType::MoveToRecycleBinSilentlyAsync($ci.Path)
+                                [void](Wait-TaskNonBlocking -Task $rTask -TimeoutSeconds 30)
+                                if ($rTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                    $deletedOk = [bool]$rTask.Result
+                                }
+                            } elseif ($hasSilentRecycle) {
                                 $deletedOk = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
                             } elseif (-not $useForceStop) {
                                 try {
@@ -1729,11 +1815,20 @@ function Show-LeftoverReviewDialog {
 
                         if (-not $deletedOk) {
                             $rbCount = 0
-                            $hasFastForceDel = @([DuckUtil.DeepUninstallerEngine].GetMethods() | Where-Object { $_.Name -eq "ForceDeleteDirectory" -and $_.GetParameters().Count -eq 3 }).Count -gt 0
-                            if ($hasFastForceDel) {
-                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, (-not $useForceStop), [ref]$rbCount)
+                            if ($hasForceDelAsync) {
+                                $dTask = $deepType::ForceDeleteDirectoryAsync($ci.Path, (-not $useForceStop))
+                                [void](Wait-TaskNonBlocking -Task $dTask -TimeoutSeconds 60)
+                                if ($dTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $dTask.Result) {
+                                    $deletedOk = [bool]$dTask.Result.Deleted
+                                    $rbCount = [int]$dTask.Result.RebootScheduledCount
+                                }
                             } else {
-                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                                $hasFastForceDel = @([DuckUtil.DeepUninstallerEngine].GetMethods() | Where-Object { $_.Name -eq "ForceDeleteDirectory" -and $_.GetParameters().Count -eq 3 }).Count -gt 0
+                                if ($hasFastForceDel) {
+                                    $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, (-not $useForceStop), [ref]$rbCount)
+                                } else {
+                                    $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                                }
                             }
                             $rebootTotal += $rbCount
                         }
@@ -1768,6 +1863,9 @@ function Show-LeftoverReviewDialog {
             $dialog.Close()
         } finally {
             $btnDelete.IsEnabled = $true
+            if ($btnCancel) { $btnCancel.IsEnabled = $true }
+            if ($btnSelectAll) { $btnSelectAll.IsEnabled = $true }
+            if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $true }
         }
     })
     $btnStack.Children.Add($btnDelete) | Out-Null
@@ -1986,12 +2084,17 @@ function Invoke-DeepAppUninstall {
         [Parameter(Mandatory = $false)]$OwnerWindow,
         [switch]$SkipVendorUninstaller,
         [switch]$ForceStopAndDelete,
-        [bool]$AutoSilent = $true
+        [bool]$AutoSilent = $true,
+        [object[]]$AllInstalledApps = $null,
+        [switch]$DeferLeftoverDialog,
+        [System.Collections.Generic.List[object]]$CollectedLeftoversOut = $null,
+        [switch]$AllowCancel
     )
 
     if ($ForceStopAndDelete) {
         $SkipVendorUninstaller = $true
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
         Log-Text "=========================================================="
@@ -2003,7 +2106,26 @@ function Invoke-DeepAppUninstall {
         Log-Text "=========================================================="
     }
 
-    $allInstalledNow = Get-SystemInstalledAppsFast
+    $canWaitNonBlocking = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+    $deepEngT = "DuckUtil.DeepUninstallerEngine" -as [type]
+    if ($deepEngT -and $null -ne $deepEngT.GetMethod("PrewarmElevationCache")) {
+        try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
+    }
+
+    $allInstalledNow = if ($AllInstalledApps -and $AllInstalledApps.Count -gt 0) {
+        $AllInstalledApps
+    } elseif ($canWaitNonBlocking -and $deepEngT -and $null -ne $deepEngT.GetMethod("GetInstalledAppsAsync")) {
+        $appsTask = $deepEngT::GetInstalledAppsAsync()
+        [void](Wait-TaskNonBlocking -Task $appsTask -TimeoutSeconds 45)
+        if ($appsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            @($appsTask.Result)
+        } else {
+            Get-SystemInstalledAppsFast
+        }
+    } else {
+        Get-SystemInstalledAppsFast
+    }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     $safeLoc = ""
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
@@ -2013,6 +2135,7 @@ function Invoke-DeepAppUninstall {
             [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true)
         }
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if (-not $AppEntry.IsBrokenOrphan) {
         if ($SkipVendorUninstaller) {
@@ -2030,10 +2153,17 @@ function Invoke-DeepAppUninstall {
                     }
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    $msiCode = Run-CliStream "msiexec.exe" $plan.Args
-                    if ($msiCode -eq 1618) {
-                        Start-Sleep -Seconds 3
-                        $null = Run-CliStream "msiexec.exe" $plan.Args
+                    $msiCode = Run-CliStream "msiexec.exe" $plan.Args -IsolateStdin:($AutoSilent -or $plan.IsSilent) -AllowCancel:$AllowCancel
+                    if ($msiCode -eq 1618 -and -not ($AllowCancel -and $script:cancelRequested) -and -not $script:isWindowClosing) {
+                        if ($canWaitNonBlocking) {
+                            $cancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+                            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(3000)) -TimeoutSeconds 5 -CancelCheck $cancelCb)
+                        } else {
+                            Start-Sleep -Seconds 3
+                        }
+                        if (-not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
+                            $null = Run-CliStream "msiexec.exe" $plan.Args -IsolateStdin:($AutoSilent -or $plan.IsSilent) -AllowCancel:$AllowCancel
+                        }
                     }
                 } else {
                     Start-Process "msiexec.exe" -ArgumentList $plan.Args -Wait -NoNewWindow
@@ -2061,7 +2191,7 @@ function Invoke-DeepAppUninstall {
                     }
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    $null = Run-CliStream $plan.Exe $plan.Args
+                    $null = Run-CliStream $plan.Exe $plan.Args -IsolateStdin:($AutoSilent -and $plan.IsSilent) -AllowCancel:$AllowCancel
                 } else {
                     Start-Process $plan.Exe -ArgumentList $plan.Args -Wait -NoNewWindow
                 }
@@ -2069,16 +2199,39 @@ function Invoke-DeepAppUninstall {
         }
     }
 
-    if ($script:isWindowClosing) { return }
-    Start-Sleep -Milliseconds 800
-    if ($script:isWindowClosing) { return }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
+    if ($canWaitNonBlocking) {
+        $cancelCb2 = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(800)) -TimeoutSeconds 3 -CancelCheck $cancelCb2)
+    } else {
+        Start-Sleep -Milliseconds 800
+    }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
         [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true)
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     $leftovers = Find-AppLeftovers -AppEntry $AppEntry -AllInstalledApps $allInstalledNow
-    if ($script:isWindowClosing) { return }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
+
+    if ($DeferLeftoverDialog) {
+        if ($leftovers.Count -gt 0) {
+            if ($null -ne $CollectedLeftoversOut) {
+                foreach ($lo in $leftovers) { $CollectedLeftoversOut.Add($lo) }
+            }
+            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) ghi nh$([char]0x1EAD)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) c$([char]0x1EE7)a '$($AppEntry.DisplayName)' (s$([char]0x1EBD) m$([char]0x1EDF) h$([char]0x1ED9)p tho$([char]0x1EA1)i d$([char]0x1ECD)n cu$([char]0x1ED1)i h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i)."
+            }
+        } else {
+            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                Log-Text "[OK] '$($AppEntry.DisplayName)' $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
+            }
+        }
+        return
+    }
+
     if ($leftovers.Count -gt 0) {
         if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
             Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c / Registry c$([char]0x00F2)n s$([char]0x00F3)t l$([char]0x1EA1)i sau khi g$([char]0x1EE1) b$([char]0x1ECF)."

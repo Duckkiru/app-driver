@@ -5106,11 +5106,27 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                 <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse Fill="#10B981" Width="7" Height="7" Margin="0,0,8,0" VerticalAlignment="Center"/>
                     <TextBlock Name="txtStatus" Text="S&#x1EB5;n s&#x00E0;ng"
-                               Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold"/>
+                               Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <Button Name="btnCancelAction" Content="D&#x1EEB;ng t&#x00E1;c v&#x1EE5;" Visibility="Collapsed"
+                            Background="#2D1215" Foreground="#FCA5A5" BorderBrush="#DC2626" BorderThickness="1"
+                            FontSize="10.5" FontWeight="SemiBold" Padding="9,2" Margin="12,0,0,0"
+                            VerticalAlignment="Center" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                 </StackPanel>
 
-                <TextBlock Grid.Column="1" Grid.Row="0" Name="txtSelectionCount" Text="0 app &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n"
-                           Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Name="borderQueueBadge" Visibility="Collapsed" Background="#172554" BorderBrush="#2563EB" BorderThickness="1"
+                            CornerRadius="4" Padding="7,1" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <TextBlock Name="txtQueueBadge" Text="" Foreground="#93C5FD" FontSize="10.5" FontWeight="SemiBold"/>
+                    </Border>
+                    <TextBlock Name="txtSelectionCount" Text="0 app &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n"
+                               Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
 
                 <ProgressBar Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                              Name="progressBar" Height="2" Margin="0,5,0,1"
@@ -6618,6 +6634,7 @@ if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
     try {
         $deepUninstCs = @'
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -6651,6 +6668,22 @@ namespace DuckUtil
             SkippedSystemLockers = new string[0];
             ClosedHandleNames = new string[0];
         }
+    }
+
+    public class ForceDeleteResult
+    {
+        public bool Deleted { get; set; }
+        public int RebootScheduledCount { get; set; }
+    }
+
+    public class ServiceScanEntry
+    {
+        public string ServiceName { get; set; }
+        public string DisplayName { get; set; }
+        public string ImagePath { get; set; }
+        public string ResolvedImagePath { get; set; }
+        public int ServiceType { get; set; }
+        public bool IsKernelDriver { get; set; }
     }
     public class InstalledAppInfo
     {
@@ -6727,6 +6760,7 @@ namespace DuckUtil
         private const uint SERVICE_ENUMERATE_DEPENDENTS = 0x0008;
         private const uint SERVICE_STOP = 0x0020;
         private const uint DELETE_ACCESS = 0x00010000;
+        private const uint LIST_MODULES_ALL = 0x03;
         private const uint SERVICE_ACTIVE = 0x00000001;
         private const uint SERVICE_CONTROL_STOP = 0x00000001;
         private const uint SERVICE_STOPPED = 0x00000001;
@@ -6964,6 +6998,15 @@ namespace DuckUtil
 
         [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern uint GetMappedFileNameW(IntPtr hProcess, IntPtr lpv, System.Text.StringBuilder lpFilename, uint nSize);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool QueryFullProcessImageNameW(IntPtr hProcess, uint dwFlags, System.Text.StringBuilder lpExeName, ref uint lpdwSize);
+
+        [DllImport("psapi.dll", SetLastError = true)]
+        private static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] IntPtr[] lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
+
+        [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetModuleFileNameExW(IntPtr hProcess, IntPtr hModule, System.Text.StringBuilder lpFilename, uint nSize);
 
         [DllImport("kernel32.dll")]
         private static extern IntPtr LocalFree(IntPtr hMem);
@@ -8598,27 +8641,83 @@ namespace DuckUtil
             }
         }
 
+        private static readonly object _tiLock = new object();
         private static DateTime _lastTiLookupAtUtc = DateTime.MinValue;
         private static int _cachedTiPid = 0;
+
+        private static bool IsProcessAliveFast(int pid)
+        {
+            if (pid <= 4) return false;
+            IntPtr hp = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (hp == IntPtr.Zero) return false;
+            CloseHandle(hp);
+            return true;
+        }
+
+        public static void PrewarmElevationCache()
+        {
+            ElevationPidProvider provider = CustomElevationPidProvider;
+            if (provider == null) return;
+            lock (_tiLock)
+            {
+                if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                {
+                    _cachedTiPid = 0;
+                }
+                if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                {
+                    _lastTiLookupAtUtc = DateTime.UtcNow;
+                    try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                }
+            }
+        }
 
         private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
         {
             EnsureUnlockPrivileges();
             int sysPid = 0;
             int tiPid = 0;
-            if (CustomElevationPidProvider != null)
+            bool onThreadPool = false;
+            try { onThreadPool = Thread.CurrentThread.IsThreadPoolThread; } catch {}
+
+            ElevationPidProvider provider = CustomElevationPidProvider;
+            if (!onThreadPool && provider != null)
             {
-                try { sysPid = CustomElevationPidProvider(false); } catch {}
+                try { sysPid = provider(false); } catch {}
                 if (preferTrustedInstaller)
                 {
-                    if (_cachedTiPid > 4 || (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                    lock (_tiLock)
+                    {
+                        if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                        {
+                            _cachedTiPid = 0;
+                        }
+                        if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                        {
+                            _lastTiLookupAtUtc = DateTime.UtcNow;
+                            try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                        }
+                        tiPid = _cachedTiPid;
+                    }
+                }
+            }
+            else if (preferTrustedInstaller)
+            {
+                lock (_tiLock)
+                {
+                    if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                    {
+                        _cachedTiPid = 0;
+                    }
+                    if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
                     {
                         _lastTiLookupAtUtc = DateTime.UtcNow;
-                        try { _cachedTiPid = CustomElevationPidProvider(true); } catch { _cachedTiPid = 0; }
+                        _cachedTiPid = FindProcessIdByNameFast("TrustedInstaller");
                     }
                     tiPid = _cachedTiPid;
                 }
             }
+
             if (sysPid <= 4)
             {
                 sysPid = FindProcessIdByNameFast("winlogon");
@@ -8770,11 +8869,58 @@ namespace DuckUtil
             return NormalizeDosOrNtPath(p);
         }
 
+        private sealed class LockTargetSpec
+        {
+            public string Norm;
+            public string Prefix;
+            public bool IsSingleFile;
+            public bool IsDirectory;
+            public HashSet<string> DirExeNames;
+
+            public bool MatchesPath(string dosPath)
+            {
+                if (string.IsNullOrEmpty(dosPath)) return false;
+                if (IsDirectory)
+                {
+                    return dosPath.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(dosPath, Norm, StringComparison.OrdinalIgnoreCase);
+                }
+                return string.Equals(dosPath, Norm, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         private static bool CollectProcessMappedFiles(int pid, string prefix, string exactNorm, bool isDirectory, Dictionary<string, string> dosMap, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
         {
-            bool anyMatch = false;
+            var singleTarget = new LockTargetSpec
+            {
+                Norm = exactNorm ?? "",
+                Prefix = prefix ?? "",
+                IsSingleFile = !isDirectory,
+                IsDirectory = isDirectory
+            };
+            var list = new List<LockTargetSpec>(1);
+            list.Add(singleTarget);
+            return CollectProcessMappedFilesMulti(pid, list, dosMap, true, matchedImagesOut, matchedDataMappedOut);
+        }
+
+        private static bool CollectProcessMappedFilesMulti(int pid, List<LockTargetSpec> targets, Dictionary<string, string> dosMap, bool includeImages, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
             IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
             if (hProc == IntPtr.Zero) return false;
+            try
+            {
+                return CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, includeImages, matchedImagesOut, matchedDataMappedOut);
+            }
+            finally
+            {
+                CloseHandle(hProc);
+            }
+        }
+
+        private static bool CollectProcessMappedFilesFromHandle(IntPtr hProc, List<LockTargetSpec> targets, Dictionary<string, string> dosMap, bool includeImages, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
+            if (hProc == IntPtr.Zero || targets == null || targets.Count == 0) return false;
+            bool anyMatch = false;
             try
             {
                 IntPtr addr = IntPtr.Zero;
@@ -8782,7 +8928,7 @@ namespace DuckUtil
                 var seenAlloc = new HashSet<long>();
                 var sb = new System.Text.StringBuilder(1024);
                 int regions = 0;
-                while (regions < 4096)
+                while (regions < 32768)
                 {
                     regions++;
                     IntPtr baseAddr;
@@ -8811,7 +8957,8 @@ namespace DuckUtil
                         memType = m86.Type;
                     }
 
-                    if (state == MEM_COMMIT && (memType == MEM_IMAGE || memType == MEM_MAPPED))
+                    bool checkRegion = (state == MEM_COMMIT) && (memType == MEM_MAPPED || (includeImages && memType == MEM_IMAGE));
+                    if (checkRegion)
                     {
                         long ab = allocBase.ToInt64();
                         if (seenAlloc.Add(ab))
@@ -8823,14 +8970,16 @@ namespace DuckUtil
                                 string dos = TranslateDevicePathToDos(sb.ToString(), dosMap);
                                 if (!string.IsNullOrEmpty(dos))
                                 {
-                                    bool hit = isDirectory
-                                        ? (dos.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || string.Equals(dos, exactNorm, StringComparison.OrdinalIgnoreCase))
-                                        : string.Equals(dos, exactNorm, StringComparison.OrdinalIgnoreCase);
-                                    if (hit)
+                                    for (int ti = 0; ti < targets.Count; ti++)
                                     {
-                                        anyMatch = true;
-                                        if (memType == MEM_IMAGE && matchedImagesOut != null) matchedImagesOut.Add(dos);
-                                        if (memType == MEM_MAPPED && matchedDataMappedOut != null) matchedDataMappedOut.Add(dos);
+                                        if (targets[ti].MatchesPath(dos))
+                                        {
+                                            anyMatch = true;
+                                            if (memType == MEM_IMAGE && matchedImagesOut != null) matchedImagesOut.Add(dos);
+                                            if (memType == MEM_MAPPED && matchedDataMappedOut != null) matchedDataMappedOut.Add(dos);
+                                            if (matchedImagesOut == null && matchedDataMappedOut == null) return true;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -8843,21 +8992,40 @@ namespace DuckUtil
                 }
             }
             catch {}
-            finally
-            {
-                CloseHandle(hProc);
-            }
             return anyMatch;
         }
 
         private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTarget(string normTarget, string prefix, bool isDirectory)
         {
+            if (string.IsNullOrWhiteSpace(normTarget)) return new Dictionary<int, List<MatchedRemoteHandle>>();
+            var single = new LockTargetSpec
+            {
+                Norm = normTarget,
+                Prefix = prefix ?? "",
+                IsSingleFile = !isDirectory,
+                IsDirectory = isDirectory
+            };
+            var list = new List<LockTargetSpec>(1);
+            list.Add(single);
+            return ScanSystemFileHandlesForTargets(list);
+        }
+
+        private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTargets(List<LockTargetSpec> targets)
+        {
             var result = new Dictionary<int, List<MatchedRemoteHandle>>();
-            if (string.IsNullOrWhiteSpace(normTarget)) return result;
+            if (targets == null || targets.Count == 0) return result;
 
             EnsureUnlockPrivileges();
 
-            string probePath = isDirectory ? normTarget : Environment.SystemDirectory;
+            string probePath = Environment.SystemDirectory;
+            for (int ti = 0; ti < targets.Count; ti++)
+            {
+                if (targets[ti].IsDirectory && Directory.Exists(targets[ti].Norm))
+                {
+                    probePath = targets[ti].Norm;
+                    break;
+                }
+            }
             IntPtr hProbe = CreateFileW(probePath, 0x00100001, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
             if (hProbe == IntPtr.Zero || hProbe == new IntPtr(-1))
             {
@@ -8931,82 +9099,120 @@ namespace DuckUtil
                     hList.Add(new MatchedRemoteHandle { RemoteHandle = new IntPtr(hv), GrantedAccess = acc });
                 }
 
-                IntPtr curProc = GetCurrentProcess();
-                HandleWorkerState ws = StartHandleQueryWorker();
-                int timeouts = 0;
-
+                var pidItems = new KeyValuePair<int, List<MatchedRemoteHandle>>[byPid.Count];
+                int idxCopy = 0;
                 foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in byPid)
                 {
-                    IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_QUERY_LIMITED_INFORMATION, false, kv.Key);
-                    if (hp == IntPtr.Zero) continue;
-                    try
-                    {
-                        foreach (MatchedRemoteHandle mh in kv.Value)
-                        {
-                            IntPtr hDup;
-                            if (!DuplicateHandle(hp, mh.RemoteHandle, curProc, out hDup, 0, false, DUPLICATE_SAME_ACCESS)) continue;
-                            bool handleOrphaned = false;
-                            try
-                            {
-                                ws.PendingPath = null;
-                                ws.PendingHandle = hDup;
-                                ws.WorkEv.Set();
-                                if (ws.DoneEv.WaitOne(12))
-                                {
-                                    string resolvedPath = ws.PendingPath;
-                                    if (!string.IsNullOrEmpty(resolvedPath))
-                                    {
-                                        bool hit = isDirectory
-                                            ? (resolvedPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || string.Equals(resolvedPath, normTarget, StringComparison.OrdinalIgnoreCase))
-                                            : string.Equals(resolvedPath, normTarget, StringComparison.OrdinalIgnoreCase);
-                                        if (hit)
-                                        {
-                                            mh.DosPath = resolvedPath;
-                                            List<MatchedRemoteHandle> hitList;
-                                            if (!result.TryGetValue(kv.Key, out hitList))
-                                            {
-                                                hitList = new List<MatchedRemoteHandle>();
-                                                result[kv.Key] = hitList;
-                                            }
-                                            hitList.Add(mh);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    timeouts++;
-                                    if (ws.ThreadHandle != IntPtr.Zero) CancelSynchronousIo(ws.ThreadHandle);
-                                    if (!ws.DoneEv.WaitOne(10))
-                                    {
-                                        handleOrphaned = true;
-                                        ws.StopRequested = true;
-                                        try { if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle); } catch {}
-                                        ws.ThreadHandle = IntPtr.Zero;
-                                        if (timeouts >= 12) break;
-                                        ws = StartHandleQueryWorker();
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                if (!handleOrphaned)
-                                {
-                                    CloseHandle(hDup);
-                                }
-                            }
-                            if (timeouts >= 12) break;
-                        }
-                    }
-                    finally
-                    {
-                        CloseHandle(hp);
-                    }
-                    if (timeouts >= 12) break;
+                    pidItems[idxCopy++] = kv;
                 }
 
-                ws.StopRequested = true;
-                ws.WorkEv.Set();
-                if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle);
+                IntPtr curProc = GetCurrentProcess();
+                var concurrentResult = new ConcurrentDictionary<int, List<MatchedRemoteHandle>>();
+                int cursor = -1;
+                int workerCount = Math.Min(4, Math.Max(1, Math.Min(Environment.ProcessorCount, pidItems.Length)));
+                Task[] workers = new Task[workerCount];
+
+                for (int w = 0; w < workerCount; w++)
+                {
+                    workers[w] = Task.Run(delegate()
+                    {
+                        HandleWorkerState ws = StartHandleQueryWorker();
+                        int timeouts = 0;
+                        try
+                        {
+                            while (true)
+                            {
+                                int nextIdx = Interlocked.Increment(ref cursor);
+                                if (nextIdx >= pidItems.Length || timeouts >= 12) break;
+                                KeyValuePair<int, List<MatchedRemoteHandle>> kv = pidItems[nextIdx];
+                                IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_QUERY_LIMITED_INFORMATION, false, kv.Key);
+                                if (hp == IntPtr.Zero) continue;
+                                List<MatchedRemoteHandle> localHits = null;
+                                try
+                                {
+                                    List<MatchedRemoteHandle> list = kv.Value;
+                                    for (int hi = 0; hi < list.Count; hi++)
+                                    {
+                                        if (timeouts >= 12) break;
+                                        MatchedRemoteHandle mh = list[hi];
+                                        IntPtr hDup;
+                                        if (!DuplicateHandle(hp, mh.RemoteHandle, curProc, out hDup, 0, false, DUPLICATE_SAME_ACCESS)) continue;
+                                        bool handleOrphaned = false;
+                                        try
+                                        {
+                                            ws.PendingPath = null;
+                                            ws.PendingHandle = hDup;
+                                            ws.WorkEv.Set();
+                                            if (ws.DoneEv.WaitOne(12))
+                                            {
+                                                string resolvedPath = ws.PendingPath;
+                                                if (!string.IsNullOrEmpty(resolvedPath))
+                                                {
+                                                    bool hit = false;
+                                                    for (int ti = 0; ti < targets.Count; ti++)
+                                                    {
+                                                        if (targets[ti].MatchesPath(resolvedPath))
+                                                        {
+                                                            hit = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (hit)
+                                                    {
+                                                        mh.DosPath = resolvedPath;
+                                                        if (localHits == null) localHits = new List<MatchedRemoteHandle>();
+                                                        localHits.Add(mh);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                timeouts++;
+                                                if (ws.ThreadHandle != IntPtr.Zero) CancelSynchronousIo(ws.ThreadHandle);
+                                                if (!ws.DoneEv.WaitOne(10))
+                                                {
+                                                    handleOrphaned = true;
+                                                    ws.StopRequested = true;
+                                                    try { if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle); } catch {}
+                                                    ws.ThreadHandle = IntPtr.Zero;
+                                                    if (timeouts >= 12) break;
+                                                    ws = StartHandleQueryWorker();
+                                                }
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            if (!handleOrphaned)
+                                            {
+                                                CloseHandle(hDup);
+                                            }
+                                        }
+                                    }
+                                    if (localHits != null && localHits.Count > 0)
+                                    {
+                                        concurrentResult[kv.Key] = localHits;
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hp);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            ws.StopRequested = true;
+                            ws.WorkEv.Set();
+                            if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle);
+                        }
+                    });
+                }
+                Task.WaitAll(workers);
+
+                foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in concurrentResult)
+                {
+                    result[kv.Key] = kv.Value;
+                }
             }
             catch {}
             finally
@@ -9673,6 +9879,24 @@ namespace DuckUtil
             }
         }
 
+        public static Task<bool> MoveToRecycleBinSilentlyAsync(string targetPath)
+        {
+            return Task.Run(delegate() { return MoveToRecycleBinSilently(targetPath); });
+        }
+
+        private sealed class ProcessScanOutcome
+        {
+            public Process Proc;
+            public int Pid;
+            public string ProcName;
+            public bool IsCritical;
+            public bool IsProtectedHost;
+            public bool IsMatch;
+            public bool DidModuleScan;
+            public HashSet<string> LoadedImages;
+            public HashSet<string> MappedData;
+        }
+
         public static ForceStopReport ForceStopDirectoryLockers(string targetPath)
         {
             return ForceStopDirectoryLockers(targetPath, true);
@@ -9680,32 +9904,278 @@ namespace DuckUtil
 
         public static ForceStopReport ForceStopDirectoryLockers(string targetPath, bool includeServicesAndTasks)
         {
+            if (string.IsNullOrWhiteSpace(targetPath)) return new ForceStopReport();
+            return ForceStopPathsLockers(new string[] { targetPath }, includeServicesAndTasks);
+        }
+
+        public static ForceStopReport ForceStopBatchDirectories(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            return ForceStopPathsLockers(targetPaths, includeServicesAndTasks);
+        }
+
+        public static Task<ForceStopReport> ForceStopDirectoryLockersAsync(string targetPath, bool includeServicesAndTasks)
+        {
+            return Task.Run(delegate() { return ForceStopDirectoryLockers(targetPath, includeServicesAndTasks); });
+        }
+
+        public static Task<ForceStopReport> ForceStopBatchDirectoriesAsync(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            return Task.Run(delegate() { return ForceStopBatchDirectories(targetPaths, includeServicesAndTasks); });
+        }
+
+        private static bool ScanProcessModulesNative(IntPtr hProc, List<LockTargetSpec> targets, bool collectAllMatched, HashSet<string> matchedImagesOut, out bool enumSucceeded)
+        {
+            enumSucceeded = false;
+            if (hProc == IntPtr.Zero || targets == null || targets.Count == 0) return false;
+            IntPtr[] hMods = new IntPtr[256];
+            uint cb = (uint)(hMods.Length * IntPtr.Size);
+            uint needed = 0;
+            if (!EnumProcessModulesEx(hProc, hMods, cb, out needed, LIST_MODULES_ALL))
+            {
+                return false;
+            }
+            if (needed > cb)
+            {
+                int countNeed = Math.Min(4096, (int)(needed / (uint)IntPtr.Size) + 16);
+                hMods = new IntPtr[countNeed];
+                cb = (uint)(hMods.Length * IntPtr.Size);
+                if (!EnumProcessModulesEx(hProc, hMods, cb, out needed, LIST_MODULES_ALL))
+                {
+                    return false;
+                }
+            }
+            enumSucceeded = true;
+            int modCount = Math.Min(hMods.Length, (int)(needed / (uint)IntPtr.Size));
+            var sb = new System.Text.StringBuilder(1024);
+            bool anyMatch = false;
+            for (int i = 0; i < modCount; i++)
+            {
+                if (hMods[i] == IntPtr.Zero) continue;
+                sb.Length = 0;
+                uint len = GetModuleFileNameExW(hProc, hMods[i], sb, (uint)sb.Capacity);
+                if (len > 0 && len < (uint)sb.Capacity)
+                {
+                    string modPath = NormalizeDosOrNtPath(sb.ToString());
+                    if (string.IsNullOrEmpty(modPath)) continue;
+                    for (int ti = 0; ti < targets.Count; ti++)
+                    {
+                        if (targets[ti].MatchesPath(modPath))
+                        {
+                            anyMatch = true;
+                            if (matchedImagesOut != null) matchedImagesOut.Add(modPath);
+                            if (!collectAllMatched) return true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return anyMatch;
+        }
+
+        private static ForceStopReport ForceStopPathsLockers(string[] targetPaths, bool includeServicesAndTasks)
+        {
             var report = new ForceStopReport();
-            if (string.IsNullOrWhiteSpace(targetPath)) return report;
+            if (targetPaths == null || targetPaths.Length == 0) return report;
 
-            string norm = targetPath.Trim().TrimEnd('\\');
-            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
-            if (norm.Length <= 3) return report;
+            var targets = new List<LockTargetSpec>();
+            var seenNorms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool hasAnyDirectory = false;
 
-            bool isSingleFile = File.Exists(norm);
-            bool isDirectory = !isSingleFile && Directory.Exists(norm);
-            if (!isSingleFile && !isDirectory) return report;
+            for (int i = 0; i < targetPaths.Length; i++)
+            {
+                string raw = targetPaths[i];
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                string norm = raw.Trim().TrimEnd('\\');
+                try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+                if (norm.Length <= 3 || !seenNorms.Add(norm)) continue;
 
-            if (isDirectory && !IsSafeLockTargetDirectory(norm)) return report;
+                bool isSingleFile = File.Exists(norm);
+                bool isDirectory = !isSingleFile && Directory.Exists(norm);
+                if (!isSingleFile && !isDirectory) continue;
+                if (isDirectory && !IsSafeLockTargetDirectory(norm)) continue;
+
+                if (isDirectory) hasAnyDirectory = true;
+                targets.Add(new LockTargetSpec
+                {
+                    Norm = norm,
+                    Prefix = isDirectory ? (norm + "\\") : "",
+                    IsSingleFile = isSingleFile,
+                    IsDirectory = isDirectory,
+                    DirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                });
+            }
+
+            if (targets.Count == 0) return report;
 
             EnsureUnlockPrivileges();
 
-            string prefix = isDirectory ? (norm + "\\") : "";
-            if (includeServicesAndTasks && isDirectory)
-            {
-                report.ServicesStoppedCount = DisableAndRemoveServicesInDirectory(norm);
-                report.TasksRemovedCount = RemoveScheduledTasksInDirectory(norm);
-            }
-
-            Dictionary<int, string> rmLockers = GetRestartManagerLockingPids(norm);
-            Dictionary<int, List<MatchedRemoteHandle>> handleLockers = ScanSystemFileHandlesForTarget(norm, prefix, isDirectory);
             Dictionary<string, string> dosMap = BuildDosDeviceMap();
-            HashSet<string> dirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var rmLockers = new Dictionary<int, string>();
+            int svcStoppedTotal = 0;
+            int taskRemovedTotal = 0;
+
+            Task leg1ServicesAndRm = Task.Run(delegate()
+            {
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    LockTargetSpec t = targets[i];
+                    if (includeServicesAndTasks && t.IsDirectory)
+                    {
+                        svcStoppedTotal += DisableAndRemoveServicesInDirectory(t.Norm);
+                        taskRemovedTotal += RemoveScheduledTasksInDirectory(t.Norm);
+                    }
+                    Dictionary<int, string> subRm = GetRestartManagerLockingPids(t.Norm);
+                    foreach (KeyValuePair<int, string> kv in subRm)
+                    {
+                        if (!rmLockers.ContainsKey(kv.Key))
+                        {
+                            rmLockers[kv.Key] = kv.Value;
+                        }
+                    }
+                }
+            });
+
+            Dictionary<int, List<MatchedRemoteHandle>> handleLockers = null;
+            Task leg2Handles = Task.Run(delegate()
+            {
+                handleLockers = ScanSystemFileHandlesForTargets(targets);
+            });
+
+            Process[] procs = null;
+            try { procs = Process.GetProcesses(); } catch { procs = new Process[0]; }
+            var outcomes = new ProcessScanOutcome[procs.Length];
+
+            Task leg3Processes = Task.Run(delegate()
+            {
+                Parallel.For(0, procs.Length, delegate(int idx)
+                {
+                    Process p = procs[idx];
+                    if (p == null) return;
+                    var outcome = new ProcessScanOutcome { Proc = p };
+                    try
+                    {
+                        int pid = p.Id;
+                        if (pid <= 4) return;
+                        string pName = "";
+                        try { pName = p.ProcessName ?? ""; } catch {}
+                        outcome.Pid = pid;
+                        outcome.ProcName = pName;
+                        outcome.IsCritical = IsKernelCriticalProcess(pid, pName);
+                        if (outcome.IsCritical)
+                        {
+                            outcomes[idx] = outcome;
+                            return;
+                        }
+                        outcome.IsProtectedHost = IsProtectedSystemOrHostProcess(pid, pName);
+
+                        bool scanModulesHere = !outcome.IsProtectedHost || hasAnyDirectory;
+                        if (scanModulesHere)
+                        {
+                            IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+                            bool hasVmRead = (hProc != IntPtr.Zero);
+                            if (hProc == IntPtr.Zero)
+                            {
+                                hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+                            }
+
+                            if (hProc == IntPtr.Zero)
+                            {
+                                if (!outcome.IsProtectedHost && !string.IsNullOrEmpty(pName))
+                                {
+                                    for (int ti = 0; ti < targets.Count; ti++)
+                                    {
+                                        if (targets[ti].IsDirectory && targets[ti].DirExeNames.Contains(pName))
+                                        {
+                                            outcome.IsMatch = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    outcome.DidModuleScan = true;
+                                    if (outcome.IsProtectedHost)
+                                    {
+                                        var loadedImgs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        var mappedDat = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        bool enumOk = false;
+                                        if (hasVmRead)
+                                        {
+                                            ScanProcessModulesNative(hProc, targets, true, loadedImgs, out enumOk);
+                                            CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, !enumOk, enumOk ? null : loadedImgs, mappedDat);
+                                        }
+                                        outcome.LoadedImages = loadedImgs;
+                                        outcome.MappedData = mappedDat;
+                                    }
+                                    else
+                                    {
+                                        var sbImg = new System.Text.StringBuilder(1024);
+                                        uint sz = (uint)sbImg.Capacity;
+                                        bool gotMain = QueryFullProcessImageNameW(hProc, 0, sbImg, ref sz);
+                                        if (gotMain && sz > 0)
+                                        {
+                                            string mainPath = NormalizeDosOrNtPath(sbImg.ToString(0, (int)sz));
+                                            for (int ti = 0; ti < targets.Count; ti++)
+                                            {
+                                                if (targets[ti].MatchesPath(mainPath))
+                                                {
+                                                    outcome.IsMatch = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (!outcome.IsMatch && hasVmRead && hasAnyDirectory)
+                                        {
+                                            bool enumOk = false;
+                                            if (ScanProcessModulesNative(hProc, targets, false, null, out enumOk))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                            else if (CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, !enumOk, null, null))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                        }
+                                        else if (!outcome.IsMatch && hasVmRead && !hasAnyDirectory)
+                                        {
+                                            if (CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, true, null, null))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                        }
+                                        if (!outcome.IsMatch && !gotMain && !string.IsNullOrEmpty(pName))
+                                        {
+                                            for (int ti = 0; ti < targets.Count; ti++)
+                                            {
+                                                if (targets[ti].IsDirectory && targets[ti].DirExeNames.Contains(pName))
+                                                {
+                                                    outcome.IsMatch = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hProc);
+                                }
+                            }
+                        }
+                        outcomes[idx] = outcome;
+                    }
+                    catch {}
+                });
+            });
+
+            Task.WaitAll(leg1ServicesAndRm, leg2Handles, leg3Processes);
+
+            report.ServicesStoppedCount = svcStoppedTotal;
+            report.TasksRemovedCount = taskRemovedTotal;
+            if (handleLockers == null) handleLockers = new Dictionary<int, List<MatchedRemoteHandle>>();
 
             var killedList = new List<string>();
             var deniedList = new List<string>();
@@ -9714,55 +10184,50 @@ namespace DuckUtil
             var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var targetProcs = new Dictionary<int, Process>();
 
-            Process[] procs = null;
-            try { procs = Process.GetProcesses(); } catch { procs = new Process[0]; }
-
-            foreach (Process p in procs)
+            for (int idx = 0; idx < procs.Length; idx++)
             {
+                Process p = procs[idx];
+                ProcessScanOutcome o = outcomes[idx];
                 bool keepProc = false;
                 try
                 {
-                    int pid = p.Id;
-                    string pName = "";
-                    try { pName = p.ProcessName ?? ""; } catch {}
-
-                    if (pid <= 4) { p.Dispose(); continue; }
-
+                    if (o == null || o.Pid <= 4) continue;
+                    int pid = o.Pid;
+                    string pName = o.ProcName ?? "";
                     bool rmMatched = rmLockers.ContainsKey(pid);
                     List<MatchedRemoteHandle> pidHandles = null;
                     handleLockers.TryGetValue(pid, out pidHandles);
 
-                    if (IsKernelCriticalProcess(pid, pName))
+                    if (o.IsCritical)
                     {
                         if (rmMatched)
                         {
                             string desc = pName + " (PID " + pid.ToString() + ")";
                             if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
                         }
-                        p.Dispose();
                         continue;
                     }
 
-                    if (IsProtectedSystemOrHostProcess(pid, pName))
+                    if (o.IsProtectedHost)
                     {
-                        var loadedImages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        var mappedData = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        if (isDirectory || rmMatched || pidHandles != null)
+                        var loadedImages = o.LoadedImages ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var mappedData = o.MappedData ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (!o.DidModuleScan && (rmMatched || pidHandles != null))
                         {
-                            try
+                            IntPtr hHost = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+                            if (hHost != IntPtr.Zero)
                             {
-                                foreach (ProcessModule pm in p.Modules)
+                                try
                                 {
-                                    string modPath = NormalizeDosOrNtPath(pm.FileName ?? "");
-                                    if (!string.IsNullOrEmpty(modPath) &&
-                                        (isDirectory ? modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) : string.Equals(modPath, norm, StringComparison.OrdinalIgnoreCase)))
-                                    {
-                                        loadedImages.Add(modPath);
-                                    }
+                                    bool enumOk = false;
+                                    ScanProcessModulesNative(hHost, targets, true, loadedImages, out enumOk);
+                                    CollectProcessMappedFilesFromHandle(hHost, targets, dosMap, !enumOk, enumOk ? null : loadedImages, mappedData);
+                                }
+                                finally
+                                {
+                                    CloseHandle(hHost);
                                 }
                             }
-                            catch {}
-                            CollectProcessMappedFiles(pid, prefix, norm, isDirectory, dosMap, loadedImages, mappedData);
                         }
 
                         int closedForPid = 0;
@@ -9775,7 +10240,7 @@ namespace DuckUtil
                                 {
                                     closedForPid++;
                                     report.ClosedHandlesCount++;
-                                    string hLabel = pName + " -> " + (string.IsNullOrEmpty(mh.DosPath) ? norm : Path.GetFileName(mh.DosPath));
+                                    string hLabel = pName + " -> " + (string.IsNullOrEmpty(mh.DosPath) ? targets[0].Norm : Path.GetFileName(mh.DosPath));
                                     if (seenNames.Add("H:" + hLabel + ":" + mh.RemoteHandle.ToString()))
                                     {
                                         if (closedHandleList.Count < 25) closedHandleList.Add(hLabel);
@@ -9797,64 +10262,10 @@ namespace DuckUtil
                                 : (pName + " (" + Path.GetFileName(firstImg) + ")");
                             if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
                         }
-                        p.Dispose();
                         continue;
                     }
 
-                    bool isMatch = rmMatched || (pidHandles != null && pidHandles.Count > 0);
-                    bool mainModAccessDenied = false;
-
-                    if (!isMatch)
-                    {
-                        try
-                        {
-                            if (p.MainModule != null)
-                            {
-                                string mainPath = NormalizeDosOrNtPath(p.MainModule.FileName ?? "");
-                                if (isSingleFile)
-                                {
-                                    isMatch = string.Equals(mainPath, norm, StringComparison.OrdinalIgnoreCase);
-                                }
-                                else if (isDirectory)
-                                {
-                                    isMatch = mainPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
-                                }
-                            }
-                        }
-                        catch (Win32Exception)
-                        {
-                            mainModAccessDenied = true;
-                        }
-                        catch {}
-                    }
-
-                    if (!isMatch && isDirectory && !mainModAccessDenied)
-                    {
-                        try
-                        {
-                            foreach (ProcessModule pm in p.Modules)
-                            {
-                                string modPath = NormalizeDosOrNtPath(pm.FileName ?? "");
-                                if (modPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    isMatch = true;
-                                    break;
-                                }
-                            }
-                        }
-                        catch {}
-                    }
-
-                    if (!isMatch && !mainModAccessDenied)
-                    {
-                        isMatch = CollectProcessMappedFiles(pid, prefix, norm, isDirectory, dosMap, null, null);
-                    }
-
-                    if (!isMatch && mainModAccessDenied && isDirectory && dirExeNames.Count > 0 && dirExeNames.Contains(pName))
-                    {
-                        isMatch = true;
-                    }
-
+                    bool isMatch = rmMatched || (pidHandles != null && pidHandles.Count > 0) || o.IsMatch;
                     if (isMatch && !targetProcs.ContainsKey(pid))
                     {
                         targetProcs[pid] = p;
@@ -9864,11 +10275,20 @@ namespace DuckUtil
                 catch {}
                 finally
                 {
-                    if (!keepProc)
+                    if (!keepProc && p != null)
                     {
                         try { p.Dispose(); } catch {}
                     }
                 }
+            }
+
+            foreach (KeyValuePair<int, Process> kvp in targetProcs)
+            {
+                try
+                {
+                    NtSuspendProcess(kvp.Value.Handle);
+                }
+                catch {}
             }
 
             foreach (KeyValuePair<int, Process> kvp in targetProcs)
@@ -9888,13 +10308,6 @@ namespace DuckUtil
                 bool terminated = false;
                 try
                 {
-                    try
-                    {
-                        IntPtr h = mp.Handle;
-                        NtSuspendProcess(h);
-                    }
-                    catch {}
-
                     mp.Kill();
                     mp.WaitForExit(1500);
                     terminated = true;
@@ -10069,6 +10482,9 @@ namespace DuckUtil
             if (!IsSafeNonMicrosoftFilterTarget(svcName)) return;
             string clean = svcName.Trim();
             EnsureUnlockPrivileges();
+            const int FLT_NOT_FOUND = unchecked((int)0x801F000F);
+            const int FLT_VOL_NOT_FOUND = unchecked((int)0x801F0014);
+            const int FLT_INST_NOT_FOUND = unchecked((int)0x801F0015);
             try
             {
                 foreach (string drv in Directory.GetLogicalDrives())
@@ -10079,13 +10495,15 @@ namespace DuckUtil
                     try
                     {
                         hr = FilterDetach(clean, vol, null);
-                        if (hr != 0)
+                        if (hr == FLT_NOT_FOUND) break;
+                        if (hr != 0 && hr != FLT_VOL_NOT_FOUND && hr != FLT_INST_NOT_FOUND)
                         {
                             hr = FilterDetach(clean, drv, null);
+                            if (hr == FLT_NOT_FOUND) break;
                         }
                     }
                     catch {}
-                    if (hr != 0)
+                    if (hr != 0 && hr != FLT_NOT_FOUND && hr != FLT_VOL_NOT_FOUND && hr != FLT_INST_NOT_FOUND)
                     {
                         RunHiddenProcess("fltmc.exe", "detach \"" + clean + "\" " + vol, 900);
                     }
@@ -10185,6 +10603,11 @@ namespace DuckUtil
             {
                 CloseServiceHandle(hSvc);
             }
+        }
+
+        public static Task<bool> NeutralizeSingleServiceOrDriverAsync(string svcName)
+        {
+            return Task.Run(delegate() { return NeutralizeSingleServiceOrDriver(svcName); });
         }
 
         public static bool NeutralizeSingleServiceOrDriver(string svcName)
@@ -10832,6 +11255,113 @@ namespace DuckUtil
             return !File.Exists(file);
         }
 
+        public static ForceDeleteResult ForceDeleteDirectoryWithResult(string targetDir, bool runFullLockerStop)
+        {
+            int rb = 0;
+            bool ok = ForceDeleteDirectory(targetDir, runFullLockerStop, out rb);
+            return new ForceDeleteResult { Deleted = ok, RebootScheduledCount = rb };
+        }
+
+        public static Task<ForceDeleteResult> ForceDeleteDirectoryAsync(string targetDir, bool runFullLockerStop)
+        {
+            return Task.Run(delegate() { return ForceDeleteDirectoryWithResult(targetDir, runFullLockerStop); });
+        }
+
+        public static Task<bool> WaitForProcessExitAsync(Process proc)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            if (proc == null)
+            {
+                tcs.TrySetResult(true);
+                return tcs.Task;
+            }
+            EventHandler handler = null;
+            handler = delegate(object s, EventArgs e)
+            {
+                try { proc.Exited -= handler; } catch {}
+                tcs.TrySetResult(true);
+            };
+            try
+            {
+                proc.EnableRaisingEvents = true;
+                proc.Exited += handler;
+                if (proc.HasExited)
+                {
+                    try { proc.Exited -= handler; } catch {}
+                    tcs.TrySetResult(true);
+                }
+            }
+            catch
+            {
+                try { proc.Exited -= handler; } catch {}
+                tcs.TrySetResult(true);
+            }
+            return tcs.Task;
+        }
+
+        public static List<ServiceScanEntry> ScanServicesAndDrivers()
+        {
+            var result = new List<ServiceScanEntry>();
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", false))
+                {
+                    if (svcRoot == null) return result;
+                    string[] names = svcRoot.GetSubKeyNames();
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        string sName = names[i];
+                        try
+                        {
+                            using (var sk = svcRoot.OpenSubKey(sName, false))
+                            {
+                                if (sk == null) continue;
+                                string rawImg = sk.GetValue("ImagePath") as string;
+                                if (string.IsNullOrWhiteSpace(rawImg)) continue;
+                                int sType = 0;
+                                try
+                                {
+                                    object tObj = sk.GetValue("Type");
+                                    if (tObj != null) sType = Convert.ToInt32(tObj);
+                                }
+                                catch {}
+                                int baseType = sType & 0x0F;
+                                bool isDrv = (baseType == 1 || baseType == 2 || baseType == 8);
+                                string normImg = NormalizeServiceImagePath(rawImg);
+                                string resolved = normImg;
+                                if (!string.IsNullOrEmpty(resolved) &&
+                                    (resolved.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                                     resolved.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase)) &&
+                                    !string.IsNullOrEmpty(winDir))
+                                {
+                                    resolved = Path.Combine(winDir, resolved);
+                                }
+                                result.Add(new ServiceScanEntry
+                                {
+                                    ServiceName = sName,
+                                    DisplayName = (sk.GetValue("DisplayName") as string) ?? "",
+                                    ImagePath = rawImg,
+                                    ResolvedImagePath = resolved,
+                                    ServiceType = sType,
+                                    IsKernelDriver = isDrv
+                                });
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return result;
+        }
+
+        public static Task<List<ServiceScanEntry>> ScanServicesAndDriversAsync()
+        {
+            return Task.Run(delegate() { return ScanServicesAndDrivers(); });
+        }
+
         public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)
         {
             return ForceDeleteDirectory(targetDir, true, out rebootScheduledCount);
@@ -11314,7 +11844,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "TryPosixUnlinkFile"
+        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "ForceStopBatchDirectoriesAsync"
     } catch {}
 }
 
@@ -11410,11 +11940,16 @@ function Run-CliStream {
         [string]$FileName,
         [Parameter(Mandatory = $false)]
         [Alias("Args")]
-        [string]$Arguments = ""
+        [string]$Arguments = "",
+        [switch]$IsolateStdin,
+        [switch]$AllowCancel
     )
 
     if ($script:isWindowClosing) {
         return -1
+    }
+    if ($AllowCancel -and $script:cancelRequested) {
+        return -2
     }
 
     try {
@@ -11430,32 +11965,56 @@ function Run-CliStream {
         $pinfo.CreateNoWindow = $false
         $pinfo.RedirectStandardOutput = $false
         $pinfo.RedirectStandardError = $false
+        if ($IsolateStdin) {
+            $pinfo.RedirectStandardInput = $true
+        }
 
         $p = [System.Diagnostics.Process]::Start($pinfo)
         if ($null -eq $p) {
             Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh: $FileName"
             return -1
         }
+        if ($IsolateStdin) {
+            try { $p.StandardInput.Close() } catch {}
+        }
 
         $prevActiveChild = $script:activeChildProcess
         $script:activeChildProcesses.Add($p) | Out-Null
         $script:activeChildProcess = $p
         try {
-            while ($true) {
-                $stillRunning = try { -not $p.HasExited } catch { $false }
-                if (-not $stillRunning) { break }
-                if ($script:isWindowClosing) {
+            $deepEngType = "DuckUtil.DeepUninstallerEngine" -as [type]
+            $canAsyncWait = ($null -ne $deepEngType -and
+                $null -ne $deepEngType.GetMethod("WaitForProcessExitAsync") -and
+                $null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and
+                $null -ne $window -and $null -ne $window.Dispatcher -and $window.Dispatcher.CheckAccess())
+
+            if ($canAsyncWait) {
+                $exitTask = $deepEngType::WaitForProcessExitAsync($p)
+                $cancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+                [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds 3600 -CancelCheck $cancelCb)
+                if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
                     Stop-ChildProcessTree $p
-                    break
                 }
-                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                if ($script:isWindowClosing) {
-                    Stop-ChildProcessTree $p
-                    break
+            } else {
+                while ($true) {
+                    $stillRunning = try { -not $p.HasExited } catch { $false }
+                    if (-not $stillRunning) { break }
+                    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                        Stop-ChildProcessTree $p
+                        break
+                    }
+                    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                        Stop-ChildProcessTree $p
+                        break
+                    }
+                    Start-Sleep -Milliseconds 25
                 }
-                Start-Sleep -Milliseconds 25
             }
 
+            if ($AllowCancel -and $script:cancelRequested) {
+                return -2
+            }
             if (-not $script:isWindowClosing) {
                 try { [void]$p.WaitForExit(1000) } catch {}
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
@@ -11476,6 +12035,9 @@ function Run-CliStream {
             }
             $script:activeChildProcess = $restored
             try { $p.Dispose() } catch {}
+            if ("DuckUtil.ConsoleHelper" -as [type]) {
+                try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {}
+            }
         }
     } catch {
         Log-Text "[!] L$([char]0x1ED7)i khi th$([char]0x1EF1)c thi l$([char]0x1EC7)nh [$FileName $Arguments]: $($_.Exception.Message)"
@@ -13000,13 +13562,7 @@ if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
                     $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
                     if (-not $tiProc) {
                         Start-Service -Name "TrustedInstaller" -ErrorAction SilentlyContinue
-                        $waited = 0
-                        while ($waited -lt 800) {
-                            $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
-                            if ($tiProc) { break }
-                            Start-Sleep -Milliseconds 80
-                            $waited += 80
-                        }
+                        $tiProc = Get-Process -Name "TrustedInstaller" -ErrorAction SilentlyContinue | Select-Object -First 1
                     }
                     if ($tiProc) { return [int]$tiProc.Id }
                 } catch {}
@@ -13664,24 +14220,29 @@ function Find-AppLeftovers {
 
     if ($vendorFam -and ("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
         try {
-            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
-            foreach ($sk in $svcItems) {
-                try {
-                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
-                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
-                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
-                    if ($tVal -notin @(1, 2, 8)) { continue }
-                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
-                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
-                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
-                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
-                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+            $svcList = $null
+            if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+                [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
+                if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $svcList = $svcTask.Result
+                }
+            } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
+                $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
+            }
+
+            if ($null -ne $svcList) {
+                foreach ($se in $svcList) {
+                    if ($script:isWindowClosing) { break }
+                    if (-not $se.IsKernelDriver) { continue }
+                    $img = $se.ResolvedImagePath
+                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
                     if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
                         $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
                         $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
                         $isVendorMatch = ($meta.IndexOf($vendorFam, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($vendorFam -eq "360" -and $meta -match '(?i)(Qihu|Qihoo)')
                         if ($isVendorMatch) {
-                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                             if ($seenPaths.Add($regSvcPath)) {
                                 $leftovers.Add([PSCustomObject]@{
                                     Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
@@ -13709,7 +14270,7 @@ function Find-AppLeftovers {
                             }
                         }
                     }
-                } catch {}
+                }
             }
         } catch {}
     }
@@ -14011,19 +14572,23 @@ function Find-SystemOrphanLeftovers {
 
     if (("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
         try {
-            $svcItems = Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services" -ErrorAction SilentlyContinue
-            foreach ($sk in $svcItems) {
-                if ($script:isWindowClosing) { break }
-                try {
-                    $sp = Get-ItemProperty -LiteralPath $sk.PSPath -ErrorAction SilentlyContinue
-                    if ($null -eq $sp -or [string]::IsNullOrWhiteSpace($sp.ImagePath)) { continue }
-                    $tVal = if ($null -ne $sp.Type) { ([int]$sp.Type -band 0x0F) } else { 0 }
-                    if ($tVal -notin @(1, 2, 8)) { continue }
-                    $img = ([string]$sp.ImagePath).Trim('"', ' ')
-                    if ($img.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = $img.Substring(4) }
-                    if ($img.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img.Substring(12) }
-                    elseif ($img.StartsWith("system32\", [System.StringComparison]::OrdinalIgnoreCase) -or $img.StartsWith("syswow64\", [System.StringComparison]::OrdinalIgnoreCase)) { $img = Join-Path $env:SystemRoot $img }
-                    $img = [Environment]::ExpandEnvironmentVariables($img).Trim('"', ' ')
+            $svcList = $null
+            if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+                [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
+                if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $svcList = $svcTask.Result
+                }
+            } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
+                $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
+            }
+
+            if ($null -ne $svcList) {
+                foreach ($se in $svcList) {
+                    if ($script:isWindowClosing) { break }
+                    if (-not $se.IsKernelDriver) { continue }
+                    $img = $se.ResolvedImagePath
+                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
                     if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
                         $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
                         $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
@@ -14041,12 +14606,12 @@ function Find-SystemOrphanLeftovers {
                             }
                         }
                         if (-not $vendorStillActive) {
-                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sk.PSChildName)"
+                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                             if ($seenPaths.Add($regSvcPath)) {
                                 $orphans.Add([PSCustomObject]@{
                                     Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
                                     Confidence        = "An to$([char]0x00E0)n 100%"
-                                    AppName           = "$drvVendor ($($sk.PSChildName))"
+                                    AppName           = "$drvVendor ($($se.ServiceName))"
                                     Path              = $regSvcPath
                                     SizeBytes         = 0L
                                     SizeMB            = 0.0
@@ -14069,7 +14634,7 @@ function Find-SystemOrphanLeftovers {
                             }
                         }
                     }
-                } catch {}
+                }
             }
         } catch {}
     }
@@ -14099,9 +14664,24 @@ function Invoke-ForceStopPathLockers {
     $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
     if (-not $deepType) { return $resObj }
 
+    if ($null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+        try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
+    }
+
+    $hasForceStopAsync = ($null -ne $deepType.GetMethod("ForceStopDirectoryLockersAsync")) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
     $hasForceStop = @($deepType.GetMethods() | Where-Object { $_.Name -eq "ForceStopDirectoryLockers" -and $_.GetParameters().Count -eq 2 }).Count -gt 0
-    if ($hasForceStop) {
+    if ($hasForceStopAsync) {
+        $fsTask = $deepType::ForceStopDirectoryLockersAsync($TargetPath, $IncludeServicesAndTasks)
+        [void](Wait-TaskNonBlocking -Task $fsTask -TimeoutSeconds 45)
+        $rpt = if ($fsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            $fsTask.Result
+        } elseif ($hasForceStop -and -not $script:isWindowClosing) {
+            $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
+        } else { $null }
+    } elseif ($hasForceStop) {
         $rpt = $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
+    }
+    if ($hasForceStopAsync -or $hasForceStop) {
         if ($rpt) {
             $resObj.KilledCount          = [int]$rpt.KilledCount
             $resObj.ServicesStoppedCount = [int]$rpt.ServicesStoppedCount
@@ -14592,12 +15172,68 @@ function Show-LeftoverReviewDialog {
         $accessDeniedTotal = 0
 
         $btnDelete.IsEnabled = $false
+        if ($btnCancel) { $btnCancel.IsEnabled = $false }
+        if ($btnSelectAll) { $btnSelectAll.IsEnabled = $false }
+        if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $false }
         try {
             $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
+            $canWaitAsync = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+            if ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+                try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
+            }
             $hasSilentRecycle = ($null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilently"))
+            $hasSilentRecycleAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilentlyAsync"))
+            $hasNeutralizeAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriverAsync"))
+            $hasForceDelAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteDirectoryAsync"))
+            $hasBatchStopAsync = ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceStopBatchDirectoriesAsync"))
+            $hasBatchStopSync = ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceStopBatchDirectories"))
+
+            $batchExplorerLock = $false
+            $usedBatchForceStop = $false
+            if ($useForceStop) {
+                $existingPaths = @($checkedItems | Where-Object { -not $_.IsRegistry -and (Test-Path -LiteralPath $_.Path) } | ForEach-Object { [string]$_.Path } | Select-Object -Unique)
+                if ($existingPaths.Count -gt 0 -and ($hasBatchStopAsync -or $hasBatchStopSync)) {
+                    $usedBatchForceStop = $true
+                    if ($summaryText) {
+                        $summaryText.Text = "$([char]0x0110)ang gi$([char]0x1EA3)i ph$([char]0x00F3)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh/handle kh$([char]0x00F3)a ($($existingPaths.Count) m$([char]0x1EE5)c)..."
+                    }
+                    $batchRpt = $null
+                    if ($hasBatchStopAsync) {
+                        $bTask = $deepType::ForceStopBatchDirectoriesAsync([string[]]$existingPaths, $true)
+                        [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 60)
+                        if ($bTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $batchRpt = $bTask.Result }
+                    } else {
+                        $batchRpt = $deepType::ForceStopBatchDirectories([string[]]$existingPaths, $true)
+                    }
+                    if ($batchRpt) {
+                        $accessDeniedTotal += [int]$batchRpt.AccessDeniedCount
+                        $batchExplorerLock = (@($batchRpt.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
+                        if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                            if ($batchRpt.KilledCount -gt 0 -or $batchRpt.ServicesStoppedCount -gt 0 -or $batchRpt.TasksRemovedCount -gt 0) {
+                                Log-Text "[FORCE-STOP] $([char]0x0110)$([char]0x00E3) bu$([char]0x1ED9)c d$([char]0x1EEB)ng $($batchRpt.KilledCount) ti$([char]0x1EBF)n tr$([char]0x00EC)nh, $($batchRpt.ServicesStoppedCount) d$([char]0x1ECB)ch v$([char]0x1EE5), $($batchRpt.TasksRemovedCount) t$([char]0x00E1)c v$([char]0x1EE5) cho $($existingPaths.Count) m$([char]0x1EE5)c."
+                            }
+                            if ($batchRpt.ClosedHandlesCount -gt 0) {
+                                Log-Text "[HANDLE-UNLOCK] $([char]0x0110)$([char]0x00E3) th$([char]0x00E1)o $($batchRpt.ClosedHandlesCount) handle t$([char]0x1EEB) xa: $($batchRpt.ClosedHandleNames -join ', ')"
+                            }
+                            if ($batchRpt.AccessDeniedCount -gt 0) {
+                                Log-Text "[!] T$([char]0x1EEB) ch$([char]0x1ED1)i quy$([char]0x1EC1)n: $($batchRpt.AccessDeniedNames -join ', ')"
+                            }
+                            if (@($batchRpt.SkippedSystemLockers).Count -gt 0) {
+                                Log-Text "[!] H$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)ang gi$([char]0x1EEF) handle: $($batchRpt.SkippedSystemLockers -join ', ')"
+                            }
+                        }
+                    }
+                }
+            }
+
             $explorerRestartDecision = $null
+            $stepIdx = 0
             foreach ($ci in $checkedItems) {
                 if ($script:isWindowClosing) { break }
+                $stepIdx++
+                if ($summaryText) {
+                    $summaryText.Text = "$([char]0x0110)ang d$([char]0x1ECD)n $stepIdx / $($checkedItems.Count): $($ci.AppName)"
+                }
                 try {
                     if ($ci.IsRegistry) {
                         if ($ci.RegistryValueName) {
@@ -14612,7 +15248,13 @@ function Show-LeftoverReviewDialog {
                             $neutralizedSvc = $false
                             if ($ci.Path -match '(?i)^HKLM:\\SYSTEM\\CurrentControlSet\\Services\\([^\\]+)$') {
                                 $svcTargetName = $Matches[1]
-                                if ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
+                                if ($hasNeutralizeAsync) {
+                                    $nTask = $deepType::NeutralizeSingleServiceOrDriverAsync($svcTargetName)
+                                    [void](Wait-TaskNonBlocking -Task $nTask -TimeoutSeconds 25)
+                                    if ($nTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                        $neutralizedSvc = [bool]$nTask.Result
+                                    }
+                                } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("NeutralizeSingleServiceOrDriver")) {
                                     $neutralizedSvc = [bool]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
                                 }
                             }
@@ -14629,16 +15271,22 @@ function Show-LeftoverReviewDialog {
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
-                        $stopInfo = $null
-                        if ($useForceStop) {
+                        $hasExplorerLock = $batchExplorerLock
+                        if ($useForceStop -and -not $usedBatchForceStop) {
                             $stopInfo = Invoke-ForceStopPathLockers -TargetPath $ci.Path -IncludeServicesAndTasks:$true
                             $accessDeniedTotal += [int]$stopInfo.AccessDeniedCount
+                            $hasExplorerLock = ($null -ne $stopInfo -and @($stopInfo.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
                         }
 
-                        $hasExplorerLock = ($null -ne $stopInfo -and @($stopInfo.SkippedSystemLockers | Where-Object { $_ -match '^explorer\b' }).Count -gt 0)
                         $deletedOk = $false
                         if ($useRecycle) {
-                            if ($hasSilentRecycle) {
+                            if ($hasSilentRecycleAsync) {
+                                $rTask = $deepType::MoveToRecycleBinSilentlyAsync($ci.Path)
+                                [void](Wait-TaskNonBlocking -Task $rTask -TimeoutSeconds 30)
+                                if ($rTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                    $deletedOk = [bool]$rTask.Result
+                                }
+                            } elseif ($hasSilentRecycle) {
                                 $deletedOk = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
                             } elseif (-not $useForceStop) {
                                 try {
@@ -14697,11 +15345,20 @@ function Show-LeftoverReviewDialog {
 
                         if (-not $deletedOk) {
                             $rbCount = 0
-                            $hasFastForceDel = @([DuckUtil.DeepUninstallerEngine].GetMethods() | Where-Object { $_.Name -eq "ForceDeleteDirectory" -and $_.GetParameters().Count -eq 3 }).Count -gt 0
-                            if ($hasFastForceDel) {
-                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, (-not $useForceStop), [ref]$rbCount)
+                            if ($hasForceDelAsync) {
+                                $dTask = $deepType::ForceDeleteDirectoryAsync($ci.Path, (-not $useForceStop))
+                                [void](Wait-TaskNonBlocking -Task $dTask -TimeoutSeconds 60)
+                                if ($dTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $dTask.Result) {
+                                    $deletedOk = [bool]$dTask.Result.Deleted
+                                    $rbCount = [int]$dTask.Result.RebootScheduledCount
+                                }
                             } else {
-                                $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                                $hasFastForceDel = @([DuckUtil.DeepUninstallerEngine].GetMethods() | Where-Object { $_.Name -eq "ForceDeleteDirectory" -and $_.GetParameters().Count -eq 3 }).Count -gt 0
+                                if ($hasFastForceDel) {
+                                    $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, (-not $useForceStop), [ref]$rbCount)
+                                } else {
+                                    $deletedOk = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbCount)
+                                }
                             }
                             $rebootTotal += $rbCount
                         }
@@ -14736,6 +15393,9 @@ function Show-LeftoverReviewDialog {
             $dialog.Close()
         } finally {
             $btnDelete.IsEnabled = $true
+            if ($btnCancel) { $btnCancel.IsEnabled = $true }
+            if ($btnSelectAll) { $btnSelectAll.IsEnabled = $true }
+            if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $true }
         }
     })
     $btnStack.Children.Add($btnDelete) | Out-Null
@@ -14954,12 +15614,17 @@ function Invoke-DeepAppUninstall {
         [Parameter(Mandatory = $false)]$OwnerWindow,
         [switch]$SkipVendorUninstaller,
         [switch]$ForceStopAndDelete,
-        [bool]$AutoSilent = $true
+        [bool]$AutoSilent = $true,
+        [object[]]$AllInstalledApps = $null,
+        [switch]$DeferLeftoverDialog,
+        [System.Collections.Generic.List[object]]$CollectedLeftoversOut = $null,
+        [switch]$AllowCancel
     )
 
     if ($ForceStopAndDelete) {
         $SkipVendorUninstaller = $true
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
         Log-Text "=========================================================="
@@ -14971,7 +15636,26 @@ function Invoke-DeepAppUninstall {
         Log-Text "=========================================================="
     }
 
-    $allInstalledNow = Get-SystemInstalledAppsFast
+    $canWaitNonBlocking = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+    $deepEngT = "DuckUtil.DeepUninstallerEngine" -as [type]
+    if ($deepEngT -and $null -ne $deepEngT.GetMethod("PrewarmElevationCache")) {
+        try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
+    }
+
+    $allInstalledNow = if ($AllInstalledApps -and $AllInstalledApps.Count -gt 0) {
+        $AllInstalledApps
+    } elseif ($canWaitNonBlocking -and $deepEngT -and $null -ne $deepEngT.GetMethod("GetInstalledAppsAsync")) {
+        $appsTask = $deepEngT::GetInstalledAppsAsync()
+        [void](Wait-TaskNonBlocking -Task $appsTask -TimeoutSeconds 45)
+        if ($appsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            @($appsTask.Result)
+        } else {
+            Get-SystemInstalledAppsFast
+        }
+    } else {
+        Get-SystemInstalledAppsFast
+    }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     $safeLoc = ""
     if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
@@ -14981,6 +15665,7 @@ function Invoke-DeepAppUninstall {
             [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true)
         }
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if (-not $AppEntry.IsBrokenOrphan) {
         if ($SkipVendorUninstaller) {
@@ -14998,10 +15683,17 @@ function Invoke-DeepAppUninstall {
                     }
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    $msiCode = Run-CliStream "msiexec.exe" $plan.Args
-                    if ($msiCode -eq 1618) {
-                        Start-Sleep -Seconds 3
-                        $null = Run-CliStream "msiexec.exe" $plan.Args
+                    $msiCode = Run-CliStream "msiexec.exe" $plan.Args -IsolateStdin:($AutoSilent -or $plan.IsSilent) -AllowCancel:$AllowCancel
+                    if ($msiCode -eq 1618 -and -not ($AllowCancel -and $script:cancelRequested) -and -not $script:isWindowClosing) {
+                        if ($canWaitNonBlocking) {
+                            $cancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+                            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(3000)) -TimeoutSeconds 5 -CancelCheck $cancelCb)
+                        } else {
+                            Start-Sleep -Seconds 3
+                        }
+                        if (-not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
+                            $null = Run-CliStream "msiexec.exe" $plan.Args -IsolateStdin:($AutoSilent -or $plan.IsSilent) -AllowCancel:$AllowCancel
+                        }
                     }
                 } else {
                     Start-Process "msiexec.exe" -ArgumentList $plan.Args -Wait -NoNewWindow
@@ -15029,7 +15721,7 @@ function Invoke-DeepAppUninstall {
                     }
                 }
                 if (Get-Command Run-CliStream -ErrorAction SilentlyContinue) {
-                    $null = Run-CliStream $plan.Exe $plan.Args
+                    $null = Run-CliStream $plan.Exe $plan.Args -IsolateStdin:($AutoSilent -and $plan.IsSilent) -AllowCancel:$AllowCancel
                 } else {
                     Start-Process $plan.Exe -ArgumentList $plan.Args -Wait -NoNewWindow
                 }
@@ -15037,16 +15729,39 @@ function Invoke-DeepAppUninstall {
         }
     }
 
-    if ($script:isWindowClosing) { return }
-    Start-Sleep -Milliseconds 800
-    if ($script:isWindowClosing) { return }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
+    if ($canWaitNonBlocking) {
+        $cancelCb2 = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(800)) -TimeoutSeconds 3 -CancelCheck $cancelCb2)
+    } else {
+        Start-Sleep -Milliseconds 800
+    }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
         [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true)
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     $leftovers = Find-AppLeftovers -AppEntry $AppEntry -AllInstalledApps $allInstalledNow
-    if ($script:isWindowClosing) { return }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
+
+    if ($DeferLeftoverDialog) {
+        if ($leftovers.Count -gt 0) {
+            if ($null -ne $CollectedLeftoversOut) {
+                foreach ($lo in $leftovers) { $CollectedLeftoversOut.Add($lo) }
+            }
+            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                Log-Text "[*] $([char]0x0110)$([char]0x00E3) ghi nh$([char]0x1EAD)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) c$([char]0x1EE7)a '$($AppEntry.DisplayName)' (s$([char]0x1EBD) m$([char]0x1EDF) h$([char]0x1ED9)p tho$([char]0x1EA1)i d$([char]0x1ECD)n cu$([char]0x1ED1)i h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i)."
+            }
+        } else {
+            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                Log-Text "[OK] '$($AppEntry.DisplayName)' $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
+            }
+        }
+        return
+    }
+
     if ($leftovers.Count -gt 0) {
         if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
             Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($leftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c / Registry c$([char]0x00F2)n s$([char]0x00F3)t l$([char]0x1EA1)i sau khi g$([char]0x1EE1) b$([char]0x1ECF)."
@@ -15361,6 +16076,9 @@ try {
 
 $MainTabControl    = $window.FindName("MainTabControl")
 $txtStatus         = $window.FindName("txtStatus")
+$btnCancelAction   = $window.FindName("btnCancelAction")
+$borderQueueBadge  = $window.FindName("borderQueueBadge")
+$txtQueueBadge     = $window.FindName("txtQueueBadge")
 $progressBar       = $window.FindName("progressBar")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
@@ -15689,6 +16407,10 @@ function Save-BitmapToCacheAtomic {
 }
 
 $script:isActionRunning = $false
+$script:cancelRequested = $false
+$script:isUninstallingQueue = $false
+$script:uninstallQueue = [System.Collections.Generic.List[object]]::new()
+$script:uninstallQueuedKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 $script:isUpdatingUninstaller = $false
 $script:isSortingUninstaller = $false
 $script:uninstallerLoadQueued = $false
@@ -16157,7 +16879,8 @@ function Stop-ActiveWaitFrames {
 function Wait-TaskNonBlocking {
     param(
         [Parameter(Mandatory = $true)][System.Threading.Tasks.Task]$Task,
-        [double]$TimeoutSeconds = 60
+        [double]$TimeoutSeconds = 60,
+        [scriptblock]$CancelCheck = $null
     )
     if ($null -eq $Task) { return $true }
     if ($Task.IsCompleted) { return $true }
@@ -16172,7 +16895,11 @@ function Wait-TaskNonBlocking {
         $guardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
         $guardTimer.Interval = [TimeSpan]::FromMilliseconds(40)
         $guardTimer.Add_Tick({
-            if ($Task.IsCompleted -or $script:isWindowClosing -or $sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+            $canceledNow = $false
+            if ($CancelCheck) {
+                try { $canceledNow = [bool](& $CancelCheck) } catch {}
+            }
+            if ($Task.IsCompleted -or $script:isWindowClosing -or $canceledNow -or $sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
                 $frame.Continue = $false
             }
         }.GetNewClosure())
@@ -16182,7 +16909,9 @@ function Wait-TaskNonBlocking {
             if ($smoothType -and $null -ne $smoothType.GetMethod("AttachFrameWake")) {
                 $smoothType::AttachFrameWake($Task, $disp, $frame)
             }
-            if (-not $Task.IsCompleted -and -not $script:isWindowClosing) {
+            $canceledInit = $false
+            if ($CancelCheck) { try { $canceledInit = [bool](& $CancelCheck) } catch {} }
+            if (-not $Task.IsCompleted -and -not $script:isWindowClosing -and -not $canceledInit) {
                 $guardTimer.Start()
                 [System.Windows.Threading.Dispatcher]::PushFrame($frame)
             }
@@ -16195,7 +16924,9 @@ function Wait-TaskNonBlocking {
 
     $swFallback = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $Task.IsCompleted) {
-        if ($script:isWindowClosing -or $swFallback.Elapsed.TotalSeconds -ge $TimeoutSeconds) { break }
+        $canceledFb = $false
+        if ($CancelCheck) { try { $canceledFb = [bool](& $CancelCheck) } catch {} }
+        if ($script:isWindowClosing -or $canceledFb -or $swFallback.Elapsed.TotalSeconds -ge $TimeoutSeconds) { break }
         try { [void]$Task.Wait(25) } catch {}
     }
     return $Task.IsCompleted
@@ -16208,7 +16939,7 @@ function Invoke-GuardedAction {
         [switch]$DeferExpand
     )
     if ($script:isWindowClosing) { return }
-    if ($script:isActionRunning -or $script:isScanningApps -or $script:isUpdatingUninstaller) {
+    if ($script:isActionRunning -or $script:isScanningApps -or $script:isUpdatingUninstaller -or $script:isUninstallingQueue) {
         Log-Text "[WARN] $([char]0x0110)ang c$([char]0x00F3) m$([char]0x1ED9)t t$([char]0x00E1)c v$([char]0x1EE5) kh$([char]0x00E1)c $([char]0x0111)ang th$([char]0x1EF1)c thi ($ActionName). Vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i!"
         return
     }
@@ -16216,16 +16947,28 @@ function Invoke-GuardedAction {
         Expand-TerminalLog
     }
     $script:isActionRunning = $true
+    $script:cancelRequested = $false
     try {
         & $Action
     } catch {
         Log-Text "[!] L$([char]0x1ED7)i khi th$([char]0x1EF1)c hi$([char]0x1EC7)n '$ActionName': $($_.Exception.Message)"
     } finally {
         $script:isActionRunning = $false
+        $script:cancelRequested = $false
         $script:isScanningApps = $false
         $script:isUpdatingUninstaller = $false
         $script:suppressSelectionCount = $false
         $script:suppressUninstallerSelectionCount = $false
+        if ($btnCancelAction) {
+            try {
+                $btnCancelAction.Visibility = [System.Windows.Visibility]::Collapsed
+                $btnCancelAction.IsEnabled = $true
+                $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+            } catch {}
+        }
+        if ($borderQueueBadge) {
+            try { $borderQueueBadge.Visibility = [System.Windows.Visibility]::Collapsed } catch {}
+        }
         if ($progressBar) {
             try { $progressBar.IsIndeterminate = $false } catch {}
         }
@@ -16632,11 +17375,11 @@ function Update-UninstallerSelectionCount {
         }
     }
     if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ($count)"
+        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($count)" } else { "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ($count)" }
         $btnDeepUninstall.IsEnabled = ($count -gt 0)
     }
     if ($btnForceStopUninstall) {
-        $btnForceStopUninstall.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($count)"
+        $btnForceStopUninstall.Content = if ($script:isUninstallingQueue) { "+ Bu$([char]0x1ED9)c d$([char]0x1EEB)ng v$([char]0x00E0)o h$([char]0x00E0)ng ($count)" } else { "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($count)" }
         $btnForceStopUninstall.IsEnabled = ($count -gt 0)
     }
 }
@@ -17255,25 +17998,239 @@ if ($btnRefreshUninstaller) {
     })
 }
 
+function Get-UninstallerAppQueueKey {
+    param($App)
+    if (-not $App) { return "" }
+    if ($App.PSObject.Properties["RawRegPath"] -and -not [string]::IsNullOrWhiteSpace($App.RawRegPath)) {
+        return "REG:" + [string]$App.RawRegPath
+    }
+    if ($App.PSObject.Properties["Id"] -and -not [string]::IsNullOrWhiteSpace($App.Id)) {
+        return "ID:" + [string]$App.Id + "|" + [string]$App.DisplayName
+    }
+    return "NAME:" + [string]$App.DisplayName + "|" + [string]$App.InstallLocation
+}
+
+function Update-UninstallQueueUiState {
+    if ($script:isWindowClosing) { return }
+    if ($borderQueueBadge -and $txtQueueBadge) {
+        if ($script:isUninstallingQueue) {
+            $borderQueueBadge.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:uninstallQueue.Count -gt 0) {
+                $txtQueueBadge.Text = "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i: +$($script:uninstallQueue.Count)"
+            } else {
+                $txtQueueBadge.Text = "$([char]0x0110)ang g$([char]0x1EE1)..."
+            }
+        } else {
+            $borderQueueBadge.Visibility = [System.Windows.Visibility]::Collapsed
+            $txtQueueBadge.Text = ""
+        }
+    }
+    if ($btnCancelAction) {
+        if ($script:isUninstallingQueue -or $script:isActionRunning) {
+            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $btnCancelAction.Visibility = [System.Windows.Visibility]::Collapsed
+            $btnCancelAction.IsEnabled = $true
+            $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+        }
+    }
+}
+
+if ($btnCancelAction) {
+    $btnCancelAction.Add_Click({
+        $script:cancelRequested = $true
+        $btnCancelAction.IsEnabled = $false
+        $btnCancelAction.Content = "$([char]0x0110)ang d$([char]0x1EEB)ng..."
+        if ($script:uninstallQueue) { $script:uninstallQueue.Clear() }
+        if ($script:uninstallQueuedKeys) { $script:uninstallQueuedKeys.Clear() }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5) theo y$([char]0x00EA)u c$([char]0x1EA7)u..." }
+        Log-Text "[STOP] $([char]0x0110)$([char]0x00E3) nh$([char]0x1EAD)n y$([char]0x00EA)u c$([char]0x1EA7)u d$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5) & x$([char]0x00F3)a h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i!"
+        try { Stop-ActiveChildProcess } catch {}
+        try { Stop-ActiveWaitFrames } catch {}
+    })
+}
+
+function Add-ItemsToUninstallQueue {
+    param(
+        [object[]]$Items,
+        [bool]$SkipVendor = $false,
+        [bool]$ForceStop = $false,
+        [bool]$AutoSilent = $true
+    )
+    $added = 0
+    $addedKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($it in $Items) {
+        if (-not $it) { continue }
+        $k = Get-UninstallerAppQueueKey $it
+        if ([string]::IsNullOrWhiteSpace($k) -or $script:uninstallQueuedKeys.Contains($k)) { continue }
+        [void]$script:uninstallQueuedKeys.Add($k)
+        [void]$addedKeys.Add($k)
+        $script:uninstallQueue.Add([PSCustomObject]@{
+            App        = $it
+            SkipVendor = $SkipVendor
+            ForceStop  = $ForceStop
+            AutoSilent = $AutoSilent
+            Key        = $k
+        })
+        $added++
+    }
+    if ($added -gt 0) {
+        $script:suppressUninstallerSelectionCount = $true
+        try {
+            foreach ($entry in $script:uninstallerRowEntries) {
+                $rk = Get-UninstallerAppQueueKey $entry.App
+                if ($addedKeys.Contains($rk)) {
+                    if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                    if ($entry.Row) { $entry.Row.Opacity = 0.52 }
+                }
+            }
+        } finally {
+            $script:suppressUninstallerSelectionCount = $false
+        }
+        Update-UninstallerSelectionCount
+    }
+    Update-UninstallQueueUiState
+    return $added
+}
+
+function Start-UninstallQueueExecution {
+    $script:isUninstallingQueue = $true
+    $script:cancelRequested = $false
+    if ($btnCancelAction) {
+        $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+        $btnCancelAction.IsEnabled = $true
+        $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+    }
+    if ($progressBar) { $progressBar.IsIndeterminate = $true }
+    Update-UninstallQueueUiState
+
+    $collectedLeftovers = [System.Collections.Generic.List[object]]::new()
+    $completedApps = 0
+    try {
+        while ($script:uninstallQueue.Count -gt 0 -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+            $qItem = $script:uninstallQueue[0]
+            $script:uninstallQueue.RemoveAt(0)
+            $totalCurrent = $completedApps + 1 + $script:uninstallQueue.Count
+            if ($txtStatus) {
+                $txtStatus.Text = "[$($completedApps + 1)/$totalCurrent] $([char]0x0110)ang g$([char]0x1EE1): $($qItem.App.DisplayName)..."
+            }
+            Update-UninstallQueueUiState
+
+            if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
+                Invoke-DeepAppUninstall `
+                    -AppEntry $qItem.App `
+                    -OwnerWindow $window `
+                    -SkipVendorUninstaller:$qItem.SkipVendor `
+                    -ForceStopAndDelete:$qItem.ForceStop `
+                    -AutoSilent:$qItem.AutoSilent `
+                    -AllInstalledApps $script:cachedUninstallerApps `
+                    -DeferLeftoverDialog `
+                    -CollectedLeftoversOut $collectedLeftovers `
+                    -AllowCancel
+            }
+
+            if ($script:isWindowClosing -or $script:cancelRequested) { break }
+            $completedApps++
+            foreach ($entry in $script:uninstallerRowEntries) {
+                if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key -and $entry.Row) {
+                    $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
+                    if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                }
+            }
+            Update-UninstallerSelectionCount
+        }
+
+        if (-not $script:isWindowClosing -and -not $script:cancelRequested -and $collectedLeftovers.Count -gt 0) {
+            $dedupLeftovers = [System.Collections.Generic.List[object]]::new()
+            $seenLo = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+            foreach ($lo in $collectedLeftovers) {
+                if (-not $lo) { continue }
+                $dKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { [string]$lo.Path }
+                if ($seenLo.Add($dKey)) { $dedupLeftovers.Add($lo) }
+            }
+            if ($dedupLeftovers.Count -gt 0 -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
+                Log-Text "[*] T$([char]0x1ED5)ng h$([char]0x1EE3)p $($dedupLeftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c / Registry c$([char]0x00F2)n s$([char]0x00F3)t sau khi g$([char]0x1EE1) $completedApps $([char]0x1EE9)ng d$([char]0x1EE5)ng."
+                if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ch$([char]0x1EDD) x$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n $($dedupLeftovers.Count) m$([char]0x1EE5)c r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)..." }
+                $dialogTitle = if ($completedApps -gt 1) { "D$([char]0x1ECD)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) sau khi g$([char]0x1EE1) ($completedApps $([char]0x1EE9)ng d$([char]0x1EE5)ng)" } else { "D$([char]0x1ECD)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) sau khi g$([char]0x1EE1)" }
+                $res = Show-LeftoverReviewDialog -OwnerWindow $window -Items @($dedupLeftovers) -Title $dialogTitle -ForceStopByDefault:$true
+                if ($res.Confirmed) {
+                    $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
+                    Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
+                }
+            }
+        }
+    } finally {
+        $wasCanceled = [bool]$script:cancelRequested
+        $script:isUninstallingQueue = $false
+        $script:uninstallQueue.Clear()
+        $script:uninstallQueuedKeys.Clear()
+        foreach ($entry in $script:uninstallerRowEntries) {
+            if ($entry.Row -and $entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $entry.Row.Opacity = 1.0
+            }
+        }
+        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        Update-UninstallQueueUiState
+        if ($txtStatus -and -not $script:isWindowClosing) {
+            $txtStatus.Text = if ($wasCanceled) { "$([char]0x0110)$([char]0x00E3) d$([char]0x1EEB)ng h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) ($completedApps $([char]0x0111)$([char]0x00E3) xong)" } else { "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ho$([char]0x00E0)n t$([char]0x1EA5)t ($completedApps $([char]0x1EE9)ng d$([char]0x1EE5)ng)!" }
+        }
+    }
+
+    if (-not $script:isWindowClosing -and $completedApps -gt 0) {
+        Update-UninstallerList -Force
+    }
+}
+
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
+
+        if ($script:isUninstallingQueue) {
+            $newItems = @($selectedItems | Where-Object { -not $script:uninstallQueuedKeys.Contains((Get-UninstallerAppQueueKey $_)) })
+            if ($newItems.Count -eq 0) {
+                Log-Text "[WARN] C$([char]0x00E1)c $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n hi$([char]0x1EC7)n $([char]0x0111)$([char]0x00E3) n$([char]0x1EB1)m trong h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                return
+            }
+            $skipVendorAppend = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
+            $appLinesAppend = @($newItems | ForEach-Object {
+                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
+                "$([char]0x2022) $($_.DisplayName)$vPart"
+            })
+            $ansAppend = Show-OwnedMessageBox `
+                -Text "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x0111)ang ch$([char]0x1EA1)y. Th$([char]0x00EA)m $($newItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng m$([char]0x1EDB)i v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i (ch$([char]0x1EA1)y n$([char]0x1ED1)i ti$([char]0x1EBF)p v$([char]0x00E0) g$([char]0x1ED9)p b$([char]0x1EA3)ng d$([char]0x1ECD)n r$([char]0x00E1)c cu$([char]0x1ED1)i l$([char]0x01B0)$([char]0x1EE3)t)?" `
+                -Caption "Th$([char]0x00EA)m v$([char]0x00E0)o H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i G$([char]0x1EE1)" `
+                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Question) `
+                -PrimaryText "Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($($newItems.Count))" `
+                -SecondaryText "B$([char]0x1ECF) qua" `
+                -DetailItems $appLinesAppend
+            if ($ansAppend -eq [System.Windows.Forms.DialogResult]::Yes -and $script:isUninstallingQueue -and -not $script:isWindowClosing) {
+                $nAdded = Add-ItemsToUninstallQueue -Items $newItems -SkipVendor:$skipVendorAppend -ForceStop:$false -AutoSilent:(if ($skipVendorAppend) { $false } else { [bool]$script:autoSilentUninstall })
+                if ($nAdded -gt 0) {
+                    Log-Text "[QUEUE] $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m +$nAdded $([char]0x1EE9)ng d$([char]0x1EE5)ng v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                }
+            }
+            return
+        }
+
         Invoke-GuardedAction "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
-            $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
-            if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
+            $selectedNow = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
-            $appLines = @($selectedItems | ForEach-Object {
+            $appLines = @($selectedNow | ForEach-Object {
                 $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
                 "$([char]0x2022) $($_.DisplayName)$vPart"
             })
 
             if ($skipVendor) {
                 $confirm = Show-OwnedMessageBox `
-                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
+                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedNow.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
                     -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" `
                     -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                     -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedItems.Count))" `
+                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedNow.Count))" `
                     -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
                     -DetailItems $appLines `
                     -ModeBadgeText "B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng $([char]0x2014) $([char]0x00C9)p x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p" `
@@ -17287,11 +18244,11 @@ if ($btnDeepUninstall) {
                     HintOff = "M$([char]0x1EDF) tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c c$([char]0x1EE7)a h$([char]0x00E3)ng nh$([char]0x01B0) b$([char]0x00EC)nh th$([char]0x01B0)$([char]0x1EDD)ng (t$([char]0x1EAF)t g$([char]0x1EAF)n c$([char]0x1EDD) im l$([char]0x1EB7)ng)"
                 }
                 $confirm = Show-OwnedMessageBox `
-                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
+                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedNow.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
                     -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" `
                     -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                     -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedItems.Count))" `
+                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedNow.Count))" `
                     -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
                     -DetailItems $appLines `
                     -ToggleState $toggleState
@@ -17303,50 +18260,68 @@ if ($btnDeepUninstall) {
 
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-            foreach ($item in $selectedItems) {
-                if ($script:isWindowClosing) { break }
-                if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
-                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$skipVendor -AutoSilent:$useAutoSilent
-                }
-            }
-            if (-not $script:isWindowClosing) {
-                Update-UninstallerList -Force
-            }
+            [void](Add-ItemsToUninstallQueue -Items $selectedNow -SkipVendor:$skipVendor -ForceStop:$false -AutoSilent:$useAutoSilent)
+            Start-UninstallQueueExecution
         }
     })
 }
 
 if ($btnForceStopUninstall) {
     $btnForceStopUninstall.Add_Click({
-        Invoke-GuardedAction "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
-            $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
-            if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
-            $appLines = @($selectedItems | ForEach-Object {
+        if ($script:isUninstallingQueue) {
+            $newItems = @($selectedItems | Where-Object { -not $script:uninstallQueuedKeys.Contains((Get-UninstallerAppQueueKey $_)) })
+            if ($newItems.Count -eq 0) {
+                Log-Text "[WARN] C$([char]0x00E1)c $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n hi$([char]0x1EC7)n $([char]0x0111)$([char]0x00E3) n$([char]0x1EB1)m trong h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                return
+            }
+            $appLinesAppend = @($newItems | ForEach-Object {
+                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
+                "$([char]0x2022) $($_.DisplayName)$vPart"
+            })
+            $ansAppend = Show-OwnedMessageBox `
+                -Text "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i $([char]0x0111)ang ch$([char]0x1EA1)y. Th$([char]0x00EA)m $($newItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p?" `
+                -Caption "Th$([char]0x00EA)m Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a v$([char]0x00E0)o H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i" `
+                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+                -PrimaryText "Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($($newItems.Count))" `
+                -SecondaryText "B$([char]0x1ECF) qua" `
+                -DetailItems $appLinesAppend `
+                -ModeBadgeText "Ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a n$([char]0x1ED1)i ti$([char]0x1EBF)p trong h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i" `
+                -ModeBadgeKind "Danger"
+            if ($ansAppend -eq [System.Windows.Forms.DialogResult]::Yes -and $script:isUninstallingQueue -and -not $script:isWindowClosing) {
+                $nAdded = Add-ItemsToUninstallQueue -Items $newItems -SkipVendor:$true -ForceStop:$true -AutoSilent:$false
+                if ($nAdded -gt 0) {
+                    Log-Text "[QUEUE] $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m +$nAdded $([char]0x1EE9)ng d$([char]0x1EE5)ng (Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a) v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i."
+                }
+            }
+            return
+        }
+
+        Invoke-GuardedAction "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
+            $selectedNow = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
+
+            $appLines = @($selectedNow | ForEach-Object {
                 $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
                 "$([char]0x2022) $($_.DisplayName)$vPart"
             })
             $confirm = Show-OwnedMessageBox `
-                -Text "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng to$([char]0x00E0)n b$([char]0x1ED9) ti$([char]0x1EBF)n tr$([char]0x00EC)nh/d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p c$([char]0x1EE7)a $($selectedItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x00E0) x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p kh$([char]0x00F4)ng qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng?" `
+                -Text "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng to$([char]0x00E0)n b$([char]0x1ED9) ti$([char]0x1EBF)n tr$([char]0x00EC)nh/d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p c$([char]0x1EE7)a $($selectedNow.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x00E0) x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p kh$([char]0x00F4)ng qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng?" `
                 -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                -PrimaryText "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($($selectedItems.Count))" `
+                -PrimaryText "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($($selectedNow.Count))" `
                 -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
                 -DetailItems $appLines `
                 -ModeBadgeText "Restart Manager + NtSuspend + Kill Tree + MoveFileEx (b$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng)" `
                 -ModeBadgeKind "Danger"
             if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-            foreach ($item in $selectedItems) {
-                if ($script:isWindowClosing) { break }
-                if (Get-Command "Invoke-DeepAppUninstall" -ErrorAction SilentlyContinue) {
-                    Invoke-DeepAppUninstall -AppEntry $item -OwnerWindow $window -SkipVendorUninstaller:$true -AutoSilent:$false -ForceStopAndDelete
-                }
-            }
-            if (-not $script:isWindowClosing) {
-                Update-UninstallerList -Force
-            }
+            [void](Add-ItemsToUninstallQueue -Items $selectedNow -SkipVendor:$true -ForceStop:$true -AutoSilent:$false)
+            Start-UninstallQueueExecution
         }
     })
 }
@@ -17355,22 +18330,34 @@ if ($btnScanOrphans) {
     $btnScanOrphans.Add_Click({
         Invoke-GuardedAction "Qu$([char]0x00E9)t r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) & App x$([char]0x00F3)a sai c$([char]0x00E1)ch" -DeferExpand {
             if ($script:isWindowClosing) { return }
-            if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
-                $orphans = @(Find-SystemOrphanLeftovers -InstalledApps $script:cachedUninstallerApps -CatalogApps $AppCatalog)
-                if ($script:isWindowClosing) { return }
-                if ($orphans.Count -eq 0) {
-                    Show-OwnedMessageBox `
-                        -Text "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p tin r$([char]0x00E1)c ho$([char]0x1EB7)c $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o b$([char]0x1ECB) x$([char]0x00F3)a sai c$([char]0x00E1)ch tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng!" `
-                        -Caption "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)" `
-                        -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
-                        -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
-                } else {
-                    if (-not $script:isWindowClosing -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
-                        Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0) & App X$([char]0x00F3)a Sai C$([char]0x00E1)ch"
+            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) & driver Ring-0 m$([char]0x1ED3) c$([char]0x00F4)i..." }
+            if ($progressBar) { $progressBar.IsIndeterminate = $true }
+            try {
+                if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
+                    $orphans = @(Find-SystemOrphanLeftovers -InstalledApps $script:cachedUninstallerApps -CatalogApps $AppCatalog)
+                    if ($progressBar) { $progressBar.IsIndeterminate = $false }
+                    if ($script:isWindowClosing) { return }
+                    if ($orphans.Count -eq 0) {
+                        if ($txtStatus) { $txtStatus.Text = "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)" }
+                        Show-OwnedMessageBox `
+                            -Text "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p tin r$([char]0x00E1)c ho$([char]0x1EB7)c $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o b$([char]0x1ECB) x$([char]0x00F3)a sai c$([char]0x00E1)ch tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng!" `
+                            -Caption "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)" `
+                            -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
+                            -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+                    } else {
+                        if ($txtStatus) { $txtStatus.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($orphans.Count) m$([char]0x1EE5)c r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)" }
+                        if (-not $script:isWindowClosing -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
+                            Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0) & App X$([char]0x00F3)a Sai C$([char]0x00E1)ch"
+                        }
+                        if (-not $script:isWindowClosing) {
+                            Update-UninstallerList -Force
+                        }
                     }
-                    if (-not $script:isWindowClosing) {
-                        Update-UninstallerList -Force
-                    }
+                }
+            } finally {
+                if ($progressBar) { $progressBar.IsIndeterminate = $false }
+                if ($txtStatus -and -not $script:isWindowClosing -and $txtStatus.Text -like "$([char]0x0110)ang qu$([char]0x00E9)t r$([char]0x00E1)c*") {
+                    $txtStatus.Text = "S$([char]0x1EB5)n s$([char]0x00E0)ng"
                 }
             }
         }
@@ -17882,9 +18869,9 @@ function Invoke-GitHubAssetInstall {
         Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
         try {
             if ($dlPath -match '\.msi$') {
-                return (Run-CliStream "msiexec.exe" "/i `"$dlPath`" /qn /norestart")
+                return (Run-CliStream "msiexec.exe" "/i `"$dlPath`" /qn /norestart" -IsolateStdin -AllowCancel)
             } else {
-                return (Run-CliStream $dlPath "--silent-install")
+                return (Run-CliStream $dlPath "--silent-install" -IsolateStdin -AllowCancel)
             }
         } finally {
             if (Test-Path -LiteralPath $dlPath) { Remove-Item -LiteralPath $dlPath -Force -ErrorAction SilentlyContinue }
@@ -17971,8 +18958,7 @@ function Wait-WindowsInstallerReady {
         }
         if (-not $isBusy) {
             if ($logged) {
-                Start-Sleep -Milliseconds 600
-                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(600)) -TimeoutSeconds 2 -CancelCheck { [bool]$script:cancelRequested })
             }
             return $true
         }
@@ -17980,26 +18966,25 @@ function Wait-WindowsInstallerReady {
             Log-Text "[*] $([char]0x0110)ang ch$([char]0x1EDD) ti$([char]0x1EBF)n tr$([char]0x00EC)nh Windows Installer kh$([char]0x00E1)c ho$([char]0x00E0)n t$([char]0x1EA5)t..."
             $logged = $true
         }
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-        Start-Sleep -Milliseconds 500
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(500)) -TimeoutSeconds 2 -CancelCheck { [bool]$script:cancelRequested })
+        if ($script:cancelRequested) { break }
     }
     return $false
 }
 
 function Invoke-WinGetWithMsiRetry {
     param([Parameter(Mandatory = $true)][string]$Arguments)
-    if ($script:isWindowClosing) { return -1 }
+    if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
-    if ($script:isWindowClosing) { return -1 }
-    $code = Run-CliStream "winget" $Arguments
-    if (-not $script:isWindowClosing -and ($code -eq -1978334974 -or $code -eq 1618)) {
+    if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
+    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel
+    if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978334974 -or $code -eq 1618)) {
         Log-Text "[!] Windows Installer $([char]0x0111)ang b$([char]0x1EAD)n (1618), $([char]0x0111)ang ch$([char]0x1EDD) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $([char]0x0111)$([char]0x1EC3) th$([char]0x1EED) l$([char]0x1EA1)i..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
-        if ($script:isWindowClosing) { return -1 }
-        Start-Sleep -Milliseconds 1200
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-        if ($script:isWindowClosing) { return -1 }
-        $code = Run-CliStream "winget" $Arguments
+        if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(1200)) -TimeoutSeconds 3 -CancelCheck { [bool]$script:cancelRequested })
+        if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
+        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel
     }
     return $code
 }
@@ -18008,13 +18993,12 @@ function Wait-SquirrelUpdatersSettle {
     param([int]$MaxWaitMs = 4000)
     $deadline = [DateTime]::UtcNow.AddMilliseconds($MaxWaitMs)
     while ([DateTime]::UtcNow -lt $deadline) {
-        if ($script:isWindowClosing) { break }
+        if ($script:isWindowClosing -or $script:cancelRequested) { break }
         $running = @(Get-Process -Name "Update" -ErrorAction SilentlyContinue | Where-Object {
             try { $_.Path -and $_.Path.StartsWith($env:LOCALAPPDATA, [System.StringComparison]::OrdinalIgnoreCase) } catch { $false }
         })
         if ($running.Count -eq 0) { break }
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-        Start-Sleep -Milliseconds 350
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(350)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
     }
 }
 
@@ -18412,13 +19396,18 @@ Register-Click "btnInstall" {
         $total = $selectedTags.Count
         $idx = 0
         $didAnyInstall = $false
+        if ($btnCancelAction) {
+            $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+            $btnCancelAction.IsEnabled = $true
+            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+        }
         Log-Text "=========================================================="
         Log-Text "[INSTALL] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) $([char]0x0110)$([char]0x00C1)NH D$([char]0x1EA4)U"
         Log-Text "=========================================================="
 
         try {
             foreach ($tag in $selectedTags) {
-                if ($script:isWindowClosing) { break }
+                if ($script:isWindowClosing -or $script:cancelRequested) { break }
                 $idx++
                 $app = $tag.App
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
@@ -18498,13 +19487,18 @@ Register-Click "btnUpgradeSelected" {
         Expand-TerminalLog
         $total = $selectedTags.Count
         $idx = 0
+        if ($btnCancelAction) {
+            $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+            $btnCancelAction.IsEnabled = $true
+            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+        }
         Log-Text "=========================================================="
         Log-Text "[UPGRADE] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U N$([char]0x00C2)NG C$([char]0x1EA4)P $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) CH$([char]0x1ECC)N"
         Log-Text "=========================================================="
 
         try {
             foreach ($tag in $selectedTags) {
-                if ($script:isWindowClosing) { break }
+                if ($script:isWindowClosing -or $script:cancelRequested) { break }
                 $idx++
                 $app = $tag.App
 
@@ -18557,6 +19551,11 @@ Register-Click "btnUpgradeAll" {
         Log-Text "=========================================================="
         if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p t$([char]0x1EA5)t c$([char]0x1EA3) $([char]0x1EE9)ng d$([char]0x1EE5)ng..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        if ($btnCancelAction) {
+            $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+            $btnCancelAction.IsEnabled = $true
+            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+        }
 
         try {
             $outdatedRows = @($allItemBorders | Where-Object { $_.Tag -and $_.Tag.Status -eq "OUTDATED" })
@@ -18564,7 +19563,7 @@ Register-Click "btnUpgradeAll" {
                 $totalOut = $outdatedRows.Count
                 $idxOut = 0
                 foreach ($row in $outdatedRows) {
-                    if ($script:isWindowClosing) { break }
+                    if ($script:isWindowClosing -or $script:cancelRequested) { break }
                     $idxOut++
                     $tagOut = $row.Tag
                     if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
@@ -18581,8 +19580,8 @@ Register-Click "btnUpgradeAll" {
                         Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($tagOut.App.Name) (Exit Code: $codeOut)"
                     }
                 }
-            } elseif (-not $script:isWindowClosing) {
-                Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements"
+            } elseif (-not $script:isWindowClosing -and -not $script:cancelRequested) {
+                Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements" -IsolateStdin -AllowCancel
             }
         } finally {
             Clear-WinGetTempInstallers
@@ -18863,6 +19862,10 @@ Register-Click "btnOpenBackupFolder" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x0
 
 function Stop-AllBackgroundWork {
     $script:isWindowClosing = $true
+    $script:cancelRequested = $true
+    $script:isUninstallingQueue = $false
+    if ($script:uninstallQueue) { try { $script:uninstallQueue.Clear() } catch {} }
+    if ($script:uninstallQueuedKeys) { try { $script:uninstallQueuedKeys.Clear() } catch {} }
     try { Stop-ActiveWaitFrames } catch {}
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
@@ -18886,6 +19889,8 @@ if ($window -and $window.Dispatcher) {
         $errMsg = if ($e -and $e.Exception) { $e.Exception.Message } else { "L$([char]0x1ED7)i giao di$([char]0x1EC7)n kh$([char]0x00F4)ng x$([char]0x00E1)c $([char]0x0111)$([char]0x1ECB)nh" }
         try { Log-Text "[!] $([char]0x0110)$([char]0x00E3) ch$([char]0x1EB7)n l$([char]0x1ED7)i ngo$([char]0x1EA1)i l$([char]0x1EC7) UI: $errMsg" } catch {}
         $script:isActionRunning = $false
+        $script:cancelRequested = $false
+        $script:isUninstallingQueue = $false
         $script:isScanningApps = $false
         $script:isUpdatingUninstaller = $false
         $script:isSortingUninstaller = $false

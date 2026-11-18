@@ -90,11 +90,16 @@ function Run-CliStream {
         [string]$FileName,
         [Parameter(Mandatory = $false)]
         [Alias("Args")]
-        [string]$Arguments = ""
+        [string]$Arguments = "",
+        [switch]$IsolateStdin,
+        [switch]$AllowCancel
     )
 
     if ($script:isWindowClosing) {
         return -1
+    }
+    if ($AllowCancel -and $script:cancelRequested) {
+        return -2
     }
 
     try {
@@ -110,32 +115,56 @@ function Run-CliStream {
         $pinfo.CreateNoWindow = $false
         $pinfo.RedirectStandardOutput = $false
         $pinfo.RedirectStandardError = $false
+        if ($IsolateStdin) {
+            $pinfo.RedirectStandardInput = $true
+        }
 
         $p = [System.Diagnostics.Process]::Start($pinfo)
         if ($null -eq $p) {
             Log-Text "[!] Không thể khởi động tiến trình: $FileName"
             return -1
         }
+        if ($IsolateStdin) {
+            try { $p.StandardInput.Close() } catch {}
+        }
 
         $prevActiveChild = $script:activeChildProcess
         $script:activeChildProcesses.Add($p) | Out-Null
         $script:activeChildProcess = $p
         try {
-            while ($true) {
-                $stillRunning = try { -not $p.HasExited } catch { $false }
-                if (-not $stillRunning) { break }
-                if ($script:isWindowClosing) {
+            $deepEngType = "DuckUtil.DeepUninstallerEngine" -as [type]
+            $canAsyncWait = ($null -ne $deepEngType -and
+                $null -ne $deepEngType.GetMethod("WaitForProcessExitAsync") -and
+                $null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and
+                $null -ne $window -and $null -ne $window.Dispatcher -and $window.Dispatcher.CheckAccess())
+
+            if ($canAsyncWait) {
+                $exitTask = $deepEngType::WaitForProcessExitAsync($p)
+                $cancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+                [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds 3600 -CancelCheck $cancelCb)
+                if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
                     Stop-ChildProcessTree $p
-                    break
                 }
-                try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                if ($script:isWindowClosing) {
-                    Stop-ChildProcessTree $p
-                    break
+            } else {
+                while ($true) {
+                    $stillRunning = try { -not $p.HasExited } catch { $false }
+                    if (-not $stillRunning) { break }
+                    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                        Stop-ChildProcessTree $p
+                        break
+                    }
+                    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                        Stop-ChildProcessTree $p
+                        break
+                    }
+                    Start-Sleep -Milliseconds 25
                 }
-                Start-Sleep -Milliseconds 25
             }
 
+            if ($AllowCancel -and $script:cancelRequested) {
+                return -2
+            }
             if (-not $script:isWindowClosing) {
                 try { [void]$p.WaitForExit(1000) } catch {}
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
@@ -156,6 +185,9 @@ function Run-CliStream {
             }
             $script:activeChildProcess = $restored
             try { $p.Dispose() } catch {}
+            if ("DuckUtil.ConsoleHelper" -as [type]) {
+                try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {}
+            }
         }
     } catch {
         Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Arguments]: $($_.Exception.Message)"
