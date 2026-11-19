@@ -379,21 +379,84 @@
                         </Grid>
                     </Border>
 
-                    <ScrollViewer Name="AppsScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                                  CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
-                        <Grid Name="CardsContainer">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
-                            <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
-                            <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
-                            <StackPanel Grid.Column="3" Name="CardsCol3" Margin="4,0"/>
-                        </Grid>
-                    </ScrollViewer>
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="204"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="#0A0F18" BorderBrush="#27344A" BorderThickness="0,0,1,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0" Margin="12,10,12,6">
+                                    <TextBlock Text="DANH MỤC" FontSize="10" FontWeight="Bold" Foreground="#64748B" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Name="txtCategorySidebarMeta" Text="23 nhóm" FontSize="10" FontWeight="SemiBold" Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <StackPanel Grid.Row="1" Name="CategorySidebarTop" Margin="8,0,8,4"/>
+
+                                <ScrollViewer Grid.Row="2" Name="CategorySidebarScrollViewer" VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly"
+                                              Padding="8,0,8,10">
+                                    <StackPanel Name="CategorySidebarPanel"/>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+
+                        <ScrollViewer Grid.Column="1" Name="AppsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                      CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
+                            <Grid Name="CardsContainer">
+                                <Grid Name="CardsMasonryHost">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
+                                    <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                                    <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                                </Grid>
+
+                                <Border Name="SingleCategoryHost" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
+                                        BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,10,12,12" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <Grid Margin="2,0,2,6">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                                <TextBlock Name="txtSingleCatTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
+                                                <Border Name="btnSingleCatBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
+                                                        Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                                        ToolTip="Quay lại xem tất cả danh mục">
+                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Padding="7,2"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <TextBlock Name="txtSingleCatCount" Text="0" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8"/>
+                                            </Border>
+                                        </Grid>
+                                        <Border Height="1" Background="#27344A" Margin="0,1,0,8"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Name="SingleCatCol0"/>
+                                            <StackPanel Grid.Column="2" Name="SingleCatCol1"/>
+                                            <StackPanel Grid.Column="4" Name="SingleCatCol2"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </ScrollViewer>
+                    </Grid>
             </Grid>
 
             <Grid Name="TabPage1" Visibility="Hidden" IsHitTestVisible="False">

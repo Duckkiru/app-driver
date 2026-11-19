@@ -122,6 +122,10 @@ $appsScrollViewer = $window.FindName("AppsScrollViewer")
 if ($appsScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
     $script:smoothScrollCtrl = [DuckUtil.SmoothScrollController]::Attach($appsScrollViewer)
 }
+$categorySidebarScrollViewer = $window.FindName("CategorySidebarScrollViewer")
+if ($categorySidebarScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+    $script:catSidebarSmoothScrollCtrl = [DuckUtil.SmoothScrollController]::Attach($categorySidebarScrollViewer)
+}
 $uninstallerScrollViewer = $window.FindName("UninstallerScrollViewer")
 if ($uninstallerScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
     $script:uninstallerSmoothScrollCtrl = [DuckUtil.SmoothScrollController]::Attach($uninstallerScrollViewer)
@@ -203,16 +207,19 @@ function Start-BackgroundIconDownload {
     }
 }
 
-$script:remoteIconRegistry = [System.Collections.Generic.List[hashtable]]::new()
-$script:cardDescriptors    = [System.Collections.Generic.List[hashtable]]::new()
-$script:deferredCardTimer  = $null
+$script:remoteIconRegistry    = [System.Collections.Generic.List[hashtable]]::new()
+$script:cardDescriptors       = [System.Collections.Generic.List[hashtable]]::new()
+$script:cardDescByCategory    = [System.Collections.Generic.Dictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:activeCatalogCategory = "__ALL__"
+$script:activeSingleCatDesc   = $null
+$script:deferredCardTimer     = $null
 
 function Try-EnableCompletedCardCaches {
     if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:sharedCardCache) { return }
     $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
     $isIdleNow = ($null -ne $pipeType -and $null -ne $pipeType.GetProperty("IsRemoteIdle")) -and [DuckUtil.UiAssetPipeline]::IsRemoteIdle
     foreach ($cd in $script:cardDescriptors) {
-        if (-not $cd.Attached -or $cd.CacheEnabled) { continue }
+        if ($cd -eq $script:activeSingleCatDesc -or -not $cd.Attached -or $cd.CacheEnabled) { continue }
         if ($cd.TotalIcons -eq 0 -or ($cd.IconsEnqueued -and ($cd.LoadedIcons -ge $cd.TotalIcons -or $isIdleNow))) {
             $cd.Card.CacheMode = $script:sharedCardCache
             $cd.CacheEnabled = $true
@@ -220,8 +227,52 @@ function Try-EnableCompletedCardCaches {
     }
 }
 
+function Enqueue-CardIconsNow {
+    param($CardDesc)
+    if ($null -eq $CardDesc -or $CardDesc.IconsEnqueued) { return }
+    $CardDesc.IconsEnqueued = $true
+    if (-not $CardDesc.IconIndices -or $CardDesc.IconIndices.Count -eq 0) { return }
+
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $hasIncremental = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("EnqueueRemoteIcons"))
+    if ($hasIncremental) {
+        $idxList  = [System.Collections.Generic.List[int]]::new()
+        $urlList  = [System.Collections.Generic.List[string]]::new()
+        $fbList   = [System.Collections.Generic.List[string]]::new()
+        $destList = [System.Collections.Generic.List[string]]::new()
+        $keyList  = [System.Collections.Generic.List[string]]::new()
+        foreach ($rIdx in $CardDesc.IconIndices) {
+            $t = $script:remoteIconRegistry[$rIdx]
+            if ($t -and -not $t.Applied) {
+                $idxList.Add($rIdx)
+                $urlList.Add([string]$t.Url)
+                $fbList.Add([string]$t.FallbackUrl)
+                $destList.Add([string]$t.DestPath)
+                $keyList.Add([string]$t.CacheKey)
+                $script:pendingIconSaves.Add($t)
+            }
+        }
+        if ($idxList.Count -gt 0) {
+            $script:remotePipelineStarted = $true
+            [DuckUtil.UiAssetPipeline]::EnqueueRemoteIcons($idxList.ToArray(), $urlList.ToArray(), $fbList.ToArray(), $destList.ToArray(), $keyList.ToArray())
+            if ($script:iconSyncTimer -and -not $script:iconSyncTimer.IsEnabled) {
+                $script:iconSyncTimer.Start()
+            }
+        }
+    } else {
+        foreach ($rIdx in $CardDesc.IconIndices) {
+            $t = $script:remoteIconRegistry[$rIdx]
+            if ($t -and -not $t.Applied) { $script:pendingIconSaves.Add($t) }
+        }
+        if ($script:pendingIconSaves.Count -gt 0 -and $script:iconSyncTimer -and -not $script:iconSyncTimer.IsEnabled) {
+            $script:iconSyncTimer.Start()
+        }
+    }
+}
+
 function Sync-Tab0ViewportAssets {
     if ($script:isWindowClosing -or -not $script:cardDescriptors -or $script:cardDescriptors.Count -eq 0) { return }
+    if ($script:activeCatalogCategory -and $script:activeCatalogCategory -ne "__ALL__") { return }
     $vOff = if ($appsScrollViewer) { [double]$appsScrollViewer.VerticalOffset } else { 0.0 }
     $vH   = if ($appsScrollViewer -and $appsScrollViewer.ViewportHeight -gt 100) { [double]$appsScrollViewer.ViewportHeight } else { 820.0 }
     $bandTop = $vOff - 250.0
@@ -3109,7 +3160,7 @@ function Get-AppFallbackGlyph {
     return [char]::ConvertFromUtf32(0x1F4E6)
 }
 
-$script:colHeights = @(0, 0, 0, 0)
+$script:colHeights = @(0, 0, 0)
 
 $allCheckBoxes   = [System.Collections.Generic.List[object]]::new()
 $allItemBorders  = [System.Collections.Generic.List[object]]::new()
@@ -3131,12 +3182,24 @@ function Update-SelectionCount {
     }
 }
 
+$cardsMasonryHost   = $window.FindName("CardsMasonryHost")
+$singleCategoryHost = $window.FindName("SingleCategoryHost")
+$txtSingleCatTitle  = $window.FindName("txtSingleCatTitle")
+$txtSingleCatCount  = $window.FindName("txtSingleCatCount")
+$btnSingleCatBack   = $window.FindName("btnSingleCatBack")
+$categorySidebarTop = $window.FindName("CategorySidebarTop")
+$categorySidebarPanel = $window.FindName("CategorySidebarPanel")
+$txtCategorySidebarMeta = $window.FindName("txtCategorySidebarMeta")
+$script:singleCatCols = @(
+    $window.FindName("SingleCatCol0"),
+    $window.FindName("SingleCatCol1"),
+    $window.FindName("SingleCatCol2")
+)
 $cardCols = @(
     $window.FindName("CardsCol0"),
     $window.FindName("CardsCol1"),
-    $window.FindName("CardsCol2"),
-    $window.FindName("CardsCol3")
-)
+    $window.FindName("CardsCol2")
+) | Where-Object { $null -ne $_ }
 
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
@@ -3312,13 +3375,17 @@ foreach ($cat in $categories) {
     $separator.Background = $script:brushSeparator
     $separator.Margin = $marginSeparator
 
+    $rowsStack = [System.Windows.Controls.StackPanel]::new()
+    $cardRowsList = [System.Collections.Generic.List[object]]::new()
+
     [void]$cardStack.Children.Add($headerGrid)
     [void]$cardStack.Children.Add($separator)
+    [void]$cardStack.Children.Add($rowsStack)
 
     $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
     $targetColIndex = 0
     $minHeight = $script:colHeights[0]
-    for ($i = 1; $i -lt 4; $i++) {
+    for ($i = 1; $i -lt $cardCols.Count; $i++) {
         if ($script:colHeights[$i] -lt $minHeight) {
             $minHeight = $script:colHeights[$i]
             $targetColIndex = $i
@@ -3326,10 +3393,14 @@ foreach ($cat in $categories) {
     }
     $cardEstTop = [double]$script:colHeights[$targetColIndex]
     $cardEstBot = $cardEstTop + $cardEstimatedHeight
-    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
+    $targetColPanel = if ($cardCols.Count -gt 0 -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
 
     $cardDesc = @{
+        Category      = [string]$cat
         Card          = $cardBorder
+        CardStack     = $cardStack
+        RowsStack     = $rowsStack
+        Rows          = $cardRowsList
         ColPanel      = $targetColPanel
         EstTop        = $cardEstTop
         EstBottom     = $cardEstBot
@@ -3435,7 +3506,8 @@ foreach ($cat in $categories) {
             }
 
             $allCheckBoxes.Add($vis.CheckBox)
-            [void]$cardStack.Children.Add($vis.RowBorder)
+            [void]$rowsStack.Children.Add($vis.RowBorder)
+            [void]$cardRowsList.Add($vis.RowBorder)
             $allItemBorders.Add($vis.RowBorder)
         }
     } else {
@@ -3657,7 +3729,8 @@ foreach ($cat in $categories) {
         $rowBorder.Add_MouseLeftButtonUp($script:rowClickHandler)
 
         $rowBorder.Child = $rowGrid
-        $cardStack.Children.Add($rowBorder) | Out-Null
+        $rowsStack.Children.Add($rowBorder) | Out-Null
+        [void]$cardRowsList.Add($rowBorder)
         $allItemBorders.Add($rowBorder)
     }
     }
@@ -3671,8 +3744,239 @@ foreach ($cat in $categories) {
         $cardDesc.Attached = $true
     }
     [void]$script:cardDescriptors.Add($cardDesc)
+    $script:cardDescByCategory[[string]$cat] = $cardDesc
 
     $script:colHeights[$targetColIndex] += $cardEstimatedHeight
+}
+
+$script:sidebarCatButtons = [System.Collections.Generic.Dictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:brushSidebarHoverBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x13, 0x1B, 0x2B)); $script:brushSidebarHoverBg.Freeze()
+$script:brushSidebarHoverBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x3A, 0x52)); $script:brushSidebarHoverBorder.Freeze()
+$script:brushSidebarActiveBg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x22, 0x38)); $script:brushSidebarActiveBg.Freeze()
+$script:brushSidebarActiveBdr   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushSidebarActiveBdr.Freeze()
+$script:brushSidebarFg          = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushSidebarFg.Freeze()
+$script:brushSidebarActiveFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushSidebarActiveFg.Freeze()
+$script:brushSidebarCntBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushSidebarCntBg.Freeze()
+$script:brushSidebarCntActiveBg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x34, 0x54)); $script:brushSidebarCntActiveBg.Freeze()
+$script:brushSidebarCntFg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushSidebarCntFg.Freeze()
+
+$script:styleSidebarCatBtn = New-Object System.Windows.Style([System.Windows.Controls.Border])
+$script:styleSidebarCatBtn.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushTransparent)))
+$script:styleSidebarCatBtn.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushTransparent)))
+$trigSideHover = New-Object System.Windows.Trigger
+$trigSideHover.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$trigSideHover.Value = $true
+$trigSideHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushSidebarHoverBg)))
+$trigSideHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushSidebarHoverBorder)))
+$script:styleSidebarCatBtn.Triggers.Add($trigSideHover)
+$script:styleSidebarCatBtn.Seal()
+
+function New-CategorySidebarRow {
+    param(
+        [string]$Key,
+        [string]$Label,
+        [int]$Count
+    )
+    $b = [System.Windows.Controls.Border]::new()
+    $b.Height = 27
+    $b.Style = $script:styleSidebarCatBtn
+    $b.BorderThickness = [System.Windows.Thickness]::new(2, 0, 0, 0)
+    $b.CornerRadius = $cornerFour
+    $b.Padding = [System.Windows.Thickness]::new(8, 0, 6, 0)
+    $b.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
+    $b.Cursor = [System.Windows.Input.Cursors]::Hand
+
+    $g = [System.Windows.Controls.Grid]::new()
+    $g.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = $glCol2
+    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = $glAuto
+    [void]$g.ColumnDefinitions.Add($c0)
+    [void]$g.ColumnDefinitions.Add($c1)
+
+    $tb = [System.Windows.Controls.TextBlock]::new()
+    $tb.Text = $Label
+    $tb.FontSize = 11.5
+    $tb.FontWeight = [System.Windows.FontWeights]::Medium
+    $tb.Foreground = $script:brushSidebarFg
+    $tb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $tb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $tb.Margin = [System.Windows.Thickness]::new(0, 0, 4, 0)
+    [System.Windows.Controls.Grid]::SetColumn($tb, 0)
+    [void]$g.Children.Add($tb)
+
+    $cntB = [System.Windows.Controls.Border]::new()
+    $cntB.Background = $script:brushSidebarCntBg
+    $cntB.CornerRadius = $cornerFour
+    $cntB.Padding = [System.Windows.Thickness]::new(5, 1, 5, 1)
+    $cntB.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $cntTb = [System.Windows.Controls.TextBlock]::new()
+    $cntTb.Text = "$Count"
+    $cntTb.FontSize = 9.5
+    $cntTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $cntTb.Foreground = $script:brushSidebarCntFg
+    $cntB.Child = $cntTb
+    [System.Windows.Controls.Grid]::SetColumn($cntB, 1)
+    [void]$g.Children.Add($cntB)
+
+    $b.Child = $g
+    $desc = @{
+        Key        = $Key
+        Border     = $b
+        TitleText  = $tb
+        CountBadge = $cntB
+        CountText  = $cntTb
+    }
+    $b.Tag = $desc
+    $script:sidebarCatButtons[$Key] = $desc
+    return $b
+}
+
+function Update-SidebarButtonVisual {
+    param([hashtable]$BtnDesc, [bool]$IsActive)
+    if (-not $BtnDesc) { return }
+    if ($IsActive) {
+        $BtnDesc.Border.Background = $script:brushSidebarActiveBg
+        $BtnDesc.Border.BorderBrush = $script:brushSidebarActiveBdr
+        $BtnDesc.TitleText.Foreground = $script:brushSidebarActiveFg
+        $BtnDesc.TitleText.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $BtnDesc.CountBadge.Background = $script:brushSidebarCntActiveBg
+        $BtnDesc.CountText.Foreground = $script:brushSidebarActiveFg
+    } else {
+        $BtnDesc.Border.ClearValue([System.Windows.Controls.Border]::BackgroundProperty)
+        $BtnDesc.Border.ClearValue([System.Windows.Controls.Border]::BorderBrushProperty)
+        $BtnDesc.TitleText.Foreground = $script:brushSidebarFg
+        $BtnDesc.TitleText.FontWeight = [System.Windows.FontWeights]::Medium
+        $BtnDesc.CountBadge.Background = $script:brushSidebarCntBg
+        $BtnDesc.CountText.Foreground = $script:brushSidebarCntFg
+    }
+}
+
+function Set-ActiveCatalogCategory {
+    param([string]$CategoryKey)
+    if ($script:isWindowClosing) { return }
+    $targetKey = if ([string]::IsNullOrWhiteSpace($CategoryKey)) { "__ALL__" } else { $CategoryKey }
+
+    if ($targetKey -ne "__ALL__" -and -not $script:cardDescByCategory.ContainsKey($targetKey)) {
+        $targetKey = "__ALL__"
+    }
+
+    if ($targetKey -eq $script:activeCatalogCategory) {
+        if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
+        return
+    }
+
+    if ($script:activeSingleCatDesc) {
+        foreach ($scCol in $script:singleCatCols) {
+            if ($scCol) { $scCol.Children.Clear() }
+        }
+        $prevCd = $script:activeSingleCatDesc
+        $prevCd.RowsStack.Children.Clear()
+        foreach ($r in $prevCd.Rows) {
+            [void]$prevCd.RowsStack.Children.Add($r)
+        }
+        $script:activeSingleCatDesc = $null
+    }
+
+    $oldKey = $script:activeCatalogCategory
+    $script:activeCatalogCategory = $targetKey
+
+    $oldBtn = $null
+    if ($oldKey -and $script:sidebarCatButtons.TryGetValue($oldKey, [ref]$oldBtn)) {
+        Update-SidebarButtonVisual -BtnDesc $oldBtn -IsActive:$false
+    }
+    $newBtn = $null
+    if ($script:sidebarCatButtons.TryGetValue($targetKey, [ref]$newBtn)) {
+        Update-SidebarButtonVisual -BtnDesc $newBtn -IsActive:$true
+    }
+
+    if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
+
+    if ($targetKey -eq "__ALL__") {
+        if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible }
+        Sync-Tab0ViewportAssets
+        return
+    }
+
+    $cd = $script:cardDescByCategory[$targetKey]
+    $script:activeSingleCatDesc = $cd
+    if ($cd.Card) {
+        $cd.Card.CacheMode = $null
+        $cd.CacheEnabled = $false
+    }
+    $cd.RowsStack.Children.Clear()
+
+    $n = $cd.Rows.Count
+    $colCnt = [Math]::Max(1, $script:singleCatCols.Count)
+    $base = [int][Math]::Floor($n / $colCnt)
+    $rem = $n % $colCnt
+    $offset = 0
+    for ($ci = 0; $ci -lt $colCnt; $ci++) {
+        $take = $base + $(if ($ci -lt $rem) { 1 } else { 0 })
+        $colPanel = $script:singleCatCols[$ci]
+        for ($k = 0; $k -lt $take -and ($offset + $k) -lt $n; $k++) {
+            if ($colPanel) { [void]$colPanel.Children.Add($cd.Rows[$offset + $k]) }
+        }
+        $offset += $take
+    }
+
+    if ($txtSingleCatTitle) { $txtSingleCatTitle.Text = $targetKey }
+    if ($txtSingleCatCount) { $txtSingleCatCount.Text = "$n ứng dụng" }
+    if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Visible }
+
+    Enqueue-CardIconsNow -CardDesc $cd
+    Flush-PendingIconCache -MaxDecode 32
+}
+
+if ($categorySidebarTop -and $categorySidebarPanel) {
+    $allBtn = New-CategorySidebarRow -Key "__ALL__" -Label "Tất cả" -Count $allItemBorders.Count
+    [void]$categorySidebarTop.Children.Add($allBtn)
+    $sepSide = [System.Windows.Controls.Border]::new()
+    $sepSide.Height = 1
+    $sepSide.Background = $script:brushSeparator
+    $sepSide.Margin = [System.Windows.Thickness]::new(2, 4, 2, 0)
+    $sepSide.IsHitTestVisible = $false
+    [void]$categorySidebarTop.Children.Add($sepSide)
+
+    foreach ($cat in $categories) {
+        $cntCat = if ($appsByCategory.ContainsKey($cat)) { $appsByCategory[$cat].Count } else { 0 }
+        $catBtn = New-CategorySidebarRow -Key ([string]$cat) -Label ([string]$cat) -Count $cntCat
+        [void]$categorySidebarPanel.Children.Add($catBtn)
+    }
+    if ($txtCategorySidebarMeta) { $txtCategorySidebarMeta.Text = "$($categories.Count) nhóm" }
+
+    $initAllBtn = $null
+    if ($script:sidebarCatButtons.TryGetValue("__ALL__", [ref]$initAllBtn)) {
+        Update-SidebarButtonVisual -BtnDesc $initAllBtn -IsActive:$true
+    }
+
+    $sidebarClickRouter = [System.Windows.Input.MouseButtonEventHandler]{
+        param($sender, $e)
+        if ($e.Handled -or $script:isWindowClosing) { return }
+        $node = $e.OriginalSource
+        while ($null -ne $node -and $node -ne $sender) {
+            if ($node -is [System.Windows.Controls.Border] -and $node.Tag -is [hashtable] -and $node.Tag.ContainsKey('Key')) {
+                $e.Handled = $true
+                Set-ActiveCatalogCategory $node.Tag['Key']
+                return
+            }
+            if ($node -is [System.Windows.Media.Visual]) {
+                $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+            } else { break }
+        }
+    }
+    $categorySidebarTop.Add_MouseLeftButtonUp($sidebarClickRouter)
+    $categorySidebarPanel.Add_MouseLeftButtonUp($sidebarClickRouter)
+}
+
+if ($btnSingleCatBack) {
+    $btnSingleCatBack.Add_MouseLeftButtonUp({
+        param($s, $e)
+        $e.Handled = $true
+        Set-ActiveCatalogCategory "__ALL__"
+    })
 }
 
 Register-Click "btnScanInstalled" {
@@ -4384,9 +4688,14 @@ Register-Click "btnUpgradeAll" {
 
 Register-Click "btnSelectAll" {
     $script:suppressSelectionCount = $true
+    $activeCatFilter = $script:activeCatalogCategory
+    $filterSingle = (-not [string]::IsNullOrWhiteSpace($activeCatFilter)) -and ($activeCatFilter -ne "__ALL__")
     try {
         foreach ($row in $allItemBorders) {
             if ($row.Visibility -eq [System.Windows.Visibility]::Visible -and $row.Tag -and $row.Tag.CheckBox) {
+                if ($filterSingle -and (-not $row.Tag.App -or $row.Tag.App.Category -ne $activeCatFilter)) {
+                    continue
+                }
                 $cb = $row.Tag.CheckBox
                 if ($cb.IsChecked -ne $true) {
                     $cb.IsChecked = $true
