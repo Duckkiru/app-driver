@@ -381,7 +381,7 @@
 
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="214"/>
+                            <ColumnDefinition Width="222"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
@@ -395,7 +395,7 @@
 
                                 <Grid Grid.Row="0" Margin="12,10,12,6">
                                     <TextBlock Text="DANH MỤC" FontSize="10" FontWeight="Bold" Foreground="#64748B" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtCategorySidebarMeta" Text="23 nhóm" FontSize="10" FontWeight="SemiBold" Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    <TextBlock Name="txtCategorySidebarMeta" Text="6 nhóm · 23 mục" FontSize="10" FontWeight="SemiBold" Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
 
                                 <StackPanel Grid.Row="1" Name="CategorySidebarTop" Margin="8,0,8,4"/>
@@ -411,22 +411,48 @@
                         <ScrollViewer Grid.Column="1" Name="AppsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                             <Grid Name="CardsContainer">
-                                <Grid Name="CardsMasonryHost">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
-                                    <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
-                                    <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
-                                </Grid>
+                                <StackPanel Name="CardsMasonrySection">
+                                    <Border Name="GroupFilterBanner" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
+                                            BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,8">
+                                        <Grid>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                                <TextBlock Name="txtGroupFilterTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
+                                                <Border Name="btnGroupBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
+                                                        Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                                        ToolTip="Quay lại xem tất cả danh mục">
+                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Padding="7,2"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <TextBlock Name="txtGroupFilterMeta" Text="" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+
+                                    <Grid Name="CardsMasonryHost">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Name="CardsColDef2" Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
+                                        <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                                        <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                                    </Grid>
+                                </StackPanel>
 
                                 <Border Name="SingleCategoryHost" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
                                         BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,10,12,12" VerticalAlignment="Top">
                                     <StackPanel>
                                         <Grid Margin="2,0,2,6">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                                <Border Name="btnSingleCatParent" Background="Transparent" Cursor="Hand" VerticalAlignment="Center"
+                                                        Padding="0,1,2,1" ToolTip="Xem toàn bộ nhóm này">
+                                                    <TextBlock Name="txtSingleCatParent" Text="" FontSize="11.5" FontWeight="SemiBold" Foreground="#64748B" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <Path Name="iconSingleCatCrumb" Data="M 0,0 L 4,3.5 L 0,7" Stroke="#475569" StrokeThickness="1.4"
+                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Margin="5,1,6,0" VerticalAlignment="Center"/>
                                                 <TextBlock Name="txtSingleCatTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
                                                 <Border Name="btnSingleCatBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
                                                         Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
