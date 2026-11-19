@@ -4791,7 +4791,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="204"/>
+                            <ColumnDefinition Width="214"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
@@ -32913,14 +32913,15 @@ function New-CategorySidebarRow {
     param(
         [string]$Key,
         [string]$Label,
-        [int]$Count
+        [int]$Count,
+        [switch]$Child
     )
     $b = [System.Windows.Controls.Border]::new()
-    $b.Height = 27
+    $b.Height = if ($Child) { 25 } else { 30 }
     $b.Style = $script:styleSidebarCatBtn
     $b.BorderThickness = [System.Windows.Thickness]::new(2, 0, 0, 0)
     $b.CornerRadius = $cornerFour
-    $b.Padding = [System.Windows.Thickness]::new(8, 0, 6, 0)
+    $b.Padding = if ($Child) { [System.Windows.Thickness]::new(8, 0, 6, 0) } else { [System.Windows.Thickness]::new(10, 0, 6, 0) }
     $b.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
     $b.Cursor = [System.Windows.Input.Cursors]::Hand
 
@@ -32933,7 +32934,7 @@ function New-CategorySidebarRow {
 
     $tb = [System.Windows.Controls.TextBlock]::new()
     $tb.Text = $Label
-    $tb.FontSize = 11.5
+    $tb.FontSize = if ($Child) { 11 } else { 12 }
     $tb.FontWeight = [System.Windows.FontWeights]::Medium
     $tb.Foreground = $script:brushSidebarFg
     $tb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -33027,6 +33028,7 @@ function Set-ActiveCatalogCategory {
     if ($script:sidebarCatButtons.TryGetValue($targetKey, [ref]$newBtn)) {
         Update-SidebarButtonVisual -BtnDesc $newBtn -IsActive:$true
     }
+    Update-SidebarGroupHighlight -CategoryKey $targetKey
 
     if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
 
@@ -33068,8 +33070,163 @@ function Set-ActiveCatalogCategory {
     Flush-PendingIconCache -MaxDecode 32
 }
 
+$script:sidebarGroupDefs = @(
+    @{ Key = 'grp_net';   Label = "Internet & K$([char]0x1EBF)t n$([char]0x1ED1)i"; Glyph = 0xE774; Cats = @('Web Browsers', 'Communication', 'Remote Desktop', 'Download Managers', 'File Transfer & Cloud') },
+    @{ Key = 'grp_dev';   Label = "L$([char]0x1EAD)p tr$([char]0x00EC)nh & AI";     Glyph = 0xE943; Cats = @('Antigravity', 'AI & Assistants', 'JetBrains', 'Development', 'Database & DevOps') },
+    @{ Key = 'grp_rt';    Label = 'Runtimes';           Glyph = 0xE7B8; Cats = @('.NET Runtimes', 'Java Runtimes', 'C++ & System Runtimes') },
+    @{ Key = 'grp_sys';   Label = "H$([char]0x1EC7) th$([char]0x1ED1)ng";           Glyph = 0xE770; Cats = @('System Utilities', 'Optimization & Tuning', 'Hardware & Monitoring', 'Benchmark & Stress Test', 'Security & Network') },
+    @{ Key = 'grp_media'; Label = "Media & V$([char]0x0103)n ph$([char]0x00F2)ng";  Glyph = 0xE8B2; Cats = @('Audio & Video', 'Graphics & Design', 'Documents & Office') },
+    @{ Key = 'grp_game';  Label = "Gi$([char]0x1EA3)i tr$([char]0x00ED)";           Glyph = 0xE7FC; Cats = @('Game Launchers', 'Minecraft & Modding') }
+)
+$script:sidebarGroups = [System.Collections.Generic.List[hashtable]]::new()
+$script:sidebarGroupByCat = [System.Collections.Generic.Dictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:brushSidebarGroupFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xCB, 0xD5, 0xE1)); $script:brushSidebarGroupFg.Freeze()
+$script:brushSidebarGroupIcon = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushSidebarGroupIcon.Freeze()
+$script:brushSidebarGuide     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushSidebarGuide.Freeze()
+$script:sidebarIconFont = [System.Windows.Media.FontFamily]::new("Segoe Fluent Icons, Segoe MDL2 Assets")
+
+function New-SidebarGroupHeader {
+    param([hashtable]$Def, [int]$Count, [int]$SubCount)
+    $b = [System.Windows.Controls.Border]::new()
+    $b.Height = 32
+    $b.Style = $script:styleSidebarCatBtn
+    $b.BorderThickness = [System.Windows.Thickness]::new(0)
+    $b.CornerRadius = $cornerFour
+    $b.Padding = [System.Windows.Thickness]::new(8, 0, 6, 0)
+    $b.Margin = [System.Windows.Thickness]::new(0, 2, 0, 0)
+    $b.Cursor = [System.Windows.Input.Cursors]::Hand
+
+    $g = [System.Windows.Controls.Grid]::new()
+    $g.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    foreach ($w in @($glAuto, $glCol2, $glAuto, $glAuto)) {
+        $cdx = [System.Windows.Controls.ColumnDefinition]::new(); $cdx.Width = $w
+        [void]$g.ColumnDefinitions.Add($cdx)
+    }
+
+    $ic = [System.Windows.Controls.TextBlock]::new()
+    $ic.Text = [string][char]$Def.Glyph
+    $ic.FontFamily = $script:sidebarIconFont
+    $ic.FontSize = 13
+    $ic.Foreground = $script:brushSidebarGroupIcon
+    $ic.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $ic.Margin = [System.Windows.Thickness]::new(0, 0, 9, 0)
+    [System.Windows.Controls.Grid]::SetColumn($ic, 0)
+    [void]$g.Children.Add($ic)
+
+    $tb = [System.Windows.Controls.TextBlock]::new()
+    $tb.Text = [string]$Def.Label
+    $tb.FontSize = 12
+    $tb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $tb.Foreground = $script:brushSidebarGroupFg
+    $tb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $tb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $tb.ToolTip = "$($Def.Label) - $SubCount danh m$([char]0x1EE5)c"
+    [System.Windows.Controls.Grid]::SetColumn($tb, 1)
+    [void]$g.Children.Add($tb)
+
+    $cntTb = [System.Windows.Controls.TextBlock]::new()
+    $cntTb.Text = "$Count"
+    $cntTb.FontSize = 10
+    $cntTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $cntTb.Foreground = $script:brushSidebarCntFg
+    $cntTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $cntTb.Margin = [System.Windows.Thickness]::new(4, 0, 6, 0)
+    [System.Windows.Controls.Grid]::SetColumn($cntTb, 2)
+    [void]$g.Children.Add($cntTb)
+
+    $chev = [System.Windows.Controls.TextBlock]::new()
+    $chev.Text = [string][char]0xE70D
+    $chev.FontFamily = $script:sidebarIconFont
+    $chev.FontSize = 9
+    $chev.Foreground = $script:brushSidebarCntFg
+    $chev.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $chev.RenderTransformOrigin = [System.Windows.Point]::new(0.5, 0.5)
+    $rot = [System.Windows.Media.RotateTransform]::new(-90)
+    $chev.RenderTransform = $rot
+    [System.Windows.Controls.Grid]::SetColumn($chev, 3)
+    [void]$g.Children.Add($chev)
+
+    $b.Child = $g
+
+    $childHost = [System.Windows.Controls.Border]::new()
+    $childHost.BorderBrush = $script:brushSidebarGuide
+    $childHost.BorderThickness = [System.Windows.Thickness]::new(1, 0, 0, 0)
+    $childHost.Margin = [System.Windows.Thickness]::new(14, 1, 0, 4)
+    $childHost.Padding = [System.Windows.Thickness]::new(5, 0, 0, 0)
+    $childHost.Visibility = [System.Windows.Visibility]::Collapsed
+    $childStack = [System.Windows.Controls.StackPanel]::new()
+    $childHost.Child = $childStack
+
+    $gd = @{
+        GroupKey   = [string]$Def.Key
+        Label      = [string]$Def.Label
+        Header     = $b
+        Icon       = $ic
+        TitleText  = $tb
+        CountText  = $cntTb
+        Rotate     = $rot
+        ChildHost  = $childHost
+        ChildStack = $childStack
+        IsExpanded = $false
+    }
+    $b.Tag = $gd
+    return $gd
+}
+
+function Set-SidebarGroupExpanded {
+    param([hashtable]$Group, [bool]$Expand)
+    if (-not $Group) { return }
+    $Group.IsExpanded = $Expand
+    $Group.ChildHost.Visibility = if ($Expand) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+    $Group.Rotate.Angle = if ($Expand) { 0 } else { -90 }
+}
+
+function Toggle-SidebarGroup {
+    param([hashtable]$Group)
+    if (-not $Group) { return }
+    $willExpand = -not $Group.IsExpanded
+    if ($willExpand) {
+        foreach ($og in $script:sidebarGroups) {
+            if ($og -ne $Group -and $og.IsExpanded) { Set-SidebarGroupExpanded -Group $og -Expand:$false }
+        }
+    }
+    Set-SidebarGroupExpanded -Group $Group -Expand:$willExpand
+    if ($willExpand -and $categorySidebarScrollViewer) {
+        $hdr = $Group.Header
+        $null = $window.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::Loaded, [Action]{
+            try { $hdr.BringIntoView() } catch { }
+        })
+    }
+}
+
+function Update-SidebarGroupHighlight {
+    param([string]$CategoryKey)
+    if (-not $script:sidebarGroups -or $script:sidebarGroups.Count -eq 0) { return }
+    $activeGroup = $null
+    if ($CategoryKey -and $CategoryKey -ne "__ALL__") {
+        [void]$script:sidebarGroupByCat.TryGetValue($CategoryKey, [ref]$activeGroup)
+    }
+    foreach ($gx in $script:sidebarGroups) {
+        if ($gx -eq $activeGroup) {
+            $gx.Icon.Foreground = $script:brushSidebarActiveFg
+            $gx.TitleText.Foreground = $script:brushSidebarActiveFg
+            $gx.CountText.Foreground = $script:brushSidebarActiveFg
+        } else {
+            $gx.Icon.Foreground = $script:brushSidebarGroupIcon
+            $gx.TitleText.Foreground = $script:brushSidebarGroupFg
+            $gx.CountText.Foreground = $script:brushSidebarCntFg
+        }
+    }
+    if ($activeGroup -and -not $activeGroup.IsExpanded) {
+        foreach ($og in $script:sidebarGroups) {
+            if ($og -ne $activeGroup -and $og.IsExpanded) { Set-SidebarGroupExpanded -Group $og -Expand:$false }
+        }
+        Set-SidebarGroupExpanded -Group $activeGroup -Expand:$true
+    }
+}
+
 if ($categorySidebarTop -and $categorySidebarPanel) {
-    $allBtn = New-CategorySidebarRow -Key "__ALL__" -Label "T$([char]0x1EA5)t c$([char]0x1EA3)" -Count $allItemBorders.Count
+    $allBtn = New-CategorySidebarRow -Key "__ALL__" -Label "T$([char]0x1EA5)t c$([char]0x1EA3) $([char]0x1EE9)ng d$([char]0x1EE5)ng" -Count $allItemBorders.Count
     [void]$categorySidebarTop.Children.Add($allBtn)
     $sepSide = [System.Windows.Controls.Border]::new()
     $sepSide.Height = 1
@@ -33078,12 +33235,36 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
     $sepSide.IsHitTestVisible = $false
     [void]$categorySidebarTop.Children.Add($sepSide)
 
-    foreach ($cat in $categories) {
-        $cntCat = if ($appsByCategory.ContainsKey($cat)) { $appsByCategory[$cat].Count } else { 0 }
-        $catBtn = New-CategorySidebarRow -Key ([string]$cat) -Label ([string]$cat) -Count $cntCat
-        [void]$categorySidebarPanel.Children.Add($catBtn)
+    $catSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($cat in $categories) { [void]$catSet.Add([string]$cat) }
+    $assigned = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    $groupPlans = [System.Collections.Generic.List[hashtable]]::new()
+    foreach ($def in $script:sidebarGroupDefs) {
+        $present = @($def.Cats | Where-Object { $catSet.Contains([string]$_) -and -not $assigned.Contains([string]$_) })
+        foreach ($pc in $present) { [void]$assigned.Add([string]$pc) }
+        if ($present.Count -gt 0) { [void]$groupPlans.Add(@{ Def = $def; Cats = $present }) }
     }
-    if ($txtCategorySidebarMeta) { $txtCategorySidebarMeta.Text = "$($categories.Count) nh$([char]0x00F3)m" }
+    $leftover = @($categories | Where-Object { -not $assigned.Contains([string]$_) })
+    if ($leftover.Count -gt 0) {
+        [void]$groupPlans.Add(@{ Def = @{ Key = 'grp_other'; Label = "Kh$([char]0x00E1)c"; Glyph = 0xE712 }; Cats = $leftover })
+    }
+
+    foreach ($plan in $groupPlans) {
+        $sum = 0
+        foreach ($pc in $plan.Cats) { if ($appsByCategory.ContainsKey($pc)) { $sum += $appsByCategory[$pc].Count } }
+        $gd = New-SidebarGroupHeader -Def $plan.Def -Count $sum -SubCount $plan.Cats.Count
+        foreach ($pc in $plan.Cats) {
+            $cntCat = if ($appsByCategory.ContainsKey($pc)) { $appsByCategory[$pc].Count } else { 0 }
+            $catBtn = New-CategorySidebarRow -Key ([string]$pc) -Label ([string]$pc) -Count $cntCat -Child
+            [void]$gd.ChildStack.Children.Add($catBtn)
+            $script:sidebarGroupByCat[[string]$pc] = $gd
+        }
+        [void]$script:sidebarGroups.Add($gd)
+        [void]$categorySidebarPanel.Children.Add($gd.Header)
+        [void]$categorySidebarPanel.Children.Add($gd.ChildHost)
+    }
+    if ($txtCategorySidebarMeta) { $txtCategorySidebarMeta.Text = "$($script:sidebarGroups.Count) nh$([char]0x00F3)m $([char]0x00B7) $($categories.Count) m$([char]0x1EE5)c" }
 
     $initAllBtn = $null
     if ($script:sidebarCatButtons.TryGetValue("__ALL__", [ref]$initAllBtn)) {
@@ -33095,10 +33276,17 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         if ($e.Handled -or $script:isWindowClosing) { return }
         $node = $e.OriginalSource
         while ($null -ne $node -and $node -ne $sender) {
-            if ($node -is [System.Windows.Controls.Border] -and $node.Tag -is [hashtable] -and $node.Tag.ContainsKey('Key')) {
-                $e.Handled = $true
-                Set-ActiveCatalogCategory $node.Tag['Key']
-                return
+            if ($node -is [System.Windows.Controls.Border] -and $node.Tag -is [hashtable]) {
+                if ($node.Tag.ContainsKey('GroupKey')) {
+                    $e.Handled = $true
+                    Toggle-SidebarGroup -Group $node.Tag
+                    return
+                }
+                if ($node.Tag.ContainsKey('Key')) {
+                    $e.Handled = $true
+                    Set-ActiveCatalogCategory $node.Tag['Key']
+                    return
+                }
             }
             if ($node -is [System.Windows.Media.Visual]) {
                 $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
