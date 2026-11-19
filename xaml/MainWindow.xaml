@@ -346,10 +346,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Button Name="btnInstall" Content="Cài đặt mục chọn" Style="{StaticResource ActionButton}"
-                                            Background="#059669" Padding="15,7"/>
-                                    <Button Name="btnUpgradeSelected" Content="Cập nhật mục chọn" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#A78BFA" BorderBrush="#49387D"/>
+                                    <Button Name="btnInstall" Content="Cài đặt &amp; Cập nhật" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Padding="15,7"
+                                            ToolTip="Tự động cài mới ứng dụng chưa có và cập nhật ứng dụng có phiên bản mới (chấm đỏ) đã đánh dấu." ToolTipService.InitialShowDelay="600"/>
                                     <Button Name="btnUpgradeAll" Content="Cập nhật tất cả" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#614F27"/>
                                     <Button Name="btnScanInstalled" Content="Làm mới" Style="{StaticResource SecondaryButton}"

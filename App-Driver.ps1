@@ -4756,10 +4756,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Button Name="btnInstall" Content="C&#x00E0;i &#x0111;&#x1EB7;t m&#x1EE5;c ch&#x1ECD;n" Style="{StaticResource ActionButton}"
-                                            Background="#059669" Padding="15,7"/>
-                                    <Button Name="btnUpgradeSelected" Content="C&#x1EAD;p nh&#x1EAD;t m&#x1EE5;c ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#A78BFA" BorderBrush="#49387D"/>
+                                    <Button Name="btnInstall" Content="C&#x00E0;i &#x0111;&#x1EB7;t &amp; C&#x1EAD;p nh&#x1EAD;t" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Padding="15,7"
+                                            ToolTip="T&#x1EF1; &#x0111;&#x1ED9;ng c&#x00E0;i m&#x1EDB;i &#x1EE9;ng d&#x1EE5;ng ch&#x01B0;a c&#x00F3; v&#x00E0; c&#x1EAD;p nh&#x1EAD;t &#x1EE9;ng d&#x1EE5;ng c&#x00F3; phi&#x00EA;n b&#x1EA3;n m&#x1EDB;i (ch&#x1EA5;m &#x0111;&#x1ECF;) &#x0111;&#x00E3; &#x0111;&#x00E1;nh d&#x1EA5;u." ToolTipService.InitialShowDelay="600"/>
                                     <Button Name="btnUpgradeAll" Content="C&#x1EAD;p nh&#x1EAD;t t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#614F27"/>
                                     <Button Name="btnScanInstalled" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
@@ -14793,7 +14792,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateUninstallerRow"
+        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateLeftoverItemRow"
     } catch {}
 }
 
@@ -33297,7 +33296,7 @@ function Invoke-SmartAppUpgrade {
 }
 
 Register-Click "btnInstall" {
-    Invoke-GuardedAction "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" {
+    Invoke-GuardedAction "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t & C$([char]0x1EAD)p nh$([char]0x1EAD)t" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -33306,20 +33305,20 @@ Register-Click "btnInstall" {
         }
 
         if ($selectedTags.Count -eq 0) {
-            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a tick ch$([char]0x1ECD)n $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t!"
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a tick ch$([char]0x1ECD)n $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ho$([char]0x1EB7)c c$([char]0x1EAD)p nh$([char]0x1EAD)t!"
             return
         }
 
         $total = $selectedTags.Count
         $idx = 0
-        $didAnyInstall = $false
+        $didAnyAction = $false
         if ($btnCancelAction) {
             $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
             $btnCancelAction.IsEnabled = $true
             $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
         }
         Log-Text "=========================================================="
-        Log-Text "[INSTALL] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U C$([char]0x00C0)I $([char]0x0110)$([char]0x1EB6)T $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) $([char]0x0110)$([char]0x00C1)NH D$([char]0x1EA4)U"
+        Log-Text "[INSTALL & UPGRADE] X$([char]0x1EEC) L$([char]0x00DD) $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) $([char]0x0110)$([char]0x00C1)NH D$([char]0x1EA4)U"
         Log-Text "=========================================================="
 
         try {
@@ -33328,15 +33327,32 @@ Register-Click "btnInstall" {
                 $idx++
                 $app = $tag.App
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] $([char]0x0110)ang c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t: $($app.Name)..." }
 
-                if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED") {
-                    Log-Text "[SKIP] $($app.Name) $([char]0x0111)$([char]0x00E3) c$([char]0x00F3) tr$([char]0x00EA)n m$([char]0x00E1)y (d$([char]0x00F9)ng 'C$([char]0x1EAD)p nh$([char]0x1EAD)t m$([char]0x1EE5)c ch$([char]0x1ECD)n' n$([char]0x1EBF)u mu$([char]0x1ED1)n n$([char]0x00E2)ng c$([char]0x1EA5)p)."
-                    if ($tag.Status -ne "OUTDATED" -and $tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                if ($tag.Status -eq "LATEST") {
+                    Log-Text "[OK] $($app.Name) $([char]0x0111)$([char]0x00E3) l$([char]0x00E0) b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t, b$([char]0x1ECF) qua."
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
 
-                $didAnyInstall = $true
+                if ($tag.Status -eq "OUTDATED") {
+                    $didAnyAction = $true
+                    if ($txtStatus) { $txtStatus.Text = "[$idx/$total] $([char]0x0110)ang c$([char]0x1EAD)p nh$([char]0x1EAD)t: $($app.Name)..." }
+                    Log-Text "[$idx/$total] $([char]0x0110)ang c$([char]0x1EAD)p nh$([char]0x1EAD)t: $($app.Name) (ID: $($app.ID))..."
+                    $upCode = Invoke-SmartAppUpgrade -Tag $tag
+                    if ($upCode -eq 0) {
+                        Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) C$([char]0x1EAC)P NH$([char]0x1EAC)T TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($app.Name)"
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } elseif ($upCode -eq 2) {
+                        Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($app.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } else {
+                        Log-Text "   [ERR - L$([char]0x1ED6)I C$([char]0x1EAC)P NH$([char]0x1EAC)T HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($app.Name) (Exit Code: $upCode)"
+                    }
+                    continue
+                }
+
+                $didAnyAction = $true
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] $([char]0x0110)ang c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t: $($app.Name)..." }
                 Log-Text "[$idx/$total] $([char]0x0110)ang c$([char]0x00E0)i: $($app.Name) (ID: $($app.ID))..."
 
                 if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
@@ -33374,88 +33390,13 @@ Register-Click "btnInstall" {
         }
         if (-not $script:isWindowClosing) {
             Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
+            if ($txtStatus) { $txtStatus.Text = "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t & C$([char]0x1EAD)p nh$([char]0x1EAD)t ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
             if ($progressBar) { $progressBar.Value = 100 }
-            if ($didAnyInstall) {
+            if ($didAnyAction) {
                 Wait-SquirrelUpdatersSettle
                 if (-not $script:isWindowClosing) {
                     Scan-And-ColorizeApps
                 }
-            }
-        }
-    }
-}
-
-Register-Click "btnUpgradeSelected" {
-    Invoke-GuardedAction "N$([char]0x00E2)ng c$([char]0x1EA5)p $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n" -DeferExpand {
-        $selectedTags = [System.Collections.Generic.List[object]]::new()
-        foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -eq $true) {
-                $selectedTags.Add($cb.Tag)
-            }
-        }
-
-        if ($selectedTags.Count -eq 0) {
-            Expand-TerminalLog
-            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) n$([char]0x00E2)ng c$([char]0x1EA5)p!"
-            return
-        }
-
-        Expand-TerminalLog
-        $total = $selectedTags.Count
-        $idx = 0
-        if ($btnCancelAction) {
-            $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
-            $btnCancelAction.IsEnabled = $true
-            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
-        }
-        Log-Text "=========================================================="
-        Log-Text "[UPGRADE] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U N$([char]0x00C2)NG C$([char]0x1EA4)P $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) CH$([char]0x1ECC)N"
-        Log-Text "=========================================================="
-
-        try {
-            foreach ($tag in $selectedTags) {
-                if ($script:isWindowClosing -or $script:cancelRequested) { break }
-                $idx++
-                $app = $tag.App
-
-                if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $($app.Name)..." }
-
-                if ($tag.Status -eq "NONE" -or $tag.Status -eq "NOT_INSTALLED" -or [string]::IsNullOrWhiteSpace($tag.Status)) {
-                    Log-Text "[SKIP] $($app.Name) ch$([char]0x01B0)a c$([char]0x00F3) tr$([char]0x00EA)n m$([char]0x00E1)y (d$([char]0x00F9)ng 'C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t m$([char]0x1EE5)c ch$([char]0x1ECD)n' $([char]0x0111)$([char]0x1EC3) c$([char]0x00E0)i m$([char]0x1EDB)i)."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    continue
-                }
-
-                if ($tag.Status -eq "LATEST") {
-                    Log-Text "[OK] $($app.Name) $([char]0x0111)$([char]0x00E3) l$([char]0x00E0) b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t, b$([char]0x1ECF) qua."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    continue
-                }
-
-                Log-Text "[$idx/$total] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $($app.Name)..."
-                $code = Invoke-SmartAppUpgrade -Tag $tag
-                if ($code -eq 0) {
-                    Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($app.Name)"
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                } elseif ($code -eq 2) {
-                    Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($app.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                } else {
-                    Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($app.Name) (Exit Code: $code)"
-                }
-            }
-        } finally {
-            Clear-WinGetTempInstallers
-        }
-        if (-not $script:isWindowClosing) {
-            Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "N$([char]0x00E2)ng c$([char]0x1EA5)p ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
-            if ($progressBar) { $progressBar.Value = 100 }
-            Wait-SquirrelUpdatersSettle
-            if (-not $script:isWindowClosing) {
-                Scan-And-ColorizeApps
             }
         }
     }

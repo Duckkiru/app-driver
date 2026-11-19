@@ -134,7 +134,10 @@ function Merge-CSharpCoreSources {
         }
         $bodies.Add(($bodyLines -join "`r`n"))
     }
-    return ((($usings | Sort-Object) -join "`r`n") + "`r`n`r`n" + ($bodies -join "`r`n`r`n"))
+    $sortedUsings = New-Object string[] $usings.Count
+    $usings.CopyTo($sortedUsings)
+    [System.Array]::Sort($sortedUsings, [System.StringComparer]::Ordinal)
+    return (($sortedUsings -join "`r`n") + "`r`n`r`n" + ($bodies -join "`r`n`r`n"))
 }
 
 $smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothScrollController.cs")
@@ -229,7 +232,7 @@ $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $duckCoreCs = @' + $q)) | Out-Null
 $sb.AppendLine($combinedCoreCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateUninstallerRow"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateLeftoverItemRow"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
@@ -265,8 +268,13 @@ $fnDirs = @("functions\private", "functions\public")
 foreach ($d in $fnDirs) {
     $fullDir = Join-Path $root $d
     if (Test-Path $fullDir) {
-        Get-ChildItem -Path $fullDir -Filter "*.ps1" | Sort-Object Name | ForEach-Object {
-            $fnContent = (ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 $_.FullName)).Trim()
+        $psFiles = @(Get-ChildItem -Path $fullDir -Filter "*.ps1")
+        [System.Array]::Sort($psFiles, [System.Comparison[System.IO.FileInfo]]{
+            param($a, $b)
+            [System.StringComparer]::Ordinal.Compare($a.Name, $b.Name)
+        })
+        foreach ($psFile in $psFiles) {
+            $fnContent = (ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 $psFile.FullName)).Trim()
             $sb.AppendLine($fnContent) | Out-Null
             $sb.AppendLine() | Out-Null
         }

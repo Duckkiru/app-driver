@@ -4221,7 +4221,7 @@ function Invoke-SmartAppUpgrade {
 }
 
 Register-Click "btnInstall" {
-    Invoke-GuardedAction "Cài đặt ứng dụng" {
+    Invoke-GuardedAction "Cài đặt & Cập nhật" {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -4230,20 +4230,20 @@ Register-Click "btnInstall" {
         }
 
         if ($selectedTags.Count -eq 0) {
-            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt!"
+            Log-Text "[!] Bạn chưa tick chọn ứng dụng nào để cài đặt hoặc cập nhật!"
             return
         }
 
         $total = $selectedTags.Count
         $idx = 0
-        $didAnyInstall = $false
+        $didAnyAction = $false
         if ($btnCancelAction) {
             $btnCancelAction.Content = "Dừng tác vụ"
             $btnCancelAction.IsEnabled = $true
             $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
         }
         Log-Text "=========================================================="
-        Log-Text "[INSTALL] BẮT ĐẦU CÀI ĐẶT $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
+        Log-Text "[INSTALL & UPGRADE] XỬ LÝ $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
 
         try {
@@ -4252,15 +4252,32 @@ Register-Click "btnInstall" {
                 $idx++
                 $app = $tag.App
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
 
-                if ($tag.Status -eq "LATEST" -or $tag.Status -eq "OUTDATED") {
-                    Log-Text "[SKIP] $($app.Name) đã có trên máy (dùng 'Cập nhật mục chọn' nếu muốn nâng cấp)."
-                    if ($tag.Status -ne "OUTDATED" -and $tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                if ($tag.Status -eq "LATEST") {
+                    Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."
+                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
 
-                $didAnyInstall = $true
+                if ($tag.Status -eq "OUTDATED") {
+                    $didAnyAction = $true
+                    if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cập nhật: $($app.Name)..." }
+                    Log-Text "[$idx/$total] Đang cập nhật: $($app.Name) (ID: $($app.ID))..."
+                    $upCode = Invoke-SmartAppUpgrade -Tag $tag
+                    if ($upCode -eq 0) {
+                        Log-Text "   [OK - ĐÃ CẬP NHẬT THÀNH CÔNG] $($app.Name)"
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } elseif ($upCode -eq 2) {
+                        Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($app.Name) để giữ nguyên file patch."
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } else {
+                        Log-Text "   [ERR - LỖI CẬP NHẬT HOẶC ĐÃ MỚI NHẤT] $($app.Name) (Exit Code: $upCode)"
+                    }
+                    continue
+                }
+
+                $didAnyAction = $true
+                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cài đặt: $($app.Name)..." }
                 Log-Text "[$idx/$total] Đang cài: $($app.Name) (ID: $($app.ID))..."
 
                 if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
@@ -4298,88 +4315,13 @@ Register-Click "btnInstall" {
         }
         if (-not $script:isWindowClosing) {
             Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "Cài đặt hoàn tất!" }
+            if ($txtStatus) { $txtStatus.Text = "Cài đặt & Cập nhật hoàn tất!" }
             if ($progressBar) { $progressBar.Value = 100 }
-            if ($didAnyInstall) {
+            if ($didAnyAction) {
                 Wait-SquirrelUpdatersSettle
                 if (-not $script:isWindowClosing) {
                     Scan-And-ColorizeApps
                 }
-            }
-        }
-    }
-}
-
-Register-Click "btnUpgradeSelected" {
-    Invoke-GuardedAction "Nâng cấp đã chọn" -DeferExpand {
-        $selectedTags = [System.Collections.Generic.List[object]]::new()
-        foreach ($cb in $allCheckBoxes) {
-            if ($cb.IsChecked -eq $true) {
-                $selectedTags.Add($cb.Tag)
-            }
-        }
-
-        if ($selectedTags.Count -eq 0) {
-            Expand-TerminalLog
-            Log-Text "[!] Bạn chưa chọn ứng dụng nào để nâng cấp!"
-            return
-        }
-
-        Expand-TerminalLog
-        $total = $selectedTags.Count
-        $idx = 0
-        if ($btnCancelAction) {
-            $btnCancelAction.Content = "Dừng tác vụ"
-            $btnCancelAction.IsEnabled = $true
-            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
-        }
-        Log-Text "=========================================================="
-        Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP $total ỨNG DỤNG ĐÃ CHỌN"
-        Log-Text "=========================================================="
-
-        try {
-            foreach ($tag in $selectedTags) {
-                if ($script:isWindowClosing -or $script:cancelRequested) { break }
-                $idx++
-                $app = $tag.App
-
-                if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang nâng cấp: $($app.Name)..." }
-
-                if ($tag.Status -eq "NONE" -or $tag.Status -eq "NOT_INSTALLED" -or [string]::IsNullOrWhiteSpace($tag.Status)) {
-                    Log-Text "[SKIP] $($app.Name) chưa có trên máy (dùng 'Cài đặt mục chọn' để cài mới)."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    continue
-                }
-
-                if ($tag.Status -eq "LATEST") {
-                    Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                    continue
-                }
-
-                Log-Text "[$idx/$total] Đang nâng cấp: $($app.Name)..."
-                $code = Invoke-SmartAppUpgrade -Tag $tag
-                if ($code -eq 0) {
-                    Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($app.Name)"
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                } elseif ($code -eq 2) {
-                    Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($app.Name) để giữ nguyên file patch."
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
-                } else {
-                    Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($app.Name) (Exit Code: $code)"
-                }
-            }
-        } finally {
-            Clear-WinGetTempInstallers
-        }
-        if (-not $script:isWindowClosing) {
-            Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-            if ($progressBar) { $progressBar.Value = 100 }
-            Wait-SquirrelUpdatersSettle
-            if (-not $script:isWindowClosing) {
-                Scan-And-ColorizeApps
             }
         }
     }
