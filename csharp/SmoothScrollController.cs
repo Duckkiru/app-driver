@@ -193,6 +193,129 @@ namespace DuckUtil {
         }
     }
 
+    public sealed class SmoothAccordionItem {
+        private readonly FrameworkElement _host;
+        private readonly RotateTransform _chevronRotate;
+        private readonly TranslateTransform _slideTransform;
+        private readonly double _expandedHeight;
+        private readonly Stopwatch _sw = new Stopwatch();
+        private double _currentHeight;
+        private double _targetHeight;
+        private double _currentAngle;
+        private double _targetAngle;
+        private double _lastTimeSec;
+        private bool _isExpanded;
+        private bool _isAnimating;
+        private bool _firstFramePending;
+
+        private SmoothAccordionItem(FrameworkElement host, RotateTransform chevronRotate, TranslateTransform slideTransform, double expandedHeight) {
+            _host = host;
+            _chevronRotate = chevronRotate;
+            _slideTransform = slideTransform;
+            _expandedHeight = Math.Max(1.0, expandedHeight);
+            _host.Unloaded += OnUnloaded;
+        }
+
+        public static SmoothAccordionItem Attach(FrameworkElement host, RotateTransform chevronRotate, TranslateTransform slideTransform, double expandedHeight) {
+            if (host == null) return null;
+            return new SmoothAccordionItem(host, chevronRotate, slideTransform, expandedHeight);
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            Stop();
+        }
+
+        public void SetExpanded(bool expanded, bool animate) {
+            _isExpanded = expanded;
+            _targetHeight = expanded ? _expandedHeight : 0.0;
+            _targetAngle = expanded ? 90.0 : 0.0;
+
+            if (!animate) {
+                Stop();
+                ApplyValues(_targetHeight, _targetAngle);
+                _host.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+                return;
+            }
+
+            if (expanded && _host.Visibility != Visibility.Visible) {
+                _host.Visibility = Visibility.Visible;
+            }
+
+            if (Math.Abs(_targetHeight - _currentHeight) < 0.25 && Math.Abs(_targetAngle - _currentAngle) < 0.25) {
+                Stop();
+                ApplyValues(_targetHeight, _targetAngle);
+                if (!_isExpanded) _host.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (!_isAnimating) {
+                _isAnimating = true;
+                _firstFramePending = true;
+                _sw.Restart();
+                _lastTimeSec = 0.0;
+                CompositionTarget.Rendering += OnRendering;
+            }
+        }
+
+        private void OnRendering(object sender, EventArgs e) {
+            if (!_host.IsLoaded) {
+                Stop();
+                return;
+            }
+
+            double nowSec = _sw.Elapsed.TotalSeconds;
+            double dt;
+            if (_firstFramePending) {
+                _firstFramePending = false;
+                _lastTimeSec = nowSec;
+                dt = 0.010;
+            } else {
+                dt = nowSec - _lastTimeSec;
+                _lastTimeSec = nowSec;
+                if (double.IsNaN(dt) || double.IsInfinity(dt) || dt <= 0.0) dt = 0.016;
+                else if (dt > 0.018) dt = 0.018;
+            }
+
+            double dh = _targetHeight - _currentHeight;
+            double da = _targetAngle - _currentAngle;
+            if (Math.Abs(dh) < 0.35 && Math.Abs(da) < 0.35) {
+                ApplyValues(_targetHeight, _targetAngle);
+                if (!_isExpanded) {
+                    _host.Visibility = Visibility.Collapsed;
+                }
+                Stop();
+                return;
+            }
+
+            double factor = 1.0 - Math.Exp(-12.5 * dt);
+            _currentHeight += dh * factor;
+            _currentAngle += da * factor;
+            ApplyValues(_currentHeight, _currentAngle);
+        }
+
+        private void ApplyValues(double h, double angle) {
+            _currentHeight = Math.Max(0.0, Math.Min(_expandedHeight, h));
+            _currentAngle = angle;
+            double ratio = _expandedHeight > 0.0 ? Math.Max(0.0, Math.Min(1.0, _currentHeight / _expandedHeight)) : 1.0;
+            _host.Height = _currentHeight;
+            _host.Opacity = Math.Pow(ratio, 0.72);
+            if (_slideTransform != null) {
+                _slideTransform.Y = -6.0 * (1.0 - ratio);
+            }
+            if (_chevronRotate != null) {
+                _chevronRotate.Angle = _currentAngle;
+            }
+        }
+
+        private void Stop() {
+            if (_isAnimating) {
+                _isAnimating = false;
+                CompositionTarget.Rendering -= OnRendering;
+                _sw.Stop();
+            }
+        }
+    }
+
     public sealed class ReadyIconItem {
         public int Index { get; set; }
         public int Generation { get; set; }

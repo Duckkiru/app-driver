@@ -3957,23 +3957,11 @@ function New-SidebarNavRow {
 $script:easeOutCubic = [System.Windows.Media.Animation.CubicEase]::new()
 $script:easeOutCubic.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
 $script:easeOutCubic.Freeze()
-$script:durSideOpen   = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(160))
-$script:durSideClose  = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(120))
-$script:durChevRotate = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(150))
-$script:durViewGlide  = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(130))
+$script:durViewGlide  = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(120))
 
-$script:animViewOp = [System.Windows.Media.Animation.DoubleAnimation]::new(0.88, 1.0, $script:durViewGlide)
-$script:animViewOp.EasingFunction = $script:easeOutCubic; $script:animViewOp.Freeze()
-$script:animViewY = [System.Windows.Media.Animation.DoubleAnimation]::new(5.0, 0.0, $script:durViewGlide)
+$script:animViewY = [System.Windows.Media.Animation.DoubleAnimation]::new(4.0, 0.0, $script:durViewGlide)
 $script:animViewY.EasingFunction = $script:easeOutCubic; $script:animViewY.Freeze()
-$script:animChevOpen = [System.Windows.Media.Animation.DoubleAnimation]::new(90.0, $script:durChevRotate)
-$script:animChevOpen.EasingFunction = $script:easeOutCubic; $script:animChevOpen.Freeze()
-$script:animChevClose = [System.Windows.Media.Animation.DoubleAnimation]::new(0.0, $script:durChevRotate)
-$script:animChevClose.EasingFunction = $script:easeOutCubic; $script:animChevClose.Freeze()
-$script:animSideOpOpen = [System.Windows.Media.Animation.DoubleAnimation]::new(1.0, $script:durSideOpen)
-$script:animSideOpOpen.EasingFunction = $script:easeOutCubic; $script:animSideOpOpen.Freeze()
-$script:animSideOpClose = [System.Windows.Media.Animation.DoubleAnimation]::new(0.0, $script:durSideClose)
-$script:animSideOpClose.EasingFunction = $script:easeOutCubic; $script:animSideOpClose.Freeze()
+$script:hasSmoothAccordion = ("DuckUtil.SmoothAccordionItem" -as [type]) -ne $null
 
 function Invoke-ViewRevealGlide {
     param([System.Windows.UIElement]$Element)
@@ -3983,7 +3971,6 @@ function Invoke-ViewRevealGlide {
         $tt = [System.Windows.Media.TranslateTransform]::new(0.0, 0.0)
         $Element.RenderTransform = $tt
     }
-    $Element.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $script:animViewOp, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
     $tt.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $script:animViewY, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
 }
 
@@ -3994,48 +3981,25 @@ function Set-SidebarGroupExpandedVisual {
         [bool]$Animate = $true
     )
     if ($null -eq $Group) { return }
+    if ($Group.AccordionCtrl) {
+        if ($Group.VisExpanded -eq $Expanded -and $Animate) { return }
+        $Group.VisExpanded = $Expanded
+        $Group.AccordionCtrl.SetExpanded($Expanded, $Animate)
+        return
+    }
     $hostEl = $Group.ChildrenHost
     if ($null -eq $hostEl) { return }
-
-    if ($Group.VisExpanded -eq $Expanded -and (($Expanded -and $hostEl.Visibility -eq [System.Windows.Visibility]::Visible) -or (-not $Expanded -and $hostEl.Visibility -eq [System.Windows.Visibility]::Collapsed))) {
-        return
-    }
-
-    $btn = $Group.BtnDesc
-    if ($btn -and $btn.ChevronRotate) {
-        if ($Animate) {
-            $animRot = if ($Expanded) { $script:animChevOpen } else { $script:animChevClose }
-            $btn.ChevronRotate.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $animRot, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
-        } else {
-            $btn.ChevronRotate.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $null)
-            $btn.ChevronRotate.Angle = if ($Expanded) { 90.0 } else { 0.0 }
-        }
-    }
-
     $Group.VisExpanded = $Expanded
-
-    if (-not $Animate) {
-        $hostEl.BeginAnimation([System.Windows.FrameworkElement]::HeightProperty, $null)
-        $hostEl.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
-        if ($Expanded) {
-            $hostEl.Height = [double]$Group.TargetHeight
-            $hostEl.Opacity = 1.0
-            $hostEl.Visibility = [System.Windows.Visibility]::Visible
-        } else {
-            $hostEl.Height = 0.0
-            $hostEl.Opacity = 0.0
-            $hostEl.Visibility = [System.Windows.Visibility]::Collapsed
-        }
-        return
-    }
-
     if ($Expanded) {
+        $hostEl.Height = [double]$Group.TargetHeight
+        $hostEl.Opacity = 1.0
         $hostEl.Visibility = [System.Windows.Visibility]::Visible
-        $hostEl.BeginAnimation([System.Windows.FrameworkElement]::HeightProperty, $Group.AnimOpenHeight, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
-        $hostEl.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $script:animSideOpOpen, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+        if ($Group.ChevronRotate) { $Group.ChevronRotate.Angle = 90.0 }
     } else {
-        $hostEl.BeginAnimation([System.Windows.FrameworkElement]::HeightProperty, $Group.AnimCloseHeight, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
-        $hostEl.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $script:animSideOpClose, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+        $hostEl.Height = 0.0
+        $hostEl.Opacity = 0.0
+        $hostEl.Visibility = [System.Windows.Visibility]::Collapsed
+        if ($Group.ChevronRotate) { $Group.ChevronRotate.Angle = 0.0 }
     }
 }
 
@@ -4399,11 +4363,11 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         }
         [void]$categorySidebarPanel.Children.Add($grpBtnDesc.Border)
 
-        $targetHeight = [double]($gDef.Categories.Count * 27.0)
+        $targetHeight = [double](($gDef.Categories.Count * 27.0) + 5.0)
         $childrenHost = [System.Windows.Controls.Border]::new()
         $childrenHost.BorderBrush = $script:brushSidebarGuide
         $childrenHost.BorderThickness = [System.Windows.Thickness]::new(1, 0, 0, 0)
-        $childrenHost.Margin = [System.Windows.Thickness]::new(12, 1, 0, 4)
+        $childrenHost.Margin = [System.Windows.Thickness]::new(12, 0, 0, 0)
         $childrenHost.Padding = [System.Windows.Thickness]::new(6, 0, 0, 0)
         $childrenHost.ClipToBounds = $true
         $childrenHost.Height = 0.0
@@ -4411,6 +4375,9 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         $childrenHost.Visibility = [System.Windows.Visibility]::Collapsed
 
         $childrenStack = [System.Windows.Controls.StackPanel]::new()
+        $childrenStack.Margin = [System.Windows.Thickness]::new(0, 1, 0, 4)
+        $slideTr = [System.Windows.Media.TranslateTransform]::new(0.0, -6.0)
+        $childrenStack.RenderTransform = $slideTr
         foreach ($cName in $gDef.Categories) {
             $cCnt = if ($appsByCategory.ContainsKey($cName)) { $appsByCategory[$cName].Count } else { 0 }
             $subDesc = New-SidebarNavRow -Key $cName -Label $cName -Count $cCnt -Role "Child"
@@ -4419,33 +4386,25 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         $childrenHost.Child = $childrenStack
         [void]$categorySidebarPanel.Children.Add($childrenHost)
 
-        $animOpenHeight = [System.Windows.Media.Animation.DoubleAnimation]::new($targetHeight, $script:durSideOpen)
-        $animOpenHeight.EasingFunction = $script:easeOutCubic; $animOpenHeight.Freeze()
-        $animCloseHeight = [System.Windows.Media.Animation.DoubleAnimation]::new(0.0, $script:durSideClose)
-        $animCloseHeight.EasingFunction = $script:easeOutCubic
+        $accCtrl = if ($script:hasSmoothAccordion) {
+            [DuckUtil.SmoothAccordionItem]::Attach($childrenHost, $grpBtnDesc.ChevronRotate, $slideTr, $targetHeight)
+        } else { $null }
 
         $grpObj = @{
-            Key             = $gDef.Key
-            Title           = $gDef.Title
-            Categories      = $gDef.Categories
-            CategorySet     = $cSet
-            AppCount        = $grpApps
-            TargetHeight    = $targetHeight
-            IsExpanded      = $false
-            VisExpanded     = $false
-            ChildrenHost    = $childrenHost
-            ChildrenStack   = $childrenStack
-            AnimOpenHeight  = $animOpenHeight
-            AnimCloseHeight = $animCloseHeight
-            BtnDesc         = $grpBtnDesc
-            ChevronRotate   = $grpBtnDesc.ChevronRotate
+            Key           = $gDef.Key
+            Title         = $gDef.Title
+            Categories    = $gDef.Categories
+            CategorySet   = $cSet
+            AppCount      = $grpApps
+            TargetHeight  = $targetHeight
+            IsExpanded    = $false
+            VisExpanded   = $false
+            ChildrenHost  = $childrenHost
+            ChildrenStack = $childrenStack
+            AccordionCtrl = $accCtrl
+            BtnDesc       = $grpBtnDesc
+            ChevronRotate = $grpBtnDesc.ChevronRotate
         }
-        $grpLocal = $grpObj
-        $animCloseHeight.Add_Completed({
-            if (-not $grpLocal.IsExpanded -and $grpLocal.ChildrenHost) {
-                $grpLocal.ChildrenHost.Visibility = [System.Windows.Visibility]::Collapsed
-            }
-        }.GetNewClosure())
         $script:catalogGroupByKey[$gDef.Key] = $grpObj
         [void]$script:catalogGroupsOrdered.Add($grpObj)
     }
