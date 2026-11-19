@@ -388,7 +388,21 @@ function Find-AppLeftovers {
         }
     }
 
-    $binTokens = [DuckUtil.DeepUninstallerEngine]::ExtractBinaryAndCertTokens($AppEntry.InstallLocation, $AppEntry.UninstallString, "")
+    $deepTypeLo = "DuckUtil.DeepUninstallerEngine" -as [type]
+    $canWaitLo = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+    $hasSizeAsyncLo = ($canWaitLo -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("GetDirectorySizeFastAsync"))
+    $hasBinTokAsyncLo = ($canWaitLo -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("ExtractBinaryAndCertTokensAsync"))
+    $hasAppScAsyncLo = ($canWaitLo -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("ScanAppShortcutsAsync"))
+
+    $binTokens = $null
+    if ($hasBinTokAsyncLo) {
+        $btTask = $deepTypeLo::ExtractBinaryAndCertTokensAsync($AppEntry.InstallLocation, $AppEntry.UninstallString, "")
+        [void](Wait-TaskNonBlocking -Task $btTask -TimeoutSeconds 15)
+        if ($btTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $binTokens = $btTask.Result }
+    } else {
+        $binTokens = [DuckUtil.DeepUninstallerEngine]::ExtractBinaryAndCertTokens($AppEntry.InstallLocation, $AppEntry.UninstallString, "")
+    }
+    if ($script:isWindowClosing) { return @() }
     if ($binTokens) {
         foreach ($bt in $binTokens) {
             if ($bt -and $bt.Length -ge 3 -and $exclusions -notcontains $bt) {
@@ -431,7 +445,14 @@ function Find-AppLeftovers {
         }
         if ($isSafe -and (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)) {
             if ($seenPaths.Add($loc)) {
-                $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($loc, 4)
+                $dirSize = 0L
+                if ($hasSizeAsyncLo) {
+                    $szTask1 = $deepTypeLo::GetDirectorySizeFastAsync($loc, 4)
+                    [void](Wait-TaskNonBlocking -Task $szTask1 -TimeoutSeconds 20)
+                    if ($szTask1.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dirSize = [long]$szTask1.Result }
+                } else {
+                    $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($loc, 4)
+                }
                 $leftovers.Add([PSCustomObject]@{
                     Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t"
                     Confidence        = "An to$([char]0x00E0)n 100%"
@@ -454,7 +475,14 @@ function Find-AppLeftovers {
         }
         if ($isDataSafe -and (Test-SafeAppDirectoryForCleanup -Path $dataLoc -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)) {
             if ($seenPaths.Add($dataLoc)) {
-                $dataSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($dataLoc, 4)
+                $dataSize = 0L
+                if ($hasSizeAsyncLo) {
+                    $szTask2 = $deepTypeLo::GetDirectorySizeFastAsync($dataLoc, 4)
+                    [void](Wait-TaskNonBlocking -Task $szTask2 -TimeoutSeconds 20)
+                    if ($szTask2.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dataSize = [long]$szTask2.Result }
+                } else {
+                    $dataSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($dataLoc, 4)
+                }
                 $leftovers.Add([PSCustomObject]@{
                     Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c d$([char]0x1EEF) li$([char]0x1EC7)u Game/App"
                     Confidence        = "An to$([char]0x00E0)n 100%"
@@ -507,7 +535,14 @@ function Find-AppLeftovers {
                     if ($fullPath -like "*\$ex\*" -or $fullPath -like "*\$ex") { $isSafe = $false; break }
                 }
                 if ($isSafe -and $seenPaths.Add($fullPath)) {
-                    $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
+                    $dirSize = 0L
+                    if ($hasSizeAsyncLo) {
+                        $szTask3 = $deepTypeLo::GetDirectorySizeFastAsync($fullPath, 4)
+                        [void](Wait-TaskNonBlocking -Task $szTask3 -TimeoutSeconds 20)
+                        if ($szTask3.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dirSize = [long]$szTask3.Result }
+                    } else {
+                        $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
+                    }
                     $leftovers.Add([PSCustomObject]@{
                         Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData"
                         Confidence        = "An to$([char]0x00E0)n 100%"
@@ -547,32 +582,20 @@ function Find-AppLeftovers {
         }
     }
 
-    $shortcutDirs = @(
+    $shortcutDirs = [string[]]@(
         [Environment]::GetFolderPath('Desktop'),
         [Environment]::GetFolderPath('CommonDesktopDirectory'),
         [Environment]::GetFolderPath('Programs'),
         [Environment]::GetFolderPath('CommonPrograms')
     )
-    $wsh = $null
-    try {
-        $wsh = New-Object -ComObject WScript.Shell
-        $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
-        foreach ($sDir in $shortcutDirs) {
-            if ($script:isWindowClosing) { break }
-            if (-not $sDir -or -not (Test-Path -LiteralPath $sDir)) { continue }
-            $lnks = Get-FilesRecursiveSafe -RootPath $sDir -SearchPattern "*.lnk"
-            foreach ($lnk in $lnks) {
-                try {
-                    $lnkName = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
-                    $sc = $wsh.CreateShortcut($lnk)
-                    $tPath = $sc.TargetPath
-                    $matchesApp = $false
-                    if ($targetLocPrefix -and $tPath -and $tPath.StartsWith($targetLocPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-                        $matchesApp = $true
-                    } elseif ($lnkName.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -and $tPath -and -not (Test-Path -LiteralPath $tPath)) {
-                        $matchesApp = $true
-                    }
-                    if ($matchesApp -and $seenPaths.Add($lnk)) {
+    $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
+    if ($hasAppScAsyncLo) {
+        try {
+            $scTask = $deepTypeLo::ScanAppShortcutsAsync($shortcutDirs, $targetLocPrefix, $cleanName)
+            [void](Wait-TaskNonBlocking -Task $scTask -TimeoutSeconds 15)
+            if ($scTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $scTask.Result) {
+                foreach ($lnk in $scTask.Result) {
+                    if ($seenPaths.Add($lnk)) {
                         $leftovers.Add([PSCustomObject]@{
                             Type              = "Shortcut ch$([char]0x1EBF)t"
                             Confidence        = "An to$([char]0x00E0)n 100%"
@@ -584,13 +607,48 @@ function Find-AppLeftovers {
                             RegistryValueName = ""
                         })
                     }
-                } catch {}
+                }
             }
-        }
-    } catch {} finally {
-        if ($null -ne $wsh) {
-            try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
-            $wsh = $null
+        } catch {}
+    } else {
+        $wsh = $null
+        try {
+            $wsh = New-Object -ComObject WScript.Shell
+            foreach ($sDir in $shortcutDirs) {
+                if ($script:isWindowClosing) { break }
+                if (-not $sDir -or -not (Test-Path -LiteralPath $sDir)) { continue }
+                $lnks = Get-FilesRecursiveSafe -RootPath $sDir -SearchPattern "*.lnk"
+                foreach ($lnk in $lnks) {
+                    try {
+                        $lnkName = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
+                        $sc = $wsh.CreateShortcut($lnk)
+                        $tPath = $sc.TargetPath
+                        $matchesApp = $false
+                        if ($targetLocPrefix -and $tPath -and $tPath.StartsWith($targetLocPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                            $matchesApp = $true
+                        } elseif ($lnkName.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -and $tPath -and -not (Test-Path -LiteralPath $tPath)) {
+                            $matchesApp = $true
+                        }
+                        if ($matchesApp -and $seenPaths.Add($lnk)) {
+                            $leftovers.Add([PSCustomObject]@{
+                                Type              = "Shortcut ch$([char]0x1EBF)t"
+                                Confidence        = "An to$([char]0x00E0)n 100%"
+                                AppName           = $AppEntry.DisplayName
+                                Path              = $lnk
+                                SizeBytes         = 0L
+                                SizeMB            = 0.0
+                                IsRegistry        = $false
+                                RegistryValueName = ""
+                            })
+                        }
+                    } catch {}
+                }
+            }
+        } catch {} finally {
+            if ($null -ne $wsh) {
+                try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
+                $wsh = $null
+            }
         }
     }
 
@@ -1486,15 +1544,126 @@ function Show-LeftoverReviewDialog {
     $scrollViewer = New-Object System.Windows.Controls.ScrollViewer
     $scrollViewer.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
     $scrollViewer.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Disabled
+    $scrollViewer.CanContentScroll = $false
     $scrollViewer.Margin = New-Object System.Windows.Thickness(18, 0, 18, 10)
+    if ("DuckUtil.SmoothScrollController" -as [type]) {
+        try { $null = [DuckUtil.SmoothScrollController]::Attach($scrollViewer) } catch {}
+    }
 
     $itemsStack = New-Object System.Windows.Controls.StackPanel
     $itemCheckBoxes = [System.Collections.Generic.List[System.Windows.Controls.CheckBox]]::new()
 
+    $bcLo = New-Object System.Windows.Media.BrushConverter
+    $mkLoBrush = {
+        param([string]$hex)
+        $br = $bcLo.ConvertFromString($hex)
+        if ($br -and $br.CanFreeze) { $br.Freeze() }
+        return $br
+    }
+    $brLoItemBg     = & $mkLoBrush "#101520"
+    $brLoItemBorder = & $mkLoBrush "#1E293B"
+    $brLoWhite      = & $mkLoBrush "#FFFFFF"
+    $brLoConfBg     = & $mkLoBrush "#064E3B"
+    $brLoConfBorder = & $mkLoBrush "#059669"
+    $brLoConfFg     = & $mkLoBrush "#6EE7B7"
+    $brLoTitleFg    = & $mkLoBrush "#E2E8F0"
+    $brLoPathFg     = & $mkLoBrush "#64748B"
+    $brLoSizeRegFg  = & $mkLoBrush "#94A3B8"
+    $brLoSizeFileFg = & $mkLoBrush "#38BDF8"
+    $brLoBtnBg      = & $mkLoBrush "#1E293B"
+    $brLoBtnFg      = & $mkLoBrush "#CBD5E1"
+    $brLoBadgeMap   = @{
+        "Ring0"    = (& $mkLoBrush "#B91C1C")
+        "Registry" = (& $mkLoBrush "#DC2626")
+        "Startup"  = (& $mkLoBrush "#E11D48")
+        "AppData"  = (& $mkLoBrush "#D97706")
+        "Hollow"   = (& $mkLoBrush "#2563EB")
+        "Shortcut" = (& $mkLoBrush "#7C3AED")
+        "Dump"     = (& $mkLoBrush "#9333EA")
+        "Default"  = (& $mkLoBrush "#0D9488")
+    }
+
+    $itemsStack.AddHandler(
+        [System.Windows.Controls.Primitives.ButtonBase]::ClickEvent,
+        [System.Windows.RoutedEventHandler]{
+            param($sender, $e)
+            $btn = $e.OriginalSource -as [System.Windows.Controls.Button]
+            if (-not $btn) { return }
+            $tg = $btn.Tag
+            if ($null -eq $tg) { return }
+            try {
+                if ($tg.IsRegistry) {
+                    $rawKey = $tg.Path -replace '^HKCU:\\', 'HKEY_CURRENT_USER\' -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\'
+                    $regApplet = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit"
+                    if (-not (Test-Path -LiteralPath $regApplet)) {
+                        New-Item -Path $regApplet -Force | Out-Null
+                    }
+                    Set-ItemProperty -LiteralPath $regApplet -Name "LastKey" -Value "Computer\$rawKey" -ErrorAction SilentlyContinue
+                    Start-Process "regedit.exe"
+                } else {
+                    if (Test-Path -LiteralPath $tg.Path) {
+                        Start-Process "explorer.exe" -ArgumentList "/select,`"$($tg.Path)`""
+                    }
+                }
+            } catch {}
+        }
+    )
+
+    $pipeLoType = "DuckUtil.UiAssetPipeline" -as [type]
+    $hasFastLoRow = ($null -ne $pipeLoType) -and ($null -ne $pipeLoType.GetMethod("CreateLeftoverItemRow"))
+
     foreach ($item in $Items) {
+        $badgeKey = switch -Wildcard ($item.Type) {
+            "*Driver Ring 0*" { "Ring0" }
+            "*Registry*" { "Registry" }
+            "*Startup*" { "Startup" }
+            "*R$([char]0x00E1)c AppData*" { "AppData" }
+            "*V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c*" { "Hollow" }
+            "*Shortcut*" { "Shortcut" }
+            "*Crash Dump*" { "Dump" }
+            default { "Default" }
+        }
+        $badgeBrush = $brLoBadgeMap[$badgeKey]
+        $displayPathText = if ($item.RegistryValueName) { "$($item.Path) [Value: $($item.RegistryValueName)]" } else { [string]$item.Path }
+        $safeSizeMb = if ($null -ne $item.SizeMB) { try { [double]$item.SizeMB } catch { 0.0 } } else { 0.0 }
+        $sizeLabel = if ($item.IsRegistry) { "Registry" } else { "$([string]::Format('{0:N2}', $safeSizeMb)) MB" }
+        $confLabel = if ($item.Confidence) { [string]$item.Confidence } else { "An to$([char]0x00E0)n 100%" }
+
+        if ($hasFastLoRow) {
+            $outCb = $null
+            $outBtn = $null
+            $itemBorder = [DuckUtil.UiAssetPipeline]::CreateLeftoverItemRow(
+                $item,
+                [string]$item.Type,
+                $confLabel,
+                [string]$item.AppName,
+                $displayPathText,
+                $sizeLabel,
+                [bool]$item.IsRegistry,
+                $brLoItemBg,
+                $brLoItemBorder,
+                $badgeBrush,
+                $brLoWhite,
+                $brLoConfBg,
+                $brLoConfBorder,
+                $brLoConfFg,
+                $brLoTitleFg,
+                $brLoPathFg,
+                $brLoSizeRegFg,
+                $brLoSizeFileFg,
+                $brLoBtnBg,
+                $brLoBtnFg,
+                [ref]$outCb,
+                [ref]$outBtn
+            )
+            $itemCheckBoxes.Add($outCb)
+            $itemsStack.Children.Add($itemBorder) | Out-Null
+            continue
+        }
+
         $itemBorder = New-Object System.Windows.Controls.Border
-        $itemBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#101520")
-        $itemBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+        $itemBorder.Background = $brLoItemBg
+        $itemBorder.BorderBrush = $brLoItemBorder
         $itemBorder.BorderThickness = New-Object System.Windows.Thickness(1)
         $itemBorder.CornerRadius = New-Object System.Windows.CornerRadius(2)
         $itemBorder.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
@@ -1527,17 +1696,7 @@ function Show-LeftoverReviewDialog {
         $badgeStack.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
 
         $badgeBorder = New-Object System.Windows.Controls.Border
-        $badgeColor = switch -Wildcard ($item.Type) {
-            "*Driver Ring 0*" { "#B91C1C" }
-            "*Registry*" { "#DC2626" }
-            "*Startup*" { "#E11D48" }
-            "*R$([char]0x00E1)c AppData*" { "#D97706" }
-            "*V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c*" { "#2563EB" }
-            "*Shortcut*" { "#7C3AED" }
-            "*Crash Dump*" { "#9333EA" }
-            default { "#0D9488" }
-        }
-        $badgeBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($badgeColor)
+        $badgeBorder.Background = $badgeBrush
         $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $badgeBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
 
@@ -1545,21 +1704,21 @@ function Show-LeftoverReviewDialog {
         $badgeText.Text = $item.Type
         $badgeText.FontSize = 10.5
         $badgeText.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $badgeText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FFFFFF")
+        $badgeText.Foreground = $brLoWhite
         $badgeBorder.Child = $badgeText
         $badgeStack.Children.Add($badgeBorder) | Out-Null
 
         $confBorder = New-Object System.Windows.Controls.Border
-        $confBorder.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#064E3B")
-        $confBorder.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#059669")
+        $confBorder.Background = $brLoConfBg
+        $confBorder.BorderBrush = $brLoConfBorder
         $confBorder.BorderThickness = New-Object System.Windows.Thickness(1)
         $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $confBorder.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
         $confBorder.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
         $confText = New-Object System.Windows.Controls.TextBlock
-        $confText.Text = if ($item.Confidence) { $item.Confidence } else { "An to$([char]0x00E0)n 100%" }
+        $confText.Text = $confLabel
         $confText.FontSize = 9.5
-        $confText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#6EE7B7")
+        $confText.Foreground = $brLoConfFg
         $confBorder.Child = $confText
         $badgeStack.Children.Add($confBorder) | Out-Null
 
@@ -1572,14 +1731,13 @@ function Show-LeftoverReviewDialog {
         $appBlock = New-Object System.Windows.Controls.TextBlock
         $appBlock.Text = $item.AppName
         $appBlock.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $appBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+        $appBlock.Foreground = $brLoTitleFg
         $infoPanel.Children.Add($appBlock) | Out-Null
 
-        $displayPathText = if ($item.RegistryValueName) { "$($item.Path) [Value: $($item.RegistryValueName)]" } else { $item.Path }
         $pathBlock = New-Object System.Windows.Controls.TextBlock
         $pathBlock.Text = $displayPathText
         $pathBlock.FontSize = 11
-        $pathBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $pathBlock.Foreground = $brLoPathFg
         $pathBlock.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $pathBlock.ToolTip = $displayPathText
         $infoPanel.Children.Add($pathBlock) | Out-Null
@@ -1592,14 +1750,8 @@ function Show-LeftoverReviewDialog {
         $sizeBlock.FontSize = 11.5
         $sizeBlock.FontWeight = [System.Windows.FontWeights]::SemiBold
         $sizeBlock.Margin = New-Object System.Windows.Thickness(10, 0, 8, 0)
-        if ($item.IsRegistry) {
-            $sizeBlock.Text = "Registry"
-            $sizeBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
-        } else {
-            $safeSizeMb = if ($null -ne $item.SizeMB) { try { [double]$item.SizeMB } catch { 0.0 } } else { 0.0 }
-            $sizeBlock.Text = "$([string]::Format('{0:N2}', $safeSizeMb)) MB"
-            $sizeBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
-        }
+        $sizeBlock.Text = $sizeLabel
+        $sizeBlock.Foreground = if ($item.IsRegistry) { $brLoSizeRegFg } else { $brLoSizeFileFg }
         [System.Windows.Controls.Grid]::SetColumn($sizeBlock, 3)
         $itemGrid.Children.Add($sizeBlock) | Out-Null
 
@@ -1608,29 +1760,9 @@ function Show-LeftoverReviewDialog {
         $btnOpenLoc.FontSize = 10.5
         $btnOpenLoc.Padding = New-Object System.Windows.Thickness(8, 3, 8, 3)
         $btnOpenLoc.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $btnOpenLoc.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
-        $btnOpenLoc.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+        $btnOpenLoc.Background = $brLoBtnBg
+        $btnOpenLoc.Foreground = $brLoBtnFg
         $btnOpenLoc.Tag = $item
-        $btnOpenLoc.Add_Click({
-            param($sender, $e)
-            $tg = $sender.Tag
-            if ($null -eq $tg) { return }
-            try {
-                if ($tg.IsRegistry) {
-                    $rawKey = $tg.Path -replace '^HKCU:\\', 'HKEY_CURRENT_USER\' -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\'
-                    $regApplet = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit"
-                    if (-not (Test-Path -LiteralPath $regApplet)) {
-                        New-Item -Path $regApplet -Force | Out-Null
-                    }
-                    Set-ItemProperty -LiteralPath $regApplet -Name "LastKey" -Value "Computer\$rawKey" -ErrorAction SilentlyContinue
-                    Start-Process "regedit.exe"
-                } else {
-                    if (Test-Path -LiteralPath $tg.Path) {
-                        Start-Process "explorer.exe" -ArgumentList "/select,`"$($tg.Path)`""
-                    }
-                }
-            } catch {}
-        })
         [System.Windows.Controls.Grid]::SetColumn($btnOpenLoc, 4)
         $itemGrid.Children.Add($btnOpenLoc) | Out-Null
 
@@ -1680,7 +1812,9 @@ function Show-LeftoverReviewDialog {
     $leftBottomStack.Children.Add($chkRecycleBin) | Out-Null
     $leftBottomStack.Children.Add($chkForceStop) | Out-Null
 
+    $suppressLoSummary = @{ Active = $false }
     $updateSummary = {
+        if ($suppressLoSummary.Active) { return }
         $selCount = 0
         $selBytes = 0L
         foreach ($c in $itemCheckBoxes) {
@@ -1694,10 +1828,8 @@ function Show-LeftoverReviewDialog {
     }
     & $updateSummary
 
-    foreach ($c in $itemCheckBoxes) {
-        $c.Add_Checked($updateSummary)
-        $c.Add_Unchecked($updateSummary)
-    }
+    $itemsStack.AddHandler([System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent, [System.Windows.RoutedEventHandler]$updateSummary)
+    $itemsStack.AddHandler([System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent, [System.Windows.RoutedEventHandler]$updateSummary)
 
     [System.Windows.Controls.Grid]::SetColumn($leftBottomStack, 0)
     $bottomGrid.Children.Add($leftBottomStack) | Out-Null
@@ -1710,10 +1842,16 @@ function Show-LeftoverReviewDialog {
     $btnSelectAll.Content = "Ch$([char]0x1ECD)n t$([char]0x1EA5)t c$([char]0x1EA3)"
     $btnSelectAll.Padding = New-Object System.Windows.Thickness(10, 6, 10, 6)
     $btnSelectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-    $btnSelectAll.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
-    $btnSelectAll.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+    $btnSelectAll.Background = $brLoBtnBg
+    $btnSelectAll.Foreground = $brLoBtnFg
     $btnSelectAll.Add_Click({
-        foreach ($c in $itemCheckBoxes) { $c.IsChecked = $true }
+        $suppressLoSummary.Active = $true
+        try {
+            foreach ($c in $itemCheckBoxes) { $c.IsChecked = $true }
+        } finally {
+            $suppressLoSummary.Active = $false
+        }
+        & $updateSummary
     })
     $btnStack.Children.Add($btnSelectAll) | Out-Null
 
@@ -1721,10 +1859,16 @@ function Show-LeftoverReviewDialog {
     $btnDeselectAll.Content = "B$([char]0x1ECF) ch$([char]0x1ECD)n"
     $btnDeselectAll.Padding = New-Object System.Windows.Thickness(10, 6, 10, 6)
     $btnDeselectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-    $btnDeselectAll.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
-    $btnDeselectAll.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#CBD5E1")
+    $btnDeselectAll.Background = $brLoBtnBg
+    $btnDeselectAll.Foreground = $brLoBtnFg
     $btnDeselectAll.Add_Click({
-        foreach ($c in $itemCheckBoxes) { $c.IsChecked = $false }
+        $suppressLoSummary.Active = $true
+        try {
+            foreach ($c in $itemCheckBoxes) { $c.IsChecked = $false }
+        } finally {
+            $suppressLoSummary.Active = $false
+        }
+        & $updateSummary
     })
     $btnStack.Children.Add($btnDeselectAll) | Out-Null
 

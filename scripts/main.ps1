@@ -1194,7 +1194,9 @@ function Set-ActiveTab {
                 ) | Out-Null
             }
         } else {
-            if (Get-Command "Sync-UninstallerViewport" -ErrorAction SilentlyContinue) {
+            if ($script:uninstallerVirtualView) {
+                $script:uninstallerVirtualView.SyncViewport($true)
+            } elseif (Get-Command "Sync-UninstallerViewport" -ErrorAction SilentlyContinue) {
                 Sync-UninstallerViewport -Force
             }
             if ($script:uninstIconsPipelineNeedsStart -and (Get-Command "Start-UninstallerIconPipelineIfNeeded" -ErrorAction SilentlyContinue)) {
@@ -1277,6 +1279,8 @@ $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x42, 0x54, 0x6E)); $script:brushUninstFolderBorder.Freeze()
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
+$script:brushUninstFilterBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushUninstFilterBrokenBg.Freeze()
+$script:brushUninstFilterBrokenFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71)); $script:brushUninstFilterBrokenFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:styleUninstRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
@@ -1655,7 +1659,47 @@ function Sync-UninstallerViewport {
     }
 }
 
-if ($uninstallerScrollViewer) {
+$script:uninstallerVirtualView = $null
+if ($uninstallerScrollViewer -and ($uninstallerRowsPanel -is [System.Windows.Controls.Canvas]) -and ("DuckUtil.UninstallerVirtualView" -as [type])) {
+    $tabPage1Ref = if ($script:tabPages -and $script:tabPages.Count -gt 1) { $script:tabPages[1] } else { $null }
+    $strFolderGlyphInit = [char]::ConvertFromUtf32(0x1F4C1)
+    $script:uninstallerVirtualView = [DuckUtil.UninstallerVirtualView]::new(
+        $uninstallerScrollViewer,
+        $uninstallerRowsPanel,
+        $tabPage1Ref,
+        $strFolderGlyphInit,
+        $script:styleUninstRow,
+        $script:brushUninstRowBorder,
+        $script:brushUninstColDivider,
+        $script:brushUninstRowCheckedBg,
+        $script:brushUninstTitle,
+        $script:brushUninstTitleBroken,
+        $script:brushUninstMuted,
+        $script:brushUninstLight,
+        $script:brushUninstBadgeBg,
+        $script:brushUninstBadgeFg,
+        $script:brushUninstBadgeBrokenBg,
+        $script:brushUninstBadgeBrokenFg,
+        $script:brushUninstStatusOkBg,
+        $script:brushUninstStatusOkBorder,
+        $script:brushUninstStatusOkFg,
+        $script:brushUninstStatusBrokenBg,
+        $script:brushUninstStatusBrokenBorder,
+        $script:brushUninstFolderBg,
+        $script:brushUninstFolderBorder
+    )
+    $script:uninstallerVirtualView.CanInteract = [System.Func[bool]]{
+        return (-not $script:isWindowClosing -and -not $script:isUpdatingUninstaller -and -not $script:isActionRunning)
+    }
+    $script:uninstallerVirtualView.OnSelectionChanged = [System.Action[int]]{
+        param([int]$cnt)
+        Update-UninstallerSelectionButtons -Count $cnt
+    }
+    $script:uninstallerRowEntries = $script:uninstallerVirtualView.AllItems
+    $script:uninstallerVisibleEntries = $script:uninstallerVirtualView.VisibleItems
+}
+
+if ($uninstallerScrollViewer -and -not $script:uninstallerVirtualView) {
     $uninstallerScrollViewer.Add_ScrollChanged({
         Sync-UninstallerViewport
     })
@@ -1667,6 +1711,10 @@ function Start-UninstallerIconPipelineIfNeeded {
         return
     }
     $script:uninstIconsPipelineNeedsStart = $false
+    if ($script:uninstallerVirtualView) {
+        $script:uninstallerVirtualView.SyncViewport($true)
+        return
+    }
     $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
     if ($pipeType -and $null -ne $pipeType.GetMethod("EnqueueUninstallerIcons")) {
         Sync-UninstallerViewport -Force
@@ -1739,27 +1787,56 @@ $script:uninstIconTimer.Add_Tick({
     }
 })
 
+function Update-UninstallerSelectionButtons {
+    param([int]$Count)
+    if ($script:suppressUninstallerSelectionCount -or $script:isWindowClosing) { return }
+    if ($btnDeepUninstall) {
+        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Thêm vào hàng đợi ($Count)" } else { "Gỡ cài đặt ($Count)" }
+        $btnDeepUninstall.IsEnabled = ($Count -gt 0)
+    }
+    if ($btnForceStopUninstall) {
+        $btnForceStopUninstall.Content = if ($script:isUninstallingQueue) { "+ Buộc dừng vào hàng ($Count)" } else { "Buộc dừng & Xóa ($Count)" }
+        $btnForceStopUninstall.IsEnabled = ($Count -gt 0)
+    }
+}
+
 function Update-UninstallerSelectionCount {
     if ($script:suppressUninstallerSelectionCount -or $script:isWindowClosing) { return }
+    if ($script:uninstallerVirtualView) {
+        Update-UninstallerSelectionButtons -Count ([int]$script:uninstallerVirtualView.SelectedCount)
+        return
+    }
     $count = 0
     foreach ($entry in $script:uninstallerRowEntries) {
         if (-not $entry.IsRemoved -and ($entry.IsSelected -or ($entry.CheckBox -and $entry.CheckBox.IsChecked -eq $true))) {
             $count++
         }
     }
-    if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Thêm vào hàng đợi ($count)" } else { "Gỡ cài đặt ($count)" }
-        $btnDeepUninstall.IsEnabled = ($count -gt 0)
-    }
-    if ($btnForceStopUninstall) {
-        $btnForceStopUninstall.Content = if ($script:isUninstallingQueue) { "+ Buộc dừng vào hàng ($count)" } else { "Buộc dừng & Xóa ($count)" }
-        $btnForceStopUninstall.IsEnabled = ($count -gt 0)
-    }
+    Update-UninstallerSelectionButtons -Count $count
 }
 
 function Apply-UninstallerFilter {
+    param([switch]$Resort)
     if ($script:isWindowClosing) { return }
-    $q = if ($txtUninstallSearch) { $txtUninstallSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $q = if ($txtUninstallSearch) { $txtUninstallSearch.Text } else { "" }
+
+    if ($script:uninstallerVirtualView) {
+        $stats = $script:uninstallerVirtualView.ApplyFilterAndSort(
+            [string]$q,
+            ($script:uninstallerFilterMode -eq "Broken"),
+            ($script:uninstallerSortMode -eq "Size"),
+            [bool]$Resort
+        )
+        if ($txtUninstallerSummary -and $stats) {
+            $vMb = [double]$stats.VisibleBytes / 1MB
+            $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
+            $txtUninstallerSummary.Text = "Đang hiển thị $($stats.VisibleCount) / $($stats.TotalCount) ứng dụng (Tổng: $totalSizeStr • $($stats.BrokenCount) lỗi/mồ côi)"
+        }
+        Update-UninstallerSelectionButtons -Count $(if ($stats) { [int]$stats.SelectedCount } else { 0 })
+        return
+    }
+
+    $q = if ($q) { $q.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $brokenCount = 0
     [long]$visibleBytes = 0
@@ -1857,35 +1934,39 @@ function Set-UninstallerSortMode {
             }
         }
 
-        if (-not $HeadersOnly -and $uninstallerRowsPanel -and $script:uninstallerRowEntries -and $script:uninstallerRowEntries.Count -gt 0) {
-            $sortedEntries = if ($Mode -eq "Size") {
-                @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [long]$_.App.SizeBytes }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
-            } else {
-                @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
-            }
-            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
-            $useVirtualTab1 = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
-            if ($useVirtualTab1) {
-                $script:uninstallerRowEntries.Clear()
-                foreach ($entry in $sortedEntries) {
-                    [void]$script:uninstallerRowEntries.Add($entry)
+        if ($script:uninstallerVirtualView) {
+            Apply-UninstallerFilter -Resort:(-not $HeadersOnly)
+        } else {
+            if (-not $HeadersOnly -and $uninstallerRowsPanel -and $script:uninstallerRowEntries -and $script:uninstallerRowEntries.Count -gt 0) {
+                $sortedEntries = if ($Mode -eq "Size") {
+                    @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [long]$_.App.SizeBytes }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
+                } else {
+                    @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
                 }
-            } else {
-                $prevVis = $uninstallerRowsPanel.Visibility
-                $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
-                try {
+                $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+                $useVirtualTab1 = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+                if ($useVirtualTab1) {
                     $script:uninstallerRowEntries.Clear()
-                    $uninstallerRowsPanel.Children.Clear()
                     foreach ($entry in $sortedEntries) {
                         [void]$script:uninstallerRowEntries.Add($entry)
-                        [void]$uninstallerRowsPanel.Children.Add($entry.Row)
                     }
-                } finally {
-                    $uninstallerRowsPanel.Visibility = $prevVis
+                } else {
+                    $prevVis = $uninstallerRowsPanel.Visibility
+                    $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
+                    try {
+                        $script:uninstallerRowEntries.Clear()
+                        $uninstallerRowsPanel.Children.Clear()
+                        foreach ($entry in $sortedEntries) {
+                            [void]$script:uninstallerRowEntries.Add($entry)
+                            [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+                        }
+                    } finally {
+                        $uninstallerRowsPanel.Visibility = $prevVis
+                    }
                 }
             }
+            Apply-UninstallerFilter
         }
-        Apply-UninstallerFilter
     } finally {
         $script:isSortingUninstaller = $false
     }
@@ -1961,7 +2042,7 @@ $marginUninstSize   = New-Object System.Windows.Thickness(8, 0, 12, 0)
 $paddingUninstBadge = New-Object System.Windows.Thickness(8, 2, 8, 2)
 $strFolderEmoji     = [char]::ConvertFromUtf32(0x1F4C1)
 
-if ($uninstallerRowsPanel -and -not $script:uninstPanelRoutedAttached) {
+if ($uninstallerRowsPanel -and -not $script:uninstallerVirtualView -and -not $script:uninstPanelRoutedAttached) {
     $script:uninstPanelRoutedAttached = $true
     $uninstallerRowsPanel.AddHandler(
         [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
@@ -2071,6 +2152,19 @@ function Update-UninstallerList {
         }
         if ($script:isWindowClosing) { return }
 
+        if ($script:uninstallerVirtualView) {
+            $buildTask = [DuckUtil.UninstallerVirtualView]::BuildVirtualItemsAsync($script:cachedUninstallerApps, $script:catalogIconLookup, $iconsCacheDir)
+            [void](Wait-TaskNonBlocking -Task $buildTask -TimeoutSeconds 30)
+            if ($script:isWindowClosing) { return }
+            $builtItems = if ($buildTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $buildTask.Result } else { $null }
+            $script:uninstallerVirtualView.SetItems($builtItems, $script:cachedUninstallerApps.Count)
+            $script:uninstallerRowEntries = $script:uninstallerVirtualView.AllItems
+            $script:uninstallerVisibleEntries = $script:uninstallerVirtualView.VisibleItems
+            $script:uninstallerLoadedOnce = $true
+            $script:deferredUninstallerLoad = $false
+            $script:uninstallerLoadQueued = $false
+            Set-UninstallerSortMode $script:uninstallerSortMode
+        } else {
         $sortedApps = if ($script:uninstallerSortMode -eq "Size") {
             @($script:cachedUninstallerApps | Sort-Object -Property @{ Expression = { [long]$_.SizeBytes }; Descending = $true }, @{ Expression = { $_.DisplayName }; Descending = $false })
         } else {
@@ -2391,6 +2485,7 @@ function Update-UninstallerList {
                 $script:uninstIconsPipelineNeedsStart = $true
             }
         }
+        }
     } finally {
         $script:suppressUninstallerSelectionCount = $false
         $script:isUpdatingUninstaller = $false
@@ -2432,10 +2527,10 @@ if ($btnFilterUninstAll) {
     $btnFilterUninstAll.Add_Click({
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
         $script:uninstallerFilterMode = "All"
-        $btnFilterUninstAll.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
-        $btnFilterUninstAll.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+        $btnFilterUninstAll.Background = $script:brushUninstFilterActiveBg
+        $btnFilterUninstAll.Foreground = $script:brushUninstFilterActiveFg
         $btnFilterUninstBroken.Background = $script:brushTransparent
-        $btnFilterUninstBroken.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $btnFilterUninstBroken.Foreground = $script:brushUninstDark
         Apply-UninstallerFilter
     })
 }
@@ -2444,25 +2539,36 @@ if ($btnFilterUninstBroken) {
     $btnFilterUninstBroken.Add_Click({
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
         $script:uninstallerFilterMode = "Broken"
-        $btnFilterUninstBroken.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2D1215")
-        $btnFilterUninstBroken.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F87171")
+        $btnFilterUninstBroken.Background = $script:brushUninstFilterBrokenBg
+        $btnFilterUninstBroken.Foreground = $script:brushUninstFilterBrokenFg
         $btnFilterUninstAll.Background = $script:brushTransparent
-        $btnFilterUninstAll.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
+        $btnFilterUninstAll.Foreground = $script:brushUninstDark
         Apply-UninstallerFilter
     })
 }
 
+$script:uninstSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:uninstSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(55)
+$script:uninstSearchDebounceTimer.Add_Tick({
+    $script:uninstSearchDebounceTimer.Stop()
+    if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
+    Apply-UninstallerFilter
+})
+
 if ($txtUninstallSearch) {
     $txtUninstallSearch.Add_TextChanged({
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
-        Apply-UninstallerFilter
+        $script:uninstSearchDebounceTimer.Stop()
+        $script:uninstSearchDebounceTimer.Start()
     })
 }
 
 if ($btnClearUninstallSearch) {
     $btnClearUninstallSearch.Add_Click({
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
+        $script:uninstSearchDebounceTimer.Stop()
         if ($txtUninstallSearch) { $txtUninstallSearch.Text = "" }
+        $script:uninstSearchDebounceTimer.Stop()
         Apply-UninstallerFilter
     })
 }
@@ -2470,6 +2576,10 @@ if ($btnClearUninstallSearch) {
 if ($btnUninstallSelectAll) {
     $btnUninstallSelectAll.Add_Click({
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller -or $script:isActionRunning) { return }
+        if ($script:uninstallerVirtualView) {
+            [void]$script:uninstallerVirtualView.SelectAllVisible()
+            return
+        }
         $script:suppressUninstallerSelectionCount = $true
         try {
             $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
@@ -2497,6 +2607,10 @@ if ($btnUninstallSelectAll) {
 if ($btnUninstallDeselectAll) {
     $btnUninstallDeselectAll.Add_Click({
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller -or $script:isActionRunning) { return }
+        if ($script:uninstallerVirtualView) {
+            [void]$script:uninstallerVirtualView.DeselectAll()
+            return
+        }
         $script:suppressUninstallerSelectionCount = $true
         try {
             foreach ($entry in $script:uninstallerRowEntries) {
@@ -2602,21 +2716,25 @@ function Add-ItemsToUninstallQueue {
         $added++
     }
     if ($added -gt 0) {
-        $script:suppressUninstallerSelectionCount = $true
-        try {
-            foreach ($entry in $script:uninstallerRowEntries) {
-                $rk = Get-UninstallerAppQueueKey $entry.App
-                if ($addedKeys.Contains($rk)) {
-                    $entry.IsSelected = $false
-                    $entry.IsQueued = $true
-                    if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
-                    if ($entry.Row) { $entry.Row.Opacity = 0.52 }
+        if ($script:uninstallerVirtualView) {
+            $script:uninstallerVirtualView.MarkQueuedByKeys($addedKeys)
+        } else {
+            $script:suppressUninstallerSelectionCount = $true
+            try {
+                foreach ($entry in $script:uninstallerRowEntries) {
+                    $rk = Get-UninstallerAppQueueKey $entry.App
+                    if ($addedKeys.Contains($rk)) {
+                        $entry.IsSelected = $false
+                        $entry.IsQueued = $true
+                        if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                        if ($entry.Row) { $entry.Row.Opacity = 0.52 }
+                    }
                 }
+            } finally {
+                $script:suppressUninstallerSelectionCount = $false
             }
-        } finally {
-            $script:suppressUninstallerSelectionCount = $false
+            Update-UninstallerSelectionCount
         }
-        Update-UninstallerSelectionCount
     }
     Update-UninstallQueueUiState
     return $added
@@ -2661,14 +2779,18 @@ function Start-UninstallQueueExecution {
             if ($script:isWindowClosing -or $script:cancelRequested) { break }
             $completedApps++
             $removedAnyRow = $false
-            foreach ($entry in $script:uninstallerRowEntries) {
-                if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
-                    $entry.IsRemoved = $true
-                    $entry.IsSelected = $false
-                    $entry.IsQueued = $false
-                    if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
-                    if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
-                    $removedAnyRow = $true
+            if ($script:uninstallerVirtualView) {
+                $removedAnyRow = [bool]$script:uninstallerVirtualView.MarkRemovedByKey($qItem.Key)
+            } else {
+                foreach ($entry in $script:uninstallerRowEntries) {
+                    if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
+                        $entry.IsRemoved = $true
+                        $entry.IsSelected = $false
+                        $entry.IsQueued = $false
+                        if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                        if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
+                        $removedAnyRow = $true
+                    }
                 }
             }
             if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
@@ -2698,10 +2820,14 @@ function Start-UninstallQueueExecution {
         $script:isUninstallingQueue = $false
         $script:uninstallQueue.Clear()
         $script:uninstallQueuedKeys.Clear()
-        foreach ($entry in $script:uninstallerRowEntries) {
-            $entry.IsQueued = $false
-            if ($entry.Row -and -not $entry.IsRemoved) {
-                $entry.Row.Opacity = 1.0
+        if ($script:uninstallerVirtualView) {
+            $script:uninstallerVirtualView.ClearAllQueued()
+        } else {
+            foreach ($entry in $script:uninstallerRowEntries) {
+                $entry.IsQueued = $false
+                if ($entry.Row -and -not $entry.IsRemoved) {
+                    $entry.Row.Opacity = 1.0
+                }
             }
         }
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
@@ -4584,6 +4710,8 @@ function Stop-AllBackgroundWork {
     try { Stop-ActiveWaitFrames } catch {}
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
+    try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
     try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
     try {
         if ("DuckUtil.UiAssetPipeline" -as [type]) {

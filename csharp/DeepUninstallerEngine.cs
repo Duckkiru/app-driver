@@ -5447,5 +5447,85 @@ namespace DuckUtil
                 };
             });
         }
+
+        public static Task<long> GetDirectorySizeFastAsync(string rootPath, int maxDepth)
+        {
+            return Task.Run(delegate() { return GetDirectorySizeFast(rootPath, maxDepth); });
+        }
+
+        public static Task<string[]> ExtractBinaryAndCertTokensAsync(string targetDir, string uninstallString, string fallbackExe)
+        {
+            return Task.Run(delegate() { return ExtractBinaryAndCertTokens(targetDir, uninstallString, fallbackExe); });
+        }
+
+        public static Task<List<string>> ScanAppShortcutsAsync(string[] rootDirs, string targetLocPrefix, string cleanAppName)
+        {
+            var tcs = new TaskCompletionSource<List<string>>();
+            Thread t = new Thread(delegate()
+            {
+                var results = new List<string>();
+                object wsh = null;
+                Type wshType = null;
+                try
+                {
+                    if (rootDirs != null && rootDirs.Length > 0)
+                    {
+                        wshType = Type.GetTypeFromProgID("WScript.Shell");
+                        if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                        if (wsh != null)
+                        {
+                            bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
+                            bool hasClean = !string.IsNullOrEmpty(cleanAppName);
+                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            {
+                                string root = rootDirs[ri];
+                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                {
+                                    object sc = null;
+                                    try
+                                    {
+                                        string lnkName = Path.GetFileNameWithoutExtension(lnk) ?? "";
+                                        sc = wshType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, wsh, new object[] { lnk });
+                                        if (sc != null)
+                                        {
+                                            string target = sc.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, sc, null) as string;
+                                            bool matches = false;
+                                            if (hasPrefix && !string.IsNullOrEmpty(target) && target.StartsWith(targetLocPrefix, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                matches = true;
+                                            }
+                                            else if (hasClean && lnkName.Equals(cleanAppName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(target) && !File.Exists(target) && !Directory.Exists(target))
+                                            {
+                                                matches = true;
+                                            }
+                                            if (matches) results.Add(lnk);
+                                        }
+                                    }
+                                    catch {}
+                                    finally
+                                    {
+                                        if (sc != null) { try { Marshal.FinalReleaseComObject(sc); } catch {} }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    tcs.TrySetResult(results);
+                }
+                catch
+                {
+                    tcs.TrySetResult(results);
+                }
+                finally
+                {
+                    if (wsh != null) { try { Marshal.FinalReleaseComObject(wsh); } catch {} }
+                }
+            });
+            t.IsBackground = true;
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            return tcs.Task;
+        }
     }
 }

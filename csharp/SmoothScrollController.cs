@@ -5,10 +5,13 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -242,7 +245,7 @@ namespace DuckUtil {
         private static readonly ConcurrentQueue<ReadyIconItem> _remoteQueue = new ConcurrentQueue<ReadyIconItem>();
         private static readonly ConcurrentQueue<ReadyIconItem> _uninstQueue = new ConcurrentQueue<ReadyIconItem>();
         private static readonly ConcurrentQueue<RemoteIconJob> _remoteJobs = new ConcurrentQueue<RemoteIconJob>();
-        private static readonly ConcurrentQueue<UninstIconJob> _uninstJobs = new ConcurrentQueue<UninstIconJob>();
+        private static readonly ConcurrentStack<UninstIconJob> _uninstJobs = new ConcurrentStack<UninstIconJob>();
 
         private static int _remoteGen = 0;
         private static int _remoteRemaining = 0;
@@ -298,8 +301,7 @@ namespace DuckUtil {
         public static void ResetUninstallerIconPipeline() {
             Interlocked.Increment(ref _uninstGen);
             Interlocked.Exchange(ref _uninstRemaining, 0);
-            UninstIconJob j;
-            while (_uninstJobs.TryDequeue(out j)) {}
+            _uninstJobs.Clear();
             ReadyIconItem d;
             while (_uninstQueue.TryDequeue(out d)) {}
         }
@@ -539,7 +541,7 @@ namespace DuckUtil {
             try {
                 while (true) {
                     UninstIconJob job;
-                    if (!_uninstJobs.TryDequeue(out job)) break;
+                    if (!_uninstJobs.TryPop(out job)) break;
                     if (job == null) continue;
                     int gen = job.Generation;
                     try {
@@ -562,7 +564,7 @@ namespace DuckUtil {
                 }
             } finally {
                 Interlocked.Decrement(ref _uninstActiveWorkers);
-                if (!_uninstJobs.IsEmpty) EnsureUninstWorkers(2);
+                if (!_uninstJobs.IsEmpty) EnsureUninstWorkers(3);
             }
         }
 
@@ -570,7 +572,8 @@ namespace DuckUtil {
             if (indices == null || targetPaths == null || indices.Length == 0) return;
             int gen = Volatile.Read(ref _uninstGen);
             int queued = 0;
-            for (int k = 0; k < indices.Length && k < targetPaths.Length; k++) {
+            for (int k = indices.Length - 1; k >= 0; k--) {
+                if (k >= targetPaths.Length) continue;
                 string p = targetPaths[k];
                 if (string.IsNullOrWhiteSpace(p)) continue;
                 BitmapSource cached;
@@ -584,7 +587,7 @@ namespace DuckUtil {
                     continue;
                 }
                 Interlocked.Increment(ref _uninstRemaining);
-                _uninstJobs.Enqueue(new UninstIconJob {
+                _uninstJobs.Push(new UninstIconJob {
                     Index = indices[k],
                     Generation = gen,
                     TargetPath = p
@@ -592,7 +595,7 @@ namespace DuckUtil {
                 queued++;
             }
             if (queued > 0) {
-                EnsureUninstWorkers(Math.Min(2, queued));
+                EnsureUninstWorkers(Math.Min(3, queued));
             }
         }
 
@@ -1032,6 +1035,1263 @@ namespace DuckUtil {
                 LinkBtn = linkBtn,
                 LinkIcon = linkIcon
             };
+        }
+
+        private static readonly Thickness _loItemMgn = new Thickness(0, 0, 0, 6);
+        private static readonly Thickness _loItemPad = new Thickness(10, 8, 10, 8);
+        private static readonly Thickness _loCbMgn = new Thickness(0, 0, 10, 0);
+        private static readonly Thickness _loBadgePad = new Thickness(6, 2, 6, 2);
+        private static readonly Thickness _loConfPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _loConfMgn = new Thickness(6, 0, 0, 0);
+        private static readonly Thickness _loSizeMgn = new Thickness(10, 0, 8, 0);
+        private static readonly Thickness _loBtnPad = new Thickness(8, 3, 8, 3);
+        private static readonly CornerRadius _loItemCr = new CornerRadius(2);
+        private static readonly CornerRadius _loPillCr = new CornerRadius(4);
+
+        public static Border CreateLeftoverItemRow(
+            object tagItem,
+            string typeText,
+            string confText,
+            string appName,
+            string displayPath,
+            string sizeText,
+            bool isRegistry,
+            System.Windows.Media.Brush itemBg,
+            System.Windows.Media.Brush itemBorder,
+            System.Windows.Media.Brush badgeBg,
+            System.Windows.Media.Brush whiteBrush,
+            System.Windows.Media.Brush confBg,
+            System.Windows.Media.Brush confBorder,
+            System.Windows.Media.Brush confFg,
+            System.Windows.Media.Brush titleFg,
+            System.Windows.Media.Brush pathFg,
+            System.Windows.Media.Brush sizeRegFg,
+            System.Windows.Media.Brush sizeFileFg,
+            System.Windows.Media.Brush btnBg,
+            System.Windows.Media.Brush btnFg,
+            out CheckBox outCheckBox,
+            out Button outOpenBtn)
+        {
+            var itemBorderEl = new Border();
+            itemBorderEl.Background = itemBg;
+            itemBorderEl.BorderBrush = itemBorder;
+            itemBorderEl.BorderThickness = _tOne;
+            itemBorderEl.CornerRadius = _loItemCr;
+            itemBorderEl.Margin = _loItemMgn;
+            itemBorderEl.Padding = _loItemPad;
+
+            var itemGrid = new Grid();
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto });
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto });
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol1 });
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto });
+            itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto });
+
+            var cb = new CheckBox();
+            cb.IsChecked = true;
+            cb.Tag = tagItem;
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.Margin = _loCbMgn;
+            Grid.SetColumn(cb, 0);
+            itemGrid.Children.Add(cb);
+
+            var badgeStack = new StackPanel();
+            badgeStack.Orientation = Orientation.Horizontal;
+            badgeStack.VerticalAlignment = VerticalAlignment.Center;
+            badgeStack.Margin = _loCbMgn;
+
+            var badgeBorder = new Border();
+            badgeBorder.Background = badgeBg;
+            badgeBorder.CornerRadius = _loPillCr;
+            badgeBorder.Padding = _loBadgePad;
+            var badgeTb = new TextBlock();
+            badgeTb.Text = typeText ?? "";
+            badgeTb.FontSize = 10.5;
+            badgeTb.FontWeight = FontWeights.SemiBold;
+            badgeTb.Foreground = whiteBrush;
+            badgeBorder.Child = badgeTb;
+            badgeStack.Children.Add(badgeBorder);
+
+            var confBorderEl = new Border();
+            confBorderEl.Background = confBg;
+            confBorderEl.BorderBrush = confBorder;
+            confBorderEl.BorderThickness = _tOne;
+            confBorderEl.CornerRadius = _loPillCr;
+            confBorderEl.Padding = _loConfPad;
+            confBorderEl.Margin = _loConfMgn;
+            var confTb = new TextBlock();
+            confTb.Text = string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText;
+            confTb.FontSize = 9.5;
+            confTb.Foreground = confFg;
+            confBorderEl.Child = confTb;
+            badgeStack.Children.Add(confBorderEl);
+
+            Grid.SetColumn(badgeStack, 1);
+            itemGrid.Children.Add(badgeStack);
+
+            var infoPanel = new StackPanel();
+            infoPanel.VerticalAlignment = VerticalAlignment.Center;
+            var appTb = new TextBlock();
+            appTb.Text = appName ?? "";
+            appTb.FontWeight = FontWeights.SemiBold;
+            appTb.Foreground = titleFg;
+            infoPanel.Children.Add(appTb);
+
+            var pathTb = new TextBlock();
+            pathTb.Text = displayPath ?? "";
+            pathTb.FontSize = 11;
+            pathTb.Foreground = pathFg;
+            pathTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            pathTb.ToolTip = displayPath ?? "";
+            infoPanel.Children.Add(pathTb);
+
+            Grid.SetColumn(infoPanel, 2);
+            itemGrid.Children.Add(infoPanel);
+
+            var sizeTb = new TextBlock();
+            sizeTb.VerticalAlignment = VerticalAlignment.Center;
+            sizeTb.FontSize = 11.5;
+            sizeTb.FontWeight = FontWeights.SemiBold;
+            sizeTb.Margin = _loSizeMgn;
+            sizeTb.Text = isRegistry ? "Registry" : (sizeText ?? "0.00 MB");
+            sizeTb.Foreground = isRegistry ? sizeRegFg : sizeFileFg;
+            Grid.SetColumn(sizeTb, 3);
+            itemGrid.Children.Add(sizeTb);
+
+            var openBtn = new Button();
+            openBtn.Content = "M\u1EDF v\u1ECB tr\u00ED";
+            openBtn.FontSize = 10.5;
+            openBtn.Padding = _loBtnPad;
+            openBtn.VerticalAlignment = VerticalAlignment.Center;
+            openBtn.Background = btnBg;
+            openBtn.Foreground = btnFg;
+            openBtn.Tag = tagItem;
+            Grid.SetColumn(openBtn, 4);
+            itemGrid.Children.Add(openBtn);
+
+            itemBorderEl.Child = itemGrid;
+            outCheckBox = cb;
+            outOpenBtn = openBtn;
+            return itemBorderEl;
+        }
+    }
+
+    public sealed class UninstVirtualItem {
+        public object App { get; set; }
+        public string Id { get; set; }
+        public string DisplayName { get; set; }
+        public string DisplayVersion { get; set; }
+        public string Publisher { get; set; }
+        public string SizeText { get; set; }
+        public long SizeBytes { get; set; }
+        public bool IsBrokenOrphan { get; set; }
+        public string TargetFolder { get; set; }
+        public string InstallLocation { get; set; }
+        public string DataLocation { get; set; }
+        public string UninstallString { get; set; }
+        public string SearchText { get; set; }
+        public string IconTarget { get; set; }
+        public string QueueKey { get; set; }
+        public string BadgeLetter { get; set; }
+        public int RegIndex { get; set; }
+        public bool IsSelected { get; set; }
+        public bool IsQueued { get; set; }
+        public bool IsRemoved { get; set; }
+        public bool IconEnqueued { get; set; }
+        public bool IconLoaded { get; set; }
+        internal UninstRowSlot BoundSlot;
+        public Border Row { get { return BoundSlot != null ? BoundSlot.RowBorder : null; } }
+        public CheckBox CheckBox { get { return BoundSlot != null ? BoundSlot.CheckBox : null; } }
+    }
+
+    public sealed class UninstFilterStats {
+        public int VisibleCount { get; set; }
+        public int TotalCount { get; set; }
+        public int BrokenCount { get; set; }
+        public long VisibleBytes { get; set; }
+        public int SelectedCount { get; set; }
+    }
+
+    internal sealed class UninstRowSlot {
+        public Border RowBorder;
+        public CheckBox CheckBox;
+        public System.Windows.Controls.Image IconImg;
+        public Border FallbackBadge;
+        public TextBlock BadgeTb;
+        public TextBlock NameTb;
+        public TextBlock VerTb;
+        public TextBlock PubTb;
+        public TextBlock SizeTb;
+        public Border StatusBorder;
+        public TextBlock StatusTb;
+        public Border FolderBtn;
+        public UninstVirtualItem BoundItem;
+        public int BoundIndex = -1;
+        public bool HasBoundOnce = false;
+        public bool LastBroken = false;
+        public bool LastSelected = false;
+        public bool LastQueued = false;
+        public bool LastHasFolder = false;
+        public double LastTop = -1.0;
+    }
+
+    public sealed class UninstallerVirtualView {
+        private sealed class FallbackRule {
+            public Regex Pattern;
+            public string Id;
+            public FallbackRule(string pat, string id) {
+                Pattern = new Regex(pat, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                Id = id;
+            }
+        }
+
+        private static readonly Regex _rxParen = new Regex(@"\(.*?\)", RegexOptions.Compiled);
+        private static readonly Regex _rxVersion = new Regex(@"\b(version|v)?\s*\d+(\.\d+)+[^\s]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxUninstExe = new Regex(@"unins|vc_redist|vcredist", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly FallbackRule[] _fallbackRules = new FallbackRule[] {
+            new FallbackRule(@"Visual Studio Code|VS Code", "Microsoft.VisualStudioCode"),
+            new FallbackRule(@"Visual C\+\+|VCRedist", "Microsoft.VCRedist.2015+.x64"),
+            new FallbackRule(@"ASP\.NET|\.NET SDK|Desktop Runtime|\.NET", "Microsoft.DotNet.DesktopRuntime.8"),
+            new FallbackRule(@"Corretto", "Amazon.Corretto.25.JDK"),
+            new FallbackRule(@"Temurin|Adoptium", "EclipseAdoptium.Temurin.21.JDK"),
+            new FallbackRule(@"Java \d+|Java\(TM\)|OpenJDK", "Oracle.JavaRuntimeEnvironment"),
+            new FallbackRule(@"Node\.js", "OpenJS.NodeJS.LTS"),
+            new FallbackRule(@"GitHub CLI", "GitHub.cli"),
+            new FallbackRule(@"^Git\b", "Git.Git"),
+            new FallbackRule(@"Python", "Python.Python.3.13"),
+            new FallbackRule(@"Rustup", "Rustlang.Rustup"),
+            new FallbackRule(@"PowerToys", "Microsoft.PowerToys"),
+            new FallbackRule(@"Legacy Launcher", "LegacyLauncher.LegacyLauncher"),
+            new FallbackRule(@"Google Chrome", "Google.Chrome"),
+            new FallbackRule(@"Chrome Remote Desktop", "Google.ChromeRemoteDesktopHost"),
+            new FallbackRule(@"Brave", "Brave.Brave"),
+            new FallbackRule(@"Firefox", "Mozilla.Firefox"),
+            new FallbackRule(@"Microsoft Edge", "Microsoft.Edge"),
+            new FallbackRule(@"Discord", "Discord.Discord"),
+            new FallbackRule(@"Zalo", "VNGCorp.Zalo"),
+            new FallbackRule(@"Docker Desktop", "Docker.DockerDesktop"),
+            new FallbackRule(@"Ollama", "Ollama.Ollama"),
+            new FallbackRule(@"Antigravity IDE", "Google.AntigravityIDE"),
+            new FallbackRule(@"^Antigravity", "Google.Antigravity"),
+            new FallbackRule(@"WebStorm", "JetBrains.WebStorm"),
+            new FallbackRule(@"Android Studio", "Google.AndroidStudio"),
+            new FallbackRule(@"Visual Studio|vs_", "Microsoft.VisualStudio.2022.Community"),
+            new FallbackRule(@"Windows Software Development Kit|Windows SDK", "Microsoft.WindowsTerminal")
+        };
+
+        private static readonly GridLength _col0 = new GridLength(38, GridUnitType.Pixel);
+        private static readonly GridLength _col1 = new GridLength(1, GridUnitType.Star);
+        private static readonly GridLength _col2 = new GridLength(130, GridUnitType.Pixel);
+        private static readonly GridLength _col3 = new GridLength(220, GridUnitType.Pixel);
+        private static readonly GridLength _col4 = new GridLength(105, GridUnitType.Pixel);
+        private static readonly GridLength _col5 = new GridLength(115, GridUnitType.Pixel);
+        private static readonly GridLength _col6 = new GridLength(54, GridUnitType.Pixel);
+        private static readonly GridLength _iconCol = new GridLength(20, GridUnitType.Pixel);
+        private static readonly Thickness _tZero = new Thickness(0);
+        private static readonly Thickness _tRowBdr = new Thickness(1, 0, 1, 1);
+        private static readonly Thickness _tOne = new Thickness(1);
+        private static readonly Thickness _tName = new Thickness(8, 0, 8, 0);
+        private static readonly Thickness _tNameText = new Thickness(8, 0, 4, 0);
+        private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
+        private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly CornerRadius _cRow = new CornerRadius(0);
+        private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private const double RowHeight = 38.0;
+
+        private readonly ScrollViewer _sv;
+        private readonly Canvas _canvas;
+        private readonly UIElement _tabPage;
+        private readonly string _folderGlyph;
+        private readonly Style _rowStyle;
+        private readonly System.Windows.Media.Brush _rowBorderBrush;
+        private readonly System.Windows.Media.Brush _colDividerBrush;
+        private readonly System.Windows.Media.Brush _checkedBg;
+        private readonly System.Windows.Media.Brush _titleBrush;
+        private readonly System.Windows.Media.Brush _titleBrokenBrush;
+        private readonly System.Windows.Media.Brush _mutedBrush;
+        private readonly System.Windows.Media.Brush _lightBrush;
+        private readonly System.Windows.Media.Brush _badgeBg;
+        private readonly System.Windows.Media.Brush _badgeFg;
+        private readonly System.Windows.Media.Brush _badgeBrokenBg;
+        private readonly System.Windows.Media.Brush _badgeBrokenFg;
+        private readonly System.Windows.Media.Brush _statusOkBg;
+        private readonly System.Windows.Media.Brush _statusOkBorder;
+        private readonly System.Windows.Media.Brush _statusOkFg;
+        private readonly System.Windows.Media.Brush _statusBrokenBg;
+        private readonly System.Windows.Media.Brush _statusBrokenBorder;
+        private readonly System.Windows.Media.Brush _folderBg;
+        private readonly System.Windows.Media.Brush _folderBorder;
+
+        private readonly List<UninstVirtualItem> _allItems = new List<UninstVirtualItem>();
+        private UninstVirtualItem[] _byRegIndex = new UninstVirtualItem[0];
+        private readonly List<UninstVirtualItem> _visibleItems = new List<UninstVirtualItem>();
+        private readonly List<UninstRowSlot> _allSlots = new List<UninstRowSlot>();
+        private readonly Dictionary<int, UninstRowSlot> _activeSlots = new Dictionary<int, UninstRowSlot>();
+        private readonly Stack<UninstRowSlot> _freeSlots = new Stack<UninstRowSlot>();
+        private readonly DispatcherTimer _iconTimer;
+
+        private int _lastStart = -1;
+        private int _lastEnd = -1;
+        private int _selectedCount = 0;
+        private double _panelWidth = 0.0;
+        private bool _suppressCheckEvents = false;
+        private bool _isStopped = false;
+        private int _lastTotalSourceCount = 0;
+
+        public Func<bool> CanInteract;
+        public Action<int> OnSelectionChanged;
+
+        public List<UninstVirtualItem> AllItems { get { return _allItems; } }
+        public List<UninstVirtualItem> VisibleItems { get { return _visibleItems; } }
+        public int SelectedCount { get { return _selectedCount; } }
+        public int PoolSize { get { return _allSlots.Count; } }
+
+        public UninstallerVirtualView(
+            ScrollViewer sv,
+            Canvas canvas,
+            UIElement tabPage,
+            string folderGlyph,
+            Style rowStyle,
+            System.Windows.Media.Brush rowBorderBrush,
+            System.Windows.Media.Brush colDividerBrush,
+            System.Windows.Media.Brush checkedBg,
+            System.Windows.Media.Brush titleBrush,
+            System.Windows.Media.Brush titleBrokenBrush,
+            System.Windows.Media.Brush mutedBrush,
+            System.Windows.Media.Brush lightBrush,
+            System.Windows.Media.Brush badgeBg,
+            System.Windows.Media.Brush badgeFg,
+            System.Windows.Media.Brush badgeBrokenBg,
+            System.Windows.Media.Brush badgeBrokenFg,
+            System.Windows.Media.Brush statusOkBg,
+            System.Windows.Media.Brush statusOkBorder,
+            System.Windows.Media.Brush statusOkFg,
+            System.Windows.Media.Brush statusBrokenBg,
+            System.Windows.Media.Brush statusBrokenBorder,
+            System.Windows.Media.Brush folderBg,
+            System.Windows.Media.Brush folderBorder)
+        {
+            _sv = sv;
+            _canvas = canvas;
+            _tabPage = tabPage;
+            _folderGlyph = folderGlyph ?? "";
+            _rowStyle = rowStyle;
+            _rowBorderBrush = rowBorderBrush;
+            _colDividerBrush = colDividerBrush;
+            _checkedBg = checkedBg;
+            _titleBrush = titleBrush;
+            _titleBrokenBrush = titleBrokenBrush;
+            _mutedBrush = mutedBrush;
+            _lightBrush = lightBrush;
+            _badgeBg = badgeBg;
+            _badgeFg = badgeFg;
+            _badgeBrokenBg = badgeBrokenBg;
+            _badgeBrokenFg = badgeBrokenFg;
+            _statusOkBg = statusOkBg;
+            _statusOkBorder = statusOkBorder;
+            _statusOkFg = statusOkFg;
+            _statusBrokenBg = statusBrokenBg;
+            _statusBrokenBorder = statusBrokenBorder;
+            _folderBg = folderBg;
+            _folderBorder = folderBorder;
+
+            if (_sv != null) {
+                _sv.ScrollChanged += OnScrollChanged;
+            }
+            if (_canvas != null) {
+                _canvas.SizeChanged += OnCanvasSizeChanged;
+                _canvas.AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(OnRowCheckBoxChecked));
+                _canvas.AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(OnRowCheckBoxUnchecked));
+                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp));
+            }
+
+            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
+            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
+            _iconTimer.Tick += OnIconTimerTick;
+        }
+
+        public static Task<List<UninstVirtualItem>> BuildVirtualItemsAsync(
+            System.Collections.IList rawApps,
+            Dictionary<string, string> catalogIconLookup,
+            string iconsCacheDir)
+        {
+            return Task.Run(delegate() {
+                var result = new List<UninstVirtualItem>();
+                if (rawApps == null || rawApps.Count == 0) return result;
+
+                string windir = Environment.GetEnvironmentVariable("WINDIR") ?? @"C:\Windows";
+                string msiExe = Path.Combine(windir, @"System32\msiexec.exe");
+                if (!File.Exists(msiExe)) msiExe = "";
+
+                PropertyInfo pId = null, pName = null, pVer = null, pPub = null, pSize = null;
+                PropertyInfo pBroken = null, pInstLoc = null, pDataLoc = null, pUninst = null;
+                PropertyInfo pRawReg = null, pIconSrc = null, pTargetFolder = null, pSearchIdx = null;
+                Type cachedType = null;
+
+                int regIdx = 0;
+                for (int i = 0; i < rawApps.Count; i++) {
+                    object app = rawApps[i];
+                    if (app == null) continue;
+                    Type t = app.GetType();
+                    if (t != cachedType) {
+                        cachedType = t;
+                        pId = t.GetProperty("Id");
+                        pName = t.GetProperty("DisplayName");
+                        pVer = t.GetProperty("DisplayVersion");
+                        pPub = t.GetProperty("Publisher");
+                        pSize = t.GetProperty("SizeBytes");
+                        pBroken = t.GetProperty("IsBrokenOrphan");
+                        pInstLoc = t.GetProperty("InstallLocation");
+                        pDataLoc = t.GetProperty("DataLocation");
+                        pUninst = t.GetProperty("UninstallString");
+                        pRawReg = t.GetProperty("RawRegPath");
+                        pIconSrc = t.GetProperty("IconSourcePath");
+                        pTargetFolder = t.GetProperty("TargetFolder");
+                        pSearchIdx = t.GetProperty("SearchIndex");
+                    }
+
+                    string id = pId != null ? (pId.GetValue(app, null) as string ?? "") : "";
+                    string dispName = pName != null ? (pName.GetValue(app, null) as string ?? "") : "";
+                    string dispVer = pVer != null ? (pVer.GetValue(app, null) as string ?? "") : "";
+                    string pub = pPub != null ? (pPub.GetValue(app, null) as string ?? "") : "";
+                    long sizeBytes = 0;
+                    if (pSize != null) {
+                        object svObj = pSize.GetValue(app, null);
+                        if (svObj != null) { try { sizeBytes = Convert.ToInt64(svObj); } catch {} }
+                    }
+                    bool isBroken = false;
+                    if (pBroken != null) {
+                        object brObj = pBroken.GetValue(app, null);
+                        if (brObj != null) { try { isBroken = Convert.ToBoolean(brObj); } catch {} }
+                    }
+                    string instLoc = pInstLoc != null ? (pInstLoc.GetValue(app, null) as string ?? "") : "";
+                    string dataLoc = pDataLoc != null ? (pDataLoc.GetValue(app, null) as string ?? "") : "";
+                    string uninstStr = pUninst != null ? (pUninst.GetValue(app, null) as string ?? "") : "";
+                    string rawReg = pRawReg != null ? (pRawReg.GetValue(app, null) as string ?? "") : "";
+                    string iconSrc = pIconSrc != null ? (pIconSrc.GetValue(app, null) as string ?? "") : "";
+                    string targetFolder = pTargetFolder != null ? (pTargetFolder.GetValue(app, null) as string ?? "") : "";
+                    string searchIdx = pSearchIdx != null ? (pSearchIdx.GetValue(app, null) as string ?? "") : "";
+
+                    if (string.IsNullOrEmpty(targetFolder)) {
+                        if (!string.IsNullOrWhiteSpace(instLoc) && Directory.Exists(instLoc)) targetFolder = instLoc;
+                        else if (!string.IsNullOrWhiteSpace(dataLoc) && Directory.Exists(dataLoc)) targetFolder = dataLoc;
+                    }
+                    if (string.IsNullOrEmpty(searchIdx)) {
+                        searchIdx = (dispName + " " + pub + " " + dispVer).ToLowerInvariant();
+                    }
+
+                    string sizeText = "--";
+                    if (sizeBytes > 0) {
+                        double mb = (double)sizeBytes / 1048576.0;
+                        sizeText = mb >= 1024.0
+                            ? string.Format("{0:N2} GB", mb / 1024.0)
+                            : string.Format("{0:N1} MB", mb);
+                    }
+
+                    string queueKey;
+                    if (!string.IsNullOrWhiteSpace(rawReg)) queueKey = "REG:" + rawReg;
+                    else if (!string.IsNullOrWhiteSpace(id)) queueKey = "ID:" + id + "|" + dispName;
+                    else queueKey = "NAME:" + dispName + "|" + instLoc;
+
+                    string dispTrim = string.IsNullOrEmpty(dispName) ? "A" : dispName.Trim();
+                    string badgeLetter = isBroken ? "!" : (dispTrim.Length > 0 ? dispTrim.Substring(0, 1).ToUpperInvariant() : "\u2022");
+
+                    string iconTarget = ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, msiExe);
+
+                    result.Add(new UninstVirtualItem {
+                        App = app,
+                        Id = id,
+                        DisplayName = dispName,
+                        DisplayVersion = string.IsNullOrEmpty(dispVer) ? "--" : dispVer,
+                        Publisher = string.IsNullOrEmpty(pub) ? "--" : pub,
+                        SizeText = sizeText,
+                        SizeBytes = sizeBytes,
+                        IsBrokenOrphan = isBroken,
+                        TargetFolder = targetFolder,
+                        InstallLocation = instLoc,
+                        DataLocation = dataLoc,
+                        UninstallString = uninstStr,
+                        SearchText = searchIdx,
+                        IconTarget = iconTarget,
+                        QueueKey = queueKey,
+                        BadgeLetter = badgeLetter,
+                        RegIndex = regIdx++
+                    });
+                }
+                return result;
+            });
+        }
+
+        private static string ResolveBestIconTarget(
+            string id,
+            string displayName,
+            string srcPath,
+            Dictionary<string, string> catalogLookup,
+            string iconsCacheDir,
+            string msiExe)
+        {
+            bool srcExists = !string.IsNullOrWhiteSpace(srcPath) && File.Exists(srcPath);
+            if (srcExists) {
+                string fn = Path.GetFileNameWithoutExtension(srcPath) ?? "";
+                bool inPkgCache = srcPath.IndexOf(@"\Package Cache\", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (!inPkgCache && !_rxUninstExe.IsMatch(fn)) {
+                    return srcPath;
+                }
+            }
+
+            string catPng = ResolveCatalogPng(id, displayName, catalogLookup, iconsCacheDir);
+            if (!string.IsNullOrEmpty(catPng)) return catPng;
+            if (srcExists) return srcPath;
+            return msiExe;
+        }
+
+        private static string ResolveCatalogPng(
+            string id,
+            string displayName,
+            Dictionary<string, string> catalogLookup,
+            string iconsCacheDir)
+        {
+            string cand;
+            if (catalogLookup != null) {
+                if (!string.IsNullOrEmpty(id) && catalogLookup.TryGetValue(id, out cand) && File.Exists(cand)) return cand;
+                if (!string.IsNullOrEmpty(displayName) && catalogLookup.TryGetValue(displayName, out cand) && File.Exists(cand)) return cand;
+                if (!string.IsNullOrEmpty(displayName)) {
+                    string cleanDn = _rxVersion.Replace(_rxParen.Replace(displayName, ""), "").Trim();
+                    if (!string.IsNullOrEmpty(cleanDn) && catalogLookup.TryGetValue(cleanDn, out cand) && File.Exists(cand)) return cand;
+                }
+            }
+            if (!string.IsNullOrEmpty(displayName) && !string.IsNullOrEmpty(iconsCacheDir)) {
+                for (int r = 0; r < _fallbackRules.Length; r++) {
+                    if (_fallbackRules[r].Pattern.IsMatch(displayName)) {
+                        string p = Path.Combine(iconsCacheDir, _fallbackRules[r].Id + ".png");
+                        if (File.Exists(p)) return p;
+                    }
+                }
+            }
+            return "";
+        }
+
+        public void SetItems(List<UninstVirtualItem> items, int totalSourceCount) {
+            _isStopped = false;
+            _iconTimer.Stop();
+            UnbindAllSlots();
+            _allItems.Clear();
+            _visibleItems.Clear();
+            _selectedCount = 0;
+            _lastStart = -1;
+            _lastEnd = -1;
+            _lastTotalSourceCount = totalSourceCount;
+
+            if (items != null) {
+                for (int i = 0; i < items.Count; i++) {
+                    UninstVirtualItem it = items[i];
+                    if (it != null) {
+                        it.RegIndex = _allItems.Count;
+                        _allItems.Add(it);
+                    }
+                }
+            }
+            _byRegIndex = _allItems.ToArray();
+            if (_canvas != null && _canvas.ActualWidth > 0) {
+                _panelWidth = _canvas.ActualWidth;
+            }
+        }
+
+        public UninstFilterStats ApplyFilterAndSort(string query, bool brokenOnly, bool sortBySize, bool resort) {
+            if (resort && _allItems.Count > 1) {
+                if (sortBySize) {
+                    _allItems.Sort(delegate(UninstVirtualItem a, UninstVirtualItem b) {
+                        int c = b.SizeBytes.CompareTo(a.SizeBytes);
+                        if (c != 0) return c;
+                        return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+                    });
+                } else {
+                    _allItems.Sort(delegate(UninstVirtualItem a, UninstVirtualItem b) {
+                        int c = b.IsBrokenOrphan.CompareTo(a.IsBrokenOrphan);
+                        if (c != 0) return c;
+                        return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+                    });
+                }
+            }
+
+            string q = string.IsNullOrWhiteSpace(query) ? "" : query.Trim().ToLowerInvariant();
+            bool hasQ = q.Length > 0;
+
+            _visibleItems.Clear();
+            int brokenCount = 0;
+            long visibleBytes = 0;
+            int selCount = 0;
+
+            for (int i = 0; i < _allItems.Count; i++) {
+                UninstVirtualItem it = _allItems[i];
+                if (it.IsRemoved) continue;
+                if (it.IsBrokenOrphan) brokenCount++;
+                if (it.IsSelected) selCount++;
+
+                if (brokenOnly && !it.IsBrokenOrphan) continue;
+                if (hasQ && (it.SearchText == null || it.SearchText.IndexOf(q, StringComparison.Ordinal) < 0)) continue;
+
+                _visibleItems.Add(it);
+                if (it.SizeBytes > 0) visibleBytes += it.SizeBytes;
+            }
+            _selectedCount = selCount;
+
+            if (_canvas != null) {
+                double newH = _visibleItems.Count * RowHeight;
+                if (double.IsNaN(_canvas.Height) || Math.Abs(_canvas.Height - newH) > 0.5) {
+                    _canvas.Height = newH;
+                }
+                if (_sv != null) {
+                    double vh = _sv.ViewportHeight > 100.0 ? _sv.ViewportHeight : 620.0;
+                    double maxOff = Math.Max(0.0, newH - vh);
+                    if (_sv.VerticalOffset > maxOff) {
+                        _sv.ScrollToVerticalOffset(maxOff);
+                    }
+                }
+            }
+
+            SyncViewport(true);
+
+            return new UninstFilterStats {
+                VisibleCount = _visibleItems.Count,
+                TotalCount = _lastTotalSourceCount > 0 ? _lastTotalSourceCount : _allItems.Count,
+                BrokenCount = brokenCount,
+                VisibleBytes = visibleBytes,
+                SelectedCount = _selectedCount
+            };
+        }
+
+        public void SyncViewport(bool force) {
+            if (_isStopped || _canvas == null) return;
+            if (_tabPage != null && _tabPage.Visibility != Visibility.Visible) return;
+
+            int visCount = _visibleItems.Count;
+            if (visCount == 0) {
+                UnbindAllSlots();
+                CollapseFreeSlots();
+                _lastStart = -1;
+                _lastEnd = -1;
+                return;
+            }
+
+            if (_canvas.ActualWidth > 0 && Math.Abs(_canvas.ActualWidth - _panelWidth) > 0.5) {
+                _panelWidth = _canvas.ActualWidth;
+            }
+
+            double vOff = _sv != null ? _sv.VerticalOffset : 0.0;
+            double vH = (_sv != null && _sv.ViewportHeight > 100.0) ? _sv.ViewportHeight : 620.0;
+
+            int startIdx = Math.Max(0, (int)Math.Floor(vOff / RowHeight) - 3);
+            int endIdx = Math.Min(visCount - 1, (int)Math.Ceiling((vOff + vH) / RowHeight) + 4);
+
+            if (!force && startIdx == _lastStart && endIdx == _lastEnd) {
+                return;
+            }
+            _lastStart = startIdx;
+            _lastEnd = endIdx;
+
+            if (force) {
+                UnbindAllSlots();
+            } else if (_activeSlots.Count > 0) {
+                var toRemove = new List<int>();
+                foreach (KeyValuePair<int, UninstRowSlot> kv in _activeSlots) {
+                    if (kv.Key < startIdx || kv.Key > endIdx) {
+                        toRemove.Add(kv.Key);
+                    }
+                }
+                for (int r = 0; r < toRemove.Count; r++) {
+                    int idx = toRemove[r];
+                    UninstRowSlot slot = _activeSlots[idx];
+                    _activeSlots.Remove(idx);
+                    if (slot.BoundItem != null && slot.BoundItem.BoundSlot == slot) {
+                        slot.BoundItem.BoundSlot = null;
+                    }
+                    slot.BoundItem = null;
+                    slot.BoundIndex = -1;
+                    _freeSlots.Push(slot);
+                }
+            }
+
+            List<int> enqIdx = null;
+            List<string> enqPaths = null;
+
+            for (int idx = startIdx; idx <= endIdx; idx++) {
+                if (_activeSlots.ContainsKey(idx)) continue;
+                UninstVirtualItem item = _visibleItems[idx];
+                UninstRowSlot slot = _freeSlots.Count > 0 ? _freeSlots.Pop() : CreateSlot();
+
+                double topY = idx * RowHeight;
+                if (Math.Abs(slot.LastTop - topY) > 0.1) {
+                    Canvas.SetTop(slot.RowBorder, topY);
+                    slot.LastTop = topY;
+                }
+                if (_panelWidth > 0 && (double.IsNaN(slot.RowBorder.Width) || Math.Abs(slot.RowBorder.Width - _panelWidth) > 0.5)) {
+                    slot.RowBorder.Width = _panelWidth;
+                }
+                if (slot.RowBorder.Visibility != Visibility.Visible) {
+                    slot.RowBorder.Visibility = Visibility.Visible;
+                }
+
+                BindSlot(slot, item, idx);
+                _activeSlots[idx] = slot;
+
+                if (!item.IconLoaded && !item.IconEnqueued && !string.IsNullOrEmpty(item.IconTarget)) {
+                    item.IconEnqueued = true;
+                    if (enqIdx == null) {
+                        enqIdx = new List<int>();
+                        enqPaths = new List<string>();
+                    }
+                    enqIdx.Add(item.RegIndex);
+                    enqPaths.Add(item.IconTarget);
+                }
+            }
+
+            CollapseFreeSlots();
+
+            if (enqIdx != null && enqIdx.Count > 0) {
+                UiAssetPipeline.EnqueueUninstallerIcons(enqIdx.ToArray(), enqPaths.ToArray());
+                if (!_iconTimer.IsEnabled) {
+                    _iconTimer.Start();
+                }
+            }
+        }
+
+        private void UnbindAllSlots() {
+            if (_activeSlots.Count == 0) return;
+            foreach (KeyValuePair<int, UninstRowSlot> kv in _activeSlots) {
+                UninstRowSlot slot = kv.Value;
+                if (slot.BoundItem != null && slot.BoundItem.BoundSlot == slot) {
+                    slot.BoundItem.BoundSlot = null;
+                }
+                slot.BoundItem = null;
+                slot.BoundIndex = -1;
+                _freeSlots.Push(slot);
+            }
+            _activeSlots.Clear();
+        }
+
+        private void CollapseFreeSlots() {
+            if (_freeSlots.Count == 0) return;
+            foreach (UninstRowSlot slot in _freeSlots) {
+                if (slot.RowBorder.Visibility != Visibility.Collapsed) {
+                    slot.RowBorder.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private UninstRowSlot CreateSlot() {
+            var rowBorder = new Border();
+            rowBorder.Height = RowHeight;
+            if (_panelWidth > 0) rowBorder.Width = _panelWidth;
+            rowBorder.CornerRadius = _cRow;
+            rowBorder.Padding = _tZero;
+            rowBorder.Margin = _tZero;
+            if (_rowStyle != null) rowBorder.Style = _rowStyle;
+            rowBorder.BorderBrush = _rowBorderBrush;
+            rowBorder.BorderThickness = _tRowBdr;
+            rowBorder.SnapsToDevicePixels = true;
+            rowBorder.Cursor = Cursors.Hand;
+            rowBorder.ToolTip = "";
+            ToolTipService.SetInitialShowDelay(rowBorder, 5000);
+            Canvas.SetLeft(rowBorder, 0.0);
+
+            var rowGrid = new Grid();
+            rowGrid.VerticalAlignment = VerticalAlignment.Stretch;
+            rowGrid.SnapsToDevicePixels = true;
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col0 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col1 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col2 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col3 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col4 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col5 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col6 });
+
+            var cb = new CheckBox();
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.HorizontalAlignment = HorizontalAlignment.Center;
+            cb.Margin = _tZero;
+            Grid.SetColumn(cb, 0);
+            rowGrid.Children.Add(cb);
+
+            var nameGrid = new Grid();
+            nameGrid.VerticalAlignment = VerticalAlignment.Center;
+            nameGrid.Margin = _tName;
+            nameGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _iconCol });
+            nameGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _col1 });
+
+            var iconSlot = new Grid();
+            iconSlot.Width = 20;
+            iconSlot.Height = 20;
+            iconSlot.VerticalAlignment = VerticalAlignment.Center;
+            iconSlot.HorizontalAlignment = HorizontalAlignment.Left;
+
+            var fallbackBadge = new Border();
+            fallbackBadge.Width = 20;
+            fallbackBadge.Height = 20;
+            fallbackBadge.CornerRadius = _cFour;
+            fallbackBadge.Background = _badgeBg;
+            fallbackBadge.VerticalAlignment = VerticalAlignment.Center;
+            fallbackBadge.HorizontalAlignment = HorizontalAlignment.Center;
+
+            var badgeTb = new TextBlock();
+            badgeTb.FontSize = 10.5;
+            badgeTb.FontWeight = FontWeights.Bold;
+            badgeTb.Foreground = _badgeFg;
+            badgeTb.HorizontalAlignment = HorizontalAlignment.Center;
+            badgeTb.VerticalAlignment = VerticalAlignment.Center;
+            fallbackBadge.Child = badgeTb;
+
+            var img = new System.Windows.Controls.Image();
+            img.Width = 20;
+            img.Height = 20;
+            img.Stretch = Stretch.Uniform;
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.LowQuality);
+            img.VerticalAlignment = VerticalAlignment.Center;
+            img.HorizontalAlignment = HorizontalAlignment.Center;
+            img.Visibility = Visibility.Collapsed;
+
+            iconSlot.Children.Add(fallbackBadge);
+            iconSlot.Children.Add(img);
+            Grid.SetColumn(iconSlot, 0);
+            nameGrid.Children.Add(iconSlot);
+
+            var nameTb = new TextBlock();
+            nameTb.FontSize = 12;
+            nameTb.FontWeight = FontWeights.SemiBold;
+            nameTb.Foreground = _titleBrush;
+            nameTb.VerticalAlignment = VerticalAlignment.Center;
+            nameTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            nameTb.Margin = _tNameText;
+            Grid.SetColumn(nameTb, 1);
+            nameGrid.Children.Add(nameTb);
+
+            Grid.SetColumn(nameGrid, 1);
+            rowGrid.Children.Add(nameGrid);
+
+            var verTb = new TextBlock();
+            verTb.FontSize = 11.5;
+            verTb.Foreground = _mutedBrush;
+            verTb.VerticalAlignment = VerticalAlignment.Center;
+            verTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            verTb.Margin = _tCol;
+            Grid.SetColumn(verTb, 2);
+            rowGrid.Children.Add(verTb);
+
+            var pubTb = new TextBlock();
+            pubTb.FontSize = 11.5;
+            pubTb.Foreground = _mutedBrush;
+            pubTb.VerticalAlignment = VerticalAlignment.Center;
+            pubTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            pubTb.Margin = _tCol;
+            Grid.SetColumn(pubTb, 3);
+            rowGrid.Children.Add(pubTb);
+
+            var sizeTb = new TextBlock();
+            sizeTb.FontSize = 11.5;
+            sizeTb.Foreground = _lightBrush;
+            sizeTb.VerticalAlignment = VerticalAlignment.Center;
+            sizeTb.TextAlignment = TextAlignment.Right;
+            sizeTb.Margin = _tSize;
+            Grid.SetColumn(sizeTb, 4);
+            rowGrid.Children.Add(sizeTb);
+
+            var statusBorder = new Border();
+            statusBorder.CornerRadius = _cFour;
+            statusBorder.Padding = _tBadgePad;
+            statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
+            statusBorder.VerticalAlignment = VerticalAlignment.Center;
+            statusBorder.BorderThickness = _tOne;
+            statusBorder.Background = _statusOkBg;
+            statusBorder.BorderBrush = _statusOkBorder;
+
+            var statusTb = new TextBlock();
+            statusTb.FontSize = 10.5;
+            statusTb.FontWeight = FontWeights.SemiBold;
+            statusTb.Text = "B\u00ECnh th\u01B0\u1EDDng";
+            statusTb.Foreground = _statusOkFg;
+            statusBorder.Child = statusTb;
+            Grid.SetColumn(statusBorder, 5);
+            rowGrid.Children.Add(statusBorder);
+
+            var folderBtn = new Border();
+            folderBtn.Width = 26;
+            folderBtn.Height = 24;
+            folderBtn.CornerRadius = _cFour;
+            folderBtn.Background = _folderBg;
+            folderBtn.BorderBrush = _folderBorder;
+            folderBtn.BorderThickness = _tOne;
+            folderBtn.HorizontalAlignment = HorizontalAlignment.Center;
+            folderBtn.VerticalAlignment = VerticalAlignment.Center;
+            folderBtn.ToolTip = "";
+            ToolTipService.SetInitialShowDelay(folderBtn, 5000);
+
+            var folderIcon = new TextBlock();
+            folderIcon.Text = _folderGlyph;
+            folderIcon.FontSize = 10.5;
+            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
+            folderIcon.VerticalAlignment = VerticalAlignment.Center;
+            folderBtn.Child = folderIcon;
+            Grid.SetColumn(folderBtn, 6);
+            rowGrid.Children.Add(folderBtn);
+
+            if (_colDividerBrush != null) {
+                for (int divCol = 0; divCol < 6; divCol++) {
+                    var colDiv = new Border();
+                    colDiv.Width = 1;
+                    colDiv.Background = _colDividerBrush;
+                    colDiv.HorizontalAlignment = HorizontalAlignment.Right;
+                    colDiv.VerticalAlignment = VerticalAlignment.Stretch;
+                    colDiv.SnapsToDevicePixels = true;
+                    colDiv.IsHitTestVisible = false;
+                    Grid.SetColumn(colDiv, divCol);
+                    rowGrid.Children.Add(colDiv);
+                }
+            }
+
+            rowBorder.Child = rowGrid;
+
+            var slot = new UninstRowSlot {
+                RowBorder = rowBorder,
+                CheckBox = cb,
+                IconImg = img,
+                FallbackBadge = fallbackBadge,
+                BadgeTb = badgeTb,
+                NameTb = nameTb,
+                VerTb = verTb,
+                PubTb = pubTb,
+                SizeTb = sizeTb,
+                StatusBorder = statusBorder,
+                StatusTb = statusTb,
+                FolderBtn = folderBtn
+            };
+            rowBorder.Tag = slot;
+            cb.Tag = slot;
+            folderBtn.Tag = slot;
+
+            rowBorder.ToolTipOpening += OnRowToolTipOpening;
+            folderBtn.ToolTipOpening += OnFolderToolTipOpening;
+
+            _allSlots.Add(slot);
+            _canvas.Children.Add(rowBorder);
+            return slot;
+        }
+
+        private void BindSlot(UninstRowSlot slot, UninstVirtualItem item, int visIdx) {
+            slot.BoundItem = item;
+            slot.BoundIndex = visIdx;
+            item.BoundSlot = slot;
+
+            if (slot.NameTb.Text != item.DisplayName) slot.NameTb.Text = item.DisplayName;
+            if (slot.VerTb.Text != item.DisplayVersion) slot.VerTb.Text = item.DisplayVersion;
+            if (slot.PubTb.Text != item.Publisher) slot.PubTb.Text = item.Publisher;
+            if (slot.SizeTb.Text != item.SizeText) slot.SizeTb.Text = item.SizeText;
+
+            bool first = !slot.HasBoundOnce;
+            if (first || slot.LastBroken != item.IsBrokenOrphan) {
+                slot.LastBroken = item.IsBrokenOrphan;
+                slot.NameTb.Foreground = item.IsBrokenOrphan ? _titleBrokenBrush : _titleBrush;
+                slot.FallbackBadge.Background = item.IsBrokenOrphan ? _badgeBrokenBg : _badgeBg;
+                slot.BadgeTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _badgeFg;
+                slot.StatusBorder.Background = item.IsBrokenOrphan ? _statusBrokenBg : _statusOkBg;
+                slot.StatusBorder.BorderBrush = item.IsBrokenOrphan ? _statusBrokenBorder : _statusOkBorder;
+                slot.StatusTb.Text = item.IsBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+                slot.StatusTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _statusOkFg;
+            }
+
+            bool hasFolder = !string.IsNullOrEmpty(item.TargetFolder);
+            if (first || slot.LastHasFolder != hasFolder) {
+                slot.LastHasFolder = hasFolder;
+                slot.FolderBtn.Cursor = hasFolder ? Cursors.Hand : Cursors.Arrow;
+                slot.FolderBtn.Opacity = hasFolder ? 1.0 : 0.25;
+            }
+
+            if (first || slot.LastQueued != item.IsQueued) {
+                slot.LastQueued = item.IsQueued;
+                slot.RowBorder.Opacity = item.IsQueued ? 0.52 : 1.0;
+            }
+
+            if (first || slot.LastSelected != item.IsSelected) {
+                slot.LastSelected = item.IsSelected;
+                _suppressCheckEvents = true;
+                try {
+                    slot.CheckBox.IsChecked = item.IsSelected;
+                } finally {
+                    _suppressCheckEvents = false;
+                }
+                if (item.IsSelected) {
+                    slot.RowBorder.Background = _checkedBg;
+                } else {
+                    slot.RowBorder.ClearValue(Border.BackgroundProperty);
+                }
+            }
+
+            BitmapSource cachedBmp = !string.IsNullOrEmpty(item.IconTarget)
+                ? UiAssetPipeline.TryGetCachedUninstIcon(item.IconTarget)
+                : null;
+            if (cachedBmp != null) {
+                item.IconLoaded = true;
+                if (!ReferenceEquals(slot.IconImg.Source, cachedBmp)) slot.IconImg.Source = cachedBmp;
+                if (slot.IconImg.Visibility != Visibility.Visible) slot.IconImg.Visibility = Visibility.Visible;
+                if (slot.FallbackBadge.Visibility != Visibility.Collapsed) slot.FallbackBadge.Visibility = Visibility.Collapsed;
+            } else {
+                if (slot.IconImg.Source != null) slot.IconImg.Source = null;
+                if (slot.IconImg.Visibility != Visibility.Collapsed) slot.IconImg.Visibility = Visibility.Collapsed;
+                if (slot.BadgeTb.Text != item.BadgeLetter) slot.BadgeTb.Text = item.BadgeLetter;
+                if (slot.FallbackBadge.Visibility != Visibility.Visible) slot.FallbackBadge.Visibility = Visibility.Visible;
+            }
+
+            slot.HasBoundOnce = true;
+        }
+
+        private void OnScrollChanged(object sender, ScrollChangedEventArgs e) {
+            if (_isStopped) return;
+            if (Math.Abs(e.VerticalChange) > 0.01 || Math.Abs(e.ViewportHeightChange) > 0.5) {
+                SyncViewport(false);
+            }
+        }
+
+        private void OnCanvasSizeChanged(object sender, SizeChangedEventArgs e) {
+            if (_isStopped || _canvas == null) return;
+            double w = _canvas.ActualWidth;
+            if (w <= 0 || Math.Abs(w - _panelWidth) <= 0.5) return;
+            _panelWidth = w;
+            for (int i = 0; i < _allSlots.Count; i++) {
+                _allSlots[i].RowBorder.Width = w;
+            }
+        }
+
+        private void OnRowToolTipOpening(object sender, ToolTipEventArgs e) {
+            var b = sender as Border;
+            if (b == null) return;
+            var slot = b.Tag as UninstRowSlot;
+            if (slot == null || slot.BoundItem == null) { e.Handled = true; return; }
+            UninstVirtualItem it = slot.BoundItem;
+            string dataTip = !string.IsNullOrWhiteSpace(it.DataLocation) ? ("\nKhu d\u1EEF li\u1EC7u ri\u00EAng: " + it.DataLocation) : "";
+            b.ToolTip = it.DisplayName + "\nPhi\u00EAn b\u1EA3n: " + it.DisplayVersion + "\nNh\u00E0 ph\u00E1t h\u00E0nh: " + it.Publisher + "\n\u0110\u01B0\u1EDDng d\u1EABn: " + it.InstallLocation + dataTip + "\nL\u1EC7nh g\u1EE1: " + it.UninstallString;
+        }
+
+        private void OnFolderToolTipOpening(object sender, ToolTipEventArgs e) {
+            var b = sender as Border;
+            if (b == null) return;
+            var slot = b.Tag as UninstRowSlot;
+            if (slot == null || slot.BoundItem == null) { e.Handled = true; return; }
+            string tf = slot.BoundItem.TargetFolder;
+            b.ToolTip = !string.IsNullOrEmpty(tf) ? ("M\u1EDF th\u01B0 m\u1EE5c: " + tf) : "Kh\u00F4ng t\u00ECm th\u1EA5y th\u01B0 m\u1EE5c c\u00E0i \u0111\u1EB7t";
+        }
+
+        private void OnRowCheckBoxChecked(object sender, RoutedEventArgs e) {
+            if (_suppressCheckEvents) return;
+            var cb = e.OriginalSource as CheckBox;
+            if (cb == null) return;
+            var slot = cb.Tag as UninstRowSlot;
+            if (slot == null || slot.BoundItem == null) return;
+            if (!slot.BoundItem.IsSelected) {
+                slot.BoundItem.IsSelected = true;
+                _selectedCount++;
+            }
+            slot.LastSelected = true;
+            slot.RowBorder.Background = _checkedBg;
+            if (OnSelectionChanged != null) OnSelectionChanged(_selectedCount);
+        }
+
+        private void OnRowCheckBoxUnchecked(object sender, RoutedEventArgs e) {
+            if (_suppressCheckEvents) return;
+            var cb = e.OriginalSource as CheckBox;
+            if (cb == null) return;
+            var slot = cb.Tag as UninstRowSlot;
+            if (slot == null || slot.BoundItem == null) return;
+            if (slot.BoundItem.IsSelected) {
+                slot.BoundItem.IsSelected = false;
+                if (_selectedCount > 0) _selectedCount--;
+            }
+            slot.LastSelected = false;
+            slot.RowBorder.ClearValue(Border.BackgroundProperty);
+            if (OnSelectionChanged != null) OnSelectionChanged(_selectedCount);
+        }
+
+        private void OnCanvasMouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
+            if (e.Handled || _isStopped) return;
+            if (CanInteract != null && !CanInteract()) return;
+
+            DependencyObject node = e.OriginalSource as DependencyObject;
+            while (node != null && !ReferenceEquals(node, _canvas)) {
+                if (node is ToggleButton) return;
+                var b = node as Border;
+                if (b != null) {
+                    var slot = b.Tag as UninstRowSlot;
+                    if (slot != null && slot.BoundItem != null) {
+                        if (ReferenceEquals(b, slot.FolderBtn)) {
+                            e.Handled = true;
+                            string loc = slot.BoundItem.TargetFolder;
+                            if (!string.IsNullOrEmpty(loc) && Directory.Exists(loc)) {
+                                try { Process.Start("explorer.exe", "\"" + loc + "\""); } catch {}
+                            }
+                            return;
+                        }
+                        if (ReferenceEquals(b, slot.RowBorder)) {
+                            bool cur = slot.CheckBox.IsChecked == true;
+                            slot.CheckBox.IsChecked = !cur;
+                            return;
+                        }
+                    }
+                }
+                if (node is Visual) node = VisualTreeHelper.GetParent(node);
+                else break;
+            }
+        }
+
+        private void OnIconTimerTick(object sender, EventArgs e) {
+            if (_isStopped) {
+                _iconTimer.Stop();
+                return;
+            }
+            ReadyIconItem[] ready = UiAssetPipeline.DequeueReadyUninstallerIcons(16);
+            if (ready != null && ready.Length > 0) {
+                for (int i = 0; i < ready.Length; i++) {
+                    ReadyIconItem ri = ready[i];
+                    if (ri == null || ri.Bitmap == null) continue;
+                    if (ri.Index >= 0 && ri.Index < _byRegIndex.Length) {
+                        UninstVirtualItem it = _byRegIndex[ri.Index];
+                        if (it != null && string.Equals(it.IconTarget, ri.CacheKey, StringComparison.OrdinalIgnoreCase)) {
+                            it.IconLoaded = true;
+                            UninstRowSlot slot = it.BoundSlot;
+                            if (slot != null && ReferenceEquals(slot.BoundItem, it)) {
+                                slot.IconImg.Source = ri.Bitmap;
+                                slot.IconImg.Visibility = Visibility.Visible;
+                                slot.FallbackBadge.Visibility = Visibility.Collapsed;
+                            }
+                        }
+                    }
+                }
+            }
+            if (UiAssetPipeline.IsUninstIdle) {
+                _iconTimer.Stop();
+            }
+        }
+
+        public int SelectAllVisible() {
+            _suppressCheckEvents = true;
+            try {
+                for (int i = 0; i < _visibleItems.Count; i++) {
+                    UninstVirtualItem it = _visibleItems[i];
+                    if (it.IsRemoved) continue;
+                    if (!it.IsSelected) {
+                        it.IsSelected = true;
+                        _selectedCount++;
+                    }
+                }
+                foreach (KeyValuePair<int, UninstRowSlot> kv in _activeSlots) {
+                    UninstRowSlot slot = kv.Value;
+                    if (slot.BoundItem != null && slot.BoundItem.IsSelected && !slot.LastSelected) {
+                        slot.LastSelected = true;
+                        slot.CheckBox.IsChecked = true;
+                        slot.RowBorder.Background = _checkedBg;
+                    }
+                }
+            } finally {
+                _suppressCheckEvents = false;
+            }
+            if (OnSelectionChanged != null) OnSelectionChanged(_selectedCount);
+            return _selectedCount;
+        }
+
+        public int DeselectAll() {
+            _suppressCheckEvents = true;
+            try {
+                for (int i = 0; i < _allItems.Count; i++) {
+                    _allItems[i].IsSelected = false;
+                }
+                _selectedCount = 0;
+                foreach (KeyValuePair<int, UninstRowSlot> kv in _activeSlots) {
+                    UninstRowSlot slot = kv.Value;
+                    if (slot.LastSelected) {
+                        slot.LastSelected = false;
+                        slot.CheckBox.IsChecked = false;
+                        slot.RowBorder.ClearValue(Border.BackgroundProperty);
+                    }
+                }
+            } finally {
+                _suppressCheckEvents = false;
+            }
+            if (OnSelectionChanged != null) OnSelectionChanged(0);
+            return 0;
+        }
+
+        public void MarkQueuedByKeys(HashSet<string> keys) {
+            if (keys == null || keys.Count == 0) return;
+            _suppressCheckEvents = true;
+            try {
+                for (int i = 0; i < _allItems.Count; i++) {
+                    UninstVirtualItem it = _allItems[i];
+                    if (keys.Contains(it.QueueKey)) {
+                        if (it.IsSelected) {
+                            it.IsSelected = false;
+                            if (_selectedCount > 0) _selectedCount--;
+                        }
+                        it.IsQueued = true;
+                        UninstRowSlot slot = it.BoundSlot;
+                        if (slot != null && ReferenceEquals(slot.BoundItem, it)) {
+                            slot.LastSelected = false;
+                            slot.LastQueued = true;
+                            slot.CheckBox.IsChecked = false;
+                            slot.RowBorder.ClearValue(Border.BackgroundProperty);
+                            slot.RowBorder.Opacity = 0.52;
+                        }
+                    }
+                }
+            } finally {
+                _suppressCheckEvents = false;
+            }
+            if (OnSelectionChanged != null) OnSelectionChanged(_selectedCount);
+        }
+
+        public void ClearAllQueued() {
+            for (int i = 0; i < _allItems.Count; i++) {
+                UninstVirtualItem it = _allItems[i];
+                if (it.IsQueued) {
+                    it.IsQueued = false;
+                    UninstRowSlot slot = it.BoundSlot;
+                    if (slot != null && ReferenceEquals(slot.BoundItem, it)) {
+                        slot.LastQueued = false;
+                        slot.RowBorder.Opacity = 1.0;
+                    }
+                }
+            }
+        }
+
+        public bool MarkRemovedByKey(string key) {
+            if (string.IsNullOrEmpty(key)) return false;
+            bool removedAny = false;
+            for (int i = 0; i < _allItems.Count; i++) {
+                UninstVirtualItem it = _allItems[i];
+                if (!it.IsRemoved && string.Equals(it.QueueKey, key, StringComparison.OrdinalIgnoreCase)) {
+                    it.IsRemoved = true;
+                    if (it.IsSelected) {
+                        it.IsSelected = false;
+                        if (_selectedCount > 0) _selectedCount--;
+                    }
+                    it.IsQueued = false;
+                    removedAny = true;
+                }
+            }
+            return removedAny;
+        }
+
+        public object[] GetSelectedApps() {
+            var list = new List<object>();
+            for (int i = 0; i < _allItems.Count; i++) {
+                UninstVirtualItem it = _allItems[i];
+                if (!it.IsRemoved && it.IsSelected && it.App != null) {
+                    list.Add(it.App);
+                }
+            }
+            return list.ToArray();
+        }
+
+        public void Stop() {
+            _isStopped = true;
+            try { _iconTimer.Stop(); } catch {}
         }
     }
 }

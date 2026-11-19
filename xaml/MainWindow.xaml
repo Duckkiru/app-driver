@@ -525,26 +525,8 @@
 
                     <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                        <Grid Margin="16,0,16,12">
-                            <Grid Name="UninstallerColLinesOverlay" Margin="1,0,1,0" IsHitTestVisible="False" Panel.ZIndex="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="38"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="130"/>
-                                    <ColumnDefinition Width="220"/>
-                                    <ColumnDefinition Width="105"/>
-                                    <ColumnDefinition Width="115"/>
-                                    <ColumnDefinition Width="54"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
-                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
-                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
-                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
-                                <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
-                                <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
-                            </Grid>
-                            <StackPanel Name="UninstallerRowsPanel"/>
-                        </Grid>
+                        <Canvas Name="UninstallerRowsPanel" Margin="16,0,16,12" Background="Transparent" ClipToBounds="True"
+                                UseLayoutRounding="True" SnapsToDevicePixels="True"/>
                     </ScrollViewer>
             </Grid>
 
