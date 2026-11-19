@@ -3954,25 +3954,7 @@ function New-SidebarNavRow {
     return $desc
 }
 
-$script:easeOutCubic = [System.Windows.Media.Animation.CubicEase]::new()
-$script:easeOutCubic.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
-$script:easeOutCubic.Freeze()
-$script:durViewGlide  = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(120))
-
-$script:animViewY = [System.Windows.Media.Animation.DoubleAnimation]::new(4.0, 0.0, $script:durViewGlide)
-$script:animViewY.EasingFunction = $script:easeOutCubic; $script:animViewY.Freeze()
 $script:hasSmoothAccordion = ("DuckUtil.SmoothAccordionItem" -as [type]) -ne $null
-
-function Invoke-ViewRevealGlide {
-    param([System.Windows.UIElement]$Element)
-    if ($null -eq $Element) { return }
-    $tt = $Element.RenderTransform -as [System.Windows.Media.TranslateTransform]
-    if ($null -eq $tt) {
-        $tt = [System.Windows.Media.TranslateTransform]::new(0.0, 0.0)
-        $Element.RenderTransform = $tt
-    }
-    $tt.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $script:animViewY, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
-}
 
 function Set-SidebarGroupExpandedVisual {
     param(
@@ -4188,7 +4170,6 @@ function Set-ActiveCatalogCategory {
         $script:activeAllowedCategories = $null
         if ($cardsMasonryHost) {
             $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
-            Invoke-ViewRevealGlide -Element $cardsMasonryHost
         }
         if (-not $script:tab0AllAssetsSettled) {
             Sync-Tab0ViewportAssets
@@ -4256,7 +4237,6 @@ function Set-ActiveCatalogCategory {
         $script:activeAllowedCategories = $grp.CategorySet
         if ($groupMasonrySection) {
             $groupMasonrySection.Visibility = [System.Windows.Visibility]::Visible
-            Invoke-ViewRevealGlide -Element $groupMasonrySection
         }
         return
     }
@@ -4307,7 +4287,6 @@ function Set-ActiveCatalogCategory {
     if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
     if ($singleCategoryHost) {
         $singleCategoryHost.Visibility = [System.Windows.Visibility]::Visible
-        Invoke-ViewRevealGlide -Element $singleCategoryHost
     }
 
     Enqueue-CardIconsNow -CardDesc $cd
