@@ -96,7 +96,7 @@ namespace DuckUtil {
                 _pendingLayoutSyncFrames = 0;
             }
 
-            double step = -e.Delta * 0.85;
+            double step = -e.Delta * 0.90;
             if (double.IsNaN(step) || double.IsInfinity(step)) return;
 
             _targetOffset = Math.Max(0.0, Math.Min(maxScroll, _targetOffset + step));
@@ -152,7 +152,7 @@ namespace DuckUtil {
                 return;
             }
 
-            if (Math.Abs(diff) < 0.35) {
+            if (Math.Abs(diff) < 0.25) {
                 _currentOffset = _targetOffset;
                 _lastAppliedOffset = _currentOffset;
                 _pendingLayoutSyncFrames = 0;
@@ -161,7 +161,7 @@ namespace DuckUtil {
                 return;
             }
 
-            double factor = 1.0 - Math.Exp(-20.0 * dt);
+            double factor = 1.0 - Math.Exp(-16.0 * dt);
             _currentOffset += diff * factor;
             if (_pendingLayoutSyncFrames == 0) {
                 _preApplySvOffset = svOffset;

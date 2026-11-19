@@ -4821,8 +4821,19 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <ScrollViewer Grid.Column="1" Name="AppsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                             <Grid Name="CardsContainer">
-                                <StackPanel Name="CardsMasonrySection">
-                                    <Border Name="GroupFilterBanner" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
+                                <Grid Name="CardsMasonryHost">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
+                                    <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                                    <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                                </Grid>
+
+                                <StackPanel Name="GroupMasonrySection" Visibility="Collapsed">
+                                    <Border Name="GroupFilterBanner" Background="#111722" BorderBrush="#2B394F"
                                             BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,8">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
@@ -4840,15 +4851,15 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                         </Grid>
                                     </Border>
 
-                                    <Grid Name="CardsMasonryHost">
+                                    <Grid Name="GroupMasonryHost">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Name="CardsColDef2" Width="*"/>
+                                            <ColumnDefinition Name="GroupColDef2" Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
-                                        <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
-                                        <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                                        <StackPanel Grid.Column="0" Name="GroupCol0" Margin="4,0"/>
+                                        <StackPanel Grid.Column="1" Name="GroupCol1" Margin="4,0"/>
+                                        <StackPanel Grid.Column="2" Name="GroupCol2" Margin="4,0"/>
                                     </Grid>
                                 </StackPanel>
 
@@ -5377,7 +5388,7 @@ namespace DuckUtil {
                 _pendingLayoutSyncFrames = 0;
             }
 
-            double step = -e.Delta * 0.85;
+            double step = -e.Delta * 0.90;
             if (double.IsNaN(step) || double.IsInfinity(step)) return;
 
             _targetOffset = Math.Max(0.0, Math.Min(maxScroll, _targetOffset + step));
@@ -5433,7 +5444,7 @@ namespace DuckUtil {
                 return;
             }
 
-            if (Math.Abs(diff) < 0.35) {
+            if (Math.Abs(diff) < 0.25) {
                 _currentOffset = _targetOffset;
                 _lastAppliedOffset = _currentOffset;
                 _pendingLayoutSyncFrames = 0;
@@ -5442,7 +5453,7 @@ namespace DuckUtil {
                 return;
             }
 
-            double factor = 1.0 - Math.Exp(-20.0 * dt);
+            double factor = 1.0 - Math.Exp(-16.0 * dt);
             _currentOffset += diff * factor;
             if (_pendingLayoutSyncFrames == 0) {
                 _preApplySvOffset = svOffset;
@@ -14986,7 +14997,7 @@ namespace DuckUtil {
                 _pendingLayoutSyncFrames = 0;
             }
 
-            double step = -e.Delta * 0.85;
+            double step = -e.Delta * 0.90;
             if (double.IsNaN(step) || double.IsInfinity(step)) return;
 
             _targetOffset = Math.Max(0.0, Math.Min(maxScroll, _targetOffset + step));
@@ -15042,7 +15053,7 @@ namespace DuckUtil {
                 return;
             }
 
-            if (Math.Abs(diff) < 0.35) {
+            if (Math.Abs(diff) < 0.25) {
                 _currentOffset = _targetOffset;
                 _lastAppliedOffset = _currentOffset;
                 _pendingLayoutSyncFrames = 0;
@@ -15051,7 +15062,7 @@ namespace DuckUtil {
                 return;
             }
 
-            double factor = 1.0 - Math.Exp(-20.0 * dt);
+            double factor = 1.0 - Math.Exp(-16.0 * dt);
             _currentOffset += diff * factor;
             if (_pendingLayoutSyncFrames == 0) {
                 _preApplySvOffset = svOffset;
@@ -29373,23 +29384,41 @@ function Start-BackgroundIconDownload {
 
 $script:remoteIconRegistry    = [System.Collections.Generic.List[hashtable]]::new()
 $script:cardDescriptors       = [System.Collections.Generic.List[hashtable]]::new()
-$script:cardDescByCategory     = [System.Collections.Generic.Dictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase)
-$script:activeCatalogCategory    = "__ALL__"
-$script:activeSingleCatDesc      = $null
-$script:activeAllowedCategories  = $null
-$script:activeMasonryDescriptors = $null
-$script:deferredCardTimer        = $null
+$script:cardDescByCategory      = [System.Collections.Generic.Dictionary[string, hashtable]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:activeCatalogCategory     = "__ALL__"
+$script:activeSingleCatDesc       = $null
+$script:activeAllowedCategories   = $null
+$script:activeMasonryDescriptors  = $null
+$script:deferredCardTimer         = $null
+$script:allCardsPreparedInAllCols = $false
+$script:currentGroupInHostKey     = ""
+$script:activeBorrowedCards       = [System.Collections.Generic.List[hashtable]]::new()
+$script:tab0AllAssetsSettled      = $false
+$script:lastScrollSyncOffset      = -9999.0
+$script:uiPipeType                = "DuckUtil.UiAssetPipeline" -as [type]
+$script:uiPipeHasIncremental      = ($null -ne $script:uiPipeType) -and ($null -ne $script:uiPipeType.GetMethod("EnqueueRemoteIcons"))
 
 function Try-EnableCompletedCardCaches {
     if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:sharedCardCache) { return }
-    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
-    $isIdleNow = ($null -ne $pipeType -and $null -ne $pipeType.GetProperty("IsRemoteIdle")) -and [DuckUtil.UiAssetPipeline]::IsRemoteIdle
+    $isIdleNow = $script:uiPipeHasIncremental -and [DuckUtil.UiAssetPipeline]::IsRemoteIdle
+    $allSettled = $true
     foreach ($cd in $script:cardDescriptors) {
-        if ($cd -eq $script:activeSingleCatDesc -or -not $cd.Attached -or $cd.CacheEnabled) { continue }
+        if (-not $cd.Attached -or -not $cd.IconsEnqueued) {
+            $allSettled = $false
+        }
+        if ($cd -eq $script:activeSingleCatDesc -or -not $cd.Attached -or $cd.CacheEnabled) {
+            if (-not $cd.CacheEnabled) { $allSettled = $false }
+            continue
+        }
         if ($cd.TotalIcons -eq 0 -or ($cd.IconsEnqueued -and ($cd.LoadedIcons -ge $cd.TotalIcons -or $isIdleNow))) {
             $cd.Card.CacheMode = $script:sharedCardCache
             $cd.CacheEnabled = $true
+        } else {
+            $allSettled = $false
         }
+    }
+    if ($allSettled -and $script:activeCatalogCategory -eq "__ALL__") {
+        $script:tab0AllAssetsSettled = $true
     }
 }
 
@@ -29399,9 +29428,7 @@ function Enqueue-CardIconsNow {
     $CardDesc.IconsEnqueued = $true
     if (-not $CardDesc.IconIndices -or $CardDesc.IconIndices.Count -eq 0) { return }
 
-    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
-    $hasIncremental = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("EnqueueRemoteIcons"))
-    if ($hasIncremental) {
+    if ($script:uiPipeHasIncremental) {
         $idxList  = [System.Collections.Generic.List[int]]::new()
         $urlList  = [System.Collections.Generic.List[string]]::new()
         $fbList   = [System.Collections.Generic.List[string]]::new()
@@ -29437,16 +29464,14 @@ function Enqueue-CardIconsNow {
 }
 
 function Sync-Tab0ViewportAssets {
-    if ($script:isWindowClosing -or -not $script:cardDescriptors -or $script:cardDescriptors.Count -eq 0) { return }
-    $isGroupView = $script:activeCatalogCategory -and $script:activeCatalogCategory.StartsWith("__GROUP__:")
-    if ($script:activeCatalogCategory -and $script:activeCatalogCategory -ne "__ALL__" -and -not $isGroupView) { return }
+    if ($script:isWindowClosing -or $script:tab0AllAssetsSettled -or -not $script:cardDescriptors -or $script:cardDescriptors.Count -eq 0) { return }
+    if ($script:activeCatalogCategory -and $script:activeCatalogCategory -ne "__ALL__") { return }
     $vOff = if ($appsScrollViewer) { [double]$appsScrollViewer.VerticalOffset } else { 0.0 }
     $vH   = if ($appsScrollViewer -and $appsScrollViewer.ViewportHeight -gt 100) { [double]$appsScrollViewer.ViewportHeight } else { 820.0 }
     $bandTop = $vOff - 250.0
     $bandBot = $vOff + $vH + 520.0
 
-    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
-    $hasIncremental = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("EnqueueRemoteIcons"))
+    $hasIncremental = $script:uiPipeHasIncremental
 
     $idxList  = $null
     $urlList  = $null
@@ -29454,8 +29479,7 @@ function Sync-Tab0ViewportAssets {
     $destList = $null
     $keyList  = $null
 
-    $descPool = if ($script:activeMasonryDescriptors) { $script:activeMasonryDescriptors } else { $script:cardDescriptors }
-    foreach ($cd in $descPool) {
+    foreach ($cd in $script:cardDescriptors) {
         if (-not $cd.Attached -and $cd.EstTop -le $bandBot) {
             $cd.Attached = $true
             if ($cd.ColPanel) { [void]$cd.ColPanel.Children.Add($cd.Card) }
@@ -32350,10 +32374,11 @@ function Update-SelectionCount {
     }
 }
 
-$cardsMasonrySection  = $window.FindName("CardsMasonrySection")
 $cardsMasonryHost     = $window.FindName("CardsMasonryHost")
-$cardsColDef2         = $window.FindName("CardsColDef2")
-$cardsCol2Panel       = $window.FindName("CardsCol2")
+$groupMasonrySection  = $window.FindName("GroupMasonrySection")
+$groupMasonryHost     = $window.FindName("GroupMasonryHost")
+$groupColDef2         = $window.FindName("GroupColDef2")
+$groupCol2Panel       = $window.FindName("GroupCol2")
 $groupFilterBanner    = $window.FindName("GroupFilterBanner")
 $txtGroupFilterTitle  = $window.FindName("txtGroupFilterTitle")
 $txtGroupFilterMeta   = $window.FindName("txtGroupFilterMeta")
@@ -32373,10 +32398,15 @@ $script:singleCatCols = @(
     $window.FindName("SingleCatCol1"),
     $window.FindName("SingleCatCol2")
 )
+$script:groupCols = @(
+    $window.FindName("GroupCol0"),
+    $window.FindName("GroupCol1"),
+    $groupCol2Panel
+) | Where-Object { $null -ne $_ }
 $cardCols = @(
     $window.FindName("CardsCol0"),
     $window.FindName("CardsCol1"),
-    $cardsCol2Panel
+    $window.FindName("CardsCol2")
 ) | Where-Object { $null -ne $_ }
 
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -32506,6 +32536,10 @@ if ($cardsContainer -and $script:hasFastCatalogRowBuilder) {
 
 if ($appsScrollViewer) {
     $appsScrollViewer.Add_ScrollChanged({
+        if ($script:tab0AllAssetsSettled -or $script:activeCatalogCategory -ne "__ALL__") { return }
+        $curOff = [double]$appsScrollViewer.VerticalOffset
+        if ($curOff -gt 5.0 -and [Math]::Abs($curOff - $script:lastScrollSyncOffset) -lt 140.0) { return }
+        $script:lastScrollSyncOffset = $curOff
         Sync-Tab0ViewportAssets
     })
 }
@@ -32592,6 +32626,7 @@ foreach ($cat in $categories) {
         Rows          = $cardRowsList
         ColPanel      = $targetColPanel
         AllColPanel   = $targetColPanel
+        AllColIndex   = -1
         EstTop        = $cardEstTop
         AllEstTop     = $cardEstTop
         EstBottom     = $cardEstBot
@@ -33094,7 +33129,96 @@ function New-SidebarNavRow {
     return $desc
 }
 
+$script:easeOutCubic = [System.Windows.Media.Animation.CubicEase]::new()
+$script:easeOutCubic.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
+$script:easeOutCubic.Freeze()
+$script:durSideOpen   = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(160))
+$script:durSideClose  = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(120))
+$script:durChevRotate = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(150))
+$script:durViewGlide  = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(130))
+
+$script:animViewOp = [System.Windows.Media.Animation.DoubleAnimation]::new(0.88, 1.0, $script:durViewGlide)
+$script:animViewOp.EasingFunction = $script:easeOutCubic; $script:animViewOp.Freeze()
+$script:animViewY = [System.Windows.Media.Animation.DoubleAnimation]::new(5.0, 0.0, $script:durViewGlide)
+$script:animViewY.EasingFunction = $script:easeOutCubic; $script:animViewY.Freeze()
+$script:animChevOpen = [System.Windows.Media.Animation.DoubleAnimation]::new(90.0, $script:durChevRotate)
+$script:animChevOpen.EasingFunction = $script:easeOutCubic; $script:animChevOpen.Freeze()
+$script:animChevClose = [System.Windows.Media.Animation.DoubleAnimation]::new(0.0, $script:durChevRotate)
+$script:animChevClose.EasingFunction = $script:easeOutCubic; $script:animChevClose.Freeze()
+$script:animSideOpOpen = [System.Windows.Media.Animation.DoubleAnimation]::new(1.0, $script:durSideOpen)
+$script:animSideOpOpen.EasingFunction = $script:easeOutCubic; $script:animSideOpOpen.Freeze()
+$script:animSideOpClose = [System.Windows.Media.Animation.DoubleAnimation]::new(0.0, $script:durSideClose)
+$script:animSideOpClose.EasingFunction = $script:easeOutCubic; $script:animSideOpClose.Freeze()
+
+function Invoke-ViewRevealGlide {
+    param([System.Windows.UIElement]$Element)
+    if ($null -eq $Element) { return }
+    $tt = $Element.RenderTransform -as [System.Windows.Media.TranslateTransform]
+    if ($null -eq $tt) {
+        $tt = [System.Windows.Media.TranslateTransform]::new(0.0, 0.0)
+        $Element.RenderTransform = $tt
+    }
+    $Element.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $script:animViewOp, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+    $tt.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $script:animViewY, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+}
+
+function Set-SidebarGroupExpandedVisual {
+    param(
+        [hashtable]$Group,
+        [bool]$Expanded,
+        [bool]$Animate = $true
+    )
+    if ($null -eq $Group) { return }
+    $hostEl = $Group.ChildrenHost
+    if ($null -eq $hostEl) { return }
+
+    if ($Group.VisExpanded -eq $Expanded -and (($Expanded -and $hostEl.Visibility -eq [System.Windows.Visibility]::Visible) -or (-not $Expanded -and $hostEl.Visibility -eq [System.Windows.Visibility]::Collapsed))) {
+        return
+    }
+
+    $btn = $Group.BtnDesc
+    if ($btn -and $btn.ChevronRotate) {
+        if ($Animate) {
+            $animRot = if ($Expanded) { $script:animChevOpen } else { $script:animChevClose }
+            $btn.ChevronRotate.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $animRot, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+        } else {
+            $btn.ChevronRotate.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $null)
+            $btn.ChevronRotate.Angle = if ($Expanded) { 90.0 } else { 0.0 }
+        }
+    }
+
+    $Group.VisExpanded = $Expanded
+
+    if (-not $Animate) {
+        $hostEl.BeginAnimation([System.Windows.FrameworkElement]::HeightProperty, $null)
+        $hostEl.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+        if ($Expanded) {
+            $hostEl.Height = [double]$Group.TargetHeight
+            $hostEl.Opacity = 1.0
+            $hostEl.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $hostEl.Height = 0.0
+            $hostEl.Opacity = 0.0
+            $hostEl.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+        return
+    }
+
+    if ($Expanded) {
+        $hostEl.Visibility = [System.Windows.Visibility]::Visible
+        $hostEl.BeginAnimation([System.Windows.FrameworkElement]::HeightProperty, $Group.AnimOpenHeight, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+        $hostEl.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $script:animSideOpOpen, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+    } else {
+        $hostEl.BeginAnimation([System.Windows.FrameworkElement]::HeightProperty, $Group.AnimCloseHeight, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+        $hostEl.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $script:animSideOpClose, [System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace)
+    }
+}
+
+$script:lastSidebarActiveKey = ""
+$script:lastSidebarParentKey = ""
+
 function Update-SidebarVisuals {
+    param([bool]$Animate = $true)
     $activeKey = if ([string]::IsNullOrWhiteSpace($script:activeCatalogCategory)) { "__ALL__" } else { $script:activeCatalogCategory }
     $activeParentKey = ""
     if ($activeKey -ne "__ALL__" -and -not $activeKey.StartsWith("__GROUP__:")) {
@@ -33104,8 +33228,19 @@ function Update-SidebarVisuals {
         }
     }
 
-    foreach ($entry in $script:sidebarCatButtons.Values) {
-        $k = $entry.Key
+    $keysToUpdate = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($script:lastSidebarActiveKey) { [void]$keysToUpdate.Add($script:lastSidebarActiveKey) }
+    if ($script:lastSidebarParentKey) { [void]$keysToUpdate.Add($script:lastSidebarParentKey) }
+    [void]$keysToUpdate.Add($activeKey)
+    if ($activeParentKey) { [void]$keysToUpdate.Add($activeParentKey) }
+
+    if (-not $script:lastSidebarActiveKey) {
+        foreach ($kAll in $script:sidebarCatButtons.Keys) { [void]$keysToUpdate.Add($kAll) }
+    }
+
+    foreach ($k in $keysToUpdate) {
+        $entry = $null
+        if (-not $script:sidebarCatButtons.TryGetValue($k, [ref]$entry)) { continue }
         if ($k -eq $activeKey) {
             $entry.Border.Background = $script:brushSidebarActiveBg
             $entry.Border.BorderBrush = $script:brushSidebarActiveBdr
@@ -33130,19 +33265,67 @@ function Update-SidebarVisuals {
         }
     }
 
+    $script:lastSidebarActiveKey = $activeKey
+    $script:lastSidebarParentKey = $activeParentKey
+
     foreach ($grp in $script:catalogGroupsOrdered) {
         $expanded = [bool]$grp.IsExpanded
-        if ($grp.ChildrenHost) {
-            $grp.ChildrenHost.Visibility = if ($expanded) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-        }
+        Set-SidebarGroupExpandedVisual -Group $grp -Expanded $expanded -Animate $Animate
         $btn = $grp.BtnDesc
         if ($btn -and $btn.Chevron) {
-            $rot = $btn.Chevron.RenderTransform -as [System.Windows.Media.RotateTransform]
-            if ($rot) { $rot.Angle = if ($expanded) { 90 } else { 0 } }
             $isHighlighted = ($grp.Key -eq $activeKey) -or ($grp.Key -eq $activeParentKey)
             $btn.Chevron.Stroke = if ($isHighlighted -or $expanded) { $script:brushSidebarActiveFg } else { $script:brushSidebarCntFg }
         }
     }
+}
+
+function Ensure-AllMasonryReady {
+    if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() }
+    if ($script:allCardsPreparedInAllCols) { return }
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached -and $cd.AllColPanel) {
+            $cd.Attached = $true
+            [void]$cd.AllColPanel.Children.Add($cd.Card)
+        }
+        if ($cd.AllColPanel) {
+            $cd.AllColIndex = $cd.AllColPanel.Children.IndexOf($cd.Card)
+        }
+    }
+    $script:allCardsPreparedInAllCols = $true
+}
+
+function Restore-BorrowedGroupCards {
+    if ($script:activeBorrowedCards.Count -eq 0) {
+        $script:currentGroupInHostKey = ""
+        return
+    }
+    foreach ($gCol in $script:groupCols) {
+        if ($gCol) { $gCol.Children.Clear() }
+    }
+    $sortedBack = @($script:activeBorrowedCards | Sort-Object { $_.AllColIndex })
+    foreach ($cd in $sortedBack) {
+        if ($cd.AllColPanel) {
+            $idx = [Math]::Max(0, [Math]::Min($cd.AllColIndex, $cd.AllColPanel.Children.Count))
+            $cd.AllColPanel.Children.Insert($idx, $cd.Card)
+            $cd.ColPanel = $cd.AllColPanel
+            $cd.EstTop = $cd.AllEstTop
+            $cd.EstBottom = $cd.AllEstBottom
+            $cd.Attached = $true
+        }
+    }
+    $script:activeBorrowedCards.Clear()
+    $script:currentGroupInHostKey = ""
+}
+
+function Schedule-DeferredIconDecode {
+    param([int]$MaxDecode = 32)
+    if (-not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) { return }
+    $window.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::Background, [Action]{
+        if (-not $script:isWindowClosing) {
+            Flush-PendingIconCache -MaxDecode $MaxDecode
+            Try-EnableCompletedCardCaches
+        }
+    }) | Out-Null
 }
 
 function Toggle-SidebarGroupExpanded {
@@ -33150,7 +33333,7 @@ function Toggle-SidebarGroupExpanded {
     $grp = $null
     if ($GroupKey -and $script:catalogGroupByKey.TryGetValue($GroupKey, [ref]$grp)) {
         $grp.IsExpanded = -not $grp.IsExpanded
-        Update-SidebarVisuals
+        Update-SidebarVisuals -Animate $true
     }
 }
 
@@ -33176,19 +33359,23 @@ function Set-ActiveCatalogCategory {
         return
     }
 
-    if ($script:activeSingleCatDesc) {
+    $wasSingleDesc = $script:activeSingleCatDesc
+    if ($wasSingleDesc) {
+        if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
         foreach ($scCol in $script:singleCatCols) {
             if ($scCol) { $scCol.Children.Clear() }
         }
-        $prevCd = $script:activeSingleCatDesc
-        $prevCd.RowsStack.Children.Clear()
-        foreach ($r in $prevCd.Rows) {
-            [void]$prevCd.RowsStack.Children.Add($r)
+        foreach ($r in $wasSingleDesc.Rows) {
+            [void]$wasSingleDesc.RowsStack.Children.Add($r)
+        }
+        if ($wasSingleDesc.TotalIcons -eq 0 -or $wasSingleDesc.LoadedIcons -ge $wasSingleDesc.TotalIcons) {
+            if ($script:sharedCardCache) {
+                $wasSingleDesc.Card.CacheMode = $script:sharedCardCache
+                $wasSingleDesc.CacheEnabled = $true
+            }
         }
         $script:activeSingleCatDesc = $null
     }
-
-    if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() }
 
     $script:activeCatalogCategory = $targetKey
 
@@ -33202,91 +33389,86 @@ function Set-ActiveCatalogCategory {
         foreach ($grp in $script:catalogGroupsOrdered) { $grp.IsExpanded = ($pKey -and $grp.Key -eq $pKey) }
     }
 
-    Update-SidebarVisuals
+    Update-SidebarVisuals -Animate $true
     if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
 
     if ($targetKey -eq "__ALL__") {
-        foreach ($colP in $cardCols) {
-            if ($colP) { $colP.Children.Clear() }
-        }
-        if ($cardsCol2Panel) { $cardsCol2Panel.Visibility = [System.Windows.Visibility]::Visible }
-        if ($cardsColDef2) { $cardsColDef2.Width = $glCol2 }
-        foreach ($cd in $script:cardDescriptors) {
-            $cd.ColPanel = $cd.AllColPanel
-            $cd.EstTop = $cd.AllEstTop
-            $cd.EstBottom = $cd.AllEstBottom
-            $cd.Attached = $true
-            if ($cd.ColPanel) { [void]$cd.ColPanel.Children.Add($cd.Card) }
-        }
+        if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
+        Restore-BorrowedGroupCards
         $script:activeMasonryDescriptors = $null
         $script:activeAllowedCategories = $null
-        if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
-        if ($groupFilterBanner) { $groupFilterBanner.Visibility = [System.Windows.Visibility]::Collapsed }
-        if ($cardsMasonrySection) { $cardsMasonrySection.Visibility = [System.Windows.Visibility]::Visible }
-        if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible }
-        Sync-Tab0ViewportAssets
+        if ($cardsMasonryHost) {
+            $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
+            Invoke-ViewRevealGlide -Element $cardsMasonryHost
+        }
+        if (-not $script:tab0AllAssetsSettled) {
+            Sync-Tab0ViewportAssets
+        }
         return
     }
 
     if ($isGroupTarget) {
         $grp = $script:catalogGroupByKey[$targetKey]
-        foreach ($colP in $cardCols) {
-            if ($colP) { $colP.Children.Clear() }
-        }
-        foreach ($cd in $script:cardDescriptors) {
-            $cd.Attached = $false
-        }
+        if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Collapsed }
 
-        $grpDescs = [System.Collections.Generic.List[hashtable]]::new()
-        foreach ($cName in $grp.Categories) {
-            $cdItem = $null
-            if ($script:cardDescByCategory.TryGetValue($cName, [ref]$cdItem)) {
-                [void]$grpDescs.Add($cdItem)
-            }
-        }
+        if ($script:currentGroupInHostKey -ne $targetKey) {
+            if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
+            Restore-BorrowedGroupCards
+            Ensure-AllMasonryReady
 
-        $colLimit = if ($grpDescs.Count -le 2 -and $cardCols.Count -ge 2) { 2 } else { [Math]::Max(1, $cardCols.Count) }
-        if ($colLimit -eq 2 -and $cardCols.Count -ge 3) {
-            if ($cardsCol2Panel) { $cardsCol2Panel.Visibility = [System.Windows.Visibility]::Collapsed }
-            if ($cardsColDef2) { $cardsColDef2.Width = $glZero }
-        } else {
-            if ($cardsCol2Panel) { $cardsCol2Panel.Visibility = [System.Windows.Visibility]::Visible }
-            if ($cardsColDef2) { $cardsColDef2.Width = $glCol2 }
-        }
-
-        $grpHeights = @(0.0, 0.0, 0.0)
-        foreach ($cd in $grpDescs) {
-            $bestCol = 0
-            $minH = $grpHeights[0]
-            for ($ci = 1; $ci -lt $colLimit; $ci++) {
-                if ($grpHeights[$ci] -lt $minH) {
-                    $minH = $grpHeights[$ci]
-                    $bestCol = $ci
+            $grpDescs = [System.Collections.Generic.List[hashtable]]::new()
+            foreach ($cName in $grp.Categories) {
+                $cdItem = $null
+                if ($script:cardDescByCategory.TryGetValue($cName, [ref]$cdItem)) {
+                    [void]$grpDescs.Add($cdItem)
                 }
             }
-            $colPanel = $cardCols[$bestCol]
-            $cd.ColPanel = $colPanel
-            $cd.EstTop = $minH
-            $cd.EstBottom = $minH + $cd.EstHeight
-            $cd.Attached = $true
-            $cd.Card.CacheMode = $null
-            $cd.CacheEnabled = $false
-            if ($colPanel) { [void]$colPanel.Children.Add($cd.Card) }
-            $grpHeights[$bestCol] += $cd.EstHeight
+
+            $colLimit = if ($grpDescs.Count -le 2 -and $script:groupCols.Count -ge 2) { 2 } else { [Math]::Max(1, $script:groupCols.Count) }
+            if ($colLimit -eq 2 -and $script:groupCols.Count -ge 3) {
+                if ($groupCol2Panel) { $groupCol2Panel.Visibility = [System.Windows.Visibility]::Collapsed }
+                if ($groupColDef2) { $groupColDef2.Width = $glZero }
+            } else {
+                if ($groupCol2Panel) { $groupCol2Panel.Visibility = [System.Windows.Visibility]::Visible }
+                if ($groupColDef2) { $groupColDef2.Width = $glCol2 }
+            }
+
+            $grpHeights = @(0.0, 0.0, 0.0)
+            foreach ($cd in $grpDescs) {
+                $bestCol = 0
+                $minH = $grpHeights[0]
+                for ($ci = 1; $ci -lt $colLimit; $ci++) {
+                    if ($grpHeights[$ci] -lt $minH) {
+                        $minH = $grpHeights[$ci]
+                        $bestCol = $ci
+                    }
+                }
+                if ($cd.AllColPanel) {
+                    $cd.AllColPanel.Children.Remove($cd.Card)
+                }
+                $colPanel = $script:groupCols[$bestCol]
+                $cd.ColPanel = $colPanel
+                $cd.EstTop = $minH
+                $cd.EstBottom = $minH + $cd.EstHeight
+                $cd.Attached = $true
+                if ($colPanel) { [void]$colPanel.Children.Add($cd.Card) }
+                [void]$script:activeBorrowedCards.Add($cd)
+                $grpHeights[$bestCol] += $cd.EstHeight
+            }
+
+            $script:currentGroupInHostKey = $targetKey
+            $script:activeMasonryDescriptors = $grpDescs
+            if ($txtGroupFilterTitle) { $txtGroupFilterTitle.Text = $grp.Title }
+            if ($txtGroupFilterMeta) { $txtGroupFilterMeta.Text = "$($grp.Categories.Count) danh m$([char]0x1EE5)c  $([char]0x00B7)  $($grp.AppCount) $([char]0x1EE9)ng d$([char]0x1EE5)ng" }
+            foreach ($cd in $grpDescs) { Enqueue-CardIconsNow -CardDesc $cd }
+            Schedule-DeferredIconDecode -MaxDecode 48
         }
 
-        $script:activeMasonryDescriptors = $grpDescs
         $script:activeAllowedCategories = $grp.CategorySet
-        if ($txtGroupFilterTitle) { $txtGroupFilterTitle.Text = $grp.Title }
-        if ($txtGroupFilterMeta) { $txtGroupFilterMeta.Text = "$($grp.Categories.Count) danh m$([char]0x1EE5)c  $([char]0x00B7)  $($grp.AppCount) $([char]0x1EE9)ng d$([char]0x1EE5)ng" }
-        if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
-        if ($groupFilterBanner) { $groupFilterBanner.Visibility = [System.Windows.Visibility]::Visible }
-        if ($cardsMasonrySection) { $cardsMasonrySection.Visibility = [System.Windows.Visibility]::Visible }
-        if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible }
-
-        foreach ($cd in $grpDescs) { Enqueue-CardIconsNow -CardDesc $cd }
-        Flush-PendingIconCache -MaxDecode 48
-        Try-EnableCompletedCardCaches
+        if ($groupMasonrySection) {
+            $groupMasonrySection.Visibility = [System.Windows.Visibility]::Visible
+            Invoke-ViewRevealGlide -Element $groupMasonrySection
+        }
         return
     }
 
@@ -33333,11 +33515,14 @@ function Set-ActiveCatalogCategory {
     if ($txtSingleCatTitle) { $txtSingleCatTitle.Text = $targetKey }
     if ($txtSingleCatCount) { $txtSingleCatCount.Text = "$n $([char]0x1EE9)ng d$([char]0x1EE5)ng" }
     if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Collapsed }
-    if ($cardsMasonrySection) { $cardsMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
-    if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Visible }
+    if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($singleCategoryHost) {
+        $singleCategoryHost.Visibility = [System.Windows.Visibility]::Visible
+        Invoke-ViewRevealGlide -Element $singleCategoryHost
+    }
 
     Enqueue-CardIconsNow -CardDesc $cd
-    Flush-PendingIconCache -MaxDecode 32
+    Schedule-DeferredIconDecode -MaxDecode 32
 }
 
 if ($categorySidebarTop -and $categorySidebarPanel) {
@@ -33384,13 +33569,20 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         }
 
         $grpBtnDesc = New-SidebarNavRow -Key $gDef.Key -Label $gDef.Title -Count $grpApps -Role "Group"
+        if ($grpBtnDesc.Chevron) {
+            $grpBtnDesc.ChevronRotate = $grpBtnDesc.Chevron.RenderTransform -as [System.Windows.Media.RotateTransform]
+        }
         [void]$categorySidebarPanel.Children.Add($grpBtnDesc.Border)
 
+        $targetHeight = [double]($gDef.Categories.Count * 27.0)
         $childrenHost = [System.Windows.Controls.Border]::new()
         $childrenHost.BorderBrush = $script:brushSidebarGuide
         $childrenHost.BorderThickness = [System.Windows.Thickness]::new(1, 0, 0, 0)
         $childrenHost.Margin = [System.Windows.Thickness]::new(12, 1, 0, 4)
         $childrenHost.Padding = [System.Windows.Thickness]::new(6, 0, 0, 0)
+        $childrenHost.ClipToBounds = $true
+        $childrenHost.Height = 0.0
+        $childrenHost.Opacity = 0.0
         $childrenHost.Visibility = [System.Windows.Visibility]::Collapsed
 
         $childrenStack = [System.Windows.Controls.StackPanel]::new()
@@ -33402,17 +33594,33 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         $childrenHost.Child = $childrenStack
         [void]$categorySidebarPanel.Children.Add($childrenHost)
 
+        $animOpenHeight = [System.Windows.Media.Animation.DoubleAnimation]::new($targetHeight, $script:durSideOpen)
+        $animOpenHeight.EasingFunction = $script:easeOutCubic; $animOpenHeight.Freeze()
+        $animCloseHeight = [System.Windows.Media.Animation.DoubleAnimation]::new(0.0, $script:durSideClose)
+        $animCloseHeight.EasingFunction = $script:easeOutCubic
+
         $grpObj = @{
-            Key           = $gDef.Key
-            Title         = $gDef.Title
-            Categories    = $gDef.Categories
-            CategorySet   = $cSet
-            AppCount      = $grpApps
-            IsExpanded    = $false
-            ChildrenHost  = $childrenHost
-            ChildrenStack = $childrenStack
-            BtnDesc       = $grpBtnDesc
+            Key             = $gDef.Key
+            Title           = $gDef.Title
+            Categories      = $gDef.Categories
+            CategorySet     = $cSet
+            AppCount        = $grpApps
+            TargetHeight    = $targetHeight
+            IsExpanded      = $false
+            VisExpanded     = $false
+            ChildrenHost    = $childrenHost
+            ChildrenStack   = $childrenStack
+            AnimOpenHeight  = $animOpenHeight
+            AnimCloseHeight = $animCloseHeight
+            BtnDesc         = $grpBtnDesc
+            ChevronRotate   = $grpBtnDesc.ChevronRotate
         }
+        $grpLocal = $grpObj
+        $animCloseHeight.Add_Completed({
+            if (-not $grpLocal.IsExpanded -and $grpLocal.ChildrenHost) {
+                $grpLocal.ChildrenHost.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+        }.GetNewClosure())
         $script:catalogGroupByKey[$gDef.Key] = $grpObj
         [void]$script:catalogGroupsOrdered.Add($grpObj)
     }
@@ -33421,7 +33629,7 @@ if ($categorySidebarTop -and $categorySidebarPanel) {
         $txtCategorySidebarMeta.Text = "$($script:catalogGroupsOrdered.Count) nh$([char]0x00F3)m $([char]0x00B7) $($categories.Count) m$([char]0x1EE5)c"
     }
 
-    Update-SidebarVisuals
+    Update-SidebarVisuals -Animate $false
 
     $sidebarClickRouter = [System.Windows.Input.MouseButtonEventHandler]{
         param($sender, $e)
@@ -34459,6 +34667,7 @@ function Stop-AllBackgroundWork {
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
     try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
+    try { if ($script:offscreenPrewarmTimer) { $script:offscreenPrewarmTimer.Stop() } } catch {}
     try {
         if ("DuckUtil.UiAssetPipeline" -as [type]) {
             [DuckUtil.UiAssetPipeline]::StopRemoteIconPipeline()
@@ -34506,6 +34715,35 @@ if ($window -and $window.Dispatcher) {
     })
 }
 
+$script:offscreenPrewarmTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::ApplicationIdle)
+$script:offscreenPrewarmTimer.Interval = [TimeSpan]::FromMilliseconds(85)
+$script:offscreenPrewarmTimer.Add_Tick({
+    if ($script:isWindowClosing -or -not $script:cardDescriptors) {
+        $script:offscreenPrewarmTimer.Stop()
+        return
+    }
+    if (-not $script:hasCompletedAppScan -or -not $script:uninstallerLoadedOnce -or $script:isActionRunning) {
+        return
+    }
+    $enqBatch = 0
+    $anyRemaining = $false
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.IconsEnqueued) {
+            if ($enqBatch -lt 3) {
+                Enqueue-CardIconsNow -CardDesc $cd
+                $enqBatch++
+            } else {
+                $anyRemaining = $true
+                break
+            }
+        }
+    }
+    if (-not $anyRemaining) {
+        $script:offscreenPrewarmTimer.Stop()
+        Try-EnableCompletedCardCaches
+    }
+})
+
 $script:deferredCardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
 $script:deferredCardTimer.Interval = [TimeSpan]::FromMilliseconds(35)
 $script:deferredCardTimer.Add_Tick({
@@ -34529,7 +34767,11 @@ $script:deferredCardTimer.Add_Tick({
     }
     if (-not $anyRemaining) {
         $script:deferredCardTimer.Stop()
+        Ensure-AllMasonryReady
         Try-EnableCompletedCardCaches
+        if ($script:offscreenPrewarmTimer -and -not $script:tab0AllAssetsSettled) {
+            $script:offscreenPrewarmTimer.Start()
+        }
     }
 })
 

@@ -411,8 +411,19 @@
                         <ScrollViewer Grid.Column="1" Name="AppsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                             <Grid Name="CardsContainer">
-                                <StackPanel Name="CardsMasonrySection">
-                                    <Border Name="GroupFilterBanner" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
+                                <Grid Name="CardsMasonryHost">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
+                                    <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                                    <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                                </Grid>
+
+                                <StackPanel Name="GroupMasonrySection" Visibility="Collapsed">
+                                    <Border Name="GroupFilterBanner" Background="#111722" BorderBrush="#2B394F"
                                             BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,8">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
@@ -430,15 +441,15 @@
                                         </Grid>
                                     </Border>
 
-                                    <Grid Name="CardsMasonryHost">
+                                    <Grid Name="GroupMasonryHost">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Name="CardsColDef2" Width="*"/>
+                                            <ColumnDefinition Name="GroupColDef2" Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
-                                        <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
-                                        <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
+                                        <StackPanel Grid.Column="0" Name="GroupCol0" Margin="4,0"/>
+                                        <StackPanel Grid.Column="1" Name="GroupCol1" Margin="4,0"/>
+                                        <StackPanel Grid.Column="2" Name="GroupCol2" Margin="4,0"/>
                                     </Grid>
                                 </StackPanel>
 
