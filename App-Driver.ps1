@@ -414,7 +414,7 @@ $appsRawJson = @'
           ],
     "Category":  "Web Browsers",
     "Url":  "https://zen-browser.app/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zen-browser.png",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/zen-browser-dark.png",
     "IDn":  9
   },
   {
@@ -701,8 +701,7 @@ $appsRawJson = @'
           ],
     "Category":  "AI \u0026 Assistants",
     "Url":  "https://ollama.com/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ollama.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ollama-dark.png",
     "IDn":  31
   },
   {
@@ -744,7 +743,7 @@ $appsRawJson = @'
           ],
     "Category":  "AI \u0026 Assistants",
     "Url":  "https://www.nomic.ai/gpt4all",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=nomic.ai\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/nomic-ai/gpt4all/main/gpt4all-chat/icons/gpt4all-48.png",
     "IDn":  34
   },
   {
@@ -928,7 +927,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://www.cursor.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=cursor.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/ios-filled/96/ffffff/cursor-ai.png",
     "IDn":  48
   },
   {
@@ -1057,7 +1056,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://desktop.github.com/",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/19267068?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/desktop/desktop/development/app/static/common/logo-64x64@2x.png",
     "IDn":  58
   },
   {
@@ -1123,7 +1122,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://windsurf.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=windsurf.com\u0026sz=128",
+    "IconUrl":  "https://exafunction.github.io/public/brand/windsurf-white-symbol.png",
     "IDn":  63
   },
   {
@@ -1136,8 +1135,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://zed.dev/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=zed.dev\u0026sz=128",
-    "IconBg":  "light",
+    "IconUrl":  "https://raw.githubusercontent.com/zed-industries/zed/main/crates/zed/resources/app-icon.png",
     "IDn":  64
   },
   {
@@ -1152,7 +1150,7 @@ $appsRawJson = @'
     "GitHubRepo":  "VSCodium/vscodium",
     "AssetRegex":  "VSCodiumSetup-x64-[0-9.]+\\.exe$",
     "Url":  "https://vscodium.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=vscodium.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/VSCodium/vscodium/master/src/stable/resources/server/favicon.ico",
     "IDn":  65
   },
   {
@@ -1165,7 +1163,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://visualstudio.microsoft.com/vs/community/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=visualstudio.microsoft.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/visual-studio.png",
     "IDn":  66
   },
   {
@@ -1178,7 +1176,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=visualstudio.microsoft.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/c-plus-plus-logo.png",
     "IDn":  67
   },
   {
@@ -1256,7 +1254,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://llvm.org/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=llvm.org\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/llvm/llvm-www/main/img/DragonSmall.png",
     "IDn":  73
   },
   {
@@ -1298,7 +1296,7 @@ $appsRawJson = @'
           ],
     "Category":  "Development",
     "Url":  "https://github.com/fastfetch-cli/fastfetch",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=github.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/fastfetch-cli/fastfetch/dev/src/common/windows/logo.ico",
     "IDn":  76
   },
   {
@@ -1446,7 +1444,7 @@ $appsRawJson = @'
           ],
     "Category":  "Database \u0026 DevOps",
     "Url":  "https://www.chiark.greenend.org.uk/~sgtatham/putty/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=putty.org.ru\u0026sz=128",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/putty.png",
     "IDn":  87
   },
   {
@@ -1639,8 +1637,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  101
   },
   {
@@ -1655,8 +1652,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  102
   },
   {
@@ -1670,8 +1666,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  103
   },
   {
@@ -1686,8 +1681,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  104
   },
   {
@@ -1701,8 +1695,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  105
   },
   {
@@ -1716,8 +1709,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  106
   },
   {
@@ -1732,8 +1724,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  107
   },
   {
@@ -1747,8 +1738,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  108
   },
   {
@@ -1762,8 +1752,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  109
   },
   {
@@ -1777,8 +1766,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  110
   },
   {
@@ -1792,8 +1780,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  111
   },
   {
@@ -1808,8 +1795,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  112
   },
   {
@@ -1823,8 +1809,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  113
   },
   {
@@ -1838,8 +1823,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  114
   },
   {
@@ -1853,8 +1837,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  115
   },
   {
@@ -1868,8 +1851,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://adoptium.net/temurin/releases/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  116
   },
   {
@@ -1882,8 +1864,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://www.java.com/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  117
   },
   {
@@ -1897,8 +1878,7 @@ $appsRawJson = @'
           ],
     "Category":  "Java Runtimes",
     "Url":  "https://aws.amazon.com/corretto/",
-    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/java.png",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/fluency/96/java-coffee-cup-logo.png",
     "IDn":  118
   },
   {
@@ -2083,6 +2063,7 @@ $appsRawJson = @'
           ],
     "Category":  "C++ \u0026 System Runtimes",
     "Url":  "https://www.microsoft.com/en-us/download/details.aspx?id=35",
+    "IconUrl":  "https://img.icons8.com/fluency/96/3d-scale.png",
     "IDn":  131
   },
   {
@@ -2206,7 +2187,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://github.com/M2Team/NanaZip",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/86552972?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/M2Team/NanaZip/main/Assets/OriginalAssets/NanaZip/Standard/Standard_128.png",
     "IDn":  141
   },
   {
@@ -2246,7 +2227,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://github.com/TranslucentTB/TranslucentTB",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/25596512?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/TranslucentTB/TranslucentTB/release/AppPackage/Assets-Release/Square44x44Logo.targetsize-256_altform-unplated.png",
     "IDn":  144
   },
   {
@@ -2300,7 +2281,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=microsoft.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/rocket.png",
     "IDn":  148
   },
   {
@@ -2314,7 +2295,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://learn.microsoft.com/en-us/sysinternals/downloads/process-explorer",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=microsoft.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/system-task.png",
     "IDn":  149
   },
   {
@@ -2340,7 +2321,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://eartrumpet.app/",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/11562010?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/File-New-Project/EarTrumpet/master/.chocolatey/logo.png",
     "IDn":  151
   },
   {
@@ -2370,7 +2351,7 @@ $appsRawJson = @'
     "GitHubRepo":  "AutoHotkey/AutoHotkey",
     "AssetRegex":  "AutoHotkey_[0-9.]+_setup\\.exe$",
     "Url":  "https://www.autohotkey.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=autohotkey.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/AutoHotkey/AutoHotkey/alpha/source/resources/icon_main.ico",
     "IDn":  153
   },
   {
@@ -2413,7 +2394,7 @@ $appsRawJson = @'
     "GitHubRepo":  "srwi/EverythingToolbar",
     "AssetRegex":  "\\.msi$",
     "Url":  "https://github.com/srwi/EverythingToolbar",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=voidtools.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/srwi/EverythingToolbar/develop/EverythingToolbar.Launcher/Icons/Dark.ico",
     "IDn":  156
   },
   {
@@ -2428,7 +2409,7 @@ $appsRawJson = @'
     "GitHubRepo":  "QL-Win/QuickLook",
     "AssetRegex":  "QuickLook-[0-9.]+\\.msi$",
     "Url":  "https://github.com/QL-Win/QuickLook",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=github.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/QL-Win/QuickLook/master/QuickLook/Resources/app.png",
     "IDn":  157
   },
   {
@@ -2442,7 +2423,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://ditto-cp.sourceforge.io/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=sourceforge.net\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/sabrogden/Ditto/master/DittoSetup/appx/ditto_150.png",
     "IDn":  158
   },
   {
@@ -2455,7 +2436,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://www.henrypp.org/product/memreduct",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/1976542?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/henrypp/memreduct/master/src/res/100.ico",
     "IDn":  159
   },
   {
@@ -2468,7 +2449,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://bitsum.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=bitsum.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/control-panel.png",
     "IDn":  160
   },
   {
@@ -2481,7 +2462,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://bitsum.com/parkcontrol/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=bitsum.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/processor.png",
     "IDn":  161
   },
   {
@@ -2508,7 +2489,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://www.techpowerup.com/download/techpowerup-throttlestop/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=techpowerup.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/electronics.png",
     "IDn":  163
   },
   {
@@ -2522,7 +2503,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://amdaputuningutility.com/",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/105427589?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/JamesCJ60/Universal-x86-Tuning-Utility/master/Universal%20x86%20Tuning%20Utility/Assets/applicationIcon-256.png",
     "IDn":  164
   },
   {
@@ -2535,7 +2516,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://learn.microsoft.com/en-us/sysinternals/downloads/rammap",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=learn.microsoft.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/memory-slot.png",
     "IDn":  165
   },
   {
@@ -2577,7 +2558,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://github.com/IridiumIO/CompactGUI",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/14960348?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/IridiumIO/CompactGUI/master/CompactGUI/icon.ico",
     "IDn":  168
   },
   {
@@ -2590,7 +2571,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://github.com/Blinue/Magpie",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/34770031?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/Blinue/Magpie/dev/src/Magpie/Icons/PNG/Magpie%20Icon%20Full%20Enabled/128.png",
     "IDn":  169
   },
   {
@@ -2632,7 +2613,7 @@ $appsRawJson = @'
           ],
     "Category":  "Optimization \u0026 Tuning",
     "Url":  "https://github.com/BartoszCichecki/LenovoLegionToolkit",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/197661095?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/BartoszCichecki/LenovoLegionToolkit/master/LenovoLegionToolkit.WPF/Assets/icon.ico",
     "IDn":  172
   },
   {
@@ -2700,7 +2681,7 @@ $appsRawJson = @'
           ],
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.techpowerup.com/gpuz/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=techpowerup.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/video-card.png",
     "IDn":  177
   },
   {
@@ -2740,7 +2721,7 @@ $appsRawJson = @'
           ],
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.techpowerup.com/nvcleanstall/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=techpowerup.com\u0026sz=128",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nvidia.png",
     "IDn":  180
   },
   {
@@ -2754,7 +2735,7 @@ $appsRawJson = @'
           ],
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.wagnardsoft.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=wagnardsoft.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/broom.png",
     "IDn":  181
   },
   {
@@ -2781,7 +2762,7 @@ $appsRawJson = @'
           ],
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.logitechg.com/en-us/innovation/g-hub.html",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=logitechg.com\u0026sz=128",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/logitech-gaming.png",
     "IDn":  183
   },
   {
@@ -2808,7 +2789,7 @@ $appsRawJson = @'
           ],
     "Category":  "Hardware \u0026 Monitoring",
     "Url":  "https://www.intel.com/content/www/us/en/support/detect.html",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=intel.com\u0026sz=128",
+    "IconUrl":  "https://avatars.githubusercontent.com/u/17888862?s=128&v=4",
     "IDn":  185
   },
   {
@@ -2821,7 +2802,7 @@ $appsRawJson = @'
           ],
     "Category":  "Benchmark \u0026 Stress Test",
     "Url":  "https://crystalmark.info/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=crystalmark.info\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/hiyohiyo/CrystalDiskMark/master/res/DiskMark.ico",
     "IDn":  186
   },
   {
@@ -2918,7 +2899,7 @@ $appsRawJson = @'
           ],
     "Category":  "Benchmark \u0026 Stress Test",
     "Url":  "https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=guru3d.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/speedometer.png",
     "IDn":  193
   },
   {
@@ -2932,7 +2913,7 @@ $appsRawJson = @'
           ],
     "Category":  "Benchmark \u0026 Stress Test",
     "Url":  "https://www.capframex.com/",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/47972546?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/CXWorld/CapFrameX/master/source/CapFrameX/Icons/CX_Concepts/Production/CX_A1_Mark_Master.png",
     "IDn":  194
   },
   {
@@ -3125,7 +3106,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "Url":  "https://www.veracrypt.fr/",
-    "IconUrl":  "https://avatars.githubusercontent.com/u/8641615?s=128\u0026v=4",
+    "IconUrl":  "https://raw.githubusercontent.com/veracrypt/VeraCrypt/master/src/Resources/Icons/VeraCrypt-128x128.png",
     "IDn":  209
   },
   {
@@ -3179,7 +3160,7 @@ $appsRawJson = @'
           ],
     "Category":  "Security \u0026 Network",
     "Url":  "https://nmap.org/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=nmap.org\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/nmap/nmap/master/zenmap/install_scripts/windows/nmap-eye.ico",
     "IDn":  213
   },
   {
@@ -3325,7 +3306,7 @@ $appsRawJson = @'
     "Category":  "Audio \u0026 Video",
     "FallbackUrl":  "https://www.blackmagicdesign.com/products/davinciresolve",
     "Url":  "https://www.blackmagicdesign.com/products/davinciresolve",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=blackmagicdesign.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/color/96/davinci-resolve.png",
     "IDn":  224
   },
   {
@@ -3356,7 +3337,7 @@ $appsRawJson = @'
     "GitHubRepo":  "mifi/lossless-cut",
     "AssetRegex":  "LosslessCut-win-x64\\.7z$",
     "Url":  "https://mifi.no/losslesscut/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=mifi.no\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/mifi/lossless-cut/master/website/public/apple-touch-icon.png",
     "IDn":  226
   },
   {
@@ -3385,7 +3366,7 @@ $appsRawJson = @'
           ],
     "Category":  "Audio \u0026 Video",
     "Url":  "https://mkvtoolnix.download/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=mkvtoolnix.download\u0026sz=128",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/mkvtoolnix.png",
     "IDn":  228
   },
   {
@@ -3438,7 +3419,7 @@ $appsRawJson = @'
           ],
     "Category":  "Audio \u0026 Video",
     "Url":  "https://vb-audio.com/Voicemeeter/banana.htm",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=vb-audio.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/audio-wave.png",
     "IDn":  232
   },
   {
@@ -3581,7 +3562,7 @@ $appsRawJson = @'
     "GitHubRepo":  "darktable-org/darktable",
     "AssetRegex":  "win64\\.exe$",
     "Url":  "https://www.darktable.org/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=darktable.org\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/darktable-org/darktable/master/data/pixmaps/256x256/darktable.png",
     "IDn":  243
   },
   {
@@ -3594,7 +3575,7 @@ $appsRawJson = @'
           ],
     "Category":  "Graphics \u0026 Design",
     "Url":  "https://www.rawtherapee.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=rawtherapee.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/Beep6581/RawTherapee/dev/rtdata/icons/hicolor/128x128/apps/rawtherapee.png",
     "IDn":  244
   },
   {
@@ -3685,7 +3666,7 @@ $appsRawJson = @'
             "Notion.Notion"
           ],
     "Category":  "Documents \u0026 Office",
-    "IconUrl":  "https://img.icons8.com/fluency/96/notion.png",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/notion-light.png",
     "IDn":  251
   },
   {
@@ -3806,7 +3787,7 @@ $appsRawJson = @'
           ],
     "Category":  "Documents \u0026 Office",
     "Url":  "https://anytype.io/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=anytype.io\u0026sz=128",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/anytype.png",
     "IDn":  260
   },
   {
@@ -3888,7 +3869,7 @@ $appsRawJson = @'
     "Category":  "Minecraft \u0026 Modding",
     "FallbackUrl":  "https://www.overwolf.com/",
     "Url":  "https://www.overwolf.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=overwolf.com\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/ios-filled/96/ef4444/overwolf.png",
     "IDn":  266
   },
   {
@@ -3991,7 +3972,7 @@ $appsRawJson = @'
             "EpicGames.EpicGamesLauncher"
           ],
     "Category":  "Game Launchers",
-    "IconUrl":  "https://img.icons8.com/fluency/96/epic-games.png",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/epic-games-light.png",
     "Url":  "https://store.epicgames.com/",
     "IDn":  273
   },
@@ -4044,8 +4025,7 @@ $appsRawJson = @'
           ],
     "Category":  "Game Launchers",
     "Url":  "https://www.ea.com/ea-app",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=ea.com\u0026sz=128",
-    "IconBg":  "light",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/electronic-arts.png",
     "IDn":  277
   },
   {
@@ -4058,8 +4038,7 @@ $appsRawJson = @'
           ],
     "Category":  "Game Launchers",
     "Url":  "https://ubisoftconnect.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=ubisoft.com\u0026sz=128",
-    "IconBg":  "light",
+    "IconUrl":  "https://img.icons8.com/nolan/96/ubisoft.png",
     "IDn":  278
   },
   {
@@ -4129,7 +4108,7 @@ $appsRawJson = @'
           ],
     "Category":  "Download Managers",
     "Url":  "https://www.internetdownloadmanager.com/",
-    "IconUrl":  "https://img.icons8.com/fluency/96/download-from-cloud.png",
+    "IconUrl":  "https://www.internetdownloadmanager.com/favicon.ico",
     "IDn":  283
   },
   {
@@ -4186,7 +4165,7 @@ $appsRawJson = @'
     "GitHubRepo":  "subhra74/xdm",
     "AssetRegex":  "xdmsetup-[0-9.]+\\.msi$",
     "Url":  "https://xtremedownloadmanager.com/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=xtremedownloadmanager.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/subhra74/xdm/master/browser-extension/chrome-extension/icon128.png",
     "IDn":  287
   },
   {
@@ -4201,7 +4180,7 @@ $appsRawJson = @'
     "GitHubRepo":  "agalwood/Motrix",
     "AssetRegex":  "Setup-[0-9.]+\\.exe$",
     "Url":  "https://motrix.app/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=motrix.app\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/agalwood/Motrix/master/static/512x512.png",
     "IDn":  288
   },
   {
@@ -4216,7 +4195,7 @@ $appsRawJson = @'
     "GitHubRepo":  "aria2/aria2",
     "AssetRegex":  "win-64bit-build1\\.zip$",
     "Url":  "https://aria2.github.io/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=aria2.github.io\u0026sz=128",
+    "IconUrl":  "https://img.icons8.com/fluency/96/download-2.png",
     "IDn":  289
   },
   {
@@ -4231,7 +4210,7 @@ $appsRawJson = @'
     "GitHubRepo":  "yt-dlp/yt-dlp",
     "AssetRegex":  "^yt-dlp\\.exe$",
     "Url":  "https://github.com/yt-dlp/yt-dlp",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=youtube.com\u0026sz=128",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/yt-dlp.png",
     "IDn":  290
   },
   {
@@ -4247,7 +4226,7 @@ $appsRawJson = @'
     "GitHubRepo":  "NickvisionApps/Parabolic",
     "AssetRegex":  "NickvisionParabolicSetup\\.exe$",
     "Url":  "https://github.com/NickvisionApps/Parabolic",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=github.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/NickvisionApps/Parabolic/main/resources/org.nickvision.tubeconverter.png",
     "IDn":  291
   },
   {
@@ -4262,7 +4241,7 @@ $appsRawJson = @'
     "GitHubRepo":  "oleksis/youtube-dl-gui",
     "AssetRegex":  "yt-dlg-[0-9.]+\\.exe$",
     "Url":  "https://oleksis.github.io/youtube-dl-gui/",
-    "IconUrl":  "https://www.google.com/s2/favicons?domain=youtube.com\u0026sz=128",
+    "IconUrl":  "https://raw.githubusercontent.com/oleksis/youtube-dl-gui/master/youtube_dl_gui/data/pixmaps/youtube-dl-gui.png",
     "IDn":  292
   },
   {
@@ -27623,7 +27602,7 @@ function Resolve-UninstallerCatalogPng {
         @{ Pattern = 'Visual Studio Code|VS Code';              Id = 'Microsoft.VisualStudioCode' },
         @{ Pattern = 'Visual C\+\+|VCRedist';                   Id = 'Microsoft.VCRedist.2015+.x64' },
         @{ Pattern = 'ASP\.NET|\.NET SDK|Desktop Runtime|\.NET'; Id = 'Microsoft.DotNet.DesktopRuntime.8' },
-        @{ Pattern = 'Corretto';                                Id = 'Amazon.Corretto.21.JDK' },
+        @{ Pattern = 'Corretto';                                Id = 'Amazon.Corretto.25.JDK' },
         @{ Pattern = 'Temurin|Adoptium';                        Id = 'EclipseAdoptium.Temurin.21.JDK' },
         @{ Pattern = 'Java \d+|Java\(TM\)|OpenJDK';             Id = 'Oracle.JavaRuntimeEnvironment' },
         @{ Pattern = 'Node\.js';                                Id = 'OpenJS.NodeJS.LTS' },
@@ -27631,7 +27610,6 @@ function Resolve-UninstallerCatalogPng {
         @{ Pattern = '^Git\b';                                  Id = 'Git.Git' },
         @{ Pattern = 'Python';                                  Id = 'Python.Python.3.13' },
         @{ Pattern = 'Rustup';                                  Id = 'Rustlang.Rustup' },
-        @{ Pattern = 'Gitleaks';                                Id = 'Gitleaks.Gitleaks' },
         @{ Pattern = 'PowerToys';                               Id = 'Microsoft.PowerToys' },
         @{ Pattern = 'Legacy Launcher';                         Id = 'LegacyLauncher.LegacyLauncher' },
         @{ Pattern = 'Google Chrome';                           Id = 'Google.Chrome' },
@@ -27640,7 +27618,7 @@ function Resolve-UninstallerCatalogPng {
         @{ Pattern = 'Firefox';                                 Id = 'Mozilla.Firefox' },
         @{ Pattern = 'Microsoft Edge';                          Id = 'Microsoft.Edge' },
         @{ Pattern = 'Discord';                                 Id = 'Discord.Discord' },
-        @{ Pattern = 'Zalo';                                    Id = 'VNG.Zalo' },
+        @{ Pattern = 'Zalo';                                    Id = 'VNGCorp.Zalo' },
         @{ Pattern = 'Docker Desktop';                          Id = 'Docker.DockerDesktop' },
         @{ Pattern = 'Ollama';                                  Id = 'Ollama.Ollama' },
         @{ Pattern = 'Antigravity IDE';                         Id = 'Google.AntigravityIDE' },
@@ -29511,7 +29489,7 @@ foreach ($cat in $categories) {
 
     if ($script:hasFastCatalogRowBuilder) {
         foreach ($app in $appsInCat) {
-            $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
+            $useLightBadge = ($app.IconBg -eq "light")
             $fallbackIconUrl = if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
                 "https://icons.duckduckgo.com/ip3/$($app.Domain).ico"
             } else { $null }
@@ -29648,7 +29626,7 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
+        $useLightBadge = ($app.IconBg -eq "light")
         $iconBadge = [System.Windows.Controls.Border]::new()
         $iconBadge.Width = 20
         $iconBadge.Height = 20

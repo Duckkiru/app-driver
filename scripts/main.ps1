@@ -1330,7 +1330,7 @@ function Resolve-UninstallerCatalogPng {
         @{ Pattern = 'Visual Studio Code|VS Code';              Id = 'Microsoft.VisualStudioCode' },
         @{ Pattern = 'Visual C\+\+|VCRedist';                   Id = 'Microsoft.VCRedist.2015+.x64' },
         @{ Pattern = 'ASP\.NET|\.NET SDK|Desktop Runtime|\.NET'; Id = 'Microsoft.DotNet.DesktopRuntime.8' },
-        @{ Pattern = 'Corretto';                                Id = 'Amazon.Corretto.21.JDK' },
+        @{ Pattern = 'Corretto';                                Id = 'Amazon.Corretto.25.JDK' },
         @{ Pattern = 'Temurin|Adoptium';                        Id = 'EclipseAdoptium.Temurin.21.JDK' },
         @{ Pattern = 'Java \d+|Java\(TM\)|OpenJDK';             Id = 'Oracle.JavaRuntimeEnvironment' },
         @{ Pattern = 'Node\.js';                                Id = 'OpenJS.NodeJS.LTS' },
@@ -1338,7 +1338,6 @@ function Resolve-UninstallerCatalogPng {
         @{ Pattern = '^Git\b';                                  Id = 'Git.Git' },
         @{ Pattern = 'Python';                                  Id = 'Python.Python.3.13' },
         @{ Pattern = 'Rustup';                                  Id = 'Rustlang.Rustup' },
-        @{ Pattern = 'Gitleaks';                                Id = 'Gitleaks.Gitleaks' },
         @{ Pattern = 'PowerToys';                               Id = 'Microsoft.PowerToys' },
         @{ Pattern = 'Legacy Launcher';                         Id = 'LegacyLauncher.LegacyLauncher' },
         @{ Pattern = 'Google Chrome';                           Id = 'Google.Chrome' },
@@ -1347,7 +1346,7 @@ function Resolve-UninstallerCatalogPng {
         @{ Pattern = 'Firefox';                                 Id = 'Mozilla.Firefox' },
         @{ Pattern = 'Microsoft Edge';                          Id = 'Microsoft.Edge' },
         @{ Pattern = 'Discord';                                 Id = 'Discord.Discord' },
-        @{ Pattern = 'Zalo';                                    Id = 'VNG.Zalo' },
+        @{ Pattern = 'Zalo';                                    Id = 'VNGCorp.Zalo' },
         @{ Pattern = 'Docker Desktop';                          Id = 'Docker.DockerDesktop' },
         @{ Pattern = 'Ollama';                                  Id = 'Ollama.Ollama' },
         @{ Pattern = 'Antigravity IDE';                         Id = 'Google.AntigravityIDE' },
@@ -3218,7 +3217,7 @@ foreach ($cat in $categories) {
 
     if ($script:hasFastCatalogRowBuilder) {
         foreach ($app in $appsInCat) {
-            $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
+            $useLightBadge = ($app.IconBg -eq "light")
             $fallbackIconUrl = if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
                 "https://icons.duckduckgo.com/ip3/$($app.Domain).ico"
             } else { $null }
@@ -3355,7 +3354,7 @@ foreach ($cat in $categories) {
         $allCheckBoxes.Add($cb)
         $rowBorder.Tag["CheckBox"] = $cb
 
-        $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
+        $useLightBadge = ($app.IconBg -eq "light")
         $iconBadge = [System.Windows.Controls.Border]::new()
         $iconBadge.Width = 20
         $iconBadge.Height = 20
