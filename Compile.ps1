@@ -115,9 +115,32 @@ $startCode = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Joi
 $appsJson  = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json"))
 $xamlCode  = ConvertTo-AsciiXml (Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml"))
 $mainCode  = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1"))
+function Merge-CSharpCoreSources {
+    param([string[]]$Sources)
+    $usings = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+    $bodies = [System.Collections.Generic.List[string]]::new()
+    foreach ($src in $Sources) {
+        $lines = $src -split "`r?`n"
+        $bodyLines = [System.Collections.Generic.List[string]]::new()
+        $inHdr = $true
+        foreach ($ln in $lines) {
+            if ($inHdr -and $ln -match '^\s*using\s+[^;]+;\s*$') {
+                [void]$usings.Add($ln.Trim())
+            } elseif ($inHdr -and [string]::IsNullOrWhiteSpace($ln)) {
+            } else {
+                $inHdr = $false
+                $bodyLines.Add($ln)
+            }
+        }
+        $bodies.Add(($bodyLines -join "`r`n"))
+    }
+    return ((($usings | Sort-Object) -join "`r`n") + "`r`n`r`n" + ($bodies -join "`r`n`r`n"))
+}
+
 $smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothScrollController.cs")
 $appCatalogCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\AppCatalogEngine.cs")
 $deepCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\DeepUninstallerEngine.cs")
+$combinedCoreCsCode = Merge-CSharpCoreSources -Sources @($smoothCsCode, $appCatalogCsCode, $deepCsCode)
 
 $sb = [System.Text.StringBuilder]::new()
 
@@ -181,20 +204,41 @@ $sb.AppendLine('        } catch {}') | Out-Null
 $sb.AppendLine('    }') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
+$sb.AppendLine('$wpfSmoothRefs = @(') | Out-Null
+$sb.AppendLine('    [System.Windows.Controls.ScrollViewer].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Windows.UIElement].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Windows.DependencyObject].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Windows.Markup.IQueryAmbient].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Diagnostics.Stopwatch].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Drawing.Icon].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Net.Http.HttpClient].Assembly.Location,') | Out-Null
+$sb.AppendLine('    [System.Object].Assembly.Location') | Out-Null
+$sb.AppendLine(') | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique') | Out-Null
+$sb.AppendLine('if ($PSVersionTable.PSEdition -eq "Core") {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine('        $refDllsCore = @([System.IO.Directory]::GetFiles((Join-Path $PSHOME "ref"), "*.dll"))') | Out-Null
+$sb.AppendLine('        $loadedExtraCore = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and -not [string]::IsNullOrWhiteSpace($_.Location) -and $_.GetName().Name -match "^(Presentation|WindowsBase|System\.Drawing|System\.Private\.Windows|DirectWriteForwarder|ReachFramework|UIAutomation)" } | ForEach-Object { $_.Location })') | Out-Null
+$sb.AppendLine('        $coreAllRefs = @($refDllsCore + $loadedExtraCore + $wpfSmoothRefs | Select-Object -Unique)') | Out-Null
+$sb.AppendLine('    } catch { $coreAllRefs = $wpfSmoothRefs }') | Out-Null
+$sb.AppendLine('} else {') | Out-Null
+$sb.AppendLine('    $coreAllRefs = $wpfSmoothRefs') | Out-Null
+$sb.AppendLine('}') | Out-Null
+$sb.AppendLine() | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine(('        $duckCoreCs = @' + $q)) | Out-Null
+$sb.AppendLine($combinedCoreCsCode.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateUninstallerRow"') | Out-Null
+$sb.AppendLine('    } catch {}') | Out-Null
+$sb.AppendLine('}') | Out-Null
+$sb.AppendLine() | Out-Null
 $sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type])) {') | Out-Null
 $sb.AppendLine('    try {') | Out-Null
-$sb.AppendLine('        $wpfSmoothRefs = @(') | Out-Null
-$sb.AppendLine('            [System.Windows.Controls.ScrollViewer].Assembly.Location,') | Out-Null
-$sb.AppendLine('            [System.Windows.UIElement].Assembly.Location,') | Out-Null
-$sb.AppendLine('            [System.Windows.DependencyObject].Assembly.Location,') | Out-Null
-$sb.AppendLine('            [System.Windows.Markup.IQueryAmbient].Assembly.Location,') | Out-Null
-$sb.AppendLine('            [System.Diagnostics.Stopwatch].Assembly.Location,') | Out-Null
-$sb.AppendLine('            [System.Object].Assembly.Location') | Out-Null
-$sb.AppendLine('        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique') | Out-Null
 $sb.AppendLine(('        $smoothScrollCs = @' + $q)) | Out-Null
 $sb.AppendLine($smoothCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "AttachFrameWake"') | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $coreAllRefs -RequiredMethod "AttachFrameWake"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null

@@ -1061,6 +1061,34 @@ function Get-LocalInstalledEntries {
     return $localItems
 }
 
+$script:cachedCatalogMatchTargets = $null
+$script:cachedCatalogMatchCount   = -1
+
+function Get-CatalogMatchTargetsCached {
+    if (-not $allItemBorders -or $allItemBorders.Count -eq 0) { return [DuckUtil.CatalogMatchTarget[]]@() }
+    if ($null -ne $script:cachedCatalogMatchTargets -and $script:cachedCatalogMatchCount -eq $allItemBorders.Count) {
+        return $script:cachedCatalogMatchTargets
+    }
+    $n = $allItemBorders.Count
+    $arr = [DuckUtil.CatalogMatchTarget[]]::new($n)
+    for ($i = 0; $i -lt $n; $i++) {
+        $app = $allItemBorders[$i].Tag.App
+        $t = [DuckUtil.CatalogMatchTarget]::new()
+        $t.ID = [string]$app.ID
+        $t.Name = [string]$app.Name
+        $t.Category = [string]$app.Category
+        if ($app.Aliases) {
+            $t.Aliases = [string[]]@($app.Aliases)
+        } else {
+            $t.Aliases = [string[]]@()
+        }
+        $arr[$i] = $t
+    }
+    $script:cachedCatalogMatchTargets = $arr
+    $script:cachedCatalogMatchCount = $n
+    return $arr
+}
+
 function Apply-InstalledDatabaseToRows {
     param(
         $IdMap,
@@ -1068,6 +1096,123 @@ function Apply-InstalledDatabaseToRows {
         $CleanNameMap,
         $InstalledList
     )
+
+    $countInstalled = 0
+    $countLatest = 0
+    $countOutdated = 0
+
+    $csMatchType = "DuckUtil.AppCatalogEngine" -as [type]
+    if ($csMatchType -and $null -ne $csMatchType.GetMethod("MatchCatalogApps")) {
+        $targets = Get-CatalogMatchTargetsCached
+        $instCount = if ($InstalledList) { $InstalledList.Count } else { 0 }
+        $sensorArr = [DuckUtil.CatalogSensorItem[]]::new($instCount)
+        for ($si = 0; $si -lt $instCount; $si++) {
+            $item = $InstalledList[$si]
+            if ($item -is [DuckUtil.CatalogSensorItem]) {
+                $sensorArr[$si] = $item
+            } elseif ($null -ne $item) {
+                $obj = [DuckUtil.CatalogSensorItem]::new()
+                $obj.Name      = [string]$item.Name
+                $obj.ID        = [string]$item.ID
+                $obj.Version   = [string]$item.Version
+                $obj.Available = [string]$item.Available
+                $obj.HasUpdate = [bool]$item.HasUpdate
+                $obj.CleanName = [string]$item.CleanName
+                $obj.Source    = [string]$item.Source
+                $sensorArr[$si] = $obj
+            }
+        }
+
+        $matchedArr = $null
+        if ($null -ne $csMatchType.GetMethod("MatchCatalogAppsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
+            $mTask = [DuckUtil.AppCatalogEngine]::MatchCatalogAppsAsync($targets, $sensorArr)
+            [void](Wait-TaskNonBlocking -Task $mTask -TimeoutSeconds 15)
+            if ($script:isWindowClosing) {
+                return [PSCustomObject]@{ Installed = 0; Latest = 0; Outdated = 0 }
+            }
+            if ($mTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $matchedArr = $mTask.Result
+            }
+        }
+        if ($null -eq $matchedArr) {
+            $matchedArr = [DuckUtil.AppCatalogEngine]::MatchCatalogApps($targets, $sensorArr)
+        }
+
+        $rowCount = $allItemBorders.Count
+        for ($ri = 0; $ri -lt $rowCount; $ri++) {
+            $row = $allItemBorders[$ri]
+            $tag = $row.Tag
+            $app = $tag.App
+            $tb  = $tag.NameText
+            $updateBadge = $tag.UpdateBadge
+            $updateText  = $tag.UpdateText
+            $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
+            $info = if ($matchedArr -and $ri -lt $matchedArr.Length) { $matchedArr[$ri] } else { $null }
+
+            if ($null -ne $info) {
+                $countInstalled++
+                $prevStatus = $tag.Status
+                $prevVer = $tag.InstalledVersion
+                $prevDet = $tag.DetectedId
+                $tag.DetectedId = $info.ID
+                $tag.InstalledVersion = $info.Version
+
+                if ($info.HasUpdate -eq $true) {
+                    $countOutdated++
+                    $newBadgeTxt = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
+                    if ($prevStatus -ne "OUTDATED" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID -or ($updateText -and $updateText.Text -ne $newBadgeTxt)) {
+                        $tag.Status = "OUTDATED"
+                        if ($tb) {
+                            $tb.Foreground = $script:brushOutdatedFg
+                            $tb.Text = $app.Name
+                            $tb.TextDecorations = $null
+                        }
+                        if ($updateBadge -and $updateText) {
+                            $updateText.Text = $newBadgeTxt
+                            $updateBadge.Visibility = [System.Windows.Visibility]::Visible
+                        }
+                        $row.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                    }
+                } else {
+                    $countLatest++
+                    if ($prevStatus -ne "LATEST" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID) {
+                        $tag.Status = "LATEST"
+                        if ($tb) {
+                            $tb.Foreground = $script:brushLatestFg
+                            $tb.Text = $app.Name
+                            $tb.TextDecorations = $null
+                        }
+                        if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                            $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                        }
+                        $row.ToolTip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
+                    }
+                }
+            } else {
+                $prevStatus = $tag.Status
+                $tag.DetectedId = $null
+                $tag.InstalledVersion = $null
+                if ($prevStatus -ne "NONE") {
+                    $tag.Status = "NONE"
+                    if ($tb) {
+                        $tb.Foreground = $script:brushNoneFg
+                        $tb.Text = $app.Name
+                        $tb.TextDecorations = $null
+                    }
+                    if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                        $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                    }
+                    $row.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+                }
+            }
+        }
+
+        return [PSCustomObject]@{
+            Installed = $countInstalled
+            Latest    = $countLatest
+            Outdated  = $countOutdated
+        }
+    }
 
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $tokenIndex  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[object]]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -1224,7 +1369,6 @@ function Apply-InstalledDatabaseToRows {
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                 }
                 $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
-                if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             } else {
                 $countLatest++
@@ -1234,24 +1378,29 @@ function Apply-InstalledDatabaseToRows {
                     $tb.Text = $app.Name
                     $tb.TextDecorations = $null
                 }
-                if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
+                if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                    $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                }
                 $tip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
-                if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             }
         } else {
-            $row.Tag.Status = "NONE"
+            $prevStatus = $row.Tag.Status
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null
-            if ($tb) {
-                $tb.Foreground = $script:brushNoneFg
-                $tb.Text = $app.Name
-                $tb.TextDecorations = $null
+            if ($prevStatus -ne "NONE") {
+                $row.Tag.Status = "NONE"
+                if ($tb) {
+                    $tb.Foreground = $script:brushNoneFg
+                    $tb.Text = $app.Name
+                    $tb.TextDecorations = $null
+                }
+                if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                    $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                $tip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+                $row.ToolTip = $tip
             }
-            if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
-            $tip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
-            if ($tb) { $tb.ToolTip = $tip }
-            $row.ToolTip = $tip
         }
     }
 
@@ -1279,17 +1428,20 @@ function Scan-And-ColorizeApps {
 
         $localItems = Get-LocalInstalledEntries -SkipAppx
         if ($script:isWindowClosing) { return }
-        $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $useCsFastMatcher = ($null -ne ("DuckUtil.AppCatalogEngine" -as [type])) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("MatchCatalogApps")))
+        $idMap        = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
+        $nameMap      = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
+        $cleanNameMap = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
         $installedList = [System.Collections.Generic.List[object]]::new()
 
         foreach ($locObj in $localItems) {
             $installedList.Add($locObj)
-            if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
-            if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
-            if ($locObj.CleanName.Length -ge 3) {
-                if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+            if (-not $useCsFastMatcher) {
+                if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
+                if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
+                if ($locObj.CleanName.Length -ge 3) {
+                    if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+                }
             }
         }
 
@@ -1350,7 +1502,7 @@ function Scan-And-ColorizeApps {
 
         if ($script:isWindowClosing) { return }
 
-        if (-not $wingetOk -or $wingetItems.Count -lt 5) {
+        if ((-not $wingetOk -or $wingetItems.Count -lt 5) -and -not ("DuckUtil.AppCatalogEngine" -as [type])) {
             $appxItems = Get-LocalInstalledEntries
             if ($script:isWindowClosing) { return }
             foreach ($ax in $appxItems) {
@@ -1366,14 +1518,16 @@ function Scan-And-ColorizeApps {
                 continue
             }
             $installedList.Add($itemObj)
-            if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
-            if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
-            if ($itemObj.CleanName.Length -ge 3) {
-                if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
-            }
+            if (-not $useCsFastMatcher) {
+                if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
+                if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
+                if ($itemObj.CleanName.Length -ge 3) {
+                    if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+                }
 
-            if ($itemObj.ID -eq "Microsoft.VisualStudio.Community.Insiders") {
-                Set-PreferredMapEntry $idMap "Microsoft.VisualStudio.2022.Community" $itemObj
+                if ($itemObj.ID -eq "Microsoft.VisualStudio.Community.Insiders") {
+                    Set-PreferredMapEntry $idMap "Microsoft.VisualStudio.2022.Community" $itemObj
+                }
             }
         }
 
@@ -1390,6 +1544,9 @@ function Scan-And-ColorizeApps {
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
 
         $script:hasCompletedAppScan = $true
+        if (Get-Command "Try-EnableCompletedCardCaches" -ErrorAction SilentlyContinue) {
+            try { Try-EnableCompletedCardCaches } catch {}
+        }
         $modeTag = if (-not $wingetOk) { " [Dự phòng Registry/Appx]" } else { "" }
         $summary = "Đã quét xong: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
         Log-Text "[OK] $summary"

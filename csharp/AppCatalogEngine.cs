@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -19,6 +20,14 @@ namespace DuckUtil
         public bool HasUpdate { get; set; }
         public string CleanName { get; set; }
         public string Source { get; set; }
+    }
+
+    public class CatalogMatchTarget
+    {
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public string[] Aliases { get; set; }
     }
 
     public static class AppCatalogEngine
@@ -1235,7 +1244,551 @@ namespace DuckUtil
 
         public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
         {
-            return Task.Run(() => ScanCatalogSensors());
+            return Task.Run(delegate() { return ScanCatalogSensors(); });
+        }
+
+        private sealed class AliasPatternPair
+        {
+            public string Raw;
+            public string Clean;
+            public Regex Pattern;
+        }
+
+        private sealed class CompiledTargetMeta
+        {
+            public string ID;
+            public string Name;
+            public string CleanTarget;
+            public List<AliasPatternPair> CleanAliases;
+            public List<AliasPatternPair> AliasEntries;
+            public Regex PatternClean;
+            public List<string> QueryTokens;
+            public bool AllowNoise;
+            public bool IsPrev;
+            public bool IsVcRedist;
+            public bool IsComm;
+            public bool IsPro;
+            public bool IsIde;
+            public bool IsAntigravity;
+            public bool IsCli;
+            public bool IsBt;
+            public bool IsVsc;
+            public bool IsVsAny;
+            public bool IsEtb;
+            public bool IsTemurin;
+            public bool IsOracleJava;
+            public bool IsCorretto;
+            public bool IsJdk;
+            public bool IsJre;
+            public Regex RxReqPy;
+            public Regex RxReqPyVer;
+            public Regex RxReqJava;
+            public Regex RxReqJavaVer;
+            public string ReqDnRaw;
+            public Regex RxReqDnId;
+            public Regex RxReqDnName;
+            public Regex RxReqDnVer;
+            public string ReqYear;
+            public string Arch;
+        }
+
+        private static readonly ConcurrentDictionary<string, CompiledTargetMeta> _metaCache =
+            new ConcurrentDictionary<string, CompiledTargetMeta>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> _matchStopWords = new HashSet<string>(
+            new string[] {
+                "microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server",
+                "edition", "community", "x64", "x86", "arm64", "arp", "msix", "machine", "user",
+                "app", "pro", "free", "jdk", "jre", "lts", "cli", "ide", "gui", "vpn", "bit"
+            }, StringComparer.OrdinalIgnoreCase);
+
+        private static readonly Regex _rxTokSplit = new Regex(@"[^a-zA-Z0-9+]+", RegexOptions.Compiled);
+        private static readonly Regex _rxSyntheticId = new Regex(@"^(ARP|MSIX|LOCAL)\\", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxAllowNoise = new Regex(@"(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseName = new Regex(@"(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseId = new Regex(@"(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxPyLauncher = new Regex(@"^Python Launcher\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordUwp = new Regex(@"\bUWP\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordComm = new Regex(@"\bCommunity\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotComm = new Regex(@"\.Community\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordPro = new Regex(@"\b(Ultimate|Professional)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotPro = new Regex(@"\.(Ultimate|Professional)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordIde = new Regex(@"\bIDE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndIde = new Regex(@"IDE$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordCli = new Regex(@"\bCLI\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndCli = new Regex(@"(\.cli|CLI)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxVscName = new Regex(@"VS Code|Visual Studio Code", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxJavaUpdate = new Regex(@"^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordJdk = new Regex(@"\bJDK\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndJdk = new Regex(@"\.JDK$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordJre = new Regex(@"\bJRE\b|^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndJre = new Regex(@"\.(JRE|JavaRuntimeEnvironment)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetPy = new Regex(@"^Python\.Python\.(\d+\.\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetJava = new Regex(@"\.(Temurin|Corretto)\.(\d+)\.", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetDn = new Regex(@"^Microsoft\.DotNet\.DesktopRuntime\.(\d+(?:_\d+)?)(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetYear = new Regex(@"^Microsoft\.VCRedist\.(\d{4})\.", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchX64Name = new Regex(@"\(x64\)|\.x64", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchX86Name = new Regex(@"\(x86\)|\.x86", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchArmName = new Regex(@"\(arm64\)|\.arm64", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemX64 = new Regex(@"(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemX86 = new Regex(@"(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemArm = new Regex(@"(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static CompiledTargetMeta GetOrBuildTargetMeta(CatalogMatchTarget target)
+        {
+            string tId = target.ID ?? "";
+            CompiledTargetMeta cached;
+            if (_metaCache.TryGetValue(tId, out cached)) return cached;
+
+            string tName = target.Name ?? "";
+            string tCat = target.Category ?? "";
+            string cleanTarget = CleanCatalogAppName(tName);
+
+            var cleanAliases = new List<AliasPatternPair>();
+            var aliasEntries = new List<AliasPatternPair>();
+            var queryTokens = new List<string>();
+            var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (cleanTarget.Length >= 4)
+            {
+                string[] toks = _rxTokSplit.Split(cleanTarget);
+                for (int i = 0; i < toks.Length; i++)
+                {
+                    string qt = toks[i];
+                    if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                    {
+                        queryTokens.Add(qt);
+                    }
+                }
+            }
+
+            if (target.Aliases != null)
+            {
+                for (int ai = 0; ai < target.Aliases.Length; ai++)
+                {
+                    string alias = target.Aliases[ai];
+                    if (string.IsNullOrWhiteSpace(alias)) continue;
+                    string cAl = CleanCatalogAppName(alias);
+                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Pattern = null };
+                    cleanAliases.Add(pair);
+                    if (alias.Length >= 4)
+                    {
+                        pair.Pattern = new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(alias) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase);
+                        aliasEntries.Add(pair);
+                        string[] toks = _rxTokSplit.Split(alias);
+                        for (int i = 0; i < toks.Length; i++)
+                        {
+                            string qt = toks[i];
+                            if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                            {
+                                queryTokens.Add(qt);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Regex patternClean = (cleanTarget.Length >= 4)
+                ? new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(cleanTarget) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase)
+                : null;
+
+            Regex rxReqPy = null;
+            Regex rxReqPyVer = null;
+            Match mPy = _rxTargetPy.Match(tId);
+            if (mPy.Success)
+            {
+                string esc = Regex.Escape(mPy.Groups[1].Value);
+                rxReqPy = new Regex(esc, RegexOptions.IgnoreCase);
+                rxReqPyVer = new Regex("^" + esc + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            Regex rxReqJava = null;
+            Regex rxReqJavaVer = null;
+            Match mJava = _rxTargetJava.Match(tId);
+            if (mJava.Success)
+            {
+                string jv = mJava.Groups[2].Value;
+                rxReqJava = new Regex(@"\b" + jv + @"\b", RegexOptions.IgnoreCase);
+                rxReqJavaVer = new Regex("^" + jv + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            string reqDnRaw = "";
+            Regex rxReqDnId = null;
+            Regex rxReqDnName = null;
+            Regex rxReqDnVer = null;
+            Match mDn = _rxTargetDn.Match(tId);
+            if (mDn.Success)
+            {
+                reqDnRaw = mDn.Groups[1].Value;
+                string reqDnEsc = reqDnRaw.Replace("_", @"\.");
+                rxReqDnId = new Regex(@"DesktopRuntime\." + Regex.Escape(reqDnRaw) + @"(\.|$)", RegexOptions.IgnoreCase);
+                rxReqDnName = new Regex(@"\b" + reqDnEsc + @"(\.\d+|\b)", RegexOptions.IgnoreCase);
+                rxReqDnVer = new Regex("^" + reqDnEsc + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            string reqYear = "";
+            Match mYr = _rxTargetYear.Match(tId);
+            if (mYr.Success) reqYear = mYr.Groups[1].Value;
+
+            string tArch = "";
+            if (_rxArchX64Name.IsMatch(tName) || tId.EndsWith(".x64", StringComparison.OrdinalIgnoreCase)) tArch = "x64";
+            else if (_rxArchX86Name.IsMatch(tName) || tId.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) tArch = "x86";
+            else if (_rxArchArmName.IsMatch(tName) || tId.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) tArch = "arm64";
+            else if (Environment.Is64BitOperatingSystem && string.Equals(tCat, ".NET Runtimes", StringComparison.OrdinalIgnoreCase) && tId.IndexOf("DesktopRuntime", StringComparison.OrdinalIgnoreCase) >= 0) tArch = "x64";
+
+            var meta = new CompiledTargetMeta
+            {
+                ID = tId,
+                Name = tName,
+                CleanTarget = cleanTarget,
+                CleanAliases = cleanAliases,
+                AliasEntries = aliasEntries,
+                PatternClean = patternClean,
+                QueryTokens = queryTokens,
+                AllowNoise = _rxAllowNoise.IsMatch(tName),
+                IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsComm = _rxWordComm.IsMatch(tName) || _rxDotComm.IsMatch(tId),
+                IsPro = _rxWordPro.IsMatch(tName) || _rxDotPro.IsMatch(tId),
+                IsIde = _rxWordIde.IsMatch(tName) || _rxEndIde.IsMatch(tId),
+                IsAntigravity = tId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsCli = _rxWordCli.IsMatch(tName) || _rxEndCli.IsMatch(tId),
+                IsBt = (tName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVsc = (tId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(tName),
+                IsVsAny = tId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsEtb = (tId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsTemurin = tId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsOracleJava = tId.IndexOf("Oracle.Java", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsCorretto = tId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsJdk = _rxWordJdk.IsMatch(tName) || _rxEndJdk.IsMatch(tId),
+                IsJre = _rxWordJre.IsMatch(tName) || _rxEndJre.IsMatch(tId),
+                RxReqPy = rxReqPy,
+                RxReqPyVer = rxReqPyVer,
+                RxReqJava = rxReqJava,
+                RxReqJavaVer = rxReqJavaVer,
+                ReqDnRaw = reqDnRaw,
+                RxReqDnId = rxReqDnId,
+                RxReqDnName = rxReqDnName,
+                RxReqDnVer = rxReqDnVer,
+                ReqYear = reqYear,
+                Arch = tArch
+            };
+
+            _metaCache[tId] = meta;
+            return meta;
+        }
+
+        private static bool IsMatchCompatible(CompiledTargetMeta meta, CatalogSensorItem item)
+        {
+            if (meta == null || item == null) return false;
+            string tId = meta.ID;
+            string iName = item.Name ?? "";
+            string iId = item.ID ?? "";
+            string iVer = item.Version ?? "";
+
+            if (!meta.AllowNoise)
+            {
+                if (_rxNoiseName.IsMatch(iName) || _rxNoiseId.IsMatch(iId)) return false;
+            }
+
+            if (string.Equals(iId, "Python.Launcher", StringComparison.OrdinalIgnoreCase) || _rxPyLauncher.IsMatch(iName))
+            {
+                if (!string.Equals(tId, "Python.Launcher", StringComparison.OrdinalIgnoreCase)) return false;
+            }
+
+            bool iPrev = (iName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsPrev != iPrev && !string.Equals(tId, "Microsoft.PowerToys", StringComparison.OrdinalIgnoreCase)) return false;
+
+            if (meta.IsVcRedist && (_rxWordUwp.IsMatch(iName) || iId.IndexOf("VCLibs", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+
+            if (meta.IsComm || meta.IsPro)
+            {
+                bool iComm = _rxWordComm.IsMatch(iName) || _rxDotComm.IsMatch(iId);
+                bool iPro = _rxWordPro.IsMatch(iName) || _rxDotPro.IsMatch(iId);
+                if ((meta.IsComm && iPro) || (meta.IsPro && iComm)) return false;
+            }
+
+            if (meta.IsAntigravity || iId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                bool iIde = _rxWordIde.IsMatch(iName) || _rxEndIde.IsMatch(iId);
+                if (meta.IsIde != iIde) return false;
+            }
+
+            bool iCli = _rxWordCli.IsMatch(iName) || _rxEndCli.IsMatch(iId);
+            if (meta.IsCli != iCli) return false;
+
+            bool iBt = (iName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsBt != iBt) return false;
+
+            if (meta.IsVsAny || iId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                bool iVsc = (iId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(iName);
+                if (meta.IsVsc != iVsc) return false;
+            }
+
+            bool iEtb = (iId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (iName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsEtb != iEtb) return false;
+
+            if (meta.IsTemurin && (iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+            if (meta.IsOracleJava && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+            if (meta.IsCorretto && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+
+            if (meta.IsJdk || meta.IsJre)
+            {
+                bool iJdk = _rxWordJdk.IsMatch(iName) || _rxEndJdk.IsMatch(iId);
+                bool iJre = _rxWordJre.IsMatch(iName) || _rxEndJre.IsMatch(iId);
+                if ((meta.IsJdk && iJre && !iJdk) || (meta.IsJre && iJdk && !iJre)) return false;
+            }
+
+            if (meta.RxReqPy != null)
+            {
+                if (!meta.RxReqPy.IsMatch(iId) && !meta.RxReqPy.IsMatch(iName) && !meta.RxReqPyVer.IsMatch(iVer)) return false;
+            }
+
+            if (meta.RxReqJava != null)
+            {
+                if (!meta.RxReqJava.IsMatch(iId) && !meta.RxReqJava.IsMatch(iName) && !meta.RxReqJavaVer.IsMatch(iVer)) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.ReqDnRaw))
+            {
+                if (iId.IndexOf("DesktopRuntime", StringComparison.OrdinalIgnoreCase) < 0 && iName.IndexOf("Desktop", StringComparison.OrdinalIgnoreCase) < 0) return false;
+                if (!meta.RxReqDnId.IsMatch(iId) && !meta.RxReqDnName.IsMatch(iName) && !meta.RxReqDnVer.IsMatch(iVer)) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.ReqYear))
+            {
+                if (iId.IndexOf(meta.ReqYear, StringComparison.OrdinalIgnoreCase) < 0 && iName.IndexOf(meta.ReqYear, StringComparison.OrdinalIgnoreCase) < 0) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.Arch))
+            {
+                string idForArch = _rxSyntheticId.IsMatch(iId) ? "" : iId;
+                string iArch = "";
+                if (_rxItemX64.IsMatch(iName) || idForArch.EndsWith(".x64", StringComparison.OrdinalIgnoreCase)) iArch = "x64";
+                else if (_rxItemX86.IsMatch(iName) || idForArch.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) iArch = "x86";
+                else if (_rxItemArm.IsMatch(iName) || idForArch.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) iArch = "arm64";
+                if (!string.IsNullOrEmpty(iArch) && !string.Equals(iArch, meta.Arch, StringComparison.OrdinalIgnoreCase)) return false;
+            }
+
+            return true;
+        }
+
+        private static void SetPreferredEntry(Dictionary<string, CatalogSensorItem> map, string key, CatalogSensorItem cand)
+        {
+            if (string.IsNullOrWhiteSpace(key) || cand == null) return;
+            CatalogSensorItem cur;
+            if (!map.TryGetValue(key, out cur))
+            {
+                map[key] = cand;
+                return;
+            }
+            bool curLocal = string.Equals(cur.Source, "local", StringComparison.OrdinalIgnoreCase);
+            bool candLocal = string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase);
+            if (curLocal && !candLocal) { map[key] = cand; return; }
+            if (!curLocal && candLocal) return;
+
+            bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
+            bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
+            if (curSyn && !candSyn) { map[key] = cand; return; }
+            if (!curSyn && candSyn) return;
+
+            int verCmp = CompareAppVersions(cand.Version, cur.Version);
+            string bestVer = (verCmp > 0 || string.IsNullOrWhiteSpace(cur.Version)) ? cand.Version : cur.Version;
+            int availCmp = CompareAppVersions(cand.Available, cur.Available);
+            string bestAvail = (availCmp > 0) ? cand.Available : cur.Available;
+            bool mergedUpd = TestAppUpdateGenuine(bestVer, bestAvail);
+            if (!mergedUpd) bestAvail = "";
+            bool useCand = (!cur.HasUpdate && cand.HasUpdate) || (verCmp > 0);
+            CatalogSensorItem baseObj = useCand ? cand : cur;
+            map[key] = new CatalogSensorItem
+            {
+                Name = baseObj.Name,
+                ID = baseObj.ID,
+                Version = bestVer,
+                Available = bestAvail,
+                HasUpdate = mergedUpd,
+                CleanName = baseObj.CleanName,
+                Source = baseObj.Source
+            };
+        }
+
+        public static CatalogSensorItem[] MatchCatalogApps(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
+        {
+            if (targets == null || targets.Length == 0) return new CatalogSensorItem[0];
+            var results = new CatalogSensorItem[targets.Length];
+            if (installedItems == null || installedItems.Length == 0) return results;
+
+            var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < installedItems.Length; i++)
+            {
+                CatalogSensorItem it = installedItems[i];
+                if (it == null) continue;
+                string itId = it.ID ?? "";
+                string itName = it.Name ?? "";
+                string itClean = it.CleanName ?? "";
+
+                if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
+                if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
+                if (itClean.Length >= 3) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
+                }
+
+                string rawText = itId + " " + itName + " " + itClean;
+                string[] toks = _rxTokSplit.Split(rawText);
+                var seenTok = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int ti = 0; ti < toks.Length; ti++)
+                {
+                    string tk = toks[ti];
+                    if (tk.Length >= 3 && seenTok.Add(tk))
+                    {
+                        List<CatalogSensorItem> bucket;
+                        if (!tokenIndex.TryGetValue(tk, out bucket))
+                        {
+                            bucket = new List<CatalogSensorItem>();
+                            tokenIndex[tk] = bucket;
+                        }
+                        bucket.Add(it);
+                    }
+                }
+            }
+
+            var lookupCache = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            for (int tIdx = 0; tIdx < targets.Length; tIdx++)
+            {
+                CatalogMatchTarget target = targets[tIdx];
+                if (target == null) continue;
+                string targetId = target.ID ?? "";
+                CatalogSensorItem cachedRes;
+                if (lookupCache.TryGetValue(targetId, out cachedRes))
+                {
+                    results[tIdx] = cachedRes;
+                    continue;
+                }
+
+                CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
+                CatalogSensorItem matched = null;
+                CatalogSensorItem cand;
+
+                if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+                if (matched == null)
+                {
+                    for (int a = 0; a < meta.CleanAliases.Count; a++)
+                    {
+                        if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null && !string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+                if (matched == null)
+                {
+                    for (int a = 0; a < meta.CleanAliases.Count; a++)
+                    {
+                        AliasPatternPair ap = meta.CleanAliases[a];
+                        if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                        if (ap.Clean.Length >= 3 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null && meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+
+                if (matched == null && meta.QueryTokens.Count > 0)
+                {
+                    var candidatePool = new List<CatalogSensorItem>();
+                    var seenCand = new HashSet<CatalogSensorItem>();
+                    for (int q = 0; q < meta.QueryTokens.Count; q++)
+                    {
+                        List<CatalogSensorItem> bucket;
+                        if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
+                        {
+                            for (int bi = 0; bi < bucket.Count; bi++)
+                            {
+                                if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
+                            }
+                        }
+                    }
+
+                    CatalogSensorItem bestCand = null;
+                    int bestScore = 0;
+                    for (int ci = 0; ci < candidatePool.Count; ci++)
+                    {
+                        CatalogSensorItem item = candidatePool[ci];
+                        string iId = item.ID ?? "";
+                        string iName = item.Name ?? "";
+                        string iClean = item.CleanName ?? "";
+                        int score = 0;
+
+                        for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
+                        {
+                            AliasPatternPair ae = meta.AliasEntries[aeIdx];
+                            if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                            {
+                                score = 780;
+                                break;
+                            }
+                            if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                            {
+                                int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
+                                int cScore = 700 + lenRatio;
+                                if (cScore > score) score = cScore;
+                            }
+                        }
+
+                        if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                        {
+                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                            score = 650 + lenRatio;
+                        }
+
+                        if (score > 0)
+                        {
+                            if (item.HasUpdate) score += 15;
+                            if (!_rxSyntheticId.IsMatch(iId)) score += 10;
+                            if (score > bestScore && IsMatchCompatible(meta, item))
+                            {
+                                bestScore = score;
+                                bestCand = item;
+                            }
+                        }
+                    }
+                    matched = bestCand;
+                }
+
+                lookupCache[targetId] = matched;
+                results[tIdx] = matched;
+            }
+
+            return results;
+        }
+
+        public static Task<CatalogSensorItem[]> MatchCatalogAppsAsync(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
+        {
+            return Task.Run(delegate() { return MatchCatalogApps(targets, installedItems); });
         }
     }
 }

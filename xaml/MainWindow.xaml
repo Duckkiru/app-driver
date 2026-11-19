@@ -438,7 +438,9 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="🔍" Foreground="#475569" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
                                             <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                      ToolTip="Tìm kiếm theo tên ứng dụng, nhà phát hành hoặc phiên bản..." ToolTipService.InitialShowDelay="5000"/>
@@ -523,7 +525,26 @@
 
                     <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                        <StackPanel Name="UninstallerRowsPanel" Margin="16,0,16,12"/>
+                        <Grid Margin="16,0,16,12">
+                            <Grid Name="UninstallerColLinesOverlay" Margin="1,0,1,0" IsHitTestVisible="False" Panel.ZIndex="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="38"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="115"/>
+                                    <ColumnDefinition Width="54"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                            </Grid>
+                            <StackPanel Name="UninstallerRowsPanel"/>
+                        </Grid>
                     </ScrollViewer>
             </Grid>
 

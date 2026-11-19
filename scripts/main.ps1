@@ -99,8 +99,17 @@ if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
                     [System.Windows.DependencyObject].Assembly.Location,
                     [System.Windows.Markup.IQueryAmbient].Assembly.Location,
                     [System.Diagnostics.Stopwatch].Assembly.Location,
+                    [System.Drawing.Icon].Assembly.Location,
+                    [System.Net.Http.HttpClient].Assembly.Location,
                     [System.Object].Assembly.Location
                 ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+                if ($PSVersionTable.PSEdition -eq "Core") {
+                    try {
+                        $refDllsCore = @([System.IO.Directory]::GetFiles((Join-Path $PSHOME "ref"), "*.dll"))
+                        $loadedExtraCore = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and -not [string]::IsNullOrWhiteSpace($_.Location) -and $_.GetName().Name -match "^(Presentation|WindowsBase|System\.Drawing|System\.Private\.Windows|DirectWriteForwarder|ReachFramework|UIAutomation)" } | ForEach-Object { $_.Location })
+                        $wpfSmoothRefs = @($refDllsCore + $loadedExtraCore + $wpfSmoothRefs | Select-Object -Unique)
+                    } catch {}
+                }
                 $smoothScrollCs = Get-Content -Raw -Encoding utf8 $cand
                 Add-Type -TypeDefinition $smoothScrollCs -ReferencedAssemblies $wpfSmoothRefs -ErrorAction SilentlyContinue
                 break
@@ -162,6 +171,8 @@ function Import-LocalIconBitmap {
 
 $script:pendingIconSaves = [System.Collections.Generic.List[hashtable]]::new()
 $script:inFlightIconTasks = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:remotePipelineStarted = $false
+$script:pendingIconTargets = $null
 
 function Start-BackgroundIconDownload {
     param(
@@ -192,10 +203,140 @@ function Start-BackgroundIconDownload {
     }
 }
 
+$script:remoteIconRegistry = [System.Collections.Generic.List[hashtable]]::new()
+$script:cardDescriptors    = [System.Collections.Generic.List[hashtable]]::new()
+$script:deferredCardTimer  = $null
+
+function Try-EnableCompletedCardCaches {
+    if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:sharedCardCache) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $isIdleNow = ($null -ne $pipeType -and $null -ne $pipeType.GetProperty("IsRemoteIdle")) -and [DuckUtil.UiAssetPipeline]::IsRemoteIdle
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached -or $cd.CacheEnabled) { continue }
+        if ($cd.TotalIcons -eq 0 -or ($cd.IconsEnqueued -and ($cd.LoadedIcons -ge $cd.TotalIcons -or $isIdleNow))) {
+            $cd.Card.CacheMode = $script:sharedCardCache
+            $cd.CacheEnabled = $true
+        }
+    }
+}
+
+function Sync-Tab0ViewportAssets {
+    if ($script:isWindowClosing -or -not $script:cardDescriptors -or $script:cardDescriptors.Count -eq 0) { return }
+    $vOff = if ($appsScrollViewer) { [double]$appsScrollViewer.VerticalOffset } else { 0.0 }
+    $vH   = if ($appsScrollViewer -and $appsScrollViewer.ViewportHeight -gt 100) { [double]$appsScrollViewer.ViewportHeight } else { 820.0 }
+    $bandTop = $vOff - 250.0
+    $bandBot = $vOff + $vH + 520.0
+
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $hasIncremental = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("EnqueueRemoteIcons"))
+
+    $idxList  = $null
+    $urlList  = $null
+    $fbList   = $null
+    $destList = $null
+    $keyList  = $null
+
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached -and $cd.EstTop -le $bandBot) {
+            $cd.Attached = $true
+            if ($cd.ColPanel) { [void]$cd.ColPanel.Children.Add($cd.Card) }
+        }
+        if ($cd.Attached -and -not $cd.IconsEnqueued -and $cd.EstBottom -ge $bandTop -and $cd.EstTop -le $bandBot) {
+            $cd.IconsEnqueued = $true
+            if ($cd.IconIndices -and $cd.IconIndices.Count -gt 0) {
+                if ($hasIncremental) {
+                    if ($null -eq $idxList) {
+                        $idxList  = [System.Collections.Generic.List[int]]::new()
+                        $urlList  = [System.Collections.Generic.List[string]]::new()
+                        $fbList   = [System.Collections.Generic.List[string]]::new()
+                        $destList = [System.Collections.Generic.List[string]]::new()
+                        $keyList  = [System.Collections.Generic.List[string]]::new()
+                    }
+                    foreach ($rIdx in $cd.IconIndices) {
+                        $t = $script:remoteIconRegistry[$rIdx]
+                        if ($t -and -not $t.Applied) {
+                            $idxList.Add($rIdx)
+                            $urlList.Add([string]$t.Url)
+                            $fbList.Add([string]$t.FallbackUrl)
+                            $destList.Add([string]$t.DestPath)
+                            $keyList.Add([string]$t.CacheKey)
+                            $script:pendingIconSaves.Add($t)
+                        }
+                    }
+                } else {
+                    foreach ($rIdx in $cd.IconIndices) {
+                        $t = $script:remoteIconRegistry[$rIdx]
+                        if ($t -and -not $t.Applied) { $script:pendingIconSaves.Add($t) }
+                    }
+                }
+            }
+        }
+    }
+
+    if ($hasIncremental -and $null -ne $idxList -and $idxList.Count -gt 0) {
+        $script:remotePipelineStarted = $true
+        [DuckUtil.UiAssetPipeline]::EnqueueRemoteIcons($idxList.ToArray(), $urlList.ToArray(), $fbList.ToArray(), $destList.ToArray(), $keyList.ToArray())
+        if ($script:iconSyncTimer -and -not $script:iconSyncTimer.IsEnabled) {
+            $script:iconSyncTimer.Start()
+        }
+    }
+    Try-EnableCompletedCardCaches
+}
+
 function Flush-PendingIconCache {
-    param([int]$MaxDecode = 8)
+    param([int]$MaxDecode = 24)
+    if ($script:isWindowClosing -or $script:isActionRunning) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($pipeType -and $null -ne $pipeType.GetMethod("EnqueueRemoteIcons")) {
+        if (-not $script:remotePipelineStarted -and $script:cardDescriptors -and $script:cardDescriptors.Count -gt 0) {
+            Sync-Tab0ViewportAssets
+        }
+
+        $readyItems = [DuckUtil.UiAssetPipeline]::DequeueReadyRemoteIcons($MaxDecode)
+        $anyCardCompleted = $false
+        if ($readyItems -and $readyItems.Length -gt 0) {
+            foreach ($ri in $readyItems) {
+                if ($null -eq $ri -or $null -eq $ri.Bitmap) { continue }
+                if ($script:remoteBmpCache -and -not [string]::IsNullOrEmpty($ri.CacheKey)) {
+                    $script:remoteBmpCache[$ri.CacheKey] = $ri.Bitmap
+                }
+                if ($script:remoteIconRegistry -and $ri.Index -ge 0 -and $ri.Index -lt $script:remoteIconRegistry.Count) {
+                    $t = $script:remoteIconRegistry[$ri.Index]
+                    if ($t -and -not $t.Applied) {
+                        $t.Applied = $true
+                        if ($script:pendingIconSaves) { [void]$script:pendingIconSaves.Remove($t) }
+                        if ($t.Img) {
+                            $t.Img.Source = $ri.Bitmap
+                            $t.Img.Visibility = [System.Windows.Visibility]::Visible
+                        }
+                        if ($t.Fallback) {
+                            $t.Fallback.Visibility = [System.Windows.Visibility]::Collapsed
+                        }
+                        if ($t.UseLight -and $t.Badge) {
+                            $t.Badge.Background = $script:brushIconBadgeLightBg
+                        }
+                        if ($t.CardDesc) {
+                            $t.CardDesc.LoadedIcons++
+                            if ($t.CardDesc.LoadedIcons -ge $t.CardDesc.TotalIcons) {
+                                $anyCardCompleted = $true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ([DuckUtil.UiAssetPipeline]::IsRemoteIdle) {
+            $script:pendingIconSaves.Clear()
+            Try-EnableCompletedCardCaches
+            if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() }
+        } elseif ($anyCardCompleted) {
+            Try-EnableCompletedCardCaches
+        }
+        return
+    }
+
     if (-not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) { return }
-    if ($script:isActionRunning) { return }
     $inFlightCount = 0
     $decodedCount  = 0
     for ($idx = $script:pendingIconSaves.Count - 1; $idx -ge 0; $idx--) {
@@ -221,7 +362,7 @@ function Flush-PendingIconCache {
                         if ($data -and $data.Length -gt 230 -and $data.Length -ne 588 -and -not [System.IO.File]::Exists($entry.DestPath)) {
                             $tmpFile = "$($entry.DestPath).$([guid]::NewGuid().ToString('N')).tmp"
                             [System.IO.File]::WriteAllBytes($tmpFile, $data)
-                            Move-Item -LiteralPath $tmpFile -Destination $entry.DestPath -Force -ErrorAction SilentlyContinue
+                            [System.IO.File]::Move($tmpFile, $entry.DestPath)
                             $hasLocalFile = $true
                         }
                     } catch {}
@@ -276,19 +417,25 @@ $thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
 $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
-if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
-    try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
+$script:remoteExistingFiles = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+if (-not [System.IO.Directory]::Exists($iconsCacheDir)) {
+    try { [System.IO.Directory]::CreateDirectory($iconsCacheDir) | Out-Null } catch {}
 } else {
     try {
-        Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
-            $_.Length -le 230 -or $_.Length -eq 588
-        } | Remove-Item -Force -ErrorAction SilentlyContinue
+        $dirInfo = [System.IO.DirectoryInfo]::new($iconsCacheDir)
+        foreach ($fi in $dirInfo.EnumerateFiles("*.png")) {
+            if ($fi.Length -le 230 -or $fi.Length -eq 588) {
+                try { $fi.Delete() } catch {}
+            } else {
+                [void]$script:remoteExistingFiles.Add($fi.Name)
+            }
+        }
     } catch {}
 
     try {
         $mapFile = Join-Path $iconsCacheDir "cache.icons.map.txt"
         $oldMap = @{}
-        if (Test-Path -LiteralPath $mapFile) {
+        if ([System.IO.File]::Exists($mapFile)) {
             foreach ($line in [System.IO.File]::ReadAllLines($mapFile)) {
                 $sepIdx = $line.IndexOf('=')
                 if ($sepIdx -gt 0) {
@@ -306,8 +453,9 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
                 if ($oldMap.ContainsKey($appKey)) {
                     if ($oldMap[$appKey] -ne $appVal) {
                         $staleIcon = Join-Path $iconsCacheDir "$appKey.png"
-                        if (Test-Path -LiteralPath $staleIcon) {
-                            Remove-Item -LiteralPath $staleIcon -Force -ErrorAction SilentlyContinue
+                        if ([System.IO.File]::Exists($staleIcon)) {
+                            try { [System.IO.File]::Delete($staleIcon) } catch {}
+                            [void]$script:remoteExistingFiles.Remove("$appKey.png")
                         }
                         $mapChanged = $true
                     }
@@ -316,7 +464,7 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
                 }
             }
         }
-        if ($mapChanged -or -not (Test-Path -LiteralPath $mapFile)) {
+        if ($mapChanged -or -not [System.IO.File]::Exists($mapFile)) {
             [System.IO.File]::WriteAllLines($mapFile, $newLines, [System.Text.Encoding]::UTF8)
         }
     } catch {}
@@ -1024,21 +1172,34 @@ function Set-ActiveTab {
         $activeBtn.BorderBrush = $script:brushNavActive
     }
 
-    if ($index -eq 1 -and -not $script:uninstallerLoadedOnce) {
-        if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller) {
-            $script:deferredUninstallerLoad = $true
-            if ($txtUninstallerSummary) {
-                $txtUninstallerSummary.Text = "Đang chờ tác vụ hiện tại hoàn tất để tải danh sách ứng dụng..."
-            }
-        } elseif (-not $script:uninstallerLoadQueued -and $window -and $window.Dispatcher) {
-            $script:uninstallerLoadQueued = $true
-            $window.Dispatcher.BeginInvoke(
-                [System.Windows.Threading.DispatcherPriority]::Loaded,
-                [Action]{
-                    $script:uninstallerLoadQueued = $false
-                    Update-UninstallerList
+    if ($index -eq 0) {
+        if ($script:cardDescriptors -and $script:cardDescriptors.Count -gt 0) {
+            try { Sync-Tab0ViewportAssets } catch {}
+        }
+    } elseif ($index -eq 1) {
+        if (-not $script:uninstallerLoadedOnce) {
+            if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller) {
+                $script:deferredUninstallerLoad = $true
+                if ($txtUninstallerSummary) {
+                    $txtUninstallerSummary.Text = "Đang chờ tác vụ hiện tại hoàn tất để tải danh sách ứng dụng..."
                 }
-            ) | Out-Null
+            } elseif (-not $script:uninstallerLoadQueued -and $window -and $window.Dispatcher) {
+                $script:uninstallerLoadQueued = $true
+                $window.Dispatcher.BeginInvoke(
+                    [System.Windows.Threading.DispatcherPriority]::Loaded,
+                    [Action]{
+                        $script:uninstallerLoadQueued = $false
+                        Update-UninstallerList
+                    }
+                ) | Out-Null
+            }
+        } else {
+            if (Get-Command "Sync-UninstallerViewport" -ErrorAction SilentlyContinue) {
+                Sync-UninstallerViewport -Force
+            }
+            if ($script:uninstIconsPipelineNeedsStart -and (Get-Command "Start-UninstallerIconPipelineIfNeeded" -ErrorAction SilentlyContinue)) {
+                Start-UninstallerIconPipelineIfNeeded
+            }
         }
     }
 }
@@ -1117,6 +1278,20 @@ $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
+
+$script:styleUninstRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
+$script:styleUninstRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushUninstRowBg)))
+$trigUninstHover = New-Object System.Windows.Trigger
+$trigUninstHover.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$trigUninstHover.Value = $true
+$trigUninstHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushUninstRowHover)))
+$script:styleUninstRow.Triggers.Add($trigUninstHover)
+$script:styleUninstRow.Seal()
+
+$script:uninstIconsPipelineNeedsStart = $false
+$script:uninstPipelineStarted       = $false
+$script:pendingUninstTargets          = $null
+$script:uninstPanelRoutedAttached     = $false
 
 $script:catalogIconLookup = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 if ($AppCatalog) {
@@ -1280,14 +1455,270 @@ function ConvertTo-UninstallerBitmapSource {
     return $resultBmp
 }
 
+$script:uninstallerVisibleEntries = [System.Collections.Generic.List[object]]::new()
+$script:uninstIconRegistry        = [System.Collections.Generic.List[object]]::new()
+$script:uninstTopSpacer           = [System.Windows.Controls.Border]::new()
+$script:uninstTopSpacer.IsHitTestVisible = $false
+$script:uninstTopSpacer.Height    = 0.0
+$script:uninstBottomSpacer        = [System.Windows.Controls.Border]::new()
+$script:uninstBottomSpacer.IsHitTestVisible = $false
+$script:uninstBottomSpacer.Height = 0.0
+$script:uninstLastStart           = -1
+$script:uninstLastEnd             = -1
+
+function Ensure-UninstallerRowRealized {
+    param($Entry)
+    if ($null -eq $Entry) { return $null }
+    if ($null -ne $Entry.Row) { return $Entry.Row }
+
+    $app = $Entry.App
+    $sizeText = if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
+        $mb = [double]$app.SizeBytes / 1MB
+        if ($mb -ge 1024) { "{0:N2} GB" -f ($mb / 1024.0) } else { "{0:N1} MB" -f $mb }
+    } else {
+        "--"
+    }
+    $targetFolder = if ($app.PSObject.Properties['TargetFolder'] -and $null -ne $app.TargetFolder) {
+        $app.TargetFolder
+    } elseif (-not [string]::IsNullOrWhiteSpace($app.InstallLocation) -and [System.IO.Directory]::Exists($app.InstallLocation)) {
+        $app.InstallLocation
+    } elseif ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation) -and [System.IO.Directory]::Exists($app.DataLocation)) {
+        $app.DataLocation
+    } else {
+        ""
+    }
+    $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu dữ liệu riêng: $($app.DataLocation)" } else { "" }
+    $rowTip = "$($app.DisplayName)`nPhiên bản: $($app.DisplayVersion)`nNhà phát hành: $($app.Publisher)`nĐường dẫn: $($app.InstallLocation)$dataTip`nLệnh gỡ: $($app.UninstallString)"
+
+    $bestTarget = $Entry.IconTarget
+    $preCached = $null
+    if (-not [string]::IsNullOrWhiteSpace($bestTarget)) {
+        if ("DuckUtil.UiAssetPipeline" -as [type]) {
+            $preCached = [DuckUtil.UiAssetPipeline]::TryGetCachedUninstIcon($bestTarget)
+        }
+        if ($null -eq $preCached -and $script:uninstallerIconCache.TryGetValue($bestTarget, [ref]$preCached)) {
+        }
+    }
+
+    $vis = [DuckUtil.UiAssetPipeline]::CreateUninstallerRow(
+        [string]$app.DisplayName,
+        [string]$app.DisplayVersion,
+        [string]$app.Publisher,
+        [string]$sizeText,
+        [bool]$app.IsBrokenOrphan,
+        [string]$targetFolder,
+        [string]$rowTip,
+        [string]$strFolderEmoji,
+        $script:styleUninstRow,
+        $script:brushUninstRowBorder,
+        $script:brushUninstTitle,
+        $script:brushUninstTitleBroken,
+        $script:brushUninstMuted,
+        $script:brushUninstLight,
+        $script:brushUninstBadgeBg,
+        $script:brushUninstBadgeFg,
+        $script:brushUninstBadgeBrokenBg,
+        $script:brushUninstBadgeBrokenFg,
+        $script:brushUninstStatusOkBg,
+        $script:brushUninstStatusOkBorder,
+        $script:brushUninstStatusOkFg,
+        $script:brushUninstStatusBrokenBg,
+        $script:brushUninstStatusBrokenBorder,
+        $script:brushUninstFolderBg,
+        $script:brushUninstFolderBorder,
+        $preCached
+    )
+
+    $Entry.Row           = $vis.RowBorder
+    $Entry.CheckBox      = $vis.CheckBox
+    $Entry.IconImg       = $vis.IconImg
+    $Entry.FallbackBadge = $vis.FallbackBadge
+    $vis.RowBorder.Tag   = $Entry
+    if ($null -ne $preCached) { $Entry.IconLoaded = $true }
+    if ($Entry.IsQueued) { $vis.RowBorder.Opacity = 0.52 }
+
+    if ($Entry.IsSelected) {
+        $prevSup = $script:suppressUninstallerSelectionCount
+        $script:suppressUninstallerSelectionCount = $true
+        try {
+            $vis.CheckBox.IsChecked = $true
+            $vis.RowBorder.Background = $script:brushUninstRowCheckedBg
+        } finally {
+            $script:suppressUninstallerSelectionCount = $prevSup
+        }
+    }
+    return $Entry.Row
+}
+
+function Sync-UninstallerViewport {
+    param([switch]$Force)
+    if ($script:isWindowClosing -or -not $uninstallerRowsPanel) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if (-not ($pipeType -and $null -ne $pipeType.GetMethod("CreateUninstallerRow"))) { return }
+
+    $isTab1Visible = $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible
+    if (-not $isTab1Visible) { return }
+
+    $visCount = $script:uninstallerVisibleEntries.Count
+    if ($visCount -eq 0) {
+        if ($uninstallerRowsPanel.Children.Count -gt 0) { $uninstallerRowsPanel.Children.Clear() }
+        $script:uninstLastStart = -1
+        $script:uninstLastEnd   = -1
+        return
+    }
+
+    $rowH = 38.0
+    $vOff = if ($uninstallerScrollViewer) { [double]$uninstallerScrollViewer.VerticalOffset } else { 0.0 }
+    $vH   = if ($uninstallerScrollViewer -and $uninstallerScrollViewer.ViewportHeight -gt 100) { [double]$uninstallerScrollViewer.ViewportHeight } else { 620.0 }
+
+    $startIdx = [Math]::Max(0, [int][Math]::Floor($vOff / $rowH) - 5)
+    $endIdx   = [Math]::Min($visCount - 1, [int][Math]::Ceiling(($vOff + $vH) / $rowH) + 8)
+
+    $prevStart = $script:uninstLastStart
+    $prevEnd   = $script:uninstLastEnd
+    if (-not $Force -and $startIdx -eq $prevStart -and $endIdx -eq $prevEnd) {
+        return
+    }
+    $script:uninstLastStart = $startIdx
+    $script:uninstLastEnd   = $endIdx
+
+    $enqIdx   = $null
+    $enqPaths = $null
+    $hasIncUninst = ($null -ne $pipeType.GetMethod("EnqueueUninstallerIcons"))
+
+    $script:uninstTopSpacer.Height    = $startIdx * $rowH
+    $script:uninstBottomSpacer.Height = [Math]::Max(0, ($visCount - 1 - $endIdx)) * $rowH
+
+    $canSlide = (-not $Force) -and ($prevStart -ge 0) -and ($prevEnd -ge $prevStart) -and
+        ($startIdx -le $prevEnd) -and ($endIdx -ge $prevStart) -and
+        ($uninstallerRowsPanel.Children.Count -eq ($prevEnd - $prevStart + 3))
+
+    if ($canSlide) {
+        $curS = $prevStart
+        $curE = $prevEnd
+        while ($curS -lt $startIdx) {
+            $uninstallerRowsPanel.Children.RemoveAt(1)
+            $curS++
+        }
+        while ($curE -gt $endIdx) {
+            $uninstallerRowsPanel.Children.RemoveAt($uninstallerRowsPanel.Children.Count - 2)
+            $curE--
+        }
+        for ($i = $curS - 1; $i -ge $startIdx; $i--) {
+            $entry = $script:uninstallerVisibleEntries[$i]
+            $rowEl = Ensure-UninstallerRowRealized -Entry $entry
+            if ($null -ne $rowEl) { $uninstallerRowsPanel.Children.Insert(1, $rowEl) }
+            if ($hasIncUninst -and -not $entry.IconLoaded -and -not $entry.IconEnqueued -and -not [string]::IsNullOrWhiteSpace($entry.IconTarget)) {
+                $entry.IconEnqueued = $true
+                if ($null -eq $enqIdx) { $enqIdx = [System.Collections.Generic.List[int]]::new(); $enqPaths = [System.Collections.Generic.List[string]]::new() }
+                $enqIdx.Add([int]$entry.RegIndex); $enqPaths.Add([string]$entry.IconTarget); $script:pendingUninstIcons.Add($entry)
+            }
+        }
+        for ($i = $curE + 1; $i -le $endIdx; $i++) {
+            $entry = $script:uninstallerVisibleEntries[$i]
+            $rowEl = Ensure-UninstallerRowRealized -Entry $entry
+            if ($null -ne $rowEl) { $uninstallerRowsPanel.Children.Insert($uninstallerRowsPanel.Children.Count - 1, $rowEl) }
+            if ($hasIncUninst -and -not $entry.IconLoaded -and -not $entry.IconEnqueued -and -not [string]::IsNullOrWhiteSpace($entry.IconTarget)) {
+                $entry.IconEnqueued = $true
+                if ($null -eq $enqIdx) { $enqIdx = [System.Collections.Generic.List[int]]::new(); $enqPaths = [System.Collections.Generic.List[string]]::new() }
+                $enqIdx.Add([int]$entry.RegIndex); $enqPaths.Add([string]$entry.IconTarget); $script:pendingUninstIcons.Add($entry)
+            }
+        }
+    } else {
+        $uninstallerRowsPanel.Children.Clear()
+        [void]$uninstallerRowsPanel.Children.Add($script:uninstTopSpacer)
+        for ($i = $startIdx; $i -le $endIdx; $i++) {
+            $entry = $script:uninstallerVisibleEntries[$i]
+            $rowEl = Ensure-UninstallerRowRealized -Entry $entry
+            if ($null -ne $rowEl) {
+                [void]$uninstallerRowsPanel.Children.Add($rowEl)
+            }
+            if ($hasIncUninst -and -not $entry.IconLoaded -and -not $entry.IconEnqueued -and -not [string]::IsNullOrWhiteSpace($entry.IconTarget)) {
+                $entry.IconEnqueued = $true
+                if ($null -eq $enqIdx) {
+                    $enqIdx   = [System.Collections.Generic.List[int]]::new()
+                    $enqPaths = [System.Collections.Generic.List[string]]::new()
+                }
+                $enqIdx.Add([int]$entry.RegIndex)
+                $enqPaths.Add([string]$entry.IconTarget)
+                $script:pendingUninstIcons.Add($entry)
+            }
+        }
+        [void]$uninstallerRowsPanel.Children.Add($script:uninstBottomSpacer)
+    }
+
+    if ($hasIncUninst -and $null -ne $enqIdx -and $enqIdx.Count -gt 0) {
+        $script:uninstPipelineStarted = $true
+        [DuckUtil.UiAssetPipeline]::EnqueueUninstallerIcons($enqIdx.ToArray(), $enqPaths.ToArray())
+        if ($script:uninstIconTimer -and -not $script:uninstIconTimer.IsEnabled) {
+            $script:uninstIconTimer.Start()
+        }
+    }
+}
+
+if ($uninstallerScrollViewer) {
+    $uninstallerScrollViewer.Add_ScrollChanged({
+        Sync-UninstallerViewport
+    })
+}
+
+function Start-UninstallerIconPipelineIfNeeded {
+    if ($script:isWindowClosing) {
+        $script:uninstIconsPipelineNeedsStart = $false
+        return
+    }
+    $script:uninstIconsPipelineNeedsStart = $false
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($pipeType -and $null -ne $pipeType.GetMethod("EnqueueUninstallerIcons")) {
+        Sync-UninstallerViewport -Force
+        return
+    }
+    if (-not $script:pendingUninstIcons -or $script:pendingUninstIcons.Count -eq 0) { return }
+    if ($script:uninstIconTimer -and -not $script:uninstIconTimer.IsEnabled) {
+        $script:uninstIconTimer.Start()
+    }
+}
+
 $script:uninstIconTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
-$script:uninstIconTimer.Interval = [TimeSpan]::FromMilliseconds(25)
+$script:uninstIconTimer.Interval = [TimeSpan]::FromMilliseconds(50)
 $script:uninstIconTimer.Add_Tick({
     if ($script:isWindowClosing) {
         $script:uninstIconTimer.Stop()
         return
     }
     if ($script:isUpdatingUninstaller) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($pipeType -and $null -ne $pipeType.GetMethod("DequeueReadyUninstallerIcons")) {
+        $readyItems = [DuckUtil.UiAssetPipeline]::DequeueReadyUninstallerIcons(12)
+        if ($readyItems -and $readyItems.Length -gt 0) {
+            foreach ($ri in $readyItems) {
+                if ($null -eq $ri -or $null -eq $ri.Bitmap) { continue }
+                if (-not [string]::IsNullOrEmpty($ri.CacheKey)) {
+                    $script:uninstallerIconCache[$ri.CacheKey] = $ri.Bitmap
+                }
+                if ($script:uninstIconRegistry -and $ri.Index -ge 0 -and $ri.Index -lt $script:uninstIconRegistry.Count) {
+                    $ent = $script:uninstIconRegistry[$ri.Index]
+                    if ($ent) {
+                        $ent.IconLoaded = $true
+                        if ($script:pendingUninstIcons) { [void]$script:pendingUninstIcons.Remove($ent) }
+                        if ($ent.IconImg) {
+                            $ent.IconImg.Source = $ri.Bitmap
+                            $ent.IconImg.Visibility = [System.Windows.Visibility]::Visible
+                        }
+                        if ($ent.FallbackBadge) {
+                            $ent.FallbackBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                        }
+                    }
+                }
+            }
+        }
+        if ([DuckUtil.UiAssetPipeline]::IsUninstIdle) {
+            $script:pendingUninstIcons.Clear()
+            $script:uninstIconTimer.Stop()
+        }
+        return
+    }
+
     if (-not $script:pendingUninstIcons -or $script:pendingUninstIcons.Count -eq 0) {
         $script:uninstIconTimer.Stop()
         return
@@ -1313,7 +1744,7 @@ function Update-UninstallerSelectionCount {
     if ($script:suppressUninstallerSelectionCount -or $script:isWindowClosing) { return }
     $count = 0
     foreach ($entry in $script:uninstallerRowEntries) {
-        if ($entry.CheckBox -and $entry.CheckBox.IsChecked -eq $true) {
+        if (-not $entry.IsRemoved -and ($entry.IsSelected -or ($entry.CheckBox -and $entry.CheckBox.IsChecked -eq $true))) {
             $count++
         }
     }
@@ -1334,7 +1765,12 @@ function Apply-UninstallerFilter {
     $brokenCount = 0
     [long]$visibleBytes = 0
 
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $useVirtualTab1 = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+    $script:uninstallerVisibleEntries.Clear()
+
     foreach ($entry in $script:uninstallerRowEntries) {
+        if ($entry.IsRemoved) { continue }
         $app = $entry.App
         if ($app.IsBrokenOrphan) { $brokenCount++ }
 
@@ -1342,14 +1778,28 @@ function Apply-UninstallerFilter {
         $matchFilter = if ($script:uninstallerFilterMode -eq "Broken") { [bool]$app.IsBrokenOrphan } else { $true }
 
         if ($matchSearch -and $matchFilter) {
-            $entry.Row.Visibility = [System.Windows.Visibility]::Visible
+            if ($useVirtualTab1) {
+                [void]$script:uninstallerVisibleEntries.Add($entry)
+            } elseif ($entry.Row) {
+                $entry.Row.Visibility = [System.Windows.Visibility]::Visible
+            }
             $visibleCount++
             if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
                 $visibleBytes += [long]$app.SizeBytes
             }
-        } else {
+        } elseif (-not $useVirtualTab1 -and $entry.Row) {
             $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
         }
+    }
+
+    if ($useVirtualTab1) {
+        if ($uninstallerScrollViewer) {
+            $maxOff = [Math]::Max(0.0, ($visibleCount * 38.0) - [Math]::Max(100.0, [double]$uninstallerScrollViewer.ViewportHeight))
+            if ($uninstallerScrollViewer.VerticalOffset -gt $maxOff) {
+                $uninstallerScrollViewer.ScrollToVerticalOffset($maxOff)
+            }
+        }
+        Sync-UninstallerViewport -Force
     }
 
     if ($txtUninstallerSummary) {
@@ -1414,17 +1864,26 @@ function Set-UninstallerSortMode {
             } else {
                 @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
             }
-            $prevVis = $uninstallerRowsPanel.Visibility
-            $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
-            try {
+            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+            $useVirtualTab1 = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+            if ($useVirtualTab1) {
                 $script:uninstallerRowEntries.Clear()
-                $uninstallerRowsPanel.Children.Clear()
                 foreach ($entry in $sortedEntries) {
                     [void]$script:uninstallerRowEntries.Add($entry)
-                    [void]$uninstallerRowsPanel.Children.Add($entry.Row)
                 }
-            } finally {
-                $uninstallerRowsPanel.Visibility = $prevVis
+            } else {
+                $prevVis = $uninstallerRowsPanel.Visibility
+                $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
+                try {
+                    $script:uninstallerRowEntries.Clear()
+                    $uninstallerRowsPanel.Children.Clear()
+                    foreach ($entry in $sortedEntries) {
+                        [void]$script:uninstallerRowEntries.Add($entry)
+                        [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+                    }
+                } finally {
+                    $uninstallerRowsPanel.Visibility = $prevVis
+                }
             }
         }
         Apply-UninstallerFilter
@@ -1503,6 +1962,67 @@ $marginUninstSize   = New-Object System.Windows.Thickness(8, 0, 12, 0)
 $paddingUninstBadge = New-Object System.Windows.Thickness(8, 2, 8, 2)
 $strFolderEmoji     = [char]::ConvertFromUtf32(0x1F4C1)
 
+if ($uninstallerRowsPanel -and -not $script:uninstPanelRoutedAttached) {
+    $script:uninstPanelRoutedAttached = $true
+    $uninstallerRowsPanel.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
+        [System.Windows.RoutedEventHandler]{
+            param($s, $e)
+            $cb = $e.OriginalSource -as [System.Windows.Controls.CheckBox]
+            if ($cb -and $cb.Tag -is [System.Windows.Controls.Border]) {
+                $cb.Tag.Background = $script:brushUninstRowCheckedBg
+                if ($cb.Tag.Tag -is [hashtable]) { $cb.Tag.Tag.IsSelected = $true }
+            }
+            Update-UninstallerSelectionCount
+        }
+    )
+    $uninstallerRowsPanel.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
+        [System.Windows.RoutedEventHandler]{
+            param($s, $e)
+            $cb = $e.OriginalSource -as [System.Windows.Controls.CheckBox]
+            if ($cb -and $cb.Tag -is [System.Windows.Controls.Border]) {
+                if ($cb.Tag.Style -eq $script:styleUninstRow) {
+                    $cb.Tag.ClearValue([System.Windows.Controls.Border]::BackgroundProperty)
+                } else {
+                    $cb.Tag.Background = $script:brushUninstRowBg
+                }
+                if ($cb.Tag.Tag -is [hashtable]) { $cb.Tag.Tag.IsSelected = $false }
+            }
+            Update-UninstallerSelectionCount
+        }
+    )
+    $uninstallerRowsPanel.AddHandler(
+        [System.Windows.UIElement]::MouseLeftButtonUpEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
+            param($sender, $e)
+            if ($e.Handled -or $script:isWindowClosing -or $script:isUpdatingUninstaller -or $script:isActionRunning) { return }
+            $node = $e.OriginalSource
+            while ($node -ne $null -and $node -ne $sender) {
+                if ($node -is [System.Windows.Controls.Primitives.ToggleButton]) { return }
+                if ($node -is [System.Windows.Controls.Border]) {
+                    if ($node.Tag -is [string] -and -not [string]::IsNullOrWhiteSpace($node.Tag)) {
+                        $e.Handled = $true
+                        $loc = [string]$node.Tag
+                        if ([System.IO.Directory]::Exists($loc)) {
+                            try { Start-Process "explorer.exe" "`"$loc`"" } catch {}
+                        }
+                        return
+                    }
+                    if ($node.Tag -is [hashtable] -and $node.Tag.ContainsKey('CheckBox') -and $node.Style -eq $script:styleUninstRow) {
+                        $cbRef = $node.Tag['CheckBox']
+                        if ($cbRef) { $cbRef.IsChecked = -not $cbRef.IsChecked }
+                        return
+                    }
+                }
+                if ($node -is [System.Windows.Media.Visual]) {
+                    $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+                } else { break }
+            }
+        }
+    )
+}
+
 function Update-UninstallerList {
     param([switch]$Force)
     if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
@@ -1522,7 +2042,16 @@ function Update-UninstallerList {
         if ($txtUninstallerSummary) { $txtUninstallerSummary.Text = "Đang quét danh sách ứng dụng đã cài..." }
 
         $script:uninstIconTimer.Stop()
+        if ("DuckUtil.UiAssetPipeline" -as [type]) {
+            try { [DuckUtil.UiAssetPipeline]::StopUninstallerIconPipeline() } catch {}
+        }
+        $script:uninstPipelineStarted = $false
+        $script:uninstIconsPipelineNeedsStart = $false
+        $script:pendingUninstTargets = $null
         $script:pendingUninstIcons.Clear()
+        $script:uninstIconRegistry.Clear()
+        $script:uninstLastStart = -1
+        $script:uninstLastEnd   = -1
 
         $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
         if ($deepType -and $null -ne $deepType.GetMethod("GetInstalledAppsAsync")) {
@@ -1554,6 +2083,38 @@ function Update-UninstallerList {
             $uninstallerRowsPanel.Children.Clear()
             $script:uninstallerRowEntries.Clear()
 
+            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+            $hasFastRowBuilder = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+            if ($hasFastRowBuilder) {
+                $regIdx = 0
+                foreach ($app in $sortedApps) {
+                    if ($script:isWindowClosing) { return }
+                    $searchIdx = if ($app.PSObject.Properties['SearchIndex'] -and -not [string]::IsNullOrEmpty($app.SearchIndex)) {
+                        $app.SearchIndex
+                    } else {
+                        "$($app.DisplayName) $($app.Publisher) $($app.DisplayVersion)".ToLowerInvariant()
+                    }
+                    $bestTarget = Get-UninstallerBestIconTarget -App $app
+                    $entry = @{
+                        Row           = $null
+                        App           = $app
+                        CheckBox      = $null
+                        IconImg       = $null
+                        FallbackBadge = $null
+                        SearchText    = $searchIdx
+                        IconTarget    = $bestTarget
+                        IconEnqueued  = $false
+                        IconLoaded    = $false
+                        IsSelected    = $false
+                        IsQueued      = $false
+                        IsRemoved     = $false
+                        RegIndex      = $regIdx
+                    }
+                    $regIdx++
+                    [void]$script:uninstIconRegistry.Add($entry)
+                    [void]$script:uninstallerRowEntries.Add($entry)
+                }
+            } else {
             foreach ($app in $sortedApps) {
                 if ($script:isWindowClosing) { return }
                 $rowBorder = [System.Windows.Controls.Border]::new()
@@ -1809,9 +2370,10 @@ function Update-UninstallerList {
                     CheckBox = $cb
                     SearchText = $searchIdx
                 }
-                $rowBorder.Tag = $entry
-                [void]$script:uninstallerRowEntries.Add($entry)
-                [void]$uninstallerRowsPanel.Children.Add($rowBorder)
+                    $rowBorder.Tag = $entry
+                    [void]$script:uninstallerRowEntries.Add($entry)
+                    [void]$uninstallerRowsPanel.Children.Add($rowBorder)
+                }
             }
         } finally {
             $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Visible
@@ -1823,7 +2385,12 @@ function Update-UninstallerList {
         $script:uninstallerLoadQueued = $false
         Set-UninstallerSortMode $script:uninstallerSortMode -HeadersOnly
         if (-not $script:isWindowClosing -and $script:pendingUninstIcons.Count -gt 0) {
-            $script:uninstIconTimer.Start()
+            $isTab1Visible = $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible
+            if ($isTab1Visible) {
+                Start-UninstallerIconPipelineIfNeeded
+            } else {
+                $script:uninstIconsPipelineNeedsStart = $true
+            }
         }
     } finally {
         $script:suppressUninstallerSelectionCount = $false
@@ -1906,9 +2473,19 @@ if ($btnUninstallSelectAll) {
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller -or $script:isActionRunning) { return }
         $script:suppressUninstallerSelectionCount = $true
         try {
-            foreach ($entry in $script:uninstallerRowEntries) {
-                if ($entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
-                    $entry.CheckBox.IsChecked = $true
+            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+            if ($pipeType -and $null -ne $pipeType.GetMethod("CreateUninstallerRow")) {
+                foreach ($entry in $script:uninstallerVisibleEntries) {
+                    $entry.IsSelected = $true
+                    if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $true }
+                    if ($entry.Row) { $entry.Row.Background = $script:brushUninstRowCheckedBg }
+                }
+            } else {
+                foreach ($entry in $script:uninstallerRowEntries) {
+                    if ($entry.Row -and $entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
+                        $entry.IsSelected = $true
+                        $entry.CheckBox.IsChecked = $true
+                    }
                 }
             }
         } finally {
@@ -1924,7 +2501,15 @@ if ($btnUninstallDeselectAll) {
         $script:suppressUninstallerSelectionCount = $true
         try {
             foreach ($entry in $script:uninstallerRowEntries) {
-                $entry.CheckBox.IsChecked = $false
+                $entry.IsSelected = $false
+                if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                if ($entry.Row) {
+                    if ($entry.Row.Style -eq $script:styleUninstRow) {
+                        $entry.Row.ClearValue([System.Windows.Controls.Border]::BackgroundProperty)
+                    } else {
+                        $entry.Row.Background = $script:brushUninstRowBg
+                    }
+                }
             }
         } finally {
             $script:suppressUninstallerSelectionCount = $false
@@ -2023,6 +2608,8 @@ function Add-ItemsToUninstallQueue {
             foreach ($entry in $script:uninstallerRowEntries) {
                 $rk = Get-UninstallerAppQueueKey $entry.App
                 if ($addedKeys.Contains($rk)) {
+                    $entry.IsSelected = $false
+                    $entry.IsQueued = $true
                     if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
                     if ($entry.Row) { $entry.Row.Opacity = 0.52 }
                 }
@@ -2074,13 +2661,18 @@ function Start-UninstallQueueExecution {
 
             if ($script:isWindowClosing -or $script:cancelRequested) { break }
             $completedApps++
+            $removedAnyRow = $false
             foreach ($entry in $script:uninstallerRowEntries) {
-                if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key -and $entry.Row) {
-                    $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
+                if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
+                    $entry.IsRemoved = $true
+                    $entry.IsSelected = $false
+                    $entry.IsQueued = $false
                     if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                    if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
+                    $removedAnyRow = $true
                 }
             }
-            Update-UninstallerSelectionCount
+            if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
         }
 
         if (-not $script:isWindowClosing -and -not $script:cancelRequested -and $collectedLeftovers.Count -gt 0) {
@@ -2108,7 +2700,8 @@ function Start-UninstallQueueExecution {
         $script:uninstallQueue.Clear()
         $script:uninstallQueuedKeys.Clear()
         foreach ($entry in $script:uninstallerRowEntries) {
-            if ($entry.Row -and $entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
+            $entry.IsQueued = $false
+            if ($entry.Row -and -not $entry.IsRemoved) {
                 $entry.Row.Opacity = 1.0
             }
         }
@@ -2126,7 +2719,7 @@ function Start-UninstallQueueExecution {
 
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
-        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
         if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
         if ($script:isUninstallingQueue) {
@@ -2158,7 +2751,7 @@ if ($btnDeepUninstall) {
         }
 
         Invoke-GuardedAction "Gỡ cài đặt ứng dụng" -DeferExpand {
-            $selectedNow = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            $selectedNow = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
             if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
@@ -2211,7 +2804,7 @@ if ($btnDeepUninstall) {
 
 if ($btnForceStopUninstall) {
     $btnForceStopUninstall.Add_Click({
-        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
         if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
         if ($script:isUninstallingQueue) {
@@ -2244,7 +2837,7 @@ if ($btnForceStopUninstall) {
         }
 
         Invoke-GuardedAction "Buộc dừng & Xóa ứng dụng" -DeferExpand {
-            $selectedNow = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            $selectedNow = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
             if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $appLines = @($selectedNow | ForEach-Object {
@@ -2492,6 +3085,58 @@ $script:sharedCardCache.RenderAtScale = 1.0
 $script:sharedCardCache.Freeze()
 $script:defaultFallbackGlyph = [char]::ConvertFromUtf32(0x1F4E6)
 
+$pipeCatalogType = "DuckUtil.UiAssetPipeline" -as [type]
+$script:hasFastCatalogRowBuilder = ($null -ne $pipeCatalogType) -and ($null -ne $pipeCatalogType.GetMethod("CreateCatalogRow"))
+
+if ($cardsContainer -and $script:hasFastCatalogRowBuilder) {
+    $cardsContainer.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
+        [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
+    )
+    $cardsContainer.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
+        [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
+    )
+    $cardsContainer.AddHandler(
+        [System.Windows.UIElement]::MouseLeftButtonUpEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
+            param($sender, $e)
+            if ($e.Handled -or $script:isActionRunning -or $script:isWindowClosing) { return }
+            $node = $e.OriginalSource
+            while ($node -ne $null -and $node -ne $sender) {
+                if ($node -is [System.Windows.Controls.Primitives.ToggleButton]) { return }
+                if ($node -is [System.Windows.Controls.Border]) {
+                    if ($node.Tag -is [string] -and -not [string]::IsNullOrWhiteSpace($node.Tag)) {
+                        $e.Handled = $true
+                        $domain = [string]$node.Tag
+                        $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
+                        try {
+                            Start-Process $targetUrl
+                        } catch {
+                            Log-Text "[!] Không thể mở trang web: $targetUrl"
+                        }
+                        return
+                    }
+                    if ($node.Tag -is [hashtable] -and $node.Tag.ContainsKey('CheckBox') -and $node.Style -eq $script:styleAppRow) {
+                        $targetCb = $node.Tag['CheckBox']
+                        if ($targetCb) { $targetCb.IsChecked = -not $targetCb.IsChecked }
+                        return
+                    }
+                }
+                if ($node -is [System.Windows.Media.Visual]) {
+                    $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+                } else { break }
+            }
+        }
+    )
+}
+
+if ($appsScrollViewer) {
+    $appsScrollViewer.Add_ScrollChanged({
+        Sync-Tab0ViewportAssets
+    })
+}
+
 foreach ($cat in $categories) {
     $cardBorder = [System.Windows.Controls.Border]::new()
     $cardBorder.Background = $script:brushCardBg
@@ -2502,7 +3147,9 @@ foreach ($cat in $categories) {
     $cardBorder.Padding = $paddingCard
     $cardBorder.Height = [double]::NaN
     $cardBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $cardBorder.CacheMode = $script:sharedCardCache
+    if (-not $script:hasFastCatalogRowBuilder) {
+        $cardBorder.CacheMode = $script:sharedCardCache
+    }
 
     $cardStack = [System.Windows.Controls.StackPanel]::new()
     $appsInCat = $appsByCategory[$cat]
@@ -2543,6 +3190,130 @@ foreach ($cat in $categories) {
     [void]$cardStack.Children.Add($headerGrid)
     [void]$cardStack.Children.Add($separator)
 
+    $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
+    $targetColIndex = 0
+    $minHeight = $script:colHeights[0]
+    for ($i = 1; $i -lt 4; $i++) {
+        if ($script:colHeights[$i] -lt $minHeight) {
+            $minHeight = $script:colHeights[$i]
+            $targetColIndex = $i
+        }
+    }
+    $cardEstTop = [double]$script:colHeights[$targetColIndex]
+    $cardEstBot = $cardEstTop + $cardEstimatedHeight
+    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
+
+    $cardDesc = @{
+        Card          = $cardBorder
+        ColPanel      = $targetColPanel
+        EstTop        = $cardEstTop
+        EstBottom     = $cardEstBot
+        Attached      = $false
+        IconsEnqueued = $false
+        TotalIcons    = 0
+        LoadedIcons   = 0
+        CacheEnabled  = (-not $script:hasFastCatalogRowBuilder)
+        IconIndices   = [System.Collections.Generic.List[int]]::new()
+    }
+
+    if ($script:hasFastCatalogRowBuilder) {
+        foreach ($app in $appsInCat) {
+            $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
+            $fallbackIconUrl = if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                "https://icons.duckduckgo.com/ip3/$($app.Domain).ico"
+            } else { $null }
+            $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
+                $app.IconUrl
+            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
+            } else { $null }
+            if ($remoteIconTarget -and $fallbackIconUrl -and $remoteIconTarget -eq $fallbackIconUrl) {
+                $fallbackIconUrl = $null
+            }
+            $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
+            $iconFileName = "$($app.ID).png"
+            $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, $iconFileName)
+            $cachedBmp = $null
+            $hasCachedInMem = $false
+            if ($script:remoteBmpCache -and $script:remoteBmpCache.TryGetValue($iconCacheKey, [ref]$cachedBmp) -and $cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+                $hasCachedInMem = $true
+            } else {
+                $cachedBmp = [DuckUtil.UiAssetPipeline]::TryGetCachedRemoteIcon($iconCacheKey)
+                if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+                    $hasCachedInMem = $true
+                    if ($script:remoteBmpCache) { $script:remoteBmpCache[$iconCacheKey] = $cachedBmp }
+                }
+            }
+            $hasLocalCachedFile = $hasCachedInMem -or ($script:remoteExistingFiles -and $script:remoteExistingFiles.Contains($iconFileName))
+            $glyphTxt = if ($hasLocalCachedFile) { $script:defaultFallbackGlyph } else { Get-AppFallbackGlyph -AppName $app.Name -Category $cat }
+            $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
+            $rowTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
+            $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
+                $app.Url
+            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                if ($app.Domain.StartsWith("http")) { $app.Domain } else { "https://$($app.Domain)" }
+            } else { "" }
+
+            $vis = [DuckUtil.UiAssetPipeline]::CreateCatalogRow(
+                [string]$app.Name,
+                [string]$rowTip,
+                [string]$targetPageUrl,
+                [string]$glyphTxt,
+                [bool]$useLightBadge,
+                $script:styleAppRow,
+                $script:styleLinkBtn,
+                $script:fontSegoeUI,
+                $script:fontSegoeEmoji,
+                $script:brushTextWhite,
+                $script:brushIconBadgeBg,
+                $script:brushIconBadgeLightBg,
+                $script:brushIconBadgeBorder,
+                $script:brushUpdateBadgeBg,
+                $script:brushUpdateBadgeBorder,
+                $script:brushUpdateBadgeFg,
+                $script:brushLinkBtnRowHover,
+                $(if ($hasCachedInMem) { $cachedBmp } else { $null })
+            )
+
+            $rowTag = @{
+                App              = $app
+                Status           = "NONE"
+                DetectedId       = $null
+                InstalledVersion = $null
+                CardBorder       = $cardBorder
+                CheckBox         = $vis.CheckBox
+                NameText         = $vis.NameText
+                UpdateBadge      = $vis.UpdateBadge
+                UpdateText       = $vis.UpdateText
+                LinkBtn          = $vis.LinkBtn
+                LinkIcon         = $vis.LinkIcon
+            }
+            $vis.RowBorder.Tag = $rowTag
+            $vis.CheckBox.Tag  = $rowTag
+
+            if (-not $hasCachedInMem -and ($remoteIconTarget -or $hasLocalCachedFile)) {
+                $rIdx = $script:remoteIconRegistry.Count
+                $script:remoteIconRegistry.Add(@{
+                    Url          = $remoteIconTarget
+                    FallbackUrl  = $fallbackIconUrl
+                    CacheKey     = $iconCacheKey
+                    DestPath     = $localIconPath
+                    Img          = $vis.IconImg
+                    Fallback     = $vis.FallbackGlyph
+                    Badge        = $vis.IconBadge
+                    UseLight     = $useLightBadge
+                    Applied      = $false
+                    CardDesc     = $cardDesc
+                })
+                $cardDesc.IconIndices.Add($rIdx)
+                $cardDesc.TotalIcons++
+            }
+
+            $allCheckBoxes.Add($vis.CheckBox)
+            [void]$cardStack.Children.Add($vis.RowBorder)
+            $allItemBorders.Add($vis.RowBorder)
+        }
+    } else {
     foreach ($app in $appsInCat) {
         $rowBorder = [System.Windows.Controls.Border]::new()
         $rowBorder.Height = 27
@@ -2596,6 +3367,8 @@ foreach ($cat in $categories) {
         $iconBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $iconInnerGrid = [System.Windows.Controls.Grid]::new()
+        $iconInnerGrid.Width = 20
+        $iconInnerGrid.Height = 20
         $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -2615,9 +3388,20 @@ foreach ($cat in $categories) {
             $fallbackIconUrl = $null
         }
         $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
-        $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, "$($app.ID).png")
-        $hasCachedInMem = $script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($iconCacheKey)
-        $hasLocalCachedFile = $hasCachedInMem -or [System.IO.File]::Exists($localIconPath)
+        $iconFileName = "$($app.ID).png"
+        $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, $iconFileName)
+        $cachedBmp = $null
+        $hasCachedInMem = $false
+        if ($script:remoteBmpCache -and $script:remoteBmpCache.TryGetValue($iconCacheKey, [ref]$cachedBmp) -and $cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+            $hasCachedInMem = $true
+        } elseif (("DuckUtil.UiAssetPipeline" -as [type]) -and $null -ne ([DuckUtil.UiAssetPipeline].GetMethod("TryGetCachedRemoteIcon"))) {
+            $cachedBmp = [DuckUtil.UiAssetPipeline]::TryGetCachedRemoteIcon($iconCacheKey)
+            if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+                $hasCachedInMem = $true
+                if ($script:remoteBmpCache) { $script:remoteBmpCache[$iconCacheKey] = $cachedBmp }
+            }
+        }
+        $hasLocalCachedFile = $hasCachedInMem -or ($script:remoteExistingFiles -and $script:remoteExistingFiles.Contains($iconFileName))
 
         $fallbackGlyph = [System.Windows.Controls.TextBlock]::new()
         $fallbackGlyph.Text = if ($hasLocalCachedFile) { $script:defaultFallbackGlyph } else { Get-AppFallbackGlyph -AppName $app.Name -Category $cat }
@@ -2640,13 +3424,10 @@ foreach ($cat in $categories) {
         $iconBadge.Child = $iconInnerGrid
 
         if ($hasCachedInMem) {
-            $cachedBmp = $script:remoteBmpCache[$iconCacheKey]
-            if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
-                $img.Source = $cachedBmp
-                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                $img.Visibility = [System.Windows.Visibility]::Visible
-                if ($useLightBadge) { $iconBadge.Background = $script:brushIconBadgeLightBg }
-            }
+            $img.Source = $cachedBmp
+            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+            $img.Visibility = [System.Windows.Visibility]::Visible
+            if ($useLightBadge) { $iconBadge.Background = $script:brushIconBadgeLightBg }
         } elseif ($remoteIconTarget -or $hasLocalCachedFile) {
             $script:pendingIconSaves.Add(@{
                 Url          = $remoteIconTarget
@@ -2658,6 +3439,7 @@ foreach ($cat in $categories) {
                 Fallback     = $fallbackGlyph
                 Badge        = $iconBadge
                 UseLight     = $useLightBadge
+                Applied      = $false
             })
         }
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
@@ -2678,9 +3460,7 @@ foreach ($cat in $categories) {
         $nameText.Margin = $marginNameText
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
-        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
-        $rowBorder.ToolTip = $nameText.ToolTip
-        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($nameText, 5000)
+        $rowBorder.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
         [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
         [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
         [void]$nameAreaGrid.Children.Add($nameText)
@@ -2755,24 +3535,17 @@ foreach ($cat in $categories) {
         $cardStack.Children.Add($rowBorder) | Out-Null
         $allItemBorders.Add($rowBorder)
     }
+    }
 
     $cardBorder.Child = $cardStack
 
-    $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
-
-    $targetColIndex = 0
-    $minHeight = $script:colHeights[0]
-    for ($i = 1; $i -lt 4; $i++) {
-        if ($script:colHeights[$i] -lt $minHeight) {
-            $minHeight = $script:colHeights[$i]
-            $targetColIndex = $i
+    if (-not $script:hasFastCatalogRowBuilder -or $cardEstTop -lt 950.0) {
+        if ($targetColPanel) {
+            $targetColPanel.Children.Add($cardBorder) | Out-Null
         }
+        $cardDesc.Attached = $true
     }
-
-    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
-    if ($targetColPanel) {
-        $targetColPanel.Children.Add($cardBorder) | Out-Null
-    }
+    [void]$script:cardDescriptors.Add($cardDesc)
 
     $script:colHeights[$targetColIndex] += $cardEstimatedHeight
 }
@@ -3812,6 +4585,13 @@ function Stop-AllBackgroundWork {
     try { Stop-ActiveWaitFrames } catch {}
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
+    try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
+    try {
+        if ("DuckUtil.UiAssetPipeline" -as [type]) {
+            [DuckUtil.UiAssetPipeline]::StopRemoteIconPipeline()
+            [DuckUtil.UiAssetPipeline]::StopUninstallerIconPipeline()
+        }
+    } catch {}
     try {
         if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) {
             Stop-PreSpawnedWinget
@@ -3853,15 +4633,42 @@ if ($window -and $window.Dispatcher) {
     })
 }
 
+$script:deferredCardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:deferredCardTimer.Interval = [TimeSpan]::FromMilliseconds(35)
+$script:deferredCardTimer.Add_Tick({
+    if ($script:isWindowClosing -or -not $script:cardDescriptors) {
+        $script:deferredCardTimer.Stop()
+        return
+    }
+    $attachedNow = 0
+    $anyRemaining = $false
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached) {
+            if ($attachedNow -lt 2) {
+                $cd.Attached = $true
+                if ($cd.ColPanel) { [void]$cd.ColPanel.Children.Add($cd.Card) }
+                $attachedNow++
+            } else {
+                $anyRemaining = $true
+                break
+            }
+        }
+    }
+    if (-not $anyRemaining) {
+        $script:deferredCardTimer.Stop()
+        Try-EnableCompletedCardCaches
+    }
+})
+
 $script:iconSyncTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
-$script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(35)
+$script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(50)
 $script:iconSyncTimer.Add_Tick({
     if ($script:isWindowClosing) {
         $script:iconSyncTimer.Stop()
         return
     }
     if ($script:isActionRunning) { return }
-    Flush-PendingIconCache -MaxDecode 8
+    Flush-PendingIconCache -MaxDecode 24
     if ($script:isWindowClosing -or -not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) {
         $script:iconSyncTimer.Stop()
     }
@@ -3872,8 +4679,12 @@ $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
         Log-Text "[OK] Sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
-        Flush-PendingIconCache -MaxDecode 10
-        if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
+        if ($script:hasFastCatalogRowBuilder) {
+            Sync-Tab0ViewportAssets
+            if ($script:deferredCardTimer) { $script:deferredCardTimer.Start() }
+        }
+        Flush-PendingIconCache -MaxDecode 24
+        if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0 -and -not $script:iconSyncTimer.IsEnabled) {
             $script:iconSyncTimer.Start()
         }
         $window.Dispatcher.BeginInvoke(

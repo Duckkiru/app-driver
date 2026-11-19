@@ -297,6 +297,7 @@ Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+Add-Type -AssemblyName System.Net.Http -ErrorAction SilentlyContinue
 
 $appsRawJson = @'
 [
@@ -4868,7 +4869,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="&#xD83D;&#xDD0D;" Foreground="#475569" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
                                             <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                      ToolTip="T&#x00EC;m ki&#x1EBF;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c phi&#x00EA;n b&#x1EA3;n..." ToolTipService.InitialShowDelay="5000"/>
@@ -4953,7 +4956,26 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                     <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                        <StackPanel Name="UninstallerRowsPanel" Margin="16,0,16,12"/>
+                        <Grid Margin="16,0,16,12">
+                            <Grid Name="UninstallerColLinesOverlay" Margin="1,0,1,0" IsHitTestVisible="False" Panel.ZIndex="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="38"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="115"/>
+                                    <ColumnDefinition Width="54"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                                <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#11FFFFFF" SnapsToDevicePixels="True"/>
+                            </Grid>
+                            <StackPanel Name="UninstallerRowsPanel"/>
+                        </Grid>
                     </ScrollViewer>
             </Grid>
 
@@ -5181,25 +5203,51 @@ function Import-CachedCSharpType {
     }
 }
 
-if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
+$wpfSmoothRefs = @(
+    [System.Windows.Controls.ScrollViewer].Assembly.Location,
+    [System.Windows.UIElement].Assembly.Location,
+    [System.Windows.DependencyObject].Assembly.Location,
+    [System.Windows.Markup.IQueryAmbient].Assembly.Location,
+    [System.Diagnostics.Stopwatch].Assembly.Location,
+    [System.Drawing.Icon].Assembly.Location,
+    [System.Net.Http.HttpClient].Assembly.Location,
+    [System.Object].Assembly.Location
+) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+if ($PSVersionTable.PSEdition -eq "Core") {
     try {
-        $wpfSmoothRefs = @(
-            [System.Windows.Controls.ScrollViewer].Assembly.Location,
-            [System.Windows.UIElement].Assembly.Location,
-            [System.Windows.DependencyObject].Assembly.Location,
-            [System.Windows.Markup.IQueryAmbient].Assembly.Location,
-            [System.Diagnostics.Stopwatch].Assembly.Location,
-            [System.Object].Assembly.Location
-        ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
-        $smoothScrollCs = @'
-using System;
+        $refDllsCore = @([System.IO.Directory]::GetFiles((Join-Path $PSHOME "ref"), "*.dll"))
+        $loadedExtraCore = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and -not [string]::IsNullOrWhiteSpace($_.Location) -and $_.GetName().Name -match "^(Presentation|WindowsBase|System\.Drawing|System\.Private\.Windows|DirectWriteForwarder|ReachFramework|UIAutomation)" } | ForEach-Object { $_.Location })
+        $coreAllRefs = @($refDllsCore + $loadedExtraCore + $wpfSmoothRefs | Select-Object -Unique)
+    } catch { $coreAllRefs = $wpfSmoothRefs }
+} else {
+    $coreAllRefs = $wpfSmoothRefs
+}
+
+if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+    try {
+        $duckCoreCs = @'
+using Microsoft.Win32;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Net.Http;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Windows;
+using System.Threading;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Windows;
+using System;
 
 namespace DuckUtil {
     public sealed class SmoothScrollController {
@@ -5375,24 +5423,853 @@ namespace DuckUtil {
             _preApplySvOffset = svOffset;
         }
     }
-}
-'@
-        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $wpfSmoothRefs -RequiredMethod "AttachFrameWake"
-    } catch {}
+
+    public sealed class ReadyIconItem {
+        public int Index { get; set; }
+        public int Generation { get; set; }
+        public string CacheKey { get; set; }
+        public BitmapSource Bitmap { get; set; }
+    }
+
+    public sealed class UninstRowVisual {
+        public Border RowBorder { get; set; }
+        public CheckBox CheckBox { get; set; }
+        public System.Windows.Controls.Image IconImg { get; set; }
+        public Border FallbackBadge { get; set; }
+        public Border FolderBtn { get; set; }
+    }
+
+    public sealed class CatalogRowVisual {
+        public Border RowBorder { get; set; }
+        public CheckBox CheckBox { get; set; }
+        public Border IconBadge { get; set; }
+        public System.Windows.Controls.Image IconImg { get; set; }
+        public TextBlock FallbackGlyph { get; set; }
+        public TextBlock NameText { get; set; }
+        public Border UpdateBadge { get; set; }
+        public TextBlock UpdateText { get; set; }
+        public Border LinkBtn { get; set; }
+        public TextBlock LinkIcon { get; set; }
+    }
+
+    public static class UiAssetPipeline {
+        private sealed class RemoteIconJob {
+            public int Index;
+            public int Generation;
+            public string Url;
+            public string FallbackUrl;
+            public string DestPath;
+            public string CacheKey;
+        }
+
+        private sealed class UninstIconJob {
+            public int Index;
+            public int Generation;
+            public string TargetPath;
+        }
+
+        private static readonly ConcurrentDictionary<string, BitmapSource> _remoteBmpCache =
+            new ConcurrentDictionary<string, BitmapSource>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, BitmapSource> _uninstBmpCache =
+            new ConcurrentDictionary<string, BitmapSource>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly ConcurrentQueue<ReadyIconItem> _remoteQueue = new ConcurrentQueue<ReadyIconItem>();
+        private static readonly ConcurrentQueue<ReadyIconItem> _uninstQueue = new ConcurrentQueue<ReadyIconItem>();
+        private static readonly ConcurrentQueue<RemoteIconJob> _remoteJobs = new ConcurrentQueue<RemoteIconJob>();
+        private static readonly ConcurrentQueue<UninstIconJob> _uninstJobs = new ConcurrentQueue<UninstIconJob>();
+
+        private static int _remoteGen = 0;
+        private static int _remoteRemaining = 0;
+        private static int _remoteActiveWorkers = 0;
+        private static int _uninstGen = 0;
+        private static int _uninstRemaining = 0;
+        private static int _uninstActiveWorkers = 0;
+        private static readonly HttpClient _httpClient = CreateHttpClient();
+
+        private static HttpClient CreateHttpClient() {
+            var handler = new HttpClientHandler();
+            try { handler.UseProxy = false; } catch {}
+            try { handler.AllowAutoRedirect = true; } catch {}
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMilliseconds(3500);
+            try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DuckUtil/3.5"); } catch {}
+            return client;
+        }
+
+        public static bool IsRemoteIdle {
+            get { return Volatile.Read(ref _remoteRemaining) <= 0 && _remoteQueue.IsEmpty; }
+        }
+
+        public static bool IsUninstIdle {
+            get { return Volatile.Read(ref _uninstRemaining) <= 0 && _uninstQueue.IsEmpty; }
+        }
+
+        public static BitmapSource TryGetCachedRemoteIcon(string cacheKey) {
+            if (string.IsNullOrEmpty(cacheKey)) return null;
+            BitmapSource bmp;
+            return _remoteBmpCache.TryGetValue(cacheKey, out bmp) ? bmp : null;
+        }
+
+        public static BitmapSource TryGetCachedUninstIcon(string key) {
+            if (string.IsNullOrEmpty(key)) return null;
+            BitmapSource bmp;
+            return _uninstBmpCache.TryGetValue(key, out bmp) ? bmp : null;
+        }
+
+        public static void ResetRemoteIconPipeline() {
+            Interlocked.Increment(ref _remoteGen);
+            Interlocked.Exchange(ref _remoteRemaining, 0);
+            RemoteIconJob j;
+            while (_remoteJobs.TryDequeue(out j)) {}
+            ReadyIconItem d;
+            while (_remoteQueue.TryDequeue(out d)) {}
+        }
+
+        public static void StopRemoteIconPipeline() {
+            ResetRemoteIconPipeline();
+        }
+
+        public static void ResetUninstallerIconPipeline() {
+            Interlocked.Increment(ref _uninstGen);
+            Interlocked.Exchange(ref _uninstRemaining, 0);
+            UninstIconJob j;
+            while (_uninstJobs.TryDequeue(out j)) {}
+            ReadyIconItem d;
+            while (_uninstQueue.TryDequeue(out d)) {}
+        }
+
+        public static void StopUninstallerIconPipeline() {
+            ResetUninstallerIconPipeline();
+        }
+
+        private static BitmapImage DecodeFrozenPngOrIcoBitmap(byte[] data) {
+            if (data == null || data.Length <= 64) return null;
+            try {
+                using (var ms = new MemoryStream(data)) {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.StreamSource = ms;
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    bmp.DecodePixelWidth = 36;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    if (bmp.PixelWidth <= 0) return null;
+                    return bmp;
+                }
+            } catch {
+                return null;
+            }
+        }
+
+        private static byte[] DownloadBytesWithTimeout(string url, int timeoutMs) {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            try {
+                using (var cts = new CancellationTokenSource(timeoutMs))
+                using (HttpResponseMessage resp = _httpClient.GetAsync(url, HttpCompletionOption.ResponseContentRead, cts.Token).GetAwaiter().GetResult()) {
+                    if (resp == null || !resp.IsSuccessStatusCode || resp.Content == null) return null;
+                    long? cl = resp.Content.Headers.ContentLength;
+                    if (cl.HasValue && cl.Value > 2 * 1024 * 1024) return null;
+                    byte[] bytes = resp.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                    if (bytes != null && bytes.Length <= 2 * 1024 * 1024) {
+                        return bytes;
+                    }
+                }
+            } catch {}
+            return null;
+        }
+
+        private static void EnsureRemoteWorkers(int maxWorkers) {
+            while (true) {
+                if (_remoteJobs.IsEmpty) return;
+                int cur = Volatile.Read(ref _remoteActiveWorkers);
+                if (cur >= maxWorkers) return;
+                if (Interlocked.CompareExchange(ref _remoteActiveWorkers, cur + 1, cur) == cur) {
+                    Task.Run(delegate() { RemoteWorkerLoop(); });
+                }
+            }
+        }
+
+        private static void RemoteWorkerLoop() {
+            try {
+                while (true) {
+                    RemoteIconJob job;
+                    if (!_remoteJobs.TryDequeue(out job)) break;
+                    if (job == null) continue;
+                    int gen = job.Generation;
+                    try {
+                        if (Volatile.Read(ref _remoteGen) != gen) continue;
+                        BitmapSource ready = null;
+                        if (!string.IsNullOrEmpty(job.CacheKey)) {
+                            _remoteBmpCache.TryGetValue(job.CacheKey, out ready);
+                        }
+                        if (ready == null && !string.IsNullOrEmpty(job.DestPath) && File.Exists(job.DestPath)) {
+                            try {
+                                byte[] fBytes = File.ReadAllBytes(job.DestPath);
+                                ready = DecodeFrozenPngOrIcoBitmap(fBytes);
+                                if (ready == null) {
+                                    try { File.Delete(job.DestPath); } catch {}
+                                }
+                            } catch {}
+                        }
+                        if (ready == null && Volatile.Read(ref _remoteGen) == gen) {
+                            byte[] dl = DownloadBytesWithTimeout(job.Url, 2500);
+                            if (dl != null && dl.Length > 230 && dl.Length != 588) {
+                                ready = DecodeFrozenPngOrIcoBitmap(dl);
+                                if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
+                                    try { File.WriteAllBytes(job.DestPath, dl); } catch {}
+                                }
+                            }
+                            if (ready == null && !string.IsNullOrWhiteSpace(job.FallbackUrl) && Volatile.Read(ref _remoteGen) == gen) {
+                                byte[] dl2 = DownloadBytesWithTimeout(job.FallbackUrl, 2500);
+                                if (dl2 != null && dl2.Length > 230 && dl2.Length != 588) {
+                                    ready = DecodeFrozenPngOrIcoBitmap(dl2);
+                                    if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
+                                        try { File.WriteAllBytes(job.DestPath, dl2); } catch {}
+                                    }
+                                }
+                            }
+                        }
+                        if (ready != null && Volatile.Read(ref _remoteGen) == gen) {
+                            if (!string.IsNullOrEmpty(job.CacheKey)) {
+                                _remoteBmpCache[job.CacheKey] = ready;
+                            }
+                            _remoteQueue.Enqueue(new ReadyIconItem {
+                                Index = job.Index,
+                                Generation = gen,
+                                CacheKey = job.CacheKey,
+                                Bitmap = ready
+                            });
+                        }
+                    } catch {
+                    } finally {
+                        if (Volatile.Read(ref _remoteGen) == gen) {
+                            Interlocked.Decrement(ref _remoteRemaining);
+                        }
+                    }
+                }
+            } finally {
+                Interlocked.Decrement(ref _remoteActiveWorkers);
+                if (!_remoteJobs.IsEmpty) EnsureRemoteWorkers(12);
+            }
+        }
+
+        public static void EnqueueRemoteIcons(int[] indices, string[] urls, string[] fallbackUrls, string[] destPaths, string[] cacheKeys) {
+            if (indices == null || indices.Length == 0) return;
+            int gen = Volatile.Read(ref _remoteGen);
+            int queued = 0;
+            for (int k = 0; k < indices.Length; k++) {
+                int idx = indices[k];
+                string url = (urls != null && k < urls.Length) ? urls[k] : null;
+                string fbUrl = (fallbackUrls != null && k < fallbackUrls.Length) ? fallbackUrls[k] : null;
+                string dest = (destPaths != null && k < destPaths.Length) ? destPaths[k] : null;
+                string cKey = (cacheKeys != null && k < cacheKeys.Length) ? cacheKeys[k] : null;
+
+                BitmapSource cached = null;
+                if (!string.IsNullOrEmpty(cKey) && _remoteBmpCache.TryGetValue(cKey, out cached) && cached != null) {
+                    _remoteQueue.Enqueue(new ReadyIconItem {
+                        Index = idx,
+                        Generation = gen,
+                        CacheKey = cKey,
+                        Bitmap = cached
+                    });
+                    continue;
+                }
+
+                Interlocked.Increment(ref _remoteRemaining);
+                _remoteJobs.Enqueue(new RemoteIconJob {
+                    Index = idx,
+                    Generation = gen,
+                    Url = url,
+                    FallbackUrl = fbUrl,
+                    DestPath = dest,
+                    CacheKey = cKey
+                });
+                queued++;
+            }
+            if (queued > 0) {
+                EnsureRemoteWorkers(Math.Min(12, Math.Max(4, queued)));
+            }
+        }
+
+        public static void StartRemoteIconPipeline(string[] urls, string[] fallbackUrls, string[] destPaths, string[] cacheKeys) {
+            ResetRemoteIconPipeline();
+            int total = urls != null ? urls.Length : 0;
+            if (total == 0) return;
+            int[] indices = new int[total];
+            for (int i = 0; i < total; i++) indices[i] = i;
+            EnqueueRemoteIcons(indices, urls, fallbackUrls, destPaths, cacheKeys);
+        }
+
+        public static ReadyIconItem[] DequeueReadyRemoteIcons(int maxCount) {
+            if (_remoteQueue.IsEmpty) return new ReadyIconItem[0];
+            var list = new List<ReadyIconItem>(maxCount);
+            int curGen = Volatile.Read(ref _remoteGen);
+            ReadyIconItem item;
+            while (list.Count < maxCount && _remoteQueue.TryDequeue(out item)) {
+                if (item != null && item.Generation == curGen && item.Bitmap != null) {
+                    list.Add(item);
+                }
+            }
+            return list.ToArray();
+        }
+
+        private static BitmapSource ExtractIconBitmapFromPath(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            BitmapSource cached;
+            if (_uninstBmpCache.TryGetValue(path, out cached)) return cached;
+            if (!File.Exists(path)) return null;
+
+            BitmapSource res = null;
+            try {
+                string ext = Path.GetExtension(path) ?? "";
+                if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = File.ReadAllBytes(path);
+                    res = DecodeFrozenPngOrIcoBitmap(bytes);
+                } else if (ext.Equals(".ico", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(ext)) {
+                    byte[] bytes = File.ReadAllBytes(path);
+                    if (bytes != null && bytes.Length > 6 && bytes[0] == 0 && bytes[1] == 0 && (bytes[2] == 1 || bytes[2] == 2) && bytes[3] == 0) {
+                        using (var ms = new MemoryStream(bytes))
+                        using (var ico = new Icon(ms, 32, 32)) {
+                            BitmapSource bs = Imaging.CreateBitmapSourceFromHIcon(ico.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bs.Freeze();
+                            res = bs;
+                        }
+                    }
+                }
+                if (res == null) {
+                    using (Icon assoc = Icon.ExtractAssociatedIcon(path)) {
+                        if (assoc != null) {
+                            BitmapSource bs2 = Imaging.CreateBitmapSourceFromHIcon(assoc.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bs2.Freeze();
+                            res = bs2;
+                        }
+                    }
+                }
+            } catch {}
+
+            if (res != null) {
+                _uninstBmpCache[path] = res;
+            }
+            return res;
+        }
+
+        private static void EnsureUninstWorkers(int maxWorkers) {
+            while (true) {
+                if (_uninstJobs.IsEmpty) return;
+                int cur = Volatile.Read(ref _uninstActiveWorkers);
+                if (cur >= maxWorkers) return;
+                if (Interlocked.CompareExchange(ref _uninstActiveWorkers, cur + 1, cur) == cur) {
+                    Thread t = new Thread(delegate() { UninstWorkerLoop(); });
+                    t.IsBackground = true;
+                    t.Priority = ThreadPriority.BelowNormal;
+                    t.SetApartmentState(ApartmentState.STA);
+                    t.Start();
+                }
+            }
+        }
+
+        private static void UninstWorkerLoop() {
+            try {
+                while (true) {
+                    UninstIconJob job;
+                    if (!_uninstJobs.TryDequeue(out job)) break;
+                    if (job == null) continue;
+                    int gen = job.Generation;
+                    try {
+                        if (Volatile.Read(ref _uninstGen) != gen) continue;
+                        BitmapSource bmp = ExtractIconBitmapFromPath(job.TargetPath);
+                        if (bmp != null && Volatile.Read(ref _uninstGen) == gen) {
+                            _uninstQueue.Enqueue(new ReadyIconItem {
+                                Index = job.Index,
+                                Generation = gen,
+                                CacheKey = job.TargetPath,
+                                Bitmap = bmp
+                            });
+                        }
+                    } catch {
+                    } finally {
+                        if (Volatile.Read(ref _uninstGen) == gen) {
+                            Interlocked.Decrement(ref _uninstRemaining);
+                        }
+                    }
+                }
+            } finally {
+                Interlocked.Decrement(ref _uninstActiveWorkers);
+                if (!_uninstJobs.IsEmpty) EnsureUninstWorkers(2);
+            }
+        }
+
+        public static void EnqueueUninstallerIcons(int[] indices, string[] targetPaths) {
+            if (indices == null || targetPaths == null || indices.Length == 0) return;
+            int gen = Volatile.Read(ref _uninstGen);
+            int queued = 0;
+            for (int k = 0; k < indices.Length && k < targetPaths.Length; k++) {
+                string p = targetPaths[k];
+                if (string.IsNullOrWhiteSpace(p)) continue;
+                BitmapSource cached;
+                if (_uninstBmpCache.TryGetValue(p, out cached) && cached != null) {
+                    _uninstQueue.Enqueue(new ReadyIconItem {
+                        Index = indices[k],
+                        Generation = gen,
+                        CacheKey = p,
+                        Bitmap = cached
+                    });
+                    continue;
+                }
+                Interlocked.Increment(ref _uninstRemaining);
+                _uninstJobs.Enqueue(new UninstIconJob {
+                    Index = indices[k],
+                    Generation = gen,
+                    TargetPath = p
+                });
+                queued++;
+            }
+            if (queued > 0) {
+                EnsureUninstWorkers(Math.Min(2, queued));
+            }
+        }
+
+        public static void StartUninstallerIconPipeline(string[] targetPaths) {
+            ResetUninstallerIconPipeline();
+            if (targetPaths == null || targetPaths.Length == 0) return;
+            int[] indices = new int[targetPaths.Length];
+            for (int i = 0; i < targetPaths.Length; i++) indices[i] = i;
+            EnqueueUninstallerIcons(indices, targetPaths);
+        }
+
+        public static ReadyIconItem[] DequeueReadyUninstallerIcons(int maxCount) {
+            if (_uninstQueue.IsEmpty) return new ReadyIconItem[0];
+            var list = new List<ReadyIconItem>(maxCount);
+            int curGen = Volatile.Read(ref _uninstGen);
+            ReadyIconItem item;
+            while (list.Count < maxCount && _uninstQueue.TryDequeue(out item)) {
+                if (item != null && item.Generation == curGen && item.Bitmap != null) {
+                    list.Add(item);
+                }
+            }
+            return list.ToArray();
+        }
+
+        private static readonly GridLength _uCol0 = new GridLength(38, GridUnitType.Pixel);
+        private static readonly GridLength _uCol1 = new GridLength(1, GridUnitType.Star);
+        private static readonly GridLength _uCol2 = new GridLength(130, GridUnitType.Pixel);
+        private static readonly GridLength _uCol3 = new GridLength(220, GridUnitType.Pixel);
+        private static readonly GridLength _uCol4 = new GridLength(105, GridUnitType.Pixel);
+        private static readonly GridLength _uCol5 = new GridLength(115, GridUnitType.Pixel);
+        private static readonly GridLength _uCol6 = new GridLength(54, GridUnitType.Pixel);
+        private static readonly GridLength _uIconW = new GridLength(20, GridUnitType.Pixel);
+        private static readonly Thickness _tZero = new Thickness(0);
+        private static readonly Thickness _tRowBdr = new Thickness(1, 0, 1, 1);
+        private static readonly Thickness _tOne = new Thickness(1);
+        private static readonly Thickness _tName = new Thickness(8, 0, 8, 0);
+        private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
+        private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly CornerRadius _cRow = new CornerRadius(0);
+        private static readonly CornerRadius _cFour = new CornerRadius(1);
+
+        public static UninstRowVisual CreateUninstallerRow(
+            string displayName,
+            string displayVersion,
+            string publisher,
+            string sizeText,
+            bool isBrokenOrphan,
+            string targetFolder,
+            string rowToolTip,
+            string folderGlyph,
+            Style rowStyle,
+            System.Windows.Media.Brush rowBorderBrush,
+            System.Windows.Media.Brush titleBrush,
+            System.Windows.Media.Brush titleBrokenBrush,
+            System.Windows.Media.Brush mutedBrush,
+            System.Windows.Media.Brush lightBrush,
+            System.Windows.Media.Brush badgeBg,
+            System.Windows.Media.Brush badgeFg,
+            System.Windows.Media.Brush badgeBrokenBg,
+            System.Windows.Media.Brush badgeBrokenFg,
+            System.Windows.Media.Brush statusOkBg,
+            System.Windows.Media.Brush statusOkBorder,
+            System.Windows.Media.Brush statusOkFg,
+            System.Windows.Media.Brush statusBrokenBg,
+            System.Windows.Media.Brush statusBrokenBorder,
+            System.Windows.Media.Brush folderBg,
+            System.Windows.Media.Brush folderBorder,
+            BitmapSource preCachedIcon)
+        {
+            var rowBorder = new Border();
+            rowBorder.Height = 38;
+            rowBorder.CornerRadius = _cRow;
+            rowBorder.Padding = _tZero;
+            rowBorder.Margin = _tZero;
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.BorderBrush = rowBorderBrush;
+            rowBorder.BorderThickness = _tRowBdr;
+            rowBorder.Cursor = Cursors.Hand;
+            if (!string.IsNullOrEmpty(rowToolTip)) {
+                rowBorder.ToolTip = rowToolTip;
+                ToolTipService.SetInitialShowDelay(rowBorder, 5000);
+            }
+
+            var rowGrid = new Grid();
+            rowGrid.VerticalAlignment = VerticalAlignment.Stretch;
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol0 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol1 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol2 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol3 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol4 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol5 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol6 });
+
+            var cb = new CheckBox();
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.HorizontalAlignment = HorizontalAlignment.Center;
+            cb.Margin = _tZero;
+            cb.Tag = rowBorder;
+            Grid.SetColumn(cb, 0);
+            rowGrid.Children.Add(cb);
+
+            var nameGrid = new Grid();
+            nameGrid.VerticalAlignment = VerticalAlignment.Center;
+            nameGrid.Margin = _tName;
+            nameGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uIconW });
+            nameGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol1 });
+
+            var iconSlot = new Grid();
+            iconSlot.Width = 20;
+            iconSlot.Height = 20;
+            iconSlot.VerticalAlignment = VerticalAlignment.Center;
+            iconSlot.HorizontalAlignment = HorizontalAlignment.Left;
+
+            var fallbackBadge = new Border();
+            fallbackBadge.Width = 20;
+            fallbackBadge.Height = 20;
+            fallbackBadge.CornerRadius = _cFour;
+            fallbackBadge.Background = isBrokenOrphan ? badgeBrokenBg : badgeBg;
+            fallbackBadge.VerticalAlignment = VerticalAlignment.Center;
+            fallbackBadge.HorizontalAlignment = HorizontalAlignment.Center;
+
+            string dispTrim = string.IsNullOrEmpty(displayName) ? "A" : displayName.Trim();
+            string badgeLetter = isBrokenOrphan ? "!" : (dispTrim.Length > 0 ? dispTrim.Substring(0, 1).ToUpperInvariant() : "\u2022");
+            var badgeTb = new TextBlock();
+            badgeTb.Text = badgeLetter;
+            badgeTb.FontSize = 10.5;
+            badgeTb.FontWeight = FontWeights.Bold;
+            badgeTb.Foreground = isBrokenOrphan ? badgeBrokenFg : badgeFg;
+            badgeTb.HorizontalAlignment = HorizontalAlignment.Center;
+            badgeTb.VerticalAlignment = VerticalAlignment.Center;
+            fallbackBadge.Child = badgeTb;
+
+            var img = new System.Windows.Controls.Image();
+            img.Width = 20;
+            img.Height = 20;
+            img.Stretch = Stretch.Uniform;
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.LowQuality);
+            img.VerticalAlignment = VerticalAlignment.Center;
+            img.HorizontalAlignment = HorizontalAlignment.Center;
+
+            if (preCachedIcon != null) {
+                img.Source = preCachedIcon;
+                fallbackBadge.Visibility = Visibility.Collapsed;
+            }
+
+            iconSlot.Children.Add(fallbackBadge);
+            iconSlot.Children.Add(img);
+            Grid.SetColumn(iconSlot, 0);
+            nameGrid.Children.Add(iconSlot);
+
+            var nameTb = new TextBlock();
+            nameTb.Text = displayName ?? "";
+            nameTb.FontSize = 12;
+            nameTb.FontWeight = FontWeights.SemiBold;
+            nameTb.Foreground = isBrokenOrphan ? titleBrokenBrush : titleBrush;
+            nameTb.VerticalAlignment = VerticalAlignment.Center;
+            nameTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            nameTb.Margin = new Thickness(8, 0, 4, 0);
+            Grid.SetColumn(nameTb, 1);
+            nameGrid.Children.Add(nameTb);
+
+            Grid.SetColumn(nameGrid, 1);
+            rowGrid.Children.Add(nameGrid);
+
+            var verTb = new TextBlock();
+            verTb.Text = string.IsNullOrEmpty(displayVersion) ? "--" : displayVersion;
+            verTb.FontSize = 11.5;
+            verTb.Foreground = mutedBrush;
+            verTb.VerticalAlignment = VerticalAlignment.Center;
+            verTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            verTb.Margin = _tCol;
+            Grid.SetColumn(verTb, 2);
+            rowGrid.Children.Add(verTb);
+
+            var pubTb = new TextBlock();
+            pubTb.Text = string.IsNullOrEmpty(publisher) ? "--" : publisher;
+            pubTb.FontSize = 11.5;
+            pubTb.Foreground = mutedBrush;
+            pubTb.VerticalAlignment = VerticalAlignment.Center;
+            pubTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            pubTb.Margin = _tCol;
+            Grid.SetColumn(pubTb, 3);
+            rowGrid.Children.Add(pubTb);
+
+            var sizeTb = new TextBlock();
+            sizeTb.Text = string.IsNullOrEmpty(sizeText) ? "--" : sizeText;
+            sizeTb.FontSize = 11.5;
+            sizeTb.Foreground = lightBrush;
+            sizeTb.VerticalAlignment = VerticalAlignment.Center;
+            sizeTb.TextAlignment = TextAlignment.Right;
+            sizeTb.Margin = _tSize;
+            Grid.SetColumn(sizeTb, 4);
+            rowGrid.Children.Add(sizeTb);
+
+            var statusBorder = new Border();
+            statusBorder.CornerRadius = _cFour;
+            statusBorder.Padding = _tBadgePad;
+            statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
+            statusBorder.VerticalAlignment = VerticalAlignment.Center;
+            statusBorder.BorderThickness = _tOne;
+            statusBorder.Background = isBrokenOrphan ? statusBrokenBg : statusOkBg;
+            statusBorder.BorderBrush = isBrokenOrphan ? statusBrokenBorder : statusOkBorder;
+
+            var statusTb = new TextBlock();
+            statusTb.FontSize = 10.5;
+            statusTb.FontWeight = FontWeights.SemiBold;
+            statusTb.Text = isBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+            statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
+            statusBorder.Child = statusTb;
+            Grid.SetColumn(statusBorder, 5);
+            rowGrid.Children.Add(statusBorder);
+
+            var folderBtn = new Border();
+            folderBtn.Width = 26;
+            folderBtn.Height = 24;
+            folderBtn.CornerRadius = _cFour;
+            folderBtn.Background = folderBg;
+            folderBtn.BorderBrush = folderBorder;
+            folderBtn.BorderThickness = _tOne;
+            folderBtn.HorizontalAlignment = HorizontalAlignment.Center;
+            folderBtn.VerticalAlignment = VerticalAlignment.Center;
+
+            var folderIcon = new TextBlock();
+            folderIcon.Text = folderGlyph ?? "";
+            folderIcon.FontSize = 10.5;
+            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
+            folderIcon.VerticalAlignment = VerticalAlignment.Center;
+            folderBtn.Child = folderIcon;
+
+            if (!string.IsNullOrWhiteSpace(targetFolder)) {
+                folderBtn.Cursor = Cursors.Hand;
+                folderBtn.Tag = targetFolder;
+                folderBtn.ToolTip = "M\u1EDF th\u01B0 m\u1EE5c: " + targetFolder;
+            } else {
+                folderBtn.Opacity = 0.25;
+                folderBtn.Cursor = Cursors.Arrow;
+                folderBtn.ToolTip = "Kh\u00F4ng t\u00ECm th\u1EA5y th\u01B0 m\u1EE5c c\u00E0i \u0111\u1EB7t";
+            }
+            ToolTipService.SetInitialShowDelay(folderBtn, 5000);
+            Grid.SetColumn(folderBtn, 6);
+            rowGrid.Children.Add(folderBtn);
+
+            rowBorder.Child = rowGrid;
+
+            return new UninstRowVisual {
+                RowBorder = rowBorder,
+                CheckBox = cb,
+                IconImg = img,
+                FallbackBadge = fallbackBadge,
+                FolderBtn = folderBtn
+            };
+        }
+
+        private static readonly GridLength _cCol0 = new GridLength(20, GridUnitType.Pixel);
+        private static readonly GridLength _cCol1 = new GridLength(23, GridUnitType.Pixel);
+        private static readonly GridLength _cCol2 = new GridLength(1, GridUnitType.Star);
+        private static readonly GridLength _cCol3 = new GridLength(22, GridUnitType.Pixel);
+        private static readonly GridLength _cAuto = GridLength.Auto;
+        private static readonly Thickness _ctRowPad = new Thickness(5, 0, 4, 0);
+        private static readonly Thickness _ctRowMgn = new Thickness(0, 1, 0, 1);
+        private static readonly Thickness _ctNameMgn = new Thickness(5, 0, 4, 0);
+        private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
+        private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
+        private static readonly CornerRadius _ccRow = new CornerRadius(1);
+
+        public static CatalogRowVisual CreateCatalogRow(
+            string appName,
+            string rowToolTip,
+            string targetPageUrl,
+            string fallbackGlyphText,
+            bool useLightBadge,
+            Style rowStyle,
+            Style linkBtnStyle,
+            System.Windows.Media.FontFamily fontSegoeUI,
+            System.Windows.Media.FontFamily fontSegoeEmoji,
+            System.Windows.Media.Brush textWhiteBrush,
+            System.Windows.Media.Brush iconBadgeBg,
+            System.Windows.Media.Brush iconBadgeLightBg,
+            System.Windows.Media.Brush iconBadgeBorder,
+            System.Windows.Media.Brush updBadgeBg,
+            System.Windows.Media.Brush updBadgeBorder,
+            System.Windows.Media.Brush updBadgeFg,
+            System.Windows.Media.Brush linkIconFg,
+            BitmapSource preCachedIcon)
+        {
+            var rowBorder = new Border();
+            rowBorder.Height = 27;
+            rowBorder.CornerRadius = _ccRow;
+            rowBorder.Padding = _ctRowPad;
+            rowBorder.Margin = _ctRowMgn;
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.Cursor = Cursors.Hand;
+            if (!string.IsNullOrEmpty(rowToolTip)) {
+                rowBorder.ToolTip = rowToolTip;
+                ToolTipService.SetInitialShowDelay(rowBorder, 5000);
+            }
+
+            var rowGrid = new Grid();
+            rowGrid.VerticalAlignment = VerticalAlignment.Center;
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol0 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol1 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol2 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol3 });
+
+            var cb = new CheckBox();
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.HorizontalAlignment = HorizontalAlignment.Left;
+            cb.Margin = _tZero;
+            Grid.SetColumn(cb, 0);
+            rowGrid.Children.Add(cb);
+
+            var iconBadge = new Border();
+            iconBadge.Width = 20;
+            iconBadge.Height = 20;
+            iconBadge.CornerRadius = _ccRow;
+            iconBadge.Background = (preCachedIcon != null && useLightBadge) ? iconBadgeLightBg : iconBadgeBg;
+            iconBadge.BorderBrush = iconBadgeBorder;
+            iconBadge.BorderThickness = _tZero;
+            iconBadge.HorizontalAlignment = HorizontalAlignment.Center;
+            iconBadge.VerticalAlignment = VerticalAlignment.Center;
+
+            var iconInnerGrid = new Grid();
+            iconInnerGrid.Width = 20;
+            iconInnerGrid.Height = 20;
+            iconInnerGrid.HorizontalAlignment = HorizontalAlignment.Center;
+            iconInnerGrid.VerticalAlignment = VerticalAlignment.Center;
+
+            var fallbackGlyph = new TextBlock();
+            fallbackGlyph.Text = fallbackGlyphText ?? "";
+            if (fontSegoeEmoji != null) fallbackGlyph.FontFamily = fontSegoeEmoji;
+            fallbackGlyph.FontSize = 10;
+            fallbackGlyph.HorizontalAlignment = HorizontalAlignment.Center;
+            fallbackGlyph.VerticalAlignment = VerticalAlignment.Center;
+
+            var img = new System.Windows.Controls.Image();
+            double imgDim = useLightBadge ? 15.0 : 17.0;
+            img.Width = imgDim;
+            img.Height = imgDim;
+            img.Stretch = Stretch.Uniform;
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.LowQuality);
+            img.HorizontalAlignment = HorizontalAlignment.Center;
+            img.VerticalAlignment = VerticalAlignment.Center;
+
+            if (preCachedIcon != null) {
+                img.Source = preCachedIcon;
+                img.Visibility = Visibility.Visible;
+                fallbackGlyph.Visibility = Visibility.Collapsed;
+            } else {
+                img.Visibility = Visibility.Collapsed;
+            }
+
+            iconInnerGrid.Children.Add(fallbackGlyph);
+            iconInnerGrid.Children.Add(img);
+            iconBadge.Child = iconInnerGrid;
+            Grid.SetColumn(iconBadge, 1);
+            rowGrid.Children.Add(iconBadge);
+
+            var nameAreaGrid = new Grid();
+            nameAreaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol2 });
+            nameAreaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto });
+
+            var nameText = new TextBlock();
+            nameText.Text = appName ?? "";
+            nameText.Foreground = textWhiteBrush;
+            nameText.FontSize = 12;
+            nameText.FontWeight = FontWeights.SemiBold;
+            nameText.VerticalAlignment = VerticalAlignment.Center;
+            nameText.Margin = _ctNameMgn;
+            nameText.TextTrimming = TextTrimming.CharacterEllipsis;
+            Grid.SetColumn(nameText, 0);
+            nameAreaGrid.Children.Add(nameText);
+
+            var updateBadge = new Border();
+            updateBadge.Background = updBadgeBg;
+            updateBadge.BorderBrush = updBadgeBorder;
+            updateBadge.BorderThickness = _tOne;
+            updateBadge.CornerRadius = _ccRow;
+            updateBadge.Padding = _ctUpdPad;
+            updateBadge.Margin = _ctUpdMgn;
+            updateBadge.VerticalAlignment = VerticalAlignment.Center;
+            updateBadge.Visibility = Visibility.Collapsed;
+            updateBadge.MaxWidth = 86;
+
+            var updateText = new TextBlock();
+            updateText.FontSize = 9.5;
+            updateText.FontWeight = FontWeights.Bold;
+            updateText.Foreground = updBadgeFg;
+            updateText.TextTrimming = TextTrimming.CharacterEllipsis;
+            updateBadge.Child = updateText;
+            Grid.SetColumn(updateBadge, 1);
+            nameAreaGrid.Children.Add(updateBadge);
+
+            Grid.SetColumn(nameAreaGrid, 2);
+            rowGrid.Children.Add(nameAreaGrid);
+
+            var linkBtn = new Border();
+            linkBtn.Width = 20;
+            linkBtn.Height = 19;
+            linkBtn.CornerRadius = _cFour;
+            if (linkBtnStyle != null) linkBtn.Style = linkBtnStyle;
+            linkBtn.BorderThickness = _tOne;
+            linkBtn.Cursor = Cursors.Hand;
+            linkBtn.HorizontalAlignment = HorizontalAlignment.Right;
+            linkBtn.VerticalAlignment = VerticalAlignment.Center;
+            linkBtn.Margin = _tZero;
+            linkBtn.ToolTip = "M\u1EDF trang ch\u00EDnh th\u1EE9c: " + (targetPageUrl ?? "");
+            ToolTipService.SetInitialShowDelay(linkBtn, 5000);
+            linkBtn.Tag = targetPageUrl ?? "";
+
+            var linkIcon = new TextBlock();
+            linkIcon.Text = "\u2197";
+            if (fontSegoeUI != null) linkIcon.FontFamily = fontSegoeUI;
+            linkIcon.FontSize = 11.5;
+            linkIcon.FontWeight = FontWeights.Bold;
+            linkIcon.Foreground = linkIconFg;
+            linkIcon.HorizontalAlignment = HorizontalAlignment.Center;
+            linkIcon.VerticalAlignment = VerticalAlignment.Center;
+            linkIcon.Margin = _ctLinkMgn;
+            linkBtn.Child = linkIcon;
+
+            Grid.SetColumn(linkBtn, 3);
+            rowGrid.Children.Add(linkBtn);
+
+            rowBorder.Child = rowGrid;
+
+            return new CatalogRowVisual {
+                RowBorder = rowBorder,
+                CheckBox = cb,
+                IconBadge = iconBadge,
+                IconImg = img,
+                FallbackGlyph = fallbackGlyph,
+                NameText = nameText,
+                UpdateBadge = updateBadge,
+                UpdateText = updateText,
+                LinkBtn = linkBtn,
+                LinkIcon = linkIcon
+            };
+        }
+    }
 }
 
-if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {
-    try {
-        $appCatalogCs = @'
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.Win32;
 
 namespace DuckUtil
 {
@@ -5405,6 +6282,14 @@ namespace DuckUtil
         public bool HasUpdate { get; set; }
         public string CleanName { get; set; }
         public string Source { get; set; }
+    }
+
+    public class CatalogMatchTarget
+    {
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public string[] Aliases { get; set; }
     }
 
     public static class AppCatalogEngine
@@ -6621,31 +7506,555 @@ namespace DuckUtil
 
         public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
         {
-            return Task.Run(() => ScanCatalogSensors());
+            return Task.Run(delegate() { return ScanCatalogSensors(); });
+        }
+
+        private sealed class AliasPatternPair
+        {
+            public string Raw;
+            public string Clean;
+            public Regex Pattern;
+        }
+
+        private sealed class CompiledTargetMeta
+        {
+            public string ID;
+            public string Name;
+            public string CleanTarget;
+            public List<AliasPatternPair> CleanAliases;
+            public List<AliasPatternPair> AliasEntries;
+            public Regex PatternClean;
+            public List<string> QueryTokens;
+            public bool AllowNoise;
+            public bool IsPrev;
+            public bool IsVcRedist;
+            public bool IsComm;
+            public bool IsPro;
+            public bool IsIde;
+            public bool IsAntigravity;
+            public bool IsCli;
+            public bool IsBt;
+            public bool IsVsc;
+            public bool IsVsAny;
+            public bool IsEtb;
+            public bool IsTemurin;
+            public bool IsOracleJava;
+            public bool IsCorretto;
+            public bool IsJdk;
+            public bool IsJre;
+            public Regex RxReqPy;
+            public Regex RxReqPyVer;
+            public Regex RxReqJava;
+            public Regex RxReqJavaVer;
+            public string ReqDnRaw;
+            public Regex RxReqDnId;
+            public Regex RxReqDnName;
+            public Regex RxReqDnVer;
+            public string ReqYear;
+            public string Arch;
+        }
+
+        private static readonly ConcurrentDictionary<string, CompiledTargetMeta> _metaCache =
+            new ConcurrentDictionary<string, CompiledTargetMeta>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> _matchStopWords = new HashSet<string>(
+            new string[] {
+                "microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server",
+                "edition", "community", "x64", "x86", "arm64", "arp", "msix", "machine", "user",
+                "app", "pro", "free", "jdk", "jre", "lts", "cli", "ide", "gui", "vpn", "bit"
+            }, StringComparer.OrdinalIgnoreCase);
+
+        private static readonly Regex _rxTokSplit = new Regex(@"[^a-zA-Z0-9+]+", RegexOptions.Compiled);
+        private static readonly Regex _rxSyntheticId = new Regex(@"^(ARP|MSIX|LOCAL)\\", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxAllowNoise = new Regex(@"(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseName = new Regex(@"(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseId = new Regex(@"(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxPyLauncher = new Regex(@"^Python Launcher\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordUwp = new Regex(@"\bUWP\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordComm = new Regex(@"\bCommunity\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotComm = new Regex(@"\.Community\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordPro = new Regex(@"\b(Ultimate|Professional)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotPro = new Regex(@"\.(Ultimate|Professional)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordIde = new Regex(@"\bIDE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndIde = new Regex(@"IDE$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordCli = new Regex(@"\bCLI\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndCli = new Regex(@"(\.cli|CLI)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxVscName = new Regex(@"VS Code|Visual Studio Code", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxJavaUpdate = new Regex(@"^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordJdk = new Regex(@"\bJDK\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndJdk = new Regex(@"\.JDK$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordJre = new Regex(@"\bJRE\b|^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndJre = new Regex(@"\.(JRE|JavaRuntimeEnvironment)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetPy = new Regex(@"^Python\.Python\.(\d+\.\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetJava = new Regex(@"\.(Temurin|Corretto)\.(\d+)\.", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetDn = new Regex(@"^Microsoft\.DotNet\.DesktopRuntime\.(\d+(?:_\d+)?)(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetYear = new Regex(@"^Microsoft\.VCRedist\.(\d{4})\.", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchX64Name = new Regex(@"\(x64\)|\.x64", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchX86Name = new Regex(@"\(x86\)|\.x86", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchArmName = new Regex(@"\(arm64\)|\.arm64", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemX64 = new Regex(@"(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemX86 = new Regex(@"(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemArm = new Regex(@"(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static CompiledTargetMeta GetOrBuildTargetMeta(CatalogMatchTarget target)
+        {
+            string tId = target.ID ?? "";
+            CompiledTargetMeta cached;
+            if (_metaCache.TryGetValue(tId, out cached)) return cached;
+
+            string tName = target.Name ?? "";
+            string tCat = target.Category ?? "";
+            string cleanTarget = CleanCatalogAppName(tName);
+
+            var cleanAliases = new List<AliasPatternPair>();
+            var aliasEntries = new List<AliasPatternPair>();
+            var queryTokens = new List<string>();
+            var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (cleanTarget.Length >= 4)
+            {
+                string[] toks = _rxTokSplit.Split(cleanTarget);
+                for (int i = 0; i < toks.Length; i++)
+                {
+                    string qt = toks[i];
+                    if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                    {
+                        queryTokens.Add(qt);
+                    }
+                }
+            }
+
+            if (target.Aliases != null)
+            {
+                for (int ai = 0; ai < target.Aliases.Length; ai++)
+                {
+                    string alias = target.Aliases[ai];
+                    if (string.IsNullOrWhiteSpace(alias)) continue;
+                    string cAl = CleanCatalogAppName(alias);
+                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Pattern = null };
+                    cleanAliases.Add(pair);
+                    if (alias.Length >= 4)
+                    {
+                        pair.Pattern = new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(alias) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase);
+                        aliasEntries.Add(pair);
+                        string[] toks = _rxTokSplit.Split(alias);
+                        for (int i = 0; i < toks.Length; i++)
+                        {
+                            string qt = toks[i];
+                            if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                            {
+                                queryTokens.Add(qt);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Regex patternClean = (cleanTarget.Length >= 4)
+                ? new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(cleanTarget) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase)
+                : null;
+
+            Regex rxReqPy = null;
+            Regex rxReqPyVer = null;
+            Match mPy = _rxTargetPy.Match(tId);
+            if (mPy.Success)
+            {
+                string esc = Regex.Escape(mPy.Groups[1].Value);
+                rxReqPy = new Regex(esc, RegexOptions.IgnoreCase);
+                rxReqPyVer = new Regex("^" + esc + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            Regex rxReqJava = null;
+            Regex rxReqJavaVer = null;
+            Match mJava = _rxTargetJava.Match(tId);
+            if (mJava.Success)
+            {
+                string jv = mJava.Groups[2].Value;
+                rxReqJava = new Regex(@"\b" + jv + @"\b", RegexOptions.IgnoreCase);
+                rxReqJavaVer = new Regex("^" + jv + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            string reqDnRaw = "";
+            Regex rxReqDnId = null;
+            Regex rxReqDnName = null;
+            Regex rxReqDnVer = null;
+            Match mDn = _rxTargetDn.Match(tId);
+            if (mDn.Success)
+            {
+                reqDnRaw = mDn.Groups[1].Value;
+                string reqDnEsc = reqDnRaw.Replace("_", @"\.");
+                rxReqDnId = new Regex(@"DesktopRuntime\." + Regex.Escape(reqDnRaw) + @"(\.|$)", RegexOptions.IgnoreCase);
+                rxReqDnName = new Regex(@"\b" + reqDnEsc + @"(\.\d+|\b)", RegexOptions.IgnoreCase);
+                rxReqDnVer = new Regex("^" + reqDnEsc + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            string reqYear = "";
+            Match mYr = _rxTargetYear.Match(tId);
+            if (mYr.Success) reqYear = mYr.Groups[1].Value;
+
+            string tArch = "";
+            if (_rxArchX64Name.IsMatch(tName) || tId.EndsWith(".x64", StringComparison.OrdinalIgnoreCase)) tArch = "x64";
+            else if (_rxArchX86Name.IsMatch(tName) || tId.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) tArch = "x86";
+            else if (_rxArchArmName.IsMatch(tName) || tId.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) tArch = "arm64";
+            else if (Environment.Is64BitOperatingSystem && string.Equals(tCat, ".NET Runtimes", StringComparison.OrdinalIgnoreCase) && tId.IndexOf("DesktopRuntime", StringComparison.OrdinalIgnoreCase) >= 0) tArch = "x64";
+
+            var meta = new CompiledTargetMeta
+            {
+                ID = tId,
+                Name = tName,
+                CleanTarget = cleanTarget,
+                CleanAliases = cleanAliases,
+                AliasEntries = aliasEntries,
+                PatternClean = patternClean,
+                QueryTokens = queryTokens,
+                AllowNoise = _rxAllowNoise.IsMatch(tName),
+                IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsComm = _rxWordComm.IsMatch(tName) || _rxDotComm.IsMatch(tId),
+                IsPro = _rxWordPro.IsMatch(tName) || _rxDotPro.IsMatch(tId),
+                IsIde = _rxWordIde.IsMatch(tName) || _rxEndIde.IsMatch(tId),
+                IsAntigravity = tId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsCli = _rxWordCli.IsMatch(tName) || _rxEndCli.IsMatch(tId),
+                IsBt = (tName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVsc = (tId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(tName),
+                IsVsAny = tId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsEtb = (tId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsTemurin = tId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsOracleJava = tId.IndexOf("Oracle.Java", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsCorretto = tId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsJdk = _rxWordJdk.IsMatch(tName) || _rxEndJdk.IsMatch(tId),
+                IsJre = _rxWordJre.IsMatch(tName) || _rxEndJre.IsMatch(tId),
+                RxReqPy = rxReqPy,
+                RxReqPyVer = rxReqPyVer,
+                RxReqJava = rxReqJava,
+                RxReqJavaVer = rxReqJavaVer,
+                ReqDnRaw = reqDnRaw,
+                RxReqDnId = rxReqDnId,
+                RxReqDnName = rxReqDnName,
+                RxReqDnVer = rxReqDnVer,
+                ReqYear = reqYear,
+                Arch = tArch
+            };
+
+            _metaCache[tId] = meta;
+            return meta;
+        }
+
+        private static bool IsMatchCompatible(CompiledTargetMeta meta, CatalogSensorItem item)
+        {
+            if (meta == null || item == null) return false;
+            string tId = meta.ID;
+            string iName = item.Name ?? "";
+            string iId = item.ID ?? "";
+            string iVer = item.Version ?? "";
+
+            if (!meta.AllowNoise)
+            {
+                if (_rxNoiseName.IsMatch(iName) || _rxNoiseId.IsMatch(iId)) return false;
+            }
+
+            if (string.Equals(iId, "Python.Launcher", StringComparison.OrdinalIgnoreCase) || _rxPyLauncher.IsMatch(iName))
+            {
+                if (!string.Equals(tId, "Python.Launcher", StringComparison.OrdinalIgnoreCase)) return false;
+            }
+
+            bool iPrev = (iName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsPrev != iPrev && !string.Equals(tId, "Microsoft.PowerToys", StringComparison.OrdinalIgnoreCase)) return false;
+
+            if (meta.IsVcRedist && (_rxWordUwp.IsMatch(iName) || iId.IndexOf("VCLibs", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+
+            if (meta.IsComm || meta.IsPro)
+            {
+                bool iComm = _rxWordComm.IsMatch(iName) || _rxDotComm.IsMatch(iId);
+                bool iPro = _rxWordPro.IsMatch(iName) || _rxDotPro.IsMatch(iId);
+                if ((meta.IsComm && iPro) || (meta.IsPro && iComm)) return false;
+            }
+
+            if (meta.IsAntigravity || iId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                bool iIde = _rxWordIde.IsMatch(iName) || _rxEndIde.IsMatch(iId);
+                if (meta.IsIde != iIde) return false;
+            }
+
+            bool iCli = _rxWordCli.IsMatch(iName) || _rxEndCli.IsMatch(iId);
+            if (meta.IsCli != iCli) return false;
+
+            bool iBt = (iName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsBt != iBt) return false;
+
+            if (meta.IsVsAny || iId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                bool iVsc = (iId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(iName);
+                if (meta.IsVsc != iVsc) return false;
+            }
+
+            bool iEtb = (iId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (iName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsEtb != iEtb) return false;
+
+            if (meta.IsTemurin && (iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+            if (meta.IsOracleJava && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+            if (meta.IsCorretto && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+
+            if (meta.IsJdk || meta.IsJre)
+            {
+                bool iJdk = _rxWordJdk.IsMatch(iName) || _rxEndJdk.IsMatch(iId);
+                bool iJre = _rxWordJre.IsMatch(iName) || _rxEndJre.IsMatch(iId);
+                if ((meta.IsJdk && iJre && !iJdk) || (meta.IsJre && iJdk && !iJre)) return false;
+            }
+
+            if (meta.RxReqPy != null)
+            {
+                if (!meta.RxReqPy.IsMatch(iId) && !meta.RxReqPy.IsMatch(iName) && !meta.RxReqPyVer.IsMatch(iVer)) return false;
+            }
+
+            if (meta.RxReqJava != null)
+            {
+                if (!meta.RxReqJava.IsMatch(iId) && !meta.RxReqJava.IsMatch(iName) && !meta.RxReqJavaVer.IsMatch(iVer)) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.ReqDnRaw))
+            {
+                if (iId.IndexOf("DesktopRuntime", StringComparison.OrdinalIgnoreCase) < 0 && iName.IndexOf("Desktop", StringComparison.OrdinalIgnoreCase) < 0) return false;
+                if (!meta.RxReqDnId.IsMatch(iId) && !meta.RxReqDnName.IsMatch(iName) && !meta.RxReqDnVer.IsMatch(iVer)) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.ReqYear))
+            {
+                if (iId.IndexOf(meta.ReqYear, StringComparison.OrdinalIgnoreCase) < 0 && iName.IndexOf(meta.ReqYear, StringComparison.OrdinalIgnoreCase) < 0) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.Arch))
+            {
+                string idForArch = _rxSyntheticId.IsMatch(iId) ? "" : iId;
+                string iArch = "";
+                if (_rxItemX64.IsMatch(iName) || idForArch.EndsWith(".x64", StringComparison.OrdinalIgnoreCase)) iArch = "x64";
+                else if (_rxItemX86.IsMatch(iName) || idForArch.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) iArch = "x86";
+                else if (_rxItemArm.IsMatch(iName) || idForArch.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) iArch = "arm64";
+                if (!string.IsNullOrEmpty(iArch) && !string.Equals(iArch, meta.Arch, StringComparison.OrdinalIgnoreCase)) return false;
+            }
+
+            return true;
+        }
+
+        private static void SetPreferredEntry(Dictionary<string, CatalogSensorItem> map, string key, CatalogSensorItem cand)
+        {
+            if (string.IsNullOrWhiteSpace(key) || cand == null) return;
+            CatalogSensorItem cur;
+            if (!map.TryGetValue(key, out cur))
+            {
+                map[key] = cand;
+                return;
+            }
+            bool curLocal = string.Equals(cur.Source, "local", StringComparison.OrdinalIgnoreCase);
+            bool candLocal = string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase);
+            if (curLocal && !candLocal) { map[key] = cand; return; }
+            if (!curLocal && candLocal) return;
+
+            bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
+            bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
+            if (curSyn && !candSyn) { map[key] = cand; return; }
+            if (!curSyn && candSyn) return;
+
+            int verCmp = CompareAppVersions(cand.Version, cur.Version);
+            string bestVer = (verCmp > 0 || string.IsNullOrWhiteSpace(cur.Version)) ? cand.Version : cur.Version;
+            int availCmp = CompareAppVersions(cand.Available, cur.Available);
+            string bestAvail = (availCmp > 0) ? cand.Available : cur.Available;
+            bool mergedUpd = TestAppUpdateGenuine(bestVer, bestAvail);
+            if (!mergedUpd) bestAvail = "";
+            bool useCand = (!cur.HasUpdate && cand.HasUpdate) || (verCmp > 0);
+            CatalogSensorItem baseObj = useCand ? cand : cur;
+            map[key] = new CatalogSensorItem
+            {
+                Name = baseObj.Name,
+                ID = baseObj.ID,
+                Version = bestVer,
+                Available = bestAvail,
+                HasUpdate = mergedUpd,
+                CleanName = baseObj.CleanName,
+                Source = baseObj.Source
+            };
+        }
+
+        public static CatalogSensorItem[] MatchCatalogApps(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
+        {
+            if (targets == null || targets.Length == 0) return new CatalogSensorItem[0];
+            var results = new CatalogSensorItem[targets.Length];
+            if (installedItems == null || installedItems.Length == 0) return results;
+
+            var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < installedItems.Length; i++)
+            {
+                CatalogSensorItem it = installedItems[i];
+                if (it == null) continue;
+                string itId = it.ID ?? "";
+                string itName = it.Name ?? "";
+                string itClean = it.CleanName ?? "";
+
+                if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
+                if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
+                if (itClean.Length >= 3) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
+                }
+
+                string rawText = itId + " " + itName + " " + itClean;
+                string[] toks = _rxTokSplit.Split(rawText);
+                var seenTok = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int ti = 0; ti < toks.Length; ti++)
+                {
+                    string tk = toks[ti];
+                    if (tk.Length >= 3 && seenTok.Add(tk))
+                    {
+                        List<CatalogSensorItem> bucket;
+                        if (!tokenIndex.TryGetValue(tk, out bucket))
+                        {
+                            bucket = new List<CatalogSensorItem>();
+                            tokenIndex[tk] = bucket;
+                        }
+                        bucket.Add(it);
+                    }
+                }
+            }
+
+            var lookupCache = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            for (int tIdx = 0; tIdx < targets.Length; tIdx++)
+            {
+                CatalogMatchTarget target = targets[tIdx];
+                if (target == null) continue;
+                string targetId = target.ID ?? "";
+                CatalogSensorItem cachedRes;
+                if (lookupCache.TryGetValue(targetId, out cachedRes))
+                {
+                    results[tIdx] = cachedRes;
+                    continue;
+                }
+
+                CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
+                CatalogSensorItem matched = null;
+                CatalogSensorItem cand;
+
+                if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+                if (matched == null)
+                {
+                    for (int a = 0; a < meta.CleanAliases.Count; a++)
+                    {
+                        if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null && !string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+                if (matched == null)
+                {
+                    for (int a = 0; a < meta.CleanAliases.Count; a++)
+                    {
+                        AliasPatternPair ap = meta.CleanAliases[a];
+                        if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                        if (ap.Clean.Length >= 3 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null && meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+
+                if (matched == null && meta.QueryTokens.Count > 0)
+                {
+                    var candidatePool = new List<CatalogSensorItem>();
+                    var seenCand = new HashSet<CatalogSensorItem>();
+                    for (int q = 0; q < meta.QueryTokens.Count; q++)
+                    {
+                        List<CatalogSensorItem> bucket;
+                        if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
+                        {
+                            for (int bi = 0; bi < bucket.Count; bi++)
+                            {
+                                if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
+                            }
+                        }
+                    }
+
+                    CatalogSensorItem bestCand = null;
+                    int bestScore = 0;
+                    for (int ci = 0; ci < candidatePool.Count; ci++)
+                    {
+                        CatalogSensorItem item = candidatePool[ci];
+                        string iId = item.ID ?? "";
+                        string iName = item.Name ?? "";
+                        string iClean = item.CleanName ?? "";
+                        int score = 0;
+
+                        for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
+                        {
+                            AliasPatternPair ae = meta.AliasEntries[aeIdx];
+                            if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                            {
+                                score = 780;
+                                break;
+                            }
+                            if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                            {
+                                int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
+                                int cScore = 700 + lenRatio;
+                                if (cScore > score) score = cScore;
+                            }
+                        }
+
+                        if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                        {
+                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                            score = 650 + lenRatio;
+                        }
+
+                        if (score > 0)
+                        {
+                            if (item.HasUpdate) score += 15;
+                            if (!_rxSyntheticId.IsMatch(iId)) score += 10;
+                            if (score > bestScore && IsMatchCompatible(meta, item))
+                            {
+                                bestScore = score;
+                                bestCand = item;
+                            }
+                        }
+                    }
+                    matched = bestCand;
+                }
+
+                lookupCache[targetId] = matched;
+                results[tIdx] = matched;
+            }
+
+            return results;
+        }
+
+        public static Task<CatalogSensorItem[]> MatchCatalogAppsAsync(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
+        {
+            return Task.Run(delegate() { return MatchCatalogApps(targets, installedItems); });
         }
     }
 }
-'@
-        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "ScanCatalogSensorsAsync"
-    } catch {}
-}
 
-if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
-    try {
-        $deepUninstCs = @'
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Win32;
 
 namespace DuckUtil
 {
@@ -6684,6 +8093,25 @@ namespace DuckUtil
         public string ResolvedImagePath { get; set; }
         public int ServiceType { get; set; }
         public bool IsKernelDriver { get; set; }
+    }
+
+    public class HollowDirResult
+    {
+        public string Path { get; set; }
+        public string AppName { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+    public class DeadShortcutResult
+    {
+        public string LnkPath { get; set; }
+        public string AppName { get; set; }
+    }
+
+    public class ServicesAndRogueResult
+    {
+        public List<ServiceScanEntry> AllServices { get; set; }
+        public List<ServiceScanEntry> RogueDrivers { get; set; }
     }
     public class InstalledAppInfo
     {
@@ -11841,6 +13269,8534 @@ namespace DuckUtil
             }
             return "";
         }
+
+        public static Task<List<HollowDirResult>> ScanHollowProgramDirsAsync(string[] programRoots, string[] exclusions, string[] activeInstallLocs)
+        {
+            return Task.Run(delegate()
+            {
+                var candidates = new List<string>();
+                if (programRoots != null)
+                {
+                    for (int ri = 0; ri < programRoots.Length; ri++)
+                    {
+                        string root = programRoots[ri];
+                        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                        try
+                        {
+                            string[] subs = Directory.GetDirectories(root);
+                            for (int si = 0; si < subs.Length; si++)
+                            {
+                                string sd = subs[si];
+                                string dirName = Path.GetFileName(sd) ?? "";
+                                bool isExcluded = false;
+                                if (exclusions != null)
+                                {
+                                    for (int ei = 0; ei < exclusions.Length; ei++)
+                                    {
+                                        string ex = exclusions[ei];
+                                        if (!string.IsNullOrEmpty(ex) && dirName.StartsWith(ex, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isExcluded = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (isExcluded) continue;
+
+                                string sdNorm = sd.Trim().TrimEnd('\\');
+                                string sdPrefix = sdNorm + "\\";
+                                bool isUsed = false;
+                                if (activeInstallLocs != null)
+                                {
+                                    for (int ai = 0; ai < activeInstallLocs.Length; ai++)
+                                    {
+                                        string actLoc = activeInstallLocs[ai];
+                                        if (string.IsNullOrEmpty(actLoc)) continue;
+                                        if (actLoc.Equals(sdNorm, StringComparison.OrdinalIgnoreCase) ||
+                                            actLoc.StartsWith(sdPrefix, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isUsed = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!isUsed) candidates.Add(sd);
+                            }
+                        }
+                        catch {}
+                    }
+                }
+
+                var bag = new ConcurrentBag<HollowDirResult>();
+                if (candidates.Count > 0)
+                {
+                    Parallel.For(0, candidates.Count, delegate(int idx)
+                    {
+                        string sd = candidates[idx];
+                        try
+                        {
+                            long hSize = GetHollowDirectorySize(sd, 3, 52428800L);
+                            if (hSize >= 0L)
+                            {
+                                bag.Add(new HollowDirResult
+                                {
+                                    Path = sd,
+                                    AppName = Path.GetFileName(sd) ?? sd,
+                                    SizeBytes = hSize
+                                });
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new List<HollowDirResult>(bag);
+            });
+        }
+
+        public static Task<List<HollowDirResult>> ScanHollowPathsWithSizesAsync(string[] paths, string[] appNames)
+        {
+            return Task.Run(delegate()
+            {
+                var bag = new ConcurrentBag<HollowDirResult>();
+                int count = (paths != null) ? paths.Length : 0;
+                if (count > 0)
+                {
+                    Parallel.For(0, count, delegate(int idx)
+                    {
+                        string p = paths[idx];
+                        if (string.IsNullOrWhiteSpace(p)) return;
+                        try
+                        {
+                            long hSize = GetHollowDirectorySize(p, 3, 52428800L);
+                            if (hSize >= 0L)
+                            {
+                                long fullSz = GetDirectorySizeFast(p, 3);
+                                bag.Add(new HollowDirResult
+                                {
+                                    Path = p,
+                                    AppName = (appNames != null && idx < appNames.Length) ? (appNames[idx] ?? "") : "",
+                                    SizeBytes = fullSz
+                                });
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new List<HollowDirResult>(bag);
+            });
+        }
+
+        public static Task<List<DeadShortcutResult>> ScanDeadShortcutsAsync(string[] rootDirs)
+        {
+            var tcs = new TaskCompletionSource<List<DeadShortcutResult>>();
+            Thread t = new Thread(delegate()
+            {
+                var results = new List<DeadShortcutResult>();
+                object wsh = null;
+                Type wshType = null;
+                try
+                {
+                    if (rootDirs != null && rootDirs.Length > 0)
+                    {
+                        wshType = Type.GetTypeFromProgID("WScript.Shell");
+                        if (wshType != null)
+                        {
+                            wsh = Activator.CreateInstance(wshType);
+                        }
+                        if (wsh != null)
+                        {
+                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            {
+                                string root = rootDirs[ri];
+                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                {
+                                    object sc = null;
+                                    try
+                                    {
+                                        sc = wshType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, wsh, new object[] { lnk });
+                                        if (sc != null)
+                                        {
+                                            string target = sc.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, sc, null) as string;
+                                            if (!string.IsNullOrEmpty(target) &&
+                                                target.Length >= 7 &&
+                                                char.IsLetter(target[0]) &&
+                                                target[1] == ':' &&
+                                                target[2] == '\\' &&
+                                                target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                                !File.Exists(target))
+                                            {
+                                                results.Add(new DeadShortcutResult
+                                                {
+                                                    LnkPath = lnk,
+                                                    AppName = Path.GetFileNameWithoutExtension(lnk) ?? lnk
+                                                });
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                    finally
+                                    {
+                                        if (sc != null) { try { Marshal.FinalReleaseComObject(sc); } catch {} }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    tcs.TrySetResult(results);
+                }
+                catch
+                {
+                    tcs.TrySetResult(results);
+                }
+                finally
+                {
+                    if (wsh != null) { try { Marshal.FinalReleaseComObject(wsh); } catch {} }
+                }
+            });
+            t.IsBackground = true;
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            return tcs.Task;
+        }
+
+        public static Task<ServicesAndRogueResult> ScanServicesAndRogueDriversAsync()
+        {
+            return Task.Run(delegate()
+            {
+                var allSvcs = ScanServicesAndDrivers();
+                var bag = new ConcurrentBag<ServiceScanEntry>();
+                if (allSvcs != null && allSvcs.Count > 0)
+                {
+                    Parallel.For(0, allSvcs.Count, delegate(int idx)
+                    {
+                        ServiceScanEntry se = allSvcs[idx];
+                        if (se == null || !se.IsKernelDriver) return;
+                        string img = se.ResolvedImagePath;
+                        if (string.IsNullOrWhiteSpace(img)) return;
+                        try
+                        {
+                            if (File.Exists(img) && IsVerifiedRogueKernelDriverFile(img))
+                            {
+                                bag.Add(se);
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new ServicesAndRogueResult
+                {
+                    AllServices = allSvcs ?? new List<ServiceScanEntry>(),
+                    RogueDrivers = new List<ServiceScanEntry>(bag)
+                };
+            });
+        }
+    }
+}
+'@
+        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateUninstallerRow"
+    } catch {}
+}
+
+if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
+    try {
+        $smoothScrollCs = @'
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+
+namespace DuckUtil {
+    public sealed class SmoothScrollController {
+        private readonly ScrollViewer _sv;
+        private double _currentOffset;
+        private double _targetOffset;
+        private double _lastAppliedOffset;
+        private double _preApplySvOffset;
+        private int _pendingLayoutSyncFrames;
+        private bool _isAnimating;
+        private readonly Stopwatch _sw = new Stopwatch();
+        private double _lastTimeSec;
+
+        private SmoothScrollController(ScrollViewer sv) {
+            _sv = sv;
+            _currentOffset = sv.VerticalOffset;
+            _targetOffset = sv.VerticalOffset;
+            _lastAppliedOffset = sv.VerticalOffset;
+            _preApplySvOffset = sv.VerticalOffset;
+            _sv.PreviewMouseWheel += OnPreviewMouseWheel;
+            _sv.IsVisibleChanged += OnIsVisibleChanged;
+            _sv.Unloaded += OnUnloaded;
+        }
+
+        public static SmoothScrollController Attach(ScrollViewer sv) {
+            if (sv == null) return null;
+            return new SmoothScrollController(sv);
+        }
+
+        public static void AttachFrameWake(Task task, Dispatcher dispatcher, DispatcherFrame frame) {
+            if (task == null || frame == null) return;
+            task.ContinueWith(_ => {
+                try {
+                    if (dispatcher != null && !dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished) {
+                        dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => { frame.Continue = false; }));
+                    } else {
+                        frame.Continue = false;
+                    }
+                } catch {}
+            }, TaskScheduler.Default);
+        }
+
+        private bool IsActiveAndVisible() {
+            return _sv.IsLoaded && _sv.IsVisible && PresentationSource.FromVisual(_sv) != null;
+        }
+
+        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
+            if (!IsActiveAndVisible()) {
+                StopAnimationAndSync();
+            }
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e) {
+            StopAnimationAndSync();
+        }
+
+        private void OnPreviewMouseWheel(object sender, MouseWheelEventArgs e) {
+            if (e == null || e.Handled) return;
+            if (Keyboard.Modifiers != ModifierKeys.None) return;
+            if (!IsActiveAndVisible()) return;
+
+            double maxScroll = _sv.ScrollableHeight;
+            if (double.IsNaN(maxScroll) || double.IsInfinity(maxScroll) || maxScroll <= 0) return;
+
+            double svOffset = _sv.VerticalOffset;
+            if (double.IsNaN(svOffset) || double.IsInfinity(svOffset)) svOffset = 0.0;
+
+            bool externalJump = _isAnimating
+                && Math.Abs(svOffset - _lastAppliedOffset) > 2.5
+                && (_pendingLayoutSyncFrames == 0 || Math.Abs(svOffset - _preApplySvOffset) > 0.5);
+
+            if (!_isAnimating || externalJump) {
+                _currentOffset = svOffset;
+                _targetOffset = svOffset;
+                _lastAppliedOffset = svOffset;
+                _preApplySvOffset = svOffset;
+                _pendingLayoutSyncFrames = 0;
+            }
+
+            double step = -e.Delta * 0.85;
+            if (double.IsNaN(step) || double.IsInfinity(step)) return;
+
+            _targetOffset = Math.Max(0.0, Math.Min(maxScroll, _targetOffset + step));
+            e.Handled = true;
+
+            if (!_isAnimating) {
+                _isAnimating = true;
+                _sw.Restart();
+                _lastTimeSec = 0.0;
+                CompositionTarget.Rendering += OnRendering;
+            }
+        }
+
+        private void OnRendering(object sender, EventArgs e) {
+            if (!IsActiveAndVisible()) {
+                StopAnimationAndSync();
+                return;
+            }
+
+            double svOffset = _sv.VerticalOffset;
+            if (double.IsNaN(svOffset) || double.IsInfinity(svOffset)) {
+                StopAnimationAndSync();
+                return;
+            }
+
+            if (Math.Abs(svOffset - _lastAppliedOffset) <= 2.5) {
+                _pendingLayoutSyncFrames = 0;
+            } else if (_pendingLayoutSyncFrames > 0 && Math.Abs(svOffset - _preApplySvOffset) <= 0.5 && _pendingLayoutSyncFrames <= 3) {
+                _pendingLayoutSyncFrames++;
+            } else {
+                _currentOffset = svOffset;
+                _targetOffset = svOffset;
+                _lastAppliedOffset = svOffset;
+                _preApplySvOffset = svOffset;
+                StopAnimation();
+                return;
+            }
+
+            double nowSec = _sw.Elapsed.TotalSeconds;
+            double dt = nowSec - _lastTimeSec;
+            _lastTimeSec = nowSec;
+            if (double.IsNaN(dt) || double.IsInfinity(dt) || dt <= 0.0) dt = 0.016;
+            else if (dt > 0.05) dt = 0.05;
+
+            double maxScroll = _sv.ScrollableHeight;
+            if (double.IsNaN(maxScroll) || double.IsInfinity(maxScroll) || maxScroll < 0.0) maxScroll = 0.0;
+            if (_targetOffset > maxScroll) _targetOffset = maxScroll;
+            if (_targetOffset < 0.0) _targetOffset = 0.0;
+
+            double diff = _targetOffset - _currentOffset;
+            if (double.IsNaN(diff) || double.IsInfinity(diff)) {
+                StopAnimationAndSync();
+                return;
+            }
+
+            if (Math.Abs(diff) < 0.35) {
+                _currentOffset = _targetOffset;
+                _lastAppliedOffset = _currentOffset;
+                _pendingLayoutSyncFrames = 0;
+                _sv.ScrollToVerticalOffset(_currentOffset);
+                StopAnimation();
+                return;
+            }
+
+            double factor = 1.0 - Math.Exp(-20.0 * dt);
+            _currentOffset += diff * factor;
+            if (_pendingLayoutSyncFrames == 0) {
+                _preApplySvOffset = svOffset;
+            }
+            _lastAppliedOffset = _currentOffset;
+            if (Math.Abs(svOffset - _currentOffset) > 0.1 && _pendingLayoutSyncFrames == 0) {
+                _pendingLayoutSyncFrames = 1;
+            }
+            _sv.ScrollToVerticalOffset(_currentOffset);
+        }
+
+        private void StopAnimation() {
+            if (_isAnimating) {
+                _isAnimating = false;
+                CompositionTarget.Rendering -= OnRendering;
+                _sw.Stop();
+            }
+            _pendingLayoutSyncFrames = 0;
+        }
+
+        private void StopAnimationAndSync() {
+            StopAnimation();
+            double svOffset = _sv.VerticalOffset;
+            if (double.IsNaN(svOffset) || double.IsInfinity(svOffset)) svOffset = 0.0;
+            _currentOffset = svOffset;
+            _targetOffset = svOffset;
+            _lastAppliedOffset = svOffset;
+            _preApplySvOffset = svOffset;
+        }
+    }
+
+    public sealed class ReadyIconItem {
+        public int Index { get; set; }
+        public int Generation { get; set; }
+        public string CacheKey { get; set; }
+        public BitmapSource Bitmap { get; set; }
+    }
+
+    public sealed class UninstRowVisual {
+        public Border RowBorder { get; set; }
+        public CheckBox CheckBox { get; set; }
+        public System.Windows.Controls.Image IconImg { get; set; }
+        public Border FallbackBadge { get; set; }
+        public Border FolderBtn { get; set; }
+    }
+
+    public sealed class CatalogRowVisual {
+        public Border RowBorder { get; set; }
+        public CheckBox CheckBox { get; set; }
+        public Border IconBadge { get; set; }
+        public System.Windows.Controls.Image IconImg { get; set; }
+        public TextBlock FallbackGlyph { get; set; }
+        public TextBlock NameText { get; set; }
+        public Border UpdateBadge { get; set; }
+        public TextBlock UpdateText { get; set; }
+        public Border LinkBtn { get; set; }
+        public TextBlock LinkIcon { get; set; }
+    }
+
+    public static class UiAssetPipeline {
+        private sealed class RemoteIconJob {
+            public int Index;
+            public int Generation;
+            public string Url;
+            public string FallbackUrl;
+            public string DestPath;
+            public string CacheKey;
+        }
+
+        private sealed class UninstIconJob {
+            public int Index;
+            public int Generation;
+            public string TargetPath;
+        }
+
+        private static readonly ConcurrentDictionary<string, BitmapSource> _remoteBmpCache =
+            new ConcurrentDictionary<string, BitmapSource>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, BitmapSource> _uninstBmpCache =
+            new ConcurrentDictionary<string, BitmapSource>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly ConcurrentQueue<ReadyIconItem> _remoteQueue = new ConcurrentQueue<ReadyIconItem>();
+        private static readonly ConcurrentQueue<ReadyIconItem> _uninstQueue = new ConcurrentQueue<ReadyIconItem>();
+        private static readonly ConcurrentQueue<RemoteIconJob> _remoteJobs = new ConcurrentQueue<RemoteIconJob>();
+        private static readonly ConcurrentQueue<UninstIconJob> _uninstJobs = new ConcurrentQueue<UninstIconJob>();
+
+        private static int _remoteGen = 0;
+        private static int _remoteRemaining = 0;
+        private static int _remoteActiveWorkers = 0;
+        private static int _uninstGen = 0;
+        private static int _uninstRemaining = 0;
+        private static int _uninstActiveWorkers = 0;
+        private static readonly HttpClient _httpClient = CreateHttpClient();
+
+        private static HttpClient CreateHttpClient() {
+            var handler = new HttpClientHandler();
+            try { handler.UseProxy = false; } catch {}
+            try { handler.AllowAutoRedirect = true; } catch {}
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMilliseconds(3500);
+            try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DuckUtil/3.5"); } catch {}
+            return client;
+        }
+
+        public static bool IsRemoteIdle {
+            get { return Volatile.Read(ref _remoteRemaining) <= 0 && _remoteQueue.IsEmpty; }
+        }
+
+        public static bool IsUninstIdle {
+            get { return Volatile.Read(ref _uninstRemaining) <= 0 && _uninstQueue.IsEmpty; }
+        }
+
+        public static BitmapSource TryGetCachedRemoteIcon(string cacheKey) {
+            if (string.IsNullOrEmpty(cacheKey)) return null;
+            BitmapSource bmp;
+            return _remoteBmpCache.TryGetValue(cacheKey, out bmp) ? bmp : null;
+        }
+
+        public static BitmapSource TryGetCachedUninstIcon(string key) {
+            if (string.IsNullOrEmpty(key)) return null;
+            BitmapSource bmp;
+            return _uninstBmpCache.TryGetValue(key, out bmp) ? bmp : null;
+        }
+
+        public static void ResetRemoteIconPipeline() {
+            Interlocked.Increment(ref _remoteGen);
+            Interlocked.Exchange(ref _remoteRemaining, 0);
+            RemoteIconJob j;
+            while (_remoteJobs.TryDequeue(out j)) {}
+            ReadyIconItem d;
+            while (_remoteQueue.TryDequeue(out d)) {}
+        }
+
+        public static void StopRemoteIconPipeline() {
+            ResetRemoteIconPipeline();
+        }
+
+        public static void ResetUninstallerIconPipeline() {
+            Interlocked.Increment(ref _uninstGen);
+            Interlocked.Exchange(ref _uninstRemaining, 0);
+            UninstIconJob j;
+            while (_uninstJobs.TryDequeue(out j)) {}
+            ReadyIconItem d;
+            while (_uninstQueue.TryDequeue(out d)) {}
+        }
+
+        public static void StopUninstallerIconPipeline() {
+            ResetUninstallerIconPipeline();
+        }
+
+        private static BitmapImage DecodeFrozenPngOrIcoBitmap(byte[] data) {
+            if (data == null || data.Length <= 64) return null;
+            try {
+                using (var ms = new MemoryStream(data)) {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.StreamSource = ms;
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    bmp.DecodePixelWidth = 36;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    if (bmp.PixelWidth <= 0) return null;
+                    return bmp;
+                }
+            } catch {
+                return null;
+            }
+        }
+
+        private static byte[] DownloadBytesWithTimeout(string url, int timeoutMs) {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            try {
+                using (var cts = new CancellationTokenSource(timeoutMs))
+                using (HttpResponseMessage resp = _httpClient.GetAsync(url, HttpCompletionOption.ResponseContentRead, cts.Token).GetAwaiter().GetResult()) {
+                    if (resp == null || !resp.IsSuccessStatusCode || resp.Content == null) return null;
+                    long? cl = resp.Content.Headers.ContentLength;
+                    if (cl.HasValue && cl.Value > 2 * 1024 * 1024) return null;
+                    byte[] bytes = resp.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                    if (bytes != null && bytes.Length <= 2 * 1024 * 1024) {
+                        return bytes;
+                    }
+                }
+            } catch {}
+            return null;
+        }
+
+        private static void EnsureRemoteWorkers(int maxWorkers) {
+            while (true) {
+                if (_remoteJobs.IsEmpty) return;
+                int cur = Volatile.Read(ref _remoteActiveWorkers);
+                if (cur >= maxWorkers) return;
+                if (Interlocked.CompareExchange(ref _remoteActiveWorkers, cur + 1, cur) == cur) {
+                    Task.Run(delegate() { RemoteWorkerLoop(); });
+                }
+            }
+        }
+
+        private static void RemoteWorkerLoop() {
+            try {
+                while (true) {
+                    RemoteIconJob job;
+                    if (!_remoteJobs.TryDequeue(out job)) break;
+                    if (job == null) continue;
+                    int gen = job.Generation;
+                    try {
+                        if (Volatile.Read(ref _remoteGen) != gen) continue;
+                        BitmapSource ready = null;
+                        if (!string.IsNullOrEmpty(job.CacheKey)) {
+                            _remoteBmpCache.TryGetValue(job.CacheKey, out ready);
+                        }
+                        if (ready == null && !string.IsNullOrEmpty(job.DestPath) && File.Exists(job.DestPath)) {
+                            try {
+                                byte[] fBytes = File.ReadAllBytes(job.DestPath);
+                                ready = DecodeFrozenPngOrIcoBitmap(fBytes);
+                                if (ready == null) {
+                                    try { File.Delete(job.DestPath); } catch {}
+                                }
+                            } catch {}
+                        }
+                        if (ready == null && Volatile.Read(ref _remoteGen) == gen) {
+                            byte[] dl = DownloadBytesWithTimeout(job.Url, 2500);
+                            if (dl != null && dl.Length > 230 && dl.Length != 588) {
+                                ready = DecodeFrozenPngOrIcoBitmap(dl);
+                                if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
+                                    try { File.WriteAllBytes(job.DestPath, dl); } catch {}
+                                }
+                            }
+                            if (ready == null && !string.IsNullOrWhiteSpace(job.FallbackUrl) && Volatile.Read(ref _remoteGen) == gen) {
+                                byte[] dl2 = DownloadBytesWithTimeout(job.FallbackUrl, 2500);
+                                if (dl2 != null && dl2.Length > 230 && dl2.Length != 588) {
+                                    ready = DecodeFrozenPngOrIcoBitmap(dl2);
+                                    if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
+                                        try { File.WriteAllBytes(job.DestPath, dl2); } catch {}
+                                    }
+                                }
+                            }
+                        }
+                        if (ready != null && Volatile.Read(ref _remoteGen) == gen) {
+                            if (!string.IsNullOrEmpty(job.CacheKey)) {
+                                _remoteBmpCache[job.CacheKey] = ready;
+                            }
+                            _remoteQueue.Enqueue(new ReadyIconItem {
+                                Index = job.Index,
+                                Generation = gen,
+                                CacheKey = job.CacheKey,
+                                Bitmap = ready
+                            });
+                        }
+                    } catch {
+                    } finally {
+                        if (Volatile.Read(ref _remoteGen) == gen) {
+                            Interlocked.Decrement(ref _remoteRemaining);
+                        }
+                    }
+                }
+            } finally {
+                Interlocked.Decrement(ref _remoteActiveWorkers);
+                if (!_remoteJobs.IsEmpty) EnsureRemoteWorkers(12);
+            }
+        }
+
+        public static void EnqueueRemoteIcons(int[] indices, string[] urls, string[] fallbackUrls, string[] destPaths, string[] cacheKeys) {
+            if (indices == null || indices.Length == 0) return;
+            int gen = Volatile.Read(ref _remoteGen);
+            int queued = 0;
+            for (int k = 0; k < indices.Length; k++) {
+                int idx = indices[k];
+                string url = (urls != null && k < urls.Length) ? urls[k] : null;
+                string fbUrl = (fallbackUrls != null && k < fallbackUrls.Length) ? fallbackUrls[k] : null;
+                string dest = (destPaths != null && k < destPaths.Length) ? destPaths[k] : null;
+                string cKey = (cacheKeys != null && k < cacheKeys.Length) ? cacheKeys[k] : null;
+
+                BitmapSource cached = null;
+                if (!string.IsNullOrEmpty(cKey) && _remoteBmpCache.TryGetValue(cKey, out cached) && cached != null) {
+                    _remoteQueue.Enqueue(new ReadyIconItem {
+                        Index = idx,
+                        Generation = gen,
+                        CacheKey = cKey,
+                        Bitmap = cached
+                    });
+                    continue;
+                }
+
+                Interlocked.Increment(ref _remoteRemaining);
+                _remoteJobs.Enqueue(new RemoteIconJob {
+                    Index = idx,
+                    Generation = gen,
+                    Url = url,
+                    FallbackUrl = fbUrl,
+                    DestPath = dest,
+                    CacheKey = cKey
+                });
+                queued++;
+            }
+            if (queued > 0) {
+                EnsureRemoteWorkers(Math.Min(12, Math.Max(4, queued)));
+            }
+        }
+
+        public static void StartRemoteIconPipeline(string[] urls, string[] fallbackUrls, string[] destPaths, string[] cacheKeys) {
+            ResetRemoteIconPipeline();
+            int total = urls != null ? urls.Length : 0;
+            if (total == 0) return;
+            int[] indices = new int[total];
+            for (int i = 0; i < total; i++) indices[i] = i;
+            EnqueueRemoteIcons(indices, urls, fallbackUrls, destPaths, cacheKeys);
+        }
+
+        public static ReadyIconItem[] DequeueReadyRemoteIcons(int maxCount) {
+            if (_remoteQueue.IsEmpty) return new ReadyIconItem[0];
+            var list = new List<ReadyIconItem>(maxCount);
+            int curGen = Volatile.Read(ref _remoteGen);
+            ReadyIconItem item;
+            while (list.Count < maxCount && _remoteQueue.TryDequeue(out item)) {
+                if (item != null && item.Generation == curGen && item.Bitmap != null) {
+                    list.Add(item);
+                }
+            }
+            return list.ToArray();
+        }
+
+        private static BitmapSource ExtractIconBitmapFromPath(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            BitmapSource cached;
+            if (_uninstBmpCache.TryGetValue(path, out cached)) return cached;
+            if (!File.Exists(path)) return null;
+
+            BitmapSource res = null;
+            try {
+                string ext = Path.GetExtension(path) ?? "";
+                if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = File.ReadAllBytes(path);
+                    res = DecodeFrozenPngOrIcoBitmap(bytes);
+                } else if (ext.Equals(".ico", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(ext)) {
+                    byte[] bytes = File.ReadAllBytes(path);
+                    if (bytes != null && bytes.Length > 6 && bytes[0] == 0 && bytes[1] == 0 && (bytes[2] == 1 || bytes[2] == 2) && bytes[3] == 0) {
+                        using (var ms = new MemoryStream(bytes))
+                        using (var ico = new Icon(ms, 32, 32)) {
+                            BitmapSource bs = Imaging.CreateBitmapSourceFromHIcon(ico.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bs.Freeze();
+                            res = bs;
+                        }
+                    }
+                }
+                if (res == null) {
+                    using (Icon assoc = Icon.ExtractAssociatedIcon(path)) {
+                        if (assoc != null) {
+                            BitmapSource bs2 = Imaging.CreateBitmapSourceFromHIcon(assoc.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bs2.Freeze();
+                            res = bs2;
+                        }
+                    }
+                }
+            } catch {}
+
+            if (res != null) {
+                _uninstBmpCache[path] = res;
+            }
+            return res;
+        }
+
+        private static void EnsureUninstWorkers(int maxWorkers) {
+            while (true) {
+                if (_uninstJobs.IsEmpty) return;
+                int cur = Volatile.Read(ref _uninstActiveWorkers);
+                if (cur >= maxWorkers) return;
+                if (Interlocked.CompareExchange(ref _uninstActiveWorkers, cur + 1, cur) == cur) {
+                    Thread t = new Thread(delegate() { UninstWorkerLoop(); });
+                    t.IsBackground = true;
+                    t.Priority = ThreadPriority.BelowNormal;
+                    t.SetApartmentState(ApartmentState.STA);
+                    t.Start();
+                }
+            }
+        }
+
+        private static void UninstWorkerLoop() {
+            try {
+                while (true) {
+                    UninstIconJob job;
+                    if (!_uninstJobs.TryDequeue(out job)) break;
+                    if (job == null) continue;
+                    int gen = job.Generation;
+                    try {
+                        if (Volatile.Read(ref _uninstGen) != gen) continue;
+                        BitmapSource bmp = ExtractIconBitmapFromPath(job.TargetPath);
+                        if (bmp != null && Volatile.Read(ref _uninstGen) == gen) {
+                            _uninstQueue.Enqueue(new ReadyIconItem {
+                                Index = job.Index,
+                                Generation = gen,
+                                CacheKey = job.TargetPath,
+                                Bitmap = bmp
+                            });
+                        }
+                    } catch {
+                    } finally {
+                        if (Volatile.Read(ref _uninstGen) == gen) {
+                            Interlocked.Decrement(ref _uninstRemaining);
+                        }
+                    }
+                }
+            } finally {
+                Interlocked.Decrement(ref _uninstActiveWorkers);
+                if (!_uninstJobs.IsEmpty) EnsureUninstWorkers(2);
+            }
+        }
+
+        public static void EnqueueUninstallerIcons(int[] indices, string[] targetPaths) {
+            if (indices == null || targetPaths == null || indices.Length == 0) return;
+            int gen = Volatile.Read(ref _uninstGen);
+            int queued = 0;
+            for (int k = 0; k < indices.Length && k < targetPaths.Length; k++) {
+                string p = targetPaths[k];
+                if (string.IsNullOrWhiteSpace(p)) continue;
+                BitmapSource cached;
+                if (_uninstBmpCache.TryGetValue(p, out cached) && cached != null) {
+                    _uninstQueue.Enqueue(new ReadyIconItem {
+                        Index = indices[k],
+                        Generation = gen,
+                        CacheKey = p,
+                        Bitmap = cached
+                    });
+                    continue;
+                }
+                Interlocked.Increment(ref _uninstRemaining);
+                _uninstJobs.Enqueue(new UninstIconJob {
+                    Index = indices[k],
+                    Generation = gen,
+                    TargetPath = p
+                });
+                queued++;
+            }
+            if (queued > 0) {
+                EnsureUninstWorkers(Math.Min(2, queued));
+            }
+        }
+
+        public static void StartUninstallerIconPipeline(string[] targetPaths) {
+            ResetUninstallerIconPipeline();
+            if (targetPaths == null || targetPaths.Length == 0) return;
+            int[] indices = new int[targetPaths.Length];
+            for (int i = 0; i < targetPaths.Length; i++) indices[i] = i;
+            EnqueueUninstallerIcons(indices, targetPaths);
+        }
+
+        public static ReadyIconItem[] DequeueReadyUninstallerIcons(int maxCount) {
+            if (_uninstQueue.IsEmpty) return new ReadyIconItem[0];
+            var list = new List<ReadyIconItem>(maxCount);
+            int curGen = Volatile.Read(ref _uninstGen);
+            ReadyIconItem item;
+            while (list.Count < maxCount && _uninstQueue.TryDequeue(out item)) {
+                if (item != null && item.Generation == curGen && item.Bitmap != null) {
+                    list.Add(item);
+                }
+            }
+            return list.ToArray();
+        }
+
+        private static readonly GridLength _uCol0 = new GridLength(38, GridUnitType.Pixel);
+        private static readonly GridLength _uCol1 = new GridLength(1, GridUnitType.Star);
+        private static readonly GridLength _uCol2 = new GridLength(130, GridUnitType.Pixel);
+        private static readonly GridLength _uCol3 = new GridLength(220, GridUnitType.Pixel);
+        private static readonly GridLength _uCol4 = new GridLength(105, GridUnitType.Pixel);
+        private static readonly GridLength _uCol5 = new GridLength(115, GridUnitType.Pixel);
+        private static readonly GridLength _uCol6 = new GridLength(54, GridUnitType.Pixel);
+        private static readonly GridLength _uIconW = new GridLength(20, GridUnitType.Pixel);
+        private static readonly Thickness _tZero = new Thickness(0);
+        private static readonly Thickness _tRowBdr = new Thickness(1, 0, 1, 1);
+        private static readonly Thickness _tOne = new Thickness(1);
+        private static readonly Thickness _tName = new Thickness(8, 0, 8, 0);
+        private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
+        private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly CornerRadius _cRow = new CornerRadius(0);
+        private static readonly CornerRadius _cFour = new CornerRadius(1);
+
+        public static UninstRowVisual CreateUninstallerRow(
+            string displayName,
+            string displayVersion,
+            string publisher,
+            string sizeText,
+            bool isBrokenOrphan,
+            string targetFolder,
+            string rowToolTip,
+            string folderGlyph,
+            Style rowStyle,
+            System.Windows.Media.Brush rowBorderBrush,
+            System.Windows.Media.Brush titleBrush,
+            System.Windows.Media.Brush titleBrokenBrush,
+            System.Windows.Media.Brush mutedBrush,
+            System.Windows.Media.Brush lightBrush,
+            System.Windows.Media.Brush badgeBg,
+            System.Windows.Media.Brush badgeFg,
+            System.Windows.Media.Brush badgeBrokenBg,
+            System.Windows.Media.Brush badgeBrokenFg,
+            System.Windows.Media.Brush statusOkBg,
+            System.Windows.Media.Brush statusOkBorder,
+            System.Windows.Media.Brush statusOkFg,
+            System.Windows.Media.Brush statusBrokenBg,
+            System.Windows.Media.Brush statusBrokenBorder,
+            System.Windows.Media.Brush folderBg,
+            System.Windows.Media.Brush folderBorder,
+            BitmapSource preCachedIcon)
+        {
+            var rowBorder = new Border();
+            rowBorder.Height = 38;
+            rowBorder.CornerRadius = _cRow;
+            rowBorder.Padding = _tZero;
+            rowBorder.Margin = _tZero;
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.BorderBrush = rowBorderBrush;
+            rowBorder.BorderThickness = _tRowBdr;
+            rowBorder.Cursor = Cursors.Hand;
+            if (!string.IsNullOrEmpty(rowToolTip)) {
+                rowBorder.ToolTip = rowToolTip;
+                ToolTipService.SetInitialShowDelay(rowBorder, 5000);
+            }
+
+            var rowGrid = new Grid();
+            rowGrid.VerticalAlignment = VerticalAlignment.Stretch;
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol0 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol1 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol2 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol3 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol4 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol5 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol6 });
+
+            var cb = new CheckBox();
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.HorizontalAlignment = HorizontalAlignment.Center;
+            cb.Margin = _tZero;
+            cb.Tag = rowBorder;
+            Grid.SetColumn(cb, 0);
+            rowGrid.Children.Add(cb);
+
+            var nameGrid = new Grid();
+            nameGrid.VerticalAlignment = VerticalAlignment.Center;
+            nameGrid.Margin = _tName;
+            nameGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uIconW });
+            nameGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _uCol1 });
+
+            var iconSlot = new Grid();
+            iconSlot.Width = 20;
+            iconSlot.Height = 20;
+            iconSlot.VerticalAlignment = VerticalAlignment.Center;
+            iconSlot.HorizontalAlignment = HorizontalAlignment.Left;
+
+            var fallbackBadge = new Border();
+            fallbackBadge.Width = 20;
+            fallbackBadge.Height = 20;
+            fallbackBadge.CornerRadius = _cFour;
+            fallbackBadge.Background = isBrokenOrphan ? badgeBrokenBg : badgeBg;
+            fallbackBadge.VerticalAlignment = VerticalAlignment.Center;
+            fallbackBadge.HorizontalAlignment = HorizontalAlignment.Center;
+
+            string dispTrim = string.IsNullOrEmpty(displayName) ? "A" : displayName.Trim();
+            string badgeLetter = isBrokenOrphan ? "!" : (dispTrim.Length > 0 ? dispTrim.Substring(0, 1).ToUpperInvariant() : "\u2022");
+            var badgeTb = new TextBlock();
+            badgeTb.Text = badgeLetter;
+            badgeTb.FontSize = 10.5;
+            badgeTb.FontWeight = FontWeights.Bold;
+            badgeTb.Foreground = isBrokenOrphan ? badgeBrokenFg : badgeFg;
+            badgeTb.HorizontalAlignment = HorizontalAlignment.Center;
+            badgeTb.VerticalAlignment = VerticalAlignment.Center;
+            fallbackBadge.Child = badgeTb;
+
+            var img = new System.Windows.Controls.Image();
+            img.Width = 20;
+            img.Height = 20;
+            img.Stretch = Stretch.Uniform;
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.LowQuality);
+            img.VerticalAlignment = VerticalAlignment.Center;
+            img.HorizontalAlignment = HorizontalAlignment.Center;
+
+            if (preCachedIcon != null) {
+                img.Source = preCachedIcon;
+                fallbackBadge.Visibility = Visibility.Collapsed;
+            }
+
+            iconSlot.Children.Add(fallbackBadge);
+            iconSlot.Children.Add(img);
+            Grid.SetColumn(iconSlot, 0);
+            nameGrid.Children.Add(iconSlot);
+
+            var nameTb = new TextBlock();
+            nameTb.Text = displayName ?? "";
+            nameTb.FontSize = 12;
+            nameTb.FontWeight = FontWeights.SemiBold;
+            nameTb.Foreground = isBrokenOrphan ? titleBrokenBrush : titleBrush;
+            nameTb.VerticalAlignment = VerticalAlignment.Center;
+            nameTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            nameTb.Margin = new Thickness(8, 0, 4, 0);
+            Grid.SetColumn(nameTb, 1);
+            nameGrid.Children.Add(nameTb);
+
+            Grid.SetColumn(nameGrid, 1);
+            rowGrid.Children.Add(nameGrid);
+
+            var verTb = new TextBlock();
+            verTb.Text = string.IsNullOrEmpty(displayVersion) ? "--" : displayVersion;
+            verTb.FontSize = 11.5;
+            verTb.Foreground = mutedBrush;
+            verTb.VerticalAlignment = VerticalAlignment.Center;
+            verTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            verTb.Margin = _tCol;
+            Grid.SetColumn(verTb, 2);
+            rowGrid.Children.Add(verTb);
+
+            var pubTb = new TextBlock();
+            pubTb.Text = string.IsNullOrEmpty(publisher) ? "--" : publisher;
+            pubTb.FontSize = 11.5;
+            pubTb.Foreground = mutedBrush;
+            pubTb.VerticalAlignment = VerticalAlignment.Center;
+            pubTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            pubTb.Margin = _tCol;
+            Grid.SetColumn(pubTb, 3);
+            rowGrid.Children.Add(pubTb);
+
+            var sizeTb = new TextBlock();
+            sizeTb.Text = string.IsNullOrEmpty(sizeText) ? "--" : sizeText;
+            sizeTb.FontSize = 11.5;
+            sizeTb.Foreground = lightBrush;
+            sizeTb.VerticalAlignment = VerticalAlignment.Center;
+            sizeTb.TextAlignment = TextAlignment.Right;
+            sizeTb.Margin = _tSize;
+            Grid.SetColumn(sizeTb, 4);
+            rowGrid.Children.Add(sizeTb);
+
+            var statusBorder = new Border();
+            statusBorder.CornerRadius = _cFour;
+            statusBorder.Padding = _tBadgePad;
+            statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
+            statusBorder.VerticalAlignment = VerticalAlignment.Center;
+            statusBorder.BorderThickness = _tOne;
+            statusBorder.Background = isBrokenOrphan ? statusBrokenBg : statusOkBg;
+            statusBorder.BorderBrush = isBrokenOrphan ? statusBrokenBorder : statusOkBorder;
+
+            var statusTb = new TextBlock();
+            statusTb.FontSize = 10.5;
+            statusTb.FontWeight = FontWeights.SemiBold;
+            statusTb.Text = isBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+            statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
+            statusBorder.Child = statusTb;
+            Grid.SetColumn(statusBorder, 5);
+            rowGrid.Children.Add(statusBorder);
+
+            var folderBtn = new Border();
+            folderBtn.Width = 26;
+            folderBtn.Height = 24;
+            folderBtn.CornerRadius = _cFour;
+            folderBtn.Background = folderBg;
+            folderBtn.BorderBrush = folderBorder;
+            folderBtn.BorderThickness = _tOne;
+            folderBtn.HorizontalAlignment = HorizontalAlignment.Center;
+            folderBtn.VerticalAlignment = VerticalAlignment.Center;
+
+            var folderIcon = new TextBlock();
+            folderIcon.Text = folderGlyph ?? "";
+            folderIcon.FontSize = 10.5;
+            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
+            folderIcon.VerticalAlignment = VerticalAlignment.Center;
+            folderBtn.Child = folderIcon;
+
+            if (!string.IsNullOrWhiteSpace(targetFolder)) {
+                folderBtn.Cursor = Cursors.Hand;
+                folderBtn.Tag = targetFolder;
+                folderBtn.ToolTip = "M\u1EDF th\u01B0 m\u1EE5c: " + targetFolder;
+            } else {
+                folderBtn.Opacity = 0.25;
+                folderBtn.Cursor = Cursors.Arrow;
+                folderBtn.ToolTip = "Kh\u00F4ng t\u00ECm th\u1EA5y th\u01B0 m\u1EE5c c\u00E0i \u0111\u1EB7t";
+            }
+            ToolTipService.SetInitialShowDelay(folderBtn, 5000);
+            Grid.SetColumn(folderBtn, 6);
+            rowGrid.Children.Add(folderBtn);
+
+            rowBorder.Child = rowGrid;
+
+            return new UninstRowVisual {
+                RowBorder = rowBorder,
+                CheckBox = cb,
+                IconImg = img,
+                FallbackBadge = fallbackBadge,
+                FolderBtn = folderBtn
+            };
+        }
+
+        private static readonly GridLength _cCol0 = new GridLength(20, GridUnitType.Pixel);
+        private static readonly GridLength _cCol1 = new GridLength(23, GridUnitType.Pixel);
+        private static readonly GridLength _cCol2 = new GridLength(1, GridUnitType.Star);
+        private static readonly GridLength _cCol3 = new GridLength(22, GridUnitType.Pixel);
+        private static readonly GridLength _cAuto = GridLength.Auto;
+        private static readonly Thickness _ctRowPad = new Thickness(5, 0, 4, 0);
+        private static readonly Thickness _ctRowMgn = new Thickness(0, 1, 0, 1);
+        private static readonly Thickness _ctNameMgn = new Thickness(5, 0, 4, 0);
+        private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
+        private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
+        private static readonly CornerRadius _ccRow = new CornerRadius(1);
+
+        public static CatalogRowVisual CreateCatalogRow(
+            string appName,
+            string rowToolTip,
+            string targetPageUrl,
+            string fallbackGlyphText,
+            bool useLightBadge,
+            Style rowStyle,
+            Style linkBtnStyle,
+            System.Windows.Media.FontFamily fontSegoeUI,
+            System.Windows.Media.FontFamily fontSegoeEmoji,
+            System.Windows.Media.Brush textWhiteBrush,
+            System.Windows.Media.Brush iconBadgeBg,
+            System.Windows.Media.Brush iconBadgeLightBg,
+            System.Windows.Media.Brush iconBadgeBorder,
+            System.Windows.Media.Brush updBadgeBg,
+            System.Windows.Media.Brush updBadgeBorder,
+            System.Windows.Media.Brush updBadgeFg,
+            System.Windows.Media.Brush linkIconFg,
+            BitmapSource preCachedIcon)
+        {
+            var rowBorder = new Border();
+            rowBorder.Height = 27;
+            rowBorder.CornerRadius = _ccRow;
+            rowBorder.Padding = _ctRowPad;
+            rowBorder.Margin = _ctRowMgn;
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.Cursor = Cursors.Hand;
+            if (!string.IsNullOrEmpty(rowToolTip)) {
+                rowBorder.ToolTip = rowToolTip;
+                ToolTipService.SetInitialShowDelay(rowBorder, 5000);
+            }
+
+            var rowGrid = new Grid();
+            rowGrid.VerticalAlignment = VerticalAlignment.Center;
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol0 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol1 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol2 });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol3 });
+
+            var cb = new CheckBox();
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.HorizontalAlignment = HorizontalAlignment.Left;
+            cb.Margin = _tZero;
+            Grid.SetColumn(cb, 0);
+            rowGrid.Children.Add(cb);
+
+            var iconBadge = new Border();
+            iconBadge.Width = 20;
+            iconBadge.Height = 20;
+            iconBadge.CornerRadius = _ccRow;
+            iconBadge.Background = (preCachedIcon != null && useLightBadge) ? iconBadgeLightBg : iconBadgeBg;
+            iconBadge.BorderBrush = iconBadgeBorder;
+            iconBadge.BorderThickness = _tZero;
+            iconBadge.HorizontalAlignment = HorizontalAlignment.Center;
+            iconBadge.VerticalAlignment = VerticalAlignment.Center;
+
+            var iconInnerGrid = new Grid();
+            iconInnerGrid.Width = 20;
+            iconInnerGrid.Height = 20;
+            iconInnerGrid.HorizontalAlignment = HorizontalAlignment.Center;
+            iconInnerGrid.VerticalAlignment = VerticalAlignment.Center;
+
+            var fallbackGlyph = new TextBlock();
+            fallbackGlyph.Text = fallbackGlyphText ?? "";
+            if (fontSegoeEmoji != null) fallbackGlyph.FontFamily = fontSegoeEmoji;
+            fallbackGlyph.FontSize = 10;
+            fallbackGlyph.HorizontalAlignment = HorizontalAlignment.Center;
+            fallbackGlyph.VerticalAlignment = VerticalAlignment.Center;
+
+            var img = new System.Windows.Controls.Image();
+            double imgDim = useLightBadge ? 15.0 : 17.0;
+            img.Width = imgDim;
+            img.Height = imgDim;
+            img.Stretch = Stretch.Uniform;
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.LowQuality);
+            img.HorizontalAlignment = HorizontalAlignment.Center;
+            img.VerticalAlignment = VerticalAlignment.Center;
+
+            if (preCachedIcon != null) {
+                img.Source = preCachedIcon;
+                img.Visibility = Visibility.Visible;
+                fallbackGlyph.Visibility = Visibility.Collapsed;
+            } else {
+                img.Visibility = Visibility.Collapsed;
+            }
+
+            iconInnerGrid.Children.Add(fallbackGlyph);
+            iconInnerGrid.Children.Add(img);
+            iconBadge.Child = iconInnerGrid;
+            Grid.SetColumn(iconBadge, 1);
+            rowGrid.Children.Add(iconBadge);
+
+            var nameAreaGrid = new Grid();
+            nameAreaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cCol2 });
+            nameAreaGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto });
+
+            var nameText = new TextBlock();
+            nameText.Text = appName ?? "";
+            nameText.Foreground = textWhiteBrush;
+            nameText.FontSize = 12;
+            nameText.FontWeight = FontWeights.SemiBold;
+            nameText.VerticalAlignment = VerticalAlignment.Center;
+            nameText.Margin = _ctNameMgn;
+            nameText.TextTrimming = TextTrimming.CharacterEllipsis;
+            Grid.SetColumn(nameText, 0);
+            nameAreaGrid.Children.Add(nameText);
+
+            var updateBadge = new Border();
+            updateBadge.Background = updBadgeBg;
+            updateBadge.BorderBrush = updBadgeBorder;
+            updateBadge.BorderThickness = _tOne;
+            updateBadge.CornerRadius = _ccRow;
+            updateBadge.Padding = _ctUpdPad;
+            updateBadge.Margin = _ctUpdMgn;
+            updateBadge.VerticalAlignment = VerticalAlignment.Center;
+            updateBadge.Visibility = Visibility.Collapsed;
+            updateBadge.MaxWidth = 86;
+
+            var updateText = new TextBlock();
+            updateText.FontSize = 9.5;
+            updateText.FontWeight = FontWeights.Bold;
+            updateText.Foreground = updBadgeFg;
+            updateText.TextTrimming = TextTrimming.CharacterEllipsis;
+            updateBadge.Child = updateText;
+            Grid.SetColumn(updateBadge, 1);
+            nameAreaGrid.Children.Add(updateBadge);
+
+            Grid.SetColumn(nameAreaGrid, 2);
+            rowGrid.Children.Add(nameAreaGrid);
+
+            var linkBtn = new Border();
+            linkBtn.Width = 20;
+            linkBtn.Height = 19;
+            linkBtn.CornerRadius = _cFour;
+            if (linkBtnStyle != null) linkBtn.Style = linkBtnStyle;
+            linkBtn.BorderThickness = _tOne;
+            linkBtn.Cursor = Cursors.Hand;
+            linkBtn.HorizontalAlignment = HorizontalAlignment.Right;
+            linkBtn.VerticalAlignment = VerticalAlignment.Center;
+            linkBtn.Margin = _tZero;
+            linkBtn.ToolTip = "M\u1EDF trang ch\u00EDnh th\u1EE9c: " + (targetPageUrl ?? "");
+            ToolTipService.SetInitialShowDelay(linkBtn, 5000);
+            linkBtn.Tag = targetPageUrl ?? "";
+
+            var linkIcon = new TextBlock();
+            linkIcon.Text = "\u2197";
+            if (fontSegoeUI != null) linkIcon.FontFamily = fontSegoeUI;
+            linkIcon.FontSize = 11.5;
+            linkIcon.FontWeight = FontWeights.Bold;
+            linkIcon.Foreground = linkIconFg;
+            linkIcon.HorizontalAlignment = HorizontalAlignment.Center;
+            linkIcon.VerticalAlignment = VerticalAlignment.Center;
+            linkIcon.Margin = _ctLinkMgn;
+            linkBtn.Child = linkIcon;
+
+            Grid.SetColumn(linkBtn, 3);
+            rowGrid.Children.Add(linkBtn);
+
+            rowBorder.Child = rowGrid;
+
+            return new CatalogRowVisual {
+                RowBorder = rowBorder,
+                CheckBox = cb,
+                IconBadge = iconBadge,
+                IconImg = img,
+                FallbackGlyph = fallbackGlyph,
+                NameText = nameText,
+                UpdateBadge = updateBadge,
+                UpdateText = updateText,
+                LinkBtn = linkBtn,
+                LinkIcon = linkIcon
+            };
+        }
+    }
+}
+'@
+        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $coreAllRefs -RequiredMethod "AttachFrameWake"
+    } catch {}
+}
+
+if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {
+    try {
+        $appCatalogCs = @'
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+
+namespace DuckUtil
+{
+    public class CatalogSensorItem
+    {
+        public string Name { get; set; }
+        public string ID { get; set; }
+        public string Version { get; set; }
+        public string Available { get; set; }
+        public bool HasUpdate { get; set; }
+        public string CleanName { get; set; }
+        public string Source { get; set; }
+    }
+
+    public class CatalogMatchTarget
+    {
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public string[] Aliases { get; set; }
+    }
+
+    public static class AppCatalogEngine
+    {
+        private static readonly Regex _rxCleanParens = new Regex(@"\((?!x64|x86|arm64).*?\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxCleanVerWord = new Regex(@"\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxCleanVerNum = new Regex(@"\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxMultiSpace = new Regex(@"\s+", RegexOptions.Compiled);
+        private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
+        private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
+        private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
+
+        public static string CleanCatalogAppName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            string c = _rxCleanParens.Replace(name, "").Replace("(", "").Replace(")", "").Trim().ToLowerInvariant();
+            c = _rxCleanVerWord.Replace(c, "");
+            c = _rxCleanVerNum.Replace(c, "");
+            foreach (string term in _cleanTerms)
+            {
+                c = c.Replace(term, "");
+            }
+            c = _rxMultiSpace.Replace(c, " ").Trim();
+            return c;
+        }
+
+        public static long[] GetVersionNumbers(string verStr)
+        {
+            if (string.IsNullOrWhiteSpace(verStr)) return new long[0];
+            string s = verStr.Trim();
+            if (s.StartsWith("<")) s = s.Substring(1).Trim();
+            Match m = _rxVerExtract.Match(s);
+            if (!m.Success) return new long[0];
+            string[] parts = _rxVerSplit.Split(m.Value);
+            var nums = new List<long>(parts.Length);
+            foreach (string p in parts)
+            {
+                long v;
+                if (long.TryParse(p, out v)) nums.Add(v);
+            }
+            return nums.ToArray();
+        }
+
+        public static int CompareAppVersions(string verA, string verB)
+        {
+            long[] a = GetVersionNumbers(verA);
+            long[] b = GetVersionNumbers(verB);
+            if (a.Length == 0 && b.Length == 0) return 0;
+            if (a.Length > 0 && b.Length == 0) return 1;
+            if (a.Length == 0 && b.Length > 0) return -1;
+            int maxLen = Math.Max(a.Length, b.Length);
+            for (int i = 0; i < maxLen; i++)
+            {
+                long va = i < a.Length ? a[i] : 0L;
+                long vb = i < b.Length ? b[i] : 0L;
+                if (va > vb) return 1;
+                if (va < vb) return -1;
+            }
+            return 0;
+        }
+
+        public static bool TestAppUpdateGenuine(string installedVer, string availableVer)
+        {
+            if (string.IsNullOrWhiteSpace(availableVer)) return false;
+            string av = availableVer.Trim();
+            if (av.Equals("winget", StringComparison.OrdinalIgnoreCase) ||
+                av.Equals("msstore", StringComparison.OrdinalIgnoreCase) ||
+                av.Equals("Unknown", StringComparison.OrdinalIgnoreCase)) return false;
+            bool hasDigit = false;
+            foreach (char c in av) { if (c >= '0' && c <= '9') { hasDigit = true; break; } }
+            if (!hasDigit) return false;
+            if (string.IsNullOrWhiteSpace(installedVer)) return true;
+            string iv = installedVer.Trim();
+            if (iv.StartsWith("<")) return true;
+            bool hasIvDigit = false;
+            foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
+            if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
+            int cmp = CompareAppVersions(av, iv);
+            if (cmp > 0) return true;
+            if (cmp == 0 && _rxPrerelease.IsMatch(iv) && !_rxPrerelease.IsMatch(av)) return true;
+            return false;
+        }
+
+        private static int GetDisplayWidthUpToIndex(string s, int charIdx)
+        {
+            if (string.IsNullOrEmpty(s) || charIdx <= 0) return 0;
+            int limit = Math.Min(charIdx, s.Length);
+            int w = 0;
+            for (int i = 0; i < limit; i++)
+            {
+                char ch = s[i];
+                if (char.IsHighSurrogate(ch) && (i + 1) < limit && char.IsLowSurrogate(s[i + 1]))
+                {
+                    int cp = char.ConvertToUtf32(ch, s[i + 1]);
+                    w += GetCharDisplayWidth(cp);
+                    i++;
+                }
+                else
+                {
+                    w += GetCharDisplayWidth((int)ch);
+                }
+            }
+            return w;
+        }
+
+        private static int SnapWingetColumnBoundary(string line, int pos, int minPos)
+        {
+            if (string.IsNullOrEmpty(line) || pos <= minPos || pos >= line.Length) return pos;
+            if (char.IsWhiteSpace(line[pos]) || char.IsWhiteSpace(line[pos - 1])) return pos;
+
+            int leftCandidate = -1;
+            int minLeft = Math.Max(minPos + 1, pos - 10);
+            for (int j = pos - 1; j >= minLeft; j--)
+            {
+                if (char.IsWhiteSpace(line[j]))
+                {
+                    leftCandidate = j + 1;
+                    break;
+                }
+            }
+
+            int rightCandidate = -1;
+            int maxRight = Math.Min(line.Length - 1, pos + 10);
+            for (int j = pos + 1; j <= maxRight; j++)
+            {
+                if (char.IsWhiteSpace(line[j]))
+                {
+                    int k = j;
+                    while (k < line.Length && char.IsWhiteSpace(line[k])) k++;
+                    if (k < line.Length) rightCandidate = k;
+                    break;
+                }
+            }
+
+            if (leftCandidate >= 0 && rightCandidate >= 0)
+            {
+                return (pos - leftCandidate) <= (rightCandidate - pos) ? leftCandidate : rightCandidate;
+            }
+            if (leftCandidate >= 0) return leftCandidate;
+            if (rightCandidate >= 0) return rightCandidate;
+            return pos;
+        }
+
+        private static string[] SliceRowColumnsByPositions(string line, int cId, int cVer, int cAvail, int cSrc)
+        {
+            string appName = "", appId = "", version = "", avail = "";
+            if (cId > 0 && line.Length > cId)
+            {
+                cId = SnapWingetColumnBoundary(line, cId, 0);
+                appName = line.Substring(0, cId).Trim();
+                if (cVer > cId && line.Length > cVer)
+                {
+                    cVer = SnapWingetColumnBoundary(line, cVer, cId);
+                    appId = line.Substring(cId, cVer - cId).Trim();
+                    if (cAvail > cVer && line.Length > cAvail)
+                    {
+                        cAvail = SnapWingetColumnBoundary(line, cAvail, cVer);
+                        version = line.Substring(cVer, cAvail - cVer).Trim();
+                        if (cSrc > cAvail && line.Length > cSrc)
+                        {
+                            cSrc = SnapWingetColumnBoundary(line, cSrc, cAvail);
+                            avail = line.Substring(cAvail, cSrc - cAvail).Trim();
+                        }
+                        else
+                        {
+                            avail = line.Substring(cAvail).Trim();
+                        }
+                    }
+                    else
+                    {
+                        version = line.Substring(cVer).Trim();
+                    }
+                }
+                else
+                {
+                    appId = line.Substring(cId).Trim();
+                }
+            }
+            return new string[] { appName, appId, version, avail };
+        }
+
+        private static int GetCharDisplayWidth(int code)
+        {
+            if ((code >= 0x1100 && code <= 0x115F) ||
+                (code == 0x2329 || code == 0x232A) ||
+                (code >= 0x2E80 && code <= 0x303E) ||
+                (code >= 0x3041 && code <= 0x33FF) ||
+                (code >= 0x3400 && code <= 0x4DBF) ||
+                (code >= 0x4E00 && code <= 0xA4CF) ||
+                (code >= 0xA960 && code <= 0xA97F) ||
+                (code >= 0xAC00 && code <= 0xD7AF) ||
+                (code >= 0xF900 && code <= 0xFAFF) ||
+                (code >= 0xFE10 && code <= 0xFE19) ||
+                (code >= 0xFE30 && code <= 0xFE6F) ||
+                (code >= 0xFF01 && code <= 0xFF60) ||
+                (code >= 0xFFE0 && code <= 0xFFE6) ||
+                (code >= 0x1F300 && code <= 0x1FAFF))
+            {
+                return 2;
+            }
+            return 1;
+        }
+
+        private static string[] SliceByDisplayWidth(string line, int[] offsets)
+        {
+            int idIdx = offsets.Length >= 2 ? offsets[1] : -1;
+            int verIdx = offsets.Length >= 3 ? offsets[2] : -1;
+            int availIdx = offsets.Length >= 4 ? offsets[3] : -1;
+            int srcIdx = offsets.Length >= 5 ? offsets[4] : -1;
+
+            int[] targets = new int[] { idIdx, verIdx, availIdx, srcIdx };
+            int[] charPos = new int[] { -1, -1, -1, -1 };
+            int w = 0;
+            for (int i = 0; i < line.Length; i++)
+            {
+                for (int t = 0; t < 4; t++)
+                {
+                    if (charPos[t] < 0 && targets[t] >= 0 && w >= targets[t])
+                    {
+                        charPos[t] = i;
+                    }
+                }
+                char ch = line[i];
+                if (char.IsHighSurrogate(ch) && (i + 1) < line.Length && char.IsLowSurrogate(line[i + 1]))
+                {
+                    int cp = char.ConvertToUtf32(ch, line[i + 1]);
+                    w += GetCharDisplayWidth(cp);
+                    i++;
+                }
+                else
+                {
+                    w += GetCharDisplayWidth((int)ch);
+                }
+            }
+
+            int cId = charPos[0];
+            int cVer = charPos[1];
+            int cAvail = charPos[2];
+            int cSrc = charPos[3];
+
+            return SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
+        }
+
+        public static List<CatalogSensorItem> ParseWingetListOutput(string rawText, bool allowHeaderless, out bool hasTable)
+        {
+            hasTable = false;
+            var parsed = new List<CatalogSensorItem>(256);
+            if (string.IsNullOrWhiteSpace(rawText)) return parsed;
+
+            string[] rawLines = rawText.Split('\n');
+            var lines = new List<string>(rawLines.Length);
+            foreach (string rl in rawLines)
+            {
+                string cleanLine = rl.TrimEnd('\r');
+                int crIdx = cleanLine.LastIndexOf('\r');
+                if (crIdx >= 0) cleanLine = cleanLine.Substring(crIdx + 1);
+                if (cleanLine.IndexOf((char)0x1B) >= 0)
+                {
+                    cleanLine = _rxAnsi.Replace(cleanLine, "");
+                }
+                lines.Add(cleanLine);
+            }
+
+            int separatorIndex = -1;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (Regex.IsMatch(lines[i], @"^\s*-{10,}"))
+                {
+                    separatorIndex = i;
+                    break;
+                }
+            }
+
+            if (separatorIndex > 0)
+            {
+                hasTable = true;
+                string separatorLine = lines[separatorIndex];
+                string headerLine = lines[separatorIndex - 1];
+                var colOffsetsList = new List<int>();
+                if (Regex.IsMatch(separatorLine, @"---+\s+---+"))
+                {
+                    MatchCollection dashMatches = Regex.Matches(separatorLine, @"-+");
+                    foreach (Match dm in dashMatches) colOffsetsList.Add(dm.Index);
+                }
+                else if (!string.IsNullOrEmpty(headerLine))
+                {
+                    MatchCollection matches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
+                    colOffsetsList = new List<int>(matches.Count);
+                    foreach (Match m in matches) colOffsetsList.Add(GetDisplayWidthUpToIndex(headerLine, m.Index));
+                }
+                int[] colOffsets = colOffsetsList.ToArray();
+
+                for (int i = separatorIndex + 1; i < lines.Count; i++)
+                {
+                    string line = lines[i];
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    string appName = "", appId = "", version = "", avail = "";
+
+                    if (colOffsets.Length >= 3)
+                    {
+                        bool hasNonAscii = false;
+                        for (int k = 0; k < line.Length; k++)
+                        {
+                            if (line[k] > 0x007F) { hasNonAscii = true; break; }
+                        }
+                        if (!hasNonAscii)
+                        {
+                            int cId = colOffsets[1];
+                            int cVer = colOffsets[2];
+                            int cAvail = colOffsets.Length >= 4 ? colOffsets[3] : -1;
+                            int cSrc = colOffsets.Length >= 5 ? colOffsets[4] : -1;
+                            string[] sliced = SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
+                            appName = sliced[0];
+                            appId = sliced[1];
+                            version = sliced[2];
+                            avail = sliced[3];
+                        }
+                        else
+                        {
+                            string[] sliced = SliceByDisplayWidth(line, colOffsets);
+                            appName = sliced[0];
+                            appId = sliced[1];
+                            version = sliced[2];
+                            avail = sliced[3];
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(appId) || appId.IndexOf(' ') >= 0)
+                    {
+                        string[] cols = Regex.Split(line.Trim(), @"\s{2,}");
+                        if (cols.Length >= 2)
+                        {
+                            appName = cols[0].Trim();
+                            appId = cols[1].Trim();
+                            version = cols.Length >= 3 ? cols[2].Trim() : "";
+                            avail = cols.Length >= 4 ? cols[3].Trim() : "";
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(appName) && !string.IsNullOrEmpty(appId))
+                    {
+                        bool hasUpdate = TestAppUpdateGenuine(version, avail);
+                        parsed.Add(new CatalogSensorItem
+                        {
+                            Name = appName,
+                            ID = appId,
+                            Version = version,
+                            Available = hasUpdate ? avail : "",
+                            HasUpdate = hasUpdate,
+                            CleanName = CleanCatalogAppName(appName),
+                            Source = "winget"
+                        });
+                    }
+                }
+            }
+            else if (allowHeaderless)
+            {
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    string line = lines[i];
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    string trimmed = line.Trim();
+                    if (trimmed.StartsWith("---")) continue;
+                    string[] cols = Regex.Split(trimmed, @"\s{2,}");
+                    if (cols.Length >= 2)
+                    {
+                        string appName = cols[0].Trim();
+                        string appId = cols[1].Trim();
+                        if (!Regex.IsMatch(appId, @"^(ARP|MSIX)\\|\S+\.\S+")) continue;
+                        string version = cols.Length >= 3 ? cols[2].Trim() : "";
+                        string avail = cols.Length >= 4 ? cols[3].Trim() : "";
+                        if (!string.IsNullOrEmpty(appName) && !string.IsNullOrEmpty(appId))
+                        {
+                            bool hasUpdate = TestAppUpdateGenuine(version, avail);
+                            parsed.Add(new CatalogSensorItem
+                            {
+                                Name = appName,
+                                ID = appId,
+                                Version = version,
+                                Available = hasUpdate ? avail : "",
+                                HasUpdate = hasUpdate,
+                                CleanName = CleanCatalogAppName(appName),
+                                Source = "winget"
+                            });
+                        }
+                    }
+                }
+            }
+            return parsed;
+        }
+
+        private static string ResolveCliExactVersion(string exePath, string toolKey)
+        {
+            if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath)) return "Installed";
+            try
+            {
+                var fvi = FileVersionInfo.GetVersionInfo(exePath);
+                string[] cands = new string[] { fvi.ProductVersion, fvi.FileVersion };
+                foreach (string cand in cands)
+                {
+                    if (!string.IsNullOrWhiteSpace(cand))
+                    {
+                        string clean = cand.Split('+')[0].Trim();
+                        if (Regex.IsMatch(clean, @"\d") && !Regex.IsMatch(clean, @"^0(\.0)+$"))
+                        {
+                            return clean;
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string userProf = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+                if (string.Equals(toolKey, "agy", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userProf))
+                {
+                    string agyVerJson = Path.Combine(userProf, @".gemini\bin\agy.version.json");
+                    if (File.Exists(agyVerJson))
+                    {
+                        string txt = File.ReadAllText(agyVerJson);
+                        Match m = Regex.Match(txt, @"""version""\s*:\s*""([^""]+)""");
+                        if (m.Success) return m.Groups[1].Value.Trim();
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(localApp) && !string.IsNullOrEmpty(toolKey))
+                {
+                    string receipt = Path.Combine(localApp, toolKey, toolKey + "-receipt.json");
+                    if (File.Exists(receipt))
+                    {
+                        string txt = File.ReadAllText(receipt);
+                        Match m = Regex.Match(txt, @"""version""\s*:\s*""([^""]+)""", RegexOptions.RightToLeft);
+                        if (m.Success) return m.Groups[1].Value.Trim();
+                    }
+                }
+
+                string dir = Path.GetDirectoryName(exePath);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    string parent = Path.GetDirectoryName(dir);
+                    if (!string.IsNullOrEmpty(parent))
+                    {
+                        string sitePkgs = Path.Combine(parent, @"Lib\site-packages");
+                        if (Directory.Exists(sitePkgs))
+                        {
+                            string prefix = toolKey.Replace('-', '_') + "-";
+                            foreach (string d in Directory.GetDirectories(sitePkgs, "*.dist-info"))
+                            {
+                                string dn = Path.GetFileName(d);
+                                if (dn.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string verPart = dn.Substring(prefix.Length);
+                                    int distIdx = verPart.IndexOf(".dist-info", StringComparison.OrdinalIgnoreCase);
+                                    if (distIdx > 0) return verPart.Substring(0, distIdx);
+                                }
+                            }
+                        }
+
+                        string scoopManifest = Path.Combine(dir, "manifest.json");
+                        if (!File.Exists(scoopManifest)) scoopManifest = Path.Combine(parent, "manifest.json");
+                        if (File.Exists(scoopManifest))
+                        {
+                            string txt = File.ReadAllText(scoopManifest);
+                            Match m = Regex.Match(txt, @"""version""\s*:\s*""([^""]+)""");
+                            if (m.Success) return m.Groups[1].Value.Trim();
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            return "Installed";
+        }
+
+        private static string ExtractExePath(string cmd)
+        {
+            if (string.IsNullOrWhiteSpace(cmd)) return null;
+            string raw = Environment.ExpandEnvironmentVariables(cmd).Trim();
+            if (raw.StartsWith("\""))
+            {
+                int nextQuote = raw.IndexOf('\"', 1);
+                if (nextQuote > 1)
+                {
+                    return raw.Substring(1, nextQuote - 1).Trim();
+                }
+            }
+
+            int exeIdx = raw.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            if (exeIdx > 0)
+            {
+                return raw.Substring(0, exeIdx + 4).Trim('\"', ' ');
+            }
+
+            int spaceIdx = raw.IndexOf(' ');
+            if (spaceIdx > 0)
+            {
+                return raw.Substring(0, spaceIdx).Trim('\"', ' ');
+            }
+
+            return raw.Trim('\"', ' ');
+        }
+
+        private static bool IsBrokenRegistryEntry(string uninstallString, string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(uninstallString)) return false;
+            string u = Environment.ExpandEnvironmentVariables(uninstallString).Trim();
+            if (u.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+
+            string exePath = ExtractExePath(u);
+            if (string.IsNullOrEmpty(exePath)) return false;
+            exePath = exePath.Trim('\"', ' ');
+            if (!Regex.IsMatch(exePath, @"^[a-zA-Z]:\\")) return false;
+
+            bool exeExists = false;
+            try { exeExists = File.Exists(exePath); } catch {}
+
+            if (!exeExists)
+            {
+                bool locExists = false;
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(installLocation))
+                    {
+                        string expLoc = Environment.ExpandEnvironmentVariables(installLocation).Trim('\"', ' ');
+                        if (!string.IsNullOrEmpty(expLoc) && Directory.Exists(expLoc))
+                        {
+                            locExists = true;
+                        }
+                    }
+                }
+                catch {}
+
+                if (!locExists) return true;
+            }
+
+            return false;
+        }
+
+        public static List<CatalogSensorItem> ScanCatalogSensors()
+        {
+            var items = new List<CatalogSensorItem>(256);
+
+            var regTargets = new Tuple<RegistryHive, RegistryView, string, string>[]
+            {
+                Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X64\"),
+                Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X86\"),
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\"),
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
+            };
+
+            string vsCodeUserDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Microsoft VS Code");
+            bool vsCodeUserExists = Directory.Exists(vsCodeUserDir);
+
+            foreach (var rt in regTargets)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(rt.Item1, rt.Item2))
+                    using (var uninst = baseKey.OpenSubKey(rt.Item3))
+                    {
+                        if (uninst == null) continue;
+                        foreach (string subName in uninst.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var sk = uninst.OpenSubKey(subName))
+                                {
+                                    if (sk == null) continue;
+                                    string parentKey = sk.GetValue("ParentKeyName") as string;
+                                    if (!string.IsNullOrEmpty(parentKey)) continue;
+
+                                    string dn = (sk.GetValue("DisplayName") as string ?? "").Trim();
+                                    if (string.IsNullOrEmpty(dn)) continue;
+
+                                    var sysComp = sk.GetValue("SystemComponent");
+                                    if (sysComp != null && (sysComp.ToString() == "1" || ((sysComp is int) && ((int)sysComp == 1))))
+                                    {
+                                        if (dn.IndexOf("Visual Studio", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Desktop Runtime", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) < 0)
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    if (Regex.IsMatch(dn, @"Additional Runtime|Minimum Runtime|Debug Runtime|IntelliSense|Language Pack", RegexOptions.IgnoreCase))
+                                    {
+                                        continue;
+                                    }
+
+                                    string loc = (sk.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    string uStr = (sk.GetValue("UninstallString") as string ?? "").Trim();
+
+                                    if (dn.IndexOf("Visual Studio Code (User)", StringComparison.OrdinalIgnoreCase) >= 0 && !vsCodeUserExists && string.IsNullOrEmpty(loc) && string.IsNullOrEmpty(uStr))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (IsBrokenRegistryEntry(uStr, loc)) continue;
+
+                                    string ver = (sk.GetValue("DisplayVersion") as string ?? "Installed").Trim();
+                                    if (string.IsNullOrEmpty(ver)) ver = "Installed";
+                                    string clean = CleanCatalogAppName(dn);
+
+                                    items.Add(new CatalogSensorItem
+                                    {
+                                        Name = dn,
+                                        ID = rt.Item4 + subName,
+                                        Version = ver,
+                                        Available = "",
+                                        HasUpdate = false,
+                                        CleanName = clean,
+                                        Source = "local"
+                                    });
+
+                                    if (dn.IndexOf("Visual Studio Community", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        items.Add(new CatalogSensorItem
+                                        {
+                                            Name = dn,
+                                            ID = "Microsoft.VisualStudio.2022.Community",
+                                            Version = ver,
+                                            Available = "",
+                                            HasUpdate = false,
+                                            CleanName = clean,
+                                            Source = "local"
+                                        });
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (var pkgRoot = baseKey.OpenSubKey(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"))
+                {
+                    if (pkgRoot != null)
+                    {
+                        foreach (string pkgFull in pkgRoot.GetSubKeyNames())
+                        {
+                            if (string.IsNullOrWhiteSpace(pkgFull)) continue;
+                            if (Regex.IsMatch(pkgFull, @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGameCallableUI|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.PowerToys\.|NotepadPlusPlus_)", RegexOptions.IgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            string[] parts = pkgFull.Split('_');
+                            string pkgPrefix = parts.Length > 0 ? parts[0] : pkgFull;
+                            string pkgVer = parts.Length > 1 ? parts[1] : "Installed";
+                            string dispName = pkgPrefix;
+
+                            try
+                            {
+                                using (var sk = pkgRoot.OpenSubKey(pkgFull))
+                                {
+                                    if (sk != null)
+                                    {
+                                        string d = (sk.GetValue("DisplayName") as string ?? "").Trim();
+                                        if (!string.IsNullOrEmpty(d) && !d.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            dispName = d;
+                                        }
+                                    }
+                                }
+                            }
+                            catch {}
+
+                            string mappedId = "MSIX\\" + pkgFull;
+                            if (pkgPrefix.IndexOf("TelegramDesktop", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "Telegram.TelegramDesktop";
+                            else if (pkgPrefix.IndexOf("OpenAI.Codex", StringComparison.OrdinalIgnoreCase) >= 0 || pkgPrefix.IndexOf("OpenAI.ChatGPT", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "OpenAI.ChatGPT"; dispName = "ChatGPT"; }
+                            else if (pkgPrefix.IndexOf("WindowsTerminal", StringComparison.OrdinalIgnoreCase) >= 0 && pkgPrefix.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) < 0) mappedId = "Microsoft.WindowsTerminal";
+                            else if (pkgPrefix.Equals("Microsoft.PowerShell", StringComparison.OrdinalIgnoreCase)) mappedId = "Microsoft.PowerShell";
+                            else if (pkgPrefix.IndexOf("WindowsSubsystemForLinux", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "Microsoft.WSL";
+                            else if (pkgPrefix.IndexOf("DirectXRuntime", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "Microsoft.DirectX";
+                            else if (pkgPrefix.IndexOf("TranslucentTB", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "CharlesMilette.TranslucentTB";
+                            else if (pkgPrefix.IndexOf("MicrosoftPCManager", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "9PM860492SZD"; dispName = "Microsoft PC Manager"; }
+                            else if (pkgPrefix.IndexOf("WhatsAppDesktop", StringComparison.OrdinalIgnoreCase) >= 0) { mappedId = "9NKSQGP7F2NH"; dispName = "WhatsApp"; }
+                            else if (pkgPrefix.IndexOf("KaliLinux", StringComparison.OrdinalIgnoreCase) >= 0) mappedId = "OffSec.KaliLinux";
+
+                            items.Add(new CatalogSensorItem
+                            {
+                                Name = dispName,
+                                ID = mappedId,
+                                Version = pkgVer,
+                                Available = "",
+                                HasUpdate = false,
+                                CleanName = CleanCatalogAppName(dispName),
+                                Source = "local"
+                            });
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var ndpKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"))
+                {
+                    if (ndpKey != null)
+                    {
+                        object relObj = ndpKey.GetValue("Release");
+                        int rel = relObj != null ? Convert.ToInt32(relObj) : 0;
+                        string ndpVer = (ndpKey.GetValue("Version") as string ?? "4.8.1").Trim();
+                        if (rel >= 533320 || ndpVer.StartsWith("4.8"))
+                        {
+                            items.Add(new CatalogSensorItem
+                            {
+                                Name = "Microsoft .NET Framework 4.8.1",
+                                ID = "Microsoft.DotNet.Framework.Runtime",
+                                Version = ndpVer,
+                                Available = "",
+                                HasUpdate = false,
+                                CleanName = "net framework 4 8 1",
+                                Source = "local"
+                            });
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string d3dx = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "d3dx9_43.dll");
+                if (File.Exists(d3dx))
+                {
+                    items.Add(new CatalogSensorItem
+                    {
+                        Name = "DirectX End-User Runtimes",
+                        ID = "Microsoft.DirectX",
+                        Version = "9.29.1974.0",
+                        Available = "",
+                        HasUpdate = false,
+                        CleanName = "directx",
+                        Source = "local"
+                    });
+                }
+            }
+            catch {}
+
+            string pf64Root = Environment.GetEnvironmentVariable("ProgramW6432");
+            if (string.IsNullOrEmpty(pf64Root)) pf64Root = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string pf86Root = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+            if (string.IsNullOrEmpty(pf86Root)) pf86Root = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+
+            var dotnetSharesList = new List<Tuple<string, string>>();
+            if (!string.IsNullOrEmpty(pf64Root)) dotnetSharesList.Add(Tuple.Create(Path.Combine(pf64Root, @"dotnet\shared\Microsoft.WindowsDesktop.App"), "x64"));
+            if (!string.IsNullOrEmpty(pf86Root)) dotnetSharesList.Add(Tuple.Create(Path.Combine(pf86Root, @"dotnet\shared\Microsoft.WindowsDesktop.App"), "x86"));
+            var dotnetShares = dotnetSharesList.ToArray();
+
+            foreach (var ds in dotnetShares)
+            {
+                if (!Directory.Exists(ds.Item1)) continue;
+                try
+                {
+                    var byMajor = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (string verDir in Directory.GetDirectories(ds.Item1))
+                    {
+                        string verName = Path.GetFileName(verDir);
+                        Match m = Regex.Match(verName ?? "", @"^(\d+)\.(\d+)\.");
+                        if (!m.Success) continue;
+                        string maj = m.Groups[1].Value;
+                        string min = m.Groups[2].Value;
+                        bool isPre = Regex.IsMatch(verName, @"preview|rc|alpha|beta", RegexOptions.IgnoreCase);
+                        string trackKey = (maj == "3" && min == "1") ? "3_1" : (isPre ? "Preview" : maj);
+                        string existing;
+                        if (!byMajor.TryGetValue(trackKey, out existing) || CompareAppVersions(verName, existing) > 0)
+                        {
+                            byMajor[trackKey] = verName;
+                        }
+                    }
+
+                    foreach (var kv in byMajor)
+                    {
+                        string tk = kv.Key;
+                        if (ds.Item2 == "x86" && tk != "6" && tk != "7" && tk != "8") continue;
+                        string bestV = kv.Value;
+                        string archSuffix = ds.Item2 == "x86" ? ".x86" : "";
+                        string archLabel = ds.Item2 == "x86" ? " (x86)" : " (x64)";
+                        string wingetId = "Microsoft.DotNet.DesktopRuntime." + tk + archSuffix;
+                        string disp = "Microsoft Windows Desktop Runtime - " + bestV + archLabel;
+                        items.Add(new CatalogSensorItem
+                        {
+                            Name = disp,
+                            ID = wingetId,
+                            Version = bestV,
+                            Available = "",
+                            HasUpdate = false,
+                            CleanName = CleanCatalogAppName(disp),
+                            Source = "local"
+                        });
+                    }
+                }
+                catch {}
+            }
+
+            var pathDirs = new List<string>();
+            var seenDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string rawPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+            foreach (string p in rawPath.Split(';'))
+            {
+                string trimmed = p.Trim().Trim('\"');
+                if (!string.IsNullOrEmpty(trimmed) && seenDirs.Add(trimmed) && Directory.Exists(trimmed))
+                {
+                    pathDirs.Add(trimmed);
+                }
+            }
+
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string[] extraDirs = new string[]
+            {
+                Path.Combine(localAppData, @"agy\bin"),
+                Path.Combine(userProfile, @".gemini\bin"),
+                Path.Combine(userProfile, @".local\bin"),
+                Path.Combine(userProfile, @".cargo\bin"),
+                Path.Combine(userProfile, @"scoop\shims"),
+                Path.Combine(appData, "npm"),
+                Path.Combine(localAppData, @"Programs\Ollama"),
+                Path.Combine(localAppData, @"Microsoft\WinGet\Links"),
+                Path.Combine(localAppData, @"Programs\Python\Python313\Scripts"),
+                Path.Combine(localAppData, @"Programs\Python\Python312\Scripts"),
+                Path.Combine(userProfile, @".bun\bin"),
+                Path.Combine(localAppData, @"pnpm"),
+                Path.Combine(localAppData, @"Programs\oh-my-posh\bin"),
+                @"C:\Program Files\Neovim\bin",
+                Path.Combine(localAppData, @"Android\Sdk\platform-tools")
+            };
+            foreach (string ed in extraDirs)
+            {
+                if (!string.IsNullOrEmpty(ed) && seenDirs.Add(ed) && Directory.Exists(ed))
+                {
+                    pathDirs.Add(ed);
+                }
+            }
+
+            var cliProbes = new Tuple<string, string, string, string>[]
+            {
+                Tuple.Create("agy.exe", "Google.AntigravityCLI", "Antigravity CLI", "agy"),
+                Tuple.Create("uv.exe", "astral-sh.uv", "uv", "uv"),
+                Tuple.Create("yt-dlp.exe", "yt-dlp.yt-dlp", "yt-dlp", "yt-dlp"),
+                Tuple.Create("ffmpeg.exe", "Gyan.FFmpeg", "FFmpeg", "ffmpeg"),
+                Tuple.Create("aria2c.exe", "aria2.aria2", "aria2", "aria2"),
+                Tuple.Create("rclone.exe", "Rclone.Rclone", "Rclone", "rclone"),
+                Tuple.Create("bun.exe", "Oven-sh.Bun", "Bun", "bun"),
+                Tuple.Create("pnpm.exe", "pnpm.pnpm", "pnpm", "pnpm"),
+                Tuple.Create("pnpm.cmd", "pnpm.pnpm", "pnpm", "pnpm"),
+                Tuple.Create("yarn.cmd", "Yarn.Yarn", "Yarn", "yarn"),
+                Tuple.Create("fastfetch.exe", "Fastfetch-cli.Fastfetch", "Fastfetch", "fastfetch"),
+                Tuple.Create("oh-my-posh.exe", "JanDeDobbeleer.OhMyPosh", "Oh My Posh", "oh-my-posh"),
+                Tuple.Create("nvim.exe", "Neovim.Neovim", "Neovim", "nvim"),
+                Tuple.Create("adb.exe", "Google.PlatformTools", "Android Platform Tools", "adb"),
+                Tuple.Create("gitleaks.exe", "Gitleaks.Gitleaks", "Gitleaks", "gitleaks")
+            };
+
+            var seenCliIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var probe in cliProbes)
+            {
+                if (seenCliIds.Contains(probe.Item2)) continue;
+                string foundExe = null;
+                foreach (string pd in pathDirs)
+                {
+                    string cand = Path.Combine(pd, probe.Item1);
+                    if (File.Exists(cand))
+                    {
+                        foundExe = cand;
+                        break;
+                    }
+                }
+                if (foundExe != null)
+                {
+                    seenCliIds.Add(probe.Item2);
+                    string exeVer = ResolveCliExactVersion(foundExe, probe.Item4);
+                    items.Add(new CatalogSensorItem
+                    {
+                        Name = probe.Item3,
+                        ID = probe.Item2,
+                        Version = exeVer,
+                        Available = "",
+                        HasUpdate = false,
+                        CleanName = CleanCatalogAppName(probe.Item3),
+                        Source = "local"
+                    });
+                }
+            }
+
+            string[] legacyPaths = new string[]
+            {
+                Path.Combine(appData, @".tlauncher\legacy\Minecraft\TL.exe"),
+                Path.Combine(appData, @".tlauncher\legacy"),
+                Path.Combine(appData, @".minecraft\LLauncher.exe"),
+                Path.Combine(appData, @"Microsoft\Windows\Start Menu\Programs\Legacy Launcher.lnk")
+            };
+            foreach (string lp in legacyPaths)
+            {
+                if (!string.IsNullOrEmpty(lp) && (File.Exists(lp) || Directory.Exists(lp)))
+                {
+                    items.Add(new CatalogSensorItem
+                    {
+                        Name = "Legacy Launcher",
+                        ID = "LegacyLauncher.LegacyLauncher",
+                        Version = "Installed",
+                        Available = "",
+                        HasUpdate = false,
+                        CleanName = "legacylauncher",
+                        Source = "local"
+                    });
+                    break;
+                }
+            }
+
+            return items;
+        }
+
+        private static bool HasValidAuthenticodeCert(string filePath)
+        {
+            object cert = null;
+            try
+            {
+                MethodInfo m = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
+                if (m == null) return false;
+                cert = m.Invoke(null, new object[] { filePath });
+                return cert != null;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                IDisposable disp = cert as IDisposable;
+                if (disp != null)
+                {
+                    try { disp.Dispose(); } catch {}
+                }
+            }
+        }
+
+        private static bool IsReparsePoint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch { return false; }
+        }
+
+        public static bool HasCrackOrPatchIndicators(string installDir)
+        {
+            if (string.IsNullOrWhiteSpace(installDir)) return false;
+            try
+            {
+                if (!Directory.Exists(installDir) || IsReparsePoint(installDir)) return false;
+            }
+            catch { return false; }
+
+            var indicatorFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "steam_emu.ini", "codex.ini", "flt.ini", "goldberg.ini", "tenoke.ini",
+                "rune.ini", "skidrow.ini", "cpy.ini", "rld.ini", "ali213.ini",
+                "3dmgame.ini", "cream_api.ini", "koalageddon.json", "smoke_api.json",
+                "smokeapi.config.json", "patcher.exe", "keygen.exe", "activator.exe",
+                "crack.txt", "readme_crack.txt"
+            };
+
+            var proxyDllNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "version.dll", "winmm.dll", "winhttp.dll", "dsound.dll", "dbghelp.dll",
+                "dinput8.dll", "dxgi.dll", "msimg32.dll", "wtsapi32.dll", "iphlpapi.dll",
+                "uxtheme.dll", "cryptsp.dll", "userenv.dll", "bink2w64.dll",
+                "steam_api64.dll", "steam_api.dll", "galaxy64.dll", "eossdk-win64-shipping.dll"
+            };
+
+            var skipScanDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries", "node_modules"
+            };
+
+            var currentLevel = new List<string> { installDir };
+            for (int depth = 0; depth <= 1; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        bool hasExe = false;
+                        var candidateProxies = new List<string>();
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            string fn = Path.GetFileName(file) ?? "";
+                            if (indicatorFiles.Contains(fn)) return true;
+                            if (fn.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) hasExe = true;
+                            if (proxyDllNames.Contains(fn)) candidateProxies.Add(file);
+                        }
+
+                        if (hasExe && candidateProxies.Count > 0)
+                        {
+                            foreach (var proxyFile in candidateProxies)
+                            {
+                                if (!HasValidAuthenticodeCert(proxyFile)) return true;
+                            }
+                        }
+
+                        if (depth < 1)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                if (IsReparsePoint(sub)) continue;
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipScanDirs.Contains(subName)) continue;
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return false;
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes)
+        {
+            return BackupDirectorySnapshot(sourceDir, backupDir, maxTotalBytes, false);
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes, bool isInstallDir)
+        {
+            if (string.IsNullOrWhiteSpace(sourceDir) || string.IsNullOrWhiteSpace(backupDir))
+                return 0L;
+            try
+            {
+                if (!Directory.Exists(sourceDir) || IsReparsePoint(sourceDir)) return 0L;
+            }
+            catch { return 0L; }
+
+            if (maxTotalBytes <= 0) maxTotalBytes = 104857600L;
+
+            var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab", ".manifest", ".cat", ".mum"
+            };
+            var skipFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "icudtl.dat", "v8_context_snapshot.bin", "snapshot_blob.bin",
+                "chrome_100_percent.pak", "chrome_200_percent.pak", "resources.pak",
+                "package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"
+            };
+            var installAllowExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".ini", ".cfg", ".conf", ".config", ".toml", ".yaml", ".yml",
+                ".lic", ".license", ".key", ".reg", ".db", ".sqlite", ".sqlite3",
+                ".json", ".xml", ".txt", ".dat", ".bin", ".properties", ".prefs"
+            };
+            var skipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries", "node_modules"
+            };
+
+            long totalBytes = 0L;
+            int srcLen = sourceDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { sourceDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string fn = Path.GetFileName(file) ?? "";
+                                if (skipFileNames.Contains(fn)) continue;
+                                if (fn.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.dev.json", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+
+                                string ext = Path.GetExtension(file);
+                                if (!string.IsNullOrEmpty(ext) && skipExts.Contains(ext))
+                                    continue;
+
+                                if (isInstallDir)
+                                {
+                                    if (string.IsNullOrEmpty(ext) || !installAllowExts.Contains(ext))
+                                        continue;
+                                }
+
+                                var fi = new FileInfo(file);
+                                if (fi.Length > 20971520L) continue;
+                                if (totalBytes + fi.Length > maxTotalBytes) continue;
+
+                                string relPath = file.Substring(srcLen).TrimStart('\\');
+                                string destFile = Path.Combine(backupDir, relPath);
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, true);
+                                totalBytes += fi.Length;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                if (IsReparsePoint(sub)) continue;
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipDirs.Contains(subName)) continue;
+                                if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalBytes;
+        }
+
+        public static int RestoreDirectorySnapshot(string backupDir, string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(backupDir) || string.IsNullOrWhiteSpace(targetDir))
+                return 0;
+            try
+            {
+                if (!Directory.Exists(backupDir)) return 0;
+            }
+            catch { return 0; }
+
+            int restoredCount = 0;
+            int bkpLen = backupDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { backupDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string relPath = file.Substring(bkpLen).TrimStart('\\');
+                                string destFile = Path.Combine(targetDir, relPath);
+                                if (File.Exists(destFile)) continue;
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, false);
+                                restoredCount++;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return restoredCount;
+        }
+
+        public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
+        {
+            return Task.Run(delegate() { return ScanCatalogSensors(); });
+        }
+
+        private sealed class AliasPatternPair
+        {
+            public string Raw;
+            public string Clean;
+            public Regex Pattern;
+        }
+
+        private sealed class CompiledTargetMeta
+        {
+            public string ID;
+            public string Name;
+            public string CleanTarget;
+            public List<AliasPatternPair> CleanAliases;
+            public List<AliasPatternPair> AliasEntries;
+            public Regex PatternClean;
+            public List<string> QueryTokens;
+            public bool AllowNoise;
+            public bool IsPrev;
+            public bool IsVcRedist;
+            public bool IsComm;
+            public bool IsPro;
+            public bool IsIde;
+            public bool IsAntigravity;
+            public bool IsCli;
+            public bool IsBt;
+            public bool IsVsc;
+            public bool IsVsAny;
+            public bool IsEtb;
+            public bool IsTemurin;
+            public bool IsOracleJava;
+            public bool IsCorretto;
+            public bool IsJdk;
+            public bool IsJre;
+            public Regex RxReqPy;
+            public Regex RxReqPyVer;
+            public Regex RxReqJava;
+            public Regex RxReqJavaVer;
+            public string ReqDnRaw;
+            public Regex RxReqDnId;
+            public Regex RxReqDnName;
+            public Regex RxReqDnVer;
+            public string ReqYear;
+            public string Arch;
+        }
+
+        private static readonly ConcurrentDictionary<string, CompiledTargetMeta> _metaCache =
+            new ConcurrentDictionary<string, CompiledTargetMeta>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> _matchStopWords = new HashSet<string>(
+            new string[] {
+                "microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server",
+                "edition", "community", "x64", "x86", "arm64", "arp", "msix", "machine", "user",
+                "app", "pro", "free", "jdk", "jre", "lts", "cli", "ide", "gui", "vpn", "bit"
+            }, StringComparer.OrdinalIgnoreCase);
+
+        private static readonly Regex _rxTokSplit = new Regex(@"[^a-zA-Z0-9+]+", RegexOptions.Compiled);
+        private static readonly Regex _rxSyntheticId = new Regex(@"^(ARP|MSIX|LOCAL)\\", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxAllowNoise = new Regex(@"(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseName = new Regex(@"(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseId = new Regex(@"(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxPyLauncher = new Regex(@"^Python Launcher\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordUwp = new Regex(@"\bUWP\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordComm = new Regex(@"\bCommunity\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotComm = new Regex(@"\.Community\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordPro = new Regex(@"\b(Ultimate|Professional)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotPro = new Regex(@"\.(Ultimate|Professional)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordIde = new Regex(@"\bIDE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndIde = new Regex(@"IDE$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordCli = new Regex(@"\bCLI\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndCli = new Regex(@"(\.cli|CLI)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxVscName = new Regex(@"VS Code|Visual Studio Code", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxJavaUpdate = new Regex(@"^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordJdk = new Regex(@"\bJDK\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndJdk = new Regex(@"\.JDK$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordJre = new Regex(@"\bJRE\b|^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxEndJre = new Regex(@"\.(JRE|JavaRuntimeEnvironment)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetPy = new Regex(@"^Python\.Python\.(\d+\.\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetJava = new Regex(@"\.(Temurin|Corretto)\.(\d+)\.", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetDn = new Regex(@"^Microsoft\.DotNet\.DesktopRuntime\.(\d+(?:_\d+)?)(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTargetYear = new Regex(@"^Microsoft\.VCRedist\.(\d{4})\.", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchX64Name = new Regex(@"\(x64\)|\.x64", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchX86Name = new Regex(@"\(x86\)|\.x86", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxArchArmName = new Regex(@"\(arm64\)|\.arm64", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemX64 = new Regex(@"(?<![a-zA-Z0-9])(x64|64-bit)(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemX86 = new Regex(@"(?<![a-zA-Z0-9])(x86|32-bit)(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxItemArm = new Regex(@"(?<![a-zA-Z0-9])arm64(?![a-zA-Z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static CompiledTargetMeta GetOrBuildTargetMeta(CatalogMatchTarget target)
+        {
+            string tId = target.ID ?? "";
+            CompiledTargetMeta cached;
+            if (_metaCache.TryGetValue(tId, out cached)) return cached;
+
+            string tName = target.Name ?? "";
+            string tCat = target.Category ?? "";
+            string cleanTarget = CleanCatalogAppName(tName);
+
+            var cleanAliases = new List<AliasPatternPair>();
+            var aliasEntries = new List<AliasPatternPair>();
+            var queryTokens = new List<string>();
+            var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (cleanTarget.Length >= 4)
+            {
+                string[] toks = _rxTokSplit.Split(cleanTarget);
+                for (int i = 0; i < toks.Length; i++)
+                {
+                    string qt = toks[i];
+                    if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                    {
+                        queryTokens.Add(qt);
+                    }
+                }
+            }
+
+            if (target.Aliases != null)
+            {
+                for (int ai = 0; ai < target.Aliases.Length; ai++)
+                {
+                    string alias = target.Aliases[ai];
+                    if (string.IsNullOrWhiteSpace(alias)) continue;
+                    string cAl = CleanCatalogAppName(alias);
+                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Pattern = null };
+                    cleanAliases.Add(pair);
+                    if (alias.Length >= 4)
+                    {
+                        pair.Pattern = new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(alias) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase);
+                        aliasEntries.Add(pair);
+                        string[] toks = _rxTokSplit.Split(alias);
+                        for (int i = 0; i < toks.Length; i++)
+                        {
+                            string qt = toks[i];
+                            if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                            {
+                                queryTokens.Add(qt);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Regex patternClean = (cleanTarget.Length >= 4)
+                ? new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(cleanTarget) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase)
+                : null;
+
+            Regex rxReqPy = null;
+            Regex rxReqPyVer = null;
+            Match mPy = _rxTargetPy.Match(tId);
+            if (mPy.Success)
+            {
+                string esc = Regex.Escape(mPy.Groups[1].Value);
+                rxReqPy = new Regex(esc, RegexOptions.IgnoreCase);
+                rxReqPyVer = new Regex("^" + esc + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            Regex rxReqJava = null;
+            Regex rxReqJavaVer = null;
+            Match mJava = _rxTargetJava.Match(tId);
+            if (mJava.Success)
+            {
+                string jv = mJava.Groups[2].Value;
+                rxReqJava = new Regex(@"\b" + jv + @"\b", RegexOptions.IgnoreCase);
+                rxReqJavaVer = new Regex("^" + jv + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            string reqDnRaw = "";
+            Regex rxReqDnId = null;
+            Regex rxReqDnName = null;
+            Regex rxReqDnVer = null;
+            Match mDn = _rxTargetDn.Match(tId);
+            if (mDn.Success)
+            {
+                reqDnRaw = mDn.Groups[1].Value;
+                string reqDnEsc = reqDnRaw.Replace("_", @"\.");
+                rxReqDnId = new Regex(@"DesktopRuntime\." + Regex.Escape(reqDnRaw) + @"(\.|$)", RegexOptions.IgnoreCase);
+                rxReqDnName = new Regex(@"\b" + reqDnEsc + @"(\.\d+|\b)", RegexOptions.IgnoreCase);
+                rxReqDnVer = new Regex("^" + reqDnEsc + @"(\.|$)", RegexOptions.IgnoreCase);
+            }
+
+            string reqYear = "";
+            Match mYr = _rxTargetYear.Match(tId);
+            if (mYr.Success) reqYear = mYr.Groups[1].Value;
+
+            string tArch = "";
+            if (_rxArchX64Name.IsMatch(tName) || tId.EndsWith(".x64", StringComparison.OrdinalIgnoreCase)) tArch = "x64";
+            else if (_rxArchX86Name.IsMatch(tName) || tId.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) tArch = "x86";
+            else if (_rxArchArmName.IsMatch(tName) || tId.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) tArch = "arm64";
+            else if (Environment.Is64BitOperatingSystem && string.Equals(tCat, ".NET Runtimes", StringComparison.OrdinalIgnoreCase) && tId.IndexOf("DesktopRuntime", StringComparison.OrdinalIgnoreCase) >= 0) tArch = "x64";
+
+            var meta = new CompiledTargetMeta
+            {
+                ID = tId,
+                Name = tName,
+                CleanTarget = cleanTarget,
+                CleanAliases = cleanAliases,
+                AliasEntries = aliasEntries,
+                PatternClean = patternClean,
+                QueryTokens = queryTokens,
+                AllowNoise = _rxAllowNoise.IsMatch(tName),
+                IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsComm = _rxWordComm.IsMatch(tName) || _rxDotComm.IsMatch(tId),
+                IsPro = _rxWordPro.IsMatch(tName) || _rxDotPro.IsMatch(tId),
+                IsIde = _rxWordIde.IsMatch(tName) || _rxEndIde.IsMatch(tId),
+                IsAntigravity = tId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsCli = _rxWordCli.IsMatch(tName) || _rxEndCli.IsMatch(tId),
+                IsBt = (tName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVsc = (tId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(tName),
+                IsVsAny = tId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsEtb = (tId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsTemurin = tId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsOracleJava = tId.IndexOf("Oracle.Java", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsCorretto = tId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0,
+                IsJdk = _rxWordJdk.IsMatch(tName) || _rxEndJdk.IsMatch(tId),
+                IsJre = _rxWordJre.IsMatch(tName) || _rxEndJre.IsMatch(tId),
+                RxReqPy = rxReqPy,
+                RxReqPyVer = rxReqPyVer,
+                RxReqJava = rxReqJava,
+                RxReqJavaVer = rxReqJavaVer,
+                ReqDnRaw = reqDnRaw,
+                RxReqDnId = rxReqDnId,
+                RxReqDnName = rxReqDnName,
+                RxReqDnVer = rxReqDnVer,
+                ReqYear = reqYear,
+                Arch = tArch
+            };
+
+            _metaCache[tId] = meta;
+            return meta;
+        }
+
+        private static bool IsMatchCompatible(CompiledTargetMeta meta, CatalogSensorItem item)
+        {
+            if (meta == null || item == null) return false;
+            string tId = meta.ID;
+            string iName = item.Name ?? "";
+            string iId = item.ID ?? "";
+            string iVer = item.Version ?? "";
+
+            if (!meta.AllowNoise)
+            {
+                if (_rxNoiseName.IsMatch(iName) || _rxNoiseId.IsMatch(iId)) return false;
+            }
+
+            if (string.Equals(iId, "Python.Launcher", StringComparison.OrdinalIgnoreCase) || _rxPyLauncher.IsMatch(iName))
+            {
+                if (!string.Equals(tId, "Python.Launcher", StringComparison.OrdinalIgnoreCase)) return false;
+            }
+
+            bool iPrev = (iName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsPrev != iPrev && !string.Equals(tId, "Microsoft.PowerToys", StringComparison.OrdinalIgnoreCase)) return false;
+
+            if (meta.IsVcRedist && (_rxWordUwp.IsMatch(iName) || iId.IndexOf("VCLibs", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+
+            if (meta.IsComm || meta.IsPro)
+            {
+                bool iComm = _rxWordComm.IsMatch(iName) || _rxDotComm.IsMatch(iId);
+                bool iPro = _rxWordPro.IsMatch(iName) || _rxDotPro.IsMatch(iId);
+                if ((meta.IsComm && iPro) || (meta.IsPro && iComm)) return false;
+            }
+
+            if (meta.IsAntigravity || iId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                bool iIde = _rxWordIde.IsMatch(iName) || _rxEndIde.IsMatch(iId);
+                if (meta.IsIde != iIde) return false;
+            }
+
+            bool iCli = _rxWordCli.IsMatch(iName) || _rxEndCli.IsMatch(iId);
+            if (meta.IsCli != iCli) return false;
+
+            bool iBt = (iName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsBt != iBt) return false;
+
+            if (meta.IsVsAny || iId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                bool iVsc = (iId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(iName);
+                if (meta.IsVsc != iVsc) return false;
+            }
+
+            bool iEtb = (iId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (iName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (meta.IsEtb != iEtb) return false;
+
+            if (meta.IsTemurin && (iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+            if (meta.IsOracleJava && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+            if (meta.IsCorretto && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+
+            if (meta.IsJdk || meta.IsJre)
+            {
+                bool iJdk = _rxWordJdk.IsMatch(iName) || _rxEndJdk.IsMatch(iId);
+                bool iJre = _rxWordJre.IsMatch(iName) || _rxEndJre.IsMatch(iId);
+                if ((meta.IsJdk && iJre && !iJdk) || (meta.IsJre && iJdk && !iJre)) return false;
+            }
+
+            if (meta.RxReqPy != null)
+            {
+                if (!meta.RxReqPy.IsMatch(iId) && !meta.RxReqPy.IsMatch(iName) && !meta.RxReqPyVer.IsMatch(iVer)) return false;
+            }
+
+            if (meta.RxReqJava != null)
+            {
+                if (!meta.RxReqJava.IsMatch(iId) && !meta.RxReqJava.IsMatch(iName) && !meta.RxReqJavaVer.IsMatch(iVer)) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.ReqDnRaw))
+            {
+                if (iId.IndexOf("DesktopRuntime", StringComparison.OrdinalIgnoreCase) < 0 && iName.IndexOf("Desktop", StringComparison.OrdinalIgnoreCase) < 0) return false;
+                if (!meta.RxReqDnId.IsMatch(iId) && !meta.RxReqDnName.IsMatch(iName) && !meta.RxReqDnVer.IsMatch(iVer)) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.ReqYear))
+            {
+                if (iId.IndexOf(meta.ReqYear, StringComparison.OrdinalIgnoreCase) < 0 && iName.IndexOf(meta.ReqYear, StringComparison.OrdinalIgnoreCase) < 0) return false;
+            }
+
+            if (!string.IsNullOrEmpty(meta.Arch))
+            {
+                string idForArch = _rxSyntheticId.IsMatch(iId) ? "" : iId;
+                string iArch = "";
+                if (_rxItemX64.IsMatch(iName) || idForArch.EndsWith(".x64", StringComparison.OrdinalIgnoreCase)) iArch = "x64";
+                else if (_rxItemX86.IsMatch(iName) || idForArch.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) iArch = "x86";
+                else if (_rxItemArm.IsMatch(iName) || idForArch.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) iArch = "arm64";
+                if (!string.IsNullOrEmpty(iArch) && !string.Equals(iArch, meta.Arch, StringComparison.OrdinalIgnoreCase)) return false;
+            }
+
+            return true;
+        }
+
+        private static void SetPreferredEntry(Dictionary<string, CatalogSensorItem> map, string key, CatalogSensorItem cand)
+        {
+            if (string.IsNullOrWhiteSpace(key) || cand == null) return;
+            CatalogSensorItem cur;
+            if (!map.TryGetValue(key, out cur))
+            {
+                map[key] = cand;
+                return;
+            }
+            bool curLocal = string.Equals(cur.Source, "local", StringComparison.OrdinalIgnoreCase);
+            bool candLocal = string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase);
+            if (curLocal && !candLocal) { map[key] = cand; return; }
+            if (!curLocal && candLocal) return;
+
+            bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
+            bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
+            if (curSyn && !candSyn) { map[key] = cand; return; }
+            if (!curSyn && candSyn) return;
+
+            int verCmp = CompareAppVersions(cand.Version, cur.Version);
+            string bestVer = (verCmp > 0 || string.IsNullOrWhiteSpace(cur.Version)) ? cand.Version : cur.Version;
+            int availCmp = CompareAppVersions(cand.Available, cur.Available);
+            string bestAvail = (availCmp > 0) ? cand.Available : cur.Available;
+            bool mergedUpd = TestAppUpdateGenuine(bestVer, bestAvail);
+            if (!mergedUpd) bestAvail = "";
+            bool useCand = (!cur.HasUpdate && cand.HasUpdate) || (verCmp > 0);
+            CatalogSensorItem baseObj = useCand ? cand : cur;
+            map[key] = new CatalogSensorItem
+            {
+                Name = baseObj.Name,
+                ID = baseObj.ID,
+                Version = bestVer,
+                Available = bestAvail,
+                HasUpdate = mergedUpd,
+                CleanName = baseObj.CleanName,
+                Source = baseObj.Source
+            };
+        }
+
+        public static CatalogSensorItem[] MatchCatalogApps(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
+        {
+            if (targets == null || targets.Length == 0) return new CatalogSensorItem[0];
+            var results = new CatalogSensorItem[targets.Length];
+            if (installedItems == null || installedItems.Length == 0) return results;
+
+            var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < installedItems.Length; i++)
+            {
+                CatalogSensorItem it = installedItems[i];
+                if (it == null) continue;
+                string itId = it.ID ?? "";
+                string itName = it.Name ?? "";
+                string itClean = it.CleanName ?? "";
+
+                if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
+                if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
+                if (itClean.Length >= 3) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
+                }
+
+                string rawText = itId + " " + itName + " " + itClean;
+                string[] toks = _rxTokSplit.Split(rawText);
+                var seenTok = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int ti = 0; ti < toks.Length; ti++)
+                {
+                    string tk = toks[ti];
+                    if (tk.Length >= 3 && seenTok.Add(tk))
+                    {
+                        List<CatalogSensorItem> bucket;
+                        if (!tokenIndex.TryGetValue(tk, out bucket))
+                        {
+                            bucket = new List<CatalogSensorItem>();
+                            tokenIndex[tk] = bucket;
+                        }
+                        bucket.Add(it);
+                    }
+                }
+            }
+
+            var lookupCache = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            for (int tIdx = 0; tIdx < targets.Length; tIdx++)
+            {
+                CatalogMatchTarget target = targets[tIdx];
+                if (target == null) continue;
+                string targetId = target.ID ?? "";
+                CatalogSensorItem cachedRes;
+                if (lookupCache.TryGetValue(targetId, out cachedRes))
+                {
+                    results[tIdx] = cachedRes;
+                    continue;
+                }
+
+                CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
+                CatalogSensorItem matched = null;
+                CatalogSensorItem cand;
+
+                if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+                if (matched == null)
+                {
+                    for (int a = 0; a < meta.CleanAliases.Count; a++)
+                    {
+                        if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null && !string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+                if (matched == null)
+                {
+                    for (int a = 0; a < meta.CleanAliases.Count; a++)
+                    {
+                        AliasPatternPair ap = meta.CleanAliases[a];
+                        if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                        if (ap.Clean.Length >= 3 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
+                        {
+                            matched = cand;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null && meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    matched = cand;
+                }
+
+                if (matched == null && meta.QueryTokens.Count > 0)
+                {
+                    var candidatePool = new List<CatalogSensorItem>();
+                    var seenCand = new HashSet<CatalogSensorItem>();
+                    for (int q = 0; q < meta.QueryTokens.Count; q++)
+                    {
+                        List<CatalogSensorItem> bucket;
+                        if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
+                        {
+                            for (int bi = 0; bi < bucket.Count; bi++)
+                            {
+                                if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
+                            }
+                        }
+                    }
+
+                    CatalogSensorItem bestCand = null;
+                    int bestScore = 0;
+                    for (int ci = 0; ci < candidatePool.Count; ci++)
+                    {
+                        CatalogSensorItem item = candidatePool[ci];
+                        string iId = item.ID ?? "";
+                        string iName = item.Name ?? "";
+                        string iClean = item.CleanName ?? "";
+                        int score = 0;
+
+                        for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
+                        {
+                            AliasPatternPair ae = meta.AliasEntries[aeIdx];
+                            if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                            {
+                                score = 780;
+                                break;
+                            }
+                            if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                            {
+                                int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
+                                int cScore = 700 + lenRatio;
+                                if (cScore > score) score = cScore;
+                            }
+                        }
+
+                        if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                        {
+                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                            score = 650 + lenRatio;
+                        }
+
+                        if (score > 0)
+                        {
+                            if (item.HasUpdate) score += 15;
+                            if (!_rxSyntheticId.IsMatch(iId)) score += 10;
+                            if (score > bestScore && IsMatchCompatible(meta, item))
+                            {
+                                bestScore = score;
+                                bestCand = item;
+                            }
+                        }
+                    }
+                    matched = bestCand;
+                }
+
+                lookupCache[targetId] = matched;
+                results[tIdx] = matched;
+            }
+
+            return results;
+        }
+
+        public static Task<CatalogSensorItem[]> MatchCatalogAppsAsync(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
+        {
+            return Task.Run(delegate() { return MatchCatalogApps(targets, installedItems); });
+        }
+    }
+}
+'@
+        Import-CachedCSharpType -TypeName "DuckUtil.AppCatalogEngine" -SourceCode $appCatalogCs -Prefix "DuckApp" -RequiredMethod "ScanCatalogSensorsAsync"
+    } catch {}
+}
+
+if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+    try {
+        $deepUninstCs = @'
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+
+namespace DuckUtil
+{
+    public class ForceStopReport
+    {
+        public int KilledCount { get; set; }
+        public int ServicesStoppedCount { get; set; }
+        public int TasksRemovedCount { get; set; }
+        public int AccessDeniedCount { get; set; }
+        public int ClosedHandlesCount { get; set; }
+        public string[] KilledNames { get; set; }
+        public string[] AccessDeniedNames { get; set; }
+        public string[] SkippedSystemLockers { get; set; }
+        public string[] ClosedHandleNames { get; set; }
+
+        public ForceStopReport()
+        {
+            KilledNames = new string[0];
+            AccessDeniedNames = new string[0];
+            SkippedSystemLockers = new string[0];
+            ClosedHandleNames = new string[0];
+        }
+    }
+
+    public class ForceDeleteResult
+    {
+        public bool Deleted { get; set; }
+        public int RebootScheduledCount { get; set; }
+    }
+
+    public class ServiceScanEntry
+    {
+        public string ServiceName { get; set; }
+        public string DisplayName { get; set; }
+        public string ImagePath { get; set; }
+        public string ResolvedImagePath { get; set; }
+        public int ServiceType { get; set; }
+        public bool IsKernelDriver { get; set; }
+    }
+
+    public class HollowDirResult
+    {
+        public string Path { get; set; }
+        public string AppName { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+    public class DeadShortcutResult
+    {
+        public string LnkPath { get; set; }
+        public string AppName { get; set; }
+    }
+
+    public class ServicesAndRogueResult
+    {
+        public List<ServiceScanEntry> AllServices { get; set; }
+        public List<ServiceScanEntry> RogueDrivers { get; set; }
+    }
+    public class InstalledAppInfo
+    {
+        public string Id { get; set; }
+        public string DisplayName { get; set; }
+        public string DisplayVersion { get; set; }
+        public string Publisher { get; set; }
+        public string InstallDate { get; set; }
+        public string InstallLocation { get; set; }
+        public string DataLocation { get; set; }
+        public string DisplayIcon { get; set; }
+        public string IconSourcePath { get; set; }
+        public string UninstallString { get; set; }
+        public string QuietUninstallString { get; set; }
+        public string RegistryPath { get; set; }
+        public string RawRegPath { get; set; }
+        public string Scope { get; set; }
+        public long SizeBytes { get; set; }
+        public bool IsBrokenOrphan { get; set; }
+        public string TargetFolder { get; set; }
+        public string SearchIndex { get; set; }
+    }
+
+    public struct ScanTarget
+    {
+        public RegistryHive Hive;
+        public RegistryView View;
+        public string SubKey;
+        public string Scope;
+        public ScanTarget(RegistryHive h, RegistryView v, string k, string s)
+        {
+            Hive = h;
+            View = v;
+            SubKey = k;
+            Scope = s;
+        }
+    }
+
+    public static class DeepUninstallerEngine
+    {
+        private const int MOVEFILE_DELAY_UNTIL_REBOOT = 0x00000004;
+        private const int ERROR_MORE_DATA = 234;
+        private const int FO_DELETE = 0x0003;
+        private const ushort FOF_SILENT = 0x0004;
+        private const ushort FOF_NOCONFIRMATION = 0x0010;
+        private const ushort FOF_ALLOWUNDO = 0x0040;
+        private const ushort FOF_NOERRORUI = 0x0400;
+        private const int SystemExtendedHandleInformation = 64;
+        private const int STATUS_INFO_LENGTH_MISMATCH = unchecked((int)0xC0000004);
+        private const uint PROCESS_DUP_HANDLE = 0x0040;
+        private const uint PROCESS_QUERY_INFORMATION = 0x0400;
+        private const uint PROCESS_VM_READ = 0x0010;
+        private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        private const uint DUPLICATE_CLOSE_SOURCE = 0x00000001;
+        private const uint DUPLICATE_SAME_ACCESS = 0x00000002;
+        private const uint FILE_TYPE_DISK = 1;
+        private const uint MEM_COMMIT = 0x1000;
+        private const uint MEM_MAPPED = 0x40000;
+        private const uint MEM_IMAGE = 0x1000000;
+        private const int SE_FILE_OBJECT = 1;
+        private const uint OWNER_SECURITY_INFORMATION = 0x00000001;
+        private const uint DACL_SECURITY_INFORMATION = 0x00000004;
+        private const uint PROTECTED_DACL_SECURITY_INFORMATION = 0x80000000;
+        private const uint GENERIC_ALL = 0x10000000;
+        private const uint SET_ACCESS = 2;
+        private const uint NO_INHERITANCE = 0;
+        private const uint SUB_CONTAINERS_AND_OBJECTS_INHERIT = 3;
+        private const uint TRUSTEE_IS_SID = 0;
+        private const uint TRUSTEE_IS_GROUP = 2;
+        private const uint TRUSTEE_IS_USER = 1;
+        private const uint SC_MANAGER_CONNECT = 0x0001;
+        private const uint SC_MANAGER_ENUMERATE_SERVICE = 0x0004;
+        private const uint SERVICE_QUERY_STATUS = 0x0004;
+        private const uint SERVICE_ENUMERATE_DEPENDENTS = 0x0008;
+        private const uint SERVICE_STOP = 0x0020;
+        private const uint DELETE_ACCESS = 0x00010000;
+        private const uint LIST_MODULES_ALL = 0x03;
+        private const uint SERVICE_ACTIVE = 0x00000001;
+        private const uint SERVICE_CONTROL_STOP = 0x00000001;
+        private const uint SERVICE_STOPPED = 0x00000001;
+        private const uint TOKEN_DUPLICATE = 0x0002;
+        private const uint TOKEN_IMPERSONATE = 0x0004;
+        private const uint TOKEN_QUERY = 0x0008;
+        private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        private const uint MAXIMUM_ALLOWED = 0x02000000;
+        private const int SecurityImpersonation = 2;
+        private const int TokenImpersonation = 2;
+        private static readonly object _privLock = new object();
+        private static bool _privilegesEnabled = false;
+        private static readonly object _sysinternalsLock = new object();
+        private static bool _sysinternalsChecked = false;
+        private static string _cachedSysinternalsHandleExe = "";
+
+        public delegate void ElevatedAction();
+        public delegate int ElevationPidProvider(bool wantInstaller);
+        public static ElevationPidProvider CustomElevationPidProvider;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct RM_UNIQUE_PROCESS
+        {
+            public int dwProcessId;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ProcessStartTime;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct RM_PROCESS_INFO
+        {
+            public RM_UNIQUE_PROCESS Process;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            public string strAppName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+            public string strServiceShortName;
+            public int ApplicationType;
+            public uint AppStatus;
+            public uint TSSessionId;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool bRestartable;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]
+        private struct SHFILEOPSTRUCT_X86
+        {
+            public IntPtr hwnd;
+            public uint wFunc;
+            public string pFrom;
+            public string pTo;
+            public ushort fFlags;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fAnyOperationsAborted;
+            public IntPtr hNameMappings;
+            public string lpszProgressTitle;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct SHFILEOPSTRUCT_X64
+        {
+            public IntPtr hwnd;
+            public uint wFunc;
+            public string pFrom;
+            public string pTo;
+            public ushort fFlags;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fAnyOperationsAborted;
+            public IntPtr hNameMappings;
+            public string lpszProgressTitle;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SID_IDENTIFIER_AUTHORITY
+        {
+            public byte Value0;
+            public byte Value1;
+            public byte Value2;
+            public byte Value3;
+            public byte Value4;
+            public byte Value5;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TRUSTEE
+        {
+            public IntPtr pMultipleTrustee;
+            public uint MultipleTrusteeOperation;
+            public uint TrusteeForm;
+            public uint TrusteeType;
+            public IntPtr ptstrName;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct EXPLICIT_ACCESS
+        {
+            public uint grfAccessPermissions;
+            public uint grfAccessMode;
+            public uint grfInheritance;
+            public TRUSTEE Trustee;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        private struct TOKEN_PRIVILEGES_1
+        {
+            public uint PrivilegeCount;
+            public long Luid;
+            public uint Attributes;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORY_BASIC_INFORMATION_X64
+        {
+            public IntPtr BaseAddress;
+            public IntPtr AllocationBase;
+            public uint AllocationProtect;
+            public ushort PartitionId;
+            public IntPtr RegionSize;
+            public uint State;
+            public uint Protect;
+            public uint Type;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORY_BASIC_INFORMATION_X86
+        {
+            public IntPtr BaseAddress;
+            public IntPtr AllocationBase;
+            public uint AllocationProtect;
+            public IntPtr RegionSize;
+            public uint State;
+            public uint Protect;
+            public uint Type;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SERVICE_STATUS
+        {
+            public uint dwServiceType;
+            public uint dwCurrentState;
+            public uint dwControlsAccepted;
+            public uint dwWin32ExitCode;
+            public uint dwServiceSpecificExitCode;
+            public uint dwCheckPoint;
+            public uint dwWaitHint;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct ENUM_SERVICE_STATUS
+        {
+            public IntPtr lpServiceName;
+            public IntPtr lpDisplayName;
+            public SERVICE_STATUS ServiceStatus;
+        }
+
+        private class MatchedRemoteHandle
+        {
+            public IntPtr RemoteHandle;
+            public string DosPath;
+            public uint GrantedAccess;
+        }
+
+        private class HandleWorkerState
+        {
+            public AutoResetEvent WorkEv = new AutoResetEvent(false);
+            public AutoResetEvent DoneEv = new AutoResetEvent(false);
+            public volatile IntPtr PendingHandle = IntPtr.Zero;
+            public volatile string PendingPath = null;
+            public volatile bool StopRequested = false;
+            public volatile uint ThreadId = 0;
+            public IntPtr ThreadHandle = IntPtr.Zero;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_STATUS_BLOCK
+        {
+            public IntPtr Status;
+            public IntPtr Information;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FILE_DISPOSITION_INFO_EX
+        {
+            public uint Flags;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, int dwFlags);
+
+        [DllImport("ntdll.dll", SetLastError = true)]
+        private static extern int NtSuspendProcess(IntPtr processHandle);
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtQuerySystemInformation(int SystemInformationClass, IntPtr SystemInformation, int SystemInformationLength, out int ReturnLength);
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtSetInformationFile(IntPtr FileHandle, out IO_STATUS_BLOCK IoStatusBlock, ref FILE_DISPOSITION_INFO_EX FileInformation, uint Length, int FileInformationClass);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateFileW(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle, uint dwDesiredAccess, bool bInheritHandle, uint dwOptions);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern uint GetFileType(IntPtr hFile);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetFinalPathNameByHandleW(IntPtr hFile, System.Text.StringBuilder lpszFilePath, uint cchFilePath, uint dwFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenThread(uint dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CancelSynchronousIo(IntPtr hThread);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint QueryDosDeviceW(string lpDeviceName, System.Text.StringBuilder lpTargetPath, uint ucchMax);
+
+        [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx", SetLastError = true)]
+        private static extern IntPtr VirtualQueryEx64(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION_X64 lpBuffer, IntPtr dwLength);
+
+        [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx", SetLastError = true)]
+        private static extern IntPtr VirtualQueryEx86(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION_X86 lpBuffer, IntPtr dwLength);
+
+        [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetMappedFileNameW(IntPtr hProcess, IntPtr lpv, System.Text.StringBuilder lpFilename, uint nSize);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool QueryFullProcessImageNameW(IntPtr hProcess, uint dwFlags, System.Text.StringBuilder lpExeName, ref uint lpdwSize);
+
+        [DllImport("psapi.dll", SetLastError = true)]
+        private static extern bool EnumProcessModulesEx(IntPtr hProcess, [Out] IntPtr[] lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
+
+        [DllImport("psapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetModuleFileNameExW(IntPtr hProcess, IntPtr hModule, System.Text.StringBuilder lpFilename, uint nSize);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool LookupPrivilegeValueW(string lpSystemName, string lpName, out long lpLuid);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref TOKEN_PRIVILEGES_1 NewState, uint BufferLength, IntPtr PreviousState, IntPtr ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool GetTokenInformation(IntPtr TokenHandle, int TokenInformationClass, IntPtr TokenInformation, uint TokenInformationLength, out uint ReturnLength);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool AllocateAndInitializeSid(
+            ref SID_IDENTIFIER_AUTHORITY pIdentifierAuthority,
+            byte nSubAuthorityCount,
+            uint nSubAuthority0, uint nSubAuthority1,
+            uint nSubAuthority2, uint nSubAuthority3,
+            uint nSubAuthority4, uint nSubAuthority5,
+            uint nSubAuthority6, uint nSubAuthority7,
+            out IntPtr pSid);
+
+        [DllImport("advapi32.dll")]
+        private static extern IntPtr FreeSid(IntPtr pSid);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        private static extern uint SetEntriesInAclW(uint cCountOfExplicitEntries, ref EXPLICIT_ACCESS pListOfExplicitEntries, IntPtr OldAcl, out IntPtr NewAcl);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+        private static extern uint SetNamedSecurityInfoW(string pObjectName, int ObjectType, uint SecurityInfo, IntPtr psidOwner, IntPtr psidGroup, IntPtr pDacl, IntPtr pSacl);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr OpenSCManagerW(string lpMachineName, string lpDatabaseName, uint dwDesiredAccess);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr OpenServiceW(IntPtr hSCManager, string lpServiceName, uint dwDesiredAccess);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool EnumDependentServicesW(IntPtr hService, uint dwServiceState, IntPtr lpServices, uint cbBufSize, out uint pcbBytesNeeded, out uint lpServicesReturned);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool ControlService(IntPtr hService, uint dwControl, out SERVICE_STATUS lpServiceStatus);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool QueryServiceStatus(IntPtr hService, out SERVICE_STATUS lpServiceStatus);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool DeleteService(IntPtr hService);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool CloseServiceHandle(IntPtr hSCObject);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool DuplicateTokenEx(
+            IntPtr hExistingToken,
+            uint dwDesiredAccess,
+            IntPtr lpTokenAttributes,
+            int ImpersonationLevel,
+            int TokenType,
+            out IntPtr phNewToken);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool ImpersonateLoggedOnUser(IntPtr hToken);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        private static extern bool RevertToSelf();
+
+        [DllImport("fltlib.dll", CharSet = CharSet.Unicode)]
+        private static extern int FilterDetach(string lpFilterName, string lpVolumeName, string lpInstanceName);
+
+        [DllImport("fltlib.dll", CharSet = CharSet.Unicode)]
+        private static extern int FilterUnload(string lpFilterName);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        private static extern int RmStartSession(out uint pSessionHandle, int dwSessionFlags, string strSessionKey);
+
+        [DllImport("rstrtmgr.dll")]
+        private static extern int RmEndSession(uint pSessionHandle);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        private static extern int RmRegisterResources(uint pSessionHandle, uint nFiles, string[] rgsFilenames, uint nApplications, [In] RM_UNIQUE_PROCESS[] rgApplications, uint nServices, string[] rgsServiceNames);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        private static extern int RmGetList(uint dwSessionHandle, out uint pnProcInfoNeeded, ref uint pnProcInfo, [In, Out] RM_PROCESS_INFO[] rgAffectedApps, ref uint lpdwRebootReasons);
+
+        [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+        private static extern int SHFileOperationX86(ref SHFILEOPSTRUCT_X86 lpFileOp);
+
+        [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
+        private static extern int SHFileOperationX64(ref SHFILEOPSTRUCT_X64 lpFileOp);
+        private static Dictionary<string, string> _cachedDirIndex;
+        private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
+        private static readonly object _dirIndexLock = new object();
+        private static readonly Regex _ignoredAppxRegex = new Regex(
+            @"^(Microsoft\.Windows\.|MicrosoftWindows\.|Windows\.|Microsoft\.UI\.Xaml|Microsoft\.VCLibs|Microsoft\.NET\.Native|Microsoft\.WinAppRuntime|Microsoft\.WindowsAppRuntime|MicrosoftCorporationII\.WinAppRuntime|Microsoft\.Services\.Store|Microsoft\.AAD|Microsoft\.AccountsControl|Microsoft\.AsyncTextService|Microsoft\.BioEnrollment|Microsoft\.CredDialogHost|Microsoft\.ECApp|Microsoft\.LockApp|Microsoft\.Win32WebViewHost|Microsoft\.XboxGame|NcsiUwpApp|Microsoft\.Winget\.|Microsoft\.Ink\.|Microsoft\.LanguageExperiencePack|Microsoft\.DirectXRuntime|Microsoft\.AV1VideoExtension|Microsoft\.HEIFImageExtension|Microsoft\.HEVCVideoExtension|Microsoft\.MPEG2VideoExtension|Microsoft\.RawImageExtension|Microsoft\.VP9VideoExtensions|Microsoft\.WebMediaExtensions|Microsoft\.WebpImageExtension|Microsoft\.SecHealthUI|Microsoft\.StorePurchaseApp|Microsoft\.WindowsStore|Microsoft\.DesktopAppInstaller|Microsoft\.Getstarted|Microsoft\.People|Microsoft\.Paint|Microsoft\.WindowsCalculator|Microsoft\.WindowsCamera|Microsoft\.WindowsMaps|Microsoft\.WindowsNotepad|Microsoft\.YourPhone|Microsoft\.ZuneVideo|microsoft\.windowscommunicationsapps|Microsoft\.549981C3F5F10|Microsoft\.6365217CE6EB4|Microsoft\.CommandPalette|Microsoft\.MicrosoftStickyNotes|Microsoft\.Office\.|Microsoft\.OfficePushNotificationUtility|Microsoft\.OneDriveSync|Microsoft\.MicrosoftEdge|Microsoft\.PowerToys\.|NotepadPlusPlus_|aimgr_|1527c705-|c5e2524a-|E2A4F912-|F46D4000-)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
+
+        private static Dictionary<string, string> BuildInstallDirectoryIndex()
+        {
+            lock (_dirIndexLock)
+            {
+                if (_cachedDirIndex != null && (DateTime.UtcNow - _dirIndexBuiltAt).TotalSeconds < 20)
+                {
+                    return _cachedDirIndex;
+                }
+
+                var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                RegistryHive[] hives = new RegistryHive[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
+                foreach (var hive in hives)
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                        using (var appPaths = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths"))
+                        {
+                            if (appPaths != null)
+                            {
+                                foreach (string sub in appPaths.GetSubKeyNames())
+                                {
+                                    try
+                                    {
+                                        using (var sk = appPaths.OpenSubKey(sub))
+                                        {
+                                            if (sk == null) continue;
+                                            string defVal = CleanIconFilePath(sk.GetValue("") as string);
+                                            string pathVal = (sk.GetValue("Path") as string ?? "").Trim().Trim('\"');
+                                            string dir = "";
+                                            if (!string.IsNullOrEmpty(defVal) && File.Exists(defVal))
+                                            {
+                                                dir = Path.GetDirectoryName(defVal);
+                                            }
+                                            else if (!string.IsNullOrEmpty(pathVal) && Directory.Exists(pathVal))
+                                            {
+                                                dir = pathVal;
+                                            }
+                                            if (!string.IsNullOrEmpty(dir) && dir.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) < 0)
+                                            {
+                                                string exeKey = Path.GetFileNameWithoutExtension(sub).ToLowerInvariant();
+                                                if (!string.IsNullOrEmpty(exeKey) && !index.ContainsKey(exeKey))
+                                                {
+                                                    index[exeKey] = dir.TrimEnd('\\');
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                var roots = new List<string>();
+                string pf64 = Environment.GetEnvironmentVariable("ProgramW6432");
+                string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                string pf   = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrEmpty(pf64)) roots.Add(pf64);
+                if (!string.IsNullOrEmpty(pf) && !roots.Contains(pf)) roots.Add(pf);
+                if (!string.IsNullOrEmpty(pf86)) roots.Add(pf86);
+                if (!string.IsNullOrEmpty(localApp))
+                {
+                    roots.Add(Path.Combine(localApp, "Programs"));
+                    roots.Add(localApp);
+                }
+
+                foreach (string root in roots)
+                {
+                    if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) continue;
+                    bool isRawLocal = string.Equals(root, localApp, StringComparison.OrdinalIgnoreCase);
+                    try
+                    {
+                        foreach (string dir in Directory.GetDirectories(root))
+                        {
+                            string folderName = Path.GetFileName(dir);
+                            if (string.IsNullOrEmpty(folderName)) continue;
+                            if (folderName.Equals("WindowsApps", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Package Cache", StringComparison.OrdinalIgnoreCase) ||
+                                folderName.Equals("Common Files", StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            string norm = NormalizeLookupToken(folderName);
+                            if (norm.Length >= 3 && !index.ContainsKey(norm))
+                            {
+                                index[norm] = dir;
+                            }
+
+                            if (!isRawLocal)
+                            {
+                                try
+                                {
+                                    foreach (string subDir in Directory.GetDirectories(dir))
+                                    {
+                                        string subName = Path.GetFileName(subDir);
+                                        if (string.IsNullOrEmpty(subName)) continue;
+                                        string normSub = NormalizeLookupToken(subName);
+                                        if (normSub.Length >= 4 && !index.ContainsKey(normSub))
+                                        {
+                                            index[normSub] = subDir;
+                                        }
+                                        string normCombined = NormalizeLookupToken(folderName + subName);
+                                        if (normCombined.Length >= 4 && !index.ContainsKey(normCombined))
+                                        {
+                                            index[normCombined] = subDir;
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                _cachedDirIndex = index;
+                _dirIndexBuiltAt = DateTime.UtcNow;
+                return index;
+            }
+        }
+
+        private static string NormalizeLookupToken(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                {
+                    sb.Append(c);
+                }
+                else if (c >= 'A' && c <= 'Z')
+                {
+                    sb.Append((char)(c + 32));
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static string CleanDisplayNameForDedup(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            string c = Regex.Replace(name, @"\((?!x64|x86|arm64).*?\)", "", RegexOptions.IgnoreCase).Replace("(", "").Replace(")", "").Trim().ToLowerInvariant();
+            c = Regex.Replace(c, @"\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*", "", RegexOptions.IgnoreCase);
+            c = Regex.Replace(c, @"\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b", "", RegexOptions.IgnoreCase);
+            string[] terms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
+            foreach (string term in terms)
+            {
+                c = c.Replace(term, "");
+            }
+            return Regex.Replace(c, @"\s+", " ").Trim();
+        }
+
+        public static List<InstalledAppInfo> GetInstalledApps()
+        {
+            var list = new List<InstalledAppInfo>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenCleanNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dirIndex = BuildInstallDirectoryIndex();
+
+            var targets = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "System"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", "System"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "User"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", "User")
+            };
+
+            foreach (var target in targets)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(target.Hive, target.View))
+                    using (var uninstallKey = baseKey.OpenSubKey(target.SubKey))
+                    {
+                        if (uninstallKey == null) continue;
+                        foreach (var subKeyName in uninstallKey.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var appKey = uninstallKey.OpenSubKey(subKeyName))
+                                {
+                                    if (appKey == null) continue;
+
+                                    var sysComp = appKey.GetValue("SystemComponent");
+                                    if (sysComp != null && (sysComp.ToString() == "1" || ((sysComp is int) && ((int)sysComp == 1))))
+                                        continue;
+
+                                    var parentKey = appKey.GetValue("ParentKeyName") as string;
+                                    if (!string.IsNullOrEmpty(parentKey)) continue;
+
+                                    var releaseType = appKey.GetValue("ReleaseType") as string;
+                                    if (!string.IsNullOrEmpty(releaseType) && (releaseType.IndexOf("Update", StringComparison.OrdinalIgnoreCase) >= 0 || releaseType.IndexOf("Hotfix", StringComparison.OrdinalIgnoreCase) >= 0))
+                                        continue;
+
+                                    var displayName = appKey.GetValue("DisplayName") as string;
+                                    if (string.IsNullOrWhiteSpace(displayName)) continue;
+                                    displayName = displayName.Trim();
+
+                                    if (displayName.Equals("vs_CoreEditorFonts", StringComparison.OrdinalIgnoreCase) ||
+                                        displayName.Equals("Windows SDK AddOn", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        continue;
+                                    }
+
+                                    string dispVer = (appKey.GetValue("DisplayVersion") as string ?? "").Trim();
+                                    string dedupKey = displayName + "|" + dispVer;
+                                    if (seen.Contains(dedupKey)) continue;
+                                    seen.Add(dedupKey);
+                                    seenCleanNames.Add(NormalizeLookupToken(CleanDisplayNameForDedup(displayName)));
+
+                                    var info = new InstalledAppInfo();
+                                    info.Id = subKeyName;
+                                    info.DisplayName = displayName;
+                                    info.DisplayVersion = dispVer;
+                                    info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
+                                    info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
+                                    info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    info.DataLocation = ResolveExternalDataLocation(appKey, info.InstallLocation);
+                                    info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
+                                    info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
+                                    info.DisplayIcon = (appKey.GetValue("DisplayIcon") as string ?? "").Trim();
+                                    info.Scope = target.Scope;
+
+                                    string hivePrefix = target.Hive == RegistryHive.LocalMachine ? @"HKLM:\" : @"HKCU:\";
+                                    string fullSub = target.SubKey + @"\" + subKeyName;
+                                    if (target.Hive == RegistryHive.LocalMachine && target.View == RegistryView.Registry32 &&
+                                        fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                                        fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                                    {
+                                        fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                                    }
+                                    info.RegistryPath = hivePrefix + fullSub;
+                                    info.RawRegPath = (target.Hive == RegistryHive.LocalMachine ? "HKEY_LOCAL_MACHINE\\" : "HKEY_CURRENT_USER\\") + fullSub;
+
+                                    long size = 0;
+                                    var estSize = appKey.GetValue("EstimatedSize");
+                                    if (estSize != null)
+                                    {
+                                        long esVal;
+                                        if (long.TryParse(estSize.ToString(), out esVal))
+                                        {
+                                            size = esVal * 1024L;
+                                        }
+                                    }
+                                    info.SizeBytes = size;
+
+                                    list.Add(info);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (var pkgRoot = baseKey.OpenSubKey(@"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"))
+                {
+                    if (pkgRoot != null)
+                    {
+                        foreach (string pkgFull in pkgRoot.GetSubKeyNames())
+                        {
+                            if (string.IsNullOrWhiteSpace(pkgFull)) continue;
+                            if (_ignoredAppxRegex.IsMatch(pkgFull))
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                using (var sk = pkgRoot.OpenSubKey(pkgFull))
+                                {
+                                    if (sk == null) continue;
+                                    string rootFolder = (sk.GetValue("PackageRootFolder") as string ?? "").Trim();
+                                    string rawDisp = (sk.GetValue("DisplayName") as string ?? "").Trim();
+                                    string[] parts = pkgFull.Split('_');
+                                    string pkgIdPrefix = parts.Length > 0 ? parts[0] : pkgFull;
+                                    string pkgVer = parts.Length > 1 ? parts[1] : "";
+
+                                    string friendlyName = rawDisp;
+                                    string publisher = "Microsoft Store (MSIX)";
+                                    if (pkgIdPrefix.IndexOf("MicrosoftPCManager", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Microsoft PC Manager";
+                                        publisher = "Microsoft Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("WindowsTerminal", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Windows Terminal";
+                                        publisher = "Microsoft Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("WindowsSubsystemForLinux", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Windows Subsystem for Linux";
+                                        publisher = "Microsoft Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("TranslucentTB", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "TranslucentTB";
+                                        publisher = "Charles Milette";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("TelegramDesktop", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Telegram Desktop";
+                                        publisher = "Telegram Messenger LLP";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("OpenAI.Codex", StringComparison.OrdinalIgnoreCase) >= 0 || pkgIdPrefix.IndexOf("OpenAI.ChatGPT", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "ChatGPT";
+                                        publisher = "OpenAI";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("LenovoCompanion", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Lenovo Vantage";
+                                        publisher = "Lenovo Group Ltd.";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("KaliLinux", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "Kali Linux";
+                                        publisher = "Offensive Security";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("NVIDIAControlPanel", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "NVIDIA Control Panel";
+                                        publisher = "NVIDIA Corporation";
+                                    }
+                                    else if (pkgIdPrefix.IndexOf("WhatsAppDesktop", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        friendlyName = "WhatsApp";
+                                        publisher = "WhatsApp Inc.";
+                                    }
+                                    else if (string.IsNullOrWhiteSpace(friendlyName) || friendlyName.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        continue;
+                                    }
+
+                                    string normClean = NormalizeLookupToken(CleanDisplayNameForDedup(friendlyName));
+                                    if (seenCleanNames.Contains(normClean)) continue;
+                                    seenCleanNames.Add(normClean);
+
+                                    string escapedPkg = pkgFull.Replace("'", "''");
+                                    string uninstCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"Remove-AppxPackage -Package '" + escapedPkg + "'\"";
+                                    var msixInfo = new InstalledAppInfo
+                                    {
+                                        Id = "MSIX\\" + pkgFull,
+                                        DisplayName = friendlyName,
+                                        DisplayVersion = pkgVer,
+                                        Publisher = publisher,
+                                        InstallDate = "",
+                                        InstallLocation = rootFolder,
+                                        DataLocation = "",
+                                        DisplayIcon = "",
+                                        UninstallString = uninstCmd,
+                                        QuietUninstallString = uninstCmd,
+                                        RegistryPath = @"HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\" + pkgFull,
+                                        RawRegPath = @"HKEY_CURRENT_USER\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages\" + pkgFull,
+                                        Scope = "User",
+                                        SizeBytes = 0
+                                    };
+                                    list.Add(msixInfo);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            Parallel.ForEach(list, info =>
+            {
+                try
+                {
+                    info.InstallLocation = InferInstallLocation(info.Id, info.DisplayName, info.InstallLocation, info.UninstallString, info.DisplayIcon, dirIndex);
+                    if (string.IsNullOrEmpty(info.DataLocation) && !string.IsNullOrEmpty(info.InstallLocation))
+                    {
+                        info.DataLocation = ResolveConfigDataLocation(info.InstallLocation);
+                    }
+                    if (!string.IsNullOrEmpty(info.DataLocation) && !string.IsNullOrEmpty(info.InstallLocation) &&
+                        info.DataLocation.Equals(info.InstallLocation.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        info.DataLocation = "";
+                    }
+                    info.IconSourcePath = ResolveBestIconPath(info.Id, info.DisplayName, info.DisplayIcon, info.InstallLocation, info.UninstallString);
+                    if (string.IsNullOrWhiteSpace(info.Publisher))
+                    {
+                        info.Publisher = InferPublisher(info);
+                    }
+                    if (!string.IsNullOrEmpty(info.InstallLocation))
+                    {
+                        long instDiskSize = GetDirectorySizeCapped(info.InstallLocation, 4, 2500);
+                        if (instDiskSize > info.SizeBytes) info.SizeBytes = instDiskSize;
+                    }
+                    if (!string.IsNullOrEmpty(info.DataLocation))
+                    {
+                        bool isSubOfInstall = !string.IsNullOrEmpty(info.InstallLocation) &&
+                            info.DataLocation.StartsWith(info.InstallLocation.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase);
+                        if (!isSubOfInstall)
+                        {
+                            long dataDiskSize = GetDirectorySizeCapped(info.DataLocation, 4, 2500);
+                            if (dataDiskSize > 0) info.SizeBytes += dataDiskSize;
+                        }
+                    }
+                    info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
+                    if (!string.IsNullOrEmpty(info.InstallLocation) && Directory.Exists(info.InstallLocation))
+                    {
+                        info.TargetFolder = info.InstallLocation;
+                    }
+                    else if (!string.IsNullOrEmpty(info.DataLocation) && Directory.Exists(info.DataLocation))
+                    {
+                        info.TargetFolder = info.DataLocation;
+                    }
+                    else
+                    {
+                        info.TargetFolder = "";
+                    }
+                    info.SearchIndex = ((info.DisplayName ?? "") + " " + (info.Publisher ?? "") + " " + (info.DisplayVersion ?? "")).ToLowerInvariant();
+                }
+                catch {}
+            });
+
+            return list;
+        }
+
+        public static Task<List<InstalledAppInfo>> GetInstalledAppsAsync()
+        {
+            return Task.Run(() => GetInstalledApps());
+        }
+
+        private static bool IsValidExternalDataPath(string candidate, string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(candidate)) return false;
+            try
+            {
+                string cleaned = Environment.ExpandEnvironmentVariables(candidate).Trim().Trim('\"', '\'', ' ').TrimEnd('\\');
+                if (cleaned.Length <= 3) return false;
+                if (!Regex.IsMatch(cleaned, @"^[a-zA-Z]:\\[^<>|""?*]+$")) return false;
+                if (!string.IsNullOrEmpty(installLocation) && cleaned.Equals(installLocation.Trim().TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                string leaf = Path.GetFileName(cleaned) ?? "";
+                if (string.IsNullOrEmpty(leaf)) return false;
+                var genericRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Windows", "System32", "SysWOW64", "Program Files", "Program Files (x86)",
+                    "ProgramData", "Users", "AppData", "Local", "Roaming", "LocalLow", "Games", "Game", "Programs"
+                };
+                if (genericRoots.Contains(leaf)) return false;
+                return Directory.Exists(cleaned);
+            }
+            catch { return false; }
+        }
+
+        private static string ResolveExternalDataLocation(RegistryKey appKey, string installLocation)
+        {
+            if (appKey == null) return "";
+            string[] valueNames = new string[]
+            {
+                "GameInstallPath", "GamePath", "DataPath", "ResourcePath", "InstallPath", "AppPath", "TargetDir"
+            };
+            foreach (string vn in valueNames)
+            {
+                try
+                {
+                    string raw = appKey.GetValue(vn) as string;
+                    if (!string.IsNullOrWhiteSpace(raw) && IsValidExternalDataPath(raw, installLocation))
+                    {
+                        return Environment.ExpandEnvironmentVariables(raw).Trim().Trim('\"', '\'', ' ').TrimEnd('\\');
+                    }
+                }
+                catch {}
+            }
+            return "";
+        }
+
+        public static string ResolveConfigDataLocation(string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(installLocation)) return "";
+            try
+            {
+                if (!Directory.Exists(installLocation)) return "";
+            }
+            catch { return ""; }
+
+            string[] cfgNames = new string[] { "config.ini", "config.json", "launcher_config.ini", "settings.json" };
+            foreach (string cfg in cfgNames)
+            {
+                try
+                {
+                    string cfgPath = Path.Combine(installLocation, cfg);
+                    if (!File.Exists(cfgPath)) continue;
+                    var fi = new FileInfo(cfgPath);
+                    if (fi.Length <= 0 || fi.Length > 262144L) continue;
+                    string txt = File.ReadAllText(cfgPath);
+                    MatchCollection matches = Regex.Matches(txt, @"(?:game_install_path|install_path|game_path|data_path|resource_path|game_biz_path)\s*[=:]\s*[""']?([A-Za-z]:\\(?:\\\\|[^""'\r\n,;}])+)", RegexOptions.IgnoreCase);
+                    foreach (Match m in matches)
+                    {
+                        if (m.Groups.Count < 2) continue;
+                        string cand = m.Groups[1].Value.Replace("\\\\", "\\").Trim('\"', '\'', ' ').TrimEnd('\\');
+                        if (IsValidExternalDataPath(cand, installLocation))
+                        {
+                            return cand;
+                        }
+                    }
+                }
+                catch {}
+            }
+            return "";
+        }
+
+        private static string InferInstallLocation(string subKeyName, string displayName, string installLocation, string uninstallString, string displayIcon, Dictionary<string, string> dirIndex)
+        {
+            if (!string.IsNullOrWhiteSpace(installLocation))
+            {
+                string trimmed = installLocation.Trim().TrimEnd('\\');
+                if (trimmed.Length > 3) return trimmed;
+            }
+
+            if (!string.IsNullOrWhiteSpace(subKeyName) && subKeyName.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(subKeyName);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var propKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed + @"\InstallProperties"))
+                        {
+                            if (propKey != null)
+                            {
+                                string msiLoc = (propKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"').TrimEnd('\\');
+                                if (!string.IsNullOrEmpty(msiLoc) && msiLoc.Length > 3 && Directory.Exists(msiLoc))
+                                {
+                                    return msiLoc;
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            string[] candidates = new string[] { uninstallString, displayIcon };
+            foreach (string cand in candidates)
+            {
+                if (string.IsNullOrWhiteSpace(cand)) continue;
+                if (cand.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+
+                string exePath = ExtractExePath(cand);
+                if (string.IsNullOrWhiteSpace(exePath)) continue;
+                if (exePath.IndexOf("\\Windows\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    exePath.IndexOf("\\Package Cache\\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    exePath.IndexOf("\\Temp\\", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string dir = Path.GetDirectoryName(exePath);
+                    if (!string.IsNullOrWhiteSpace(dir) && dir.Length > 3)
+                    {
+                        return dir.TrimEnd('\\');
+                    }
+                }
+                catch {}
+            }
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                string dotnetRoot = displayName.IndexOf("(x86)", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? @"C:\Program Files (x86)\dotnet"
+                    : @"C:\Program Files\dotnet";
+
+                Match mSdk = Regex.Match(displayName, @"\.NET SDK\s+(\d+\.\d+\.\d+[^\s\(]*)", RegexOptions.IgnoreCase);
+                if (mSdk.Success)
+                {
+                    string sdkDir = Path.Combine(dotnetRoot, "sdk", mSdk.Groups[1].Value);
+                    if (Directory.Exists(sdkDir)) return sdkDir;
+                    if (Directory.Exists(dotnetRoot)) return dotnetRoot;
+                }
+
+                Match mDesk = Regex.Match(displayName, @"Windows Desktop Runtime\s*(?:-\s*)?(\d+\.\d+\.\d+[^\s\(]*)", RegexOptions.IgnoreCase);
+                if (mDesk.Success)
+                {
+                    string deskDir = Path.Combine(dotnetRoot, @"shared\Microsoft.WindowsDesktop.App", mDesk.Groups[1].Value);
+                    if (Directory.Exists(deskDir)) return deskDir;
+                }
+
+                Match mAsp = Regex.Match(displayName, @"ASP\.NET Core Runtime\s*(?:-\s*)?(\d+\.\d+\.\d+[^\s\(]*)", RegexOptions.IgnoreCase);
+                if (mAsp.Success)
+                {
+                    string aspDir = Path.Combine(dotnetRoot, @"shared\Microsoft.AspNetCore.App", mAsp.Groups[1].Value);
+                    if (Directory.Exists(aspDir)) return aspDir;
+                }
+
+                if (displayName.IndexOf("Windows Software Development Kit", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    string kitDir = @"C:\Program Files (x86)\Windows Kits\10";
+                    if (Directory.Exists(kitDir)) return kitDir;
+                }
+
+                if (displayName.IndexOf("DaVinci Resolve Control Panels", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    string dvPanel = @"C:\Program Files (x86)\Blackmagic Design\DaVinci Control Panels";
+                    if (Directory.Exists(dvPanel)) return dvPanel;
+                }
+            }
+
+            if (dirIndex != null && !string.IsNullOrWhiteSpace(displayName))
+            {
+                if (displayName.IndexOf("Redistributable", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("Runtime", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf(".NET SDK", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("AddOn", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    displayName.IndexOf("CoreEditorFonts", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    string cleanName = Regex.Replace(displayName, @"\(.*?\)|\b(version|v)?\s*\d+(\.\d+)+[^\s]*|\b(x64|x86|64-bit|32-bit|Common Components|System Software)\b", "", RegexOptions.IgnoreCase).Trim();
+                    string normFull = NormalizeLookupToken(cleanName);
+                    string matchedDir;
+                    if (normFull.Length >= 3 && dirIndex.TryGetValue(normFull, out matchedDir) && Directory.Exists(matchedDir))
+                    {
+                        return matchedDir;
+                    }
+                    string normRaw = NormalizeLookupToken(displayName);
+                    if (normRaw.Length >= 3 && dirIndex.TryGetValue(normRaw, out matchedDir) && Directory.Exists(matchedDir))
+                    {
+                        return matchedDir;
+                    }
+                    if (normFull.Contains("cloudflareone") && dirIndex.TryGetValue("cloudflarewarp", out matchedDir)) return matchedDir;
+                    if (normFull.Contains("chromeremotedesktop") && dirIndex.TryGetValue("chromeremotedesktop", out matchedDir)) return matchedDir;
+                }
+            }
+
+            return "";
+        }
+
+        public static string ConvertToPackedGuid(string guidStr)
+        {
+            if (string.IsNullOrWhiteSpace(guidStr)) return "";
+            string g = guidStr.Trim().Trim('{', '}').Replace("-", "");
+            if (g.Length != 32) return "";
+            for (int k = 0; k < 32; k++)
+            {
+                char c = g[k];
+                bool isHex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+                if (!isHex) return "";
+            }
+            char[] chars = new char[32];
+            for (int i = 0; i < 8; i++) chars[i] = g[7 - i];
+            for (int i = 0; i < 4; i++) chars[8 + i] = g[11 - i];
+            for (int i = 0; i < 4; i++) chars[12 + i] = g[15 - i];
+            for (int i = 0; i < 8; i++)
+            {
+                chars[16 + (i * 2)] = g[16 + (i * 2) + 1];
+                chars[16 + (i * 2) + 1] = g[16 + (i * 2)];
+            }
+            return new string(chars);
+        }
+
+        public static string CleanIconFilePath(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "";
+            string s = Environment.ExpandEnvironmentVariables(raw.Trim()).Replace('/', '\\');
+            if (s.StartsWith("\""))
+            {
+                int q = s.IndexOf('\"', 1);
+                if (q > 1) s = s.Substring(1, q - 1).Trim();
+                else s = s.Trim('\"');
+            }
+            else
+            {
+                int lastComma = s.LastIndexOf(',');
+                if (lastComma > 2)
+                {
+                    string after = s.Substring(lastComma + 1).Trim();
+                    int dummy;
+                    if (int.TryParse(after, out dummy))
+                    {
+                        s = s.Substring(0, lastComma).Trim();
+                    }
+                }
+            }
+            s = s.Trim('\"', ' ');
+            while (s.Contains("\\\\") && !s.StartsWith("\\\\"))
+            {
+                s = s.Replace("\\\\", "\\");
+            }
+            try
+            {
+                if (File.Exists(s)) return s;
+            }
+            catch {}
+
+            string[] exts = new string[] { ".ico", ".exe", ".dll" };
+            foreach (string ext in exts)
+            {
+                int idx = s.IndexOf(ext, StringComparison.OrdinalIgnoreCase);
+                if (idx > 0)
+                {
+                    string cand = s.Substring(0, idx + ext.Length).Trim('\"', ' ');
+                    try
+                    {
+                        if (File.Exists(cand)) return cand;
+                    }
+                    catch {}
+                }
+            }
+            return "";
+        }
+
+        private static string FindBestExeOrIcoInDirectory(string dirPath, string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return "";
+            try
+            {
+                if (!Directory.Exists(dirPath)) return "";
+            }
+            catch { return ""; }
+
+            try
+            {
+                string appIco = Path.Combine(dirPath, "app.ico");
+                if (File.Exists(appIco)) return appIco;
+                string iconIco = Path.Combine(dirPath, "icon.ico");
+                if (File.Exists(iconIco)) return iconIco;
+                string[] icos = Directory.GetFiles(dirPath, "*.ico", SearchOption.TopDirectoryOnly);
+                if (icos != null && icos.Length > 0) return icos[0];
+            }
+            catch {}
+
+            var dirsToScan = new List<string>();
+            dirsToScan.Add(dirPath);
+            string[] commonSubDirs = new string[] { "bin", "bin\\64bit", "64bit", "app", "Application", "Client" };
+            foreach (string sub in commonSubDirs)
+            {
+                try
+                {
+                    string sp = Path.Combine(dirPath, sub);
+                    if (Directory.Exists(sp)) dirsToScan.Add(sp);
+                }
+                catch {}
+            }
+            try
+            {
+                string[] subFolders = Directory.GetDirectories(dirPath, "app-*", SearchOption.TopDirectoryOnly);
+                if (subFolders != null && subFolders.Length > 0)
+                {
+                    for (int i = subFolders.Length - 1; i >= 0; i--)
+                    {
+                        dirsToScan.Add(subFolders[i]);
+                    }
+                }
+            }
+            catch {}
+
+            string cleanDisp = "";
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                cleanDisp = displayName.Replace(" ", "").ToLowerInvariant();
+            }
+
+            string bestExe = "";
+            int bestScore = -1;
+
+            foreach (string d in dirsToScan)
+            {
+                string[] exes = null;
+                try { exes = Directory.GetFiles(d, "*.exe", SearchOption.TopDirectoryOnly); } catch {}
+                if (exes == null || exes.Length == 0) continue;
+
+                foreach (string exe in exes)
+                {
+                    string nameNoExt = "";
+                    try { nameNoExt = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant(); } catch { continue; }
+                    if (string.IsNullOrEmpty(nameNoExt)) continue;
+
+                    if (nameNoExt.Contains("unins") || nameNoExt.Contains("setup") || nameNoExt.Contains("update") ||
+                        nameNoExt.Contains("crash") || nameNoExt.Contains("helper") || nameNoExt.Contains("repair") ||
+                        nameNoExt.Contains("patch") || nameNoExt.Contains("createdump") || nameNoExt.Contains("eclipsec"))
+                    {
+                        continue;
+                    }
+
+                    int score = 10;
+                    string compactExe = nameNoExt.Replace(" ", "").Replace("-", "").Replace("_", "");
+                    if (!string.IsNullOrEmpty(cleanDisp) && compactExe.Length >= 3)
+                    {
+                        if (cleanDisp.Contains(compactExe) || compactExe.Contains(cleanDisp))
+                        {
+                            score += 50;
+                        }
+                    }
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestExe = exe;
+                    }
+                }
+                if (bestScore >= 50) return bestExe;
+            }
+
+            return bestExe;
+        }
+
+        public static string ResolveBestIconPath(string subKeyName, string displayName, string displayIcon, string installLocation, string uninstallString)
+        {
+            string cleanedIcon = CleanIconFilePath(displayIcon);
+            if (!string.IsNullOrEmpty(cleanedIcon))
+            {
+                string fn = "";
+                try { fn = Path.GetFileNameWithoutExtension(cleanedIcon).ToLowerInvariant(); } catch {}
+                if (!fn.Contains("unins"))
+                {
+                    return cleanedIcon;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(subKeyName) && subKeyName.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(subKeyName);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Classes\Installer\Products\" + packed))
+                        {
+                            if (k != null)
+                            {
+                                string pi = CleanIconFilePath(k.GetValue("ProductIcon") as string);
+                                if (!string.IsNullOrEmpty(pi)) return pi;
+                            }
+                        }
+                    }
+                    catch {}
+                    try
+                    {
+                        using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Installer\Products\" + packed))
+                        {
+                            if (k != null)
+                            {
+                                string pi = CleanIconFilePath(k.GetValue("ProductIcon") as string);
+                                if (!string.IsNullOrEmpty(pi)) return pi;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                try
+                {
+                    string wiDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Installer", subKeyName);
+                    if (Directory.Exists(wiDir))
+                    {
+                        string[] wiFiles = Directory.GetFiles(wiDir);
+                        if (wiFiles != null && wiFiles.Length > 0)
+                        {
+                            foreach (string wf in wiFiles)
+                            {
+                                string wfn = Path.GetFileName(wf).ToLowerInvariant();
+                                if (wfn.EndsWith(".ico") || wfn.Contains("icon") || wfn.Contains("logo"))
+                                {
+                                    return wf;
+                                }
+                            }
+                            return wiFiles[0];
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            string fromDir = FindBestExeOrIcoInDirectory(installLocation, displayName);
+            if (!string.IsNullOrEmpty(fromDir)) return fromDir;
+
+            if (!string.IsNullOrEmpty(cleanedIcon))
+            {
+                try
+                {
+                    string iconDir = Path.GetDirectoryName(cleanedIcon);
+                    string sibling = FindBestExeOrIcoInDirectory(iconDir, displayName);
+                    if (!string.IsNullOrEmpty(sibling)) return sibling;
+                }
+                catch {}
+                return cleanedIcon;
+            }
+
+            if (!string.IsNullOrWhiteSpace(uninstallString) && uninstallString.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                string uExe = CleanIconFilePath(uninstallString);
+                if (!string.IsNullOrEmpty(uExe))
+                {
+                    try
+                    {
+                        string uDir = Path.GetDirectoryName(uExe);
+                        string uSibling = FindBestExeOrIcoInDirectory(uDir, displayName);
+                        if (!string.IsNullOrEmpty(uSibling)) return uSibling;
+                    }
+                    catch {}
+                    return uExe;
+                }
+            }
+
+            return "";
+        }
+
+        private static bool IsUsablePublisherCandidate(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            string s = raw.Trim().Trim('\"', ' ');
+            if (s.Length < 2 || s.Length > 100) return false;
+            string lower = s.ToLowerInvariant();
+            string[] invalid = new string[]
+            {
+                "n/a", "none", "null", "unknown", "default", "todo", "company",
+                "my company", "my company, inc.", "your company", "your company name",
+                "publisher", "author", "developer", "vendor", "jordan russell",
+                "inno setup", "nullsoft", "nsis", "localhost", "test"
+            };
+            foreach (string inv in invalid)
+            {
+                if (lower == inv) return false;
+            }
+            return true;
+        }
+
+        private static string ExtractOrganizationFromCertSubject(string subject)
+        {
+            if (string.IsNullOrWhiteSpace(subject)) return "";
+            string org = "";
+            string cn = "";
+            try
+            {
+                MatchCollection matches = Regex.Matches(subject, @"(?:^|,\s*)(?<k>O|CN)=(?:""(?<vq>[^""]+)""|(?<vp>[^,]+))", RegexOptions.IgnoreCase);
+                foreach (Match m in matches)
+                {
+                    string k = m.Groups["k"].Value.ToUpperInvariant();
+                    string v = (m.Groups["vq"].Success ? m.Groups["vq"].Value : m.Groups["vp"].Value).Trim();
+                    if (!IsUsablePublisherCandidate(v)) continue;
+                    if (k == "O" && string.IsNullOrEmpty(org)) org = v;
+                    else if (k == "CN" && string.IsNullOrEmpty(cn)) cn = v;
+                }
+            }
+            catch {}
+            return !string.IsNullOrEmpty(org) ? org : cn;
+        }
+
+        public static string InferPublisher(InstalledAppInfo info)
+        {
+            if (info == null) return "";
+            if (!string.IsNullOrWhiteSpace(info.Publisher)) return info.Publisher.Trim();
+
+            if (!string.IsNullOrWhiteSpace(info.Id) && info.Id.StartsWith("{"))
+            {
+                string packed = ConvertToPackedGuid(info.Id);
+                if (!string.IsNullOrEmpty(packed))
+                {
+                    try
+                    {
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var propKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed + @"\InstallProperties"))
+                        {
+                            if (propKey != null)
+                            {
+                                string msiPub = (propKey.GetValue("Publisher") as string ?? "").Trim();
+                                if (IsUsablePublisherCandidate(msiPub)) return msiPub;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            var candidateExes = new List<string>();
+            var seenExes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            string iconExe = CleanIconFilePath(info.IconSourcePath);
+            if (!string.IsNullOrEmpty(iconExe) && iconExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(iconExe))
+            {
+                candidateExes.Add(iconExe);
+            }
+
+            string dispExe = CleanIconFilePath(info.DisplayIcon);
+            if (!string.IsNullOrEmpty(dispExe) && dispExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(dispExe))
+            {
+                candidateExes.Add(dispExe);
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.InstallLocation))
+            {
+                try
+                {
+                    if (Directory.Exists(info.InstallLocation))
+                    {
+                        int count = 0;
+                        foreach (string exe in Directory.EnumerateFiles(info.InstallLocation, "*.exe", SearchOption.TopDirectoryOnly))
+                        {
+                            string fn = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant();
+                            if (fn.Contains("unins") || fn.Contains("uninst") || fn.Contains("setup") ||
+                                fn.Contains("repair") || fn.Contains("crash") || fn.Contains("update"))
+                            {
+                                continue;
+                            }
+                            if (seenExes.Add(exe))
+                            {
+                                candidateExes.Add(exe);
+                                count++;
+                                if (count >= 10) break;
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.UninstallString) &&
+                info.UninstallString.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                string uninstExe = CleanIconFilePath(info.UninstallString);
+                if (!string.IsNullOrEmpty(uninstExe) && uninstExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && seenExes.Add(uninstExe))
+                {
+                    candidateExes.Add(uninstExe);
+                }
+            }
+
+            foreach (string exe in candidateExes)
+            {
+                try
+                {
+                    if (!File.Exists(exe)) continue;
+                    FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exe);
+                    string company = (fvi.CompanyName ?? "").Trim();
+                    if (IsUsablePublisherCandidate(company)) return company;
+                }
+                catch {}
+            }
+
+            foreach (string exe in candidateExes)
+            {
+                try
+                {
+                    if (!File.Exists(exe)) continue;
+                    string certOrg = ExtractOrganizationFromCertSubject(GetSignerSubject(exe));
+                    if (IsUsablePublisherCandidate(certOrg)) return certOrg;
+                }
+                catch {}
+            }
+
+            if ((!string.IsNullOrWhiteSpace(info.Id) && info.Id.Equals("Rustup", StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(info.DisplayName) && info.DisplayName.StartsWith("Rustup", StringComparison.OrdinalIgnoreCase)))
+            {
+                return "The Rust Project Developers";
+            }
+
+            return "";
+        }
+
+        private static bool CheckIsBrokenOrphan(string uninstallString, string installLocation)
+        {
+            if (string.IsNullOrWhiteSpace(uninstallString)) return false;
+            string u = Environment.ExpandEnvironmentVariables(uninstallString).Trim();
+            if (u.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+
+            string exePath = ExtractExePath(u);
+            if (string.IsNullOrEmpty(exePath)) return false;
+            exePath = exePath.Trim('\"', ' ');
+            if (!Regex.IsMatch(exePath, @"^[a-zA-Z]:\\")) return false;
+
+            bool exeExists = false;
+            try { exeExists = File.Exists(exePath); } catch {}
+
+            if (!exeExists)
+            {
+                bool locExists = false;
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(installLocation))
+                    {
+                        string expLoc = Environment.ExpandEnvironmentVariables(installLocation).Trim('\"', ' ');
+                        if (!string.IsNullOrEmpty(expLoc) && Directory.Exists(expLoc))
+                        {
+                            locExists = true;
+                        }
+                    }
+                }
+                catch {}
+
+                if (!locExists) return true;
+            }
+
+            return false;
+        }
+
+        private static string ExtractExePath(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            raw = Environment.ExpandEnvironmentVariables(raw).Trim();
+            if (raw.StartsWith("\""))
+            {
+                int nextQuote = raw.IndexOf('\"', 1);
+                if (nextQuote > 1)
+                {
+                    return raw.Substring(1, nextQuote - 1).Trim();
+                }
+            }
+
+            int exeIdx = raw.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+            if (exeIdx > 0)
+            {
+                return raw.Substring(0, exeIdx + 4).Trim('\"', ' ');
+            }
+
+            int spaceIdx = raw.IndexOf(' ');
+            if (spaceIdx > 0)
+            {
+                return raw.Substring(0, spaceIdx).Trim('\"', ' ');
+            }
+
+            return raw.Trim('\"', ' ');
+        }
+
+        private static bool IsReparsePoint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch { return false; }
+        }
+
+        public static long GetHollowDirectorySize(string rootPath, int maxDepth, long maxSizeLimit)
+        {
+            if (string.IsNullOrEmpty(rootPath)) return -1L;
+            try
+            {
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return -1L;
+            }
+            catch { return -1L; }
+
+            long totalSize = 0L;
+            var currentLevel = new List<string> { rootPath };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            string ext = Path.GetExtension(file);
+                            if (string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(ext, ".sys", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return -1L;
+                            }
+                            try
+                            {
+                                var fi = new FileInfo(file);
+                                totalSize += fi.Length;
+                                if (totalSize >= maxSizeLimit) return -1L;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalSize < maxSizeLimit ? totalSize : -1L;
+        }
+
+        public static long GetDirectorySizeCapped(string rootPath, int maxDepth, int maxFiles)
+        {
+            if (string.IsNullOrEmpty(rootPath)) return 0L;
+            try
+            {
+                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
+            }
+            catch { return 0L; }
+
+            long totalSize = 0L;
+            int fileCount = 0;
+            var currentLevel = new List<string> { rootPath };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                var fi = new FileInfo(file);
+                                totalSize += fi.Length;
+                                fileCount++;
+                                if (fileCount >= maxFiles) return totalSize;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalSize;
+        }
+
+        public static long GetDirectorySizeFast(string rootPath, int maxDepth)
+        {
+            return GetDirectorySizeCapped(rootPath, maxDepth, 10000);
+        }
+
+        private static List<string> EnumerateFilesSafe(string rootDir, string pattern, int maxDepth)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrEmpty(rootDir)) return results;
+            try
+            {
+                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
+            }
+            catch { return results; }
+
+            var currentLevel = new List<string> { rootDir };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir, pattern))
+                        {
+                            results.Add(file);
+                        }
+
+                        if (depth < maxDepth)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return results;
+        }
+
+        private static List<string> EnumerateDirectoriesSafe(string rootDir, int maxDepth)
+        {
+            var results = new List<string>();
+            if (string.IsNullOrEmpty(rootDir)) return results;
+            try
+            {
+                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
+            }
+            catch { return results; }
+
+            var currentLevel = new List<string> { rootDir };
+
+            for (int depth = 0; depth <= maxDepth; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var sub in Directory.EnumerateDirectories(dir))
+                        {
+                            results.Add(sub);
+                            if (depth < maxDepth && !IsReparsePoint(sub))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return results;
+        }
+
+        private static string GetSignerSubject(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return "";
+            object cert = null;
+            try
+            {
+                MethodInfo method = typeof(X509Certificate).GetMethod("CreateFromSignedFile", new Type[] { typeof(string) });
+                if (method != null)
+                {
+                    cert = method.Invoke(null, new object[] { filePath });
+                    if (cert != null)
+                    {
+                        PropertyInfo prop = cert.GetType().GetProperty("Subject");
+                        if (prop != null)
+                        {
+                            return prop.GetValue(cert, null) as string ?? "";
+                        }
+                    }
+                }
+            }
+            catch {}
+            finally
+            {
+                IDisposable disp = cert as IDisposable;
+                if (disp != null)
+                {
+                    try { disp.Dispose(); } catch {}
+                }
+            }
+            return "";
+        }
+
+        private static readonly HashSet<string> _kernelCriticalProcNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "system", "idle", "registry", "memory compression", "vmmem", "vmmemwsl",
+            "smss", "csrss", "wininit", "services", "lsass", "lsm", "winlogon",
+            "dwm", "fontdrvhost", "audiodg"
+        };
+
+        private static readonly HashSet<string> _protectedSystemProcNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "system", "idle", "registry", "memory compression", "vmmem", "vmmemwsl",
+            "smss", "csrss", "wininit", "services", "lsass", "lsm", "winlogon",
+            "dwm", "fontdrvhost", "audiodg", "sihost", "ctfmon", "spoolsv", "msdtc",
+            "svchost", "explorer", "conhost", "openconsole", "windowsterminal",
+            "cmd", "powershell", "pwsh", "code", "antigravity"
+        };
+
+        private static bool IsKernelCriticalProcess(int pid, string procName)
+        {
+            if (pid <= 4) return true;
+            try
+            {
+                if (pid == Process.GetCurrentProcess().Id) return true;
+            }
+            catch {}
+            if (string.IsNullOrWhiteSpace(procName)) return false;
+            return _kernelCriticalProcNames.Contains(procName.Trim());
+        }
+
+        private static bool IsProtectedSystemOrHostProcess(int pid, string procName)
+        {
+            if (pid <= 4) return true;
+            try
+            {
+                if (pid == Process.GetCurrentProcess().Id) return true;
+            }
+            catch {}
+            if (string.IsNullOrWhiteSpace(procName)) return false;
+            return _protectedSystemProcNames.Contains(procName.Trim());
+        }
+
+        private static void EnableUnlockPrivilegesOnToken(IntPtr hTok)
+        {
+            if (hTok == IntPtr.Zero) return;
+            try
+            {
+                string[] privs = new string[]
+                {
+                    "SeDebugPrivilege",
+                    "SeBackupPrivilege",
+                    "SeRestorePrivilege",
+                    "SeTakeOwnershipPrivilege",
+                    "SeSecurityPrivilege",
+                    "SeLoadDriverPrivilege",
+                    "SeImpersonatePrivilege",
+                    "SeTcbPrivilege",
+                    "SeAssignPrimaryTokenPrivilege"
+                };
+                foreach (string priv in privs)
+                {
+                    long luid;
+                    if (LookupPrivilegeValueW(null, priv, out luid))
+                    {
+                        var tp = new TOKEN_PRIVILEGES_1();
+                        tp.PrivilegeCount = 1;
+                        tp.Luid = luid;
+                        tp.Attributes = 2;
+                        AdjustTokenPrivileges(hTok, false, ref tp, 0, IntPtr.Zero, IntPtr.Zero);
+                    }
+                }
+            }
+            catch {}
+        }
+
+        private static void EnsureUnlockPrivileges()
+        {
+            lock (_privLock)
+            {
+                if (_privilegesEnabled) return;
+                IntPtr hTok;
+                if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out hTok))
+                {
+                    try
+                    {
+                        EnableUnlockPrivilegesOnToken(hTok);
+                    }
+                    finally
+                    {
+                        CloseHandle(hTok);
+                    }
+                }
+                _privilegesEnabled = true;
+            }
+        }
+
+        private static int FindProcessIdByNameFast(string procName)
+        {
+            if (string.IsNullOrWhiteSpace(procName)) return 0;
+            int foundPid = 0;
+            Process[] arr = null;
+            try
+            {
+                arr = Process.GetProcessesByName(procName);
+                if (arr != null)
+                {
+                    for (int i = 0; i < arr.Length; i++)
+                    {
+                        try
+                        {
+                            if (foundPid == 0 && arr[i] != null && arr[i].Id > 4)
+                            {
+                                foundPid = arr[i].Id;
+                            }
+                        }
+                        catch {}
+                        finally
+                        {
+                            try { if (arr[i] != null) arr[i].Dispose(); } catch {}
+                        }
+                    }
+                }
+            }
+            catch {}
+            return foundPid;
+        }
+
+        private static bool TryDuplicateProcessImpersonationToken(int pid, out IntPtr hDupToken)
+        {
+            hDupToken = IntPtr.Zero;
+            if (pid <= 4) return false;
+            IntPtr hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (hProc == IntPtr.Zero)
+            {
+                hProc = OpenProcess(PROCESS_QUERY_INFORMATION, false, pid);
+            }
+            if (hProc == IntPtr.Zero) return false;
+            try
+            {
+                IntPtr hTok;
+                if (!OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_IMPERSONATE | TOKEN_QUERY, out hTok))
+                {
+                    if (!OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_QUERY, out hTok))
+                    {
+                        return false;
+                    }
+                }
+                try
+                {
+                    if (DuplicateTokenEx(hTok, MAXIMUM_ALLOWED, IntPtr.Zero, SecurityImpersonation, TokenImpersonation, out hDupToken) && hDupToken != IntPtr.Zero)
+                    {
+                        EnableUnlockPrivilegesOnToken(hDupToken);
+                        return true;
+                    }
+                    hDupToken = IntPtr.Zero;
+                    return false;
+                }
+                finally
+                {
+                    CloseHandle(hTok);
+                }
+            }
+            catch
+            {
+                hDupToken = IntPtr.Zero;
+                return false;
+            }
+            finally
+            {
+                CloseHandle(hProc);
+            }
+        }
+
+        private static readonly object _tiLock = new object();
+        private static DateTime _lastTiLookupAtUtc = DateTime.MinValue;
+        private static int _cachedTiPid = 0;
+
+        private static bool IsProcessAliveFast(int pid)
+        {
+            if (pid <= 4) return false;
+            IntPtr hp = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (hp == IntPtr.Zero) return false;
+            CloseHandle(hp);
+            return true;
+        }
+
+        public static void PrewarmElevationCache()
+        {
+            ElevationPidProvider provider = CustomElevationPidProvider;
+            if (provider == null) return;
+            lock (_tiLock)
+            {
+                if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                {
+                    _cachedTiPid = 0;
+                }
+                if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                {
+                    _lastTiLookupAtUtc = DateTime.UtcNow;
+                    try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                }
+            }
+        }
+
+        private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
+        {
+            EnsureUnlockPrivileges();
+            int sysPid = 0;
+            int tiPid = 0;
+            bool onThreadPool = false;
+            try { onThreadPool = Thread.CurrentThread.IsThreadPoolThread; } catch {}
+
+            ElevationPidProvider provider = CustomElevationPidProvider;
+            if (!onThreadPool && provider != null)
+            {
+                try { sysPid = provider(false); } catch {}
+                if (preferTrustedInstaller)
+                {
+                    lock (_tiLock)
+                    {
+                        if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                        {
+                            _cachedTiPid = 0;
+                        }
+                        if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                        {
+                            _lastTiLookupAtUtc = DateTime.UtcNow;
+                            try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                        }
+                        tiPid = _cachedTiPid;
+                    }
+                }
+            }
+            else if (preferTrustedInstaller)
+            {
+                lock (_tiLock)
+                {
+                    if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
+                    {
+                        _cachedTiPid = 0;
+                    }
+                    if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
+                    {
+                        _lastTiLookupAtUtc = DateTime.UtcNow;
+                        _cachedTiPid = FindProcessIdByNameFast("TrustedInstaller");
+                    }
+                    tiPid = _cachedTiPid;
+                }
+            }
+
+            if (sysPid <= 4)
+            {
+                sysPid = FindProcessIdByNameFast("winlogon");
+                if (sysPid <= 4) sysPid = FindProcessIdByNameFast("spoolsv");
+            }
+            IntPtr hSysToken = IntPtr.Zero;
+            if (sysPid > 4)
+            {
+                TryDuplicateProcessImpersonationToken(sysPid, out hSysToken);
+            }
+
+            if (!preferTrustedInstaller || tiPid <= 4)
+            {
+                return hSysToken;
+            }
+
+            IntPtr hTiToken = IntPtr.Zero;
+            bool tempSysImp = false;
+            try
+            {
+                if (hSysToken != IntPtr.Zero)
+                {
+                    tempSysImp = ImpersonateLoggedOnUser(hSysToken);
+                }
+                if (TryDuplicateProcessImpersonationToken(tiPid, out hTiToken) && hTiToken != IntPtr.Zero)
+                {
+                    if (tempSysImp)
+                    {
+                        try { RevertToSelf(); } catch {}
+                        tempSysImp = false;
+                    }
+                    if (hSysToken != IntPtr.Zero)
+                    {
+                        try { CloseHandle(hSysToken); } catch {}
+                    }
+                    return hTiToken;
+                }
+            }
+            catch {}
+            finally
+            {
+                if (tempSysImp)
+                {
+                    try { RevertToSelf(); } catch {}
+                }
+            }
+
+            return hSysToken;
+        }
+
+        public static bool RunWithSystemOrTrustedInstaller(bool preferTrustedInstaller, ElevatedAction action)
+        {
+            if (action == null) return false;
+            EnsureUnlockPrivileges();
+            IntPtr hImpToken = TryAcquireSystemOrTrustedInstallerToken(preferTrustedInstaller);
+            bool impersonated = false;
+            try
+            {
+                if (hImpToken != IntPtr.Zero)
+                {
+                    impersonated = ImpersonateLoggedOnUser(hImpToken);
+                }
+                action();
+                return impersonated;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (impersonated)
+                {
+                    try { RevertToSelf(); } catch {}
+                }
+                if (hImpToken != IntPtr.Zero)
+                {
+                    try { CloseHandle(hImpToken); } catch {}
+                }
+            }
+        }
+
+        private static string NormalizeDosOrNtPath(string rawPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawPath)) return "";
+            string p = rawPath.Trim();
+            if (p.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+            {
+                p = @"\\" + p.Substring(8);
+            }
+            else if (p.StartsWith(@"\\?\", StringComparison.OrdinalIgnoreCase) || p.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
+            {
+                p = p.Substring(4);
+            }
+            return p.TrimEnd('\\');
+        }
+
+        private static Dictionary<string, string> BuildDosDeviceMap()
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var sb = new System.Text.StringBuilder(512);
+                foreach (string driveRoot in Directory.GetLogicalDrives())
+                {
+                    if (string.IsNullOrEmpty(driveRoot) || driveRoot.Length < 2) continue;
+                    string dosName = driveRoot.Substring(0, 2);
+                    sb.Length = 0;
+                    uint res = QueryDosDeviceW(dosName, sb, (uint)sb.Capacity);
+                    if (res > 0)
+                    {
+                        string target = sb.ToString();
+                        int nul = target.IndexOf('\0');
+                        if (nul >= 0) target = target.Substring(0, nul);
+                        target = target.TrimEnd('\\');
+                        if (!string.IsNullOrEmpty(target) && !map.ContainsKey(target))
+                        {
+                            map[target] = dosName;
+                        }
+                    }
+                }
+            }
+            catch {}
+            return map;
+        }
+
+        private static string TranslateDevicePathToDos(string devicePath, Dictionary<string, string> dosMap)
+        {
+            if (string.IsNullOrWhiteSpace(devicePath)) return "";
+            string p = devicePath.Trim();
+            if (p.StartsWith(@"\Device\Mup\", StringComparison.OrdinalIgnoreCase))
+            {
+                return @"\\" + p.Substring(12);
+            }
+            if (dosMap != null)
+            {
+                foreach (KeyValuePair<string, string> kv in dosMap)
+                {
+                    if (p.StartsWith(kv.Key + "\\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return kv.Value + p.Substring(kv.Key.Length);
+                    }
+                    if (string.Equals(p, kv.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return kv.Value;
+                    }
+                }
+            }
+            return NormalizeDosOrNtPath(p);
+        }
+
+        private sealed class LockTargetSpec
+        {
+            public string Norm;
+            public string Prefix;
+            public bool IsSingleFile;
+            public bool IsDirectory;
+            public HashSet<string> DirExeNames;
+
+            public bool MatchesPath(string dosPath)
+            {
+                if (string.IsNullOrEmpty(dosPath)) return false;
+                if (IsDirectory)
+                {
+                    return dosPath.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(dosPath, Norm, StringComparison.OrdinalIgnoreCase);
+                }
+                return string.Equals(dosPath, Norm, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool CollectProcessMappedFiles(int pid, string prefix, string exactNorm, bool isDirectory, Dictionary<string, string> dosMap, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
+            var singleTarget = new LockTargetSpec
+            {
+                Norm = exactNorm ?? "",
+                Prefix = prefix ?? "",
+                IsSingleFile = !isDirectory,
+                IsDirectory = isDirectory
+            };
+            var list = new List<LockTargetSpec>(1);
+            list.Add(singleTarget);
+            return CollectProcessMappedFilesMulti(pid, list, dosMap, true, matchedImagesOut, matchedDataMappedOut);
+        }
+
+        private static bool CollectProcessMappedFilesMulti(int pid, List<LockTargetSpec> targets, Dictionary<string, string> dosMap, bool includeImages, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
+            IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+            if (hProc == IntPtr.Zero) return false;
+            try
+            {
+                return CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, includeImages, matchedImagesOut, matchedDataMappedOut);
+            }
+            finally
+            {
+                CloseHandle(hProc);
+            }
+        }
+
+        private static bool CollectProcessMappedFilesFromHandle(IntPtr hProc, List<LockTargetSpec> targets, Dictionary<string, string> dosMap, bool includeImages, HashSet<string> matchedImagesOut, HashSet<string> matchedDataMappedOut)
+        {
+            if (hProc == IntPtr.Zero || targets == null || targets.Count == 0) return false;
+            bool anyMatch = false;
+            try
+            {
+                IntPtr addr = IntPtr.Zero;
+                IntPtr mbiSz = new IntPtr(IntPtr.Size == 8 ? Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION_X64)) : Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION_X86)));
+                var seenAlloc = new HashSet<long>();
+                var sb = new System.Text.StringBuilder(1024);
+                int regions = 0;
+                while (regions < 32768)
+                {
+                    regions++;
+                    IntPtr baseAddr;
+                    IntPtr allocBase;
+                    IntPtr regionSize;
+                    uint state;
+                    uint memType;
+                    if (IntPtr.Size == 8)
+                    {
+                        MEMORY_BASIC_INFORMATION_X64 m64;
+                        if (VirtualQueryEx64(hProc, addr, out m64, mbiSz) == IntPtr.Zero) break;
+                        baseAddr = m64.BaseAddress;
+                        allocBase = m64.AllocationBase;
+                        regionSize = m64.RegionSize;
+                        state = m64.State;
+                        memType = m64.Type;
+                    }
+                    else
+                    {
+                        MEMORY_BASIC_INFORMATION_X86 m86;
+                        if (VirtualQueryEx86(hProc, addr, out m86, mbiSz) == IntPtr.Zero) break;
+                        baseAddr = m86.BaseAddress;
+                        allocBase = m86.AllocationBase;
+                        regionSize = m86.RegionSize;
+                        state = m86.State;
+                        memType = m86.Type;
+                    }
+
+                    bool checkRegion = (state == MEM_COMMIT) && (memType == MEM_MAPPED || (includeImages && memType == MEM_IMAGE));
+                    if (checkRegion)
+                    {
+                        long ab = allocBase.ToInt64();
+                        if (seenAlloc.Add(ab))
+                        {
+                            sb.Length = 0;
+                            uint n = GetMappedFileNameW(hProc, baseAddr, sb, (uint)sb.Capacity);
+                            if (n > 0 && n < (uint)sb.Capacity)
+                            {
+                                string dos = TranslateDevicePathToDos(sb.ToString(), dosMap);
+                                if (!string.IsNullOrEmpty(dos))
+                                {
+                                    for (int ti = 0; ti < targets.Count; ti++)
+                                    {
+                                        if (targets[ti].MatchesPath(dos))
+                                        {
+                                            anyMatch = true;
+                                            if (memType == MEM_IMAGE && matchedImagesOut != null) matchedImagesOut.Add(dos);
+                                            if (memType == MEM_MAPPED && matchedDataMappedOut != null) matchedDataMappedOut.Add(dos);
+                                            if (matchedImagesOut == null && matchedDataMappedOut == null) return true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    long nextAddr = unchecked(baseAddr.ToInt64() + regionSize.ToInt64());
+                    if (nextAddr <= addr.ToInt64()) break;
+                    addr = new IntPtr(nextAddr);
+                }
+            }
+            catch {}
+            return anyMatch;
+        }
+
+        private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTarget(string normTarget, string prefix, bool isDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(normTarget)) return new Dictionary<int, List<MatchedRemoteHandle>>();
+            var single = new LockTargetSpec
+            {
+                Norm = normTarget,
+                Prefix = prefix ?? "",
+                IsSingleFile = !isDirectory,
+                IsDirectory = isDirectory
+            };
+            var list = new List<LockTargetSpec>(1);
+            list.Add(single);
+            return ScanSystemFileHandlesForTargets(list);
+        }
+
+        private static Dictionary<int, List<MatchedRemoteHandle>> ScanSystemFileHandlesForTargets(List<LockTargetSpec> targets)
+        {
+            var result = new Dictionary<int, List<MatchedRemoteHandle>>();
+            if (targets == null || targets.Count == 0) return result;
+
+            EnsureUnlockPrivileges();
+
+            string probePath = Environment.SystemDirectory;
+            for (int ti = 0; ti < targets.Count; ti++)
+            {
+                if (targets[ti].IsDirectory && Directory.Exists(targets[ti].Norm))
+                {
+                    probePath = targets[ti].Norm;
+                    break;
+                }
+            }
+            IntPtr hProbe = CreateFileW(probePath, 0x00100001, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
+            if (hProbe == IntPtr.Zero || hProbe == new IntPtr(-1))
+            {
+                hProbe = CreateFileW(Environment.SystemDirectory, 0x00100001, 7, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
+            }
+            if (hProbe == IntPtr.Zero || hProbe == new IntPtr(-1)) return result;
+
+            int size = 4 * 1024 * 1024;
+            IntPtr buf = Marshal.AllocHGlobal(size);
+            try
+            {
+                int retLen = 0;
+                int status;
+                while ((status = NtQuerySystemInformation(SystemExtendedHandleInformation, buf, size, out retLen)) == STATUS_INFO_LENGTH_MISMATCH)
+                {
+                    Marshal.FreeHGlobal(buf);
+                    size = Math.Max(size * 2, retLen + 65536);
+                    if (size > 128 * 1024 * 1024) return result;
+                    buf = Marshal.AllocHGlobal(size);
+                }
+                if (status != 0) return result;
+
+                long count = (IntPtr.Size == 8) ? Marshal.ReadInt64(buf, 0) : Marshal.ReadInt32(buf, 0);
+                int headerSize = IntPtr.Size * 2;
+                int entrySize = (IntPtr.Size == 8) ? 40 : 28;
+                int pidOff = IntPtr.Size;
+                int hOff = IntPtr.Size * 2;
+                int accOff = IntPtr.Size * 3;
+                int typeOff = accOff + 6;
+                int myPid = Process.GetCurrentProcess().Id;
+                ulong myProbeVal = unchecked((ulong)hProbe.ToInt64());
+                ushort fileTypeIndex = 0;
+                bool foundFileType = false;
+
+                for (long i = 0; i < count; i++)
+                {
+                    long baseAddr = buf.ToInt64() + headerSize + i * entrySize;
+                    int p = (int)((IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + pidOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + pidOff)));
+                    if (p == myPid)
+                    {
+                        ulong hv = unchecked((ulong)((IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + hOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + hOff))));
+                        if (hv == myProbeVal)
+                        {
+                            fileTypeIndex = unchecked((ushort)Marshal.ReadInt16(new IntPtr(baseAddr + typeOff)));
+                            foundFileType = true;
+                            break;
+                        }
+                    }
+                }
+                if (!foundFileType) return result;
+
+                var byPid = new Dictionary<int, List<MatchedRemoteHandle>>();
+                for (long i = 0; i < count; i++)
+                {
+                    long baseAddr = buf.ToInt64() + headerSize + i * entrySize;
+                    ushort ot = unchecked((ushort)Marshal.ReadInt16(new IntPtr(baseAddr + typeOff)));
+                    if (ot != fileTypeIndex) continue;
+
+                    int p = (int)((IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + pidOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + pidOff)));
+                    if (p <= 4 || p == myPid) continue;
+
+                    uint acc = unchecked((uint)Marshal.ReadInt32(new IntPtr(baseAddr + accOff)));
+
+                    long hv = (IntPtr.Size == 8) ? Marshal.ReadInt64(new IntPtr(baseAddr + hOff)) : Marshal.ReadInt32(new IntPtr(baseAddr + hOff));
+                    List<MatchedRemoteHandle> hList;
+                    if (!byPid.TryGetValue(p, out hList))
+                    {
+                        hList = new List<MatchedRemoteHandle>();
+                        byPid[p] = hList;
+                    }
+                    hList.Add(new MatchedRemoteHandle { RemoteHandle = new IntPtr(hv), GrantedAccess = acc });
+                }
+
+                var pidItems = new KeyValuePair<int, List<MatchedRemoteHandle>>[byPid.Count];
+                int idxCopy = 0;
+                foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in byPid)
+                {
+                    pidItems[idxCopy++] = kv;
+                }
+
+                IntPtr curProc = GetCurrentProcess();
+                var concurrentResult = new ConcurrentDictionary<int, List<MatchedRemoteHandle>>();
+                int cursor = -1;
+                int workerCount = Math.Min(4, Math.Max(1, Math.Min(Environment.ProcessorCount, pidItems.Length)));
+                Task[] workers = new Task[workerCount];
+
+                for (int w = 0; w < workerCount; w++)
+                {
+                    workers[w] = Task.Run(delegate()
+                    {
+                        HandleWorkerState ws = StartHandleQueryWorker();
+                        int timeouts = 0;
+                        try
+                        {
+                            while (true)
+                            {
+                                int nextIdx = Interlocked.Increment(ref cursor);
+                                if (nextIdx >= pidItems.Length || timeouts >= 12) break;
+                                KeyValuePair<int, List<MatchedRemoteHandle>> kv = pidItems[nextIdx];
+                                IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE | PROCESS_QUERY_LIMITED_INFORMATION, false, kv.Key);
+                                if (hp == IntPtr.Zero) continue;
+                                List<MatchedRemoteHandle> localHits = null;
+                                try
+                                {
+                                    List<MatchedRemoteHandle> list = kv.Value;
+                                    for (int hi = 0; hi < list.Count; hi++)
+                                    {
+                                        if (timeouts >= 12) break;
+                                        MatchedRemoteHandle mh = list[hi];
+                                        IntPtr hDup;
+                                        if (!DuplicateHandle(hp, mh.RemoteHandle, curProc, out hDup, 0, false, DUPLICATE_SAME_ACCESS)) continue;
+                                        bool handleOrphaned = false;
+                                        try
+                                        {
+                                            ws.PendingPath = null;
+                                            ws.PendingHandle = hDup;
+                                            ws.WorkEv.Set();
+                                            if (ws.DoneEv.WaitOne(12))
+                                            {
+                                                string resolvedPath = ws.PendingPath;
+                                                if (!string.IsNullOrEmpty(resolvedPath))
+                                                {
+                                                    bool hit = false;
+                                                    for (int ti = 0; ti < targets.Count; ti++)
+                                                    {
+                                                        if (targets[ti].MatchesPath(resolvedPath))
+                                                        {
+                                                            hit = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (hit)
+                                                    {
+                                                        mh.DosPath = resolvedPath;
+                                                        if (localHits == null) localHits = new List<MatchedRemoteHandle>();
+                                                        localHits.Add(mh);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                timeouts++;
+                                                if (ws.ThreadHandle != IntPtr.Zero) CancelSynchronousIo(ws.ThreadHandle);
+                                                if (!ws.DoneEv.WaitOne(10))
+                                                {
+                                                    handleOrphaned = true;
+                                                    ws.StopRequested = true;
+                                                    try { if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle); } catch {}
+                                                    ws.ThreadHandle = IntPtr.Zero;
+                                                    if (timeouts >= 12) break;
+                                                    ws = StartHandleQueryWorker();
+                                                }
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            if (!handleOrphaned)
+                                            {
+                                                CloseHandle(hDup);
+                                            }
+                                        }
+                                    }
+                                    if (localHits != null && localHits.Count > 0)
+                                    {
+                                        concurrentResult[kv.Key] = localHits;
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hp);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            ws.StopRequested = true;
+                            ws.WorkEv.Set();
+                            if (ws.ThreadHandle != IntPtr.Zero) CloseHandle(ws.ThreadHandle);
+                        }
+                    });
+                }
+                Task.WaitAll(workers);
+
+                foreach (KeyValuePair<int, List<MatchedRemoteHandle>> kv in concurrentResult)
+                {
+                    result[kv.Key] = kv.Value;
+                }
+            }
+            catch {}
+            finally
+            {
+                Marshal.FreeHGlobal(buf);
+                CloseHandle(hProbe);
+            }
+            return result;
+        }
+
+        private static HandleWorkerState StartHandleQueryWorker()
+        {
+            HandleWorkerState state = new HandleWorkerState();
+            Thread t = new Thread(delegate()
+            {
+                state.ThreadId = GetCurrentThreadId();
+                var sb = new System.Text.StringBuilder(1024);
+                try
+                {
+                    while (!state.StopRequested)
+                    {
+                        state.WorkEv.WaitOne();
+                        if (state.StopRequested) break;
+                        IntPtr h = state.PendingHandle;
+                        string resolved = null;
+                        if (h != IntPtr.Zero)
+                        {
+                            try
+                            {
+                                if (GetFileType(h) == FILE_TYPE_DISK)
+                                {
+                                    sb.Length = 0;
+                                    uint n = GetFinalPathNameByHandleW(h, sb, (uint)sb.Capacity, 0);
+                                    if (n > 0 && n < (uint)sb.Capacity)
+                                    {
+                                        resolved = NormalizeDosOrNtPath(sb.ToString());
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                        state.PendingPath = resolved;
+                        state.DoneEv.Set();
+                    }
+                }
+                catch {}
+                finally
+                {
+                    try { state.WorkEv.Close(); } catch {}
+                    try { state.DoneEv.Close(); } catch {}
+                }
+            });
+            t.IsBackground = true;
+            t.Start();
+            while (state.ThreadId == 0) Thread.Sleep(1);
+            state.ThreadHandle = OpenThread(0x0001 | 0x0002, false, state.ThreadId);
+            return state;
+        }
+
+        private static string ResolveSysinternalsHandleExe()
+        {
+            lock (_sysinternalsLock)
+            {
+                if (_sysinternalsChecked) return _cachedSysinternalsHandleExe;
+                _sysinternalsChecked = true;
+                _cachedSysinternalsHandleExe = "";
+
+                try
+                {
+                    string[] exeNames = (IntPtr.Size == 8)
+                        ? new string[] { "handle64.exe", "handle.exe" }
+                        : new string[] { "handle.exe", "handle64.exe" };
+
+                    string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    if (!string.IsNullOrWhiteSpace(localApp))
+                    {
+                        string toolsDir = Path.Combine(localApp, @"DuckUtil\Tools");
+                        foreach (string fn in exeNames)
+                        {
+                            string cand = Path.Combine(toolsDir, fn);
+                            if (File.Exists(cand))
+                            {
+                                _cachedSysinternalsHandleExe = cand;
+                                return _cachedSysinternalsHandleExe;
+                            }
+                        }
+                    }
+
+                    string pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+                    string[] dirs = pathEnv.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string rawDir in dirs)
+                    {
+                        string d = rawDir.Trim().Trim('\"');
+                        if (string.IsNullOrEmpty(d)) continue;
+                        foreach (string fn in exeNames)
+                        {
+                            try
+                            {
+                                string cand = Path.Combine(d, fn);
+                                if (File.Exists(cand))
+                                {
+                                    _cachedSysinternalsHandleExe = cand;
+                                    return _cachedSysinternalsHandleExe;
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+                return _cachedSysinternalsHandleExe;
+            }
+        }
+
+        private static bool TryCloseHandleViaSysinternals(int pid, IntPtr remoteHandle)
+        {
+            if (pid <= 4 || remoteHandle == IntPtr.Zero) return false;
+            string handleExe = ResolveSysinternalsHandleExe();
+            if (string.IsNullOrEmpty(handleExe)) return false;
+            try
+            {
+                string hexHandle = remoteHandle.ToInt64().ToString("X");
+                var psi = new ProcessStartInfo(handleExe, "-accepteula -nobanner -c " + hexHandle + " -y -p " + pid.ToString());
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var p = Process.Start(psi))
+                {
+                    if (p != null && p.WaitForExit(2000))
+                    {
+                        return (p.ExitCode == 0);
+                    }
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        private static bool TryCloseRemoteFileHandleDirect(int pid, IntPtr remoteHandle)
+        {
+            IntPtr hp = OpenProcess(PROCESS_DUP_HANDLE, false, pid);
+            if (hp == IntPtr.Zero) return false;
+            try
+            {
+                IntPtr hDummy;
+                if (DuplicateHandle(hp, remoteHandle, GetCurrentProcess(), out hDummy, 0, false, DUPLICATE_CLOSE_SOURCE))
+                {
+                    if (hDummy != IntPtr.Zero) CloseHandle(hDummy);
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                CloseHandle(hp);
+            }
+        }
+
+        private static bool TryCloseRemoteFileHandle(int pid, IntPtr remoteHandle)
+        {
+            if (TryCloseRemoteFileHandleDirect(pid, remoteHandle)) return true;
+
+            bool closedAsSystem = false;
+            RunWithSystemOrTrustedInstaller(false, delegate()
+            {
+                closedAsSystem = TryCloseRemoteFileHandleDirect(pid, remoteHandle);
+            });
+            if (closedAsSystem) return true;
+
+            return TryCloseHandleViaSysinternals(pid, remoteHandle);
+        }
+
+        private static IntPtr GetCurrentTokenUserSidCopy()
+        {
+            IntPtr hTok;
+            if (!OpenProcessToken(GetCurrentProcess(), 0x0008, out hTok)) return IntPtr.Zero;
+            try
+            {
+                uint needed = 0;
+                GetTokenInformation(hTok, 1, IntPtr.Zero, 0, out needed);
+                if (needed == 0) return IntPtr.Zero;
+                IntPtr tokBuf = Marshal.AllocHGlobal((int)needed);
+                try
+                {
+                    if (!GetTokenInformation(hTok, 1, tokBuf, needed, out needed)) return IntPtr.Zero;
+                    IntPtr srcSid = Marshal.ReadIntPtr(tokBuf, 0);
+                    if (srcSid == IntPtr.Zero) return IntPtr.Zero;
+                    int subCount = Marshal.ReadByte(srcSid, 1) & 0xFF;
+                    int sidLen = 8 + subCount * 4;
+                    byte[] raw = new byte[sidLen];
+                    Marshal.Copy(srcSid, raw, 0, sidLen);
+                    IntPtr sidCopy = Marshal.AllocHGlobal(sidLen);
+                    Marshal.Copy(raw, 0, sidCopy, sidLen);
+                    return sidCopy;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(tokBuf);
+                }
+            }
+            finally
+            {
+                CloseHandle(hTok);
+            }
+        }
+
+        private static bool TryTakeOwnershipAndGrantAdminAccessCore(string norm, bool isDir)
+        {
+            var auth = new SID_IDENTIFIER_AUTHORITY { Value0 = 0, Value1 = 0, Value2 = 0, Value3 = 0, Value4 = 0, Value5 = 5 };
+            IntPtr adminSid = IntPtr.Zero;
+            IntPtr userSid = IntPtr.Zero;
+            IntPtr newAcl = IntPtr.Zero;
+            try
+            {
+                if (!AllocateAndInitializeSid(ref auth, 2, 32, 544, 0, 0, 0, 0, 0, 0, out adminSid))
+                {
+                    return false;
+                }
+
+                IntPtr grantSid = adminSid;
+                uint trusteeType = TRUSTEE_IS_GROUP;
+                uint ownerErr = SetNamedSecurityInfoW(norm, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, adminSid, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                if (ownerErr == 1307)
+                {
+                    userSid = GetCurrentTokenUserSidCopy();
+                    if (userSid != IntPtr.Zero)
+                    {
+                        ownerErr = SetNamedSecurityInfoW(norm, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, userSid, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                        if (ownerErr == 0)
+                        {
+                            grantSid = userSid;
+                            trusteeType = TRUSTEE_IS_USER;
+                        }
+                    }
+                }
+
+                var ea = new EXPLICIT_ACCESS();
+                ea.grfAccessPermissions = GENERIC_ALL;
+                ea.grfAccessMode = SET_ACCESS;
+                ea.grfInheritance = isDir ? SUB_CONTAINERS_AND_OBJECTS_INHERIT : NO_INHERITANCE;
+                ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+                ea.Trustee.TrusteeType = trusteeType;
+                ea.Trustee.ptstrName = grantSid;
+
+                if (SetEntriesInAclW(1, ref ea, IntPtr.Zero, out newAcl) != 0)
+                {
+                    return ownerErr == 0;
+                }
+
+                uint daclErr = SetNamedSecurityInfoW(norm, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, IntPtr.Zero, IntPtr.Zero, newAcl, IntPtr.Zero);
+                return (daclErr == 0);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (newAcl != IntPtr.Zero) LocalFree(newAcl);
+                if (userSid != IntPtr.Zero) Marshal.FreeHGlobal(userSid);
+                if (adminSid != IntPtr.Zero) FreeSid(adminSid);
+            }
+        }
+
+        public static bool TryTakeOwnershipAndGrantAdminAccess(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string norm = path.Trim().TrimEnd('\\');
+            bool isDir = Directory.Exists(norm);
+            bool isFile = !isDir && File.Exists(norm);
+            if (!isDir && !isFile) return false;
+            if (IsReparsePoint(norm)) return false;
+
+            string checkDir = isDir ? norm : Path.GetDirectoryName(norm);
+            if (!IsSafeLockTargetDirectory(checkDir) && !(isFile && IsVerifiedRogueKernelDriverFile(norm))) return false;
+
+            EnsureUnlockPrivileges();
+
+            if (TryTakeOwnershipAndGrantAdminAccessCore(norm, isDir))
+            {
+                return true;
+            }
+
+            bool elevatedOk = false;
+            RunWithSystemOrTrustedInstaller(true, delegate()
+            {
+                elevatedOk = TryTakeOwnershipAndGrantAdminAccessCore(norm, isDir);
+            });
+            return elevatedOk;
+        }
+
+        private static bool IsSafeLockTargetDirectory(string norm)
+        {
+            if (string.IsNullOrWhiteSpace(norm) || norm.Length <= 3) return false;
+            try
+            {
+                string full = Path.GetFullPath(norm).TrimEnd('\\');
+                if (full.Length <= 3) return false;
+                var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                string[] envPaths = new string[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    Environment.GetFolderPath(Environment.SpecialFolder.SystemX86),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                    Environment.GetEnvironmentVariable("ProgramW6432"),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+                };
+                foreach (string ep in envPaths)
+                {
+                    if (!string.IsNullOrWhiteSpace(ep))
+                    {
+                        blocked.Add(ep.Trim().TrimEnd('\\'));
+                    }
+                }
+                string localProg = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrWhiteSpace(localProg))
+                {
+                    blocked.Add(Path.Combine(localProg, "Programs").TrimEnd('\\'));
+                }
+                string sys32 = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (!string.IsNullOrWhiteSpace(sys32))
+                {
+                    blocked.Add(Path.Combine(sys32, "drivers").TrimEnd('\\'));
+                }
+                string sys86 = Environment.GetFolderPath(Environment.SpecialFolder.SystemX86);
+                if (!string.IsNullOrWhiteSpace(sys86))
+                {
+                    blocked.Add(Path.Combine(sys86, "drivers").TrimEnd('\\'));
+                }
+                string sysDrive = Path.GetPathRoot(full);
+                if (!string.IsNullOrWhiteSpace(sysDrive))
+                {
+                    blocked.Add(Path.Combine(sysDrive, "Users").TrimEnd('\\'));
+                }
+                return !blocked.Contains(full);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsVerifiedRogueKernelDriverFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+            try
+            {
+                string full = Path.GetFullPath(filePath.Trim());
+                if (!full.EndsWith(".sys", StringComparison.OrdinalIgnoreCase)) return false;
+                if (!File.Exists(full)) return false;
+
+                string sysDrivers = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers");
+                string dir = Path.GetDirectoryName(full) ?? "";
+                if (!string.Equals(dir.TrimEnd('\\'), sysDrivers.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)) return false;
+
+                string fn = Path.GetFileName(full);
+                string comp = "";
+                string prod = "";
+                string desc = "";
+                try
+                {
+                    FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(full);
+                    comp = fvi.CompanyName ?? "";
+                    prod = fvi.ProductName ?? "";
+                    desc = fvi.FileDescription ?? "";
+                }
+                catch {}
+                string cert = GetSignerSubject(full);
+                string combined = fn + " | " + comp + " | " + prod + " | " + desc + " | " + cert;
+
+                if (combined.IndexOf("Microsoft Corporation", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    combined.IndexOf("360", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Qihu", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Qihoo", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("2345", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Kingsoft", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    combined.IndexOf("Baidu", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return false;
+                }
+
+                string[] rogueTokens = new string[]
+                {
+                    "360.cn", "360Total", "360Safe", "360\u5B89\u5168\u536B\u58EB", "Beijing Qihu", "Qihoo 360",
+                    "360FsFlt", "360disproc", "360Box", "360AntiHacker", "360netmon", "360reskit",
+                    "BAPIDRV", "dsark", "360SelfProtection", "360AvFlt", "360Hvm", "360qpesv", "360Camera",
+                    "2345.com", "2345Safe", "Kingsoft", "KWatch", "KisKrnl", "Baidu"
+                };
+                foreach (string tok in rogueTokens)
+                {
+                    if (combined.IndexOf(tok, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool TryPosixUnlinkFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return false;
+            string norm = filePath.Trim();
+            if (!File.Exists(norm)) return true;
+
+            EnsureUnlockPrivileges();
+
+            IntPtr h = CreateFileW(norm, DELETE_ACCESS | 0x0100, 0x00000001 | 0x00000002 | 0x00000004, IntPtr.Zero, 3, 0x02000000 | 0x00200000, IntPtr.Zero);
+            if (h == IntPtr.Zero || h == new IntPtr(-1))
+            {
+                h = CreateFileW(norm, DELETE_ACCESS, 0x00000001 | 0x00000002 | 0x00000004, IntPtr.Zero, 3, 0x02000000 | 0x00200000, IntPtr.Zero);
+            }
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return false;
+
+            int st = -1;
+            try
+            {
+                IO_STATUS_BLOCK iosb;
+                var info = new FILE_DISPOSITION_INFO_EX { Flags = 0x00000017 };
+                st = NtSetInformationFile(h, out iosb, ref info, 4, 64);
+                if (st != 0)
+                {
+                    info.Flags = 0x00000013;
+                    st = NtSetInformationFile(h, out iosb, ref info, 4, 64);
+                }
+            }
+            catch {}
+            finally
+            {
+                CloseHandle(h);
+            }
+            return (st == 0 && !File.Exists(norm));
+        }
+
+        private static Dictionary<int, string> GetRestartManagerLockingPids(string targetPath)
+        {
+            var result = new Dictionary<int, string>();
+            if (string.IsNullOrWhiteSpace(targetPath)) return result;
+
+            var filesToCheck = new List<string>();
+            if (File.Exists(targetPath))
+            {
+                filesToCheck.Add(targetPath);
+            }
+            else if (Directory.Exists(targetPath))
+            {
+                var secondary = new List<string>();
+                try
+                {
+                    foreach (string f in EnumerateFilesSafe(targetPath, "*", 6))
+                    {
+                        string ext = Path.GetExtension(f) ?? "";
+                        if (string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".sys", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".ocx", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".cpl", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".db", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".sqlite", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".dat", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".lock", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".log", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".asar", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".pak", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(ext, ".ttf", StringComparison.OrdinalIgnoreCase))
+                        {
+                            filesToCheck.Add(f);
+                            if (filesToCheck.Count >= 400) break;
+                        }
+                        else if (secondary.Count < 120)
+                        {
+                            secondary.Add(f);
+                        }
+                    }
+                }
+                catch {}
+
+                foreach (string sf in secondary)
+                {
+                    if (filesToCheck.Count >= 400) break;
+                    filesToCheck.Add(sf);
+                }
+            }
+
+            if (filesToCheck.Count == 0) return result;
+
+            uint session = 0;
+            bool sessionStarted = false;
+            try
+            {
+                string key = Guid.NewGuid().ToString("N");
+                if (RmStartSession(out session, 0, key) != 0)
+                {
+                    return result;
+                }
+                sessionStarted = true;
+
+                int batchSize = 80;
+                for (int offset = 0; offset < filesToCheck.Count; offset += batchSize)
+                {
+                    int take = Math.Min(batchSize, filesToCheck.Count - offset);
+                    string[] batch = new string[take];
+                    filesToCheck.CopyTo(offset, batch, 0, take);
+                    RmRegisterResources(session, (uint)batch.Length, batch, 0, null, 0, null);
+                }
+
+                uint procInfoNeeded = 0;
+                uint procInfo = 0;
+                uint rebootReasons = 0;
+                int rmRes = RmGetList(session, out procInfoNeeded, ref procInfo, null, ref rebootReasons);
+                if (rmRes == ERROR_MORE_DATA && procInfoNeeded > 0)
+                {
+                    RM_PROCESS_INFO[] infos = new RM_PROCESS_INFO[procInfoNeeded];
+                    procInfo = procInfoNeeded;
+                    rmRes = RmGetList(session, out procInfoNeeded, ref procInfo, infos, ref rebootReasons);
+                    if (rmRes == 0)
+                    {
+                        for (int i = 0; i < (int)procInfo && i < infos.Length; i++)
+                        {
+                            int pid = infos[i].Process.dwProcessId;
+                            if (pid > 4 && !result.ContainsKey(pid))
+                            {
+                                result[pid] = infos[i].strAppName ?? "";
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+            finally
+            {
+                if (sessionStarted)
+                {
+                    try { RmEndSession(session); } catch {}
+                }
+            }
+            return result;
+        }
+
+        private static HashSet<string> CollectExeBaseNamesInDirectory(string dir)
+        {
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var genericNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "setup", "install", "installer", "uninstall", "uninst", "unins000", "unins001",
+                "update", "updater", "helper", "launcher", "crashhandler", "reporter", "service"
+            };
+            try
+            {
+                int seen = 0;
+                foreach (string exeFile in EnumerateFilesSafe(dir, "*.exe", 4))
+                {
+                    string bn = Path.GetFileNameWithoutExtension(exeFile);
+                    if (!string.IsNullOrWhiteSpace(bn) && bn.Length >= 3 && !genericNames.Contains(bn))
+                    {
+                        names.Add(bn);
+                    }
+                    seen++;
+                    if (seen >= 40) break;
+                }
+            }
+            catch {}
+            return names;
+        }
+
+        private static bool TryTaskkillPidTree(int pid)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("taskkill.exe", "/F /T /PID " + pid.ToString());
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var tp = Process.Start(psi))
+                {
+                    if (tp != null)
+                    {
+                        tp.WaitForExit(2500);
+                        if (tp.ExitCode == 0) return true;
+                    }
+                }
+            }
+            catch {}
+            try
+            {
+                using (Process checkP = Process.GetProcessById(pid))
+                {
+                    return checkP.HasExited;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        public static bool MoveToRecycleBinSilently(string targetPath)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath)) return false;
+            string norm = targetPath.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+            if (norm.Length <= 3) return false;
+            bool isDir = Directory.Exists(norm);
+            bool isFile = !isDir && File.Exists(norm);
+            if (!isDir && !isFile) return true;
+            if (!IsSafeLockTargetDirectory(isDir ? norm : Path.GetDirectoryName(norm))) return false;
+
+            try
+            {
+                ushort flags = (ushort)(FOF_SILENT | FOF_NOCONFIRMATION | FOF_ALLOWUNDO | FOF_NOERRORUI);
+                string doubleNullFrom = norm + "\0\0";
+                int res;
+                bool aborted;
+
+                if (IntPtr.Size == 8)
+                {
+                    var op64 = new SHFILEOPSTRUCT_X64();
+                    op64.hwnd = IntPtr.Zero;
+                    op64.wFunc = FO_DELETE;
+                    op64.pFrom = doubleNullFrom;
+                    op64.pTo = null;
+                    op64.fFlags = flags;
+                    op64.fAnyOperationsAborted = false;
+                    op64.hNameMappings = IntPtr.Zero;
+                    op64.lpszProgressTitle = null;
+                    res = SHFileOperationX64(ref op64);
+                    aborted = op64.fAnyOperationsAborted;
+                }
+                else
+                {
+                    var op86 = new SHFILEOPSTRUCT_X86();
+                    op86.hwnd = IntPtr.Zero;
+                    op86.wFunc = FO_DELETE;
+                    op86.pFrom = doubleNullFrom;
+                    op86.pTo = null;
+                    op86.fFlags = flags;
+                    op86.fAnyOperationsAborted = false;
+                    op86.hNameMappings = IntPtr.Zero;
+                    op86.lpszProgressTitle = null;
+                    res = SHFileOperationX86(ref op86);
+                    aborted = op86.fAnyOperationsAborted;
+                }
+
+                return (res == 0 && !aborted && !File.Exists(norm) && !Directory.Exists(norm));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static Task<bool> MoveToRecycleBinSilentlyAsync(string targetPath)
+        {
+            return Task.Run(delegate() { return MoveToRecycleBinSilently(targetPath); });
+        }
+
+        private sealed class ProcessScanOutcome
+        {
+            public Process Proc;
+            public int Pid;
+            public string ProcName;
+            public bool IsCritical;
+            public bool IsProtectedHost;
+            public bool IsMatch;
+            public bool DidModuleScan;
+            public HashSet<string> LoadedImages;
+            public HashSet<string> MappedData;
+        }
+
+        public static ForceStopReport ForceStopDirectoryLockers(string targetPath)
+        {
+            return ForceStopDirectoryLockers(targetPath, true);
+        }
+
+        public static ForceStopReport ForceStopDirectoryLockers(string targetPath, bool includeServicesAndTasks)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath)) return new ForceStopReport();
+            return ForceStopPathsLockers(new string[] { targetPath }, includeServicesAndTasks);
+        }
+
+        public static ForceStopReport ForceStopBatchDirectories(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            return ForceStopPathsLockers(targetPaths, includeServicesAndTasks);
+        }
+
+        public static Task<ForceStopReport> ForceStopDirectoryLockersAsync(string targetPath, bool includeServicesAndTasks)
+        {
+            return Task.Run(delegate() { return ForceStopDirectoryLockers(targetPath, includeServicesAndTasks); });
+        }
+
+        public static Task<ForceStopReport> ForceStopBatchDirectoriesAsync(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            return Task.Run(delegate() { return ForceStopBatchDirectories(targetPaths, includeServicesAndTasks); });
+        }
+
+        private static bool ScanProcessModulesNative(IntPtr hProc, List<LockTargetSpec> targets, bool collectAllMatched, HashSet<string> matchedImagesOut, out bool enumSucceeded)
+        {
+            enumSucceeded = false;
+            if (hProc == IntPtr.Zero || targets == null || targets.Count == 0) return false;
+            IntPtr[] hMods = new IntPtr[256];
+            uint cb = (uint)(hMods.Length * IntPtr.Size);
+            uint needed = 0;
+            if (!EnumProcessModulesEx(hProc, hMods, cb, out needed, LIST_MODULES_ALL))
+            {
+                return false;
+            }
+            if (needed > cb)
+            {
+                int countNeed = Math.Min(4096, (int)(needed / (uint)IntPtr.Size) + 16);
+                hMods = new IntPtr[countNeed];
+                cb = (uint)(hMods.Length * IntPtr.Size);
+                if (!EnumProcessModulesEx(hProc, hMods, cb, out needed, LIST_MODULES_ALL))
+                {
+                    return false;
+                }
+            }
+            enumSucceeded = true;
+            int modCount = Math.Min(hMods.Length, (int)(needed / (uint)IntPtr.Size));
+            var sb = new System.Text.StringBuilder(1024);
+            bool anyMatch = false;
+            for (int i = 0; i < modCount; i++)
+            {
+                if (hMods[i] == IntPtr.Zero) continue;
+                sb.Length = 0;
+                uint len = GetModuleFileNameExW(hProc, hMods[i], sb, (uint)sb.Capacity);
+                if (len > 0 && len < (uint)sb.Capacity)
+                {
+                    string modPath = NormalizeDosOrNtPath(sb.ToString());
+                    if (string.IsNullOrEmpty(modPath)) continue;
+                    for (int ti = 0; ti < targets.Count; ti++)
+                    {
+                        if (targets[ti].MatchesPath(modPath))
+                        {
+                            anyMatch = true;
+                            if (matchedImagesOut != null) matchedImagesOut.Add(modPath);
+                            if (!collectAllMatched) return true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return anyMatch;
+        }
+
+        private static ForceStopReport ForceStopPathsLockers(string[] targetPaths, bool includeServicesAndTasks)
+        {
+            var report = new ForceStopReport();
+            if (targetPaths == null || targetPaths.Length == 0) return report;
+
+            var targets = new List<LockTargetSpec>();
+            var seenNorms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool hasAnyDirectory = false;
+
+            for (int i = 0; i < targetPaths.Length; i++)
+            {
+                string raw = targetPaths[i];
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                string norm = raw.Trim().TrimEnd('\\');
+                try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+                if (norm.Length <= 3 || !seenNorms.Add(norm)) continue;
+
+                bool isSingleFile = File.Exists(norm);
+                bool isDirectory = !isSingleFile && Directory.Exists(norm);
+                if (!isSingleFile && !isDirectory) continue;
+                if (isDirectory && !IsSafeLockTargetDirectory(norm)) continue;
+
+                if (isDirectory) hasAnyDirectory = true;
+                targets.Add(new LockTargetSpec
+                {
+                    Norm = norm,
+                    Prefix = isDirectory ? (norm + "\\") : "",
+                    IsSingleFile = isSingleFile,
+                    IsDirectory = isDirectory,
+                    DirExeNames = isDirectory ? CollectExeBaseNamesInDirectory(norm) : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                });
+            }
+
+            if (targets.Count == 0) return report;
+
+            EnsureUnlockPrivileges();
+
+            Dictionary<string, string> dosMap = BuildDosDeviceMap();
+            var rmLockers = new Dictionary<int, string>();
+            int svcStoppedTotal = 0;
+            int taskRemovedTotal = 0;
+
+            Task leg1ServicesAndRm = Task.Run(delegate()
+            {
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    LockTargetSpec t = targets[i];
+                    if (includeServicesAndTasks && t.IsDirectory)
+                    {
+                        svcStoppedTotal += DisableAndRemoveServicesInDirectory(t.Norm);
+                        taskRemovedTotal += RemoveScheduledTasksInDirectory(t.Norm);
+                    }
+                    Dictionary<int, string> subRm = GetRestartManagerLockingPids(t.Norm);
+                    foreach (KeyValuePair<int, string> kv in subRm)
+                    {
+                        if (!rmLockers.ContainsKey(kv.Key))
+                        {
+                            rmLockers[kv.Key] = kv.Value;
+                        }
+                    }
+                }
+            });
+
+            Dictionary<int, List<MatchedRemoteHandle>> handleLockers = null;
+            Task leg2Handles = Task.Run(delegate()
+            {
+                handleLockers = ScanSystemFileHandlesForTargets(targets);
+            });
+
+            Process[] procs = null;
+            try { procs = Process.GetProcesses(); } catch { procs = new Process[0]; }
+            var outcomes = new ProcessScanOutcome[procs.Length];
+
+            Task leg3Processes = Task.Run(delegate()
+            {
+                Parallel.For(0, procs.Length, delegate(int idx)
+                {
+                    Process p = procs[idx];
+                    if (p == null) return;
+                    var outcome = new ProcessScanOutcome { Proc = p };
+                    try
+                    {
+                        int pid = p.Id;
+                        if (pid <= 4) return;
+                        string pName = "";
+                        try { pName = p.ProcessName ?? ""; } catch {}
+                        outcome.Pid = pid;
+                        outcome.ProcName = pName;
+                        outcome.IsCritical = IsKernelCriticalProcess(pid, pName);
+                        if (outcome.IsCritical)
+                        {
+                            outcomes[idx] = outcome;
+                            return;
+                        }
+                        outcome.IsProtectedHost = IsProtectedSystemOrHostProcess(pid, pName);
+
+                        bool scanModulesHere = !outcome.IsProtectedHost || hasAnyDirectory;
+                        if (scanModulesHere)
+                        {
+                            IntPtr hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+                            bool hasVmRead = (hProc != IntPtr.Zero);
+                            if (hProc == IntPtr.Zero)
+                            {
+                                hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+                            }
+
+                            if (hProc == IntPtr.Zero)
+                            {
+                                if (!outcome.IsProtectedHost && !string.IsNullOrEmpty(pName))
+                                {
+                                    for (int ti = 0; ti < targets.Count; ti++)
+                                    {
+                                        if (targets[ti].IsDirectory && targets[ti].DirExeNames.Contains(pName))
+                                        {
+                                            outcome.IsMatch = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    outcome.DidModuleScan = true;
+                                    if (outcome.IsProtectedHost)
+                                    {
+                                        var loadedImgs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        var mappedDat = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                        bool enumOk = false;
+                                        if (hasVmRead)
+                                        {
+                                            ScanProcessModulesNative(hProc, targets, true, loadedImgs, out enumOk);
+                                            CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, !enumOk, enumOk ? null : loadedImgs, mappedDat);
+                                        }
+                                        outcome.LoadedImages = loadedImgs;
+                                        outcome.MappedData = mappedDat;
+                                    }
+                                    else
+                                    {
+                                        var sbImg = new System.Text.StringBuilder(1024);
+                                        uint sz = (uint)sbImg.Capacity;
+                                        bool gotMain = QueryFullProcessImageNameW(hProc, 0, sbImg, ref sz);
+                                        if (gotMain && sz > 0)
+                                        {
+                                            string mainPath = NormalizeDosOrNtPath(sbImg.ToString(0, (int)sz));
+                                            for (int ti = 0; ti < targets.Count; ti++)
+                                            {
+                                                if (targets[ti].MatchesPath(mainPath))
+                                                {
+                                                    outcome.IsMatch = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (!outcome.IsMatch && hasVmRead && hasAnyDirectory)
+                                        {
+                                            bool enumOk = false;
+                                            if (ScanProcessModulesNative(hProc, targets, false, null, out enumOk))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                            else if (CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, !enumOk, null, null))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                        }
+                                        else if (!outcome.IsMatch && hasVmRead && !hasAnyDirectory)
+                                        {
+                                            if (CollectProcessMappedFilesFromHandle(hProc, targets, dosMap, true, null, null))
+                                            {
+                                                outcome.IsMatch = true;
+                                            }
+                                        }
+                                        if (!outcome.IsMatch && !gotMain && !string.IsNullOrEmpty(pName))
+                                        {
+                                            for (int ti = 0; ti < targets.Count; ti++)
+                                            {
+                                                if (targets[ti].IsDirectory && targets[ti].DirExeNames.Contains(pName))
+                                                {
+                                                    outcome.IsMatch = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    CloseHandle(hProc);
+                                }
+                            }
+                        }
+                        outcomes[idx] = outcome;
+                    }
+                    catch {}
+                });
+            });
+
+            Task.WaitAll(leg1ServicesAndRm, leg2Handles, leg3Processes);
+
+            report.ServicesStoppedCount = svcStoppedTotal;
+            report.TasksRemovedCount = taskRemovedTotal;
+            if (handleLockers == null) handleLockers = new Dictionary<int, List<MatchedRemoteHandle>>();
+
+            var killedList = new List<string>();
+            var deniedList = new List<string>();
+            var skippedSystem = new List<string>();
+            var closedHandleList = new List<string>();
+            var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetProcs = new Dictionary<int, Process>();
+
+            for (int idx = 0; idx < procs.Length; idx++)
+            {
+                Process p = procs[idx];
+                ProcessScanOutcome o = outcomes[idx];
+                bool keepProc = false;
+                try
+                {
+                    if (o == null || o.Pid <= 4) continue;
+                    int pid = o.Pid;
+                    string pName = o.ProcName ?? "";
+                    bool rmMatched = rmLockers.ContainsKey(pid);
+                    List<MatchedRemoteHandle> pidHandles = null;
+                    handleLockers.TryGetValue(pid, out pidHandles);
+
+                    if (o.IsCritical)
+                    {
+                        if (rmMatched)
+                        {
+                            string desc = pName + " (PID " + pid.ToString() + ")";
+                            if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
+                        }
+                        continue;
+                    }
+
+                    if (o.IsProtectedHost)
+                    {
+                        var loadedImages = o.LoadedImages ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var mappedData = o.MappedData ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (!o.DidModuleScan && (rmMatched || pidHandles != null))
+                        {
+                            IntPtr hHost = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+                            if (hHost != IntPtr.Zero)
+                            {
+                                try
+                                {
+                                    bool enumOk = false;
+                                    ScanProcessModulesNative(hHost, targets, true, loadedImages, out enumOk);
+                                    CollectProcessMappedFilesFromHandle(hHost, targets, dosMap, !enumOk, enumOk ? null : loadedImages, mappedData);
+                                }
+                                finally
+                                {
+                                    CloseHandle(hHost);
+                                }
+                            }
+                        }
+
+                        int closedForPid = 0;
+                        if (pidHandles != null && pidHandles.Count > 0)
+                        {
+                            foreach (MatchedRemoteHandle mh in pidHandles)
+                            {
+                                if (loadedImages.Contains(mh.DosPath)) continue;
+                                if (TryCloseRemoteFileHandle(pid, mh.RemoteHandle))
+                                {
+                                    closedForPid++;
+                                    report.ClosedHandlesCount++;
+                                    string hLabel = pName + " -> " + (string.IsNullOrEmpty(mh.DosPath) ? targets[0].Norm : Path.GetFileName(mh.DosPath));
+                                    if (seenNames.Add("H:" + hLabel + ":" + mh.RemoteHandle.ToString()))
+                                    {
+                                        if (closedHandleList.Count < 25) closedHandleList.Add(hLabel);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (loadedImages.Count > 0 || mappedData.Count > 0 || (rmMatched && closedForPid == 0 && (string.Equals(pName, "explorer", StringComparison.OrdinalIgnoreCase) || string.Equals(pName, "svchost", StringComparison.OrdinalIgnoreCase))))
+                        {
+                            string firstImg = "";
+                            foreach (string img in loadedImages) { firstImg = img; break; }
+                            if (string.IsNullOrEmpty(firstImg))
+                            {
+                                foreach (string md in mappedData) { firstImg = md; break; }
+                            }
+                            string desc = string.IsNullOrEmpty(firstImg)
+                                ? (pName + " (PID " + pid.ToString() + ")")
+                                : (pName + " (" + Path.GetFileName(firstImg) + ")");
+                            if (!skippedSystem.Contains(desc)) skippedSystem.Add(desc);
+                        }
+                        continue;
+                    }
+
+                    bool isMatch = rmMatched || (pidHandles != null && pidHandles.Count > 0) || o.IsMatch;
+                    if (isMatch && !targetProcs.ContainsKey(pid))
+                    {
+                        targetProcs[pid] = p;
+                        keepProc = true;
+                    }
+                }
+                catch {}
+                finally
+                {
+                    if (!keepProc && p != null)
+                    {
+                        try { p.Dispose(); } catch {}
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<int, Process> kvp in targetProcs)
+            {
+                try
+                {
+                    NtSuspendProcess(kvp.Value.Handle);
+                }
+                catch {}
+            }
+
+            foreach (KeyValuePair<int, Process> kvp in targetProcs)
+            {
+                int pid = kvp.Key;
+                Process mp = kvp.Value;
+                string pLabel = "PID " + pid.ToString();
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(mp.ProcessName))
+                    {
+                        pLabel = mp.ProcessName + ".exe (PID " + pid.ToString() + ")";
+                    }
+                }
+                catch {}
+
+                bool terminated = false;
+                try
+                {
+                    mp.Kill();
+                    mp.WaitForExit(1500);
+                    terminated = true;
+                }
+                catch
+                {
+                    terminated = TryTaskkillPidTree(pid);
+                }
+                finally
+                {
+                    try { mp.Dispose(); } catch {}
+                }
+
+                if (terminated)
+                {
+                    report.KilledCount++;
+                    if (seenNames.Add("K:" + pLabel)) killedList.Add(pLabel);
+                }
+                else
+                {
+                    report.AccessDeniedCount++;
+                    if (seenNames.Add("D:" + pLabel)) deniedList.Add(pLabel);
+                }
+            }
+
+            if (report.KilledCount > 0 || report.ServicesStoppedCount > 0 || report.ClosedHandlesCount > 0)
+            {
+                try { Thread.Sleep(180); } catch {}
+            }
+
+            report.KilledNames = killedList.ToArray();
+            report.AccessDeniedNames = deniedList.ToArray();
+            report.SkippedSystemLockers = skippedSystem.ToArray();
+            report.ClosedHandleNames = closedHandleList.ToArray();
+            return report;
+        }
+
+        public static int StopProcessesInDirectory(string targetDir)
+        {
+            ForceStopReport rpt = ForceStopDirectoryLockers(targetDir, false);
+            return rpt.KilledCount;
+        }
+
+        private static string NormalizeServiceImagePath(string rawImgPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawImgPath)) return "";
+            string s = rawImgPath.Trim('\"', ' ');
+            if (s.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
+            {
+                s = s.Substring(4);
+            }
+            if (s.StartsWith(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase))
+            {
+                s = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), s.Substring(12));
+            }
+            try { s = Environment.ExpandEnvironmentVariables(s); } catch {}
+            return s.Trim('\"', ' ');
+        }
+
+        private static void StopSingleServiceHandleAndWait(IntPtr hSvc)
+        {
+            if (hSvc == IntPtr.Zero) return;
+            try
+            {
+                SERVICE_STATUS st;
+                ControlService(hSvc, SERVICE_CONTROL_STOP, out st);
+                int waited = 0;
+                while (waited < 1200)
+                {
+                    SERVICE_STATUS cur;
+                    if (!QueryServiceStatus(hSvc, out cur) || cur.dwCurrentState == SERVICE_STOPPED) break;
+                    Thread.Sleep(80);
+                    waited += 80;
+                }
+            }
+            catch {}
+        }
+
+        private static readonly HashSet<string> _protectedWindowsFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "FltMgr", "FileInfo", "Wof", "WdFilter", "MsSecFlt", "WinDefend", "Sense",
+            "wcifs", "luafv", "storqosflt", "bindflt", "cldflt", "bfs", "npsvctrig",
+            "FileCrypt", "tbs", "Csc", "dfsc", "mup", "mrxdav", "mrxsmb", "rdbss",
+            "srv2", "namedpipe", "msfs", "ntfs", "fastfat", "exfat", "refs", "volsnap",
+            "fvevol", "iorate", "rdyboost", "mountmgr", "partmgr", "disk", "acpi",
+            "pci", "ksecdd", "cng", "tcpip", "afd", "ndis", "nsiproxy", "sysmondrv", "procmon24"
+        };
+
+        public static bool IsSafeNonMicrosoftFilterTarget(string svcName)
+        {
+            if (string.IsNullOrWhiteSpace(svcName)) return false;
+            string clean = svcName.Trim();
+            if (_protectedWindowsFilters.Contains(clean)) return false;
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var sk = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + clean, false))
+                {
+                    if (sk == null) return false;
+                    string rawImg = sk.GetValue("ImagePath") as string;
+                    string imgPath = NormalizeServiceImagePath(rawImg);
+                    if (string.IsNullOrEmpty(imgPath)) return false;
+
+                    int exePos = imgPath.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+                    if (exePos > 0) imgPath = imgPath.Substring(0, exePos + 4).Trim('\"', ' ');
+                    else
+                    {
+                        int sysPos = imgPath.IndexOf(".sys", StringComparison.OrdinalIgnoreCase);
+                        if (sysPos > 0) imgPath = imgPath.Substring(0, sysPos + 4).Trim('\"', ' ');
+                    }
+
+                    string dispName = ((sk.GetValue("DisplayName") as string) ?? "").Trim();
+                    if (dispName.StartsWith("Microsoft ", StringComparison.OrdinalIgnoreCase) ||
+                        dispName.StartsWith("@%SystemRoot%", StringComparison.OrdinalIgnoreCase) ||
+                        dispName.StartsWith("@%windir%", StringComparison.OrdinalIgnoreCase) ||
+                        dispName.StartsWith("@SystemRoot", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+
+                    string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
+                    if (imgPath.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                        imgPath.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        imgPath = Path.Combine(winDir, imgPath);
+                    }
+
+                    string fullImg = imgPath;
+                    try { fullImg = Path.GetFullPath(imgPath); } catch {}
+
+                    if (fullImg.IndexOf(@"\Microsoft Update Health Tools\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Windows Defender", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Windows Security", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Windows NT\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fullImg.IndexOf(@"\Microsoft.NET\", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return false;
+                    }
+
+                    if (fullImg.StartsWith(winDir + "\\", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(fullImg, winDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return IsVerifiedRogueKernelDriverFile(fullImg);
+                    }
+
+                    string parentDir = Path.GetDirectoryName(fullImg);
+                    if (!IsSafeLockTargetDirectory(parentDir)) return false;
+
+                    if (File.Exists(fullImg))
+                    {
+                        string comp = "";
+                        try { comp = FileVersionInfo.GetVersionInfo(fullImg).CompanyName ?? ""; } catch {}
+                        string cert = GetSignerSubject(fullImg);
+                        if (comp.IndexOf("Microsoft Corporation", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            cert.IndexOf("Microsoft Corporation", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void DetachMinifilterFromAllVolumes(string svcName)
+        {
+            if (!IsSafeNonMicrosoftFilterTarget(svcName)) return;
+            string clean = svcName.Trim();
+            EnsureUnlockPrivileges();
+            const int FLT_NOT_FOUND = unchecked((int)0x801F000F);
+            const int FLT_VOL_NOT_FOUND = unchecked((int)0x801F0014);
+            const int FLT_INST_NOT_FOUND = unchecked((int)0x801F0015);
+            try
+            {
+                foreach (string drv in Directory.GetLogicalDrives())
+                {
+                    if (string.IsNullOrEmpty(drv) || drv.Length < 2) continue;
+                    string vol = drv.Substring(0, 2);
+                    int hr = -1;
+                    try
+                    {
+                        hr = FilterDetach(clean, vol, null);
+                        if (hr == FLT_NOT_FOUND) break;
+                        if (hr != 0 && hr != FLT_VOL_NOT_FOUND && hr != FLT_INST_NOT_FOUND)
+                        {
+                            hr = FilterDetach(clean, drv, null);
+                            if (hr == FLT_NOT_FOUND) break;
+                        }
+                    }
+                    catch {}
+                    if (hr != 0 && hr != FLT_NOT_FOUND && hr != FLT_VOL_NOT_FOUND && hr != FLT_INST_NOT_FOUND)
+                    {
+                        RunHiddenProcess("fltmc.exe", "detach \"" + clean + "\" " + vol, 900);
+                    }
+                }
+            }
+            catch {}
+        }
+
+        public static bool TryUnloadMinifilterDirect(string svcName)
+        {
+            if (!IsSafeNonMicrosoftFilterTarget(svcName)) return false;
+            string clean = svcName.Trim();
+            EnsureUnlockPrivileges();
+            DetachMinifilterFromAllVolumes(clean);
+
+            int hr = -1;
+            try
+            {
+                hr = FilterUnload(clean);
+            }
+            catch {}
+
+            if (hr != 0 && hr != unchecked((int)0x801F000F))
+            {
+                RunWithSystemOrTrustedInstaller(true, delegate()
+                {
+                    DetachMinifilterFromAllVolumes(clean);
+                    try { hr = FilterUnload(clean); } catch {}
+                });
+            }
+
+            if (hr != 0 && hr != unchecked((int)0x801F000F))
+            {
+                RunHiddenProcess("fltmc.exe", "unload \"" + clean + "\"", 1500);
+            }
+
+            return (hr == 0 || hr == unchecked((int)0x801F000F));
+        }
+
+        private static bool TryStopAndDeleteViaScm(IntPtr hScm, string svcName, bool isDriver)
+        {
+            if (isDriver)
+            {
+                TryUnloadMinifilterDirect(svcName);
+            }
+            if (hScm == IntPtr.Zero) return false;
+            IntPtr hSvc = OpenServiceW(hScm, svcName, SERVICE_STOP | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS | DELETE_ACCESS);
+            if (hSvc == IntPtr.Zero)
+            {
+                hSvc = OpenServiceW(hScm, svcName, SERVICE_STOP | SERVICE_QUERY_STATUS | DELETE_ACCESS);
+            }
+            if (hSvc == IntPtr.Zero) return false;
+            try
+            {
+                uint needed = 0;
+                uint depCount = 0;
+                EnumDependentServicesW(hSvc, SERVICE_ACTIVE, IntPtr.Zero, 0, out needed, out depCount);
+                if (needed > 0 && needed < 1048576)
+                {
+                    IntPtr depBuf = Marshal.AllocHGlobal((int)needed);
+                    try
+                    {
+                        if (EnumDependentServicesW(hSvc, SERVICE_ACTIVE, depBuf, needed, out needed, out depCount))
+                        {
+                            int esSz = Marshal.SizeOf(typeof(ENUM_SERVICE_STATUS));
+                            for (int i = 0; i < (int)depCount; i++)
+                            {
+                                ENUM_SERVICE_STATUS ess = (ENUM_SERVICE_STATUS)Marshal.PtrToStructure(new IntPtr(depBuf.ToInt64() + i * esSz), typeof(ENUM_SERVICE_STATUS));
+                                string depName = Marshal.PtrToStringUni(ess.lpServiceName);
+                                if (!string.IsNullOrWhiteSpace(depName))
+                                {
+                                    IntPtr hDep = OpenServiceW(hScm, depName, SERVICE_STOP | SERVICE_QUERY_STATUS);
+                                    if (hDep != IntPtr.Zero)
+                                    {
+                                        try { StopSingleServiceHandleAndWait(hDep); }
+                                        finally { CloseServiceHandle(hDep); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(depBuf);
+                    }
+                }
+
+                StopSingleServiceHandleAndWait(hSvc);
+                bool delOk = DeleteService(hSvc);
+                return delOk;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                CloseServiceHandle(hSvc);
+            }
+        }
+
+        public static Task<bool> NeutralizeSingleServiceOrDriverAsync(string svcName)
+        {
+            return Task.Run(delegate() { return NeutralizeSingleServiceOrDriver(svcName); });
+        }
+
+        public static bool NeutralizeSingleServiceOrDriver(string svcName)
+        {
+            if (string.IsNullOrWhiteSpace(svcName)) return false;
+            string cleanName = svcName.Trim();
+            if (!IsSafeNonMicrosoftFilterTarget(cleanName)) return false;
+            EnsureUnlockPrivileges();
+
+            bool isDriver = false;
+            Action disableInReg = delegate()
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (var sk = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, true))
+                    {
+                        if (sk != null)
+                        {
+                            object tObj = sk.GetValue("Type");
+                            if (tObj != null)
+                            {
+                                int tVal = Convert.ToInt32(tObj) & 0x0F;
+                                isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                            }
+                            try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
+                            try { sk.DeleteValue("FailureActions", false); } catch {}
+                        }
+                    }
+                }
+                catch {}
+            };
+
+            disableInReg();
+
+            bool scmOk = false;
+            IntPtr hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
+            try
+            {
+                scmOk = TryStopAndDeleteViaScm(hScm, cleanName, isDriver);
+                if (!scmOk)
+                {
+                    RunWithSystemOrTrustedInstaller(true, delegate()
+                    {
+                        disableInReg();
+                        IntPtr hScmElev = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
+                        if (hScmElev != IntPtr.Zero)
+                        {
+                            try
+                            {
+                                scmOk = TryStopAndDeleteViaScm(hScmElev, cleanName, isDriver);
+                            }
+                            finally
+                            {
+                                CloseServiceHandle(hScmElev);
+                            }
+                        }
+                    });
+                }
+                if (!scmOk)
+                {
+                    if (isDriver)
+                    {
+                        TryUnloadMinifilterDirect(cleanName);
+                    }
+                    RunHiddenSc("stop \"" + cleanName + "\"");
+                    RunHiddenSc("delete \"" + cleanName + "\"");
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (hScm != IntPtr.Zero) CloseServiceHandle(hScm);
+            }
+
+            Action deleteSvcKeyTree = delegate()
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", true))
+                    {
+                        if (svcRoot != null)
+                        {
+                            svcRoot.DeleteSubKeyTree(cleanName, false);
+                        }
+                    }
+                }
+                catch {}
+            };
+
+            deleteSvcKeyTree();
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var skCheck = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, false))
+                {
+                    if (skCheck != null)
+                    {
+                        RunWithSystemOrTrustedInstaller(true, delegate()
+                        {
+                            deleteSvcKeyTree();
+                        });
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var skFinal = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + cleanName, false))
+                {
+                    if (skFinal == null) return true;
+                    object delFlag = skFinal.GetValue("DeleteFlag");
+                    if (delFlag != null && Convert.ToInt32(delFlag) != 0) return true;
+                    return scmOk;
+                }
+            }
+            catch
+            {
+                return scmOk;
+            }
+        }
+
+        private static void RunHiddenProcess(string exe, string args, int timeoutMs)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo(exe, args);
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (var p = Process.Start(psi))
+                {
+                    if (p != null) p.WaitForExit(timeoutMs);
+                }
+            }
+            catch {}
+        }
+
+        private static string DetectRogueVendorFamilyFromPath(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return "";
+            if (targetDir.IndexOf("360", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                targetDir.IndexOf("Qihu", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                targetDir.IndexOf("Qihoo", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "360";
+            }
+            if (targetDir.IndexOf("2345", StringComparison.OrdinalIgnoreCase) >= 0) return "2345";
+            if (targetDir.IndexOf("Kingsoft", StringComparison.OrdinalIgnoreCase) >= 0) return "Kingsoft";
+            if (targetDir.IndexOf("Baidu", StringComparison.OrdinalIgnoreCase) >= 0) return "Baidu";
+            return "";
+        }
+
+        public static int DisableAndRemoveServicesInDirectory(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
+            string norm = targetDir.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+            if (!IsSafeLockTargetDirectory(norm)) return 0;
+            string prefix = norm + "\\";
+            if (prefix.Length <= 4) return 0;
+
+            string vendorFamily = DetectRogueVendorFamilyFromPath(norm);
+            int neutralized = 0;
+            IntPtr hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", true))
+                {
+                    if (svcRoot == null) return 0;
+                    foreach (string svcName in svcRoot.GetSubKeyNames())
+                    {
+                        try
+                        {
+                            bool matches = false;
+                            bool isDriver = false;
+                            string resolvedDriverSys = "";
+                            using (var sk = svcRoot.OpenSubKey(svcName, true))
+                            {
+                                if (sk == null) continue;
+                                string rawImg = sk.GetValue("ImagePath") as string;
+                                string imgPath = NormalizeServiceImagePath(rawImg);
+                                if (string.IsNullOrEmpty(imgPath)) continue;
+
+                                try
+                                {
+                                    object tObj = sk.GetValue("Type");
+                                    if (tObj != null)
+                                    {
+                                        int tVal = Convert.ToInt32(tObj) & 0x0F;
+                                        isDriver = (tVal == 1 || tVal == 2 || tVal == 8);
+                                    }
+                                }
+                                catch {}
+
+                                if (imgPath.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    matches = true;
+                                }
+                                else if (isDriver && !string.IsNullOrEmpty(vendorFamily))
+                                {
+                                    string sysCandidate = imgPath;
+                                    if (sysCandidate.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                                        sysCandidate.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        sysCandidate = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), sysCandidate);
+                                    }
+                                    if (File.Exists(sysCandidate) && IsVerifiedRogueKernelDriverFile(sysCandidate))
+                                    {
+                                        FileVersionInfo fvi = null;
+                                        try { fvi = FileVersionInfo.GetVersionInfo(sysCandidate); } catch {}
+                                        string meta = Path.GetFileName(sysCandidate) + " " + (fvi != null ? (fvi.CompanyName + " " + fvi.ProductName + " " + fvi.FileDescription) : "") + " " + GetSignerSubject(sysCandidate);
+                                        if (meta.IndexOf(vendorFamily, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            (vendorFamily == "360" && (meta.IndexOf("Qihu", StringComparison.OrdinalIgnoreCase) >= 0 || meta.IndexOf("Qihoo", StringComparison.OrdinalIgnoreCase) >= 0)))
+                                        {
+                                            matches = true;
+                                            resolvedDriverSys = sysCandidate;
+                                        }
+                                    }
+                                }
+
+                                if (matches)
+                                {
+                                    try { sk.SetValue("Start", 4, RegistryValueKind.DWord); } catch {}
+                                    try { sk.DeleteValue("FailureActions", false); } catch {}
+                                }
+                            }
+
+                            if (matches)
+                            {
+                                neutralized++;
+                                if (!TryStopAndDeleteViaScm(hScm, svcName, isDriver))
+                                {
+                                    NeutralizeSingleServiceOrDriver(svcName);
+                                }
+                                if (!string.IsNullOrEmpty(resolvedDriverSys) && File.Exists(resolvedDriverSys))
+                                {
+                                    int rbDummy;
+                                    ForceDeleteDirectory(resolvedDriverSys, false, out rbDummy);
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            finally
+            {
+                if (hScm != IntPtr.Zero) CloseServiceHandle(hScm);
+            }
+            return neutralized;
+        }
+
+        public static int RemoveScheduledTasksInDirectory(string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir)) return 0;
+            string norm = targetDir.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+            if (!IsSafeLockTargetDirectory(norm)) return 0;
+            string prefix = norm + "\\";
+            if (prefix.Length <= 4) return 0;
+
+            int removed = 0;
+            string tasksRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "Tasks");
+            if (!Directory.Exists(tasksRoot)) return 0;
+
+            try
+            {
+                foreach (string taskFile in EnumerateFilesSafe(tasksRoot, "*", 6))
+                {
+                    try
+                    {
+                        if (taskFile.IndexOf(@"\Tasks\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase) >= 0)
+                            continue;
+
+                        string xml = File.ReadAllText(taskFile);
+                        if (xml.IndexOf(prefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            string relTaskName = taskFile.Substring(tasksRoot.Length);
+                            try
+                            {
+                                var psi = new ProcessStartInfo("schtasks.exe", "/Delete /TN \"" + relTaskName + "\" /F");
+                                psi.CreateNoWindow = true;
+                                psi.UseShellExecute = false;
+                                using (var p = Process.Start(psi))
+                                {
+                                    if (p != null) p.WaitForExit(2000);
+                                }
+                            }
+                            catch {}
+                            try
+                            {
+                                File.SetAttributes(taskFile, FileAttributes.Normal);
+                                File.Delete(taskFile);
+                            }
+                            catch {}
+                            removed++;
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+            return removed;
+        }
+
+        private static void RunHiddenSc(string args)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("sc.exe", args);
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                using (var p = Process.Start(psi))
+                {
+                    if (p != null) p.WaitForExit(2000);
+                }
+            }
+            catch {}
+        }
+
+        public static bool VerifyDirectoryExeOwnership(string targetDir, string[] expectedKeywords)
+        {
+            if (string.IsNullOrWhiteSpace(targetDir) || expectedKeywords == null || expectedKeywords.Length == 0)
+                return false;
+            try
+            {
+                if (!Directory.Exists(targetDir)) return false;
+                int checkedCount = 0;
+                foreach (string file in EnumerateFilesSafe(targetDir, "*", 4))
+                {
+                    string ext = Path.GetExtension(file);
+                    if (!string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(ext, ".dll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    checkedCount++;
+                    if (checkedCount > 15) break;
+
+                    try
+                    {
+                        FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
+                        string certSubj = GetSignerSubject(file);
+
+                        string combined = (fvi.ProductName ?? "") + " | " + (fvi.CompanyName ?? "") + " | " + (fvi.FileDescription ?? "") + " | " + (fvi.InternalName ?? "") + " | " + (fvi.OriginalFilename ?? "") + " | " + certSubj;
+                        foreach (string kw in expectedKeywords)
+                        {
+                            if (string.IsNullOrWhiteSpace(kw) || kw.Length < 2) continue;
+                            if (combined.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        public static string[] ExtractBinaryAndCertTokens(string targetDir, string uninstallString, string displayIcon)
+        {
+            var results = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var ignoreWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "uninstall", "uninst", "unins000", "unins001", "setup", "install", "installer",
+                "update", "updater", "helper", "launcher", "client", "app", "application",
+                "main", "bin", "x64", "x86", "win32", "win64", "release", "debug", "program files",
+                "program files (x86)", "common files", "programs", "appdata", "local", "roaming",
+                "windows", "system32", "temp", "microsoft", "corporation", "company", "limited",
+                "ltd", "inc", "llc", "corp", "co", "technology", "software", "network", "beijing",
+                "shenzhen", "guangzhou", "shanghai", "hangzhou", "china"
+            };
+
+            string[] exeSources = new string[] { uninstallString, displayIcon };
+            foreach (string src in exeSources)
+            {
+                string exe = ExtractExePath(src);
+                if (!string.IsNullOrWhiteSpace(exe))
+                {
+                    try
+                    {
+                        string baseName = Path.GetFileNameWithoutExtension(exe);
+                        if (!string.IsNullOrWhiteSpace(baseName) && baseName.Length >= 3 && !ignoreWords.Contains(baseName))
+                        {
+                            if (seen.Add(baseName)) results.Add(baseName);
+                        }
+                    }
+                    catch {}
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetDir) && Directory.Exists(targetDir))
+            {
+                try
+                {
+                    int count = 0;
+                    foreach (string file in EnumerateFilesSafe(targetDir, "*.exe", 4))
+                    {
+                        count++;
+                        if (count > 8) break;
+                        string fn = Path.GetFileNameWithoutExtension(file);
+                        if (!string.IsNullOrWhiteSpace(fn) && fn.Length >= 3 && !ignoreWords.Contains(fn))
+                        {
+                            if (seen.Add(fn)) results.Add(fn);
+                        }
+
+                        try
+                        {
+                            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(file);
+                            string[] fields = new string[] { fvi.ProductName, fvi.CompanyName, fvi.InternalName };
+                            foreach (string f in fields)
+                            {
+                                if (string.IsNullOrWhiteSpace(f)) continue;
+                                string clean = f.Replace(".exe", "").Replace(".dll", "").Trim();
+                                if (clean.Length >= 3 && clean.Length <= 30 && !ignoreWords.Contains(clean))
+                                {
+                                    if (seen.Add(clean)) results.Add(clean);
+                                }
+                            }
+                        }
+                        catch {}
+
+                        try
+                        {
+                            string certSubj = GetSignerSubject(file);
+                            if (!string.IsNullOrWhiteSpace(certSubj))
+                            {
+                                string[] parts = certSubj.Split(',');
+                                foreach (string part in parts)
+                                {
+                                    string p = part.Trim();
+                                    if (p.StartsWith("CN=", StringComparison.OrdinalIgnoreCase) ||
+                                        p.StartsWith("O=", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        string val = p.Substring(p.IndexOf('=') + 1).Trim('\"', ' ');
+                                        string[] words = val.Split(new char[] { ' ', '(', ')', '.', ',', '-' }, StringSplitOptions.RemoveEmptyEntries);
+                                        foreach (string w in words)
+                                        {
+                                            if (w.Length >= 4 && !ignoreWords.Contains(w))
+                                            {
+                                                if (seen.Add(w)) results.Add(w);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+                catch {}
+            }
+
+            return results.ToArray();
+        }
+
+        private static HashSet<string> LoadPendingRebootDeleteSet()
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var sm = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager", false))
+                {
+                    if (sm != null)
+                    {
+                        string[] ops = sm.GetValue("PendingFileRenameOperations") as string[];
+                        if (ops != null)
+                        {
+                            for (int i = 0; i + 1 < ops.Length; i += 2)
+                            {
+                                string src = ops[i];
+                                string dst = ops[i + 1];
+                                if (!string.IsNullOrEmpty(src) && string.IsNullOrEmpty(dst))
+                                {
+                                    set.Add(NormalizeDosOrNtPath(src));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+            return set;
+        }
+
+        private static bool ScheduleMoveFileExUnique(string path, HashSet<string> existingPending)
+        {
+            string normPath = NormalizeDosOrNtPath(path);
+            if (existingPending != null && existingPending.Contains(normPath))
+            {
+                return false;
+            }
+            if (MoveFileEx(path, null, MOVEFILE_DELAY_UNTIL_REBOOT))
+            {
+                if (existingPending != null) existingPending.Add(normPath);
+                return true;
+            }
+            return false;
+        }
+
+        private static string GetOrCreateGraveyardDirectory(string sourceFilePath, HashSet<string> existingPending)
+        {
+            try
+            {
+                string srcRoot = Path.GetPathRoot(Path.GetFullPath(sourceFilePath)) ?? "";
+                string tmpBase = Path.GetTempPath();
+                string tmpRoot = Path.GetPathRoot(tmpBase) ?? "";
+                string graveDir = string.Equals(srcRoot, tmpRoot, StringComparison.OrdinalIgnoreCase)
+                    ? Path.Combine(tmpBase.TrimEnd('\\'), "DuckUtil_Graveyard")
+                    : Path.Combine(srcRoot, "DuckUtil_Graveyard");
+
+                if (!Directory.Exists(graveDir))
+                {
+                    Directory.CreateDirectory(graveDir);
+                    try
+                    {
+                        File.SetAttributes(graveDir, FileAttributes.Directory | FileAttributes.Hidden);
+                    }
+                    catch {}
+                }
+                else
+                {
+                    try
+                    {
+                        foreach (string oldDead in Directory.GetFiles(graveDir, "*.dead_*"))
+                        {
+                            try
+                            {
+                                if (!TryPosixUnlinkFile(oldDead))
+                                {
+                                    File.SetAttributes(oldDead, FileAttributes.Normal);
+                                    File.Delete(oldDead);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                    catch {}
+                }
+                ScheduleMoveFileExUnique(graveDir, existingPending);
+                return graveDir;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        private static bool TryEvacuateLockedFileToGraveyard(string filePath, HashSet<string> existingPending, ref int rebootScheduledCount)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) return true;
+            try
+            {
+                string graveDir = GetOrCreateGraveyardDirectory(filePath, existingPending);
+                if (!string.IsNullOrEmpty(graveDir))
+                {
+                    string graveFile = Path.Combine(graveDir, Path.GetFileName(filePath) + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+                    File.Move(filePath, graveFile);
+                    if (!TryPosixUnlinkFile(graveFile) && File.Exists(graveFile))
+                    {
+                        if (ScheduleMoveFileExUnique(graveFile, existingPending))
+                        {
+                            rebootScheduledCount++;
+                        }
+                    }
+                    return !File.Exists(filePath);
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        private static bool TryDeleteSingleFileAggressively(string file, bool allowParentAclUnlock)
+        {
+            if (!File.Exists(file)) return true;
+            try
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+                if (!File.Exists(file)) return true;
+            }
+            catch {}
+
+            if (TryPosixUnlinkFile(file)) return true;
+
+            if (TryTakeOwnershipAndGrantAdminAccess(file))
+            {
+                try
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                    if (!File.Exists(file)) return true;
+                }
+                catch {}
+                if (TryPosixUnlinkFile(file)) return true;
+            }
+
+            if (allowParentAclUnlock)
+            {
+                string parentDir = Path.GetDirectoryName(file);
+                if (!string.IsNullOrEmpty(parentDir) && TryTakeOwnershipAndGrantAdminAccess(parentDir))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                        if (!File.Exists(file)) return true;
+                    }
+                    catch {}
+                    if (TryPosixUnlinkFile(file)) return true;
+                }
+            }
+
+            if (File.Exists(file))
+            {
+                RunWithSystemOrTrustedInstaller(true, delegate()
+                {
+                    TryTakeOwnershipAndGrantAdminAccessCore(file, false);
+                    if (!TryPosixUnlinkFile(file) && File.Exists(file))
+                    {
+                        try
+                        {
+                            File.SetAttributes(file, FileAttributes.Normal);
+                            File.Delete(file);
+                        }
+                        catch {}
+                    }
+                });
+            }
+            return !File.Exists(file);
+        }
+
+        public static ForceDeleteResult ForceDeleteDirectoryWithResult(string targetDir, bool runFullLockerStop)
+        {
+            int rb = 0;
+            bool ok = ForceDeleteDirectory(targetDir, runFullLockerStop, out rb);
+            return new ForceDeleteResult { Deleted = ok, RebootScheduledCount = rb };
+        }
+
+        public static Task<ForceDeleteResult> ForceDeleteDirectoryAsync(string targetDir, bool runFullLockerStop)
+        {
+            return Task.Run(delegate() { return ForceDeleteDirectoryWithResult(targetDir, runFullLockerStop); });
+        }
+
+        public static Task<bool> WaitForProcessExitAsync(Process proc)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            if (proc == null)
+            {
+                tcs.TrySetResult(true);
+                return tcs.Task;
+            }
+            EventHandler handler = null;
+            handler = delegate(object s, EventArgs e)
+            {
+                try { proc.Exited -= handler; } catch {}
+                tcs.TrySetResult(true);
+            };
+            try
+            {
+                proc.EnableRaisingEvents = true;
+                proc.Exited += handler;
+                if (proc.HasExited)
+                {
+                    try { proc.Exited -= handler; } catch {}
+                    tcs.TrySetResult(true);
+                }
+            }
+            catch
+            {
+                try { proc.Exited -= handler; } catch {}
+                tcs.TrySetResult(true);
+            }
+            return tcs.Task;
+        }
+
+        public static List<ServiceScanEntry> ScanServicesAndDrivers()
+        {
+            var result = new List<ServiceScanEntry>();
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", false))
+                {
+                    if (svcRoot == null) return result;
+                    string[] names = svcRoot.GetSubKeyNames();
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        string sName = names[i];
+                        try
+                        {
+                            using (var sk = svcRoot.OpenSubKey(sName, false))
+                            {
+                                if (sk == null) continue;
+                                string rawImg = sk.GetValue("ImagePath") as string;
+                                if (string.IsNullOrWhiteSpace(rawImg)) continue;
+                                int sType = 0;
+                                try
+                                {
+                                    object tObj = sk.GetValue("Type");
+                                    if (tObj != null) sType = Convert.ToInt32(tObj);
+                                }
+                                catch {}
+                                int baseType = sType & 0x0F;
+                                bool isDrv = (baseType == 1 || baseType == 2 || baseType == 8);
+                                string normImg = NormalizeServiceImagePath(rawImg);
+                                string resolved = normImg;
+                                if (!string.IsNullOrEmpty(resolved) &&
+                                    (resolved.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                                     resolved.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase)) &&
+                                    !string.IsNullOrEmpty(winDir))
+                                {
+                                    resolved = Path.Combine(winDir, resolved);
+                                }
+                                result.Add(new ServiceScanEntry
+                                {
+                                    ServiceName = sName,
+                                    DisplayName = (sk.GetValue("DisplayName") as string) ?? "",
+                                    ImagePath = rawImg,
+                                    ResolvedImagePath = resolved,
+                                    ServiceType = sType,
+                                    IsKernelDriver = isDrv
+                                });
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return result;
+        }
+
+        public static Task<List<ServiceScanEntry>> ScanServicesAndDriversAsync()
+        {
+            return Task.Run(delegate() { return ScanServicesAndDrivers(); });
+        }
+
+        public static bool ForceDeleteDirectory(string targetDir, out int rebootScheduledCount)
+        {
+            return ForceDeleteDirectory(targetDir, true, out rebootScheduledCount);
+        }
+
+        public static bool ForceDeleteDirectory(string targetDir, bool runFullLockerStop, out int rebootScheduledCount)
+        {
+            rebootScheduledCount = 0;
+            if (string.IsNullOrWhiteSpace(targetDir)) return false;
+            string norm = targetDir.Trim().TrimEnd('\\');
+            try { norm = Path.GetFullPath(norm).TrimEnd('\\'); } catch {}
+            if (norm.Length <= 3) return false;
+
+            HashSet<string> existingPending = LoadPendingRebootDeleteSet();
+
+            if (File.Exists(norm))
+            {
+                bool isRogueDrv = IsVerifiedRogueKernelDriverFile(norm);
+                if (!IsSafeLockTargetDirectory(Path.GetDirectoryName(norm)) && !isRogueDrv) return false;
+                if (isRogueDrv)
+                {
+                    try
+                    {
+                        string drvFileName = Path.GetFileName(norm);
+                        using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                        using (var svcRoot = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services", false))
+                        {
+                            if (svcRoot != null && !string.IsNullOrEmpty(drvFileName))
+                            {
+                                foreach (string sName in svcRoot.GetSubKeyNames())
+                                {
+                                    try
+                                    {
+                                        using (var sk = svcRoot.OpenSubKey(sName, false))
+                                        {
+                                            if (sk == null) continue;
+                                            string img = sk.GetValue("ImagePath") as string ?? "";
+                                            if (img.IndexOf(drvFileName, StringComparison.OrdinalIgnoreCase) >= 0)
+                                            {
+                                                NeutralizeSingleServiceOrDriver(sName);
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (TryDeleteSingleFileAggressively(norm, !isRogueDrv)) return true;
+                if (runFullLockerStop)
+                {
+                    ForceStopDirectoryLockers(norm, false);
+                    if (TryDeleteSingleFileAggressively(norm, !isRogueDrv)) return true;
+                }
+                if (TryEvacuateLockedFileToGraveyard(norm, existingPending, ref rebootScheduledCount))
+                {
+                    return true;
+                }
+                if (ScheduleMoveFileExUnique(norm, existingPending))
+                {
+                    rebootScheduledCount++;
+                }
+                return existingPending.Contains(NormalizeDosOrNtPath(norm));
+            }
+
+            if (!Directory.Exists(norm)) return true;
+            if (!IsSafeLockTargetDirectory(norm)) return false;
+
+            if (IsReparsePoint(norm))
+            {
+                try
+                {
+                    Directory.Delete(norm, false);
+                    return true;
+                }
+                catch
+                {
+                    if (ScheduleMoveFileExUnique(norm, existingPending))
+                    {
+                        rebootScheduledCount++;
+                    }
+                    return existingPending.Contains(NormalizeDosOrNtPath(norm));
+                }
+            }
+
+            if (runFullLockerStop)
+            {
+                ForceStopDirectoryLockers(norm, true);
+            }
+
+            try
+            {
+                foreach (string file in EnumerateFilesSafe(norm, "*", 10))
+                {
+                    if (TryDeleteSingleFileAggressively(file, true)) continue;
+
+                    if (TryEvacuateLockedFileToGraveyard(file, existingPending, ref rebootScheduledCount))
+                    {
+                        continue;
+                    }
+
+                    if (file.IndexOf(".dead_", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        if (ScheduleMoveFileExUnique(file, existingPending))
+                        {
+                            rebootScheduledCount++;
+                        }
+                    }
+                    else
+                    {
+                        string deadPath = file + ".dead_" + Guid.NewGuid().ToString("N").Substring(0, 6);
+                        try
+                        {
+                            File.Move(file, deadPath);
+                            if (ScheduleMoveFileExUnique(deadPath, existingPending))
+                            {
+                                rebootScheduledCount++;
+                            }
+                        }
+                        catch
+                        {
+                            if (ScheduleMoveFileExUnique(file, existingPending))
+                            {
+                                rebootScheduledCount++;
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                List<string> subDirs = EnumerateDirectoriesSafe(norm, 10);
+                subDirs.Sort(delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                foreach (string sd in subDirs)
+                {
+                    try
+                    {
+                        if (IsReparsePoint(sd))
+                        {
+                            Directory.Delete(sd, false);
+                        }
+                        else
+                        {
+                            File.SetAttributes(sd, FileAttributes.Normal);
+                            Directory.Delete(sd, false);
+                        }
+                    }
+                    catch
+                    {
+                        bool dirRecovered = false;
+                        if (!IsReparsePoint(sd) && TryTakeOwnershipAndGrantAdminAccess(sd))
+                        {
+                            try
+                            {
+                                foreach (string innerFile in Directory.GetFiles(sd))
+                                {
+                                    if (!TryDeleteSingleFileAggressively(innerFile, false))
+                                    {
+                                        TryEvacuateLockedFileToGraveyard(innerFile, existingPending, ref rebootScheduledCount);
+                                    }
+                                }
+                            }
+                            catch {}
+                            try
+                            {
+                                File.SetAttributes(sd, FileAttributes.Normal);
+                                Directory.Delete(sd, false);
+                                dirRecovered = true;
+                            }
+                            catch {}
+                        }
+                        if (!dirRecovered)
+                        {
+                            ScheduleMoveFileExUnique(sd, existingPending);
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                File.SetAttributes(norm, FileAttributes.Normal);
+                Directory.Delete(norm, false);
+                return true;
+            }
+            catch
+            {
+                if (TryTakeOwnershipAndGrantAdminAccess(norm))
+                {
+                    try
+                    {
+                        File.SetAttributes(norm, FileAttributes.Normal);
+                        Directory.Delete(norm, false);
+                        return true;
+                    }
+                    catch {}
+                }
+                if (ScheduleMoveFileExUnique(norm, existingPending))
+                {
+                    rebootScheduledCount++;
+                    return true;
+                }
+                return existingPending.Contains(NormalizeDosOrNtPath(norm));
+            }
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes)
+        {
+            return BackupDirectorySnapshot(sourceDir, backupDir, maxTotalBytes, false);
+        }
+
+        public static long BackupDirectorySnapshot(string sourceDir, string backupDir, long maxTotalBytes, bool isInstallDir)
+        {
+            if (string.IsNullOrWhiteSpace(sourceDir) || string.IsNullOrWhiteSpace(backupDir))
+                return 0L;
+            try
+            {
+                if (!Directory.Exists(sourceDir) || IsReparsePoint(sourceDir)) return 0L;
+            }
+            catch { return 0L; }
+
+            if (maxTotalBytes <= 0) maxTotalBytes = 104857600L;
+
+            var skipExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".exe", ".dll", ".sys", ".pdb", ".pak", ".node", ".obj", ".iso", ".vmdk", ".asar", ".msi", ".cab", ".manifest", ".cat", ".mum"
+            };
+            var skipFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "icudtl.dat", "v8_context_snapshot.bin", "snapshot_blob.bin",
+                "chrome_100_percent.pak", "chrome_200_percent.pak", "resources.pak",
+                "package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"
+            };
+            var installAllowExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".ini", ".cfg", ".conf", ".config", ".toml", ".yaml", ".yml",
+                ".lic", ".license", ".key", ".reg", ".db", ".sqlite", ".sqlite3",
+                ".json", ".xml", ".txt", ".dat", ".bin", ".properties", ".prefs"
+            };
+            var skipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Cache", "Code Cache", "GPUCache", "DawnGraphiteCache", "DawnWebGPUCache",
+                "GrShaderCache", "ShaderCache", "Crashpad", "logs", "Log", "temp", "tmp",
+                "blob_storage", "Service Worker", "packages", "IndexedDB", "WebStorage",
+                "locales", "swiftshader", "Dictionaries", "node_modules"
+            };
+
+            long totalBytes = 0L;
+            int srcLen = sourceDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { sourceDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string fn = Path.GetFileName(file) ?? "";
+                                if (skipFileNames.Contains(fn)) continue;
+                                if (fn.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase) ||
+                                    fn.EndsWith(".runtimeconfig.dev.json", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+
+                                string ext = Path.GetExtension(file);
+                                if (!string.IsNullOrEmpty(ext) && skipExts.Contains(ext))
+                                    continue;
+
+                                if (isInstallDir)
+                                {
+                                    if (string.IsNullOrEmpty(ext) || !installAllowExts.Contains(ext))
+                                        continue;
+                                }
+
+                                var fi = new FileInfo(file);
+                                if (fi.Length > 20971520L) continue;
+                                if (totalBytes + fi.Length > maxTotalBytes) continue;
+
+                                string relPath = file.Substring(srcLen).TrimStart('\\');
+                                string destFile = Path.Combine(backupDir, relPath);
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, true);
+                                totalBytes += fi.Length;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                if (IsReparsePoint(sub)) continue;
+                                string subName = Path.GetFileName(sub) ?? "";
+                                if (skipDirs.Contains(subName)) continue;
+                                if (Regex.IsMatch(subName, @"^(app-\d+(\.\d+)+|\d+\.\d+\.\d+(\.\d+)?)$", RegexOptions.IgnoreCase)) continue;
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return totalBytes;
+        }
+
+        public static int RestoreDirectorySnapshot(string backupDir, string targetDir)
+        {
+            if (string.IsNullOrWhiteSpace(backupDir) || string.IsNullOrWhiteSpace(targetDir))
+                return 0;
+            try
+            {
+                if (!Directory.Exists(backupDir)) return 0;
+            }
+            catch { return 0; }
+
+            int restoredCount = 0;
+            int bkpLen = backupDir.TrimEnd('\\').Length;
+
+            var currentLevel = new List<string> { backupDir };
+            for (int depth = 0; depth <= 8; depth++)
+            {
+                var nextLevel = new List<string>();
+                foreach (var dir in currentLevel)
+                {
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(dir))
+                        {
+                            try
+                            {
+                                string relPath = file.Substring(bkpLen).TrimStart('\\');
+                                string destFile = Path.Combine(targetDir, relPath);
+                                if (File.Exists(destFile)) continue;
+                                string destDir = Path.GetDirectoryName(destFile);
+                                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                                {
+                                    Directory.CreateDirectory(destDir);
+                                }
+
+                                File.Copy(file, destFile, false);
+                                restoredCount++;
+                            }
+                            catch {}
+                        }
+
+                        if (depth < 8)
+                        {
+                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            {
+                                nextLevel.Add(sub);
+                            }
+                        }
+                    }
+                    catch {}
+                }
+                if (nextLevel.Count == 0) break;
+                currentLevel = nextLevel;
+            }
+
+            return restoredCount;
+        }
+
+        public static string DetectInstallerFramework(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath)) return "";
+            try
+            {
+                if (!File.Exists(exePath)) return "";
+
+                try
+                {
+                    string datPath = Path.ChangeExtension(exePath, ".dat");
+                    if (!string.IsNullOrEmpty(datPath) && File.Exists(datPath))
+                    {
+                        using (var dfs = new FileStream(datPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                            byte[] hdr = new byte[(int)Math.Min(64L, dfs.Length)];
+                            int read = dfs.Read(hdr, 0, hdr.Length);
+                            if (read > 0)
+                            {
+                                string hdrAscii = System.Text.Encoding.ASCII.GetString(hdr, 0, read);
+                                if (hdrAscii.IndexOf("Inno Setup Uninstall Log", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    return "InnoSetup";
+                            }
+                        }
+                    }
+                }
+                catch {}
+
+                string fileName = Path.GetFileName(exePath) ?? "";
+                if (fileName.Equals("Update.exe", StringComparison.OrdinalIgnoreCase))
+                    return "Squirrel";
+
+                using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    int headLen = (int)Math.Min(1048576L, fs.Length);
+                    byte[] headBuf = new byte[headLen];
+                    int headRead = fs.Read(headBuf, 0, headLen);
+                    string matched = DetectFrameworkFromBuffer(headBuf, headRead);
+                    if (!string.IsNullOrEmpty(matched)) return matched;
+
+                    if (fs.Length > 1048576L)
+                    {
+                        int tailLen = (int)Math.Min(524288L, fs.Length - headLen);
+                        if (tailLen > 0)
+                        {
+                            fs.Seek(-tailLen, SeekOrigin.End);
+                            byte[] tailBuf = new byte[tailLen];
+                            int tailRead = fs.Read(tailBuf, 0, tailLen);
+                            matched = DetectFrameworkFromBuffer(tailBuf, tailRead);
+                            if (!string.IsNullOrEmpty(matched)) return matched;
+                        }
+                    }
+                }
+
+                try
+                {
+                    var fvi = FileVersionInfo.GetVersionInfo(exePath);
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "");
+                    if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "InnoSetup";
+                }
+                catch {}
+            }
+            catch {}
+            return "";
+        }
+
+        private static string DetectFrameworkFromBuffer(byte[] buf, int len)
+        {
+            if (buf == null || len <= 0) return "";
+            string ascii = System.Text.Encoding.ASCII.GetString(buf, 0, len);
+            string uni = System.Text.Encoding.Unicode.GetString(buf, 0, len);
+
+            if (ascii.IndexOf("NullsoftInst", StringComparison.Ordinal) >= 0 ||
+                ascii.IndexOf("Nullsoft Install System", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Nullsoft Install System", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "NSIS";
+            }
+            if (ascii.IndexOf(".wixburn", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("WiX Toolset", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("WiX Toolset", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "WiX";
+            }
+            if (ascii.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "BitRock";
+            }
+            if (ascii.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("InnoSetup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "InnoSetup";
+            }
+            return "";
+        }
+
+        public static Task<List<HollowDirResult>> ScanHollowProgramDirsAsync(string[] programRoots, string[] exclusions, string[] activeInstallLocs)
+        {
+            return Task.Run(delegate()
+            {
+                var candidates = new List<string>();
+                if (programRoots != null)
+                {
+                    for (int ri = 0; ri < programRoots.Length; ri++)
+                    {
+                        string root = programRoots[ri];
+                        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                        try
+                        {
+                            string[] subs = Directory.GetDirectories(root);
+                            for (int si = 0; si < subs.Length; si++)
+                            {
+                                string sd = subs[si];
+                                string dirName = Path.GetFileName(sd) ?? "";
+                                bool isExcluded = false;
+                                if (exclusions != null)
+                                {
+                                    for (int ei = 0; ei < exclusions.Length; ei++)
+                                    {
+                                        string ex = exclusions[ei];
+                                        if (!string.IsNullOrEmpty(ex) && dirName.StartsWith(ex, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isExcluded = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (isExcluded) continue;
+
+                                string sdNorm = sd.Trim().TrimEnd('\\');
+                                string sdPrefix = sdNorm + "\\";
+                                bool isUsed = false;
+                                if (activeInstallLocs != null)
+                                {
+                                    for (int ai = 0; ai < activeInstallLocs.Length; ai++)
+                                    {
+                                        string actLoc = activeInstallLocs[ai];
+                                        if (string.IsNullOrEmpty(actLoc)) continue;
+                                        if (actLoc.Equals(sdNorm, StringComparison.OrdinalIgnoreCase) ||
+                                            actLoc.StartsWith(sdPrefix, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isUsed = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!isUsed) candidates.Add(sd);
+                            }
+                        }
+                        catch {}
+                    }
+                }
+
+                var bag = new ConcurrentBag<HollowDirResult>();
+                if (candidates.Count > 0)
+                {
+                    Parallel.For(0, candidates.Count, delegate(int idx)
+                    {
+                        string sd = candidates[idx];
+                        try
+                        {
+                            long hSize = GetHollowDirectorySize(sd, 3, 52428800L);
+                            if (hSize >= 0L)
+                            {
+                                bag.Add(new HollowDirResult
+                                {
+                                    Path = sd,
+                                    AppName = Path.GetFileName(sd) ?? sd,
+                                    SizeBytes = hSize
+                                });
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new List<HollowDirResult>(bag);
+            });
+        }
+
+        public static Task<List<HollowDirResult>> ScanHollowPathsWithSizesAsync(string[] paths, string[] appNames)
+        {
+            return Task.Run(delegate()
+            {
+                var bag = new ConcurrentBag<HollowDirResult>();
+                int count = (paths != null) ? paths.Length : 0;
+                if (count > 0)
+                {
+                    Parallel.For(0, count, delegate(int idx)
+                    {
+                        string p = paths[idx];
+                        if (string.IsNullOrWhiteSpace(p)) return;
+                        try
+                        {
+                            long hSize = GetHollowDirectorySize(p, 3, 52428800L);
+                            if (hSize >= 0L)
+                            {
+                                long fullSz = GetDirectorySizeFast(p, 3);
+                                bag.Add(new HollowDirResult
+                                {
+                                    Path = p,
+                                    AppName = (appNames != null && idx < appNames.Length) ? (appNames[idx] ?? "") : "",
+                                    SizeBytes = fullSz
+                                });
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new List<HollowDirResult>(bag);
+            });
+        }
+
+        public static Task<List<DeadShortcutResult>> ScanDeadShortcutsAsync(string[] rootDirs)
+        {
+            var tcs = new TaskCompletionSource<List<DeadShortcutResult>>();
+            Thread t = new Thread(delegate()
+            {
+                var results = new List<DeadShortcutResult>();
+                object wsh = null;
+                Type wshType = null;
+                try
+                {
+                    if (rootDirs != null && rootDirs.Length > 0)
+                    {
+                        wshType = Type.GetTypeFromProgID("WScript.Shell");
+                        if (wshType != null)
+                        {
+                            wsh = Activator.CreateInstance(wshType);
+                        }
+                        if (wsh != null)
+                        {
+                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            {
+                                string root = rootDirs[ri];
+                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                {
+                                    object sc = null;
+                                    try
+                                    {
+                                        sc = wshType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, wsh, new object[] { lnk });
+                                        if (sc != null)
+                                        {
+                                            string target = sc.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, sc, null) as string;
+                                            if (!string.IsNullOrEmpty(target) &&
+                                                target.Length >= 7 &&
+                                                char.IsLetter(target[0]) &&
+                                                target[1] == ':' &&
+                                                target[2] == '\\' &&
+                                                target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                                !File.Exists(target))
+                                            {
+                                                results.Add(new DeadShortcutResult
+                                                {
+                                                    LnkPath = lnk,
+                                                    AppName = Path.GetFileNameWithoutExtension(lnk) ?? lnk
+                                                });
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                    finally
+                                    {
+                                        if (sc != null) { try { Marshal.FinalReleaseComObject(sc); } catch {} }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    tcs.TrySetResult(results);
+                }
+                catch
+                {
+                    tcs.TrySetResult(results);
+                }
+                finally
+                {
+                    if (wsh != null) { try { Marshal.FinalReleaseComObject(wsh); } catch {} }
+                }
+            });
+            t.IsBackground = true;
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            return tcs.Task;
+        }
+
+        public static Task<ServicesAndRogueResult> ScanServicesAndRogueDriversAsync()
+        {
+            return Task.Run(delegate()
+            {
+                var allSvcs = ScanServicesAndDrivers();
+                var bag = new ConcurrentBag<ServiceScanEntry>();
+                if (allSvcs != null && allSvcs.Count > 0)
+                {
+                    Parallel.For(0, allSvcs.Count, delegate(int idx)
+                    {
+                        ServiceScanEntry se = allSvcs[idx];
+                        if (se == null || !se.IsKernelDriver) return;
+                        string img = se.ResolvedImagePath;
+                        if (string.IsNullOrWhiteSpace(img)) return;
+                        try
+                        {
+                            if (File.Exists(img) && IsVerifiedRogueKernelDriverFile(img))
+                            {
+                                bag.Add(se);
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new ServicesAndRogueResult
+                {
+                    AllServices = allSvcs ?? new List<ServiceScanEntry>(),
+                    RogueDrivers = new List<ServiceScanEntry>(bag)
+                };
+            });
+        }
     }
 }
 '@
@@ -13184,6 +23140,34 @@ function Get-LocalInstalledEntries {
     return $localItems
 }
 
+$script:cachedCatalogMatchTargets = $null
+$script:cachedCatalogMatchCount   = -1
+
+function Get-CatalogMatchTargetsCached {
+    if (-not $allItemBorders -or $allItemBorders.Count -eq 0) { return [DuckUtil.CatalogMatchTarget[]]@() }
+    if ($null -ne $script:cachedCatalogMatchTargets -and $script:cachedCatalogMatchCount -eq $allItemBorders.Count) {
+        return $script:cachedCatalogMatchTargets
+    }
+    $n = $allItemBorders.Count
+    $arr = [DuckUtil.CatalogMatchTarget[]]::new($n)
+    for ($i = 0; $i -lt $n; $i++) {
+        $app = $allItemBorders[$i].Tag.App
+        $t = [DuckUtil.CatalogMatchTarget]::new()
+        $t.ID = [string]$app.ID
+        $t.Name = [string]$app.Name
+        $t.Category = [string]$app.Category
+        if ($app.Aliases) {
+            $t.Aliases = [string[]]@($app.Aliases)
+        } else {
+            $t.Aliases = [string[]]@()
+        }
+        $arr[$i] = $t
+    }
+    $script:cachedCatalogMatchTargets = $arr
+    $script:cachedCatalogMatchCount = $n
+    return $arr
+}
+
 function Apply-InstalledDatabaseToRows {
     param(
         $IdMap,
@@ -13191,6 +23175,123 @@ function Apply-InstalledDatabaseToRows {
         $CleanNameMap,
         $InstalledList
     )
+
+    $countInstalled = 0
+    $countLatest = 0
+    $countOutdated = 0
+
+    $csMatchType = "DuckUtil.AppCatalogEngine" -as [type]
+    if ($csMatchType -and $null -ne $csMatchType.GetMethod("MatchCatalogApps")) {
+        $targets = Get-CatalogMatchTargetsCached
+        $instCount = if ($InstalledList) { $InstalledList.Count } else { 0 }
+        $sensorArr = [DuckUtil.CatalogSensorItem[]]::new($instCount)
+        for ($si = 0; $si -lt $instCount; $si++) {
+            $item = $InstalledList[$si]
+            if ($item -is [DuckUtil.CatalogSensorItem]) {
+                $sensorArr[$si] = $item
+            } elseif ($null -ne $item) {
+                $obj = [DuckUtil.CatalogSensorItem]::new()
+                $obj.Name      = [string]$item.Name
+                $obj.ID        = [string]$item.ID
+                $obj.Version   = [string]$item.Version
+                $obj.Available = [string]$item.Available
+                $obj.HasUpdate = [bool]$item.HasUpdate
+                $obj.CleanName = [string]$item.CleanName
+                $obj.Source    = [string]$item.Source
+                $sensorArr[$si] = $obj
+            }
+        }
+
+        $matchedArr = $null
+        if ($null -ne $csMatchType.GetMethod("MatchCatalogAppsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
+            $mTask = [DuckUtil.AppCatalogEngine]::MatchCatalogAppsAsync($targets, $sensorArr)
+            [void](Wait-TaskNonBlocking -Task $mTask -TimeoutSeconds 15)
+            if ($script:isWindowClosing) {
+                return [PSCustomObject]@{ Installed = 0; Latest = 0; Outdated = 0 }
+            }
+            if ($mTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $matchedArr = $mTask.Result
+            }
+        }
+        if ($null -eq $matchedArr) {
+            $matchedArr = [DuckUtil.AppCatalogEngine]::MatchCatalogApps($targets, $sensorArr)
+        }
+
+        $rowCount = $allItemBorders.Count
+        for ($ri = 0; $ri -lt $rowCount; $ri++) {
+            $row = $allItemBorders[$ri]
+            $tag = $row.Tag
+            $app = $tag.App
+            $tb  = $tag.NameText
+            $updateBadge = $tag.UpdateBadge
+            $updateText  = $tag.UpdateText
+            $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
+            $info = if ($matchedArr -and $ri -lt $matchedArr.Length) { $matchedArr[$ri] } else { $null }
+
+            if ($null -ne $info) {
+                $countInstalled++
+                $prevStatus = $tag.Status
+                $prevVer = $tag.InstalledVersion
+                $prevDet = $tag.DetectedId
+                $tag.DetectedId = $info.ID
+                $tag.InstalledVersion = $info.Version
+
+                if ($info.HasUpdate -eq $true) {
+                    $countOutdated++
+                    $newBadgeTxt = if ($info.Available) { "$([char]0x2191) $($info.Available)" } else { "$([char]0x2191) M$([char]0x1EDB)i" }
+                    if ($prevStatus -ne "OUTDATED" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID -or ($updateText -and $updateText.Text -ne $newBadgeTxt)) {
+                        $tag.Status = "OUTDATED"
+                        if ($tb) {
+                            $tb.Foreground = $script:brushOutdatedFg
+                            $tb.Text = $app.Name
+                            $tb.TextDecorations = $null
+                        }
+                        if ($updateBadge -and $updateText) {
+                            $updateText.Text = $newBadgeTxt
+                            $updateBadge.Visibility = [System.Windows.Visibility]::Visible
+                        }
+                        $row.ToolTip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $($info.Available)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
+                    }
+                } else {
+                    $countLatest++
+                    if ($prevStatus -ne "LATEST" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID) {
+                        $tag.Status = "LATEST"
+                        if ($tb) {
+                            $tb.Foreground = $script:brushLatestFg
+                            $tb.Text = $app.Name
+                            $tb.TextDecorations = $null
+                        }
+                        if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                            $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                        }
+                        $row.ToolTip = "$idnPrefix$($app.Name)`nPhi$([char]0x00EA)n b$([char]0x1EA3)n: $($info.Version) (M$([char]0x1EDB)i nh$([char]0x1EA5)t)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
+                    }
+                }
+            } else {
+                $prevStatus = $tag.Status
+                $tag.DetectedId = $null
+                $tag.InstalledVersion = $null
+                if ($prevStatus -ne "NONE") {
+                    $tag.Status = "NONE"
+                    if ($tb) {
+                        $tb.Foreground = $script:brushNoneFg
+                        $tb.Text = $app.Name
+                        $tb.TextDecorations = $null
+                    }
+                    if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                        $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                    }
+                    $row.ToolTip = "$idnPrefix$($app.Name)`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: Ch$([char]0x01B0)a c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t`nID: $($app.ID)"
+                }
+            }
+        }
+
+        return [PSCustomObject]@{
+            Installed = $countInstalled
+            Latest    = $countLatest
+            Outdated  = $countOutdated
+        }
+    }
 
     $lookupCache = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $tokenIndex  = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[object]]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -13347,7 +23448,6 @@ function Apply-InstalledDatabaseToRows {
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                 }
                 $tip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $($info.Available)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
-                if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             } else {
                 $countLatest++
@@ -13357,24 +23457,29 @@ function Apply-InstalledDatabaseToRows {
                     $tb.Text = $app.Name
                     $tb.TextDecorations = $null
                 }
-                if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
+                if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                    $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                }
                 $tip = "$idnPrefix$($app.Name)`nPhi$([char]0x00EA)n b$([char]0x1EA3)n: $($info.Version) (M$([char]0x1EDB)i nh$([char]0x1EA5)t)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
-                if ($tb) { $tb.ToolTip = $tip }
                 $row.ToolTip = $tip
             }
         } else {
-            $row.Tag.Status = "NONE"
+            $prevStatus = $row.Tag.Status
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null
-            if ($tb) {
-                $tb.Foreground = $script:brushNoneFg
-                $tb.Text = $app.Name
-                $tb.TextDecorations = $null
+            if ($prevStatus -ne "NONE") {
+                $row.Tag.Status = "NONE"
+                if ($tb) {
+                    $tb.Foreground = $script:brushNoneFg
+                    $tb.Text = $app.Name
+                    $tb.TextDecorations = $null
+                }
+                if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                    $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+                $tip = "$idnPrefix$($app.Name)`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: Ch$([char]0x01B0)a c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t`nID: $($app.ID)"
+                $row.ToolTip = $tip
             }
-            if ($updateBadge) { $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed }
-            $tip = "$idnPrefix$($app.Name)`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: Ch$([char]0x01B0)a c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t`nID: $($app.ID)"
-            if ($tb) { $tb.ToolTip = $tip }
-            $row.ToolTip = $tip
         }
     }
 
@@ -13402,17 +23507,20 @@ function Scan-And-ColorizeApps {
 
         $localItems = Get-LocalInstalledEntries -SkipAppx
         if ($script:isWindowClosing) { return }
-        $idMap        = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $nameMap      = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        $cleanNameMap = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        $useCsFastMatcher = ($null -ne ("DuckUtil.AppCatalogEngine" -as [type])) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("MatchCatalogApps")))
+        $idMap        = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
+        $nameMap      = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
+        $cleanNameMap = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
         $installedList = [System.Collections.Generic.List[object]]::new()
 
         foreach ($locObj in $localItems) {
             $installedList.Add($locObj)
-            if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
-            if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
-            if ($locObj.CleanName.Length -ge 3) {
-                if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+            if (-not $useCsFastMatcher) {
+                if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
+                if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
+                if ($locObj.CleanName.Length -ge 3) {
+                    if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
+                }
             }
         }
 
@@ -13473,7 +23581,7 @@ function Scan-And-ColorizeApps {
 
         if ($script:isWindowClosing) { return }
 
-        if (-not $wingetOk -or $wingetItems.Count -lt 5) {
+        if ((-not $wingetOk -or $wingetItems.Count -lt 5) -and -not ("DuckUtil.AppCatalogEngine" -as [type])) {
             $appxItems = Get-LocalInstalledEntries
             if ($script:isWindowClosing) { return }
             foreach ($ax in $appxItems) {
@@ -13489,14 +23597,16 @@ function Scan-And-ColorizeApps {
                 continue
             }
             $installedList.Add($itemObj)
-            if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
-            if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
-            if ($itemObj.CleanName.Length -ge 3) {
-                if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
-            }
+            if (-not $useCsFastMatcher) {
+                if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
+                if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
+                if ($itemObj.CleanName.Length -ge 3) {
+                    if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
+                }
 
-            if ($itemObj.ID -eq "Microsoft.VisualStudio.Community.Insiders") {
-                Set-PreferredMapEntry $idMap "Microsoft.VisualStudio.2022.Community" $itemObj
+                if ($itemObj.ID -eq "Microsoft.VisualStudio.Community.Insiders") {
+                    Set-PreferredMapEntry $idMap "Microsoft.VisualStudio.2022.Community" $itemObj
+                }
             }
         }
 
@@ -13513,6 +23623,9 @@ function Scan-And-ColorizeApps {
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
 
         $script:hasCompletedAppScan = $true
+        if (Get-Command "Try-EnableCompletedCardCaches" -ErrorAction SilentlyContinue) {
+            try { Try-EnableCompletedCardCaches } catch {}
+        }
         $modeTag = if (-not $wingetOk) { " [D$([char]0x1EF1) ph$([char]0x00F2)ng Registry/Appx]" } else { "" }
         $summary = "$([char]0x0110)$([char]0x00E3) qu$([char]0x00E9)t xong: $($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i ($($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t)$modeTag"
         Log-Text "[OK] $summary"
@@ -13787,7 +23900,8 @@ function Test-PathClaimedByActiveApp {
 function Find-AppLeftovers {
     param(
         [Parameter(Mandatory = $true)]$AppEntry,
-        [Parameter(Mandatory = $false)]$AllInstalledApps = $null
+        [Parameter(Mandatory = $false)]$AllInstalledApps = $null,
+        [Parameter(Mandatory = $false)]$PreloadedServices = $null
     )
 
     $leftovers = [System.Collections.Generic.List[object]]::new()
@@ -14220,15 +24334,17 @@ function Find-AppLeftovers {
 
     if ($vendorFam -and ("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
         try {
-            $svcList = $null
-            if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
-                $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
-                [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
-                if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $svcList = $svcTask.Result
+            $svcList = $PreloadedServices
+            if ($null -eq $svcList) {
+                if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                    $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+                    [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
+                    if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        $svcList = $svcTask.Result
+                    }
+                } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
+                    $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
                 }
-            } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
-                $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
             }
 
             if ($null -ne $svcList) {
@@ -14291,7 +24407,7 @@ function Find-SystemOrphanLeftovers {
     $orphans = [System.Collections.Generic.List[object]]::new()
     $seenPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    $exclusions = @(
+    $exclusions = [string[]]@(
         'Microsoft', 'Windows', 'Intel', 'AMD', 'NVIDIA', 'Google', 'Common Files',
         'WindowsApps', 'ModifiableWindowsApps', 'Internet Explorer', 'Windows Defender',
         'Windows Mail', 'Windows Media Player', 'Windows NT', 'Windows Photo Viewer',
@@ -14302,58 +24418,17 @@ function Find-SystemOrphanLeftovers {
 
     $activeApps = [System.Collections.Generic.List[object]]::new()
     $activeNormIdentities = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $activeInstallLocs = [System.Collections.Generic.List[string]]::new()
     foreach ($ia in $InstalledApps) {
         if (-not $ia.IsBrokenOrphan) {
             $activeApps.Add($ia)
             $normIa = Get-NormalizedAppIdentity $ia.DisplayName
             if ($normIa) { $activeNormIdentities.Add($normIa) | Out-Null }
-        }
-    }
-
-    foreach ($app in $InstalledApps) {
-        if ($app.IsBrokenOrphan) {
-            if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
-                if ($seenPaths.Add($app.RegistryPath)) {
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
-                        AppName           = $app.DisplayName
-                        Path              = $app.RegistryPath
-                        SizeBytes         = 0L
-                        SizeMB            = 0.0
-                        IsRegistry        = $true
-                        RegistryValueName = ""
-                    })
-                }
+            if (-not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
+                $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
             }
-
-            $brokenNorm = Get-NormalizedAppIdentity $app.DisplayName
-            if ($brokenNorm -and $activeNormIdentities.Contains($brokenNorm)) {
-                continue
-            }
-
-            $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps
-            foreach ($lo in $appLeftovers) {
-                $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
-                if ($seenPaths.Add($dedupKey)) {
-                    $badgeType = if ($lo.Type -like "*Driver Ring 0*") {
-                        "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
-                    } elseif ($lo.IsRegistry) {
-                        "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
-                    } else {
-                        "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                    }
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = $badgeType
-                        Confidence        = if ($lo.Confidence) { $lo.Confidence } else { "An to$([char]0x00E0)n 100%" }
-                        AppName           = $app.DisplayName
-                        Path              = $lo.Path
-                        SizeBytes         = [long]$lo.SizeBytes
-                        SizeMB            = [double]$lo.SizeMB
-                        IsRegistry        = [bool]$lo.IsRegistry
-                        RegistryValueName = [string]$lo.RegistryValueName
-                    })
-                }
+            if ($ia.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($ia.DataLocation)) {
+                $activeInstallLocs.Add($ia.DataLocation.Trim().TrimEnd('\'))
             }
         }
     }
@@ -14364,8 +24439,8 @@ function Find-SystemOrphanLeftovers {
             if ($drv.DriveType -eq [System.IO.DriveType]::Fixed -and $drv.IsReady) {
                 $pf1 = Join-Path $drv.RootDirectory.FullName "Program Files"
                 $pf2 = Join-Path $drv.RootDirectory.FullName "Program Files (x86)"
-                if (Test-Path -LiteralPath $pf1) { $programRoots.Add($pf1) }
-                if (Test-Path -LiteralPath $pf2) { $programRoots.Add($pf2) }
+                if ([System.IO.Directory]::Exists($pf1)) { $programRoots.Add($pf1) }
+                if ([System.IO.Directory]::Exists($pf2)) { $programRoots.Add($pf2) }
             }
         }
     } catch {
@@ -14373,69 +24448,16 @@ function Find-SystemOrphanLeftovers {
         $programRoots.Add("C:\Program Files (x86)")
     }
     $localProgs = Join-Path $env:LOCALAPPDATA "Programs"
-    if (Test-Path -LiteralPath $localProgs) { $programRoots.Add($localProgs) }
+    if ([System.IO.Directory]::Exists($localProgs)) { $programRoots.Add($localProgs) }
 
-    $activeInstallLocs = [System.Collections.Generic.List[string]]::new()
-    foreach ($ia in $InstalledApps) {
-        if (-not $ia.IsBrokenOrphan) {
-            if (-not [string]::IsNullOrWhiteSpace($ia.InstallLocation)) {
-                $activeInstallLocs.Add($ia.InstallLocation.Trim().TrimEnd('\'))
-            }
-            if ($ia.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($ia.DataLocation)) {
-                $activeInstallLocs.Add($ia.DataLocation.Trim().TrimEnd('\'))
-            }
-        }
-    }
-
-    foreach ($pRoot in $programRoots) {
-        if ($script:isWindowClosing) { break }
-        if (-not (Test-Path -LiteralPath $pRoot)) { continue }
-        $subDirs = Get-DirectoriesSafe -RootPath $pRoot
-        foreach ($sd in $subDirs) {
-            $dirName = [System.IO.Path]::GetFileName($sd)
-            $isExcluded = $false
-            foreach ($ex in $exclusions) {
-                if ($dirName -like "$ex*" -or $dirName -eq $ex) { $isExcluded = $true; break }
-            }
-            if ($isExcluded) { continue }
-
-            $sdNorm = $sd.Trim().TrimEnd('\')
-            $isUsedByActiveApp = $false
-            foreach ($actLoc in $activeInstallLocs) {
-                if ($actLoc.Equals($sdNorm, [System.StringComparison]::OrdinalIgnoreCase) -or
-                    $actLoc.StartsWith($sdNorm + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
-                    $isUsedByActiveApp = $true
-                    break
-                }
-            }
-            if ($isUsedByActiveApp) { continue }
-
-            $hollowSize = [DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($sd, 3, 52428800L)
-            if ($hollowSize -ge 0L) {
-                if ($seenPaths.Add($sd)) {
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
-                        AppName           = $dirName
-                        Path              = $sd
-                        SizeBytes         = [long]$hollowSize
-                        SizeMB            = [math]::Round($hollowSize / 1MB, 2)
-                        IsRegistry        = $false
-                        RegistryValueName = ""
-                    })
-                }
-            }
-        }
-    }
-
+    $candAppDataPaths = [System.Collections.Generic.List[string]]::new()
+    $candAppDataNames = [System.Collections.Generic.List[string]]::new()
     if ($CatalogApps) {
         $installedNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
         $installedIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-        foreach ($ia in $InstalledApps) {
-            if (-not $ia.IsBrokenOrphan) {
-                $installedNames.Add($ia.DisplayName) | Out-Null
-                if ($ia.Id) { $installedIds.Add($ia.Id) | Out-Null }
-            }
+        foreach ($ia in $activeApps) {
+            $installedNames.Add($ia.DisplayName) | Out-Null
+            if ($ia.Id) { $installedIds.Add($ia.Id) | Out-Null }
         }
 
         $catalogInstalledIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
@@ -14450,6 +24472,7 @@ function Find-SystemOrphanLeftovers {
         }
 
         $appDataRoots = @($env:APPDATA, $env:LOCALAPPDATA)
+        $candPathSeen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
         foreach ($catApp in $CatalogApps) {
             if ($script:isWindowClosing) { break }
             if ($catApp.ID -and $catalogInstalledIds.Contains($catApp.ID)) { continue }
@@ -14502,21 +24525,205 @@ function Find-SystemOrphanLeftovers {
             }
             if (-not $isInstalled) {
                 foreach ($cand in $candidateDirs) {
-                    if ($script:isWindowClosing) { break }
                     $full = Resolve-PathSafe -Path $cand
-                    if (-not $full) { continue }
-                    if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
-                        continue
+                    if ($full -and $candPathSeen.Add($full)) {
+                        $candAppDataPaths.Add($full)
+                        $candAppDataNames.Add($catApp.Name)
                     }
-                    if ($seenPaths.Add($full)) {
-                        $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
+                }
+            }
+        }
+    }
+
+    $desktopPaths = [string[]]@(
+        [Environment]::GetFolderPath('Desktop'),
+        [Environment]::GetFolderPath('CommonDesktopDirectory'),
+        [Environment]::GetFolderPath('Programs'),
+        [Environment]::GetFolderPath('CommonPrograms')
+    )
+
+    $engType = "DuckUtil.DeepUninstallerEngine" -as [type]
+    $hasParallelEngine = ($null -ne $engType) -and
+        ($null -ne $engType.GetMethod("ScanHollowProgramDirsAsync")) -and
+        ($null -ne $engType.GetMethod("ScanHollowPathsWithSizesAsync")) -and
+        ($null -ne $engType.GetMethod("ScanDeadShortcutsAsync"))
+
+    $hollowProgTask = $null
+    $hollowAppDataTask = $null
+    $deadLnkTask = $null
+    $svcTask = $null
+    $svcAndRogueTask = $null
+    $svcList = $null
+    $verifiedRogueDrivers = $null
+
+    if ($hasParallelEngine) {
+        $taskList = [System.Collections.Generic.List[System.Threading.Tasks.Task]]::new()
+        $hollowProgTask = [DuckUtil.DeepUninstallerEngine]::ScanHollowProgramDirsAsync($programRoots.ToArray(), $exclusions, $activeInstallLocs.ToArray())
+        $taskList.Add($hollowProgTask)
+        if ($candAppDataPaths.Count -gt 0) {
+            $hollowAppDataTask = [DuckUtil.DeepUninstallerEngine]::ScanHollowPathsWithSizesAsync($candAppDataPaths.ToArray(), $candAppDataNames.ToArray())
+            $taskList.Add($hollowAppDataTask)
+        }
+        $deadLnkTask = [DuckUtil.DeepUninstallerEngine]::ScanDeadShortcutsAsync($desktopPaths)
+        $taskList.Add($deadLnkTask)
+        if ($engType.GetMethod("ScanServicesAndRogueDriversAsync")) {
+            $svcAndRogueTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndRogueDriversAsync()
+            $taskList.Add($svcAndRogueTask)
+        } elseif ($engType.GetMethod("IsVerifiedRogueKernelDriverFile") -and $engType.GetMethod("ScanServicesAndDriversAsync")) {
+            $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+            $taskList.Add($svcTask)
+        }
+
+        if ($taskList.Count -gt 0) {
+            $allOrphTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]]$taskList.ToArray())
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $allOrphTask -TimeoutSeconds 45)
+            } else {
+                try { [void]$allOrphTask.Wait(45000) } catch {}
+            }
+        }
+        if ($null -ne $svcAndRogueTask -and $svcAndRogueTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $svcAndRogueTask.Result) {
+            $svcList = $svcAndRogueTask.Result.AllServices
+            $verifiedRogueDrivers = $svcAndRogueTask.Result.RogueDrivers
+        } elseif ($null -ne $svcTask -and $svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            $svcList = $svcTask.Result
+        }
+    }
+
+    foreach ($app in $InstalledApps) {
+        if ($script:isWindowClosing) { break }
+        if ($app.IsBrokenOrphan) {
+            if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
+                if ($seenPaths.Add($app.RegistryPath)) {
+                    $orphans.Add([PSCustomObject]@{
+                        Type              = "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $app.DisplayName
+                        Path              = $app.RegistryPath
+                        SizeBytes         = 0L
+                        SizeMB            = 0.0
+                        IsRegistry        = $true
+                        RegistryValueName = ""
+                    })
+                }
+            }
+
+            $brokenNorm = Get-NormalizedAppIdentity $app.DisplayName
+            if ($brokenNorm -and $activeNormIdentities.Contains($brokenNorm)) {
+                continue
+            }
+
+            $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps -PreloadedServices $svcList
+            foreach ($lo in $appLeftovers) {
+                $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
+                if ($seenPaths.Add($dedupKey)) {
+                    $badgeType = if ($lo.Type -like "*Driver Ring 0*") {
+                        "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                    } elseif ($lo.IsRegistry) {
+                        "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                    } else {
+                        "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                    }
+                    $orphans.Add([PSCustomObject]@{
+                        Type              = $badgeType
+                        Confidence        = if ($lo.Confidence) { $lo.Confidence } else { "An to$([char]0x00E0)n 100%" }
+                        AppName           = $app.DisplayName
+                        Path              = $lo.Path
+                        SizeBytes         = [long]$lo.SizeBytes
+                        SizeMB            = [double]$lo.SizeMB
+                        IsRegistry        = [bool]$lo.IsRegistry
+                        RegistryValueName = [string]$lo.RegistryValueName
+                    })
+                }
+            }
+        }
+    }
+
+    if ($hasParallelEngine) {
+        if ($null -ne $hollowProgTask -and $hollowProgTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $hollowProgTask.Result) {
+            foreach ($hr in $hollowProgTask.Result) {
+                if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
+                    $orphans.Add([PSCustomObject]@{
+                        Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $hr.AppName
+                        Path              = $hr.Path
+                        SizeBytes         = [long]$hr.SizeBytes
+                        SizeMB            = [math]::Round($hr.SizeBytes / 1MB, 2)
+                        IsRegistry        = $false
+                        RegistryValueName = ""
+                    })
+                }
+            }
+        }
+
+        if ($null -ne $hollowAppDataTask -and $hollowAppDataTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $hollowAppDataTask.Result) {
+            foreach ($hr in $hollowAppDataTask.Result) {
+                if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
+                    $orphans.Add([PSCustomObject]@{
+                        Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $hr.AppName
+                        Path              = $hr.Path
+                        SizeBytes         = [long]$hr.SizeBytes
+                        SizeMB            = [math]::Round($hr.SizeBytes / 1MB, 2)
+                        IsRegistry        = $false
+                        RegistryValueName = ""
+                    })
+                }
+            }
+        }
+
+        if ($null -ne $deadLnkTask -and $deadLnkTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $deadLnkTask.Result) {
+            foreach ($dl in $deadLnkTask.Result) {
+                if ($dl -and $dl.LnkPath -and $seenPaths.Add($dl.LnkPath)) {
+                    $orphans.Add([PSCustomObject]@{
+                        Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $dl.AppName
+                        Path              = $dl.LnkPath
+                        SizeBytes         = 0L
+                        SizeMB            = 0.0
+                        IsRegistry        = $false
+                        RegistryValueName = ""
+                    })
+                }
+            }
+        }
+    } else {
+        foreach ($pRoot in $programRoots) {
+            if ($script:isWindowClosing) { break }
+            if (-not (Test-Path -LiteralPath $pRoot)) { continue }
+            $subDirs = Get-DirectoriesSafe -RootPath $pRoot
+            foreach ($sd in $subDirs) {
+                $dirName = [System.IO.Path]::GetFileName($sd)
+                $isExcluded = $false
+                foreach ($ex in $exclusions) {
+                    if ($dirName -like "$ex*" -or $dirName -eq $ex) { $isExcluded = $true; break }
+                }
+                if ($isExcluded) { continue }
+
+                $sdNorm = $sd.Trim().TrimEnd('\')
+                $isUsedByActiveApp = $false
+                foreach ($actLoc in $activeInstallLocs) {
+                    if ($actLoc.Equals($sdNorm, [System.StringComparison]::OrdinalIgnoreCase) -or
+                        $actLoc.StartsWith($sdNorm + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $isUsedByActiveApp = $true
+                        break
+                    }
+                }
+                if ($isUsedByActiveApp) { continue }
+
+                $hollowSize = [DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($sd, 3, 52428800L)
+                if ($hollowSize -ge 0L) {
+                    if ($seenPaths.Add($sd)) {
                         $orphans.Add([PSCustomObject]@{
-                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                            Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
                             Confidence        = "An to$([char]0x00E0)n 100%"
-                            AppName           = $catApp.Name
-                            Path              = $full
-                            SizeBytes         = [long]$dirSize
-                            SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                            AppName           = $dirName
+                            Path              = $sd
+                            SizeBytes         = [long]$hollowSize
+                            SizeMB            = [math]::Round($hollowSize / 1MB, 2)
                             IsRegistry        = $false
                             RegistryValueName = ""
                         })
@@ -14524,114 +24731,143 @@ function Find-SystemOrphanLeftovers {
                 }
             }
         }
+
+        for ($ci = 0; $ci -lt $candAppDataPaths.Count; $ci++) {
+            if ($script:isWindowClosing) { break }
+            $full = $candAppDataPaths[$ci]
+            if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
+                continue
+            }
+            if ($seenPaths.Add($full)) {
+                $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
+                $orphans.Add([PSCustomObject]@{
+                    Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                    Confidence        = "An to$([char]0x00E0)n 100%"
+                    AppName           = $candAppDataNames[$ci]
+                    Path              = $full
+                    SizeBytes         = [long]$dirSize
+                    SizeMB            = [math]::Round($dirSize / 1MB, 2)
+                    IsRegistry        = $false
+                    RegistryValueName = ""
+                })
+            }
+        }
+
+        $wsh = $null
+        try {
+            $wsh = New-Object -ComObject WScript.Shell
+            foreach ($dp in $desktopPaths) {
+                if ($script:isWindowClosing) { break }
+                if ([string]::IsNullOrWhiteSpace($dp) -or -not [System.IO.Directory]::Exists($dp)) { continue }
+                $lnks = Get-FilesRecursiveSafe -RootPath $dp -SearchPattern "*.lnk"
+                foreach ($lnk in $lnks) {
+                    try {
+                        $sc = $wsh.CreateShortcut($lnk)
+                        $target = $sc.TargetPath
+                        if ($target -and $target -match '^[A-Za-z]:\\' -and $target.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase)) {
+                            if (-not [System.IO.File]::Exists($target)) {
+                                if ($seenPaths.Add($lnk)) {
+                                    $orphans.Add([PSCustomObject]@{
+                                        Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                                        Confidence        = "An to$([char]0x00E0)n 100%"
+                                        AppName           = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
+                                        Path              = $lnk
+                                        SizeBytes         = 0L
+                                        SizeMB            = 0.0
+                                        IsRegistry        = $false
+                                        RegistryValueName = ""
+                                    })
+                                }
+                            }
+                        }
+                    } catch {}
+                }
+            }
+        } catch {} finally {
+            if ($null -ne $wsh) {
+                try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
+                $wsh = $null
+            }
+        }
     }
 
-    $desktopPaths = @(
-        [Environment]::GetFolderPath('Desktop'),
-        [Environment]::GetFolderPath('CommonDesktopDirectory'),
-        [Environment]::GetFolderPath('Programs'),
-        [Environment]::GetFolderPath('CommonPrograms')
-    )
-
-    $wsh = $null
-    try {
-        $wsh = New-Object -ComObject WScript.Shell
-        foreach ($dp in $desktopPaths) {
-            if ($script:isWindowClosing) { break }
-            if ([string]::IsNullOrWhiteSpace($dp) -or -not [System.IO.Directory]::Exists($dp)) { continue }
-            $lnks = Get-FilesRecursiveSafe -RootPath $dp -SearchPattern "*.lnk"
-            foreach ($lnk in $lnks) {
-                try {
-                    $sc = $wsh.CreateShortcut($lnk)
-                    $target = $sc.TargetPath
-                    if ($target -and $target -match '^[A-Za-z]:\\' -and $target.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-                        if (-not [System.IO.File]::Exists($target)) {
-                            if ($seenPaths.Add($lnk)) {
-                                $orphans.Add([PSCustomObject]@{
-                                    Type              = "[Shortcut ch$([char]0x1EBF)t]"
-                                    Confidence        = "An to$([char]0x00E0)n 100%"
-                                    AppName           = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
-                                    Path              = $lnk
-                                    SizeBytes         = 0L
-                                    SizeMB            = 0.0
-                                    IsRegistry        = $false
-                                    RegistryValueName = ""
-                                })
-                            }
+    if ($engType -and ($engType.GetMethod("IsVerifiedRogueKernelDriverFile"))) {
+        try {
+            $rogueDriversToProcess = $null
+            if ($null -ne $verifiedRogueDrivers) {
+                $rogueDriversToProcess = $verifiedRogueDrivers
+            } else {
+                if ($null -eq $svcList) {
+                    if ($engType.GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                        $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
+                        [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
+                        if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                            $svcList = $svcTask.Result
+                        }
+                    } elseif ($engType.GetMethod("ScanServicesAndDrivers")) {
+                        $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
+                    }
+                }
+                if ($null -ne $svcList) {
+                    $rogueDriversToProcess = [System.Collections.Generic.List[object]]::new()
+                    foreach ($se in $svcList) {
+                        if ($script:isWindowClosing) { break }
+                        if (-not $se.IsKernelDriver) { continue }
+                        $img = $se.ResolvedImagePath
+                        if ([string]::IsNullOrWhiteSpace($img)) { continue }
+                        if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
+                            $rogueDriversToProcess.Add($se)
                         }
                     }
-                } catch {}
-            }
-        }
-    } catch {} finally {
-        if ($null -ne $wsh) {
-            try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
-            $wsh = $null
-        }
-    }
-
-    if (("DuckUtil.DeepUninstallerEngine" -as [type]) -and ([DuckUtil.DeepUninstallerEngine].GetMethod("IsVerifiedRogueKernelDriverFile"))) {
-        try {
-            $svcList = $null
-            if ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
-                $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
-                [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
-                if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $svcList = $svcTask.Result
                 }
-            } elseif ([DuckUtil.DeepUninstallerEngine].GetMethod("ScanServicesAndDrivers")) {
-                $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
             }
 
-            if ($null -ne $svcList) {
-                foreach ($se in $svcList) {
+            if ($null -ne $rogueDriversToProcess) {
+                foreach ($se in $rogueDriversToProcess) {
                     if ($script:isWindowClosing) { break }
-                    if (-not $se.IsKernelDriver) { continue }
                     $img = $se.ResolvedImagePath
                     if ([string]::IsNullOrWhiteSpace($img)) { continue }
-                    if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
-                        $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
-                        $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
-                        $drvVendor = "360 Total Security"
-                        $vendorPattern = '(?i)(360|Qihu|Qihoo)'
-                        if ($meta -match '(?i)2345') { $drvVendor = "2345 Security"; $vendorPattern = '(?i)2345' }
-                        elseif ($meta -match '(?i)Kingsoft') { $drvVendor = "Kingsoft"; $vendorPattern = '(?i)Kingsoft' }
-                        elseif ($meta -match '(?i)Baidu') { $drvVendor = "Baidu"; $vendorPattern = '(?i)Baidu' }
+                    $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
+                    $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
+                    $drvVendor = "360 Total Security"
+                    $vendorPattern = '(?i)(360|Qihu|Qihoo)'
+                    if ($meta -match '(?i)2345') { $drvVendor = "2345 Security"; $vendorPattern = '(?i)2345' }
+                    elseif ($meta -match '(?i)Kingsoft') { $drvVendor = "Kingsoft"; $vendorPattern = '(?i)Kingsoft' }
+                    elseif ($meta -match '(?i)Baidu') { $drvVendor = "Baidu"; $vendorPattern = '(?i)Baidu' }
 
-                        $vendorStillActive = $false
-                        foreach ($actApp in $activeApps) {
-                            if ("$($actApp.DisplayName) $($actApp.Publisher) $($actApp.InstallLocation)" -match $vendorPattern) {
-                                $vendorStillActive = $true
-                                break
-                            }
+                    $vendorStillActive = $false
+                    foreach ($actApp in $activeApps) {
+                        if ("$($actApp.DisplayName) $($actApp.Publisher) $($actApp.InstallLocation)" -match $vendorPattern) {
+                            $vendorStillActive = $true
+                            break
                         }
-                        if (-not $vendorStillActive) {
-                            $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
-                            if ($seenPaths.Add($regSvcPath)) {
-                                $orphans.Add([PSCustomObject]@{
-                                    Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
-                                    Confidence        = "An to$([char]0x00E0)n 100%"
-                                    AppName           = "$drvVendor ($($se.ServiceName))"
-                                    Path              = $regSvcPath
-                                    SizeBytes         = 0L
-                                    SizeMB            = 0.0
-                                    IsRegistry        = $true
-                                    RegistryValueName = ""
-                                })
-                            }
-                            if ($seenPaths.Add($img)) {
-                                $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
-                                $orphans.Add([PSCustomObject]@{
-                                    Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
-                                    Confidence        = "An to$([char]0x00E0)n 100%"
-                                    AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
-                                    Path              = $img
-                                    SizeBytes         = [long]$fLen
-                                    SizeMB            = [math]::Round($fLen / 1MB, 2)
-                                    IsRegistry        = $false
-                                    RegistryValueName = ""
-                                })
-                            }
+                    }
+                    if (-not $vendorStillActive) {
+                        $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
+                        if ($seenPaths.Add($regSvcPath)) {
+                            $orphans.Add([PSCustomObject]@{
+                                Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                Confidence        = "An to$([char]0x00E0)n 100%"
+                                AppName           = "$drvVendor ($($se.ServiceName))"
+                                Path              = $regSvcPath
+                                SizeBytes         = 0L
+                                SizeMB            = 0.0
+                                IsRegistry        = $true
+                                RegistryValueName = ""
+                            })
+                        }
+                        if ($seenPaths.Add($img)) {
+                            $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
+                            $orphans.Add([PSCustomObject]@{
+                                Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                Confidence        = "An to$([char]0x00E0)n 100%"
+                                AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
+                                Path              = $img
+                                SizeBytes         = [long]$fLen
+                                SizeMB            = [math]::Round($fLen / 1MB, 2)
+                                IsRegistry        = $false
+                                RegistryValueName = ""
+                            })
                         }
                     }
                 }
@@ -16156,8 +26392,17 @@ if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
                     [System.Windows.DependencyObject].Assembly.Location,
                     [System.Windows.Markup.IQueryAmbient].Assembly.Location,
                     [System.Diagnostics.Stopwatch].Assembly.Location,
+                    [System.Drawing.Icon].Assembly.Location,
+                    [System.Net.Http.HttpClient].Assembly.Location,
                     [System.Object].Assembly.Location
                 ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+                if ($PSVersionTable.PSEdition -eq "Core") {
+                    try {
+                        $refDllsCore = @([System.IO.Directory]::GetFiles((Join-Path $PSHOME "ref"), "*.dll"))
+                        $loadedExtraCore = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and -not [string]::IsNullOrWhiteSpace($_.Location) -and $_.GetName().Name -match "^(Presentation|WindowsBase|System\.Drawing|System\.Private\.Windows|DirectWriteForwarder|ReachFramework|UIAutomation)" } | ForEach-Object { $_.Location })
+                        $wpfSmoothRefs = @($refDllsCore + $loadedExtraCore + $wpfSmoothRefs | Select-Object -Unique)
+                    } catch {}
+                }
                 $smoothScrollCs = Get-Content -Raw -Encoding utf8 $cand
                 Add-Type -TypeDefinition $smoothScrollCs -ReferencedAssemblies $wpfSmoothRefs -ErrorAction SilentlyContinue
                 break
@@ -16219,6 +26464,8 @@ function Import-LocalIconBitmap {
 
 $script:pendingIconSaves = [System.Collections.Generic.List[hashtable]]::new()
 $script:inFlightIconTasks = [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase)
+$script:remotePipelineStarted = $false
+$script:pendingIconTargets = $null
 
 function Start-BackgroundIconDownload {
     param(
@@ -16249,10 +26496,140 @@ function Start-BackgroundIconDownload {
     }
 }
 
+$script:remoteIconRegistry = [System.Collections.Generic.List[hashtable]]::new()
+$script:cardDescriptors    = [System.Collections.Generic.List[hashtable]]::new()
+$script:deferredCardTimer  = $null
+
+function Try-EnableCompletedCardCaches {
+    if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:sharedCardCache) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $isIdleNow = ($null -ne $pipeType -and $null -ne $pipeType.GetProperty("IsRemoteIdle")) -and [DuckUtil.UiAssetPipeline]::IsRemoteIdle
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached -or $cd.CacheEnabled) { continue }
+        if ($cd.TotalIcons -eq 0 -or ($cd.IconsEnqueued -and ($cd.LoadedIcons -ge $cd.TotalIcons -or $isIdleNow))) {
+            $cd.Card.CacheMode = $script:sharedCardCache
+            $cd.CacheEnabled = $true
+        }
+    }
+}
+
+function Sync-Tab0ViewportAssets {
+    if ($script:isWindowClosing -or -not $script:cardDescriptors -or $script:cardDescriptors.Count -eq 0) { return }
+    $vOff = if ($appsScrollViewer) { [double]$appsScrollViewer.VerticalOffset } else { 0.0 }
+    $vH   = if ($appsScrollViewer -and $appsScrollViewer.ViewportHeight -gt 100) { [double]$appsScrollViewer.ViewportHeight } else { 820.0 }
+    $bandTop = $vOff - 250.0
+    $bandBot = $vOff + $vH + 520.0
+
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $hasIncremental = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("EnqueueRemoteIcons"))
+
+    $idxList  = $null
+    $urlList  = $null
+    $fbList   = $null
+    $destList = $null
+    $keyList  = $null
+
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached -and $cd.EstTop -le $bandBot) {
+            $cd.Attached = $true
+            if ($cd.ColPanel) { [void]$cd.ColPanel.Children.Add($cd.Card) }
+        }
+        if ($cd.Attached -and -not $cd.IconsEnqueued -and $cd.EstBottom -ge $bandTop -and $cd.EstTop -le $bandBot) {
+            $cd.IconsEnqueued = $true
+            if ($cd.IconIndices -and $cd.IconIndices.Count -gt 0) {
+                if ($hasIncremental) {
+                    if ($null -eq $idxList) {
+                        $idxList  = [System.Collections.Generic.List[int]]::new()
+                        $urlList  = [System.Collections.Generic.List[string]]::new()
+                        $fbList   = [System.Collections.Generic.List[string]]::new()
+                        $destList = [System.Collections.Generic.List[string]]::new()
+                        $keyList  = [System.Collections.Generic.List[string]]::new()
+                    }
+                    foreach ($rIdx in $cd.IconIndices) {
+                        $t = $script:remoteIconRegistry[$rIdx]
+                        if ($t -and -not $t.Applied) {
+                            $idxList.Add($rIdx)
+                            $urlList.Add([string]$t.Url)
+                            $fbList.Add([string]$t.FallbackUrl)
+                            $destList.Add([string]$t.DestPath)
+                            $keyList.Add([string]$t.CacheKey)
+                            $script:pendingIconSaves.Add($t)
+                        }
+                    }
+                } else {
+                    foreach ($rIdx in $cd.IconIndices) {
+                        $t = $script:remoteIconRegistry[$rIdx]
+                        if ($t -and -not $t.Applied) { $script:pendingIconSaves.Add($t) }
+                    }
+                }
+            }
+        }
+    }
+
+    if ($hasIncremental -and $null -ne $idxList -and $idxList.Count -gt 0) {
+        $script:remotePipelineStarted = $true
+        [DuckUtil.UiAssetPipeline]::EnqueueRemoteIcons($idxList.ToArray(), $urlList.ToArray(), $fbList.ToArray(), $destList.ToArray(), $keyList.ToArray())
+        if ($script:iconSyncTimer -and -not $script:iconSyncTimer.IsEnabled) {
+            $script:iconSyncTimer.Start()
+        }
+    }
+    Try-EnableCompletedCardCaches
+}
+
 function Flush-PendingIconCache {
-    param([int]$MaxDecode = 8)
+    param([int]$MaxDecode = 24)
+    if ($script:isWindowClosing -or $script:isActionRunning) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($pipeType -and $null -ne $pipeType.GetMethod("EnqueueRemoteIcons")) {
+        if (-not $script:remotePipelineStarted -and $script:cardDescriptors -and $script:cardDescriptors.Count -gt 0) {
+            Sync-Tab0ViewportAssets
+        }
+
+        $readyItems = [DuckUtil.UiAssetPipeline]::DequeueReadyRemoteIcons($MaxDecode)
+        $anyCardCompleted = $false
+        if ($readyItems -and $readyItems.Length -gt 0) {
+            foreach ($ri in $readyItems) {
+                if ($null -eq $ri -or $null -eq $ri.Bitmap) { continue }
+                if ($script:remoteBmpCache -and -not [string]::IsNullOrEmpty($ri.CacheKey)) {
+                    $script:remoteBmpCache[$ri.CacheKey] = $ri.Bitmap
+                }
+                if ($script:remoteIconRegistry -and $ri.Index -ge 0 -and $ri.Index -lt $script:remoteIconRegistry.Count) {
+                    $t = $script:remoteIconRegistry[$ri.Index]
+                    if ($t -and -not $t.Applied) {
+                        $t.Applied = $true
+                        if ($script:pendingIconSaves) { [void]$script:pendingIconSaves.Remove($t) }
+                        if ($t.Img) {
+                            $t.Img.Source = $ri.Bitmap
+                            $t.Img.Visibility = [System.Windows.Visibility]::Visible
+                        }
+                        if ($t.Fallback) {
+                            $t.Fallback.Visibility = [System.Windows.Visibility]::Collapsed
+                        }
+                        if ($t.UseLight -and $t.Badge) {
+                            $t.Badge.Background = $script:brushIconBadgeLightBg
+                        }
+                        if ($t.CardDesc) {
+                            $t.CardDesc.LoadedIcons++
+                            if ($t.CardDesc.LoadedIcons -ge $t.CardDesc.TotalIcons) {
+                                $anyCardCompleted = $true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ([DuckUtil.UiAssetPipeline]::IsRemoteIdle) {
+            $script:pendingIconSaves.Clear()
+            Try-EnableCompletedCardCaches
+            if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() }
+        } elseif ($anyCardCompleted) {
+            Try-EnableCompletedCardCaches
+        }
+        return
+    }
+
     if (-not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) { return }
-    if ($script:isActionRunning) { return }
     $inFlightCount = 0
     $decodedCount  = 0
     for ($idx = $script:pendingIconSaves.Count - 1; $idx -ge 0; $idx--) {
@@ -16278,7 +26655,7 @@ function Flush-PendingIconCache {
                         if ($data -and $data.Length -gt 230 -and $data.Length -ne 588 -and -not [System.IO.File]::Exists($entry.DestPath)) {
                             $tmpFile = "$($entry.DestPath).$([guid]::NewGuid().ToString('N')).tmp"
                             [System.IO.File]::WriteAllBytes($tmpFile, $data)
-                            Move-Item -LiteralPath $tmpFile -Destination $entry.DestPath -Force -ErrorAction SilentlyContinue
+                            [System.IO.File]::Move($tmpFile, $entry.DestPath)
                             $hasLocalFile = $true
                         }
                     } catch {}
@@ -16333,19 +26710,25 @@ $thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
 $iconsCacheDir = Join-Path $env:LOCALAPPDATA "DuckUtil\Icons"
-if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
-    try { New-Item -ItemType Directory -Path $iconsCacheDir -Force -ErrorAction SilentlyContinue | Out-Null } catch {}
+$script:remoteExistingFiles = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+if (-not [System.IO.Directory]::Exists($iconsCacheDir)) {
+    try { [System.IO.Directory]::CreateDirectory($iconsCacheDir) | Out-Null } catch {}
 } else {
     try {
-        Get-ChildItem -Path $iconsCacheDir -Filter "*.png" -ErrorAction SilentlyContinue | Where-Object {
-            $_.Length -le 230 -or $_.Length -eq 588
-        } | Remove-Item -Force -ErrorAction SilentlyContinue
+        $dirInfo = [System.IO.DirectoryInfo]::new($iconsCacheDir)
+        foreach ($fi in $dirInfo.EnumerateFiles("*.png")) {
+            if ($fi.Length -le 230 -or $fi.Length -eq 588) {
+                try { $fi.Delete() } catch {}
+            } else {
+                [void]$script:remoteExistingFiles.Add($fi.Name)
+            }
+        }
     } catch {}
 
     try {
         $mapFile = Join-Path $iconsCacheDir "cache.icons.map.txt"
         $oldMap = @{}
-        if (Test-Path -LiteralPath $mapFile) {
+        if ([System.IO.File]::Exists($mapFile)) {
             foreach ($line in [System.IO.File]::ReadAllLines($mapFile)) {
                 $sepIdx = $line.IndexOf('=')
                 if ($sepIdx -gt 0) {
@@ -16363,8 +26746,9 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
                 if ($oldMap.ContainsKey($appKey)) {
                     if ($oldMap[$appKey] -ne $appVal) {
                         $staleIcon = Join-Path $iconsCacheDir "$appKey.png"
-                        if (Test-Path -LiteralPath $staleIcon) {
-                            Remove-Item -LiteralPath $staleIcon -Force -ErrorAction SilentlyContinue
+                        if ([System.IO.File]::Exists($staleIcon)) {
+                            try { [System.IO.File]::Delete($staleIcon) } catch {}
+                            [void]$script:remoteExistingFiles.Remove("$appKey.png")
                         }
                         $mapChanged = $true
                     }
@@ -16373,7 +26757,7 @@ if (-not (Test-Path -LiteralPath $iconsCacheDir)) {
                 }
             }
         }
-        if ($mapChanged -or -not (Test-Path -LiteralPath $mapFile)) {
+        if ($mapChanged -or -not [System.IO.File]::Exists($mapFile)) {
             [System.IO.File]::WriteAllLines($mapFile, $newLines, [System.Text.Encoding]::UTF8)
         }
     } catch {}
@@ -17081,21 +27465,34 @@ function Set-ActiveTab {
         $activeBtn.BorderBrush = $script:brushNavActive
     }
 
-    if ($index -eq 1 -and -not $script:uninstallerLoadedOnce) {
-        if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller) {
-            $script:deferredUninstallerLoad = $true
-            if ($txtUninstallerSummary) {
-                $txtUninstallerSummary.Text = "$([char]0x0110)ang ch$([char]0x1EDD) t$([char]0x00E1)c v$([char]0x1EE5) hi$([char]0x1EC7)n t$([char]0x1EA1)i ho$([char]0x00E0)n t$([char]0x1EA5)t $([char]0x0111)$([char]0x1EC3) t$([char]0x1EA3)i danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng..."
-            }
-        } elseif (-not $script:uninstallerLoadQueued -and $window -and $window.Dispatcher) {
-            $script:uninstallerLoadQueued = $true
-            $window.Dispatcher.BeginInvoke(
-                [System.Windows.Threading.DispatcherPriority]::Loaded,
-                [Action]{
-                    $script:uninstallerLoadQueued = $false
-                    Update-UninstallerList
+    if ($index -eq 0) {
+        if ($script:cardDescriptors -and $script:cardDescriptors.Count -gt 0) {
+            try { Sync-Tab0ViewportAssets } catch {}
+        }
+    } elseif ($index -eq 1) {
+        if (-not $script:uninstallerLoadedOnce) {
+            if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller) {
+                $script:deferredUninstallerLoad = $true
+                if ($txtUninstallerSummary) {
+                    $txtUninstallerSummary.Text = "$([char]0x0110)ang ch$([char]0x1EDD) t$([char]0x00E1)c v$([char]0x1EE5) hi$([char]0x1EC7)n t$([char]0x1EA1)i ho$([char]0x00E0)n t$([char]0x1EA5)t $([char]0x0111)$([char]0x1EC3) t$([char]0x1EA3)i danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng..."
                 }
-            ) | Out-Null
+            } elseif (-not $script:uninstallerLoadQueued -and $window -and $window.Dispatcher) {
+                $script:uninstallerLoadQueued = $true
+                $window.Dispatcher.BeginInvoke(
+                    [System.Windows.Threading.DispatcherPriority]::Loaded,
+                    [Action]{
+                        $script:uninstallerLoadQueued = $false
+                        Update-UninstallerList
+                    }
+                ) | Out-Null
+            }
+        } else {
+            if (Get-Command "Sync-UninstallerViewport" -ErrorAction SilentlyContinue) {
+                Sync-UninstallerViewport -Force
+            }
+            if ($script:uninstIconsPipelineNeedsStart -and (Get-Command "Start-UninstallerIconPipelineIfNeeded" -ErrorAction SilentlyContinue)) {
+                Start-UninstallerIconPipelineIfNeeded
+            }
         }
     }
 }
@@ -17174,6 +27571,20 @@ $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
+
+$script:styleUninstRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
+$script:styleUninstRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushUninstRowBg)))
+$trigUninstHover = New-Object System.Windows.Trigger
+$trigUninstHover.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$trigUninstHover.Value = $true
+$trigUninstHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushUninstRowHover)))
+$script:styleUninstRow.Triggers.Add($trigUninstHover)
+$script:styleUninstRow.Seal()
+
+$script:uninstIconsPipelineNeedsStart = $false
+$script:uninstPipelineStarted       = $false
+$script:pendingUninstTargets          = $null
+$script:uninstPanelRoutedAttached     = $false
 
 $script:catalogIconLookup = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 if ($AppCatalog) {
@@ -17337,14 +27748,270 @@ function ConvertTo-UninstallerBitmapSource {
     return $resultBmp
 }
 
+$script:uninstallerVisibleEntries = [System.Collections.Generic.List[object]]::new()
+$script:uninstIconRegistry        = [System.Collections.Generic.List[object]]::new()
+$script:uninstTopSpacer           = [System.Windows.Controls.Border]::new()
+$script:uninstTopSpacer.IsHitTestVisible = $false
+$script:uninstTopSpacer.Height    = 0.0
+$script:uninstBottomSpacer        = [System.Windows.Controls.Border]::new()
+$script:uninstBottomSpacer.IsHitTestVisible = $false
+$script:uninstBottomSpacer.Height = 0.0
+$script:uninstLastStart           = -1
+$script:uninstLastEnd             = -1
+
+function Ensure-UninstallerRowRealized {
+    param($Entry)
+    if ($null -eq $Entry) { return $null }
+    if ($null -ne $Entry.Row) { return $Entry.Row }
+
+    $app = $Entry.App
+    $sizeText = if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
+        $mb = [double]$app.SizeBytes / 1MB
+        if ($mb -ge 1024) { "{0:N2} GB" -f ($mb / 1024.0) } else { "{0:N1} MB" -f $mb }
+    } else {
+        "--"
+    }
+    $targetFolder = if ($app.PSObject.Properties['TargetFolder'] -and $null -ne $app.TargetFolder) {
+        $app.TargetFolder
+    } elseif (-not [string]::IsNullOrWhiteSpace($app.InstallLocation) -and [System.IO.Directory]::Exists($app.InstallLocation)) {
+        $app.InstallLocation
+    } elseif ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation) -and [System.IO.Directory]::Exists($app.DataLocation)) {
+        $app.DataLocation
+    } else {
+        ""
+    }
+    $dataTip = if ($app.PSObject.Properties['DataLocation'] -and -not [string]::IsNullOrWhiteSpace($app.DataLocation)) { "`nKhu d$([char]0x1EEF) li$([char]0x1EC7)u ri$([char]0x00EA)ng: $($app.DataLocation)" } else { "" }
+    $rowTip = "$($app.DisplayName)`nPhi$([char]0x00EA)n b$([char]0x1EA3)n: $($app.DisplayVersion)`nNh$([char]0x00E0) ph$([char]0x00E1)t h$([char]0x00E0)nh: $($app.Publisher)`n$([char]0x0110)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n: $($app.InstallLocation)$dataTip`nL$([char]0x1EC7)nh g$([char]0x1EE1): $($app.UninstallString)"
+
+    $bestTarget = $Entry.IconTarget
+    $preCached = $null
+    if (-not [string]::IsNullOrWhiteSpace($bestTarget)) {
+        if ("DuckUtil.UiAssetPipeline" -as [type]) {
+            $preCached = [DuckUtil.UiAssetPipeline]::TryGetCachedUninstIcon($bestTarget)
+        }
+        if ($null -eq $preCached -and $script:uninstallerIconCache.TryGetValue($bestTarget, [ref]$preCached)) {
+        }
+    }
+
+    $vis = [DuckUtil.UiAssetPipeline]::CreateUninstallerRow(
+        [string]$app.DisplayName,
+        [string]$app.DisplayVersion,
+        [string]$app.Publisher,
+        [string]$sizeText,
+        [bool]$app.IsBrokenOrphan,
+        [string]$targetFolder,
+        [string]$rowTip,
+        [string]$strFolderEmoji,
+        $script:styleUninstRow,
+        $script:brushUninstRowBorder,
+        $script:brushUninstTitle,
+        $script:brushUninstTitleBroken,
+        $script:brushUninstMuted,
+        $script:brushUninstLight,
+        $script:brushUninstBadgeBg,
+        $script:brushUninstBadgeFg,
+        $script:brushUninstBadgeBrokenBg,
+        $script:brushUninstBadgeBrokenFg,
+        $script:brushUninstStatusOkBg,
+        $script:brushUninstStatusOkBorder,
+        $script:brushUninstStatusOkFg,
+        $script:brushUninstStatusBrokenBg,
+        $script:brushUninstStatusBrokenBorder,
+        $script:brushUninstFolderBg,
+        $script:brushUninstFolderBorder,
+        $preCached
+    )
+
+    $Entry.Row           = $vis.RowBorder
+    $Entry.CheckBox      = $vis.CheckBox
+    $Entry.IconImg       = $vis.IconImg
+    $Entry.FallbackBadge = $vis.FallbackBadge
+    $vis.RowBorder.Tag   = $Entry
+    if ($null -ne $preCached) { $Entry.IconLoaded = $true }
+    if ($Entry.IsQueued) { $vis.RowBorder.Opacity = 0.52 }
+
+    if ($Entry.IsSelected) {
+        $prevSup = $script:suppressUninstallerSelectionCount
+        $script:suppressUninstallerSelectionCount = $true
+        try {
+            $vis.CheckBox.IsChecked = $true
+            $vis.RowBorder.Background = $script:brushUninstRowCheckedBg
+        } finally {
+            $script:suppressUninstallerSelectionCount = $prevSup
+        }
+    }
+    return $Entry.Row
+}
+
+function Sync-UninstallerViewport {
+    param([switch]$Force)
+    if ($script:isWindowClosing -or -not $uninstallerRowsPanel) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if (-not ($pipeType -and $null -ne $pipeType.GetMethod("CreateUninstallerRow"))) { return }
+
+    $isTab1Visible = $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible
+    if (-not $isTab1Visible) { return }
+
+    $visCount = $script:uninstallerVisibleEntries.Count
+    if ($visCount -eq 0) {
+        if ($uninstallerRowsPanel.Children.Count -gt 0) { $uninstallerRowsPanel.Children.Clear() }
+        $script:uninstLastStart = -1
+        $script:uninstLastEnd   = -1
+        return
+    }
+
+    $rowH = 38.0
+    $vOff = if ($uninstallerScrollViewer) { [double]$uninstallerScrollViewer.VerticalOffset } else { 0.0 }
+    $vH   = if ($uninstallerScrollViewer -and $uninstallerScrollViewer.ViewportHeight -gt 100) { [double]$uninstallerScrollViewer.ViewportHeight } else { 620.0 }
+
+    $startIdx = [Math]::Max(0, [int][Math]::Floor($vOff / $rowH) - 5)
+    $endIdx   = [Math]::Min($visCount - 1, [int][Math]::Ceiling(($vOff + $vH) / $rowH) + 8)
+
+    $prevStart = $script:uninstLastStart
+    $prevEnd   = $script:uninstLastEnd
+    if (-not $Force -and $startIdx -eq $prevStart -and $endIdx -eq $prevEnd) {
+        return
+    }
+    $script:uninstLastStart = $startIdx
+    $script:uninstLastEnd   = $endIdx
+
+    $enqIdx   = $null
+    $enqPaths = $null
+    $hasIncUninst = ($null -ne $pipeType.GetMethod("EnqueueUninstallerIcons"))
+
+    $script:uninstTopSpacer.Height    = $startIdx * $rowH
+    $script:uninstBottomSpacer.Height = [Math]::Max(0, ($visCount - 1 - $endIdx)) * $rowH
+
+    $canSlide = (-not $Force) -and ($prevStart -ge 0) -and ($prevEnd -ge $prevStart) -and
+        ($startIdx -le $prevEnd) -and ($endIdx -ge $prevStart) -and
+        ($uninstallerRowsPanel.Children.Count -eq ($prevEnd - $prevStart + 3))
+
+    if ($canSlide) {
+        $curS = $prevStart
+        $curE = $prevEnd
+        while ($curS -lt $startIdx) {
+            $uninstallerRowsPanel.Children.RemoveAt(1)
+            $curS++
+        }
+        while ($curE -gt $endIdx) {
+            $uninstallerRowsPanel.Children.RemoveAt($uninstallerRowsPanel.Children.Count - 2)
+            $curE--
+        }
+        for ($i = $curS - 1; $i -ge $startIdx; $i--) {
+            $entry = $script:uninstallerVisibleEntries[$i]
+            $rowEl = Ensure-UninstallerRowRealized -Entry $entry
+            if ($null -ne $rowEl) { $uninstallerRowsPanel.Children.Insert(1, $rowEl) }
+            if ($hasIncUninst -and -not $entry.IconLoaded -and -not $entry.IconEnqueued -and -not [string]::IsNullOrWhiteSpace($entry.IconTarget)) {
+                $entry.IconEnqueued = $true
+                if ($null -eq $enqIdx) { $enqIdx = [System.Collections.Generic.List[int]]::new(); $enqPaths = [System.Collections.Generic.List[string]]::new() }
+                $enqIdx.Add([int]$entry.RegIndex); $enqPaths.Add([string]$entry.IconTarget); $script:pendingUninstIcons.Add($entry)
+            }
+        }
+        for ($i = $curE + 1; $i -le $endIdx; $i++) {
+            $entry = $script:uninstallerVisibleEntries[$i]
+            $rowEl = Ensure-UninstallerRowRealized -Entry $entry
+            if ($null -ne $rowEl) { $uninstallerRowsPanel.Children.Insert($uninstallerRowsPanel.Children.Count - 1, $rowEl) }
+            if ($hasIncUninst -and -not $entry.IconLoaded -and -not $entry.IconEnqueued -and -not [string]::IsNullOrWhiteSpace($entry.IconTarget)) {
+                $entry.IconEnqueued = $true
+                if ($null -eq $enqIdx) { $enqIdx = [System.Collections.Generic.List[int]]::new(); $enqPaths = [System.Collections.Generic.List[string]]::new() }
+                $enqIdx.Add([int]$entry.RegIndex); $enqPaths.Add([string]$entry.IconTarget); $script:pendingUninstIcons.Add($entry)
+            }
+        }
+    } else {
+        $uninstallerRowsPanel.Children.Clear()
+        [void]$uninstallerRowsPanel.Children.Add($script:uninstTopSpacer)
+        for ($i = $startIdx; $i -le $endIdx; $i++) {
+            $entry = $script:uninstallerVisibleEntries[$i]
+            $rowEl = Ensure-UninstallerRowRealized -Entry $entry
+            if ($null -ne $rowEl) {
+                [void]$uninstallerRowsPanel.Children.Add($rowEl)
+            }
+            if ($hasIncUninst -and -not $entry.IconLoaded -and -not $entry.IconEnqueued -and -not [string]::IsNullOrWhiteSpace($entry.IconTarget)) {
+                $entry.IconEnqueued = $true
+                if ($null -eq $enqIdx) {
+                    $enqIdx   = [System.Collections.Generic.List[int]]::new()
+                    $enqPaths = [System.Collections.Generic.List[string]]::new()
+                }
+                $enqIdx.Add([int]$entry.RegIndex)
+                $enqPaths.Add([string]$entry.IconTarget)
+                $script:pendingUninstIcons.Add($entry)
+            }
+        }
+        [void]$uninstallerRowsPanel.Children.Add($script:uninstBottomSpacer)
+    }
+
+    if ($hasIncUninst -and $null -ne $enqIdx -and $enqIdx.Count -gt 0) {
+        $script:uninstPipelineStarted = $true
+        [DuckUtil.UiAssetPipeline]::EnqueueUninstallerIcons($enqIdx.ToArray(), $enqPaths.ToArray())
+        if ($script:uninstIconTimer -and -not $script:uninstIconTimer.IsEnabled) {
+            $script:uninstIconTimer.Start()
+        }
+    }
+}
+
+if ($uninstallerScrollViewer) {
+    $uninstallerScrollViewer.Add_ScrollChanged({
+        Sync-UninstallerViewport
+    })
+}
+
+function Start-UninstallerIconPipelineIfNeeded {
+    if ($script:isWindowClosing) {
+        $script:uninstIconsPipelineNeedsStart = $false
+        return
+    }
+    $script:uninstIconsPipelineNeedsStart = $false
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($pipeType -and $null -ne $pipeType.GetMethod("EnqueueUninstallerIcons")) {
+        Sync-UninstallerViewport -Force
+        return
+    }
+    if (-not $script:pendingUninstIcons -or $script:pendingUninstIcons.Count -eq 0) { return }
+    if ($script:uninstIconTimer -and -not $script:uninstIconTimer.IsEnabled) {
+        $script:uninstIconTimer.Start()
+    }
+}
+
 $script:uninstIconTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
-$script:uninstIconTimer.Interval = [TimeSpan]::FromMilliseconds(25)
+$script:uninstIconTimer.Interval = [TimeSpan]::FromMilliseconds(50)
 $script:uninstIconTimer.Add_Tick({
     if ($script:isWindowClosing) {
         $script:uninstIconTimer.Stop()
         return
     }
     if ($script:isUpdatingUninstaller) { return }
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($pipeType -and $null -ne $pipeType.GetMethod("DequeueReadyUninstallerIcons")) {
+        $readyItems = [DuckUtil.UiAssetPipeline]::DequeueReadyUninstallerIcons(12)
+        if ($readyItems -and $readyItems.Length -gt 0) {
+            foreach ($ri in $readyItems) {
+                if ($null -eq $ri -or $null -eq $ri.Bitmap) { continue }
+                if (-not [string]::IsNullOrEmpty($ri.CacheKey)) {
+                    $script:uninstallerIconCache[$ri.CacheKey] = $ri.Bitmap
+                }
+                if ($script:uninstIconRegistry -and $ri.Index -ge 0 -and $ri.Index -lt $script:uninstIconRegistry.Count) {
+                    $ent = $script:uninstIconRegistry[$ri.Index]
+                    if ($ent) {
+                        $ent.IconLoaded = $true
+                        if ($script:pendingUninstIcons) { [void]$script:pendingUninstIcons.Remove($ent) }
+                        if ($ent.IconImg) {
+                            $ent.IconImg.Source = $ri.Bitmap
+                            $ent.IconImg.Visibility = [System.Windows.Visibility]::Visible
+                        }
+                        if ($ent.FallbackBadge) {
+                            $ent.FallbackBadge.Visibility = [System.Windows.Visibility]::Collapsed
+                        }
+                    }
+                }
+            }
+        }
+        if ([DuckUtil.UiAssetPipeline]::IsUninstIdle) {
+            $script:pendingUninstIcons.Clear()
+            $script:uninstIconTimer.Stop()
+        }
+        return
+    }
+
     if (-not $script:pendingUninstIcons -or $script:pendingUninstIcons.Count -eq 0) {
         $script:uninstIconTimer.Stop()
         return
@@ -17370,7 +28037,7 @@ function Update-UninstallerSelectionCount {
     if ($script:suppressUninstallerSelectionCount -or $script:isWindowClosing) { return }
     $count = 0
     foreach ($entry in $script:uninstallerRowEntries) {
-        if ($entry.CheckBox -and $entry.CheckBox.IsChecked -eq $true) {
+        if (-not $entry.IsRemoved -and ($entry.IsSelected -or ($entry.CheckBox -and $entry.CheckBox.IsChecked -eq $true))) {
             $count++
         }
     }
@@ -17391,7 +28058,12 @@ function Apply-UninstallerFilter {
     $brokenCount = 0
     [long]$visibleBytes = 0
 
+    $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+    $useVirtualTab1 = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+    $script:uninstallerVisibleEntries.Clear()
+
     foreach ($entry in $script:uninstallerRowEntries) {
+        if ($entry.IsRemoved) { continue }
         $app = $entry.App
         if ($app.IsBrokenOrphan) { $brokenCount++ }
 
@@ -17399,14 +28071,28 @@ function Apply-UninstallerFilter {
         $matchFilter = if ($script:uninstallerFilterMode -eq "Broken") { [bool]$app.IsBrokenOrphan } else { $true }
 
         if ($matchSearch -and $matchFilter) {
-            $entry.Row.Visibility = [System.Windows.Visibility]::Visible
+            if ($useVirtualTab1) {
+                [void]$script:uninstallerVisibleEntries.Add($entry)
+            } elseif ($entry.Row) {
+                $entry.Row.Visibility = [System.Windows.Visibility]::Visible
+            }
             $visibleCount++
             if ($app.SizeBytes -and $app.SizeBytes -gt 0) {
                 $visibleBytes += [long]$app.SizeBytes
             }
-        } else {
+        } elseif (-not $useVirtualTab1 -and $entry.Row) {
             $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
         }
+    }
+
+    if ($useVirtualTab1) {
+        if ($uninstallerScrollViewer) {
+            $maxOff = [Math]::Max(0.0, ($visibleCount * 38.0) - [Math]::Max(100.0, [double]$uninstallerScrollViewer.ViewportHeight))
+            if ($uninstallerScrollViewer.VerticalOffset -gt $maxOff) {
+                $uninstallerScrollViewer.ScrollToVerticalOffset($maxOff)
+            }
+        }
+        Sync-UninstallerViewport -Force
     }
 
     if ($txtUninstallerSummary) {
@@ -17471,17 +28157,26 @@ function Set-UninstallerSortMode {
             } else {
                 @($script:uninstallerRowEntries | Sort-Object -Property @{ Expression = { [bool]$_.App.IsBrokenOrphan }; Descending = $true }, @{ Expression = { $_.App.DisplayName }; Descending = $false })
             }
-            $prevVis = $uninstallerRowsPanel.Visibility
-            $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
-            try {
+            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+            $useVirtualTab1 = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+            if ($useVirtualTab1) {
                 $script:uninstallerRowEntries.Clear()
-                $uninstallerRowsPanel.Children.Clear()
                 foreach ($entry in $sortedEntries) {
                     [void]$script:uninstallerRowEntries.Add($entry)
-                    [void]$uninstallerRowsPanel.Children.Add($entry.Row)
                 }
-            } finally {
-                $uninstallerRowsPanel.Visibility = $prevVis
+            } else {
+                $prevVis = $uninstallerRowsPanel.Visibility
+                $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Collapsed
+                try {
+                    $script:uninstallerRowEntries.Clear()
+                    $uninstallerRowsPanel.Children.Clear()
+                    foreach ($entry in $sortedEntries) {
+                        [void]$script:uninstallerRowEntries.Add($entry)
+                        [void]$uninstallerRowsPanel.Children.Add($entry.Row)
+                    }
+                } finally {
+                    $uninstallerRowsPanel.Visibility = $prevVis
+                }
             }
         }
         Apply-UninstallerFilter
@@ -17560,6 +28255,67 @@ $marginUninstSize   = New-Object System.Windows.Thickness(8, 0, 12, 0)
 $paddingUninstBadge = New-Object System.Windows.Thickness(8, 2, 8, 2)
 $strFolderEmoji     = [char]::ConvertFromUtf32(0x1F4C1)
 
+if ($uninstallerRowsPanel -and -not $script:uninstPanelRoutedAttached) {
+    $script:uninstPanelRoutedAttached = $true
+    $uninstallerRowsPanel.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
+        [System.Windows.RoutedEventHandler]{
+            param($s, $e)
+            $cb = $e.OriginalSource -as [System.Windows.Controls.CheckBox]
+            if ($cb -and $cb.Tag -is [System.Windows.Controls.Border]) {
+                $cb.Tag.Background = $script:brushUninstRowCheckedBg
+                if ($cb.Tag.Tag -is [hashtable]) { $cb.Tag.Tag.IsSelected = $true }
+            }
+            Update-UninstallerSelectionCount
+        }
+    )
+    $uninstallerRowsPanel.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
+        [System.Windows.RoutedEventHandler]{
+            param($s, $e)
+            $cb = $e.OriginalSource -as [System.Windows.Controls.CheckBox]
+            if ($cb -and $cb.Tag -is [System.Windows.Controls.Border]) {
+                if ($cb.Tag.Style -eq $script:styleUninstRow) {
+                    $cb.Tag.ClearValue([System.Windows.Controls.Border]::BackgroundProperty)
+                } else {
+                    $cb.Tag.Background = $script:brushUninstRowBg
+                }
+                if ($cb.Tag.Tag -is [hashtable]) { $cb.Tag.Tag.IsSelected = $false }
+            }
+            Update-UninstallerSelectionCount
+        }
+    )
+    $uninstallerRowsPanel.AddHandler(
+        [System.Windows.UIElement]::MouseLeftButtonUpEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
+            param($sender, $e)
+            if ($e.Handled -or $script:isWindowClosing -or $script:isUpdatingUninstaller -or $script:isActionRunning) { return }
+            $node = $e.OriginalSource
+            while ($node -ne $null -and $node -ne $sender) {
+                if ($node -is [System.Windows.Controls.Primitives.ToggleButton]) { return }
+                if ($node -is [System.Windows.Controls.Border]) {
+                    if ($node.Tag -is [string] -and -not [string]::IsNullOrWhiteSpace($node.Tag)) {
+                        $e.Handled = $true
+                        $loc = [string]$node.Tag
+                        if ([System.IO.Directory]::Exists($loc)) {
+                            try { Start-Process "explorer.exe" "`"$loc`"" } catch {}
+                        }
+                        return
+                    }
+                    if ($node.Tag -is [hashtable] -and $node.Tag.ContainsKey('CheckBox') -and $node.Style -eq $script:styleUninstRow) {
+                        $cbRef = $node.Tag['CheckBox']
+                        if ($cbRef) { $cbRef.IsChecked = -not $cbRef.IsChecked }
+                        return
+                    }
+                }
+                if ($node -is [System.Windows.Media.Visual]) {
+                    $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+                } else { break }
+            }
+        }
+    )
+}
+
 function Update-UninstallerList {
     param([switch]$Force)
     if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
@@ -17579,7 +28335,16 @@ function Update-UninstallerList {
         if ($txtUninstallerSummary) { $txtUninstallerSummary.Text = "$([char]0x0110)ang qu$([char]0x00E9)t danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i..." }
 
         $script:uninstIconTimer.Stop()
+        if ("DuckUtil.UiAssetPipeline" -as [type]) {
+            try { [DuckUtil.UiAssetPipeline]::StopUninstallerIconPipeline() } catch {}
+        }
+        $script:uninstPipelineStarted = $false
+        $script:uninstIconsPipelineNeedsStart = $false
+        $script:pendingUninstTargets = $null
         $script:pendingUninstIcons.Clear()
+        $script:uninstIconRegistry.Clear()
+        $script:uninstLastStart = -1
+        $script:uninstLastEnd   = -1
 
         $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
         if ($deepType -and $null -ne $deepType.GetMethod("GetInstalledAppsAsync")) {
@@ -17611,6 +28376,38 @@ function Update-UninstallerList {
             $uninstallerRowsPanel.Children.Clear()
             $script:uninstallerRowEntries.Clear()
 
+            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+            $hasFastRowBuilder = ($null -ne $pipeType) -and ($null -ne $pipeType.GetMethod("CreateUninstallerRow"))
+            if ($hasFastRowBuilder) {
+                $regIdx = 0
+                foreach ($app in $sortedApps) {
+                    if ($script:isWindowClosing) { return }
+                    $searchIdx = if ($app.PSObject.Properties['SearchIndex'] -and -not [string]::IsNullOrEmpty($app.SearchIndex)) {
+                        $app.SearchIndex
+                    } else {
+                        "$($app.DisplayName) $($app.Publisher) $($app.DisplayVersion)".ToLowerInvariant()
+                    }
+                    $bestTarget = Get-UninstallerBestIconTarget -App $app
+                    $entry = @{
+                        Row           = $null
+                        App           = $app
+                        CheckBox      = $null
+                        IconImg       = $null
+                        FallbackBadge = $null
+                        SearchText    = $searchIdx
+                        IconTarget    = $bestTarget
+                        IconEnqueued  = $false
+                        IconLoaded    = $false
+                        IsSelected    = $false
+                        IsQueued      = $false
+                        IsRemoved     = $false
+                        RegIndex      = $regIdx
+                    }
+                    $regIdx++
+                    [void]$script:uninstIconRegistry.Add($entry)
+                    [void]$script:uninstallerRowEntries.Add($entry)
+                }
+            } else {
             foreach ($app in $sortedApps) {
                 if ($script:isWindowClosing) { return }
                 $rowBorder = [System.Windows.Controls.Border]::new()
@@ -17866,9 +28663,10 @@ function Update-UninstallerList {
                     CheckBox = $cb
                     SearchText = $searchIdx
                 }
-                $rowBorder.Tag = $entry
-                [void]$script:uninstallerRowEntries.Add($entry)
-                [void]$uninstallerRowsPanel.Children.Add($rowBorder)
+                    $rowBorder.Tag = $entry
+                    [void]$script:uninstallerRowEntries.Add($entry)
+                    [void]$uninstallerRowsPanel.Children.Add($rowBorder)
+                }
             }
         } finally {
             $uninstallerRowsPanel.Visibility = [System.Windows.Visibility]::Visible
@@ -17880,7 +28678,12 @@ function Update-UninstallerList {
         $script:uninstallerLoadQueued = $false
         Set-UninstallerSortMode $script:uninstallerSortMode -HeadersOnly
         if (-not $script:isWindowClosing -and $script:pendingUninstIcons.Count -gt 0) {
-            $script:uninstIconTimer.Start()
+            $isTab1Visible = $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible
+            if ($isTab1Visible) {
+                Start-UninstallerIconPipelineIfNeeded
+            } else {
+                $script:uninstIconsPipelineNeedsStart = $true
+            }
         }
     } finally {
         $script:suppressUninstallerSelectionCount = $false
@@ -17963,9 +28766,19 @@ if ($btnUninstallSelectAll) {
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller -or $script:isActionRunning) { return }
         $script:suppressUninstallerSelectionCount = $true
         try {
-            foreach ($entry in $script:uninstallerRowEntries) {
-                if ($entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
-                    $entry.CheckBox.IsChecked = $true
+            $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+            if ($pipeType -and $null -ne $pipeType.GetMethod("CreateUninstallerRow")) {
+                foreach ($entry in $script:uninstallerVisibleEntries) {
+                    $entry.IsSelected = $true
+                    if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $true }
+                    if ($entry.Row) { $entry.Row.Background = $script:brushUninstRowCheckedBg }
+                }
+            } else {
+                foreach ($entry in $script:uninstallerRowEntries) {
+                    if ($entry.Row -and $entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
+                        $entry.IsSelected = $true
+                        $entry.CheckBox.IsChecked = $true
+                    }
                 }
             }
         } finally {
@@ -17981,7 +28794,15 @@ if ($btnUninstallDeselectAll) {
         $script:suppressUninstallerSelectionCount = $true
         try {
             foreach ($entry in $script:uninstallerRowEntries) {
-                $entry.CheckBox.IsChecked = $false
+                $entry.IsSelected = $false
+                if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                if ($entry.Row) {
+                    if ($entry.Row.Style -eq $script:styleUninstRow) {
+                        $entry.Row.ClearValue([System.Windows.Controls.Border]::BackgroundProperty)
+                    } else {
+                        $entry.Row.Background = $script:brushUninstRowBg
+                    }
+                }
             }
         } finally {
             $script:suppressUninstallerSelectionCount = $false
@@ -18080,6 +28901,8 @@ function Add-ItemsToUninstallQueue {
             foreach ($entry in $script:uninstallerRowEntries) {
                 $rk = Get-UninstallerAppQueueKey $entry.App
                 if ($addedKeys.Contains($rk)) {
+                    $entry.IsSelected = $false
+                    $entry.IsQueued = $true
                     if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
                     if ($entry.Row) { $entry.Row.Opacity = 0.52 }
                 }
@@ -18131,13 +28954,18 @@ function Start-UninstallQueueExecution {
 
             if ($script:isWindowClosing -or $script:cancelRequested) { break }
             $completedApps++
+            $removedAnyRow = $false
             foreach ($entry in $script:uninstallerRowEntries) {
-                if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key -and $entry.Row) {
-                    $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed
+                if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
+                    $entry.IsRemoved = $true
+                    $entry.IsSelected = $false
+                    $entry.IsQueued = $false
                     if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                    if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
+                    $removedAnyRow = $true
                 }
             }
-            Update-UninstallerSelectionCount
+            if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
         }
 
         if (-not $script:isWindowClosing -and -not $script:cancelRequested -and $collectedLeftovers.Count -gt 0) {
@@ -18165,7 +28993,8 @@ function Start-UninstallQueueExecution {
         $script:uninstallQueue.Clear()
         $script:uninstallQueuedKeys.Clear()
         foreach ($entry in $script:uninstallerRowEntries) {
-            if ($entry.Row -and $entry.Row.Visibility -eq [System.Windows.Visibility]::Visible) {
+            $entry.IsQueued = $false
+            if ($entry.Row -and -not $entry.IsRemoved) {
                 $entry.Row.Opacity = 1.0
             }
         }
@@ -18183,7 +29012,7 @@ function Start-UninstallQueueExecution {
 
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
-        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
         if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
         if ($script:isUninstallingQueue) {
@@ -18215,7 +29044,7 @@ if ($btnDeepUninstall) {
         }
 
         Invoke-GuardedAction "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
-            $selectedNow = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            $selectedNow = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
             if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
@@ -18268,7 +29097,7 @@ if ($btnDeepUninstall) {
 
 if ($btnForceStopUninstall) {
     $btnForceStopUninstall.Add_Click({
-        $selectedItems = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+        $selectedItems = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
         if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
         if ($script:isUninstallingQueue) {
@@ -18301,7 +29130,7 @@ if ($btnForceStopUninstall) {
         }
 
         Invoke-GuardedAction "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
-            $selectedNow = @($script:uninstallerRowEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true } | ForEach-Object { $_.App })
+            $selectedNow = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
             if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
 
             $appLines = @($selectedNow | ForEach-Object {
@@ -18549,6 +29378,58 @@ $script:sharedCardCache.RenderAtScale = 1.0
 $script:sharedCardCache.Freeze()
 $script:defaultFallbackGlyph = [char]::ConvertFromUtf32(0x1F4E6)
 
+$pipeCatalogType = "DuckUtil.UiAssetPipeline" -as [type]
+$script:hasFastCatalogRowBuilder = ($null -ne $pipeCatalogType) -and ($null -ne $pipeCatalogType.GetMethod("CreateCatalogRow"))
+
+if ($cardsContainer -and $script:hasFastCatalogRowBuilder) {
+    $cardsContainer.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
+        [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
+    )
+    $cardsContainer.AddHandler(
+        [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
+        [System.Windows.RoutedEventHandler]{ Update-SelectionCount }
+    )
+    $cardsContainer.AddHandler(
+        [System.Windows.UIElement]::MouseLeftButtonUpEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
+            param($sender, $e)
+            if ($e.Handled -or $script:isActionRunning -or $script:isWindowClosing) { return }
+            $node = $e.OriginalSource
+            while ($node -ne $null -and $node -ne $sender) {
+                if ($node -is [System.Windows.Controls.Primitives.ToggleButton]) { return }
+                if ($node -is [System.Windows.Controls.Border]) {
+                    if ($node.Tag -is [string] -and -not [string]::IsNullOrWhiteSpace($node.Tag)) {
+                        $e.Handled = $true
+                        $domain = [string]$node.Tag
+                        $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
+                        try {
+                            Start-Process $targetUrl
+                        } catch {
+                            Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) trang web: $targetUrl"
+                        }
+                        return
+                    }
+                    if ($node.Tag -is [hashtable] -and $node.Tag.ContainsKey('CheckBox') -and $node.Style -eq $script:styleAppRow) {
+                        $targetCb = $node.Tag['CheckBox']
+                        if ($targetCb) { $targetCb.IsChecked = -not $targetCb.IsChecked }
+                        return
+                    }
+                }
+                if ($node -is [System.Windows.Media.Visual]) {
+                    $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
+                } else { break }
+            }
+        }
+    )
+}
+
+if ($appsScrollViewer) {
+    $appsScrollViewer.Add_ScrollChanged({
+        Sync-Tab0ViewportAssets
+    })
+}
+
 foreach ($cat in $categories) {
     $cardBorder = [System.Windows.Controls.Border]::new()
     $cardBorder.Background = $script:brushCardBg
@@ -18559,7 +29440,9 @@ foreach ($cat in $categories) {
     $cardBorder.Padding = $paddingCard
     $cardBorder.Height = [double]::NaN
     $cardBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    $cardBorder.CacheMode = $script:sharedCardCache
+    if (-not $script:hasFastCatalogRowBuilder) {
+        $cardBorder.CacheMode = $script:sharedCardCache
+    }
 
     $cardStack = [System.Windows.Controls.StackPanel]::new()
     $appsInCat = $appsByCategory[$cat]
@@ -18600,6 +29483,130 @@ foreach ($cat in $categories) {
     [void]$cardStack.Children.Add($headerGrid)
     [void]$cardStack.Children.Add($separator)
 
+    $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
+    $targetColIndex = 0
+    $minHeight = $script:colHeights[0]
+    for ($i = 1; $i -lt 4; $i++) {
+        if ($script:colHeights[$i] -lt $minHeight) {
+            $minHeight = $script:colHeights[$i]
+            $targetColIndex = $i
+        }
+    }
+    $cardEstTop = [double]$script:colHeights[$targetColIndex]
+    $cardEstBot = $cardEstTop + $cardEstimatedHeight
+    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
+
+    $cardDesc = @{
+        Card          = $cardBorder
+        ColPanel      = $targetColPanel
+        EstTop        = $cardEstTop
+        EstBottom     = $cardEstBot
+        Attached      = $false
+        IconsEnqueued = $false
+        TotalIcons    = 0
+        LoadedIcons   = 0
+        CacheEnabled  = (-not $script:hasFastCatalogRowBuilder)
+        IconIndices   = [System.Collections.Generic.List[int]]::new()
+    }
+
+    if ($script:hasFastCatalogRowBuilder) {
+        foreach ($app in $appsInCat) {
+            $useLightBadge = ($app.IconBg -eq "light") -or ($cat -eq "Java Runtimes")
+            $fallbackIconUrl = if (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                "https://icons.duckduckgo.com/ip3/$($app.Domain).ico"
+            } else { $null }
+            $remoteIconTarget = if (-not [string]::IsNullOrWhiteSpace($app.IconUrl)) {
+                $app.IconUrl
+            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                "https://www.google.com/s2/favicons?domain=$($app.Domain)&sz=128"
+            } else { $null }
+            if ($remoteIconTarget -and $fallbackIconUrl -and $remoteIconTarget -eq $fallbackIconUrl) {
+                $fallbackIconUrl = $null
+            }
+            $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
+            $iconFileName = "$($app.ID).png"
+            $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, $iconFileName)
+            $cachedBmp = $null
+            $hasCachedInMem = $false
+            if ($script:remoteBmpCache -and $script:remoteBmpCache.TryGetValue($iconCacheKey, [ref]$cachedBmp) -and $cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+                $hasCachedInMem = $true
+            } else {
+                $cachedBmp = [DuckUtil.UiAssetPipeline]::TryGetCachedRemoteIcon($iconCacheKey)
+                if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+                    $hasCachedInMem = $true
+                    if ($script:remoteBmpCache) { $script:remoteBmpCache[$iconCacheKey] = $cachedBmp }
+                }
+            }
+            $hasLocalCachedFile = $hasCachedInMem -or ($script:remoteExistingFiles -and $script:remoteExistingFiles.Contains($iconFileName))
+            $glyphTxt = if ($hasLocalCachedFile) { $script:defaultFallbackGlyph } else { Get-AppFallbackGlyph -AppName $app.Name -Category $cat }
+            $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
+            $rowTip = "$idnPrefix$($app.Name)`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: Ch$([char]0x01B0)a c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t`nID: $($app.ID)"
+            $targetPageUrl = if (-not [string]::IsNullOrWhiteSpace($app.Url)) {
+                $app.Url
+            } elseif (-not [string]::IsNullOrWhiteSpace($app.Domain)) {
+                if ($app.Domain.StartsWith("http")) { $app.Domain } else { "https://$($app.Domain)" }
+            } else { "" }
+
+            $vis = [DuckUtil.UiAssetPipeline]::CreateCatalogRow(
+                [string]$app.Name,
+                [string]$rowTip,
+                [string]$targetPageUrl,
+                [string]$glyphTxt,
+                [bool]$useLightBadge,
+                $script:styleAppRow,
+                $script:styleLinkBtn,
+                $script:fontSegoeUI,
+                $script:fontSegoeEmoji,
+                $script:brushTextWhite,
+                $script:brushIconBadgeBg,
+                $script:brushIconBadgeLightBg,
+                $script:brushIconBadgeBorder,
+                $script:brushUpdateBadgeBg,
+                $script:brushUpdateBadgeBorder,
+                $script:brushUpdateBadgeFg,
+                $script:brushLinkBtnRowHover,
+                $(if ($hasCachedInMem) { $cachedBmp } else { $null })
+            )
+
+            $rowTag = @{
+                App              = $app
+                Status           = "NONE"
+                DetectedId       = $null
+                InstalledVersion = $null
+                CardBorder       = $cardBorder
+                CheckBox         = $vis.CheckBox
+                NameText         = $vis.NameText
+                UpdateBadge      = $vis.UpdateBadge
+                UpdateText       = $vis.UpdateText
+                LinkBtn          = $vis.LinkBtn
+                LinkIcon         = $vis.LinkIcon
+            }
+            $vis.RowBorder.Tag = $rowTag
+            $vis.CheckBox.Tag  = $rowTag
+
+            if (-not $hasCachedInMem -and ($remoteIconTarget -or $hasLocalCachedFile)) {
+                $rIdx = $script:remoteIconRegistry.Count
+                $script:remoteIconRegistry.Add(@{
+                    Url          = $remoteIconTarget
+                    FallbackUrl  = $fallbackIconUrl
+                    CacheKey     = $iconCacheKey
+                    DestPath     = $localIconPath
+                    Img          = $vis.IconImg
+                    Fallback     = $vis.FallbackGlyph
+                    Badge        = $vis.IconBadge
+                    UseLight     = $useLightBadge
+                    Applied      = $false
+                    CardDesc     = $cardDesc
+                })
+                $cardDesc.IconIndices.Add($rIdx)
+                $cardDesc.TotalIcons++
+            }
+
+            $allCheckBoxes.Add($vis.CheckBox)
+            [void]$cardStack.Children.Add($vis.RowBorder)
+            $allItemBorders.Add($vis.RowBorder)
+        }
+    } else {
     foreach ($app in $appsInCat) {
         $rowBorder = [System.Windows.Controls.Border]::new()
         $rowBorder.Height = 27
@@ -18653,6 +29660,8 @@ foreach ($cat in $categories) {
         $iconBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $iconInnerGrid = [System.Windows.Controls.Grid]::new()
+        $iconInnerGrid.Width = 20
+        $iconInnerGrid.Height = 20
         $iconInnerGrid.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
         $iconInnerGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -18672,9 +29681,20 @@ foreach ($cat in $categories) {
             $fallbackIconUrl = $null
         }
         $iconCacheKey = if ($remoteIconTarget) { $remoteIconTarget } else { "$($app.ID)" }
-        $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, "$($app.ID).png")
-        $hasCachedInMem = $script:remoteBmpCache -and $script:remoteBmpCache.ContainsKey($iconCacheKey)
-        $hasLocalCachedFile = $hasCachedInMem -or [System.IO.File]::Exists($localIconPath)
+        $iconFileName = "$($app.ID).png"
+        $localIconPath = [System.IO.Path]::Combine($iconsCacheDir, $iconFileName)
+        $cachedBmp = $null
+        $hasCachedInMem = $false
+        if ($script:remoteBmpCache -and $script:remoteBmpCache.TryGetValue($iconCacheKey, [ref]$cachedBmp) -and $cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+            $hasCachedInMem = $true
+        } elseif (("DuckUtil.UiAssetPipeline" -as [type]) -and $null -ne ([DuckUtil.UiAssetPipeline].GetMethod("TryGetCachedRemoteIcon"))) {
+            $cachedBmp = [DuckUtil.UiAssetPipeline]::TryGetCachedRemoteIcon($iconCacheKey)
+            if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
+                $hasCachedInMem = $true
+                if ($script:remoteBmpCache) { $script:remoteBmpCache[$iconCacheKey] = $cachedBmp }
+            }
+        }
+        $hasLocalCachedFile = $hasCachedInMem -or ($script:remoteExistingFiles -and $script:remoteExistingFiles.Contains($iconFileName))
 
         $fallbackGlyph = [System.Windows.Controls.TextBlock]::new()
         $fallbackGlyph.Text = if ($hasLocalCachedFile) { $script:defaultFallbackGlyph } else { Get-AppFallbackGlyph -AppName $app.Name -Category $cat }
@@ -18697,13 +29717,10 @@ foreach ($cat in $categories) {
         $iconBadge.Child = $iconInnerGrid
 
         if ($hasCachedInMem) {
-            $cachedBmp = $script:remoteBmpCache[$iconCacheKey]
-            if ($cachedBmp -and $cachedBmp.PixelWidth -gt 0) {
-                $img.Source = $cachedBmp
-                $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
-                $img.Visibility = [System.Windows.Visibility]::Visible
-                if ($useLightBadge) { $iconBadge.Background = $script:brushIconBadgeLightBg }
-            }
+            $img.Source = $cachedBmp
+            $fallbackGlyph.Visibility = [System.Windows.Visibility]::Collapsed
+            $img.Visibility = [System.Windows.Visibility]::Visible
+            if ($useLightBadge) { $iconBadge.Background = $script:brushIconBadgeLightBg }
         } elseif ($remoteIconTarget -or $hasLocalCachedFile) {
             $script:pendingIconSaves.Add(@{
                 Url          = $remoteIconTarget
@@ -18715,6 +29732,7 @@ foreach ($cat in $categories) {
                 Fallback     = $fallbackGlyph
                 Badge        = $iconBadge
                 UseLight     = $useLightBadge
+                Applied      = $false
             })
         }
         [System.Windows.Controls.Grid]::SetColumn($iconBadge, 1)
@@ -18735,9 +29753,7 @@ foreach ($cat in $categories) {
         $nameText.Margin = $marginNameText
         $nameText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $idnPrefix = if ($app.IDn) { "[#$($app.IDn)] " } else { "" }
-        $nameText.ToolTip = "$idnPrefix$($app.Name)`nID: $($app.ID)"
-        $rowBorder.ToolTip = $nameText.ToolTip
-        [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($nameText, 5000)
+        $rowBorder.ToolTip = "$idnPrefix$($app.Name)`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: Ch$([char]0x01B0)a c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t`nID: $($app.ID)"
         [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 5000)
         [System.Windows.Controls.Grid]::SetColumn($nameText, 0)
         [void]$nameAreaGrid.Children.Add($nameText)
@@ -18812,24 +29828,17 @@ foreach ($cat in $categories) {
         $cardStack.Children.Add($rowBorder) | Out-Null
         $allItemBorders.Add($rowBorder)
     }
+    }
 
     $cardBorder.Child = $cardStack
 
-    $cardEstimatedHeight = 56 + ($appsInCat.Count * 29)
-
-    $targetColIndex = 0
-    $minHeight = $script:colHeights[0]
-    for ($i = 1; $i -lt 4; $i++) {
-        if ($script:colHeights[$i] -lt $minHeight) {
-            $minHeight = $script:colHeights[$i]
-            $targetColIndex = $i
+    if (-not $script:hasFastCatalogRowBuilder -or $cardEstTop -lt 950.0) {
+        if ($targetColPanel) {
+            $targetColPanel.Children.Add($cardBorder) | Out-Null
         }
+        $cardDesc.Attached = $true
     }
-
-    $targetColPanel = if ($cardCols[0] -and $cardCols[$targetColIndex]) { $cardCols[$targetColIndex] } else { $cardsContainer }
-    if ($targetColPanel) {
-        $targetColPanel.Children.Add($cardBorder) | Out-Null
-    }
+    [void]$script:cardDescriptors.Add($cardDesc)
 
     $script:colHeights[$targetColIndex] += $cardEstimatedHeight
 }
@@ -19869,6 +30878,13 @@ function Stop-AllBackgroundWork {
     try { Stop-ActiveWaitFrames } catch {}
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
+    try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
+    try {
+        if ("DuckUtil.UiAssetPipeline" -as [type]) {
+            [DuckUtil.UiAssetPipeline]::StopRemoteIconPipeline()
+            [DuckUtil.UiAssetPipeline]::StopUninstallerIconPipeline()
+        }
+    } catch {}
     try {
         if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) {
             Stop-PreSpawnedWinget
@@ -19910,15 +30926,42 @@ if ($window -and $window.Dispatcher) {
     })
 }
 
+$script:deferredCardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:deferredCardTimer.Interval = [TimeSpan]::FromMilliseconds(35)
+$script:deferredCardTimer.Add_Tick({
+    if ($script:isWindowClosing -or -not $script:cardDescriptors) {
+        $script:deferredCardTimer.Stop()
+        return
+    }
+    $attachedNow = 0
+    $anyRemaining = $false
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd.Attached) {
+            if ($attachedNow -lt 2) {
+                $cd.Attached = $true
+                if ($cd.ColPanel) { [void]$cd.ColPanel.Children.Add($cd.Card) }
+                $attachedNow++
+            } else {
+                $anyRemaining = $true
+                break
+            }
+        }
+    }
+    if (-not $anyRemaining) {
+        $script:deferredCardTimer.Stop()
+        Try-EnableCompletedCardCaches
+    }
+})
+
 $script:iconSyncTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
-$script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(35)
+$script:iconSyncTimer.Interval = [TimeSpan]::FromMilliseconds(50)
 $script:iconSyncTimer.Add_Tick({
     if ($script:isWindowClosing) {
         $script:iconSyncTimer.Stop()
         return
     }
     if ($script:isActionRunning) { return }
-    Flush-PendingIconCache -MaxDecode 8
+    Flush-PendingIconCache -MaxDecode 24
     if ($script:isWindowClosing -or -not $script:pendingIconSaves -or $script:pendingIconSaves.Count -eq 0) {
         $script:iconSyncTimer.Stop()
     }
@@ -19929,8 +30972,12 @@ $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
         Log-Text "[OK] S$([char]0x1EB5)n s$([char]0x00E0)ng ($($allItemBorders.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng / $($categories.Count) danh m$([char]0x1EE5)c)."
-        Flush-PendingIconCache -MaxDecode 10
-        if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0) {
+        if ($script:hasFastCatalogRowBuilder) {
+            Sync-Tab0ViewportAssets
+            if ($script:deferredCardTimer) { $script:deferredCardTimer.Start() }
+        }
+        Flush-PendingIconCache -MaxDecode 24
+        if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0 -and -not $script:iconSyncTimer.IsEnabled) {
             $script:iconSyncTimer.Start()
         }
         $window.Dispatcher.BeginInvoke(

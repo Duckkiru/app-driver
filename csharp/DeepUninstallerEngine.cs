@@ -50,6 +50,25 @@ namespace DuckUtil
         public int ServiceType { get; set; }
         public bool IsKernelDriver { get; set; }
     }
+
+    public class HollowDirResult
+    {
+        public string Path { get; set; }
+        public string AppName { get; set; }
+        public long SizeBytes { get; set; }
+    }
+
+    public class DeadShortcutResult
+    {
+        public string LnkPath { get; set; }
+        public string AppName { get; set; }
+    }
+
+    public class ServicesAndRogueResult
+    {
+        public List<ServiceScanEntry> AllServices { get; set; }
+        public List<ServiceScanEntry> RogueDrivers { get; set; }
+    }
     public class InstalledAppInfo
     {
         public string Id { get; set; }
@@ -5205,6 +5224,228 @@ namespace DuckUtil
                 return "InnoSetup";
             }
             return "";
+        }
+
+        public static Task<List<HollowDirResult>> ScanHollowProgramDirsAsync(string[] programRoots, string[] exclusions, string[] activeInstallLocs)
+        {
+            return Task.Run(delegate()
+            {
+                var candidates = new List<string>();
+                if (programRoots != null)
+                {
+                    for (int ri = 0; ri < programRoots.Length; ri++)
+                    {
+                        string root = programRoots[ri];
+                        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                        try
+                        {
+                            string[] subs = Directory.GetDirectories(root);
+                            for (int si = 0; si < subs.Length; si++)
+                            {
+                                string sd = subs[si];
+                                string dirName = Path.GetFileName(sd) ?? "";
+                                bool isExcluded = false;
+                                if (exclusions != null)
+                                {
+                                    for (int ei = 0; ei < exclusions.Length; ei++)
+                                    {
+                                        string ex = exclusions[ei];
+                                        if (!string.IsNullOrEmpty(ex) && dirName.StartsWith(ex, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isExcluded = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (isExcluded) continue;
+
+                                string sdNorm = sd.Trim().TrimEnd('\\');
+                                string sdPrefix = sdNorm + "\\";
+                                bool isUsed = false;
+                                if (activeInstallLocs != null)
+                                {
+                                    for (int ai = 0; ai < activeInstallLocs.Length; ai++)
+                                    {
+                                        string actLoc = activeInstallLocs[ai];
+                                        if (string.IsNullOrEmpty(actLoc)) continue;
+                                        if (actLoc.Equals(sdNorm, StringComparison.OrdinalIgnoreCase) ||
+                                            actLoc.StartsWith(sdPrefix, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isUsed = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!isUsed) candidates.Add(sd);
+                            }
+                        }
+                        catch {}
+                    }
+                }
+
+                var bag = new ConcurrentBag<HollowDirResult>();
+                if (candidates.Count > 0)
+                {
+                    Parallel.For(0, candidates.Count, delegate(int idx)
+                    {
+                        string sd = candidates[idx];
+                        try
+                        {
+                            long hSize = GetHollowDirectorySize(sd, 3, 52428800L);
+                            if (hSize >= 0L)
+                            {
+                                bag.Add(new HollowDirResult
+                                {
+                                    Path = sd,
+                                    AppName = Path.GetFileName(sd) ?? sd,
+                                    SizeBytes = hSize
+                                });
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new List<HollowDirResult>(bag);
+            });
+        }
+
+        public static Task<List<HollowDirResult>> ScanHollowPathsWithSizesAsync(string[] paths, string[] appNames)
+        {
+            return Task.Run(delegate()
+            {
+                var bag = new ConcurrentBag<HollowDirResult>();
+                int count = (paths != null) ? paths.Length : 0;
+                if (count > 0)
+                {
+                    Parallel.For(0, count, delegate(int idx)
+                    {
+                        string p = paths[idx];
+                        if (string.IsNullOrWhiteSpace(p)) return;
+                        try
+                        {
+                            long hSize = GetHollowDirectorySize(p, 3, 52428800L);
+                            if (hSize >= 0L)
+                            {
+                                long fullSz = GetDirectorySizeFast(p, 3);
+                                bag.Add(new HollowDirResult
+                                {
+                                    Path = p,
+                                    AppName = (appNames != null && idx < appNames.Length) ? (appNames[idx] ?? "") : "",
+                                    SizeBytes = fullSz
+                                });
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new List<HollowDirResult>(bag);
+            });
+        }
+
+        public static Task<List<DeadShortcutResult>> ScanDeadShortcutsAsync(string[] rootDirs)
+        {
+            var tcs = new TaskCompletionSource<List<DeadShortcutResult>>();
+            Thread t = new Thread(delegate()
+            {
+                var results = new List<DeadShortcutResult>();
+                object wsh = null;
+                Type wshType = null;
+                try
+                {
+                    if (rootDirs != null && rootDirs.Length > 0)
+                    {
+                        wshType = Type.GetTypeFromProgID("WScript.Shell");
+                        if (wshType != null)
+                        {
+                            wsh = Activator.CreateInstance(wshType);
+                        }
+                        if (wsh != null)
+                        {
+                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            {
+                                string root = rootDirs[ri];
+                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                {
+                                    object sc = null;
+                                    try
+                                    {
+                                        sc = wshType.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, wsh, new object[] { lnk });
+                                        if (sc != null)
+                                        {
+                                            string target = sc.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, sc, null) as string;
+                                            if (!string.IsNullOrEmpty(target) &&
+                                                target.Length >= 7 &&
+                                                char.IsLetter(target[0]) &&
+                                                target[1] == ':' &&
+                                                target[2] == '\\' &&
+                                                target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                                !File.Exists(target))
+                                            {
+                                                results.Add(new DeadShortcutResult
+                                                {
+                                                    LnkPath = lnk,
+                                                    AppName = Path.GetFileNameWithoutExtension(lnk) ?? lnk
+                                                });
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                    finally
+                                    {
+                                        if (sc != null) { try { Marshal.FinalReleaseComObject(sc); } catch {} }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    tcs.TrySetResult(results);
+                }
+                catch
+                {
+                    tcs.TrySetResult(results);
+                }
+                finally
+                {
+                    if (wsh != null) { try { Marshal.FinalReleaseComObject(wsh); } catch {} }
+                }
+            });
+            t.IsBackground = true;
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            return tcs.Task;
+        }
+
+        public static Task<ServicesAndRogueResult> ScanServicesAndRogueDriversAsync()
+        {
+            return Task.Run(delegate()
+            {
+                var allSvcs = ScanServicesAndDrivers();
+                var bag = new ConcurrentBag<ServiceScanEntry>();
+                if (allSvcs != null && allSvcs.Count > 0)
+                {
+                    Parallel.For(0, allSvcs.Count, delegate(int idx)
+                    {
+                        ServiceScanEntry se = allSvcs[idx];
+                        if (se == null || !se.IsKernelDriver) return;
+                        string img = se.ResolvedImagePath;
+                        if (string.IsNullOrWhiteSpace(img)) return;
+                        try
+                        {
+                            if (File.Exists(img) && IsVerifiedRogueKernelDriverFile(img))
+                            {
+                                bag.Add(se);
+                            }
+                        }
+                        catch {}
+                    });
+                }
+                return new ServicesAndRogueResult
+                {
+                    AllServices = allSvcs ?? new List<ServiceScanEntry>(),
+                    RogueDrivers = new List<ServiceScanEntry>(bag)
+                };
+            });
         }
     }
 }
