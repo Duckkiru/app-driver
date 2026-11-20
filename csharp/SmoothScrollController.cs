@@ -794,9 +794,23 @@ namespace DuckUtil {
         private static readonly Thickness _tName = new Thickness(8, 0, 8, 0);
         private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
         private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
-        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 0, 8, 2);
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private static readonly CornerRadius _cPill = new CornerRadius(3);
+
+        internal static TextBlock CreateCenteredBadgeLabel(string text, double fontSize, FontWeight weight, System.Windows.Media.Brush fg) {
+            var tb = new TextBlock();
+            tb.Text = text ?? "";
+            tb.FontSize = fontSize;
+            tb.FontWeight = weight;
+            tb.Foreground = fg;
+            tb.HorizontalAlignment = HorizontalAlignment.Center;
+            tb.VerticalAlignment = VerticalAlignment.Center;
+            tb.TextAlignment = TextAlignment.Center;
+            TextOptions.SetTextFormattingMode(tb, TextFormattingMode.Display);
+            return tb;
+        }
 
         public static UninstRowVisual CreateUninstallerRow(
             string displayName,
@@ -952,7 +966,8 @@ namespace DuckUtil {
             rowGrid.Children.Add(sizeTb);
 
             var statusBorder = new Border();
-            statusBorder.CornerRadius = _cFour;
+            statusBorder.CornerRadius = _cPill;
+            statusBorder.Height = 22;
             statusBorder.Padding = _tBadgePad;
             statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
             statusBorder.VerticalAlignment = VerticalAlignment.Center;
@@ -960,11 +975,11 @@ namespace DuckUtil {
             statusBorder.Background = isBrokenOrphan ? statusBrokenBg : statusOkBg;
             statusBorder.BorderBrush = isBrokenOrphan ? statusBrokenBorder : statusOkBorder;
 
-            var statusTb = new TextBlock();
-            statusTb.FontSize = 10.5;
-            statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
-            statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
+            var statusTb = CreateCenteredBadgeLabel(
+                isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng",
+                10.5,
+                FontWeights.SemiBold,
+                isBrokenOrphan ? badgeBrokenFg : statusOkFg);
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
             rowGrid.Children.Add(statusBorder);
@@ -1018,7 +1033,7 @@ namespace DuckUtil {
         private static readonly Thickness _ctRowPad = new Thickness(5, 0, 4, 0);
         private static readonly Thickness _ctRowMgn = new Thickness(0, 1, 0, 1);
         private static readonly Thickness _ctNameMgn = new Thickness(5, 0, 4, 0);
-        private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _ctUpdPad = new Thickness(5, 0, 5, 0);
         private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
         private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
         private static readonly CornerRadius _ccRow = new CornerRadius(2);
@@ -1136,16 +1151,14 @@ namespace DuckUtil {
             updateBadge.BorderBrush = updBadgeBorder;
             updateBadge.BorderThickness = _tOne;
             updateBadge.CornerRadius = _ccRow;
+            updateBadge.Height = 18;
             updateBadge.Padding = _ctUpdPad;
             updateBadge.Margin = _ctUpdMgn;
             updateBadge.VerticalAlignment = VerticalAlignment.Center;
             updateBadge.Visibility = Visibility.Collapsed;
             updateBadge.MaxWidth = 86;
 
-            var updateText = new TextBlock();
-            updateText.FontSize = 9.5;
-            updateText.FontWeight = FontWeights.Bold;
-            updateText.Foreground = updBadgeFg;
+            var updateText = CreateCenteredBadgeLabel("", 9.5, FontWeights.Bold, updBadgeFg);
             updateText.TextTrimming = TextTrimming.CharacterEllipsis;
             updateBadge.Child = updateText;
             Grid.SetColumn(updateBadge, 1);
@@ -1201,13 +1214,13 @@ namespace DuckUtil {
         private static readonly Thickness _loItemMgn = new Thickness(0, 0, 0, 6);
         private static readonly Thickness _loItemPad = new Thickness(10, 8, 10, 8);
         private static readonly Thickness _loCbMgn = new Thickness(0, 0, 10, 0);
-        private static readonly Thickness _loBadgePad = new Thickness(6, 2, 6, 2);
-        private static readonly Thickness _loConfPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _loBadgePad = new Thickness(8, 0, 8, 3);
+        private static readonly Thickness _loConfPad = new Thickness(7, 0, 7, 2);
         private static readonly Thickness _loConfMgn = new Thickness(6, 0, 0, 0);
         private static readonly Thickness _loSizeMgn = new Thickness(10, 0, 8, 0);
-        private static readonly Thickness _loBtnPad = new Thickness(8, 3, 8, 3);
+        private static readonly Thickness _loBtnPad = new Thickness(10, 0, 10, 1);
         private static readonly CornerRadius _loItemCr = new CornerRadius(2);
-        private static readonly CornerRadius _loPillCr = new CornerRadius(4);
+        private static readonly CornerRadius _loPillCr = new CornerRadius(3);
 
         public static Border CreateLeftoverItemRow(
             object tagItem,
@@ -1256,39 +1269,41 @@ namespace DuckUtil {
             Grid.SetColumn(cb, 0);
             itemGrid.Children.Add(cb);
 
-            var badgeStack = new StackPanel();
-            badgeStack.Orientation = Orientation.Horizontal;
-            badgeStack.VerticalAlignment = VerticalAlignment.Center;
-            badgeStack.Margin = _loCbMgn;
+            var badgeGrid = new Grid();
+            badgeGrid.VerticalAlignment = VerticalAlignment.Center;
+            badgeGrid.Margin = _loCbMgn;
+            badgeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto, SharedSizeGroup = "LoTypeCol" });
+            badgeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto, SharedSizeGroup = "LoConfCol" });
 
             var badgeBorder = new Border();
             badgeBorder.Background = badgeBg;
             badgeBorder.CornerRadius = _loPillCr;
+            badgeBorder.Height = 22;
             badgeBorder.Padding = _loBadgePad;
-            var badgeTb = new TextBlock();
-            badgeTb.Text = typeText ?? "";
-            badgeTb.FontSize = 10.5;
-            badgeTb.FontWeight = FontWeights.SemiBold;
-            badgeTb.Foreground = whiteBrush;
+            badgeBorder.HorizontalAlignment = HorizontalAlignment.Left;
+            badgeBorder.VerticalAlignment = VerticalAlignment.Center;
+            var badgeTb = CreateCenteredBadgeLabel(typeText ?? "", 10.5, FontWeights.SemiBold, whiteBrush);
             badgeBorder.Child = badgeTb;
-            badgeStack.Children.Add(badgeBorder);
+            Grid.SetColumn(badgeBorder, 0);
+            badgeGrid.Children.Add(badgeBorder);
 
             var confBorderEl = new Border();
             confBorderEl.Background = confBg;
             confBorderEl.BorderBrush = confBorder;
             confBorderEl.BorderThickness = _tOne;
             confBorderEl.CornerRadius = _loPillCr;
+            confBorderEl.Height = 22;
             confBorderEl.Padding = _loConfPad;
             confBorderEl.Margin = _loConfMgn;
-            var confTb = new TextBlock();
-            confTb.Text = string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText;
-            confTb.FontSize = 9.5;
-            confTb.Foreground = confFg;
+            confBorderEl.HorizontalAlignment = HorizontalAlignment.Left;
+            confBorderEl.VerticalAlignment = VerticalAlignment.Center;
+            var confTb = CreateCenteredBadgeLabel(string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText, 10.0, FontWeights.SemiBold, confFg);
             confBorderEl.Child = confTb;
-            badgeStack.Children.Add(confBorderEl);
+            Grid.SetColumn(confBorderEl, 1);
+            badgeGrid.Children.Add(confBorderEl);
 
-            Grid.SetColumn(badgeStack, 1);
-            itemGrid.Children.Add(badgeStack);
+            Grid.SetColumn(badgeGrid, 1);
+            itemGrid.Children.Add(badgeGrid);
 
             var infoPanel = new StackPanel();
             infoPanel.VerticalAlignment = VerticalAlignment.Center;
@@ -1322,8 +1337,11 @@ namespace DuckUtil {
             var openBtn = new Button();
             openBtn.Content = "M\u1EDF v\u1ECB tr\u00ED";
             openBtn.FontSize = 10.5;
+            openBtn.Height = 24;
             openBtn.Padding = _loBtnPad;
             openBtn.VerticalAlignment = VerticalAlignment.Center;
+            openBtn.VerticalContentAlignment = VerticalAlignment.Center;
+            openBtn.HorizontalContentAlignment = HorizontalAlignment.Center;
             openBtn.Background = btnBg;
             openBtn.Foreground = btnFg;
             openBtn.Tag = tagItem;
@@ -1837,9 +1855,10 @@ namespace DuckUtil {
         private static readonly Thickness _tNameText = new Thickness(8, 0, 4, 0);
         private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
         private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
-        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 0, 8, 2);
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private static readonly CornerRadius _cPill = new CornerRadius(3);
         private const double RowHeight = 38.0;
 
         private readonly ScrollViewer _sv;
@@ -2508,7 +2527,8 @@ namespace DuckUtil {
             rowGrid.Children.Add(sizeTb);
 
             var statusBorder = new Border();
-            statusBorder.CornerRadius = _cFour;
+            statusBorder.CornerRadius = _cPill;
+            statusBorder.Height = 22;
             statusBorder.Padding = _tBadgePad;
             statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
             statusBorder.VerticalAlignment = VerticalAlignment.Center;
@@ -2516,11 +2536,11 @@ namespace DuckUtil {
             statusBorder.Background = _statusOkBg;
             statusBorder.BorderBrush = _statusOkBorder;
 
-            var statusTb = new TextBlock();
-            statusTb.FontSize = 10.5;
-            statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = "B\u00ECnh th\u01B0\u1EDDng";
-            statusTb.Foreground = _statusOkFg;
+            var statusTb = UiAssetPipeline.CreateCenteredBadgeLabel(
+                "B\u00ECnh th\u01B0\u1EDDng",
+                10.5,
+                FontWeights.SemiBold,
+                _statusOkFg);
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
             rowGrid.Children.Add(statusBorder);

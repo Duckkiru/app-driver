@@ -4829,14 +4829,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
                                                 <TextBlock Name="txtGroupFilterTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
                                                 <Border Name="btnGroupBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
-                                                        Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                                        Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay l&#x1EA1;i xem t&#x1EA5;t c&#x1EA3; danh m&#x1EE5;c">
-                                                    <TextBlock Text="&#x2190; T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                                                    <TextBlock Text="&#x2190; T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
                                                 </Border>
                                             </StackPanel>
-                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Padding="7,2"
+                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
                                                     HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <TextBlock Name="txtGroupFilterMeta" Text="" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8"/>
+                                                <TextBlock Name="txtGroupFilterMeta" Text="" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8" VerticalAlignment="Center"/>
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -4879,14 +4879,14 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" Margin="5,1,6,0" VerticalAlignment="Center"/>
                                                 <TextBlock Name="txtSingleCatTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
                                                 <Border Name="btnSingleCatBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
-                                                        Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                                        Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay l&#x1EA1;i xem t&#x1EA5;t c&#x1EA3; danh m&#x1EE5;c">
-                                                    <TextBlock Text="&#x2190; T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                                                    <TextBlock Text="&#x2190; T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
                                                 </Border>
                                             </StackPanel>
-                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Padding="7,2"
+                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
                                                     HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <TextBlock Name="txtSingleCatCount" Text="0" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8"/>
+                                                <TextBlock Name="txtSingleCatCount" Text="0" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8" VerticalAlignment="Center"/>
                                             </Border>
                                         </Grid>
                                         <Border Height="1" Background="#27344A" Margin="0,1,0,8"/>
@@ -4934,10 +4934,9 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnDeepUninstall" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t (0)" Style="{StaticResource ActionButton}"
-                                            Background="#991B1B" Foreground="#FEE2E2" Padding="14,7"/>
-                                    <Button Name="btnForceStopUninstall" Content="Bu&#x1ED9;c d&#x1EEB;ng &amp; X&#x00F3;a (0)" Style="{StaticResource ActionButton}"
-                                            Background="#B45309" Foreground="#FEF3C7" Padding="13,7"
-                                            ToolTip="Bu&#x1ED9;c d&#x1EEB;ng to&#x00E0;n b&#x1ED9; ti&#x1EBF;n tr&#x00EC;nh, service, task v&#x00E0; handle &#x0111;ang kh&#x00F3;a t&#x1EC7;p r&#x1ED3;i x&#x00F3;a tr&#x1EF1;c ti&#x1EBF;p kh&#x00F4;ng qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng." ToolTipService.InitialShowDelay="500"/>
+                                            Background="#7F1D1D" Foreground="#FEE2E2" Padding="14,7"
+                                            ToolTip="G&#x1EE1; &#x1EE9;ng d&#x1EE5;ng &#x0111;&#x00E3; ch&#x1ECD;n: h&#x1ED7; tr&#x1EE3; g&#x1EE1; chu&#x1EA9;n theo h&#x00E3;ng (t&#x1EF1; g&#x1EAF;n c&#x1EDD; im l&#x1EB7;ng) ho&#x1EB7;c b&#x1EAD;t Bu&#x1ED9;c d&#x1EEB;ng &amp; X&#x00F3;a tr&#x1EF1;c ti&#x1EBF;p (t&#x1EAF;t ti&#x1EBF;n tr&#x00EC;nh/service/task/handle, b&#x1ECF; qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng) ngay trong h&#x1ED9;p tho&#x1EA1;i x&#x00E1;c nh&#x1EAD;n."
+                                            ToolTipService.InitialShowDelay="500"/>
                                     <Button Name="btnScanOrphans" Content="Qu&#x00E9;t R&#x00E1;c &amp; App L&#x1ED7;i" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
                                     <Button Name="btnRefreshUninstaller" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
@@ -4988,16 +4987,6 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             <Button Name="btnSortUninstName" Content="Theo t&#x00EA;n (A-Z)" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
                                             <Button Name="btnSortUninstSize" Content="Theo dung l&#x01B0;&#x1EE3;ng" Style="{StaticResource FilterTabButton}"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Name="pnlSkipVendorUninstaller" Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2"
-                                            Padding="8,4" Margin="12,0,0,0" VerticalAlignment="Center" Cursor="Hand"
-                                            ToolTip="M&#x1EB7;c &#x0111;&#x1ECB;nh App-Driver t&#x1EF1; nh&#x1EAD;n di&#x1EC7;n b&#x1ED9; c&#x00E0;i (Inno, NSIS, WiX, MSI, Squirrel) &#x0111;&#x1EC3; &#x00E9;p c&#x1EDD; g&#x1EE1; im l&#x1EB7;ng. B&#x1EAD;t t&#x00F9;y ch&#x1ECD;n n&#x00E0;y n&#x1EBF;u mu&#x1ED1;n b&#x1ECF; qua h&#x1EB3;n tr&#x00EC;nh g&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t c&#x1EE7;a h&#x00E3;ng (chuy&#x00EA;n tr&#x1ECB; app hay hi&#x1EC7;n b&#x1EA3;ng h&#x1ECF;i l&#x1EEB;a gi&#x1EEF; ch&#x00E2;n nh&#x01B0; 360), t&#x1EAF;t ti&#x1EBF;n tr&#x00EC;nh/service v&#x00E0; x&#x00F3;a s&#x1EA1;ch tr&#x1EF1;c ti&#x1EBF;p."
-                                            ToolTipService.InitialShowDelay="5000">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <CheckBox Name="cbSkipVendorUninstaller" VerticalAlignment="Center"/>
-                                            <TextBlock Text="B&#x1ECF; qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng" Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold"
-                                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
@@ -5195,12 +5184,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <TextBlock Name="txtStatus" Text="S&#x1EB5;n s&#x00E0;ng"
                                Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <Button Name="btnCancelAction" Content="D&#x1EEB;ng t&#x00E1;c v&#x1EE5;" Visibility="Collapsed"
-                            Background="#2D1215" Foreground="#FCA5A5" BorderBrush="#DC2626" BorderThickness="1"
-                            FontSize="10.5" FontWeight="SemiBold" Padding="9,2" Margin="12,0,0,0"
-                            VerticalAlignment="Center" Cursor="Hand">
+                            Background="#281317" Foreground="#FCA5A5" BorderBrush="#991B1B" BorderThickness="1"
+                            FontSize="10.5" FontWeight="SemiBold" Height="22" Padding="9,0,9,1" Margin="12,0,0,0"
+                            VerticalAlignment="Center" VerticalContentAlignment="Center" Cursor="Hand">
                         <Button.Resources>
                             <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="4"/>
+                                <Setter Property="CornerRadius" Value="3"/>
                             </Style>
                         </Button.Resources>
                     </Button>
@@ -5208,8 +5197,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                 <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Name="borderQueueBadge" Visibility="Collapsed" Background="#172554" BorderBrush="#2563EB" BorderThickness="1"
-                            CornerRadius="4" Padding="7,1" Margin="0,0,10,0" VerticalAlignment="Center">
-                        <TextBlock Name="txtQueueBadge" Text="" Foreground="#93C5FD" FontSize="10.5" FontWeight="SemiBold"/>
+                            CornerRadius="3" Height="22" Padding="8,0,8,1" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <TextBlock Name="txtQueueBadge" Text="" Foreground="#93C5FD" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Name="txtSelectionCount" Text="0 app &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n"
                                Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -6097,9 +6086,23 @@ namespace DuckUtil {
         private static readonly Thickness _tName = new Thickness(8, 0, 8, 0);
         private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
         private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
-        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 0, 8, 2);
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private static readonly CornerRadius _cPill = new CornerRadius(3);
+
+        internal static TextBlock CreateCenteredBadgeLabel(string text, double fontSize, FontWeight weight, System.Windows.Media.Brush fg) {
+            var tb = new TextBlock();
+            tb.Text = text ?? "";
+            tb.FontSize = fontSize;
+            tb.FontWeight = weight;
+            tb.Foreground = fg;
+            tb.HorizontalAlignment = HorizontalAlignment.Center;
+            tb.VerticalAlignment = VerticalAlignment.Center;
+            tb.TextAlignment = TextAlignment.Center;
+            TextOptions.SetTextFormattingMode(tb, TextFormattingMode.Display);
+            return tb;
+        }
 
         public static UninstRowVisual CreateUninstallerRow(
             string displayName,
@@ -6255,7 +6258,8 @@ namespace DuckUtil {
             rowGrid.Children.Add(sizeTb);
 
             var statusBorder = new Border();
-            statusBorder.CornerRadius = _cFour;
+            statusBorder.CornerRadius = _cPill;
+            statusBorder.Height = 22;
             statusBorder.Padding = _tBadgePad;
             statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
             statusBorder.VerticalAlignment = VerticalAlignment.Center;
@@ -6263,11 +6267,11 @@ namespace DuckUtil {
             statusBorder.Background = isBrokenOrphan ? statusBrokenBg : statusOkBg;
             statusBorder.BorderBrush = isBrokenOrphan ? statusBrokenBorder : statusOkBorder;
 
-            var statusTb = new TextBlock();
-            statusTb.FontSize = 10.5;
-            statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
-            statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
+            var statusTb = CreateCenteredBadgeLabel(
+                isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng",
+                10.5,
+                FontWeights.SemiBold,
+                isBrokenOrphan ? badgeBrokenFg : statusOkFg);
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
             rowGrid.Children.Add(statusBorder);
@@ -6321,7 +6325,7 @@ namespace DuckUtil {
         private static readonly Thickness _ctRowPad = new Thickness(5, 0, 4, 0);
         private static readonly Thickness _ctRowMgn = new Thickness(0, 1, 0, 1);
         private static readonly Thickness _ctNameMgn = new Thickness(5, 0, 4, 0);
-        private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _ctUpdPad = new Thickness(5, 0, 5, 0);
         private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
         private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
         private static readonly CornerRadius _ccRow = new CornerRadius(2);
@@ -6439,16 +6443,14 @@ namespace DuckUtil {
             updateBadge.BorderBrush = updBadgeBorder;
             updateBadge.BorderThickness = _tOne;
             updateBadge.CornerRadius = _ccRow;
+            updateBadge.Height = 18;
             updateBadge.Padding = _ctUpdPad;
             updateBadge.Margin = _ctUpdMgn;
             updateBadge.VerticalAlignment = VerticalAlignment.Center;
             updateBadge.Visibility = Visibility.Collapsed;
             updateBadge.MaxWidth = 86;
 
-            var updateText = new TextBlock();
-            updateText.FontSize = 9.5;
-            updateText.FontWeight = FontWeights.Bold;
-            updateText.Foreground = updBadgeFg;
+            var updateText = CreateCenteredBadgeLabel("", 9.5, FontWeights.Bold, updBadgeFg);
             updateText.TextTrimming = TextTrimming.CharacterEllipsis;
             updateBadge.Child = updateText;
             Grid.SetColumn(updateBadge, 1);
@@ -6504,13 +6506,13 @@ namespace DuckUtil {
         private static readonly Thickness _loItemMgn = new Thickness(0, 0, 0, 6);
         private static readonly Thickness _loItemPad = new Thickness(10, 8, 10, 8);
         private static readonly Thickness _loCbMgn = new Thickness(0, 0, 10, 0);
-        private static readonly Thickness _loBadgePad = new Thickness(6, 2, 6, 2);
-        private static readonly Thickness _loConfPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _loBadgePad = new Thickness(8, 0, 8, 3);
+        private static readonly Thickness _loConfPad = new Thickness(7, 0, 7, 2);
         private static readonly Thickness _loConfMgn = new Thickness(6, 0, 0, 0);
         private static readonly Thickness _loSizeMgn = new Thickness(10, 0, 8, 0);
-        private static readonly Thickness _loBtnPad = new Thickness(8, 3, 8, 3);
+        private static readonly Thickness _loBtnPad = new Thickness(10, 0, 10, 1);
         private static readonly CornerRadius _loItemCr = new CornerRadius(2);
-        private static readonly CornerRadius _loPillCr = new CornerRadius(4);
+        private static readonly CornerRadius _loPillCr = new CornerRadius(3);
 
         public static Border CreateLeftoverItemRow(
             object tagItem,
@@ -6559,39 +6561,41 @@ namespace DuckUtil {
             Grid.SetColumn(cb, 0);
             itemGrid.Children.Add(cb);
 
-            var badgeStack = new StackPanel();
-            badgeStack.Orientation = Orientation.Horizontal;
-            badgeStack.VerticalAlignment = VerticalAlignment.Center;
-            badgeStack.Margin = _loCbMgn;
+            var badgeGrid = new Grid();
+            badgeGrid.VerticalAlignment = VerticalAlignment.Center;
+            badgeGrid.Margin = _loCbMgn;
+            badgeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto, SharedSizeGroup = "LoTypeCol" });
+            badgeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto, SharedSizeGroup = "LoConfCol" });
 
             var badgeBorder = new Border();
             badgeBorder.Background = badgeBg;
             badgeBorder.CornerRadius = _loPillCr;
+            badgeBorder.Height = 22;
             badgeBorder.Padding = _loBadgePad;
-            var badgeTb = new TextBlock();
-            badgeTb.Text = typeText ?? "";
-            badgeTb.FontSize = 10.5;
-            badgeTb.FontWeight = FontWeights.SemiBold;
-            badgeTb.Foreground = whiteBrush;
+            badgeBorder.HorizontalAlignment = HorizontalAlignment.Left;
+            badgeBorder.VerticalAlignment = VerticalAlignment.Center;
+            var badgeTb = CreateCenteredBadgeLabel(typeText ?? "", 10.5, FontWeights.SemiBold, whiteBrush);
             badgeBorder.Child = badgeTb;
-            badgeStack.Children.Add(badgeBorder);
+            Grid.SetColumn(badgeBorder, 0);
+            badgeGrid.Children.Add(badgeBorder);
 
             var confBorderEl = new Border();
             confBorderEl.Background = confBg;
             confBorderEl.BorderBrush = confBorder;
             confBorderEl.BorderThickness = _tOne;
             confBorderEl.CornerRadius = _loPillCr;
+            confBorderEl.Height = 22;
             confBorderEl.Padding = _loConfPad;
             confBorderEl.Margin = _loConfMgn;
-            var confTb = new TextBlock();
-            confTb.Text = string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText;
-            confTb.FontSize = 9.5;
-            confTb.Foreground = confFg;
+            confBorderEl.HorizontalAlignment = HorizontalAlignment.Left;
+            confBorderEl.VerticalAlignment = VerticalAlignment.Center;
+            var confTb = CreateCenteredBadgeLabel(string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText, 10.0, FontWeights.SemiBold, confFg);
             confBorderEl.Child = confTb;
-            badgeStack.Children.Add(confBorderEl);
+            Grid.SetColumn(confBorderEl, 1);
+            badgeGrid.Children.Add(confBorderEl);
 
-            Grid.SetColumn(badgeStack, 1);
-            itemGrid.Children.Add(badgeStack);
+            Grid.SetColumn(badgeGrid, 1);
+            itemGrid.Children.Add(badgeGrid);
 
             var infoPanel = new StackPanel();
             infoPanel.VerticalAlignment = VerticalAlignment.Center;
@@ -6625,8 +6629,11 @@ namespace DuckUtil {
             var openBtn = new Button();
             openBtn.Content = "M\u1EDF v\u1ECB tr\u00ED";
             openBtn.FontSize = 10.5;
+            openBtn.Height = 24;
             openBtn.Padding = _loBtnPad;
             openBtn.VerticalAlignment = VerticalAlignment.Center;
+            openBtn.VerticalContentAlignment = VerticalAlignment.Center;
+            openBtn.HorizontalContentAlignment = HorizontalAlignment.Center;
             openBtn.Background = btnBg;
             openBtn.Foreground = btnFg;
             openBtn.Tag = tagItem;
@@ -7140,9 +7147,10 @@ namespace DuckUtil {
         private static readonly Thickness _tNameText = new Thickness(8, 0, 4, 0);
         private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
         private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
-        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 0, 8, 2);
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private static readonly CornerRadius _cPill = new CornerRadius(3);
         private const double RowHeight = 38.0;
 
         private readonly ScrollViewer _sv;
@@ -7811,7 +7819,8 @@ namespace DuckUtil {
             rowGrid.Children.Add(sizeTb);
 
             var statusBorder = new Border();
-            statusBorder.CornerRadius = _cFour;
+            statusBorder.CornerRadius = _cPill;
+            statusBorder.Height = 22;
             statusBorder.Padding = _tBadgePad;
             statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
             statusBorder.VerticalAlignment = VerticalAlignment.Center;
@@ -7819,11 +7828,11 @@ namespace DuckUtil {
             statusBorder.Background = _statusOkBg;
             statusBorder.BorderBrush = _statusOkBorder;
 
-            var statusTb = new TextBlock();
-            statusTb.FontSize = 10.5;
-            statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = "B\u00ECnh th\u01B0\u1EDDng";
-            statusTb.Foreground = _statusOkFg;
+            var statusTb = UiAssetPipeline.CreateCenteredBadgeLabel(
+                "B\u00ECnh th\u01B0\u1EDDng",
+                10.5,
+                FontWeights.SemiBold,
+                _statusOkFg);
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
             rowGrid.Children.Add(statusBorder);
@@ -16937,9 +16946,23 @@ namespace DuckUtil {
         private static readonly Thickness _tName = new Thickness(8, 0, 8, 0);
         private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
         private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
-        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 0, 8, 2);
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private static readonly CornerRadius _cPill = new CornerRadius(3);
+
+        internal static TextBlock CreateCenteredBadgeLabel(string text, double fontSize, FontWeight weight, System.Windows.Media.Brush fg) {
+            var tb = new TextBlock();
+            tb.Text = text ?? "";
+            tb.FontSize = fontSize;
+            tb.FontWeight = weight;
+            tb.Foreground = fg;
+            tb.HorizontalAlignment = HorizontalAlignment.Center;
+            tb.VerticalAlignment = VerticalAlignment.Center;
+            tb.TextAlignment = TextAlignment.Center;
+            TextOptions.SetTextFormattingMode(tb, TextFormattingMode.Display);
+            return tb;
+        }
 
         public static UninstRowVisual CreateUninstallerRow(
             string displayName,
@@ -17095,7 +17118,8 @@ namespace DuckUtil {
             rowGrid.Children.Add(sizeTb);
 
             var statusBorder = new Border();
-            statusBorder.CornerRadius = _cFour;
+            statusBorder.CornerRadius = _cPill;
+            statusBorder.Height = 22;
             statusBorder.Padding = _tBadgePad;
             statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
             statusBorder.VerticalAlignment = VerticalAlignment.Center;
@@ -17103,11 +17127,11 @@ namespace DuckUtil {
             statusBorder.Background = isBrokenOrphan ? statusBrokenBg : statusOkBg;
             statusBorder.BorderBrush = isBrokenOrphan ? statusBrokenBorder : statusOkBorder;
 
-            var statusTb = new TextBlock();
-            statusTb.FontSize = 10.5;
-            statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
-            statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
+            var statusTb = CreateCenteredBadgeLabel(
+                isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng",
+                10.5,
+                FontWeights.SemiBold,
+                isBrokenOrphan ? badgeBrokenFg : statusOkFg);
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
             rowGrid.Children.Add(statusBorder);
@@ -17161,7 +17185,7 @@ namespace DuckUtil {
         private static readonly Thickness _ctRowPad = new Thickness(5, 0, 4, 0);
         private static readonly Thickness _ctRowMgn = new Thickness(0, 1, 0, 1);
         private static readonly Thickness _ctNameMgn = new Thickness(5, 0, 4, 0);
-        private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _ctUpdPad = new Thickness(5, 0, 5, 0);
         private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
         private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
         private static readonly CornerRadius _ccRow = new CornerRadius(2);
@@ -17279,16 +17303,14 @@ namespace DuckUtil {
             updateBadge.BorderBrush = updBadgeBorder;
             updateBadge.BorderThickness = _tOne;
             updateBadge.CornerRadius = _ccRow;
+            updateBadge.Height = 18;
             updateBadge.Padding = _ctUpdPad;
             updateBadge.Margin = _ctUpdMgn;
             updateBadge.VerticalAlignment = VerticalAlignment.Center;
             updateBadge.Visibility = Visibility.Collapsed;
             updateBadge.MaxWidth = 86;
 
-            var updateText = new TextBlock();
-            updateText.FontSize = 9.5;
-            updateText.FontWeight = FontWeights.Bold;
-            updateText.Foreground = updBadgeFg;
+            var updateText = CreateCenteredBadgeLabel("", 9.5, FontWeights.Bold, updBadgeFg);
             updateText.TextTrimming = TextTrimming.CharacterEllipsis;
             updateBadge.Child = updateText;
             Grid.SetColumn(updateBadge, 1);
@@ -17344,13 +17366,13 @@ namespace DuckUtil {
         private static readonly Thickness _loItemMgn = new Thickness(0, 0, 0, 6);
         private static readonly Thickness _loItemPad = new Thickness(10, 8, 10, 8);
         private static readonly Thickness _loCbMgn = new Thickness(0, 0, 10, 0);
-        private static readonly Thickness _loBadgePad = new Thickness(6, 2, 6, 2);
-        private static readonly Thickness _loConfPad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness _loBadgePad = new Thickness(8, 0, 8, 3);
+        private static readonly Thickness _loConfPad = new Thickness(7, 0, 7, 2);
         private static readonly Thickness _loConfMgn = new Thickness(6, 0, 0, 0);
         private static readonly Thickness _loSizeMgn = new Thickness(10, 0, 8, 0);
-        private static readonly Thickness _loBtnPad = new Thickness(8, 3, 8, 3);
+        private static readonly Thickness _loBtnPad = new Thickness(10, 0, 10, 1);
         private static readonly CornerRadius _loItemCr = new CornerRadius(2);
-        private static readonly CornerRadius _loPillCr = new CornerRadius(4);
+        private static readonly CornerRadius _loPillCr = new CornerRadius(3);
 
         public static Border CreateLeftoverItemRow(
             object tagItem,
@@ -17399,39 +17421,41 @@ namespace DuckUtil {
             Grid.SetColumn(cb, 0);
             itemGrid.Children.Add(cb);
 
-            var badgeStack = new StackPanel();
-            badgeStack.Orientation = Orientation.Horizontal;
-            badgeStack.VerticalAlignment = VerticalAlignment.Center;
-            badgeStack.Margin = _loCbMgn;
+            var badgeGrid = new Grid();
+            badgeGrid.VerticalAlignment = VerticalAlignment.Center;
+            badgeGrid.Margin = _loCbMgn;
+            badgeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto, SharedSizeGroup = "LoTypeCol" });
+            badgeGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = _cAuto, SharedSizeGroup = "LoConfCol" });
 
             var badgeBorder = new Border();
             badgeBorder.Background = badgeBg;
             badgeBorder.CornerRadius = _loPillCr;
+            badgeBorder.Height = 22;
             badgeBorder.Padding = _loBadgePad;
-            var badgeTb = new TextBlock();
-            badgeTb.Text = typeText ?? "";
-            badgeTb.FontSize = 10.5;
-            badgeTb.FontWeight = FontWeights.SemiBold;
-            badgeTb.Foreground = whiteBrush;
+            badgeBorder.HorizontalAlignment = HorizontalAlignment.Left;
+            badgeBorder.VerticalAlignment = VerticalAlignment.Center;
+            var badgeTb = CreateCenteredBadgeLabel(typeText ?? "", 10.5, FontWeights.SemiBold, whiteBrush);
             badgeBorder.Child = badgeTb;
-            badgeStack.Children.Add(badgeBorder);
+            Grid.SetColumn(badgeBorder, 0);
+            badgeGrid.Children.Add(badgeBorder);
 
             var confBorderEl = new Border();
             confBorderEl.Background = confBg;
             confBorderEl.BorderBrush = confBorder;
             confBorderEl.BorderThickness = _tOne;
             confBorderEl.CornerRadius = _loPillCr;
+            confBorderEl.Height = 22;
             confBorderEl.Padding = _loConfPad;
             confBorderEl.Margin = _loConfMgn;
-            var confTb = new TextBlock();
-            confTb.Text = string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText;
-            confTb.FontSize = 9.5;
-            confTb.Foreground = confFg;
+            confBorderEl.HorizontalAlignment = HorizontalAlignment.Left;
+            confBorderEl.VerticalAlignment = VerticalAlignment.Center;
+            var confTb = CreateCenteredBadgeLabel(string.IsNullOrEmpty(confText) ? "An to\u00E0n 100%" : confText, 10.0, FontWeights.SemiBold, confFg);
             confBorderEl.Child = confTb;
-            badgeStack.Children.Add(confBorderEl);
+            Grid.SetColumn(confBorderEl, 1);
+            badgeGrid.Children.Add(confBorderEl);
 
-            Grid.SetColumn(badgeStack, 1);
-            itemGrid.Children.Add(badgeStack);
+            Grid.SetColumn(badgeGrid, 1);
+            itemGrid.Children.Add(badgeGrid);
 
             var infoPanel = new StackPanel();
             infoPanel.VerticalAlignment = VerticalAlignment.Center;
@@ -17465,8 +17489,11 @@ namespace DuckUtil {
             var openBtn = new Button();
             openBtn.Content = "M\u1EDF v\u1ECB tr\u00ED";
             openBtn.FontSize = 10.5;
+            openBtn.Height = 24;
             openBtn.Padding = _loBtnPad;
             openBtn.VerticalAlignment = VerticalAlignment.Center;
+            openBtn.VerticalContentAlignment = VerticalAlignment.Center;
+            openBtn.HorizontalContentAlignment = HorizontalAlignment.Center;
             openBtn.Background = btnBg;
             openBtn.Foreground = btnFg;
             openBtn.Tag = tagItem;
@@ -17980,9 +18007,10 @@ namespace DuckUtil {
         private static readonly Thickness _tNameText = new Thickness(8, 0, 4, 0);
         private static readonly Thickness _tCol = new Thickness(10, 0, 10, 0);
         private static readonly Thickness _tSize = new Thickness(8, 0, 12, 0);
-        private static readonly Thickness _tBadgePad = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness _tBadgePad = new Thickness(8, 0, 8, 2);
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
+        private static readonly CornerRadius _cPill = new CornerRadius(3);
         private const double RowHeight = 38.0;
 
         private readonly ScrollViewer _sv;
@@ -18651,7 +18679,8 @@ namespace DuckUtil {
             rowGrid.Children.Add(sizeTb);
 
             var statusBorder = new Border();
-            statusBorder.CornerRadius = _cFour;
+            statusBorder.CornerRadius = _cPill;
+            statusBorder.Height = 22;
             statusBorder.Padding = _tBadgePad;
             statusBorder.HorizontalAlignment = HorizontalAlignment.Center;
             statusBorder.VerticalAlignment = VerticalAlignment.Center;
@@ -18659,11 +18688,11 @@ namespace DuckUtil {
             statusBorder.Background = _statusOkBg;
             statusBorder.BorderBrush = _statusOkBorder;
 
-            var statusTb = new TextBlock();
-            statusTb.FontSize = 10.5;
-            statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = "B\u00ECnh th\u01B0\u1EDDng";
-            statusTb.Foreground = _statusOkFg;
+            var statusTb = UiAssetPipeline.CreateCenteredBadgeLabel(
+                "B\u00ECnh th\u01B0\u1EDDng",
+                10.5,
+                FontWeights.SemiBold,
+                _statusOkFg);
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
             rowGrid.Children.Add(statusBorder);
@@ -30619,9 +30648,9 @@ function Show-LeftoverReviewDialog {
 
     $dialog = New-Object System.Windows.Window
     $dialog.Title = $Title
-    $dialog.Width = 920
+    $dialog.Width = 940
     $dialog.Height = 590
-    $dialog.MinWidth = 760
+    $dialog.MinWidth = 780
     $dialog.MinHeight = 460
     $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
     $canAttachOwner = $false
@@ -30680,20 +30709,20 @@ function Show-LeftoverReviewDialog {
             BtnFg        = & $mkC "#CBD5E1"
             BottomBg     = & $mkC "#0D121B"
             WarnFg       = & $mkC "#FBBF24"
-            DelBg        = & $mkC "#991B1B"
+            DelBg        = & $mkC "#7F1D1D"
             DelFg        = & $mkC "#FEE2E2"
-            DelBorder    = & $mkC "#DC2626"
+            DelBorder    = & $mkC "#991B1B"
             BadgeMap     = @{
-                "Ring0"    = (& $mkC "#B91C1C")
-                "Service"  = (& $mkC "#C2410C")
-                "Task"     = (& $mkC "#EA580C")
-                "Registry" = (& $mkC "#DC2626")
-                "Startup"  = (& $mkC "#E11D48")
-                "AppData"  = (& $mkC "#D97706")
-                "Hollow"   = (& $mkC "#2563EB")
-                "Shortcut" = (& $mkC "#7C3AED")
-                "Dump"     = (& $mkC "#9333EA")
-                "Default"  = (& $mkC "#0D9488")
+                "Ring0"    = (& $mkC "#7F1D1D")
+                "Service"  = (& $mkC "#B45309")
+                "Task"     = (& $mkC "#C2410C")
+                "Registry" = (& $mkC "#991B1B")
+                "Startup"  = (& $mkC "#9F1239")
+                "AppData"  = (& $mkC "#B45309")
+                "Hollow"   = (& $mkC "#1D4ED8")
+                "Shortcut" = (& $mkC "#6D28D9")
+                "Dump"     = (& $mkC "#7E22CE")
+                "Default"  = (& $mkC "#0F766E")
             }
         }
     }
@@ -30701,6 +30730,9 @@ function Show-LeftoverReviewDialog {
 
     $dialog.Background = $pal.Bg
     $dialog.Foreground = $pal.Fg
+    $dialog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif")
+    [System.Windows.Media.TextOptions]::SetTextFormattingMode($dialog, [System.Windows.Media.TextFormattingMode]::Display)
+    [System.Windows.Media.TextOptions]::SetTextRenderingMode($dialog, [System.Windows.Media.TextRenderingMode]::ClearType)
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
@@ -30744,12 +30776,14 @@ function Show-LeftoverReviewDialog {
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="#2F3E57"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -30805,6 +30839,7 @@ function Show-LeftoverReviewDialog {
     }
 
     $itemsStack = New-Object System.Windows.Controls.StackPanel
+    [System.Windows.Controls.Grid]::SetIsSharedSizeScope($itemsStack, $true)
     $itemCheckBoxes = [System.Collections.Generic.List[System.Windows.Controls.CheckBox]]::new()
 
     $brLoItemBg     = $pal.ItemBg
@@ -30938,40 +30973,60 @@ function Show-LeftoverReviewDialog {
         $itemGrid.Children.Add($cb) | Out-Null
         $itemCheckBoxes.Add($cb)
 
-        $badgeStack = New-Object System.Windows.Controls.StackPanel
-        $badgeStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-        $badgeStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $badgeStack.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        $badgeGrid = New-Object System.Windows.Controls.Grid
+        $badgeGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $badgeGrid.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        $bgC0 = New-Object System.Windows.Controls.ColumnDefinition; $bgC0.Width = [System.Windows.GridLength]::Auto; $bgC0.SharedSizeGroup = "LoTypeCol"
+        $bgC1 = New-Object System.Windows.Controls.ColumnDefinition; $bgC1.Width = [System.Windows.GridLength]::Auto; $bgC1.SharedSizeGroup = "LoConfCol"
+        $badgeGrid.ColumnDefinitions.Add($bgC0) | Out-Null
+        $badgeGrid.ColumnDefinitions.Add($bgC1) | Out-Null
 
         $badgeBorder = New-Object System.Windows.Controls.Border
         $badgeBorder.Background = $badgeBrush
-        $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $badgeBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
+        $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(3)
+        $badgeBorder.Height = 22
+        $badgeBorder.Padding = New-Object System.Windows.Thickness(8, 0, 8, 3)
+        $badgeBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $badgeBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $badgeText = New-Object System.Windows.Controls.TextBlock
         $badgeText.Text = $item.Type
         $badgeText.FontSize = 10.5
         $badgeText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $badgeText.Foreground = $brLoWhite
+        $badgeText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $badgeText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $badgeText.TextAlignment = [System.Windows.TextAlignment]::Center
+        [System.Windows.Media.TextOptions]::SetTextFormattingMode($badgeText, [System.Windows.Media.TextFormattingMode]::Display)
         $badgeBorder.Child = $badgeText
-        $badgeStack.Children.Add($badgeBorder) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($badgeBorder, 0)
+        $badgeGrid.Children.Add($badgeBorder) | Out-Null
 
         $confBorder = New-Object System.Windows.Controls.Border
         $confBorder.Background = $rowConfBg
         $confBorder.BorderBrush = $rowConfBdr
         $confBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-        $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $confBorder.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
+        $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(3)
+        $confBorder.Height = 22
+        $confBorder.Padding = New-Object System.Windows.Thickness(7, 0, 7, 2)
         $confBorder.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        $confBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $confBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $confText = New-Object System.Windows.Controls.TextBlock
         $confText.Text = $confLabel
-        $confText.FontSize = 9.5
+        $confText.FontSize = 10
+        $confText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $confText.Foreground = $rowConfFg
+        $confText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $confText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $confText.TextAlignment = [System.Windows.TextAlignment]::Center
+        [System.Windows.Media.TextOptions]::SetTextFormattingMode($confText, [System.Windows.Media.TextFormattingMode]::Display)
         $confBorder.Child = $confText
-        $badgeStack.Children.Add($confBorder) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($confBorder, 1)
+        $badgeGrid.Children.Add($confBorder) | Out-Null
 
-        [System.Windows.Controls.Grid]::SetColumn($badgeStack, 1)
-        $itemGrid.Children.Add($badgeStack) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($badgeGrid, 1)
+        $itemGrid.Children.Add($badgeGrid) | Out-Null
 
         $infoPanel = New-Object System.Windows.Controls.StackPanel
         $infoPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -31006,8 +31061,11 @@ function Show-LeftoverReviewDialog {
         $btnOpenLoc = New-Object System.Windows.Controls.Button
         $btnOpenLoc.Content = "M$([char]0x1EDF) v$([char]0x1ECB) tr$([char]0x00ED)"
         $btnOpenLoc.FontSize = 10.5
-        $btnOpenLoc.Padding = New-Object System.Windows.Thickness(8, 3, 8, 3)
+        $btnOpenLoc.Height = 24
+        $btnOpenLoc.Padding = New-Object System.Windows.Thickness(10, 0, 10, 1)
         $btnOpenLoc.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $btnOpenLoc.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+        $btnOpenLoc.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
         $btnOpenLoc.Background = $brLoBtnBg
         $btnOpenLoc.Foreground = $brLoBtnFg
         $btnOpenLoc.Tag = $item
@@ -31036,6 +31094,7 @@ function Show-LeftoverReviewDialog {
 
     $leftBottomStack = New-Object System.Windows.Controls.StackPanel
     $leftBottomStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $leftBottomStack.Margin = New-Object System.Windows.Thickness(0, 0, 12, 0)
 
     $summaryText = New-Object System.Windows.Controls.TextBlock
     $summaryText.FontSize = 12
@@ -31054,7 +31113,7 @@ function Show-LeftoverReviewDialog {
     $chkForceStop.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
     $chkForceStop.Foreground = $pal.WarnFg
     $chkForceStop.FontSize = 11.5
-    $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a (kh$([char]0x00F4)ng hi$([char]0x1EC7)n popup Windows)"
+    $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) kh$([char]0x00F3)a t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a ($([char]0x1EA9)n popup Windows)"
 
     $leftBottomStack.Children.Add($summaryText) | Out-Null
     $leftBottomStack.Children.Add($chkRecycleBin) | Out-Null
@@ -31088,8 +31147,11 @@ function Show-LeftoverReviewDialog {
 
     $btnSelectAll = New-Object System.Windows.Controls.Button
     $btnSelectAll.Content = "Ch$([char]0x1ECD)n t$([char]0x1EA5)t c$([char]0x1EA3)"
-    $btnSelectAll.Padding = New-Object System.Windows.Thickness(10, 6, 10, 6)
+    $btnSelectAll.Height = 32
+    $btnSelectAll.Padding = New-Object System.Windows.Thickness(12, 0, 12, 1)
     $btnSelectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnSelectAll.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnSelectAll.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnSelectAll.Background = $brLoBtnBg
     $btnSelectAll.Foreground = $brLoBtnFg
     $btnSelectAll.Add_Click({
@@ -31105,8 +31167,11 @@ function Show-LeftoverReviewDialog {
 
     $btnDeselectAll = New-Object System.Windows.Controls.Button
     $btnDeselectAll.Content = "B$([char]0x1ECF) ch$([char]0x1ECD)n"
-    $btnDeselectAll.Padding = New-Object System.Windows.Thickness(10, 6, 10, 6)
+    $btnDeselectAll.Height = 32
+    $btnDeselectAll.Padding = New-Object System.Windows.Thickness(12, 0, 12, 1)
     $btnDeselectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnDeselectAll.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnDeselectAll.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnDeselectAll.Background = $brLoBtnBg
     $btnDeselectAll.Foreground = $brLoBtnFg
     $btnDeselectAll.Add_Click({
@@ -31122,10 +31187,14 @@ function Show-LeftoverReviewDialog {
 
     $btnCancel = New-Object System.Windows.Controls.Button
     $btnCancel.Content = "H$([char]0x1EE7)y b$([char]0x1ECF)"
-    $btnCancel.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
+    $btnCancel.Height = 32
+    $btnCancel.MinWidth = 86
+    $btnCancel.Padding = New-Object System.Windows.Thickness(14, 0, 14, 1)
     $btnCancel.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-    $btnCancel.Background = $pal.ItemBorder
-    $btnCancel.Foreground = $pal.SizeRegFg
+    $btnCancel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnCancel.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnCancel.Background = $pal.BtnBg
+    $btnCancel.Foreground = $pal.BtnFg
     $btnCancel.Add_Click({ $dialog.Close() })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
@@ -31140,11 +31209,14 @@ function Show-LeftoverReviewDialog {
 
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "X$([char]0x00F3)a S$([char]0x1EA1)ch M$([char]0x1EE5)c $([char]0x0110)$([char]0x00E3) Ch$([char]0x1ECD)n"
-    $btnDelete.Padding = New-Object System.Windows.Thickness(14, 6, 14, 6)
+    $btnDelete.Height = 32
+    $btnDelete.Padding = New-Object System.Windows.Thickness(16, 0, 16, 1)
+    $btnDelete.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnDelete.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnDelete.Background = $pal.DelBg
     $btnDelete.Foreground = $pal.DelFg
     $btnDelete.BorderBrush = $pal.DelBorder
-    $btnDelete.FontWeight = [System.Windows.FontWeights]::Bold
+    $btnDelete.FontWeight = [System.Windows.FontWeights]::SemiBold
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
         if ($checkedItems.Count -eq 0) {
@@ -31758,9 +31830,9 @@ function Invoke-DeepAppUninstall {
                         Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($plan.Exe) $($plan.Args)"
                         if (-not $plan.IsSilent) {
                             $hintText = if ($plan.IsLikelyDarkPattern) {
-                                "[!] $([char]0x1EE8)ng d$([char]0x1EE5)ng n$([char]0x00E0)y hay c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i gi$([char]0x1EEF) ch$([char]0x00E2)n; n$([char]0x1EBF)u popup hi$([char]0x1EC7)n l$([char]0x00EA)n, l$([char]0x1EA7)n sau h$([char]0x00E3)y t$([char]0x00ED)ch 'B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng'."
+                                "[!] $([char]0x1EE8)ng d$([char]0x1EE5)ng n$([char]0x00E0)y hay c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i gi$([char]0x1EEF) ch$([char]0x00E2)n; n$([char]0x1EBF)u popup hi$([char]0x1EC7)n l$([char]0x00EA)n, l$([char]0x1EA7)n sau h$([char]0x00E3)y b$([char]0x1EAD)t 'Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p' trong h$([char]0x1ED9)p tho$([char]0x1EA1)i G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                             } else {
-                                "[!] Kh$([char]0x00F4)ng r$([char]0x00F5) c$([char]0x1EDD) im l$([char]0x1EB7)ng chu$([char]0x1EA9)n cho tr$([char]0x00EC)nh g$([char]0x1EE1) n$([char]0x00E0)y; n$([char]0x1EBF)u c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i l$([char]0x00E0)m phi$([char]0x1EC1)n, c$([char]0x00F3) th$([char]0x1EC3) t$([char]0x00ED)ch 'B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng'."
+                                "[!] Kh$([char]0x00F4)ng r$([char]0x00F5) c$([char]0x1EDD) im l$([char]0x1EB7)ng chu$([char]0x1EA9)n cho tr$([char]0x00EC)nh g$([char]0x1EE1) n$([char]0x00E0)y; n$([char]0x1EBF)u c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i l$([char]0x00E0)m phi$([char]0x1EC1)n, c$([char]0x00F3) th$([char]0x1EC3) b$([char]0x1EAD)t 'Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p' trong h$([char]0x1ED9)p tho$([char]0x1EA1)i G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                             }
                             Log-Text $hintText
                         }
@@ -32809,6 +32881,7 @@ function Show-OwnedMessageBox {
         [string]$ModeBadgeText = "",
         [string]$ModeBadgeKind = "Info",
         [hashtable]$ToggleState = $null,
+        [hashtable]$ForceToggleState = $null,
         $OwnerWindowOverride = $null
     )
     if ($script:isWindowClosing) {
@@ -32870,8 +32943,8 @@ function Show-OwnedMessageBox {
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                <Border Name="tStatePill" Grid.Column="1" Background="#141C2B" BorderBrush="#2F3E57" BorderThickness="1" CornerRadius="2" Padding="6,2" Margin="12,0,8,0" VerticalAlignment="Center">
-                                    <TextBlock Name="tStateText" Text="T&#x1EAE;T" Foreground="#94A3B8" FontSize="10" FontWeight="Bold"/>
+                                <Border Name="tStatePill" Grid.Column="1" Width="40" Background="#141C2B" BorderBrush="#2F3E57" BorderThickness="1" CornerRadius="2" Padding="0,2" Margin="12,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Name="tStateText" Text="T&#x1EAE;T" Foreground="#94A3B8" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                                 </Border>
                                 <Border Name="tTrack" Grid.Column="2" Width="34" Height="18" Background="#0B111C" BorderBrush="#334155" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
                                     <Grid>
@@ -32905,11 +32978,71 @@ function Show-OwnedMessageBox {
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="DlgDangerToggleBtn" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="#101623"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#27344A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="500"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border Name="tBox" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Border Name="tStatePill" Grid.Column="1" Width="40" Background="#141C2B" BorderBrush="#2F3E57" BorderThickness="1" CornerRadius="2" Padding="0,2" Margin="12,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock Name="tStateText" Text="T&#x1EAE;T" Foreground="#94A3B8" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                </Border>
+                                <Border Name="tTrack" Grid.Column="2" Width="34" Height="18" Background="#0B111C" BorderBrush="#334155" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Border Name="tThumb" Width="12" Height="12" Background="#64748B" CornerRadius="1" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="tBox" Property="Background" Value="#281317"/>
+                                <Setter TargetName="tBox" Property="BorderBrush" Value="#B45309"/>
+                                <Setter Property="Foreground" Value="#FEF3C7"/>
+                                <Setter TargetName="tStatePill" Property="Background" Value="#3B1A12"/>
+                                <Setter TargetName="tStatePill" Property="BorderBrush" Value="#D97706"/>
+                                <Setter TargetName="tStateText" Property="Text" Value="B&#x1EAC;T"/>
+                                <Setter TargetName="tStateText" Property="Foreground" Value="#FBBF24"/>
+                                <Setter TargetName="tTrack" Property="Background" Value="#B45309"/>
+                                <Setter TargetName="tTrack" Property="BorderBrush" Value="#F59E0B"/>
+                                <Setter TargetName="tThumb" Property="Background" Value="#FEF3C7"/>
+                                <Setter TargetName="tThumb" Property="HorizontalAlignment" Value="Right"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="tBox" Property="BorderBrush" Value="#F59E0B"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="tBox" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="DlgActionBtn" TargetType="Button">
-            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="16,7"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="108"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="#3EFFFFFF"/>
@@ -32917,15 +33050,15 @@ function Show-OwnedMessageBox {
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="b" Property="Opacity" Value="0.90"/>
-                                <Setter TargetName="b" Property="BorderBrush" Value="#80FFFFFF"/>
+                                <Setter TargetName="b" Property="Opacity" Value="0.92"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#66FFFFFF"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="b" Property="Opacity" Value="0.72"/>
+                                <Setter TargetName="b" Property="Opacity" Value="0.76"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -32933,19 +33066,24 @@ function Show-OwnedMessageBox {
             </Setter>
         </Style>
         <Style x:Key="DlgSecondaryBtn" TargetType="Button">
-            <Setter Property="Background" Value="#121826"/>
+            <Setter Property="Background" Value="#141C2B"/>
             <Setter Property="Foreground" Value="#CBD5E1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="15,7"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="94"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#2F3E57"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -32995,7 +33133,7 @@ function Show-OwnedMessageBox {
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Border Name="dlgHeader" Grid.Row="0" Background="#090D14" BorderBrush="#27344A" BorderThickness="0,0,0,1" Padding="14,10">
+            <Border Name="dlgHeader" Grid.Row="0" Background="#090D14" BorderBrush="#27344A" BorderThickness="0,0,0,1" Padding="18,11">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -33015,6 +33153,12 @@ function Show-OwnedMessageBox {
                 <Border Name="dlgModeBadge" Visibility="Collapsed" CornerRadius="2" BorderThickness="1" Padding="9,5" Margin="0,10,0,0" HorizontalAlignment="Stretch">
                     <TextBlock Name="dlgModeBadgeText" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"/>
                 </Border>
+                <ToggleButton Name="dlgForceToggle" Visibility="Collapsed" Style="{StaticResource DlgDangerToggleBtn}" Margin="0,10,0,0" HorizontalAlignment="Stretch">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Name="dlgForceToggleLabel" FontSize="11.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Name="dlgForceToggleSub" Visibility="Collapsed" FontSize="10.5" Foreground="#64748B" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </ToggleButton>
                 <ToggleButton Name="dlgModeToggle" Visibility="Collapsed" Style="{StaticResource DlgModeToggleBtn}" Margin="0,10,0,0" HorizontalAlignment="Stretch">
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Name="dlgToggleLabel" FontSize="11.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
@@ -33028,8 +33172,8 @@ function Show-OwnedMessageBox {
                 </Border>
             </StackPanel>
 
-            <Border Grid.Row="2" Background="#090D14" BorderBrush="#27344A" BorderThickness="0,1,0,0" Padding="16,11">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Border Grid.Row="2" Background="#090D14" BorderBrush="#27344A" BorderThickness="0,1,0,0" Padding="18,12">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Name="dlgBtnSecondary" Style="{StaticResource DlgSecondaryBtn}" Margin="0,0,8,0"/>
                     <Button Name="dlgBtnPrimary" Style="{StaticResource DlgActionBtn}"/>
                 </StackPanel>
@@ -33068,11 +33212,14 @@ function Show-OwnedMessageBox {
     $dlgTitleText     = $dlg.FindName("dlgTitleText")
     $dlgBtnCloseX     = $dlg.FindName("dlgBtnCloseX")
     $dlgMessageText   = $dlg.FindName("dlgMessageText")
-    $dlgModeBadge     = $dlg.FindName("dlgModeBadge")
-    $dlgModeBadgeText = $dlg.FindName("dlgModeBadgeText")
-    $dlgModeToggle    = $dlg.FindName("dlgModeToggle")
-    $dlgToggleLabel   = $dlg.FindName("dlgToggleLabel")
-    $dlgToggleSub     = $dlg.FindName("dlgToggleSub")
+    $dlgModeBadge        = $dlg.FindName("dlgModeBadge")
+    $dlgModeBadgeText    = $dlg.FindName("dlgModeBadgeText")
+    $dlgForceToggle      = $dlg.FindName("dlgForceToggle")
+    $dlgForceToggleLabel = $dlg.FindName("dlgForceToggleLabel")
+    $dlgForceToggleSub   = $dlg.FindName("dlgForceToggleSub")
+    $dlgModeToggle       = $dlg.FindName("dlgModeToggle")
+    $dlgToggleLabel      = $dlg.FindName("dlgToggleLabel")
+    $dlgToggleSub        = $dlg.FindName("dlgToggleSub")
     $dlgListBorder    = $dlg.FindName("dlgListBorder")
     $dlgDetailList    = $dlg.FindName("dlgDetailList")
     $dlgBtnSecondary  = $dlg.FindName("dlgBtnSecondary")
@@ -33081,15 +33228,21 @@ function Show-OwnedMessageBox {
     $dlgTitleText.Text = $Caption
     $dlgMessageText.Text = $Text
 
+    if ($null -ne $ToggleState -or $null -ne $ForceToggleState -or ($DetailItems -and $DetailItems.Count -gt 0)) {
+        $dlg.SizeToContent = [System.Windows.SizeToContent]::Height
+        $dlg.Width = 530
+    }
+
     $isWarning = ($Icon -eq [System.Windows.Forms.MessageBoxIcon]::Warning) -or ($Icon -eq [System.Windows.Forms.MessageBoxIcon]::Error)
     if ($isWarning) {
-        $dlgOuterBorder.BorderBrush = $bc.ConvertFromString("#47262A")
-        $dlgIconBox.Background      = $bc.ConvertFromString("#2A1519")
-        $dlgIconBox.BorderBrush     = $bc.ConvertFromString("#7F1D1D")
+        $dlgOuterBorder.BorderBrush = $bc.ConvertFromString("#3D2429")
+        $dlgIconBox.Background      = $bc.ConvertFromString("#231317")
+        $dlgIconBox.BorderBrush     = $bc.ConvertFromString("#6D2020")
         $dlgIconGlyph.Foreground    = $bc.ConvertFromString("#F87171")
         $dlgIconGlyph.Text          = "!"
-        $dlgBtnPrimary.Background   = $bc.ConvertFromString("#991B1B")
-        $dlgBtnPrimary.BorderBrush  = $bc.ConvertFromString("#DC2626")
+        $dlgBtnPrimary.Background   = $bc.ConvertFromString("#7F1D1D")
+        $dlgBtnPrimary.BorderBrush  = $bc.ConvertFromString("#991B1B")
+        $dlgBtnPrimary.Foreground   = $bc.ConvertFromString("#FEE2E2")
     } else {
         $dlgOuterBorder.BorderBrush = $bc.ConvertFromString("#2B3B52")
         $dlgIconBox.Background      = $bc.ConvertFromString("#102438")
@@ -33100,19 +33253,31 @@ function Show-OwnedMessageBox {
         $dlgBtnPrimary.BorderBrush  = $bc.ConvertFromString("#38BDF8")
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($ModeBadgeText)) {
+    $setBadgeUi = {
+        param([string]$BText, [string]$BKind)
+        if (-not $dlgModeBadge -or -not $dlgModeBadgeText) { return }
+        if ([string]::IsNullOrWhiteSpace($BText)) {
+            $dlgModeBadge.Visibility = [System.Windows.Visibility]::Collapsed
+            return
+        }
         $dlgModeBadge.Visibility = [System.Windows.Visibility]::Visible
-        $dlgModeBadgeText.Text = $ModeBadgeText
-        if ($ModeBadgeKind -eq "Danger") {
-            $dlgModeBadge.Background   = $bc.ConvertFromString("#281317")
-            $dlgModeBadge.BorderBrush  = $bc.ConvertFromString("#7F1D1D")
+        $dlgModeBadgeText.Text = $BText
+        if ($BKind -eq "Danger") {
+            $dlgModeBadge.Background     = $bc.ConvertFromString("#281317")
+            $dlgModeBadge.BorderBrush    = $bc.ConvertFromString("#7F1D1D")
             $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#FCA5A5")
+        } elseif ($BKind -eq "Warn") {
+            $dlgModeBadge.Background     = $bc.ConvertFromString("#261B0D")
+            $dlgModeBadge.BorderBrush    = $bc.ConvertFromString("#B45309")
+            $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#FCD34D")
         } else {
-            $dlgModeBadge.Background   = $bc.ConvertFromString("#0D2134")
-            $dlgModeBadge.BorderBrush  = $bc.ConvertFromString("#1D4E78")
+            $dlgModeBadge.Background     = $bc.ConvertFromString("#0D2134")
+            $dlgModeBadge.BorderBrush    = $bc.ConvertFromString("#1D4E78")
             $dlgModeBadgeText.Foreground = $bc.ConvertFromString("#7DD3FC")
         }
-    }
+    }.GetNewClosure()
+
+    & $setBadgeUi $ModeBadgeText $ModeBadgeKind
 
     if ($null -ne $ToggleState -and $dlgModeToggle -and $dlgToggleLabel) {
         $dlgModeToggle.Visibility = [System.Windows.Visibility]::Visible
@@ -33169,6 +33334,59 @@ function Show-OwnedMessageBox {
     } else {
         $dlgBtnPrimary.Content = if ([string]::IsNullOrWhiteSpace($PrimaryText)) { "$([char]0x0110)$([char]0x00F3)ng" } else { $PrimaryText }
         $dlgBtnSecondary.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    if ($null -ne $ForceToggleState -and $dlgForceToggle -and $dlgForceToggleLabel) {
+        $dlgForceToggle.Visibility = [System.Windows.Visibility]::Visible
+        $dlgForceToggleLabel.Text = if ($ForceToggleState.Label) { [string]$ForceToggleState.Label } else { "" }
+        if ($null -ne $ToggleState -and $dlgModeToggle) {
+            $dlgModeToggle.Margin = [System.Windows.Thickness]::new(0, 8, 0, 0)
+        }
+        $fSubOnFg       = $bc.ConvertFromString("#FCA5A5")
+        $fSubOffFg      = $bc.ConvertFromString("#64748B")
+        $fHintOn        = if ($ForceToggleState.HintOn)  { [string]$ForceToggleState.HintOn }  else { "" }
+        $fHintOff       = if ($ForceToggleState.HintOff) { [string]$ForceToggleState.HintOff } else { "" }
+        $fBadgeOn       = if ($ForceToggleState.BadgeOn) { [string]$ForceToggleState.BadgeOn } else { $ModeBadgeText }
+        $fBadgeKindOn   = if ($ForceToggleState.BadgeKindOn) { [string]$ForceToggleState.BadgeKindOn } else { "Danger" }
+        $fPrimOn        = if ($ForceToggleState.PrimaryTextOn) { [string]$ForceToggleState.PrimaryTextOn } else { "" }
+        $fPrimOff       = if ($ForceToggleState.PrimaryTextOff) { [string]$ForceToggleState.PrimaryTextOff } else { [string]$dlgBtnPrimary.Content }
+
+        $syncForceUi = {
+            $isForce = ($dlgForceToggle.IsChecked -eq $true)
+            $ForceToggleState.Checked = $isForce
+            if ($dlgForceToggleSub) {
+                $fSubMsg = if ($isForce) { $fHintOn } else { $fHintOff }
+                if ([string]::IsNullOrWhiteSpace($fSubMsg)) {
+                    $dlgForceToggleSub.Visibility = [System.Windows.Visibility]::Collapsed
+                } else {
+                    $dlgForceToggleSub.Text = $fSubMsg
+                    $dlgForceToggleSub.Foreground = if ($isForce) { $fSubOnFg } else { $fSubOffFg }
+                    $dlgForceToggleSub.Visibility = [System.Windows.Visibility]::Visible
+                }
+            }
+            if ($isForce) {
+                & $setBadgeUi $fBadgeOn $fBadgeKindOn
+                if (-not [string]::IsNullOrWhiteSpace($fPrimOn)) {
+                    $dlgBtnPrimary.Content = $fPrimOn
+                }
+                if ($null -ne $ToggleState -and $dlgModeToggle) {
+                    $dlgModeToggle.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            } else {
+                & $setBadgeUi $ModeBadgeText $ModeBadgeKind
+                if (-not [string]::IsNullOrWhiteSpace($fPrimOff)) {
+                    $dlgBtnPrimary.Content = $fPrimOff
+                }
+                if ($null -ne $ToggleState -and $dlgModeToggle) {
+                    $dlgModeToggle.Visibility = [System.Windows.Visibility]::Visible
+                }
+            }
+        }.GetNewClosure()
+
+        $dlgForceToggle.IsChecked = [bool]$ForceToggleState.Checked
+        & $syncForceUi
+        $dlgForceToggle.Add_Checked($syncForceUi)
+        $dlgForceToggle.Add_Unchecked($syncForceUi)
     }
 
     $dlgState = @{
@@ -33503,7 +33721,6 @@ Register-Click "navBtnDrivers"     -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00F
 Set-ActiveTab 0 $navBtnApps
 
 $btnDeepUninstall        = $window.FindName("btnDeepUninstall")
-$btnForceStopUninstall   = $window.FindName("btnForceStopUninstall")
 $btnScanOrphans          = $window.FindName("btnScanOrphans")
 $btnRefreshUninstaller   = $window.FindName("btnRefreshUninstaller")
 $btnFilterUninstAll      = $window.FindName("btnFilterUninstAll")
@@ -33516,25 +33733,8 @@ $txtUninstallSearch      = $window.FindName("txtUninstallSearch")
 $btnClearUninstallSearch = $window.FindName("btnClearUninstallSearch")
 $btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
 $btnUninstallDeselectAll = $window.FindName("btnUninstallDeselectAll")
-$pnlSkipVendorUninst     = $window.FindName("pnlSkipVendorUninstaller")
-$cbSkipVendorUninst      = $window.FindName("cbSkipVendorUninstaller")
 $txtUninstallerSummary   = $window.FindName("txtUninstallerSummary")
 $uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
-
-if ($pnlSkipVendorUninst -and $cbSkipVendorUninst) {
-    $pnlSkipVendorUninst.Add_MouseLeftButtonUp({
-        param($s, $e)
-        if ($script:isWindowClosing -or $script:isActionRunning) { return }
-        $node = $e.OriginalSource
-        while ($node -ne $null -and $node -ne $s) {
-            if ($node -is [System.Windows.Controls.CheckBox]) { return }
-            if ($node -is [System.Windows.Media.Visual]) {
-                $node = [System.Windows.Media.VisualTreeHelper]::GetParent($node)
-            } else { break }
-        }
-        $cbSkipVendorUninst.IsChecked = -not ($cbSkipVendorUninst.IsChecked -eq $true)
-    })
-}
 
 $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
@@ -33560,7 +33760,7 @@ $script:brushUninstBadgeFg            = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstBadgeBrokenBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x3B, 0x12, 0x18)); $script:brushUninstBadgeBrokenBg.Freeze()
 $script:brushUninstBadgeBrokenFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71)); $script:brushUninstBadgeBrokenFg.Freeze()
 $script:brushUninstStatusBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushUninstStatusBrokenBg.Freeze()
-$script:brushUninstStatusBrokenBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xE1, 0x1D, 0x48)); $script:brushUninstStatusBrokenBorder.Freeze()
+$script:brushUninstStatusBrokenBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x99, 0x1B, 0x1B)); $script:brushUninstStatusBrokenBorder.Freeze()
 $script:brushUninstStatusOkBg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x25, 0x18)); $script:brushUninstStatusOkBg.Freeze()
 $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushUninstStatusOkBorder.Freeze()
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
@@ -34082,10 +34282,6 @@ function Update-UninstallerSelectionButtons {
     if ($btnDeepUninstall) {
         $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($Count)" } else { "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ($Count)" }
         $btnDeepUninstall.IsEnabled = ($Count -gt 0)
-    }
-    if ($btnForceStopUninstall) {
-        $btnForceStopUninstall.Content = if ($script:isUninstallingQueue) { "+ Bu$([char]0x1ED9)c d$([char]0x1EEB)ng v$([char]0x00E0)o h$([char]0x00E0)ng ($Count)" } else { "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($Count)" }
-        $btnForceStopUninstall.IsEnabled = ($Count -gt 0)
     }
 }
 
@@ -34659,8 +34855,9 @@ function Update-UninstallerList {
                 [void]$rowGrid.Children.Add($sizeTb)
 
                 $statusBorder = [System.Windows.Controls.Border]::new()
-                $statusBorder.CornerRadius = $cornerFour
-                $statusBorder.Padding = $paddingUninstBadge
+                $statusBorder.CornerRadius = [System.Windows.CornerRadius]::new(3)
+                $statusBorder.Height = 22
+                $statusBorder.Padding = [System.Windows.Thickness]::new(8, 0, 8, 2)
                 $statusBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
                 $statusBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
                 $statusBorder.BorderThickness = $thicknessOne
@@ -34668,6 +34865,10 @@ function Update-UninstallerList {
                 $statusTb = [System.Windows.Controls.TextBlock]::new()
                 $statusTb.FontSize = 10.5
                 $statusTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+                $statusTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+                $statusTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $statusTb.TextAlignment = [System.Windows.TextAlignment]::Center
+                [System.Windows.Media.TextOptions]::SetTextFormattingMode($statusTb, [System.Windows.Media.TextFormattingMode]::Display)
 
                 if ($app.IsBrokenOrphan) {
                     $statusBorder.Background = $script:brushUninstStatusBrokenBg
@@ -35145,9 +35346,120 @@ function Start-UninstallQueueExecution {
     }
 }
 
+function Get-SelectedUninstallerApps {
+    return @($script:uninstallerRowEntries | Where-Object {
+        -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true))
+    } | ForEach-Object { $_.App })
+}
+
+function Confirm-UnifiedUninstallSelection {
+    param(
+        [Parameter(Mandatory = $true)][object[]]$Items,
+        [switch]$IsQueueAppend
+    )
+    if (-not $Items -or $Items.Count -eq 0 -or $script:isWindowClosing) { return $null }
+
+    $appLines = @($Items | ForEach-Object {
+        $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
+        "$([char]0x2022) $($_.DisplayName)$vPart"
+    })
+    $allBrokenOrphan = (@($Items | Where-Object { -not $_.IsBrokenOrphan }).Count -eq 0)
+    $hasDarkPattern = $false
+    foreach ($it in $Items) {
+        $meta = "$($it.DisplayName) $($it.Publisher) $($it.UninstallString) $($it.QuietUninstallString)"
+        if ($meta -match '(?i)\b(360Safe|360 Total|Qihu|2345|Kingsoft|Sogou|Baidu|Driver Booster|IObit)\b') {
+            $hasDarkPattern = $true
+            break
+        }
+    }
+
+    $count = $Items.Count
+    $normalPrimary = if ($IsQueueAppend) { "Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($count)" } else { "G$([char]0x1EE1) ngay ($count)" }
+    $forcePrimary  = if ($IsQueueAppend) { "+ Bu$([char]0x1ED9)c d$([char]0x1EEB)ng v$([char]0x00E0)o h$([char]0x00E0)ng ($count)" } else { "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($count)" }
+    $secondaryText = if ($IsQueueAppend) { "B$([char]0x1ECF) qua" } else { "H$([char]0x1EE7)y b$([char]0x1ECF)" }
+
+    if ($allBrokenOrphan) {
+        $msgText = if ($IsQueueAppend) {
+            "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i $([char]0x0111)ang ch$([char]0x1EA1)y. Th$([char]0x00EA)m $count $([char]0x1EE9)ng d$([char]0x1EE5)ng l$([char]0x1ED7)i / c$([char]0x00F2)n s$([char]0x00F3)t v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i qu$([char]0x00E9)t x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p?"
+        } else {
+            "$([char]0x00C9)p d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh/d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang kh$([char]0x00F3)a (n$([char]0x1EBF)u c$([char]0x00F2)n) v$([char]0x00E0) qu$([char]0x00E9)t x$([char]0x00F3)a s$([char]0x1EA1)ch $count m$([char]0x1EE5)c l$([char]0x1ED7)i / c$([char]0x00F2)n s$([char]0x00F3)t $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?"
+        }
+        $captionText = if ($IsQueueAppend) { "Th$([char]0x00EA)m v$([char]0x00E0)o H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i G$([char]0x1EE1)" } else { "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) & D$([char]0x1ECD)n s$([char]0x1EA1)ch" }
+        $confirm = Show-OwnedMessageBox `
+            -Text $msgText `
+            -Caption $captionText `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+            -PrimaryText $normalPrimary `
+            -SecondaryText $secondaryText `
+            -DetailItems $appLines `
+            -ModeBadgeText "$([char]0x1EE8)ng d$([char]0x1EE5)ng b$([char]0x1ECB) l$([char]0x1ED7)i / thi$([char]0x1EBF)u tr$([char]0x00EC)nh g$([char]0x1EE1) $([char]0x2014) T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng $([char]0x00E9)p d$([char]0x1EEB)ng & qu$([char]0x00E9)t x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p" `
+            -ModeBadgeKind "Warn"
+        if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return $null }
+        return [PSCustomObject]@{ SkipVendor = $true; ForceStop = $true; AutoSilent = $false }
+    }
+
+    $defaultBadgeText = if ($hasDarkPattern) {
+        "Ph$([char]0x00E1)t hi$([char]0x1EC7)n app hay c$([char]0x00F3) popup gi$([char]0x1EEF) ch$([char]0x00E2)n $([char]0x2014) n$([char]0x00EA)n b$([char]0x1EAD)t 'Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p' b$([char]0x00EA)n d$([char]0x01B0)$([char]0x1EDB)i"
+    } elseif ($IsQueueAppend) {
+        "Ch$([char]0x1EA1)y n$([char]0x1ED1)i ti$([char]0x1EBF)p v$([char]0x00E0) g$([char]0x1ED9)p b$([char]0x1EA3)ng d$([char]0x1ECD)n r$([char]0x00E1)c cu$([char]0x1ED1)i l$([char]0x01B0)$([char]0x1EE3)t"
+    } else {
+        ""
+    }
+    $defaultBadgeKind = if ($hasDarkPattern) { "Warn" } else { "Info" }
+
+    $forceToggleState = @{
+        Checked        = $false
+        Label          = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p (b$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng)"
+        HintOn         = "$([char]0x00C9)p t$([char]0x1EAF)t ti$([char]0x1EBF)n tr$([char]0x00EC)nh/service/task/handle, b$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c r$([char]0x1ED3)i x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p"
+        HintOff        = "T$([char]0x1EAE)T: Ch$([char]0x1EA1)y tr$([char]0x00EC)nh g$([char]0x1EE1) chu$([char]0x1EA9)n c$([char]0x1EE7)a h$([char]0x00E3)ng tr$([char]0x01B0)$([char]0x1EDB)c (v$([char]0x1EAB)n t$([char]0x1EF1) $([char]0x0111)$([char]0x00F3)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh kh$([char]0x00F3)a file)"
+        BadgeOn        = "Restart Manager + NtSuspend + Kill Tree + MoveFileEx (b$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng)"
+        BadgeKindOn    = "Danger"
+        PrimaryTextOn  = $forcePrimary
+        PrimaryTextOff = $normalPrimary
+    }
+    $autoSilentToggleState = @{
+        Checked = [bool]$script:autoSilentUninstall
+        Label   = "T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng g$([char]0x1EAF)n c$([char]0x1EDD) g$([char]0x1EE1) im l$([char]0x1EB7)ng theo b$([char]0x1ED9) c$([char]0x00E0)i"
+        HintOn  = "T$([char]0x1EF1) nh$([char]0x1EAD)n di$([char]0x1EC7)n b$([char]0x1ED9) c$([char]0x00E0)i (Inno, NSIS, WiX, InstallShield, MSI...) v$([char]0x00E0) g$([char]0x1EAF)n c$([char]0x1EDD) ch$([char]0x1EA1)y ng$([char]0x1EA7)m"
+        HintOff = "M$([char]0x1EDF) tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c c$([char]0x1EE7)a h$([char]0x00E3)ng nh$([char]0x01B0) b$([char]0x00EC)nh th$([char]0x01B0)$([char]0x1EDD)ng (t$([char]0x1EAF)t g$([char]0x1EAF)n c$([char]0x1EDD) im l$([char]0x1EB7)ng)"
+    }
+
+    $msgText = if ($IsQueueAppend) {
+        "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x0111)ang ch$([char]0x1EA1)y. Th$([char]0x00EA)m $count $([char]0x1EE9)ng d$([char]0x1EE5)ng m$([char]0x1EDB)i v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i?"
+    } else {
+        "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $count $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?"
+    }
+    $captionText = if ($IsQueueAppend) { "Th$([char]0x00EA)m v$([char]0x00E0)o H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i G$([char]0x1EE1)" } else { "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" }
+    $confirm = Show-OwnedMessageBox `
+        -Text $msgText `
+        -Caption $captionText `
+        -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+        -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
+        -PrimaryText $normalPrimary `
+        -SecondaryText $secondaryText `
+        -DetailItems $appLines `
+        -ModeBadgeText $defaultBadgeText `
+        -ModeBadgeKind $defaultBadgeKind `
+        -ForceToggleState $forceToggleState `
+        -ToggleState $autoSilentToggleState
+    if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return $null }
+
+    $useForce = [bool]$forceToggleState.Checked
+    $useAutoSilent = if ($useForce) { $false } else { [bool]$autoSilentToggleState.Checked }
+    if (-not $useForce -and -not $script:isWindowClosing) {
+        $script:autoSilentUninstall = $useAutoSilent
+    }
+    return [PSCustomObject]@{
+        SkipVendor = $useForce
+        ForceStop  = $useForce
+        AutoSilent = $useAutoSilent
+    }
+}
+
 if ($btnDeepUninstall) {
     $btnDeepUninstall.Add_Click({
-        $selectedItems = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
+        $selectedItems = Get-SelectedUninstallerApps
         if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
 
         if ($script:isUninstallingQueue) {
@@ -35156,135 +35468,26 @@ if ($btnDeepUninstall) {
                 Log-Text "[WARN] C$([char]0x00E1)c $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n hi$([char]0x1EC7)n $([char]0x0111)$([char]0x00E3) n$([char]0x1EB1)m trong h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                 return
             }
-            $skipVendorAppend = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
-            $appLinesAppend = @($newItems | ForEach-Object {
-                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
-                "$([char]0x2022) $($_.DisplayName)$vPart"
-            })
-            $ansAppend = Show-OwnedMessageBox `
-                -Text "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x0111)ang ch$([char]0x1EA1)y. Th$([char]0x00EA)m $($newItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng m$([char]0x1EDB)i v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i (ch$([char]0x1EA1)y n$([char]0x1ED1)i ti$([char]0x1EBF)p v$([char]0x00E0) g$([char]0x1ED9)p b$([char]0x1EA3)ng d$([char]0x1ECD)n r$([char]0x00E1)c cu$([char]0x1ED1)i l$([char]0x01B0)$([char]0x1EE3)t)?" `
-                -Caption "Th$([char]0x00EA)m v$([char]0x00E0)o H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i G$([char]0x1EE1)" `
-                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Question) `
-                -PrimaryText "Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($($newItems.Count))" `
-                -SecondaryText "B$([char]0x1ECF) qua" `
-                -DetailItems $appLinesAppend
-            if ($ansAppend -eq [System.Windows.Forms.DialogResult]::Yes -and $script:isUninstallingQueue -and -not $script:isWindowClosing) {
-                $nAdded = Add-ItemsToUninstallQueue -Items $newItems -SkipVendor:$skipVendorAppend -ForceStop:$false -AutoSilent:(if ($skipVendorAppend) { $false } else { [bool]$script:autoSilentUninstall })
+            $planChoice = Confirm-UnifiedUninstallSelection -Items $newItems -IsQueueAppend
+            if ($null -ne $planChoice -and $script:isUninstallingQueue -and -not $script:isWindowClosing) {
+                $nAdded = Add-ItemsToUninstallQueue -Items $newItems -SkipVendor:$planChoice.SkipVendor -ForceStop:$planChoice.ForceStop -AutoSilent:$planChoice.AutoSilent
                 if ($nAdded -gt 0) {
-                    Log-Text "[QUEUE] $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m +$nAdded $([char]0x1EE9)ng d$([char]0x1EE5)ng v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                    if ($planChoice.ForceStop) {
+                        Log-Text "[QUEUE] $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m +$nAdded $([char]0x1EE9)ng d$([char]0x1EE5)ng (Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a) v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i."
+                    } else {
+                        Log-Text "[QUEUE] $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m +$nAdded $([char]0x1EE9)ng d$([char]0x1EE5)ng v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                    }
                 }
             }
             return
         }
 
         Invoke-GuardedAction "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
-            $selectedNow = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
-            if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
+            $selectedNow = Get-SelectedUninstallerApps
+            $planChoice = Confirm-UnifiedUninstallSelection -Items $selectedNow
+            if ($null -eq $planChoice) { return }
 
-            $skipVendor = ($null -ne $cbSkipVendorUninst -and $cbSkipVendorUninst.IsChecked -eq $true)
-            $appLines = @($selectedNow | ForEach-Object {
-                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
-                "$([char]0x2022) $($_.DisplayName)$vPart"
-            })
-
-            if ($skipVendor) {
-                $confirm = Show-OwnedMessageBox `
-                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedNow.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
-                    -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" `
-                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedNow.Count))" `
-                    -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
-                    -DetailItems $appLines `
-                    -ModeBadgeText "B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng $([char]0x2014) $([char]0x00C9)p x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p" `
-                    -ModeBadgeKind "Danger"
-                $useAutoSilent = $false
-            } else {
-                $toggleState = @{
-                    Checked = [bool]$script:autoSilentUninstall
-                    Label   = "T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng g$([char]0x1EAF)n c$([char]0x1EDD) g$([char]0x1EE1) im l$([char]0x1EB7)ng theo b$([char]0x1ED9) c$([char]0x00E0)i"
-                    HintOn  = "T$([char]0x1EF1) nh$([char]0x1EAD)n di$([char]0x1EC7)n b$([char]0x1ED9) c$([char]0x00E0)i (Inno, NSIS, WiX, MSI...) v$([char]0x00E0) g$([char]0x1EAF)n c$([char]0x1EDD) ch$([char]0x1EA1)y ng$([char]0x1EA7)m"
-                    HintOff = "M$([char]0x1EDF) tr$([char]0x00EC)nh g$([char]0x1EE1) g$([char]0x1ED1)c c$([char]0x1EE7)a h$([char]0x00E3)ng nh$([char]0x01B0) b$([char]0x00EC)nh th$([char]0x01B0)$([char]0x1EDD)ng (t$([char]0x1EAF)t g$([char]0x1EAF)n c$([char]0x1EDD) im l$([char]0x1EB7)ng)"
-                }
-                $confirm = Show-OwnedMessageBox `
-                    -Text "B$([char]0x1EA1)n c$([char]0x00F3) ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($selectedNow.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n?" `
-                    -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" `
-                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                    -PrimaryText "G$([char]0x1EE1) ngay ($($selectedNow.Count))" `
-                    -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
-                    -DetailItems $appLines `
-                    -ToggleState $toggleState
-                if (-not $script:isWindowClosing) {
-                    $script:autoSilentUninstall = [bool]$toggleState.Checked
-                }
-                $useAutoSilent = [bool]$toggleState.Checked
-            }
-
-            if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
-
-            [void](Add-ItemsToUninstallQueue -Items $selectedNow -SkipVendor:$skipVendor -ForceStop:$false -AutoSilent:$useAutoSilent)
-            Start-UninstallQueueExecution
-        }
-    })
-}
-
-if ($btnForceStopUninstall) {
-    $btnForceStopUninstall.Add_Click({
-        $selectedItems = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
-        if ($selectedItems.Count -eq 0 -or $script:isWindowClosing) { return }
-
-        if ($script:isUninstallingQueue) {
-            $newItems = @($selectedItems | Where-Object { -not $script:uninstallQueuedKeys.Contains((Get-UninstallerAppQueueKey $_)) })
-            if ($newItems.Count -eq 0) {
-                Log-Text "[WARN] C$([char]0x00E1)c $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n hi$([char]0x1EC7)n $([char]0x0111)$([char]0x00E3) n$([char]0x1EB1)m trong h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i g$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
-                return
-            }
-            $appLinesAppend = @($newItems | ForEach-Object {
-                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
-                "$([char]0x2022) $($_.DisplayName)$vPart"
-            })
-            $ansAppend = Show-OwnedMessageBox `
-                -Text "H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i $([char]0x0111)ang ch$([char]0x1EA1)y. Th$([char]0x00EA)m $($newItems.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p?" `
-                -Caption "Th$([char]0x00EA)m Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a v$([char]0x00E0)o H$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i" `
-                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                -PrimaryText "Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($($newItems.Count))" `
-                -SecondaryText "B$([char]0x1ECF) qua" `
-                -DetailItems $appLinesAppend `
-                -ModeBadgeText "Ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a n$([char]0x1ED1)i ti$([char]0x1EBF)p trong h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i" `
-                -ModeBadgeKind "Danger"
-            if ($ansAppend -eq [System.Windows.Forms.DialogResult]::Yes -and $script:isUninstallingQueue -and -not $script:isWindowClosing) {
-                $nAdded = Add-ItemsToUninstallQueue -Items $newItems -SkipVendor:$true -ForceStop:$true -AutoSilent:$false
-                if ($nAdded -gt 0) {
-                    Log-Text "[QUEUE] $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m +$nAdded $([char]0x1EE9)ng d$([char]0x1EE5)ng (Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a) v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i."
-                }
-            }
-            return
-        }
-
-        Invoke-GuardedAction "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand {
-            $selectedNow = @($script:uninstallerRowEntries | Where-Object { -not $_.IsRemoved -and ($_.IsSelected -or ($_.CheckBox -and $_.CheckBox.IsChecked -eq $true)) } | ForEach-Object { $_.App })
-            if ($selectedNow.Count -eq 0 -or $script:isWindowClosing) { return }
-
-            $appLines = @($selectedNow | ForEach-Object {
-                $vPart = if (-not [string]::IsNullOrWhiteSpace($_.DisplayVersion)) { " ($($_.DisplayVersion))" } else { "" }
-                "$([char]0x2022) $($_.DisplayName)$vPart"
-            })
-            $confirm = Show-OwnedMessageBox `
-                -Text "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng to$([char]0x00E0)n b$([char]0x1ED9) ti$([char]0x1EBF)n tr$([char]0x00EC)nh/d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p c$([char]0x1EE7)a $($selectedNow.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x00E0) x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p kh$([char]0x00F4)ng qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng?" `
-                -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a" `
-                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning) `
-                -PrimaryText "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a ($($selectedNow.Count))" `
-                -SecondaryText "H$([char]0x1EE7)y b$([char]0x1ECF)" `
-                -DetailItems $appLines `
-                -ModeBadgeText "Restart Manager + NtSuspend + Kill Tree + MoveFileEx (b$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng)" `
-                -ModeBadgeKind "Danger"
-            if ($confirm -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
-
-            [void](Add-ItemsToUninstallQueue -Items $selectedNow -SkipVendor:$true -ForceStop:$true -AutoSilent:$false)
+            [void](Add-ItemsToUninstallQueue -Items $selectedNow -SkipVendor:$planChoice.SkipVendor -ForceStop:$planChoice.ForceStop -AutoSilent:$planChoice.AutoSilent)
             Start-UninstallQueueExecution
         }
     })
@@ -35981,7 +36184,8 @@ foreach ($cat in $categories) {
         $updateBadge.BorderBrush = $script:brushUpdateBadgeBorder
         $updateBadge.BorderThickness = $thicknessOne
         $updateBadge.CornerRadius = $script:cornerIconBadge
-        $updateBadge.Padding = $paddingUpdateBadge
+        $updateBadge.Height = 18
+        $updateBadge.Padding = [System.Windows.Thickness]::new(5, 0, 5, 0)
         $updateBadge.Margin = $marginUpdateBadge
         $updateBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
@@ -35991,6 +36195,10 @@ foreach ($cat in $categories) {
         $updateText.FontSize = 9.5
         $updateText.FontWeight = [System.Windows.FontWeights]::Bold
         $updateText.Foreground = $script:brushUpdateBadgeFg
+        $updateText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $updateText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $updateText.TextAlignment = [System.Windows.TextAlignment]::Center
+        [System.Windows.Media.TextOptions]::SetTextFormattingMode($updateText, [System.Windows.Media.TextFormattingMode]::Display)
         $updateText.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
         $updateBadge.Child = $updateText
         [System.Windows.Controls.Grid]::SetColumn($updateBadge, 1)

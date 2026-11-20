@@ -1545,9 +1545,9 @@ function Show-LeftoverReviewDialog {
 
     $dialog = New-Object System.Windows.Window
     $dialog.Title = $Title
-    $dialog.Width = 920
+    $dialog.Width = 940
     $dialog.Height = 590
-    $dialog.MinWidth = 760
+    $dialog.MinWidth = 780
     $dialog.MinHeight = 460
     $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
     $canAttachOwner = $false
@@ -1606,20 +1606,20 @@ function Show-LeftoverReviewDialog {
             BtnFg        = & $mkC "#CBD5E1"
             BottomBg     = & $mkC "#0D121B"
             WarnFg       = & $mkC "#FBBF24"
-            DelBg        = & $mkC "#991B1B"
+            DelBg        = & $mkC "#7F1D1D"
             DelFg        = & $mkC "#FEE2E2"
-            DelBorder    = & $mkC "#DC2626"
+            DelBorder    = & $mkC "#991B1B"
             BadgeMap     = @{
-                "Ring0"    = (& $mkC "#B91C1C")
-                "Service"  = (& $mkC "#C2410C")
-                "Task"     = (& $mkC "#EA580C")
-                "Registry" = (& $mkC "#DC2626")
-                "Startup"  = (& $mkC "#E11D48")
-                "AppData"  = (& $mkC "#D97706")
-                "Hollow"   = (& $mkC "#2563EB")
-                "Shortcut" = (& $mkC "#7C3AED")
-                "Dump"     = (& $mkC "#9333EA")
-                "Default"  = (& $mkC "#0D9488")
+                "Ring0"    = (& $mkC "#7F1D1D")
+                "Service"  = (& $mkC "#B45309")
+                "Task"     = (& $mkC "#C2410C")
+                "Registry" = (& $mkC "#991B1B")
+                "Startup"  = (& $mkC "#9F1239")
+                "AppData"  = (& $mkC "#B45309")
+                "Hollow"   = (& $mkC "#1D4ED8")
+                "Shortcut" = (& $mkC "#6D28D9")
+                "Dump"     = (& $mkC "#7E22CE")
+                "Default"  = (& $mkC "#0F766E")
             }
         }
     }
@@ -1627,6 +1627,9 @@ function Show-LeftoverReviewDialog {
 
     $dialog.Background = $pal.Bg
     $dialog.Foreground = $pal.Fg
+    $dialog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif")
+    [System.Windows.Media.TextOptions]::SetTextFormattingMode($dialog, [System.Windows.Media.TextFormattingMode]::Display)
+    [System.Windows.Media.TextOptions]::SetTextRenderingMode($dialog, [System.Windows.Media.TextRenderingMode]::ClearType)
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
@@ -1670,12 +1673,14 @@ function Show-LeftoverReviewDialog {
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="#2F3E57"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
                     <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -1731,6 +1736,7 @@ function Show-LeftoverReviewDialog {
     }
 
     $itemsStack = New-Object System.Windows.Controls.StackPanel
+    [System.Windows.Controls.Grid]::SetIsSharedSizeScope($itemsStack, $true)
     $itemCheckBoxes = [System.Collections.Generic.List[System.Windows.Controls.CheckBox]]::new()
 
     $brLoItemBg     = $pal.ItemBg
@@ -1864,40 +1870,60 @@ function Show-LeftoverReviewDialog {
         $itemGrid.Children.Add($cb) | Out-Null
         $itemCheckBoxes.Add($cb)
 
-        $badgeStack = New-Object System.Windows.Controls.StackPanel
-        $badgeStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-        $badgeStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $badgeStack.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        $badgeGrid = New-Object System.Windows.Controls.Grid
+        $badgeGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $badgeGrid.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
+        $bgC0 = New-Object System.Windows.Controls.ColumnDefinition; $bgC0.Width = [System.Windows.GridLength]::Auto; $bgC0.SharedSizeGroup = "LoTypeCol"
+        $bgC1 = New-Object System.Windows.Controls.ColumnDefinition; $bgC1.Width = [System.Windows.GridLength]::Auto; $bgC1.SharedSizeGroup = "LoConfCol"
+        $badgeGrid.ColumnDefinitions.Add($bgC0) | Out-Null
+        $badgeGrid.ColumnDefinitions.Add($bgC1) | Out-Null
 
         $badgeBorder = New-Object System.Windows.Controls.Border
         $badgeBorder.Background = $badgeBrush
-        $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $badgeBorder.Padding = New-Object System.Windows.Thickness(6, 2, 6, 2)
+        $badgeBorder.CornerRadius = New-Object System.Windows.CornerRadius(3)
+        $badgeBorder.Height = 22
+        $badgeBorder.Padding = New-Object System.Windows.Thickness(8, 0, 8, 3)
+        $badgeBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $badgeBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
         $badgeText = New-Object System.Windows.Controls.TextBlock
         $badgeText.Text = $item.Type
         $badgeText.FontSize = 10.5
         $badgeText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $badgeText.Foreground = $brLoWhite
+        $badgeText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $badgeText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $badgeText.TextAlignment = [System.Windows.TextAlignment]::Center
+        [System.Windows.Media.TextOptions]::SetTextFormattingMode($badgeText, [System.Windows.Media.TextFormattingMode]::Display)
         $badgeBorder.Child = $badgeText
-        $badgeStack.Children.Add($badgeBorder) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($badgeBorder, 0)
+        $badgeGrid.Children.Add($badgeBorder) | Out-Null
 
         $confBorder = New-Object System.Windows.Controls.Border
         $confBorder.Background = $rowConfBg
         $confBorder.BorderBrush = $rowConfBdr
         $confBorder.BorderThickness = New-Object System.Windows.Thickness(1)
-        $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
-        $confBorder.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
+        $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(3)
+        $confBorder.Height = 22
+        $confBorder.Padding = New-Object System.Windows.Thickness(7, 0, 7, 2)
         $confBorder.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+        $confBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $confBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $confText = New-Object System.Windows.Controls.TextBlock
         $confText.Text = $confLabel
-        $confText.FontSize = 9.5
+        $confText.FontSize = 10
+        $confText.FontWeight = [System.Windows.FontWeights]::SemiBold
         $confText.Foreground = $rowConfFg
+        $confText.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $confText.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $confText.TextAlignment = [System.Windows.TextAlignment]::Center
+        [System.Windows.Media.TextOptions]::SetTextFormattingMode($confText, [System.Windows.Media.TextFormattingMode]::Display)
         $confBorder.Child = $confText
-        $badgeStack.Children.Add($confBorder) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($confBorder, 1)
+        $badgeGrid.Children.Add($confBorder) | Out-Null
 
-        [System.Windows.Controls.Grid]::SetColumn($badgeStack, 1)
-        $itemGrid.Children.Add($badgeStack) | Out-Null
+        [System.Windows.Controls.Grid]::SetColumn($badgeGrid, 1)
+        $itemGrid.Children.Add($badgeGrid) | Out-Null
 
         $infoPanel = New-Object System.Windows.Controls.StackPanel
         $infoPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -1932,8 +1958,11 @@ function Show-LeftoverReviewDialog {
         $btnOpenLoc = New-Object System.Windows.Controls.Button
         $btnOpenLoc.Content = "M$([char]0x1EDF) v$([char]0x1ECB) tr$([char]0x00ED)"
         $btnOpenLoc.FontSize = 10.5
-        $btnOpenLoc.Padding = New-Object System.Windows.Thickness(8, 3, 8, 3)
+        $btnOpenLoc.Height = 24
+        $btnOpenLoc.Padding = New-Object System.Windows.Thickness(10, 0, 10, 1)
         $btnOpenLoc.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $btnOpenLoc.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+        $btnOpenLoc.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
         $btnOpenLoc.Background = $brLoBtnBg
         $btnOpenLoc.Foreground = $brLoBtnFg
         $btnOpenLoc.Tag = $item
@@ -1962,6 +1991,7 @@ function Show-LeftoverReviewDialog {
 
     $leftBottomStack = New-Object System.Windows.Controls.StackPanel
     $leftBottomStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $leftBottomStack.Margin = New-Object System.Windows.Thickness(0, 0, 12, 0)
 
     $summaryText = New-Object System.Windows.Controls.TextBlock
     $summaryText.FontSize = 12
@@ -1980,7 +2010,7 @@ function Show-LeftoverReviewDialog {
     $chkForceStop.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
     $chkForceStop.Foreground = $pal.WarnFg
     $chkForceStop.FontSize = 11.5
-    $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a (kh$([char]0x00F4)ng hi$([char]0x1EC7)n popup Windows)"
+    $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) kh$([char]0x00F3)a t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a ($([char]0x1EA9)n popup Windows)"
 
     $leftBottomStack.Children.Add($summaryText) | Out-Null
     $leftBottomStack.Children.Add($chkRecycleBin) | Out-Null
@@ -2014,8 +2044,11 @@ function Show-LeftoverReviewDialog {
 
     $btnSelectAll = New-Object System.Windows.Controls.Button
     $btnSelectAll.Content = "Ch$([char]0x1ECD)n t$([char]0x1EA5)t c$([char]0x1EA3)"
-    $btnSelectAll.Padding = New-Object System.Windows.Thickness(10, 6, 10, 6)
+    $btnSelectAll.Height = 32
+    $btnSelectAll.Padding = New-Object System.Windows.Thickness(12, 0, 12, 1)
     $btnSelectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnSelectAll.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnSelectAll.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnSelectAll.Background = $brLoBtnBg
     $btnSelectAll.Foreground = $brLoBtnFg
     $btnSelectAll.Add_Click({
@@ -2031,8 +2064,11 @@ function Show-LeftoverReviewDialog {
 
     $btnDeselectAll = New-Object System.Windows.Controls.Button
     $btnDeselectAll.Content = "B$([char]0x1ECF) ch$([char]0x1ECD)n"
-    $btnDeselectAll.Padding = New-Object System.Windows.Thickness(10, 6, 10, 6)
+    $btnDeselectAll.Height = 32
+    $btnDeselectAll.Padding = New-Object System.Windows.Thickness(12, 0, 12, 1)
     $btnDeselectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnDeselectAll.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnDeselectAll.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnDeselectAll.Background = $brLoBtnBg
     $btnDeselectAll.Foreground = $brLoBtnFg
     $btnDeselectAll.Add_Click({
@@ -2048,10 +2084,14 @@ function Show-LeftoverReviewDialog {
 
     $btnCancel = New-Object System.Windows.Controls.Button
     $btnCancel.Content = "H$([char]0x1EE7)y b$([char]0x1ECF)"
-    $btnCancel.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
+    $btnCancel.Height = 32
+    $btnCancel.MinWidth = 86
+    $btnCancel.Padding = New-Object System.Windows.Thickness(14, 0, 14, 1)
     $btnCancel.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-    $btnCancel.Background = $pal.ItemBorder
-    $btnCancel.Foreground = $pal.SizeRegFg
+    $btnCancel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnCancel.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnCancel.Background = $pal.BtnBg
+    $btnCancel.Foreground = $pal.BtnFg
     $btnCancel.Add_Click({ $dialog.Close() })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
@@ -2066,11 +2106,14 @@ function Show-LeftoverReviewDialog {
 
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "X$([char]0x00F3)a S$([char]0x1EA1)ch M$([char]0x1EE5)c $([char]0x0110)$([char]0x00E3) Ch$([char]0x1ECD)n"
-    $btnDelete.Padding = New-Object System.Windows.Thickness(14, 6, 14, 6)
+    $btnDelete.Height = 32
+    $btnDelete.Padding = New-Object System.Windows.Thickness(16, 0, 16, 1)
+    $btnDelete.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btnDelete.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnDelete.Background = $pal.DelBg
     $btnDelete.Foreground = $pal.DelFg
     $btnDelete.BorderBrush = $pal.DelBorder
-    $btnDelete.FontWeight = [System.Windows.FontWeights]::Bold
+    $btnDelete.FontWeight = [System.Windows.FontWeights]::SemiBold
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
         if ($checkedItems.Count -eq 0) {
@@ -2684,9 +2727,9 @@ function Invoke-DeepAppUninstall {
                         Log-Text "[*] $([char]0x0110)ang th$([char]0x1EF1)c thi tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($plan.Exe) $($plan.Args)"
                         if (-not $plan.IsSilent) {
                             $hintText = if ($plan.IsLikelyDarkPattern) {
-                                "[!] $([char]0x1EE8)ng d$([char]0x1EE5)ng n$([char]0x00E0)y hay c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i gi$([char]0x1EEF) ch$([char]0x00E2)n; n$([char]0x1EBF)u popup hi$([char]0x1EC7)n l$([char]0x00EA)n, l$([char]0x1EA7)n sau h$([char]0x00E3)y t$([char]0x00ED)ch 'B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng'."
+                                "[!] $([char]0x1EE8)ng d$([char]0x1EE5)ng n$([char]0x00E0)y hay c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i gi$([char]0x1EEF) ch$([char]0x00E2)n; n$([char]0x1EBF)u popup hi$([char]0x1EC7)n l$([char]0x00EA)n, l$([char]0x1EA7)n sau h$([char]0x00E3)y b$([char]0x1EAD)t 'Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p' trong h$([char]0x1ED9)p tho$([char]0x1EA1)i G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                             } else {
-                                "[!] Kh$([char]0x00F4)ng r$([char]0x00F5) c$([char]0x1EDD) im l$([char]0x1EB7)ng chu$([char]0x1EA9)n cho tr$([char]0x00EC)nh g$([char]0x1EE1) n$([char]0x00E0)y; n$([char]0x1EBF)u c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i l$([char]0x00E0)m phi$([char]0x1EC1)n, c$([char]0x00F3) th$([char]0x1EC3) t$([char]0x00ED)ch 'B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) h$([char]0x00E3)ng'."
+                                "[!] Kh$([char]0x00F4)ng r$([char]0x00F5) c$([char]0x1EDD) im l$([char]0x1EB7)ng chu$([char]0x1EA9)n cho tr$([char]0x00EC)nh g$([char]0x1EE1) n$([char]0x00E0)y; n$([char]0x1EBF)u c$([char]0x00F3) b$([char]0x1EA3)ng h$([char]0x1ECF)i l$([char]0x00E0)m phi$([char]0x1EC1)n, c$([char]0x00F3) th$([char]0x1EC3) b$([char]0x1EAD)t 'Bu$([char]0x1ED9)c d$([char]0x1EEB)ng & X$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p' trong h$([char]0x1ED9)p tho$([char]0x1EA1)i G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                             }
                             Log-Text $hintText
                         }

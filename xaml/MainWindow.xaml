@@ -450,14 +450,14 @@
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
                                                 <TextBlock Name="txtGroupFilterTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
                                                 <Border Name="btnGroupBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
-                                                        Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                                        Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay lại xem tất cả danh mục">
-                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
                                                 </Border>
                                             </StackPanel>
-                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Padding="7,2"
+                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
                                                     HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <TextBlock Name="txtGroupFilterMeta" Text="" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8"/>
+                                                <TextBlock Name="txtGroupFilterMeta" Text="" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8" VerticalAlignment="Center"/>
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -500,14 +500,14 @@
                                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" Margin="5,1,6,0" VerticalAlignment="Center"/>
                                                 <TextBlock Name="txtSingleCatTitle" Text="" FontSize="12.5" FontWeight="SemiBold" Foreground="#7DD3FC" VerticalAlignment="Center"/>
                                                 <Border Name="btnSingleCatBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
-                                                        Padding="7,2" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
+                                                        Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay lại xem tất cả danh mục">
-                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
                                                 </Border>
                                             </StackPanel>
-                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Padding="7,2"
+                                            <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
                                                     HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <TextBlock Name="txtSingleCatCount" Text="0" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8"/>
+                                                <TextBlock Name="txtSingleCatCount" Text="0" FontSize="10.5" FontWeight="SemiBold" Foreground="#8A9EB8" VerticalAlignment="Center"/>
                                             </Border>
                                         </Grid>
                                         <Border Height="1" Background="#27344A" Margin="0,1,0,8"/>
@@ -555,10 +555,9 @@
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnDeepUninstall" Content="Gỡ cài đặt (0)" Style="{StaticResource ActionButton}"
-                                            Background="#991B1B" Foreground="#FEE2E2" Padding="14,7"/>
-                                    <Button Name="btnForceStopUninstall" Content="Buộc dừng &amp; Xóa (0)" Style="{StaticResource ActionButton}"
-                                            Background="#B45309" Foreground="#FEF3C7" Padding="13,7"
-                                            ToolTip="Buộc dừng toàn bộ tiến trình, service, task và handle đang khóa tệp rồi xóa trực tiếp không qua trình gỡ hãng." ToolTipService.InitialShowDelay="500"/>
+                                            Background="#7F1D1D" Foreground="#FEE2E2" Padding="14,7"
+                                            ToolTip="Gỡ ứng dụng đã chọn: hỗ trợ gỡ chuẩn theo hãng (tự gắn cờ im lặng) hoặc bật Buộc dừng &amp; Xóa trực tiếp (tắt tiến trình/service/task/handle, bỏ qua trình gỡ hãng) ngay trong hộp thoại xác nhận."
+                                            ToolTipService.InitialShowDelay="500"/>
                                     <Button Name="btnScanOrphans" Content="Quét Rác &amp; App Lỗi" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
                                     <Button Name="btnRefreshUninstaller" Content="Làm mới" Style="{StaticResource SecondaryButton}"
@@ -609,16 +608,6 @@
                                             <Button Name="btnSortUninstName" Content="Theo tên (A-Z)" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
                                             <Button Name="btnSortUninstSize" Content="Theo dung lượng" Style="{StaticResource FilterTabButton}"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Name="pnlSkipVendorUninstaller" Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2"
-                                            Padding="8,4" Margin="12,0,0,0" VerticalAlignment="Center" Cursor="Hand"
-                                            ToolTip="Mặc định App-Driver tự nhận diện bộ cài (Inno, NSIS, WiX, MSI, Squirrel) để ép cờ gỡ im lặng. Bật tùy chọn này nếu muốn bỏ qua hẳn trình gỡ cài đặt của hãng (chuyên trị app hay hiện bảng hỏi lừa giữ chân như 360), tắt tiến trình/service và xóa sạch trực tiếp."
-                                            ToolTipService.InitialShowDelay="5000">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <CheckBox Name="cbSkipVendorUninstaller" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Bỏ qua trình gỡ hãng" Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold"
-                                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
@@ -816,12 +805,12 @@
                     <TextBlock Name="txtStatus" Text="Sẵn sàng"
                                Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <Button Name="btnCancelAction" Content="Dừng tác vụ" Visibility="Collapsed"
-                            Background="#2D1215" Foreground="#FCA5A5" BorderBrush="#DC2626" BorderThickness="1"
-                            FontSize="10.5" FontWeight="SemiBold" Padding="9,2" Margin="12,0,0,0"
-                            VerticalAlignment="Center" Cursor="Hand">
+                            Background="#281317" Foreground="#FCA5A5" BorderBrush="#991B1B" BorderThickness="1"
+                            FontSize="10.5" FontWeight="SemiBold" Height="22" Padding="9,0,9,1" Margin="12,0,0,0"
+                            VerticalAlignment="Center" VerticalContentAlignment="Center" Cursor="Hand">
                         <Button.Resources>
                             <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="4"/>
+                                <Setter Property="CornerRadius" Value="3"/>
                             </Style>
                         </Button.Resources>
                     </Button>
@@ -829,8 +818,8 @@
 
                 <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Name="borderQueueBadge" Visibility="Collapsed" Background="#172554" BorderBrush="#2563EB" BorderThickness="1"
-                            CornerRadius="4" Padding="7,1" Margin="0,0,10,0" VerticalAlignment="Center">
-                        <TextBlock Name="txtQueueBadge" Text="" Foreground="#93C5FD" FontSize="10.5" FontWeight="SemiBold"/>
+                            CornerRadius="3" Height="22" Padding="8,0,8,1" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <TextBlock Name="txtQueueBadge" Text="" Foreground="#93C5FD" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Name="txtSelectionCount" Text="0 app được chọn"
                                Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
