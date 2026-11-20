@@ -181,31 +181,174 @@ function Get-SliceByDisplayWidth {
         }
     }
 
-    $cId    = $charPos[0]
-    $cVer   = $charPos[1]
-    $cAvail = $charPos[2]
-    $cSrc   = $charPos[3]
+    return Slice-WingetRowColumnsByPositions -Line $Line -CId $charPos[0] -CVer $charPos[1] -CAvail $charPos[2] -CSrc $charPos[3]
+}
 
-    $appName = ""; $appId = ""; $version = ""; $avail = ""
-    if ($cId -gt 0 -and $Line.Length -gt $cId) {
-        $appName = $Line.Substring(0, $cId).Trim()
-        if ($cVer -gt $cId -and $Line.Length -gt $cVer) {
-            $appId = $Line.Substring($cId, $cVer - $cId).Trim()
-            if ($cAvail -gt $cVer -and $Line.Length -gt $cAvail) {
-                $version = $Line.Substring($cVer, $cAvail - $cVer).Trim()
-                if ($cSrc -gt $cAvail -and $Line.Length -gt $cSrc) {
-                    $avail = $Line.Substring($cAvail, $cSrc - $cAvail).Trim()
-                } else {
-                    $avail = $Line.Substring($cAvail).Trim()
-                }
-            } else {
-                $version = $Line.Substring($cVer).Trim()
-            }
+function Get-StringDisplayWidth {
+    param([string]$Text, [int]$EndIndex = -1)
+    if ([string]::IsNullOrEmpty($Text)) { return 0 }
+    $limit = if ($EndIndex -ge 0 -and $EndIndex -le $Text.Length) { $EndIndex } else { $Text.Length }
+    $w = 0
+    for ($i = 0; $i -lt $limit; $i++) {
+        $ch = $Text[$i]
+        if ([char]::IsHighSurrogate($ch) -and ($i + 1) -lt $limit -and [char]::IsLowSurrogate($Text[$i + 1])) {
+            $cp = [char]::ConvertToUtf32($ch, $Text[$i + 1])
+            $w += Get-CharDisplayWidth $cp
+            $i++
         } else {
-            $appId = $Line.Substring($cId).Trim()
+            $w += Get-CharDisplayWidth ([int]$ch)
         }
     }
-    return @($appName, $appId, $version, $avail)
+    return $w
+}
+
+function Snap-WingetColumnBoundary {
+    param([string]$Line, [int]$Pos, [int]$MinPos)
+    if ([string]::IsNullOrEmpty($Line) -or $Pos -le $MinPos -or $Pos -ge $Line.Length) { return $Pos }
+    if ([char]::IsWhiteSpace($Line[$Pos]) -or [char]::IsWhiteSpace($Line[$Pos - 1])) { return $Pos }
+
+    $leftCand = -1
+    $minLeft = [Math]::Max($MinPos + 1, $Pos - 10)
+    for ($j = $Pos - 1; $j -ge $minLeft; $j--) {
+        if ([char]::IsWhiteSpace($Line[$j])) { $leftCand = $j + 1; break }
+    }
+
+    $rightCand = -1
+    $maxRight = [Math]::Min($Line.Length - 1, $Pos + 10)
+    for ($j = $Pos + 1; $j -le $maxRight; $j++) {
+        if ([char]::IsWhiteSpace($Line[$j])) {
+            $k = $j
+            while ($k -lt $Line.Length -and [char]::IsWhiteSpace($Line[$k])) { $k++ }
+            if ($k -lt $Line.Length) { $rightCand = $k }
+            break
+        }
+    }
+
+    if ($leftCand -ge 0 -and $rightCand -ge 0) {
+        if (($Pos - $leftCand) -le ($rightCand - $Pos)) { return $leftCand }
+        return $rightCand
+    }
+    if ($leftCand -ge 0) { return $leftCand }
+    if ($rightCand -ge 0) { return $rightCand }
+    return $Pos
+}
+
+function Find-NextWingetColumnStartOrEnd {
+    param([string]$Line, [int]$Pos, [int]$MaxEnd)
+    $limit = if ($MaxEnd -gt $Pos -and $MaxEnd -le $Line.Length) { $MaxEnd } else { $Line.Length }
+    if ($Pos -lt 0 -or $Pos -ge $limit) { return $limit }
+    if ([char]::IsWhiteSpace($Line[$Pos]) -or ($Pos -gt 0 -and [char]::IsWhiteSpace($Line[$Pos - 1]))) { return $Pos }
+    $j = $Pos
+    while ($j -lt $limit -and -not [char]::IsWhiteSpace($Line[$j])) { $j++ }
+    while ($j -lt $limit -and [char]::IsWhiteSpace($Line[$j])) { $j++ }
+    return $j
+}
+
+function Split-WingetTailAvailAndSource {
+    param([string]$Tail)
+    $avail = ""; $src = ""
+    if ([string]::IsNullOrWhiteSpace($Tail)) { return @($avail, $src) }
+    $t = $Tail.Trim()
+    if ($t -match '^(?i)(winget|msstore)$') {
+        return @("", $t)
+    }
+    $lastSpace = -1
+    for ($i = $t.Length - 1; $i -ge 0; $i--) {
+        if ([char]::IsWhiteSpace($t[$i])) { $lastSpace = $i; break }
+    }
+    if ($lastSpace -gt 0) {
+        $lastTok = $t.Substring($lastSpace + 1).Trim()
+        if ($lastTok -match '^(?i)(winget|msstore)$') {
+            $src = $lastTok
+            $avail = $t.Substring(0, $lastSpace).Trim()
+            return @($avail, $src)
+        }
+    }
+    return @($t, "")
+}
+
+function Resolve-WingetRowSource {
+    param([string]$AppId, [string]$SrcCol)
+    if (-not [string]::IsNullOrWhiteSpace($SrcCol)) {
+        $s = $SrcCol.Trim()
+        if ($s.Equals("msstore", [System.StringComparison]::OrdinalIgnoreCase)) { return "msstore" }
+        return "winget"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($AppId) -and ($AppId.StartsWith("ARP\", [System.StringComparison]::OrdinalIgnoreCase) -or $AppId.StartsWith("MSIX\", [System.StringComparison]::OrdinalIgnoreCase))) {
+        return "local"
+    }
+    return "winget"
+}
+
+function Slice-WingetRowColumnsByPositions {
+    param([string]$Line, [int]$CId, [int]$CVer, [int]$CAvail, [int]$CSrc)
+    $appName = ""; $appId = ""; $version = ""; $avail = ""; $src = ""
+    if ($CId -gt 0 -and $Line.Length -gt $CId) {
+        $CId = Snap-WingetColumnBoundary -Line $Line -Pos $CId -MinPos 0
+        $appName = $Line.Substring(0, $CId).Trim()
+        if ($CVer -gt $CId -and $Line.Length -gt $CVer) {
+            $CVer = Snap-WingetColumnBoundary -Line $Line -Pos $CVer -MinPos $CId
+            if ($CVer -gt $CId -and $CVer -lt $Line.Length -and -not [char]::IsWhiteSpace($Line[$CVer]) -and -not [char]::IsWhiteSpace($Line[$CVer - 1])) {
+                $CVer = Find-NextWingetColumnStartOrEnd -Line $Line -Pos $CVer -MaxEnd $Line.Length
+            }
+            $appId = if ($CVer -lt $Line.Length) { $Line.Substring($CId, $CVer - $CId).Trim() } else { $Line.Substring($CId).Trim() }
+            if ($CVer -lt $Line.Length) {
+                if ($CAvail -gt $CVer -and $Line.Length -gt $CAvail) {
+                    $availStart = Find-NextWingetColumnStartOrEnd -Line $Line -Pos $CAvail -MaxEnd $Line.Length
+                    if ($availStart -le $CVer) { $availStart = $CAvail }
+                    if ($availStart -lt $Line.Length) {
+                        $verSlice = $Line.Substring($CVer, $availStart - $CVer).Trim()
+                        if ($verSlice -eq "<" -or $verSlice -eq ">") {
+                            while ($availStart -lt $Line.Length -and [char]::IsWhiteSpace($Line[$availStart])) { $availStart++ }
+                            $availStart = Find-NextWingetColumnStartOrEnd -Line $Line -Pos $availStart -MaxEnd $Line.Length
+                        }
+                    }
+                    if ($availStart -ge $Line.Length) {
+                        $version = $Line.Substring($CVer).Trim()
+                    } else {
+                        $version = $Line.Substring($CVer, $availStart - $CVer).Trim()
+                        if ($CSrc -gt $availStart -and $Line.Length -gt $CSrc) {
+                            $srcStart = Find-NextWingetColumnStartOrEnd -Line $Line -Pos $CSrc -MaxEnd $Line.Length
+                            $avail = $Line.Substring($availStart, $srcStart - $availStart).Trim()
+                            if ($srcStart -lt $Line.Length) { $src = $Line.Substring($srcStart).Trim() }
+                        } elseif ($CSrc -gt 0 -and $CSrc -le $availStart -and $Line.Length -gt $availStart) {
+                            $splitTail = Split-WingetTailAvailAndSource -Tail $Line.Substring($availStart)
+                            $avail = $splitTail[0]; $src = $splitTail[1]
+                        } else {
+                            $avail = $Line.Substring($availStart).Trim()
+                        }
+                    }
+                } elseif ($CAvail -gt 0 -and $CVer -ge $CAvail) {
+                    $verEnd = $CVer
+                    while ($verEnd -lt $Line.Length -and -not [char]::IsWhiteSpace($Line[$verEnd])) { $verEnd++ }
+                    $tok = $Line.Substring($CVer, $verEnd - $CVer)
+                    if (($tok -eq "<" -or $tok -eq ">") -and $verEnd -lt $Line.Length) {
+                        $p = $verEnd
+                        while ($p -lt $Line.Length -and [char]::IsWhiteSpace($Line[$p])) { $p++ }
+                        while ($p -lt $Line.Length -and -not [char]::IsWhiteSpace($Line[$p])) { $p++ }
+                        $verEnd = $p
+                    }
+                    $version = $Line.Substring($CVer, $verEnd - $CVer).Trim()
+                    $availStart = $verEnd
+                    while ($availStart -lt $Line.Length -and [char]::IsWhiteSpace($Line[$availStart])) { $availStart++ }
+                    if ($availStart -lt $Line.Length) {
+                        $tail = $Line.Substring($availStart).Trim()
+                        if ($CSrc -gt 0) {
+                            $splitTail = Split-WingetTailAvailAndSource -Tail $tail
+                            $avail = $splitTail[0]; $src = $splitTail[1]
+                        } else {
+                            $avail = $tail
+                        }
+                    }
+                } else {
+                    $version = $Line.Substring($CVer).Trim()
+                }
+            }
+        } else {
+            $appId = $Line.Substring($CId).Trim()
+        }
+    }
+    return @($appName, $appId, $version, $avail, $src)
 }
 
 function Set-PreferredMapEntry {
@@ -335,6 +478,19 @@ function Get-TargetAppMeta {
         $reqYear = $Matches[1]
     }
 
+    $tNameNoParens = ([regex]::Replace($tName, '(?i)\((?!x64|x86|arm64).*?\)', '')).Trim()
+    $aliasIdSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if (-not [string]::IsNullOrWhiteSpace($tId)) { [void]$aliasIdSet.Add($tId) }
+    if ($TargetApp.Aliases) {
+        foreach ($al in $TargetApp.Aliases) {
+            if (-not [string]::IsNullOrWhiteSpace($al)) { [void]$aliasIdSet.Add($al) }
+        }
+    }
+    $tIdSegs = if ($tId) { $tId.Split('.') } else { @() }
+    $pubPref = if ($tIdSegs.Count -ge 2) { $tIdSegs[0] } else { "" }
+    $secSeg  = if ($tIdSegs.Count -ge 2) { $tIdSegs[1] } else { "" }
+    $hasThreePlus = ($tIdSegs.Count -ge 3)
+
     $tArch = if ($tName -match '\(x64\)|\.x64' -or $tId -match '\.x64$') { "x64" }
              elseif ($tName -match '\(x86\)|\.x86' -or $tId -match '\.x86$') { "x86" }
              elseif ($tName -match '\(arm64\)|\.arm64' -or $tId -match '\.arm64$') { "arm64" }
@@ -342,36 +498,48 @@ function Get-TargetAppMeta {
              else { "" }
 
     $meta = [PSCustomObject]@{
-        ID             = $tId
-        Name           = $tName
-        CleanTarget    = $cleanTarget
-        CleanAliases   = $cleanAliases
-        AliasEntries   = $aliasEntries
-        PatternClean   = $patternClean
-        QueryTokens    = $queryTokens
-        AllowNoise     = ($tName -match '(?i)(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)')
-        IsPrev         = (($tName -match 'Preview') -or ($tId -match 'Preview'))
-        IsVcRedist     = (($tId -match 'VCRedist') -or ($tName -match 'VC\+\+'))
-        IsComm         = (($tName -match '\bCommunity\b') -or ($tId -match '\.Community\b'))
-        IsPro          = (($tName -match '\b(Ultimate|Professional)\b') -or ($tId -match '\.(Ultimate|Professional)\b'))
-        IsIde          = (($tName -match '\bIDE\b') -or ($tId -match 'IDE$'))
-        IsAntigravity  = ($tId -match 'Antigravity')
-        IsCli          = (($tName -match '\bCLI\b') -or ($tId -match '(\.cli|CLI)$'))
-        IsBt           = (($tName -match 'Build Tools') -or ($tId -match 'BuildTools'))
-        IsVsc          = (($tId -match 'VisualStudioCode') -or ($tName -match 'VS Code|Visual Studio Code'))
-        IsVsAny        = ($tId -match 'VisualStudio')
-        IsEtb          = (($tId -match 'EverythingToolbar') -or ($tName -match 'EverythingToolbar'))
-        IsTemurin      = ($tId -match 'Temurin')
-        IsOracleJava   = ($tId -match 'Oracle\.Java')
-        IsCorretto     = ($tId -match 'Corretto')
-        IsJdk          = (($tName -match '\bJDK\b') -or ($tId -match '\.JDK$'))
-        IsJre          = (($tName -match '\bJRE\b') -or ($tId -match '\.(JRE|JavaRuntimeEnvironment)$'))
-        ReqPy          = $reqPy
-        ReqJava        = $reqJava
-        ReqDnRaw       = $reqDnRaw
-        ReqDnEsc       = $reqDnEsc
-        ReqYear        = $reqYear
-        Arch           = $tArch
+        ID                  = $tId
+        Name                = $tName
+        CleanTarget         = $cleanTarget
+        CleanAliases        = $cleanAliases
+        AliasEntries        = $aliasEntries
+        AliasIdSet          = $aliasIdSet
+        PublisherPrefix     = $pubPref
+        SecondSegment       = $secSeg
+        HasThreePlusIdParts = $hasThreePlus
+        PatternClean        = $patternClean
+        QueryTokens         = $queryTokens
+        AllowNoise          = ($tName -match '(?i)(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)')
+        IsPrev              = (($tNameNoParens -match '(?i)Preview') -or ($tId -match '(?i)Preview'))
+        IsBeta              = (($tNameNoParens -match '(?i)\bBeta\b') -or ($tId -match '(?i)\.Beta(?:\.|$)'))
+        IsCanary            = (($tNameNoParens -match '(?i)\bCanary\b') -or ($tId -match '(?i)\.Canary(?:\.|$)'))
+        IsDevChannel        = (($tNameNoParens -match '(?i)\b(?:Dev|Developer\s*Edition)\b') -or ($tId -match '(?i)\.(?:Dev|DeveloperEdition)(?:\.|$)'))
+        IsNightly           = (($tNameNoParens -match '(?i)\bNightly\b') -or ($tId -match '(?i)\.Nightly(?:\.|$)'))
+        IsAlpha             = (($tNameNoParens -match '(?i)\bAlpha\b') -or ($tId -match '(?i)\.Alpha(?:\.|$)'))
+        IsPtb               = (($tNameNoParens -match '(?i)\bPTB\b') -or ($tId -match '(?i)\.PTB(?:\.|$)'))
+        IsEsr               = (($tNameNoParens -match '(?i)\bESR\b') -or ($tId -match '(?i)\.ESR(?:\.|$)'))
+        IsInsiders          = (($tNameNoParens -match '(?i)\bInsiders?\b') -or ($tId -match '(?i)\.Insiders?(?:\.|$)'))
+        IsVcRedist          = (($tId -match 'VCRedist') -or ($tName -match 'VC\+\+'))
+        IsComm              = (($tNameNoParens -match '\bCommunity\b') -or ($tId -match '\.Community\b'))
+        IsPro               = (($tNameNoParens -match '\b(Ultimate|Professional)\b') -or ($tId -match '\.(Ultimate|Professional)\b'))
+        IsIde               = (($tNameNoParens -match '\bIDE\b') -or ($tId -match 'IDE$'))
+        IsAntigravity       = ($tId -match 'Antigravity')
+        IsCli               = (($tNameNoParens -match '\bCLI\b') -or ($tId -match '(\.cli|CLI)$'))
+        IsBt                = (($tNameNoParens -match '(?i)Build Tools') -or ($tId -match '(?i)BuildTools'))
+        IsVsc               = (($tId -match 'VisualStudioCode') -or ($tNameNoParens -match 'VS Code|Visual Studio Code'))
+        IsVsAny             = ($tId -match 'VisualStudio')
+        IsEtb               = (($tId -match 'EverythingToolbar') -or ($tName -match 'EverythingToolbar'))
+        IsTemurin           = ($tId -match 'Temurin')
+        IsOracleJava        = ($tId -match 'Oracle\.Java')
+        IsCorretto          = ($tId -match 'Corretto')
+        IsJdk               = (($tNameNoParens -match '\bJDK\b') -or ($tId -match '\.JDK$'))
+        IsJre               = (($tNameNoParens -match '\bJRE\b') -or ($tId -match '\.(JRE|JavaRuntimeEnvironment)$'))
+        ReqPy               = $reqPy
+        ReqJava             = $reqJava
+        ReqDnRaw            = $reqDnRaw
+        ReqDnEsc            = $reqDnEsc
+        ReqYear             = $reqYear
+        Arch                = $tArch
     }
     $script:targetAppMetaCache[$tId] = $meta
     return $meta
@@ -381,10 +549,11 @@ function Test-MatchCompatible {
     param($TargetApp, $Item)
     if (-not $TargetApp -or -not $Item) { return $false }
 
-    $meta  = Get-TargetAppMeta $TargetApp
-    $tId   = $meta.ID
-    $iName = [string]$Item.Name
-    $iId   = [string]$Item.ID
+    $meta          = Get-TargetAppMeta $TargetApp
+    $tId           = $meta.ID
+    $iName         = [string]$Item.Name
+    $iNameNoParens = ([regex]::Replace($iName, '(?i)\((?!x64|x86|arm64).*?\)', '')).Trim()
+    $iId           = [string]$Item.ID
 
     if (-not $meta.AllowNoise) {
         if ($iName -match '(?i)(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)' -or
@@ -397,8 +566,30 @@ function Test-MatchCompatible {
         if ($tId -ne 'Python.Launcher') { return $false }
     }
 
-    $iPrev = ($iName.IndexOf('Preview', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($iId.IndexOf('Preview', [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
+    $iPrev = ($iNameNoParens.IndexOf('Preview', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -or ($iId.IndexOf('Preview', [System.StringComparison]::OrdinalIgnoreCase) -ge 0)
     if ($meta.IsPrev -ne $iPrev -and $tId -ne 'Microsoft.PowerToys') { return $false }
+
+    if ($meta.IsBeta       -ne (($iNameNoParens -match '(?i)\bBeta\b') -or ($iId -match '(?i)\.Beta(?:\.|$)'))) { return $false }
+    if ($meta.IsCanary     -ne (($iNameNoParens -match '(?i)\bCanary\b') -or ($iId -match '(?i)\.Canary(?:\.|$)'))) { return $false }
+    if ($meta.IsDevChannel -ne (($iNameNoParens -match '(?i)\b(?:Dev|Developer\s*Edition)\b') -or ($iId -match '(?i)\.(?:Dev|DeveloperEdition)(?:\.|$)'))) { return $false }
+    if ($meta.IsNightly    -ne (($iNameNoParens -match '(?i)\bNightly\b') -or ($iId -match '(?i)\.Nightly(?:\.|$)'))) { return $false }
+    if ($meta.IsAlpha      -ne (($iNameNoParens -match '(?i)\bAlpha\b') -or ($iId -match '(?i)\.Alpha(?:\.|$)'))) { return $false }
+    if ($meta.IsPtb        -ne (($iNameNoParens -match '(?i)\bPTB\b') -or ($iId -match '(?i)\.PTB(?:\.|$)'))) { return $false }
+    if ($meta.IsEsr        -ne (($iNameNoParens -match '(?i)\bESR\b') -or ($iId -match '(?i)\.ESR(?:\.|$)'))) { return $false }
+    if ($meta.IsInsiders   -ne (($iNameNoParens -match '(?i)\bInsiders?\b') -or ($iId -match '(?i)\.Insiders?(?:\.|$)'))) { return $false }
+
+    if ($iId -notmatch '^(?i)(ARP|MSIX|LOCAL)\\' -and -not $meta.AliasIdSet.Contains($iId) -and -not $iId.StartsWith($tId + ".", [System.StringComparison]::OrdinalIgnoreCase)) {
+        if ($tId.Equals('OpenJS.NodeJS.LTS', [System.StringComparison]::OrdinalIgnoreCase) -and $iId.StartsWith('OpenJS.NodeJS', [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+        if ($meta.PublisherPrefix.Length -ge 3 -and $iId.StartsWith($meta.PublisherPrefix + ".", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $iSegs = $iId.Split('.')
+            if ($iSegs.Count -ge 2) {
+                if (-not $iSegs[1].Equals($meta.SecondSegment, [System.StringComparison]::OrdinalIgnoreCase)) { return $false }
+                if ($meta.HasThreePlusIdParts) { return $false }
+            }
+        }
+    }
 
     if ($meta.IsVcRedist -and ($iName -match '\bUWP\b' -or $iId -match 'VCLibs')) {
         return $false
@@ -582,7 +773,8 @@ function Invoke-WingetListCapture {
     $exitCode = -1
 
     try {
-        if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
+        $canUsePreSpawned = (-not $TrackAsAuto -and -not $script:hasCompletedAppScan -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30)
+        if ($canUsePreSpawned) {
             $job = $script:preSpawnedWinget
             $script:preSpawnedWinget = $null
             $p = $job.Process
@@ -590,7 +782,7 @@ function Invoke-WingetListCapture {
             $errTask = $job.ErrTask
             $sw = $job.Stopwatch
         } else {
-            if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -ge 30) {
+            if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget) {
                 Stop-PreSpawnedWinget
             }
             if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
@@ -659,9 +851,17 @@ function Invoke-WingetListCapture {
             }
         }
 
-        if (-not $script:isWindowClosing -and -not $wasCanceled) {
+        if (-not $script:isWindowClosing -and -not $wasCanceled -and -not $timedOut -and $null -ne $p) {
             try {
-                if ($null -ne $p -and -not $p.HasExited) { $p.WaitForExit(1000) | Out-Null }
+                if (-not $p.HasExited) {
+                    $deepTypeWg = "DuckUtil.DeepUninstallerEngine" -as [type]
+                    if ($deepTypeWg -and $null -ne $deepTypeWg.GetMethod("WaitForProcessExitAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+                        $exitWaitTask = $deepTypeWg::WaitForProcessExitAsync($p)
+                        [void](Wait-TaskNonBlocking -Task $exitWaitTask -TimeoutSeconds 5 -CancelCheck $CancelCheck)
+                    } else {
+                        $p.WaitForExit(5000) | Out-Null
+                    }
+                }
             } catch {}
         }
         if (-not $wasCanceled) {
@@ -726,7 +926,7 @@ function ConvertFrom-WingetListOutput {
 
     $separatorIndex = -1
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match '^---+(\s+---+)*\s*$') {
+        if ($lines[$i] -match '^\s*-{10,}') {
             $separatorIndex = $i
             break
         }
@@ -735,14 +935,37 @@ function ConvertFrom-WingetListOutput {
     if ($separatorIndex -gt 0) {
         $separatorLine = $lines[$separatorIndex]
         $headerLine    = $lines[$separatorIndex - 1]
+        $knownHdrTokens = [System.Collections.Generic.HashSet[string]]::new([string[]]@("Name", "Id", "Version", "Available", "Source", "Match", "Tag", "Command", "Moniker"), [System.StringComparer]::OrdinalIgnoreCase)
 
         $colOffsets = @()
         if ($separatorLine -match '---+\s+---+') {
             $dashMatches = [System.Text.RegularExpressions.Regex]::Matches($separatorLine, '-+')
             foreach ($dm in $dashMatches) { $colOffsets += $dm.Index }
         } elseif ($headerLine) {
-            $headerMatches = [System.Text.RegularExpressions.Regex]::Matches($headerLine, '[^\s]+(?:\s[^\s]+)*(?=\s{2,}|\s*$)')
-            foreach ($hm in $headerMatches) { $colOffsets += $hm.Index }
+            $singleTokens = [System.Text.RegularExpressions.Regex]::Matches($headerLine, '\S+')
+            $allKnown = ($singleTokens.Count -ge 3)
+            if ($allKnown) {
+                foreach ($st in $singleTokens) {
+                    if (-not $knownHdrTokens.Contains($st.Value)) { $allKnown = $false; break }
+                }
+            }
+            if ($allKnown) {
+                foreach ($st in $singleTokens) { $colOffsets += (Get-StringDisplayWidth -Text $headerLine -EndIndex $st.Index) }
+            } else {
+                $groupedMatches = [System.Text.RegularExpressions.Regex]::Matches($headerLine, '\S+(?:\s\S+)*')
+                foreach ($gm in $groupedMatches) {
+                    $subTokens = [System.Text.RegularExpressions.Regex]::Matches($gm.Value, '\S+')
+                    for ($k = 0; $k -lt $subTokens.Count; $k++) {
+                        if ($k -eq 0 -or $knownHdrTokens.Contains($subTokens[$k].Value) -or $knownHdrTokens.Contains($subTokens[$k - 1].Value)) {
+                            $colOffsets += (Get-StringDisplayWidth -Text $headerLine -EndIndex ($gm.Index + $subTokens[$k].Index))
+                        }
+                    }
+                }
+                if ($colOffsets.Count -lt 3 -and $singleTokens.Count -ge 3) {
+                    $colOffsets = @()
+                    foreach ($st in $singleTokens) { $colOffsets += (Get-StringDisplayWidth -Text $headerLine -EndIndex $st.Index) }
+                }
+            }
         }
 
         $idIdx    = if ($colOffsets.Count -ge 2) { $colOffsets[1] } else { -1 }
@@ -754,41 +977,71 @@ function ConvertFrom-WingetListOutput {
             $line = $lines[$j]
             if ([string]::IsNullOrWhiteSpace($line)) { continue }
 
-            $appName = ""; $appId = ""; $version = ""; $avail = ""
+            $appName = ""; $appId = ""; $version = ""; $avail = ""; $srcCol = ""
 
-            if ($idIdx -gt 0 -and $line -match '[^\x00-\xFF]') {
-                $sliced = Get-SliceByDisplayWidth -Line $line -Offsets $colOffsets
-                $appName = $sliced[0]; $appId = $sliced[1]; $version = $sliced[2]; $avail = $sliced[3]
-            } elseif ($idIdx -gt 0 -and $line.Length -gt $idIdx) {
-                $appName = $line.Substring(0, $idIdx).Trim()
-                if ($verIdx -gt $idIdx -and $line.Length -gt $verIdx) {
-                    $appId = $line.Substring($idIdx, $verIdx - $idIdx).Trim()
-                    if ($availIdx -gt $verIdx -and $Line.Length -gt $availIdx) {
-                        $version = $line.Substring($verIdx, $availIdx - $verIdx).Trim()
-                        if ($srcIdx -gt $availIdx -and $Line.Length -gt $srcIdx) {
-                            $avail = $line.Substring($availIdx, $srcIdx - $availIdx).Trim()
-                        } else {
-                            $avail = $line.Substring($availIdx).Trim()
-                        }
-                    } else {
-                        $version = $line.Substring($verIdx).Trim()
-                    }
+            if ($colOffsets.Count -ge 3) {
+                if ($line -match '[^\x00-\x7F]') {
+                    $sliced = Get-SliceByDisplayWidth -Line $line -Offsets $colOffsets
+                    $appName = $sliced[0]; $appId = $sliced[1]; $version = $sliced[2]; $avail = $sliced[3]; $srcCol = $sliced[4]
                 } else {
-                    $appId = $line.Substring($idIdx).Trim()
-                }
-            } else {
-                $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
-                if ($cols.Count -ge 2) {
-                    $appName = $cols[0].Trim()
-                    $appId   = $cols[1].Trim()
-                    $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
-                    $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                    $sliced = Slice-WingetRowColumnsByPositions -Line $line -CId $idIdx -CVer $verIdx -CAvail $availIdx -CSrc $srcIdx
+                    $appName = $sliced[0]; $appId = $sliced[1]; $version = $sliced[2]; $avail = $sliced[3]; $srcCol = $sliced[4]
                 }
             }
 
-            if (-not [string]::IsNullOrWhiteSpace($appId)) {
+            if ([string]::IsNullOrEmpty($appId) -or $appId.IndexOf(' ') -ge 0) {
+                $tailCols = $null
+                if (-not [string]::IsNullOrEmpty($appName) -and $colOffsets.Count -ge 3) {
+                    $nameEnd = $line.IndexOf($appName, [System.StringComparison]::Ordinal)
+                    $searchFrom = if ($nameEnd -ge 0) { $nameEnd + $appName.Length } else { 0 }
+                    while ($searchFrom -lt $line.Length -and [char]::IsWhiteSpace($line[$searchFrom])) { $searchFrom++ }
+                    if ($searchFrom -lt $line.Length) {
+                        $tCols = [System.Text.RegularExpressions.Regex]::Split($line.Substring($searchFrom).Trim(), '\s{2,}')
+                        if ($tCols.Count -ge 1 -and -not [string]::IsNullOrWhiteSpace($tCols[0])) {
+                            $tailCols = $tCols
+                        }
+                    }
+                }
+                if ($null -ne $tailCols) {
+                    $appId   = $tailCols[0].Trim()
+                    $version = if ($tailCols.Count -ge 2) { $tailCols[1].Trim() } else { "" }
+                    $c3      = if ($tailCols.Count -ge 3) { $tailCols[2].Trim() } else { "" }
+                    $c4      = if ($tailCols.Count -ge 4) { $tailCols[3].Trim() } else { "" }
+                    if ($c3 -match '^(?i)(winget|msstore)$' -and [string]::IsNullOrEmpty($c4)) {
+                        $srcCol = $c3
+                        $avail  = ""
+                    } else {
+                        $avail = $c3
+                        if (-not [string]::IsNullOrEmpty($c4)) { $srcCol = $c4 }
+                    }
+                } else {
+                    $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
+                    if ($cols.Count -ge 2) {
+                        $appName = $cols[0].Trim()
+                        $appId   = $cols[1].Trim()
+                        $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
+                        $c3      = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                        $c4      = if ($cols.Count -ge 5) { $cols[4].Trim() } else { "" }
+                        if ($c3 -match '^(?i)(winget|msstore)$' -and [string]::IsNullOrEmpty($c4)) {
+                            $srcCol = $c3
+                            $avail  = ""
+                        } else {
+                            $avail = $c3
+                            if (-not [string]::IsNullOrEmpty($c4)) { $srcCol = $c4 }
+                        }
+                    }
+                }
+            }
+
+            if (-not [string]::IsNullOrEmpty($appName) -and -not [string]::IsNullOrEmpty($appId)) {
+                if ($appId.StartsWith("MSIX\NotepadPlusPlus_", [System.StringComparison]::OrdinalIgnoreCase)) { continue }
+                if ($avail -match '^(?i)(winget|msstore)$') {
+                    $srcCol = $avail
+                    $avail  = ""
+                }
                 $hasUpdate = Test-AppUpdateGenuine -InstalledVer $version -AvailableVer $avail
                 $clean = Get-CleanAppName $appName
+                $rowSrc = if ($colOffsets.Count -lt 5 -and [string]::IsNullOrWhiteSpace($srcCol)) { "winget" } else { Resolve-WingetRowSource -AppId $appId -SrcCol $srcCol }
                 $parsed.Add([PSCustomObject]@{
                     Name      = $appName
                     ID        = $appId
@@ -796,21 +1049,33 @@ function ConvertFrom-WingetListOutput {
                     Available = $(if ($hasUpdate) { $avail } else { "" })
                     HasUpdate = $hasUpdate
                     CleanName = $clean
+                    Source    = $rowSrc
                 })
             }
         }
     } elseif ($AllowHeaderless) {
         foreach ($line in $lines) {
-            if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line -like "---*")) {
+            if (-not [string]::IsNullOrWhiteSpace($line) -and -not ($line.Trim().StartsWith("---"))) {
                 $cols = [System.Text.RegularExpressions.Regex]::Split($line.Trim(), '\s{2,}')
                 if ($cols.Count -ge 2) {
                     $appName = $cols[0].Trim()
                     $appId   = $cols[1].Trim()
                     if ($appId -notmatch '^(ARP|MSIX)\\|\S+\.\S+') { continue }
+                    if ($appId.StartsWith("MSIX\NotepadPlusPlus_", [System.StringComparison]::OrdinalIgnoreCase)) { continue }
                     $version = if ($cols.Count -ge 3) { $cols[2].Trim() } else { "" }
-                    $avail   = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                    $c3      = if ($cols.Count -ge 4) { $cols[3].Trim() } else { "" }
+                    $c4      = if ($cols.Count -ge 5) { $cols[4].Trim() } else { "" }
+                    $srcCol  = ""
+                    $avail   = ""
+                    if ($c3 -match '^(?i)(winget|msstore)$' -and [string]::IsNullOrEmpty($c4)) {
+                        $srcCol = $c3
+                    } else {
+                        $avail = $c3
+                        if (-not [string]::IsNullOrEmpty($c4)) { $srcCol = $c4 }
+                    }
                     $hasUpdate = Test-AppUpdateGenuine -InstalledVer $version -AvailableVer $avail
                     $clean = Get-CleanAppName $appName
+                    $rowSrc = Resolve-WingetRowSource -AppId $appId -SrcCol $srcCol
 
                     $parsed.Add([PSCustomObject]@{
                         Name      = $appName
@@ -819,6 +1084,7 @@ function ConvertFrom-WingetListOutput {
                         Available = $(if ($hasUpdate) { $avail } else { "" })
                         HasUpdate = $hasUpdate
                         CleanName = $clean
+                        Source    = $rowSrc
                     })
                 }
             }
@@ -1275,14 +1541,15 @@ function Apply-InstalledDatabaseToRows {
                     }
                 } else {
                     $countLatest++
-                    if ($prevStatus -ne "LATEST" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID) {
+                    $badgeStillShown = ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed)
+                    if ($prevStatus -ne "LATEST" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID -or $badgeStillShown) {
                         $tag.Status = "LATEST"
                         if ($tb) {
                             $tb.Foreground = $script:brushLatestFg
                             $tb.Text = $app.Name
                             $tb.TextDecorations = $null
                         }
-                        if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                        if ($badgeStillShown) {
                             $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
                         }
                         $row.ToolTip = "$idnPrefix$($app.Name)`nPhiên bản: $($info.Version) (Mới nhất)`nID phát hiện: $($info.ID)"
@@ -1292,14 +1559,15 @@ function Apply-InstalledDatabaseToRows {
                 $prevStatus = $tag.Status
                 $tag.DetectedId = $null
                 $tag.InstalledVersion = $null
-                if ($prevStatus -ne "NONE") {
+                $badgeStillShown = ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed)
+                if ($prevStatus -ne "NONE" -or $badgeStillShown) {
                     $tag.Status = "NONE"
                     if ($tb) {
                         $tb.Foreground = $script:brushNoneFg
                         $tb.Text = $app.Name
                         $tb.TextDecorations = $null
                     }
-                    if ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                    if ($badgeStillShown) {
                         $updateBadge.Visibility = [System.Windows.Visibility]::Collapsed
                     }
                     $row.ToolTip = "$idnPrefix$($app.Name)`nTrạng thái: Chưa cài đặt`nID: $($app.ID)"
@@ -1522,7 +1790,10 @@ function Apply-InstalledDatabaseToRows {
 }
 
 function Scan-And-ColorizeApps {
-    param([switch]$Quiet)
+    param(
+        [switch]$Quiet,
+        [switch]$ForceSourceRefresh
+    )
     if ($script:isWindowClosing) { return }
     if ($Quiet) {
         if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller -or $script:isUninstallingQueue -or $script:isAutoRefreshing) {
@@ -1563,6 +1834,17 @@ function Scan-And-ColorizeApps {
                 $progressBar.Value = 0
                 $progressBar.IsIndeterminate = $true
             }
+            if ($ForceSourceRefresh) {
+                Stop-PreSpawnedWinget
+                if (-not $script:isUpdatingUninstaller) {
+                    $script:cachedUninstallerApps = @()
+                }
+                if ($script:uninstallerLoadedOnce) {
+                    $script:uninstallerStale = $true
+                }
+                $srcUpd = Invoke-WingetListCapture -Arguments "source update --disable-interactivity" -TimeoutSeconds 12 -CancelCheck $cancelBlock
+                if ($srcUpd.WasCanceled -or (& $cancelBlock)) { return }
+            }
         }
         if (& $cancelBlock) { return }
 
@@ -1592,6 +1874,14 @@ function Scan-And-ColorizeApps {
         $localSigParts.Sort([System.StringComparer]::OrdinalIgnoreCase)
         $localFingerprint = ($localSigParts -join ';')
         $localChanged = ($localFingerprint -ne $script:lastLocalScanSig)
+        if ($localChanged) {
+            if (-not $script:isUpdatingUninstaller) {
+                $script:cachedUninstallerApps = @()
+            }
+            if ($script:uninstallerLoadedOnce) {
+                $script:uninstallerStale = $true
+            }
+        }
 
         if (-not $Quiet -and $allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
             $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock
@@ -1606,7 +1896,7 @@ function Scan-And-ColorizeApps {
         $wingetMissing = $false
 
         try {
-            $wgTimeout = if ($Quiet) { 14 } else { 35 }
+            $wgTimeout = if ($Quiet) { 22 } else { 35 }
             $primary = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds $wgTimeout -CancelCheck $cancelBlock -TrackAsAuto:$Quiet
             if ($primary.WasCanceled -or (& $cancelBlock)) { return }
             if (-not $primary.Available) {
@@ -1614,7 +1904,7 @@ function Scan-And-ColorizeApps {
                 if (-not $Quiet) { Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry, Runtimes & Appx." }
             } else {
                 $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
-                if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
+                if (-not $primary.TimedOut -and (($primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) -or ($parsedPrimary.HasTable -and $parsedPrimary.Items.Count -gt 0))) {
                     $wingetItems = $parsedPrimary.Items
                     $wingetOk = $true
                 } elseif (-not $Quiet) {
@@ -1641,6 +1931,25 @@ function Scan-And-ColorizeApps {
                     } elseif ($parsedFallback.HasTable -and $parsedFallback.Items.Count -gt 0) {
                         $wingetItems = $parsedFallback.Items
                         $wingetOk = $true
+                    }
+                }
+
+                if ($wingetOk -and -not (& $cancelBlock)) {
+                    $msStoreCap = Invoke-WingetListCapture -Arguments "list --source msstore --disable-interactivity --accept-source-agreements" -TimeoutSeconds 10 -CancelCheck $cancelBlock -TrackAsAuto:$Quiet
+                    if ($msStoreCap.WasCanceled -or (& $cancelBlock)) { return }
+                    if ($msStoreCap.Available -and -not $msStoreCap.TimedOut -and -not [string]::IsNullOrWhiteSpace($msStoreCap.StdOut)) {
+                        $parsedStore = ConvertFrom-WingetListOutput -RawText $msStoreCap.StdOut -AllowHeaderless ($msStoreCap.ExitCode -eq 0)
+                        if ($parsedStore -and $parsedStore.Items.Count -gt 0) {
+                            $seenWgIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+                            foreach ($wgi in $wingetItems) {
+                                if ($wgi -and -not [string]::IsNullOrWhiteSpace($wgi.ID)) { [void]$seenWgIds.Add($wgi.ID) }
+                            }
+                            foreach ($stItem in $parsedStore.Items) {
+                                if ($stItem -and -not [string]::IsNullOrWhiteSpace($stItem.ID) -and $seenWgIds.Add($stItem.ID)) {
+                                    $wingetItems.Add($stItem)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1694,7 +2003,7 @@ function Scan-And-ColorizeApps {
         }
 
         if (& $cancelBlock) { return }
-        $preserveOutdated = [bool]($Quiet -and -not $wingetOk)
+        $preserveOutdated = [bool]((-not $wingetOk) -and $script:hasCompletedAppScan)
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock -PreserveOutdatedOnLocalFallback:$preserveOutdated
         if (($finalStats.PSObject.Properties['Canceled'] -and $finalStats.Canceled) -or (& $cancelBlock)) { return }
         if (-not $Quiet -and $progressBar) {
@@ -1717,10 +2026,16 @@ function Scan-And-ColorizeApps {
         if (Get-Command "Try-EnableCompletedCardCaches" -ErrorAction SilentlyContinue) {
             try { Try-EnableCompletedCardCaches } catch {}
         }
-        $modeTag = if (-not $wingetOk) { " [Dự phòng Registry/Appx]" } else { "" }
+        $modeTag = if (-not $wingetOk) {
+            if ($preserveOutdated) { " [WinGet lỗi - giữ trạng thái cập nhật trước đó]" } else { " [Dự phòng Registry/Appx]" }
+        } else { "" }
         $summary = "Đã quét xong: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
         if (-not $Quiet) {
-            Log-Text "[OK] $summary"
+            if (-not $wingetOk -and -not $wingetMissing) {
+                Log-Text "[WARN] $summary"
+            } else {
+                Log-Text "[OK] $summary"
+            }
         } elseif ($sigChanged) {
             Log-Text "[AUTO] Làm mới: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
         }
@@ -1738,9 +2053,10 @@ function Scan-And-ColorizeApps {
                 $script:cancelAutoScan = $false
             }
         } else {
+            $keepWaitingLabel = ($script:pendingManualAppRefresh -and -not $script:isWindowClosing -and -not $script:isActionRunning)
             if ($btnScanInstalled) {
-                $btnScanInstalled.Content = "Làm mới"
-                $btnScanInstalled.IsEnabled = $true
+                $btnScanInstalled.Content = if ($keepWaitingLabel) { "Đang chờ..." } else { "Làm mới" }
+                $btnScanInstalled.IsEnabled = (-not $keepWaitingLabel)
             }
             if ($progressBar) {
                 $progressBar.IsIndeterminate = $false
@@ -1754,13 +2070,23 @@ function Scan-And-ColorizeApps {
             Flush-PendingIconCache
         }
         if ($script:pendingManualAppRefresh -and -not $script:isWindowClosing -and -not $script:isScanningApps -and $window -and $window.Dispatcher) {
-            $script:pendingManualAppRefresh = $false
             $window.Dispatcher.BeginInvoke(
                 [System.Windows.Threading.DispatcherPriority]::Background,
                 [Action]{
-                    if (-not $script:isWindowClosing -and -not $script:isActionRunning -and -not $script:isScanningApps) {
+                    if ($script:isWindowClosing) {
+                        $script:pendingManualAppRefresh = $false
+                        return
+                    }
+                    if (-not $script:isActionRunning -and -not $script:isScanningApps) {
+                        $script:pendingManualAppRefresh = $false
                         Invoke-GuardedAction "Quét ứng dụng" -DeferExpand -AllowDuringUninstallerLoad {
-                            Scan-And-ColorizeApps
+                            Scan-And-ColorizeApps -ForceSourceRefresh
+                        }
+                    } else {
+                        $script:pendingManualAppRefresh = $false
+                        if ($btnScanInstalled) {
+                            $btnScanInstalled.Content = "Làm mới"
+                            $btnScanInstalled.IsEnabled = $true
                         }
                     }
                 }

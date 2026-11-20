@@ -1547,24 +1547,38 @@ namespace DuckUtil {
             return 0;
         }
 
-        private static string UnescapeJsonString(string raw) {
-            if (string.IsNullOrEmpty(raw) || raw.IndexOf('\\') < 0) return raw ?? "";
-            var sb = new StringBuilder(raw.Length);
-            for (int i = 0; i < raw.Length; i++) {
-                char c = raw[i];
-                if (c == '\\' && i + 1 < raw.Length) {
-                    char n = raw[++i];
+        private static void SkipJsonWhitespace(string json, ref int pos) {
+            while (pos < json.Length) {
+                char c = json[pos];
+                if (c == ' ' || c == '\t' || c == '\r' || c == '\n') pos++;
+                else break;
+            }
+        }
+
+        private static string ReadJsonString(string json, ref int pos) {
+            if (pos >= json.Length || json[pos] != '"') return "";
+            pos++;
+            var sb = new StringBuilder();
+            while (pos < json.Length) {
+                char c = json[pos++];
+                if (c == '"') break;
+                if (c == '\\' && pos < json.Length) {
+                    char n = json[pos++];
                     if (n == '"' || n == '\\' || n == '/') sb.Append(n);
                     else if (n == 'n') sb.Append('\n');
                     else if (n == 'r') sb.Append('\r');
                     else if (n == 't') sb.Append('\t');
-                    else if (n == 'u' && i + 4 < raw.Length) {
+                    else if (n == 'b') sb.Append('\b');
+                    else if (n == 'f') sb.Append('\f');
+                    else if (n == 'u' && pos + 3 < json.Length) {
                         int code;
-                        if (int.TryParse(raw.Substring(i + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out code)) {
+                        if (int.TryParse(json.Substring(pos, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out code)) {
                             sb.Append((char)code);
-                            i += 4;
+                            pos += 4;
                         }
-                    } else sb.Append(n);
+                    } else {
+                        sb.Append(n);
+                    }
                 } else {
                     sb.Append(c);
                 }
@@ -1572,46 +1586,138 @@ namespace DuckUtil {
             return sb.ToString();
         }
 
-        private static readonly Regex _rxGhAssetPair = new Regex(
-            @"""name""\s*:\s*""((?:\\.|[^""])*)""[\s\S]{0,1200}?""browser_download_url""\s*:\s*""((?:\\.|[^""])*)""",
-            RegexOptions.Compiled);
+        private static void SkipJsonValue(string json, ref int pos) {
+            SkipJsonWhitespace(json, ref pos);
+            if (pos >= json.Length) return;
+            char c = json[pos];
+            if (c == '"') {
+                ReadJsonString(json, ref pos);
+                return;
+            }
+            if (c == '{' || c == '[') {
+                int depth = 0;
+                while (pos < json.Length) {
+                    char ch = json[pos];
+                    if (ch == '"') {
+                        ReadJsonString(json, ref pos);
+                        continue;
+                    }
+                    if (ch == '{' || ch == '[') depth++;
+                    else if (ch == '}' || ch == ']') {
+                        depth--;
+                        pos++;
+                        if (depth <= 0) break;
+                        continue;
+                    }
+                    pos++;
+                }
+                return;
+            }
+            while (pos < json.Length) {
+                char ch = json[pos];
+                if (ch == ',' || ch == '}' || ch == ']' || ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') break;
+                pos++;
+            }
+        }
 
-        public static async Task<string> PrefetchGitHubReleaseAssetAsync(string repo, string assetRegex, string destDir, CancellationToken ct) {
-            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(assetRegex) || string.IsNullOrWhiteSpace(destDir)) return "";
+        public static string FindGitHubReleaseAssetUrl(string json, string assetRegex, out string matchedName) {
+            matchedName = "";
+            if (string.IsNullOrWhiteSpace(json) || string.IsNullOrWhiteSpace(assetRegex)) return "";
+            Regex rxAsset = new Regex(assetRegex, RegexOptions.IgnoreCase);
+            int pos = 0;
+            SkipJsonWhitespace(json, ref pos);
+            if (pos >= json.Length || json[pos] != '{') return "";
+            pos++;
+            while (pos < json.Length) {
+                SkipJsonWhitespace(json, ref pos);
+                if (pos >= json.Length || json[pos] == '}') break;
+                if (json[pos] == ',') { pos++; continue; }
+                if (json[pos] != '"') break;
+                string rootKey = ReadJsonString(json, ref pos);
+                SkipJsonWhitespace(json, ref pos);
+                if (pos >= json.Length || json[pos] != ':') break;
+                pos++;
+                if (string.Equals(rootKey, "assets", StringComparison.Ordinal)) {
+                    SkipJsonWhitespace(json, ref pos);
+                    if (pos < json.Length && json[pos] == '[') {
+                        pos++;
+                        while (pos < json.Length) {
+                            SkipJsonWhitespace(json, ref pos);
+                            if (pos >= json.Length || json[pos] == ']') break;
+                            if (json[pos] == ',') { pos++; continue; }
+                            if (json[pos] != '{') {
+                                SkipJsonValue(json, ref pos);
+                                continue;
+                            }
+                            pos++;
+                            string candName = "";
+                            string candUrl = "";
+                            while (pos < json.Length) {
+                                SkipJsonWhitespace(json, ref pos);
+                                if (pos >= json.Length) break;
+                                if (json[pos] == '}') { pos++; break; }
+                                if (json[pos] == ',') { pos++; continue; }
+                                if (json[pos] != '"') {
+                                    SkipJsonValue(json, ref pos);
+                                    continue;
+                                }
+                                string aKey = ReadJsonString(json, ref pos);
+                                SkipJsonWhitespace(json, ref pos);
+                                if (pos >= json.Length || json[pos] != ':') break;
+                                pos++;
+                                SkipJsonWhitespace(json, ref pos);
+                                if ((string.Equals(aKey, "name", StringComparison.Ordinal) || string.Equals(aKey, "browser_download_url", StringComparison.Ordinal)) && pos < json.Length && json[pos] == '"') {
+                                    string aVal = ReadJsonString(json, ref pos);
+                                    if (string.Equals(aKey, "name", StringComparison.Ordinal)) candName = aVal;
+                                    else candUrl = aVal;
+                                } else {
+                                    SkipJsonValue(json, ref pos);
+                                }
+                            }
+                            if (!string.IsNullOrWhiteSpace(candName) && !string.IsNullOrWhiteSpace(candUrl) && rxAsset.IsMatch(candName)) {
+                                matchedName = candName;
+                                return candUrl;
+                            }
+                        }
+                    }
+                    return "";
+                } else {
+                    SkipJsonValue(json, ref pos);
+                }
+            }
+            return "";
+        }
+
+        public static async Task<string> PrefetchGitHubReleaseAssetDetailedAsync(string repo, string assetRegex, string destDir, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(assetRegex) || string.IsNullOrWhiteSpace(destDir)) return "SKIP|invalid-args";
+            string outFile = "";
             try {
                 ct.ThrowIfCancellationRequested();
                 string apiUrl = "https://api.github.com/repos/" + repo.Trim('/') + "/releases/latest";
                 string json = "";
                 using (HttpResponseMessage apiResp = await _downloadClient.GetAsync(apiUrl, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false)) {
-                    if (!apiResp.IsSuccessStatusCode || apiResp.Content == null) return "";
+                    if (!apiResp.IsSuccessStatusCode || apiResp.Content == null) {
+                        return "ERR|http-" + ((int)apiResp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
                     json = await apiResp.Content.ReadAsStringAsync().ConfigureAwait(false);
                 }
-                if (string.IsNullOrEmpty(json)) return "";
-                int assetsIdx = json.IndexOf("\"assets\"", StringComparison.Ordinal);
-                string scanSlice = assetsIdx >= 0 ? json.Substring(assetsIdx) : json;
-                var rxAsset = new Regex(assetRegex, RegexOptions.IgnoreCase);
-                string matchedName = "";
-                string matchedUrl = "";
-                foreach (Match m in _rxGhAssetPair.Matches(scanSlice)) {
-                    string candName = UnescapeJsonString(m.Groups[1].Value);
-                    string candUrl = UnescapeJsonString(m.Groups[2].Value);
-                    if (rxAsset.IsMatch(candName)) {
-                        matchedName = candName;
-                        matchedUrl = candUrl;
-                        break;
-                    }
-                }
-                if (string.IsNullOrWhiteSpace(matchedName) || string.IsNullOrWhiteSpace(matchedUrl)) return "";
+                if (string.IsNullOrEmpty(json)) return "ERR|empty-response";
+
+                string matchedName;
+                string matchedUrl = FindGitHubReleaseAssetUrl(json, assetRegex, out matchedName);
+                if (string.IsNullOrWhiteSpace(matchedName) || string.IsNullOrWhiteSpace(matchedUrl)) return "SKIP|no-matching-asset";
                 string safeName = Path.GetFileName(matchedName);
-                if (string.IsNullOrWhiteSpace(safeName)) return "";
+                if (string.IsNullOrWhiteSpace(safeName)) return "SKIP|invalid-asset-name";
                 bool isInstaller = safeName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || safeName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
-                if (!isInstaller || !matchedUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return "";
+                if (!isInstaller || !matchedUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return "SKIP|non-installer:" + safeName;
 
                 ct.ThrowIfCancellationRequested();
                 Directory.CreateDirectory(destDir);
-                string outFile = Path.Combine(destDir, safeName);
+                outFile = Path.Combine(destDir, safeName);
                 using (HttpResponseMessage dlResp = await _downloadClient.GetAsync(matchedUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
-                    if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) return "";
+                    if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) {
+                        return "ERR|download-http-" + ((int)dlResp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
                     using (Stream src = await dlResp.Content.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
                         byte[] buf = new byte[81920];
@@ -1621,13 +1727,28 @@ namespace DuckUtil {
                         }
                     }
                 }
-                return File.Exists(outFile) ? outFile : "";
-            } catch {
-                try {
-                    if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
-                } catch {}
-                return "";
+                if (File.Exists(outFile)) {
+                    FileInfo fi = new FileInfo(outFile);
+                    if (fi.Length > 0) return "OK|" + outFile;
+                }
+                return "ERR|empty-file";
+            } catch (OperationCanceledException) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                try { if (Directory.Exists(destDir)) Directory.Delete(destDir, true); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                try { if (Directory.Exists(destDir)) Directory.Delete(destDir, true); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
             }
+        }
+
+        public static async Task<string> PrefetchGitHubReleaseAssetAsync(string repo, string assetRegex, string destDir, CancellationToken ct) {
+            string res = await PrefetchGitHubReleaseAssetDetailedAsync(repo, assetRegex, destDir, ct).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(res) && res.StartsWith("OK|", StringComparison.Ordinal)) {
+                return res.Substring(3);
+            }
+            return "";
         }
     }
 

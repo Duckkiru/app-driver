@@ -3031,8 +3031,6 @@
             "mifi.losslesscut"
           ],
     "Category":  "Audio \u0026 Video",
-    "GitHubRepo":  "mifi/lossless-cut",
-    "AssetRegex":  "LosslessCut-win-x64\\.7z$",
     "Url":  "https://mifi.no/losslesscut/",
     "IconUrl":  "https://raw.githubusercontent.com/mifi/lossless-cut/master/website/public/apple-touch-icon.png",
     "IDn":  226
@@ -3637,7 +3635,8 @@
     "Aliases":  [
             "Legacy Launcher",
             "LegacyLauncher",
-            "LLauncher"
+            "LLauncher",
+            "LegacyLauncher.LegacyLauncher"
           ],
     "Category":  "Minecraft \u0026 Modding",
     "Url":  "https://llaun.ch/en",
@@ -3889,8 +3888,6 @@
             "aria2.aria2"
           ],
     "Category":  "Download Managers",
-    "GitHubRepo":  "aria2/aria2",
-    "AssetRegex":  "win-64bit-build1\\.zip$",
     "Url":  "https://aria2.github.io/",
     "IconUrl":  "https://img.icons8.com/fluency/96/download-2.png",
     "IDn":  289

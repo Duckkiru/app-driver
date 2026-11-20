@@ -4973,8 +4973,11 @@ Register-Click "btnScanInstalled" {
         if ($txtStatus) { $txtStatus.Text = "Đang hoàn tất lượt quét trước đó, sẽ tự làm mới tiếp..." }
         return
     }
+    if (-not $script:isWindowClosing -and $script:isActionRunning) {
+        if ($txtStatus) { $txtStatus.Text = "Đang có tác vụ khác thực thi, vui lòng đợi hoàn tất rồi làm mới..." }
+    }
     Invoke-GuardedAction "Quét ứng dụng" -DeferExpand -AllowDuringUninstallerLoad {
-        Scan-And-ColorizeApps
+        Scan-And-ColorizeApps -ForceSourceRefresh
     }
 }
 
@@ -4990,6 +4993,26 @@ function Clear-AllCheckBoxes {
         $script:suppressSelectionCount = $false
     }
     Update-SelectionCount
+}
+
+function Test-7zSfxHasRunner {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) { return $false }
+    try {
+        $fs = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        try {
+            $len = [int][Math]::Min(2097152L, $fs.Length)
+            $buf = [byte[]]::new($len)
+            $read = $fs.Read($buf, 0, $len)
+            if ($read -gt 0) {
+                $txt = [System.Text.Encoding]::UTF8.GetString($buf, 0, $read)
+                if ($txt -match '(?i)(RunProgram|ExecuteFile)\s*=') { return $true }
+            }
+        } finally {
+            $fs.Dispose()
+        }
+    } catch {}
+    return $false
 }
 
 function Get-SilentInstallerArgsForFile {
@@ -5019,11 +5042,74 @@ function Get-SilentInstallerArgsForFile {
     }
 }
 
+function Test-CatalogAppInstalledNow {
+    <#
+    .SYNOPSIS
+        Verify via local Registry/CLI/MSIX sensors and optional WinGet list whether an app is actually installed.
+    #>
+    param(
+        $App,
+        [string]$ProbeWingetId = ""
+    )
+    if (-not $App) { return $null }
+    try {
+        $localItems = @(Get-LocalInstalledEntries -SkipAppx)
+        $csType = "DuckUtil.AppCatalogEngine" -as [type]
+        if ($csType -and $null -ne $csType.GetMethod("MatchCatalogApps")) {
+            $t = [DuckUtil.CatalogMatchTarget]::new()
+            $t.ID = [string]$App.ID
+            $t.Name = [string]$App.Name
+            $t.Category = [string]$App.Category
+            $t.Aliases = if ($App.Aliases) { [string[]]@($App.Aliases) } else { [string[]]@() }
+            $sensorArr = [DuckUtil.CatalogSensorItem[]]::new($localItems.Count)
+            for ($si = 0; $si -lt $localItems.Count; $si++) {
+                $it = $localItems[$si]
+                if ($it -is [DuckUtil.CatalogSensorItem]) {
+                    $sensorArr[$si] = $it
+                } elseif ($null -ne $it) {
+                    $obj = [DuckUtil.CatalogSensorItem]::new()
+                    $obj.Name = [string]$it.Name
+                    $obj.ID = [string]$it.ID
+                    $obj.Version = [string]$it.Version
+                    $obj.Available = [string]$it.Available
+                    $obj.HasUpdate = [bool]$it.HasUpdate
+                    $obj.CleanName = [string]$it.CleanName
+                    $obj.Source = [string]$it.Source
+                    $sensorArr[$si] = $obj
+                }
+            }
+            $res = $csType::MatchCatalogApps([DuckUtil.CatalogMatchTarget[]]@($t), $sensorArr)
+            if ($res -and $res.Length -gt 0 -and $null -ne $res[0]) {
+                return $res[0]
+            }
+        }
+    } catch {}
+
+    if (-not [string]::IsNullOrWhiteSpace($ProbeWingetId)) {
+        try {
+            $st = Get-WinGetExactPackageState -Id $ProbeWingetId -App $App
+            if ($st.AnyFound) {
+                return [PSCustomObject]@{
+                    ID = $ProbeWingetId
+                    Version = $st.BestVersion
+                    HasUpdate = $st.AnyOutdated
+                }
+            }
+        } catch {}
+    }
+    return $null
+}
+
 function Invoke-GitHubAssetInstall {
     param(
         $App,
-        [string]$PreDownloadedPath = ""
+        [string]$PreDownloadedPath = "",
+        [string]$PrefetchStatus = ""
     )
+    if ($PrefetchStatus -like "SKIP|*") {
+        Log-Text "   [*] Bỏ qua tải GitHub ($PrefetchStatus), chuyển sang nguồn dự phòng..."
+        return -1
+    }
     $tmpDir = $null
     $prevProgPref = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
@@ -5034,6 +5120,10 @@ function Invoke-GitHubAssetInstall {
             $tmpDir = Split-Path -Parent $dlPath
             Log-Text "   [PREFETCH] Đã tải sẵn bộ cài: $([System.IO.Path]::GetFileName($dlPath))"
         } else {
+            if ($PrefetchStatus -match '^ERR\|http-403') {
+                Log-Text "   [!] GitHub API đang giới hạn truy cập (HTTP 403), chuyển sang nguồn dự phòng..."
+                return -1
+            }
             Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
             $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
             $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
@@ -5056,12 +5146,42 @@ function Invoke-GitHubAssetInstall {
         }
         if ($script:cancelRequested) { return -2 }
         if ($script:isWindowClosing) { return -1 }
-        $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath
-        if ($dlPath -match '\.msi$') {
-            return (Run-CliStream "msiexec.exe" $silentArgs -IsolateStdin -AllowCancel)
-        } else {
-            return (Run-CliStream $dlPath $silentArgs -IsolateStdin -AllowCancel)
+        if (-not (Test-Path -LiteralPath $dlPath) -or ([System.IO.FileInfo]::new($dlPath)).Length -le 0) {
+            Log-Text "   [!] Tệp bộ cài tải về trống hoặc không tồn tại."
+            return -1
         }
+        if ($dlPath -match '\.msi$') {
+            $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath
+            return (Run-CliStream "msiexec.exe" $silentArgs -IsolateStdin -AllowCancel)
+        }
+
+        $fw = ""
+        if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+            try { $fw = [DuckUtil.DeepUninstallerEngine]::DetectInstallerFramework($dlPath) } catch { $fw = "" }
+        }
+        if ($fw -eq "7zSFX" -and -not (Test-7zSfxHasRunner -Path $dlPath)) {
+            Log-Text "   [*] Tệp 7zSFX '$([System.IO.Path]::GetFileName($dlPath))' là gói nén không có lệnh cài đặt tự động; chuyển sang nguồn dự phòng..."
+            return -1
+        }
+        if ([string]::IsNullOrWhiteSpace($fw)) {
+            $exeLeaf = [System.IO.Path]::GetFileName($dlPath)
+            if ($exeLeaf -notmatch '(?i)(setup|install|update|bootstrap)') {
+                Log-Text "   [*] Tệp '$exeLeaf' là tệp thực thi độc lập, không phải bộ cài đặt; chuyển sang nguồn dự phòng..."
+                return -1
+            }
+        }
+
+        $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath -FrameworkOverride $fw
+        $execCode = Run-CliStream $dlPath $silentArgs -IsolateStdin -AllowCancel
+        if ($execCode -in @(0, 3010, 1641) -and ([string]::IsNullOrWhiteSpace($fw) -or $fw -eq "7zSFX" -or $fw -eq "QtIFW")) {
+            Wait-SquirrelUpdatersSettle
+            $verified = Test-CatalogAppInstalledNow -App $App -ProbeWingetId ([string]$App.ID)
+            if ($null -eq $verified) {
+                Log-Text "   [!] Bộ cài '$fw' trả về mã $execCode nhưng chưa phát hiện $($App.Name) được cài đặt trên máy."
+                return -1
+            }
+        }
+        return $execCode
     } catch {
         Log-Text "   [!] Lỗi tải/cài từ GitHub: $($_.Exception.Message)"
         return -1
@@ -5171,12 +5291,17 @@ function Test-IsStandardInstallLocation {
     param([string]$InstallPath)
     if ([string]::IsNullOrWhiteSpace($InstallPath)) { return $true }
     $norm = try { [System.IO.Path]::GetFullPath($InstallPath).TrimEnd('\') + '\' } catch { $InstallPath.Trim().TrimEnd('\') + '\' }
+    if ($norm -match '(?i)\\Package Cache\\' -or $norm -match '(?i)\\WindowsApps\\') {
+        return $true
+    }
     $stdRoots = @()
-    foreach ($rootCand in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:SystemRoot)) {
+    foreach ($rootCand in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:SystemRoot, $env:LOCALAPPDATA, $env:APPDATA)) {
         if (-not [string]::IsNullOrWhiteSpace($rootCand)) { $stdRoots += ($rootCand.TrimEnd('\') + '\') }
     }
-    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
-        $stdRoots += (Join-Path $env:LOCALAPPDATA "Programs").TrimEnd('\') + '\'
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        foreach ($dotRel in @(".cargo", ".local", ".bun")) {
+            $stdRoots += (Join-Path $env:USERPROFILE $dotRel).TrimEnd('\') + '\'
+        }
     }
     foreach ($sr in $stdRoots) {
         if ($norm.StartsWith($sr, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
@@ -5189,14 +5314,14 @@ function Invoke-WinGetWithMsiRetry {
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
-    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel
+    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput
     if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978334974 -or $code -eq 1618)) {
         Log-Text "[!] Windows Installer đang bận (1618), đang chờ giải phóng để thử lại..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
         if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
         [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(1200)) -TimeoutSeconds 3 -CancelCheck { [bool]$script:cancelRequested })
         if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
-        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel
+        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput
     }
     return $code
 }
@@ -5232,14 +5357,21 @@ function Find-RegistryMatchForCatalogApp {
     param(
         $App,
         $InstalledList,
-        [string]$DetectedId = ""
+        [string]$DetectedId = "",
+        [string]$InstalledVersion = ""
     )
 
     if (-not $App -or -not $InstalledList) { return $null }
 
+    $normDetected = $DetectedId
+    if ($normDetected -match '^ARP\\(?:Machine|User)\\(?:X64|X86)\\(.+)$') {
+        $normDetected = $Matches[1]
+    }
+    $detScopeHint = if ($DetectedId -match '^ARP\\User\\|^MSIX\\') { "User" } elseif ($DetectedId -match '^ARP\\Machine\\') { "System" } else { "" }
+
     foreach ($inst in $InstalledList) {
-        if ($null -eq $inst) { continue }
-        if ($inst.Id -and ($inst.Id -ieq $App.ID -or ($DetectedId -and $inst.Id -ieq $DetectedId))) {
+        if ($null -eq $inst -or -not $inst.Id) { continue }
+        if ($inst.Id -ieq $App.ID -or ($DetectedId -and $inst.Id -ieq $DetectedId) -or ($normDetected -and $inst.Id -ieq $normDetected)) {
             return $inst
         }
     }
@@ -5250,13 +5382,6 @@ function Find-RegistryMatchForCatalogApp {
     if ($App.Aliases) {
         foreach ($al in $App.Aliases) {
             if (-not [string]::IsNullOrWhiteSpace($al)) { [void]$exactNames.Add($al) }
-        }
-    }
-
-    foreach ($inst in $InstalledList) {
-        if ($null -eq $inst -or -not $inst.DisplayName) { continue }
-        if ($exactNames.Contains($inst.DisplayName)) {
-            return $inst
         }
     }
 
@@ -5282,26 +5407,38 @@ function Find-RegistryMatchForCatalogApp {
 
     foreach ($inst in $InstalledList) {
         if ($null -eq $inst -or -not $inst.DisplayName) { continue }
-        $cleanInst = & $getClean $inst.DisplayName
-        if ([string]::IsNullOrWhiteSpace($cleanInst)) { continue }
-
         $score = 0
-        foreach ($ct in $cleanTargets) {
-            if ($cleanInst.Equals($ct, [System.StringComparison]::OrdinalIgnoreCase)) {
-                $score = [Math]::Max($score, 900)
-                break
+        if ($exactNames.Contains($inst.DisplayName)) {
+            $score = 950
+        } else {
+            $cleanInst = & $getClean $inst.DisplayName
+            if ([string]::IsNullOrWhiteSpace($cleanInst)) { continue }
+            foreach ($ct in $cleanTargets) {
+                if ($cleanInst.Equals($ct, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $score = [Math]::Max($score, 900)
+                    break
+                }
+                if ($ct.Length -ge 4 -and $cleanInst -match ("(?<![a-zA-Z0-9])" + [regex]::Escape($ct) + "(?![a-zA-Z0-9])")) {
+                    $score = [Math]::Max($score, 700 + $ct.Length)
+                }
             }
-            if ($ct.Length -ge 4 -and $cleanInst -match ("(?<![a-zA-Z0-9])" + [regex]::Escape($ct) + "(?![a-zA-Z0-9])")) {
-                $score = [Math]::Max($score, 700 + $ct.Length)
-            }
+        }
+        if ($score -le 0) { continue }
+
+        if ($hasCompat) {
+            $verProp = if ($inst.PSObject.Properties['DisplayVersion']) { [string]$inst.DisplayVersion } else { "" }
+            $probe = [PSCustomObject]@{ Name = [string]$inst.DisplayName; ID = [string]$inst.Id; Version = $verProp }
+            if (-not (Test-MatchCompatible $App $probe)) { continue }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($InstalledVersion) -and $inst.PSObject.Properties['DisplayVersion'] -and [string]$inst.DisplayVersion -eq $InstalledVersion) {
+            $score += 120
+        }
+        if ($detScopeHint -and $inst.PSObject.Properties['Scope'] -and $inst.Scope -eq $detScopeHint) {
+            $score += 80
         }
 
         if ($score -gt $bestScore) {
-            if ($hasCompat) {
-                $verProp = if ($inst.PSObject.Properties['DisplayVersion']) { [string]$inst.DisplayVersion } else { "" }
-                $probe = [PSCustomObject]@{ Name = [string]$inst.DisplayName; ID = [string]$inst.Id; Version = $verProp }
-                if (-not (Test-MatchCompatible $App $probe)) { continue }
-            }
             $bestScore = $score
             $bestCand = $inst
         }
@@ -5314,11 +5451,14 @@ function Resolve-AppInstallLocation {
     param($App, $RegMatch)
     $loc = $null
     if ($RegMatch -and -not [string]::IsNullOrWhiteSpace($RegMatch.InstallLocation) -and (Test-Path -LiteralPath $RegMatch.InstallLocation)) {
-        $loc = $RegMatch.InstallLocation.Trim().TrimEnd('\')
+        $candLoc = $RegMatch.InstallLocation.Trim().TrimEnd('\')
+        if ($candLoc -notmatch '(?i)\\Package Cache(\\|$)' -and $candLoc -notmatch '(?i)\\WindowsApps(\\|$)' -and $candLoc -notmatch '(?i)^[a-z]:\\Windows(\\System32|\\SysWOW64)?$') {
+            $loc = $candLoc
+        }
     }
     if (-not $loc -and $RegMatch) {
         $uCmd = if ($RegMatch.QuietUninstallString) { $RegMatch.QuietUninstallString } else { $RegMatch.UninstallString }
-        if ($uCmd) {
+        if ($uCmd -and $uCmd -notmatch '(?i)\bmsiexec(\.exe)?\b') {
             $uExe = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
                 (Split-CommandLineExecutableAndArgs -CommandLine $uCmd).Exe
             } elseif ($uCmd.StartsWith('"')) {
@@ -5329,7 +5469,7 @@ function Resolve-AppInstallLocation {
             }
             if ($uExe -and (Test-Path -LiteralPath $uExe)) {
                 $pDir = [System.IO.Path]::GetDirectoryName($uExe)
-                if ($pDir -and (Test-Path -LiteralPath $pDir)) {
+                if ($pDir -and (Test-Path -LiteralPath $pDir) -and $pDir -notmatch '(?i)\\Package Cache(\\|$)' -and $pDir -notmatch '(?i)\\WindowsApps(\\|$)' -and $pDir -notmatch '(?i)^[a-z]:\\Windows(\\System32|\\SysWOW64)?$') {
                     $loc = $pDir
                 }
             }
@@ -5350,17 +5490,112 @@ function Resolve-AppInstallLocation {
     return $loc
 }
 
+function Resolve-ValidatedUpgradeId {
+    param($App, [string]$DetectedId)
+    if (-not $App) { return $DetectedId }
+    if ([string]::IsNullOrWhiteSpace($DetectedId) -or $DetectedId -match '^(ARP|MSIX|LOCAL)\\') {
+        return [string]$App.ID
+    }
+    if ($DetectedId -ieq [string]$App.ID) {
+        return $DetectedId
+    }
+    if ($App.Aliases) {
+        foreach ($al in $App.Aliases) {
+            if (-not [string]::IsNullOrWhiteSpace($al) -and $DetectedId -ieq [string]$al) {
+                return $DetectedId
+            }
+        }
+    }
+    Log-Text "   [WARN] DetectedId '$DetectedId' không khớp ID gốc '$($App.ID)'; dùng ID gốc để tránh cập nhật nhầm gói."
+    return [string]$App.ID
+}
+
+function Get-WinGetExactPackageState {
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        $App = $null
+    )
+    $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
+    $cap = Invoke-WingetListCapture -Arguments ("list --id `"$Id`" --exact$srcArg --disable-interactivity --accept-source-agreements") -TimeoutSeconds 12
+    if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled) {
+        return [PSCustomObject]@{ Available = $cap.Available; TimedOut = $cap.TimedOut; AnyFound = $false; AnyOutdated = $false; HasUnknownVersion = $false; BestVersion = ""; BestAvailable = ""; Items = @() }
+    }
+    $parsed = ConvertFrom-WingetListOutput -RawText $cap.StdOut -AllowHeaderless $true
+    $items = if ($parsed -and $parsed.Items.Count -gt 0) {
+        @($parsed.Items | Where-Object { $_.ID -ieq $Id })
+    } else { @() }
+    $anyOutdated = $false
+    $hasUnknown = $false
+    $bestVer = ""
+    $bestAvail = ""
+    foreach ($it in $items) {
+        if ($it.HasUpdate) { $anyOutdated = $true }
+        if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match '^(<|Unknown)') { $hasUnknown = $true }
+        if ([string]::IsNullOrWhiteSpace($bestVer) -and -not [string]::IsNullOrWhiteSpace($it.Version)) { $bestVer = [string]$it.Version }
+        if ([string]::IsNullOrWhiteSpace($bestAvail) -and -not [string]::IsNullOrWhiteSpace($it.Available)) { $bestAvail = [string]$it.Available }
+    }
+    return [PSCustomObject]@{
+        Available         = $true
+        TimedOut          = $false
+        AnyFound          = ($items.Count -gt 0)
+        AnyOutdated       = $anyOutdated
+        HasUnknownVersion = $hasUnknown
+        BestVersion       = $bestVer
+        BestAvailable     = $bestAvail
+        Items             = $items
+    }
+}
+
+function Test-WinGetScopeSupported {
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        $App = $null,
+        [Parameter(Mandatory = $true)][string]$Scope
+    )
+    if ([string]::IsNullOrWhiteSpace($Scope)) { return $true }
+    $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
+    $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --scope $Scope --disable-interactivity --accept-source-agreements") -TimeoutSeconds 12
+    if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled) { return $true }
+    $outTxt = "$($cap.StdOut)`n$($cap.StdErr)"
+    if ($cap.ExitCode -ne 0 -or $outTxt -match '(?i)No applicable installer found|No package found matching') {
+        return $false
+    }
+    return $true
+}
+
+function Get-WinGetRunOutcomeFromOutput {
+    param($CliResult)
+    if ($null -eq $CliResult) { return "Unknown" }
+    $txt = "$($CliResult.StdOut)`n$($CliResult.StdErr)"
+    if ([string]::IsNullOrWhiteSpace($txt)) { return "Unknown" }
+    if ($txt -match '(?i)No applicable update found|No newer package versions are available|No available upgrade found') {
+        return "NoUpgradeAvailable"
+    }
+    if ($txt -match '(?i)No installed package found matching input criteria') {
+        return "NotInstalled"
+    }
+    if ($txt -match '(?i)Successfully installed|Successfully updated') {
+        return "Succeeded"
+    }
+    if ($txt -match '(?i)Installation failed|Installer failed|Download failed|No applicable installer found|Another installation is already in progress|hash does not match|requires administrator|winget upgrade --all completed with failures') {
+        return "Failed"
+    }
+    return "Unknown"
+}
+
 function Invoke-SmartAppUpgrade {
+    <#
+    .SYNOPSIS
+        Upgrade a catalog row via WinGet while preserving scope/location and verifying actual upgrade outcome.
+        Returns: 0=upgraded, 2=crack-skipped, 3=already-latest, 4=unverified-no-change, other=error/cancel.
+    #>
     param($Tag, [switch]$IsBulkUpgrade)
     if (-not $Tag) { return 1 }
     $app = $Tag.App
     if (-not $app) { return 1 }
 
-    $upgradeId = if ($Tag.DetectedId -and -not ($Tag.DetectedId.StartsWith("ARP\") -or $Tag.DetectedId.StartsWith("MSIX\") -or $Tag.DetectedId.StartsWith("LOCAL\"))) {
-        $Tag.DetectedId
-    } else {
-        $app.ID
-    }
+    $upgradeId = Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)
+    $preVersion = [string]$Tag.InstalledVersion
 
     $instApps = if ($script:cachedUninstallerApps -and $script:cachedUninstallerApps.Count -gt 0) {
         $script:cachedUninstallerApps
@@ -5370,7 +5605,7 @@ function Invoke-SmartAppUpgrade {
         @()
     }
 
-    $regMatch = Find-RegistryMatchForCatalogApp -App $app -InstalledList $instApps -DetectedId $Tag.DetectedId
+    $regMatch = Find-RegistryMatchForCatalogApp -App $app -InstalledList $instApps -DetectedId ([string]$Tag.DetectedId) -InstalledVersion $preVersion
     $existingLoc = Resolve-AppInstallLocation -App $app -RegMatch $regMatch
 
     if ($existingLoc -and ("DuckUtil.AppCatalogEngine" -as [type])) {
@@ -5396,8 +5631,20 @@ function Invoke-SmartAppUpgrade {
     $scope = ""
     if ($regMatch -and $regMatch.Scope -eq "User") {
         $scope = "user"
-    } elseif ($existingLoc -and $existingLoc.StartsWith($env:USERPROFILE, [System.StringComparison]::OrdinalIgnoreCase)) {
+    } elseif ([string]$Tag.DetectedId -match '^ARP\\User\\') {
         $scope = "user"
+    } elseif ($existingLoc -and -not [string]::IsNullOrWhiteSpace($env:USERPROFILE) -and $existingLoc.StartsWith($env:USERPROFILE, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $scope = "user"
+    } elseif ($regMatch -and $regMatch.Scope -eq "System") {
+        $scope = "machine"
+    } elseif ([string]$Tag.DetectedId -match '^ARP\\Machine\\') {
+        $scope = "machine"
+    } elseif ($existingLoc -and $existingLoc -notmatch '(?i)\\WindowsApps\\' -and (
+        ($env:ProgramW6432 -and $existingLoc.StartsWith($env:ProgramW6432, [System.StringComparison]::OrdinalIgnoreCase)) -or
+        ($env:ProgramFiles -and $existingLoc.StartsWith($env:ProgramFiles, [System.StringComparison]::OrdinalIgnoreCase)) -or
+        (${env:ProgramFiles(x86)} -and $existingLoc.StartsWith(${env:ProgramFiles(x86)}, [System.StringComparison]::OrdinalIgnoreCase))
+    )) {
+        $scope = "machine"
     }
 
     $needCustomLocArg = $false
@@ -5474,14 +5721,15 @@ function Invoke-SmartAppUpgrade {
     $appDataBkps = [System.Collections.Generic.List[object]]::new()
     $regFiles = [System.Collections.Generic.List[object]]::new()
 
-    $shouldSnapshot = ($null -ne $snapshotType) -and ($existingLoc -or $targetAppDataDirs.Count -gt 0 -or $hkcuKeys.Count -gt 0)
+    $canSnapshotLoc = ($existingLoc -and $existingLoc -notmatch '(?i)\\WindowsApps(\\|$)' -and $existingLoc -notmatch '(?i)\\Package Cache(\\|$)' -and (Test-Path -LiteralPath $existingLoc))
+    $shouldSnapshot = ($null -ne $snapshotType) -and ($canSnapshotLoc -or $targetAppDataDirs.Count -gt 0 -or $hkcuKeys.Count -gt 0)
     if ($shouldSnapshot) {
         if (Test-Path -LiteralPath $backupRoot) {
             Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
         }
         New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 
-        if ($existingLoc -and (Test-Path -LiteralPath $existingLoc)) {
+        if ($canSnapshotLoc) {
             $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
             if ($bytes -gt 0) { $hasSnapshots = $true }
         }
@@ -5527,7 +5775,7 @@ function Invoke-SmartAppUpgrade {
         Log-Text "[*] Đã kích hoạt UpgradeDataGuard: Chụp snapshot cấu hình trước khi nâng cấp."
     }
 
-    $baseUpArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
+    $baseUpArgs = "upgrade --id `"$upgradeId`" --exact --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
     $upArgs = $baseUpArgs
     if ($needCustomLocArg -and $existingLoc) {
         $upArgs += " --location `"$existingLoc`""
@@ -5537,53 +5785,68 @@ function Invoke-SmartAppUpgrade {
     }
 
     $code = Invoke-WinGetSourceAware -BaseArguments $upArgs -App $app -Id $upgradeId
-    if ($code -ne 0 -and $scope) {
-        Log-Text "[!] Nâng cấp theo scope '$scope' không thành công (Code: $code), đang thử lại bỏ giới hạn scope..."
-        $upArgsNoScope = $baseUpArgs
-        if ($needCustomLocArg -and $existingLoc) {
-            $upArgsNoScope += " --location `"$existingLoc`""
-        }
-        $code = Invoke-WinGetSourceAware -BaseArguments $upArgsNoScope -App $app -Id $upgradeId
+    if ($code -ne 0 -and $needCustomLocArg -and $existingLoc -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+        Log-Text "[!] Nâng cấp kèm đường dẫn cố định không khả dụng (Code: $code), đang thử lại bỏ tham số --location..."
+        $upArgsNoLoc = $baseUpArgs
+        if ($scope) { $upArgsNoLoc += " --scope $scope" }
+        $code = Invoke-WinGetSourceAware -BaseArguments $upArgsNoLoc -App $app -Id $upgradeId
     }
 
-    if ($code -ne 0 -and $needCustomLocArg -and $existingLoc) {
-        Log-Text "[!] Nâng cấp kèm đường dẫn cố định không khả dụng (Code: $code), đang thử lại cấu hình mặc định..."
-        $code = Invoke-WinGetSourceAware -BaseArguments $baseUpArgs -App $app -Id $upgradeId
+    $scopeSupported = $true
+    if ($code -ne 0 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+        $scopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $scope
+        if (-not $scopeSupported) {
+            Log-Text "[!] $($app.Name): Bản đang cài thuộc scope '$scope', nhưng WinGet không có bộ cài cho scope '$scope' (từ chối cài chồng scope khác để tránh trùng 2 bản)."
+            $code = -1978335216
+        }
     }
 
     $alreadyLatest = $false
-    if ($code -eq -1978335189) {
+    if ($code -eq -1978335189 -and $scopeSupported -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         try {
-            $probeSrcArg = Get-WinGetSourceArgument -App $app -Id $upgradeId
-            $probeCap = Invoke-WingetListCapture -Arguments ("list --id `"$upgradeId`" --exact$probeSrcArg --disable-interactivity --accept-source-agreements") -TimeoutSeconds 12
-            if ($probeCap.Available -and -not $probeCap.TimedOut) {
-                $probeParsed = ConvertFrom-WingetListOutput -RawText $probeCap.StdOut -AllowHeaderless $true
-                $probeItem = if ($probeParsed -and $probeParsed.Items.Count -gt 0) {
-                    $probeParsed.Items | Where-Object { $_.ID -ieq $upgradeId } | Select-Object -First 1
-                } else { $null }
-                if ($probeItem -and -not $probeItem.HasUpdate) {
+            $probeState = Get-WinGetExactPackageState -Id $upgradeId -App $app
+            if ($probeState.Available -and -not $probeState.TimedOut -and $probeState.AnyFound) {
+                if (-not $probeState.AnyOutdated) {
                     $alreadyLatest = $true
-                    $code = 0
-                    Log-Text "[OK] $($app.Name) hiện đã ở phiên bản mới nhất ($($probeItem.Version))."
-                } elseif ($probeItem -and $probeItem.HasUpdate) {
-                    Log-Text "[*] Phát hiện bản mới $($probeItem.Available) nhưng khác scope cài đặt; đang nâng cấp trực tiếp (--force)..."
-                    $baseForceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
-                    $forceArgs = $baseForceArgs
-                    if ($needCustomLocArg -and $existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
-                    if ($scope) { $forceArgs += " --scope $scope" }
-                    $code = Invoke-WinGetSourceAware -BaseArguments $forceArgs -App $app -Id $upgradeId
-                    if ($code -ne 0 -and (($needCustomLocArg -and $existingLoc) -or $scope)) {
-                        $code = Invoke-WinGetSourceAware -BaseArguments $baseForceArgs -App $app -Id $upgradeId
+                    $code = 3
+                    Log-Text "[INFO] $($app.Name) hiện đã ở phiên bản mới nhất trên WinGet ($($probeState.BestVersion))."
+                } else {
+                    if ($probeState.HasUnknownVersion) {
+                        $unkArgs = $baseUpArgs + " --include-unknown"
+                        if ($scope) { $unkArgs += " --scope $scope" }
+                        $code = Invoke-WinGetSourceAware -BaseArguments $unkArgs -App $app -Id $upgradeId
+                    }
+                    if ($code -ne 0 -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                        Log-Text "[*] Phát hiện bản mới $($probeState.BestAvailable); đang thử cài đặt trực tiếp (--force) giữ nguyên scope '$scope'..."
+                        $forceArgs = "install --id `"$upgradeId`" --exact --silent --disable-interactivity --force --accept-package-agreements --accept-source-agreements"
+                        if ($needCustomLocArg -and $existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
+                        if ($scope) { $forceArgs += " --scope $scope" }
+                        $code = Invoke-WinGetSourceAware -BaseArguments $forceArgs -App $app -Id $upgradeId
+                        if ($code -ne 0 -and $needCustomLocArg -and $existingLoc -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                            $forceNoLoc = "install --id `"$upgradeId`" --exact --silent --disable-interactivity --force --accept-package-agreements --accept-source-agreements"
+                            if ($scope) { $forceNoLoc += " --scope $scope" }
+                            $code = Invoke-WinGetSourceAware -BaseArguments $forceNoLoc -App $app -Id $upgradeId
+                        }
                     }
                 }
             }
         } catch {}
     }
 
-    $preInstallerAborted = $alreadyLatest -or ($code -in @(-1978335189, -1978335212, -1978335191, -1978334974, 1618))
+    $outcomeFromText = Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun
+    if ($code -in @(0, 3010, 1641)) {
+        if ($outcomeFromText -eq "NoUpgradeAvailable") {
+            $alreadyLatest = $true
+            $code = 3
+        } elseif ($outcomeFromText -eq "Failed" -or $outcomeFromText -eq "NotInstalled") {
+            $code = 1
+        }
+    }
+
+    $preInstallerAborted = $alreadyLatest -or ($code -in @(3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
     if ($hasSnapshots) {
         if (-not $preInstallerAborted) {
-            if ($existingLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
+            if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
                 $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
                 if ($restoredLoc -gt 0) {
                     Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
@@ -5637,7 +5900,53 @@ function Invoke-SmartAppUpgrade {
         } catch {}
     }
 
+    if ($code -in @(0, 3010, 1641)) {
+        Wait-SquirrelUpdatersSettle
+        try {
+            $postState = Get-WinGetExactPackageState -Id $upgradeId -App $app
+            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
+                if ([string]::IsNullOrWhiteSpace($preVersion) -or $postState.BestVersion -eq $preVersion) {
+                    Log-Text "   [WARN] $($app.Name): Tiến trình thoát với mã $code nhưng phiên bản vẫn là '$($postState.BestVersion)' (còn bản mới $($postState.BestAvailable))."
+                    return 4
+                }
+            }
+        } catch {}
+        return 0
+    }
+
     return $code
+}
+
+function Invoke-CatalogUpgradeWithFallback {
+    <#
+    .SYNOPSIS
+        Upgrade an OUTDATED catalog row via WinGet, falling back to GitHub release installer if WinGet fails.
+    #>
+    param(
+        $Tag,
+        [switch]$IsBulkUpgrade
+    )
+    $app = $Tag.App
+    if (-not $app) { return 1 }
+    if ($app.BrowserDownload -eq $true -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+        Log-Text "   [WEB] $($app.Name) cập nhật qua trang tải chính thức: $($app.FallbackUrl)"
+        try { Start-Process $app.FallbackUrl } catch { return 1 }
+        return 5
+    }
+    $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade
+    if ($upCode -notin @(0, 2, 3, -2, -1978335216) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+        Log-Text "   [*] Đang thử cập nhật dự phòng qua GitHub Release ($($app.GitHubRepo))..."
+        $ghCode = Invoke-GitHubAssetInstall -App $app
+        if ($ghCode -in @(0, 3010, 1641)) {
+            $postState = Get-WinGetExactPackageState -Id (Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)) -App $app
+            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated -and $postState.BestVersion -eq [string]$Tag.InstalledVersion) {
+                return 4
+            }
+            return 0
+        }
+        if ($ghCode -eq -2) { return -2 }
+    }
+    return $upCode
 }
 
 Register-Click "btnInstall" {
@@ -5654,9 +5963,19 @@ Register-Click "btnInstall" {
             return
         }
 
+        if (-not $script:isUpdatingUninstaller) {
+            $script:cachedUninstallerApps = @()
+        }
+
         $total = $selectedTags.Count
         $idx = 0
         $didAnyAction = $false
+        $okCount = 0
+        $alreadyCount = 0
+        $skipCount = 0
+        $webCount = 0
+        $failCount = 0
+
         if ($btnCancelAction) {
             $btnCancelAction.Content = "Dừng tác vụ"
             $btnCancelAction.IsEnabled = $true
@@ -5670,7 +5989,18 @@ Register-Click "btnInstall" {
         $prefetchQueue = [System.Collections.Generic.Queue[object]]::new()
         $prefetchSlots = @{}
         $prefetchDirs = [System.Collections.Generic.List[string]]::new()
-        $hasPrefetchApi = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("PrefetchGitHubReleaseAssetAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        $pipePfType = "DuckUtil.UiAssetPipeline" -as [type]
+        $hasDetailedPrefetch = ($null -ne $pipePfType) -and ($null -ne $pipePfType.GetMethod("PrefetchGitHubReleaseAssetDetailedAsync")) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        $hasPrefetchApi = $hasDetailedPrefetch -or (($null -ne $pipePfType) -and ($null -ne $pipePfType.GetMethod("PrefetchGitHubReleaseAssetAsync")) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)))
+
+        $startPrefetchTask = {
+            param($pfAppObj, [string]$pfDirPath, $ctsToken)
+            if ($hasDetailedPrefetch) {
+                return [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetDetailedAsync([string]$pfAppObj.GitHubRepo, [string]$pfAppObj.AssetRegex, $pfDirPath, $ctsToken)
+            }
+            return [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$pfAppObj.GitHubRepo, [string]$pfAppObj.AssetRegex, $pfDirPath, $ctsToken)
+        }
+
         if ($hasPrefetchApi -and $selectedTags.Count -ge 2) {
             foreach ($pt in $selectedTags) {
                 if ($pt.Status -ne "LATEST" -and $pt.Status -ne "OUTDATED" -and $pt.App -and -not ($pt.App.BrowserDownload -eq $true) -and -not [string]::IsNullOrWhiteSpace($pt.App.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($pt.App.AssetRegex)) {
@@ -5686,7 +6016,7 @@ Register-Click "btnInstall" {
                     [void]$prefetchDirs.Add($pfDir)
                     $prefetchSlots[[string]$pfApp.ID] = @{
                         Dir  = $pfDir
-                        Task = [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$pfApp.GitHubRepo, [string]$pfApp.AssetRegex, $pfDir, $prefetchCts.Token)
+                        Task = (& $startPrefetchTask $pfApp $pfDir $prefetchCts.Token)
                     }
                 }
             } else {
@@ -5703,6 +6033,7 @@ Register-Click "btnInstall" {
 
                 if ($tag.Status -eq "LATEST") {
                     Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."
+                    $alreadyCount++
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
                 }
@@ -5711,15 +6042,28 @@ Register-Click "btnInstall" {
                     $didAnyAction = $true
                     if ($txtStatus) { $txtStatus.Text = "[$idx/$total] Đang cập nhật: $($app.Name)..." }
                     Log-Text "[$idx/$total] Đang cập nhật: $($app.Name) (ID: $($app.ID))..."
-                    $upCode = Invoke-SmartAppUpgrade -Tag $tag
+                    $upCode = Invoke-CatalogUpgradeWithFallback -Tag $tag
                     if ($upCode -eq 0) {
                         Log-Text "   [OK - ĐÃ CẬP NHẬT THÀNH CÔNG] $($app.Name)"
+                        $okCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     } elseif ($upCode -eq 2) {
                         Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($app.Name) để giữ nguyên file patch."
+                        $skipCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } elseif ($upCode -eq 3) {
+                        Log-Text "   [INFO - KHÔNG CÓ BẢN MỚI TRÊN WINGET] $($app.Name) (bấm 'Làm mới' để đồng bộ)"
+                        $alreadyCount++
+                    } elseif ($upCode -eq 4) {
+                        Log-Text "   [WARN - CHƯA THAY ĐỔI PHIÊN BẢN] $($app.Name) chưa ghi nhận phiên bản mới."
+                        $failCount++
+                    } elseif ($upCode -eq 5) {
+                        $webCount++
+                    } elseif ($upCode -eq -2 -or $script:cancelRequested) {
+                        Log-Text "   [!] Đã hủy cập nhật $($app.Name)."
                     } else {
-                        Log-Text "   [ERR - LỖI CẬP NHẬT HOẶC ĐÃ MỚI NHẤT] $($app.Name) (Exit Code: $upCode)"
+                        Log-Text "   [ERR - LỖI CẬP NHẬT] $($app.Name) (Exit Code: $upCode)"
+                        $failCount++
                     }
                     continue
                 }
@@ -5732,15 +6076,18 @@ Register-Click "btnInstall" {
                     Log-Text "   [WEB] Đang mở liên kết tải bộ cài chính thức: $($app.FallbackUrl)"
                     try {
                         Start-Process $app.FallbackUrl
-                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                        $webCount++
                     } catch {
                         Log-Text "   [ERR - LỖI] Không thể mở trình duyệt cho $($app.Name)"
+                        $failCount++
                     }
                     continue
                 }
 
+                $usedWingetInstall = $false
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
                     $preDlPath = ""
+                    $pfStatus = ""
                     $pfSlot = $null
                     if ($prefetchSlots.ContainsKey([string]$app.ID)) {
                         $pfSlot = $prefetchSlots[[string]$app.ID]
@@ -5752,38 +6099,61 @@ Register-Click "btnInstall" {
                         [void]$prefetchDirs.Add($nextPfDir)
                         $prefetchSlots[[string]$nextPfApp.ID] = @{
                             Dir  = $nextPfDir
-                            Task = [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$nextPfApp.GitHubRepo, [string]$nextPfApp.AssetRegex, $nextPfDir, $prefetchCts.Token)
+                            Task = (& $startPrefetchTask $nextPfApp $nextPfDir $prefetchCts.Token)
                         }
                     }
                     if ($pfSlot -and $pfSlot.Task) {
                         [void](Wait-TaskNonBlocking -Task $pfSlot.Task -TimeoutSeconds 120 -CancelCheck { [bool]$script:cancelRequested })
                         if ($pfSlot.Task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                            $preDlPath = [string]$pfSlot.Task.Result
+                            $rawPfRes = [string]$pfSlot.Task.Result
+                            if ($hasDetailedPrefetch) {
+                                if ($rawPfRes.StartsWith("OK|")) {
+                                    $preDlPath = $rawPfRes.Substring(3)
+                                } else {
+                                    $pfStatus = $rawPfRes
+                                }
+                            } else {
+                                $preDlPath = $rawPfRes
+                            }
                         }
                     }
                     if ($script:cancelRequested -or $script:isWindowClosing) {
                         $code = if ($script:cancelRequested) { -2 } else { -1 }
                     } else {
-                        $code = Invoke-GitHubAssetInstall -App $app -PreDownloadedPath $preDlPath
+                        $code = Invoke-GitHubAssetInstall -App $app -PreDownloadedPath $preDlPath -PrefetchStatus $pfStatus
                     }
                     if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.ID)) {
                         Log-Text "   [*] Thử cài đặt dự phòng qua WinGet ($($app.ID))..."
-                        $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                        $wgArgs = "install --id `"$($app.ID)`" --exact --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
                         $code = Invoke-WinGetSourceAware -BaseArguments $wgArgs -App $app -Id $app.ID
+                        $usedWingetInstall = $true
                     }
                 } else {
-                    $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                    $wgArgs = "install --id `"$($app.ID)`" --exact --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
                     $code = Invoke-WinGetSourceAware -BaseArguments $wgArgs -App $app -Id $app.ID
+                    $usedWingetInstall = $true
                 }
 
                 if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
-                    $okNote = if ($code -eq 3010 -or $code -eq 1641) { " (Cần khởi động lại)" } else { "" }
-                    Log-Text "   [OK - HOÀN THÀNH] $($app.Name)$okNote"
-                    if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    $wgOutcome = if ($usedWingetInstall) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
+                    if ($wgOutcome -eq "NoUpgradeAvailable") {
+                        Log-Text "   [INFO] $($app.Name) đã được cài sẵn phiên bản mới nhất trên máy."
+                        $alreadyCount++
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    } elseif ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled") {
+                        Log-Text "   [ERR - LỖI] $($app.Name) không cài đặt được theo phản hồi từ WinGet."
+                        $failCount++
+                    } else {
+                        $okNote = if ($code -eq 3010 -or $code -eq 1641) { " (Cần khởi động lại)" } else { "" }
+                        Log-Text "   [OK - HOÀN THÀNH] $($app.Name)$okNote"
+                        $okCount++
+                        if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                    }
                 } elseif ($code -eq -2 -or $code -eq 1602 -or $script:cancelRequested) {
                     Log-Text "   [!] Đã hủy cài đặt $($app.Name)."
                 } else {
                     Log-Text "   [ERR - LỖI] $($app.Name) (Exit Code: $code)"
+                    $failCount++
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
                         Log-Text "   [WEB] Gói này hiện không khả dụng tự động qua WinGet. Đang mở trang tải chính thức: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
@@ -5805,10 +6175,14 @@ Register-Click "btnInstall" {
         }
         if (-not $script:isWindowClosing) {
             Update-SelectionCount
-            if ($txtStatus) { $txtStatus.Text = "Cài đặt & Cập nhật hoàn tất!" }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($didAnyAction) {
+                if (-not $script:isUpdatingUninstaller) { $script:cachedUninstallerApps = @() }
                 if ($script:uninstallerLoadedOnce) { $script:uninstallerStale = $true }
+                Log-Text "[SUMMARY] Kết quả: $okCount thành công • $alreadyCount đã mới nhất • $skipCount bỏ qua • $webCount mở web • $failCount lỗi"
+                if ($txtStatus) {
+                    $txtStatus.Text = "Hoàn tất: $okCount thành công • $failCount lỗi"
+                }
                 Wait-SquirrelUpdatersSettle
                 if (-not $script:isWindowClosing) {
                     Scan-And-ColorizeApps
@@ -5834,15 +6208,24 @@ Register-Click "btnUpgradeAll" {
             $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
         }
 
+        if (-not $script:isUpdatingUninstaller) {
+            $script:cachedUninstallerApps = @()
+        }
+
+        $bulkOk = 0
+        $bulkAlready = 0
+        $bulkSkip = 0
+        $bulkFail = 0
+        $bulkCode = 0
+
         try {
             $outdatedRows = @($allItemBorders | Where-Object { $_.Tag -and $_.Tag.Status -eq "OUTDATED" })
             $crackBlockedCount = 0
             $safeOutdatedRows = [System.Collections.Generic.List[object]]::new()
             $msStoreOutdatedRows = [System.Collections.Generic.List[object]]::new()
+            $safeWingetOutdatedRows = [System.Collections.Generic.List[object]]::new()
             if ($outdatedRows.Count -gt 0) {
-                $instAppsBulk = if ($script:cachedUninstallerApps -and $script:cachedUninstallerApps.Count -gt 0) {
-                    $script:cachedUninstallerApps
-                } elseif ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+                $instAppsBulk = if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
                     [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
                 } else { @() }
                 $hasCrackChecker = [bool]("DuckUtil.AppCatalogEngine" -as [type])
@@ -5852,7 +6235,7 @@ Register-Click "btnUpgradeAll" {
                     $appOut = $tagOut.App
                     $isCracked = $false
                     if ($hasCrackChecker -and $appOut) {
-                        $regM = Find-RegistryMatchForCatalogApp -App $appOut -InstalledList $instAppsBulk -DetectedId $tagOut.DetectedId
+                        $regM = Find-RegistryMatchForCatalogApp -App $appOut -InstalledList $instAppsBulk -DetectedId ([string]$tagOut.DetectedId) -InstalledVersion ([string]$tagOut.InstalledVersion)
                         $locM = Resolve-AppInstallLocation -App $appOut -RegMatch $regM
                         if ($locM -and [DuckUtil.AppCatalogEngine]::HasCrackOrPatchIndicators($locM)) {
                             $isCracked = $true
@@ -5860,50 +6243,101 @@ Register-Click "btnUpgradeAll" {
                     }
                     if ($isCracked) {
                         $crackBlockedCount++
+                        $bulkSkip++
                         Log-Text "[SKIP - BẢO VỆ CRACK/PATCH] Tự động bỏ qua $($appOut.Name) để giữ nguyên file patch."
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } else {
                         [void]$safeOutdatedRows.Add($row)
                         if (($appOut -and $appOut.Source -eq "msstore") -or ($tagOut.DetectedId -match '^9[A-Z0-9]{11}$')) {
                             [void]$msStoreOutdatedRows.Add($row)
+                        } else {
+                            [void]$safeWingetOutdatedRows.Add($row)
                         }
                     }
                 }
             }
 
             if (-not $script:isWindowClosing -and -not $script:cancelRequested) {
+                $runPerAppSafeList = $false
                 if ($crackBlockedCount -eq 0 -and ($outdatedRows.Count -eq 0 -or $safeOutdatedRows.Count -gt 0)) {
                     if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp toàn bộ ứng dụng (nhanh - an toàn)..." }
-                    Log-Text "[*] Đã kiểm tra bảo vệ Crack/Patch xong (0 cảnh báo) - chạy nâng cấp gộp tốc độ cao..."
-                    $bulkCode = Invoke-WinGetWithMsiRetry -Arguments "upgrade --all --source winget --silent --accept-package-agreements --accept-source-agreements"
+                    Log-Text "[*] Đã kiểm tra bảo vệ Crack/Patch xong (0 cảnh báo) - chạy nâng cấp gộp..."
+                    $bulkCode = Invoke-WinGetWithMsiRetry -Arguments "upgrade --all --source winget --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
+                    $bulkOutcome = Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun
+                    if ($bulkCode -ne 0 -or $bulkOutcome -eq "Failed") {
+                        Log-Text "[WARN] Lệnh 'winget upgrade --all' kết thúc với mã $bulkCode (một số gói có thể lỗi hoặc khác scope)."
+                        if ($safeWingetOutdatedRows.Count -gt 0 -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                            Log-Text "[*] Đang kiểm tra và nâng cấp từng gói an toàn trong danh mục..."
+                            $runPerAppSafeList = $true
+                        } elseif ($bulkCode -ne 0) {
+                            $bulkFail++
+                        }
+                    } else {
+                        $bulkOk += $safeWingetOutdatedRows.Count
+                    }
+
                     foreach ($stRow in $msStoreOutdatedRows) {
                         if ($script:isWindowClosing -or $script:cancelRequested) { break }
-                        [void](Invoke-SmartAppUpgrade -Tag $stRow.Tag -IsBulkUpgrade)
-                    }
-                    if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
-                        foreach ($sr in $safeOutdatedRows) {
-                            if ($sr.Tag -and $sr.Tag.CheckBox) { $sr.Tag.CheckBox.IsChecked = $false }
+                        $stCode = Invoke-CatalogUpgradeWithFallback -Tag $stRow.Tag -IsBulkUpgrade
+                        if ($stCode -eq 0) {
+                            Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($stRow.Tag.App.Name)"
+                            $bulkOk++
+                            if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
+                        } elseif ($stCode -eq 2) {
+                            Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($stRow.Tag.App.Name) để giữ nguyên file patch."
+                            $bulkSkip++
+                            if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
+                        } elseif ($stCode -eq 3) {
+                            Log-Text "   [INFO - ĐÃ LÀ BẢN MỚI NHẤT] $($stRow.Tag.App.Name)"
+                            $bulkAlready++
+                        } elseif ($stCode -eq 4) {
+                            Log-Text "   [WARN - CHƯA THAY ĐỔI PHIÊN BẢN] $($stRow.Tag.App.Name) chưa ghi nhận phiên bản mới."
+                            $bulkFail++
+                        } elseif ($stCode -eq 5) {
+                            $bulkSkip++
+                        } elseif ($stCode -ne -2 -and -not $script:cancelRequested) {
+                            Log-Text "   [ERR - LỖI NÂNG CẤP] $($stRow.Tag.App.Name) (Exit Code: $stCode)"
+                            $bulkFail++
                         }
                     }
                 } elseif ($safeOutdatedRows.Count -gt 0) {
-                    $totalOut = $safeOutdatedRows.Count
+                    $runPerAppSafeList = $true
+                    $safeWingetOutdatedRows = $safeOutdatedRows
+                }
+
+                if ($runPerAppSafeList -and $safeWingetOutdatedRows.Count -gt 0) {
+                    $totalOut = $safeWingetOutdatedRows.Count
                     $idxOut = 0
-                    foreach ($row in $safeOutdatedRows) {
+                    foreach ($row in $safeWingetOutdatedRows) {
                         if ($script:isWindowClosing -or $script:cancelRequested) { break }
                         $idxOut++
                         $tagOut = $row.Tag
-                        if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
+                        if ($progressBar) {
+                            $progressBar.IsIndeterminate = $false
+                            $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100)
+                        }
                         if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..." }
                         Log-Text "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..."
-                        $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut -IsBulkUpgrade
+                        $codeOut = Invoke-CatalogUpgradeWithFallback -Tag $tagOut -IsBulkUpgrade
                         if ($codeOut -eq 0) {
                             Log-Text "   [OK - ĐÃ NÂNG CẤP THÀNH CÔNG] $($tagOut.App.Name)"
+                            $bulkOk++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 2) {
                             Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($tagOut.App.Name) để giữ nguyên file patch."
+                            $bulkSkip++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
-                        } else {
-                            Log-Text "   [ERR - LỖI NÂNG CẤP HOẶC ĐÃ MỚI NHẤT] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                        } elseif ($codeOut -eq 3) {
+                            Log-Text "   [INFO - ĐÃ LÀ BẢN MỚI NHẤT] $($tagOut.App.Name)"
+                            $bulkAlready++
+                        } elseif ($codeOut -eq 4) {
+                            Log-Text "   [WARN - CHƯA THAY ĐỔI PHIÊN BẢN] $($tagOut.App.Name) chưa ghi nhận phiên bản mới."
+                            $bulkFail++
+                        } elseif ($codeOut -eq 5) {
+                            $bulkSkip++
+                        } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
+                            Log-Text "   [ERR - LỖI NÂNG CẤP] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                            $bulkFail++
                         }
                     }
                 }
@@ -5915,17 +6349,29 @@ Register-Click "btnUpgradeAll" {
 
         if (-not $script:isWindowClosing) {
             if ($progressBar) { $progressBar.Value = 0 }
+            if (-not $script:isUpdatingUninstaller) { $script:cachedUninstallerApps = @() }
+            if ($script:uninstallerLoadedOnce) { $script:uninstallerStale = $true }
             if ($script:cancelRequested) {
                 if ($txtStatus) { $txtStatus.Text = "Đã hủy nâng cấp theo yêu cầu." }
                 Log-Text "[!] Đã dừng tiến trình nâng cấp theo yêu cầu."
+            } elseif ($bulkFail -gt 0) {
+                if ($txtStatus) { $txtStatus.Text = "Nâng cấp xong với $bulkFail lỗi ($bulkOk thành công)" }
+                Log-Text "[WARN] Nâng cấp kết thúc với $bulkFail lỗi ($bulkOk thành công, $bulkAlready đã mới nhất, $bulkSkip bỏ qua)."
             } else {
                 if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-                Log-Text "[OK] Hoàn tất tiến trình nâng cấp phần mềm."
+                Log-Text "[OK] Hoàn tất tiến trình nâng cấp phần mềm ($bulkOk thành công, $bulkAlready đã mới nhất, $bulkSkip bỏ qua)."
             }
-            if ($script:uninstallerLoadedOnce) { $script:uninstallerStale = $true }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
                 Scan-And-ColorizeApps
+                if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
+                    foreach ($sr in $safeOutdatedRows) {
+                        if ($sr.Tag -and $sr.Tag.Status -ne "OUTDATED" -and $sr.Tag.CheckBox -and $sr.Tag.CheckBox.IsChecked -eq $true) {
+                            $sr.Tag.CheckBox.IsChecked = $false
+                        }
+                    }
+                    Update-SelectionCount
+                }
                 if (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue) {
                     Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "upgrade-all"
                 }

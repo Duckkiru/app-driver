@@ -5251,15 +5251,17 @@ namespace DuckUtil
 
                 using (var fs = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    int headLen = (int)Math.Min(1048576L, fs.Length);
+                    const long MaxHeadBytes = 4194304L;
+                    const long MaxTailBytes = 2097152L;
+                    int headLen = (int)Math.Min(MaxHeadBytes, fs.Length);
                     byte[] headBuf = new byte[headLen];
                     int headRead = fs.Read(headBuf, 0, headLen);
                     string matched = DetectFrameworkFromBuffer(headBuf, headRead);
                     if (!string.IsNullOrEmpty(matched)) return matched;
 
-                    if (fs.Length > 1048576L)
+                    if (fs.Length > MaxHeadBytes)
                     {
-                        int tailLen = (int)Math.Min(524288L, fs.Length - headLen);
+                        int tailLen = (int)Math.Min(MaxTailBytes, fs.Length - headLen);
                         if (tailLen > 0)
                         {
                             fs.Seek(-tailLen, SeekOrigin.End);
@@ -5274,9 +5276,20 @@ namespace DuckUtil
                 try
                 {
                     var fvi = FileVersionInfo.GetVersionInfo(exePath);
-                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "") + " " + (fvi.CompanyName ?? "");
+                    string origName = fvi.OriginalFilename ?? "";
+                    string intName = fvi.InternalName ?? "";
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "") + " " + (fvi.CompanyName ?? "") + " " + (fvi.Comments ?? "") + " " + intName;
+                    if (origName.Equals("Update.exe", StringComparison.OrdinalIgnoreCase) ||
+                        desc.IndexOf("Squirrel", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("Velopack", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "Squirrel";
                     if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
                         return "InnoSetup";
+                    if (desc.IndexOf("Nullsoft", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("NSIS", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "NSIS";
+                    if (desc.IndexOf("WiX", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "WiX";
                     if (desc.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
                         return "InstallShield";
                     if (desc.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -5311,6 +5324,15 @@ namespace DuckUtil
                 uni.IndexOf("BitRock InstallBuilder", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "BitRock";
+            }
+            if (ascii.IndexOf("Squirrel.Windows", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("SquirrelTemp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("SquirrelAware", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Squirrel.Windows", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("SquirrelTemp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("Velopack", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "Squirrel";
             }
             if (ascii.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 ascii.IndexOf("InnoSetup", StringComparison.OrdinalIgnoreCase) >= 0 ||

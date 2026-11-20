@@ -1,6 +1,7 @@
 ﻿$script:activeChildProcess   = $null
 $script:activeChildProcesses = [System.Collections.Generic.List[object]]::new()
 $script:isWindowClosing      = $false
+$script:lastCliRun           = $null
 
 function Stop-ChildProcessTree {
     param([object]$Proc)
@@ -96,6 +97,10 @@ function Log-Text {
 }
 
 function Run-CliStream {
+    <#
+    .SYNOPSIS
+        Execute an external command without blocking the WPF Dispatcher, optionally capturing UTF-8 output.
+    #>
     param(
         [Parameter(Mandatory = $true)]
         [string]$FileName,
@@ -103,13 +108,26 @@ function Run-CliStream {
         [Alias("Args")]
         [string]$Arguments = "",
         [switch]$IsolateStdin,
-        [switch]$AllowCancel
+        [switch]$AllowCancel,
+        [switch]$CaptureOutput,
+        [switch]$ReturnResult
     )
 
+    $script:lastCliRun = [PSCustomObject]@{
+        FileName  = $FileName
+        Arguments = $Arguments
+        ExitCode  = -1
+        StdOut    = ""
+        StdErr    = ""
+    }
+
     if ($script:isWindowClosing) {
+        if ($ReturnResult) { return $script:lastCliRun }
         return -1
     }
     if ($AllowCancel -and $script:cancelRequested) {
+        $script:lastCliRun.ExitCode = -2
+        if ($ReturnResult) { return $script:lastCliRun }
         return -2
     }
 
@@ -123,9 +141,17 @@ function Run-CliStream {
         $pinfo.FileName = $FileName
         $pinfo.Arguments = $Arguments
         $pinfo.UseShellExecute = $false
-        $pinfo.CreateNoWindow = $false
-        $pinfo.RedirectStandardOutput = $false
-        $pinfo.RedirectStandardError = $false
+        if ($CaptureOutput) {
+            $pinfo.CreateNoWindow = $true
+            $pinfo.RedirectStandardOutput = $true
+            $pinfo.RedirectStandardError = $true
+            $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+            $pinfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+        } else {
+            $pinfo.CreateNoWindow = $false
+            $pinfo.RedirectStandardOutput = $false
+            $pinfo.RedirectStandardError = $false
+        }
         if ($IsolateStdin) {
             $pinfo.RedirectStandardInput = $true
         }
@@ -133,10 +159,18 @@ function Run-CliStream {
         $p = [System.Diagnostics.Process]::Start($pinfo)
         if ($null -eq $p) {
             Log-Text "[!] Không thể khởi động tiến trình: $FileName"
+            if ($ReturnResult) { return $script:lastCliRun }
             return -1
         }
         if ($IsolateStdin) {
             try { $p.StandardInput.Close() } catch {}
+        }
+
+        $readTask = $null
+        $errTask = $null
+        if ($CaptureOutput) {
+            $readTask = $p.StandardOutput.ReadToEndAsync()
+            $errTask = $p.StandardError.ReadToEndAsync()
         }
 
         $prevActiveChild = $script:activeChildProcess
@@ -155,6 +189,9 @@ function Run-CliStream {
                 [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds 3600 -CancelCheck $cancelCb)
                 if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
                     Stop-ChildProcessTree $p
+                } elseif ($CaptureOutput -and $null -ne $readTask -and $null -ne $errTask) {
+                    $flushTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]]@($readTask, $errTask))
+                    [void](Wait-TaskNonBlocking -Task $flushTask -TimeoutSeconds 2.0 -CancelCheck $cancelCb)
                 }
             } else {
                 while ($true) {
@@ -171,18 +208,65 @@ function Run-CliStream {
                     }
                     Start-Sleep -Milliseconds 25
                 }
+                if ($CaptureOutput -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested) -and $null -ne $readTask -and $null -ne $errTask) {
+                    $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
+                    while ((-not $readTask.IsCompleted -or -not $errTask.IsCompleted) -and $flushSw.ElapsedMilliseconds -lt 1500) {
+                        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                        Start-Sleep -Milliseconds 20
+                    }
+                }
             }
 
             if ($AllowCancel -and $script:cancelRequested) {
+                $script:lastCliRun.ExitCode = -2
+                if ($ReturnResult) { return $script:lastCliRun }
                 return -2
             }
             if (-not $script:isWindowClosing) {
-                try { [void]$p.WaitForExit(1000) } catch {}
+                try { [void]$p.WaitForExit(3000) } catch {}
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
             }
             $exitCode = try {
                 if ($p.HasExited) { $p.ExitCode } else { -1 }
             } catch { -1 }
+
+            $stdOutText = ""
+            $stdErrText = ""
+            if ($CaptureOutput) {
+                if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $stdOutText = [string]$readTask.Result
+                }
+                if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $stdErrText = [string]$errTask.Result
+                }
+                if (-not [string]::IsNullOrWhiteSpace($stdOutText)) {
+                    foreach ($rawOutLine in ($stdOutText -split "`n")) {
+                        $cleanLine = ($rawOutLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '')
+                        if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+                        $cleanLine = $cleanLine.Trim()
+                        if ([string]::IsNullOrWhiteSpace($cleanLine)) { continue }
+                        if ($cleanLine -match '^[-\\|/]+$' -or $cleanLine -match '^\s*\d+(\.\d+)?\s*(KB|MB|GB)\s*/\s*\d+') { continue }
+                        Log-Text "   $cleanLine"
+                    }
+                }
+                if (-not [string]::IsNullOrWhiteSpace($stdErrText)) {
+                    foreach ($rawErrLine in ($stdErrText -split "`n")) {
+                        $cleanErr = ($rawErrLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '').Trim()
+                        if (-not [string]::IsNullOrWhiteSpace($cleanErr)) {
+                            Log-Text "   [stderr] $cleanErr"
+                        }
+                    }
+                }
+            }
+
+            $script:lastCliRun = [PSCustomObject]@{
+                FileName  = $FileName
+                Arguments = $Arguments
+                ExitCode  = $exitCode
+                StdOut    = $stdOutText
+                StdErr    = $stdErrText
+            }
+            if ($ReturnResult) { return $script:lastCliRun }
             return $exitCode
         } finally {
             try { [void]$script:activeChildProcesses.Remove($p) } catch {}
@@ -202,6 +286,7 @@ function Run-CliStream {
         }
     } catch {
         Log-Text "[!] Lỗi khi thực thi lệnh [$FileName $Arguments]: $($_.Exception.Message)"
+        if ($ReturnResult) { return $script:lastCliRun }
         return -1
     }
 }

@@ -33,15 +33,18 @@ namespace DuckUtil
     public static class AppCatalogEngine
     {
         private static readonly Regex _rxCleanParens = new Regex(@"\((?!x64|x86|arm64).*?\)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex _rxCleanVerWord = new Regex(@"\b(version|ver|v|release)\s*\d+(\.\d+)*[^\s]*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxCleanVerWord = new Regex(@"(?:\b(?:version|ver|release)\s*\d+(?:\.\d+)*[^\s]*|\bv\.?\d+(?:\.\d+)*\b)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxCleanVerNum = new Regex(@"\b\d+(\.\d+){1,4}(-[a-z0-9.]+)?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxCleanTrailingTerms = new Regex(@"(?<=\s)(?:browser|desktop|lts|client|free|ce|community|end-user|stable|edition|x64|x86|arm64|64-bit|32-bit)(?=\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxMultiSpace = new Regex(@"\s+", RegexOptions.Compiled);
-        private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
-        private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
+        private static readonly Regex _rxDottedVer = new Regex(@"(?<![a-zA-Z0-9])v?(\d+(?:\.\d+)+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxSingleVer = new Regex(@"(?<![a-zA-Z0-9])v?(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxAnyDigits = new Regex(@"\d+", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
-        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(canary|nightly|dev|alpha|beta|preview|pre|rc)(?:[.+_-]*(\d+))?(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex _rxTrailingLetter = new Regex(@"^\s*v?\d+(?:[.+_-]\d+)*([a-z])(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
+        private static readonly Regex _rxPrereleaseTag = new Regex(@"(?:^|[-.+_\s])?(canary|nightly|dev|alpha|beta|preview|pre|rc|insiders?|experimental|exp|snapshot)(?![a-z])(?:[.+_-]*(\d+(?:\.\d+)*))?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNumericPrerelease = new Regex(@"^-(\d+(?:\.\d+)*)(?=$|[\s(])", RegexOptions.Compiled);
+        private static readonly Regex _rxTrailingLetter = new Regex(@"^([a-z])(?:\s|$|\()", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxBracketBuildVer = new Regex(@"^\s*(?:[a-zA-Z]+\s+)?\[(\d+(?:\.\d+)+)\]\s*$", RegexOptions.Compiled);
 
         public static string CleanCatalogAppName(string name)
         {
@@ -49,10 +52,7 @@ namespace DuckUtil
             string c = _rxCleanParens.Replace(name, "").Replace("(", "").Replace(")", "").Trim().ToLowerInvariant();
             c = _rxCleanVerWord.Replace(c, "");
             c = _rxCleanVerNum.Replace(c, "");
-            foreach (string term in _cleanTerms)
-            {
-                c = c.Replace(term, "");
-            }
+            c = _rxCleanTrailingTerms.Replace(c, "");
             c = _rxMultiSpace.Replace(c, " ").Trim();
             return c;
         }
@@ -71,40 +71,30 @@ namespace DuckUtil
             return sb.ToString();
         }
 
-        private static int GetPrereleaseRank(string verStr, out long preNum)
+        private static string StripBuildMetadata(string verStr)
         {
-            preNum = 0L;
-            if (string.IsNullOrWhiteSpace(verStr)) return 100;
-            Match m = _rxPrerelease.Match(verStr);
-            if (!m.Success) return 100;
-            string tag = m.Groups[1].Value.ToLowerInvariant();
-            if (m.Groups[2].Success) long.TryParse(m.Groups[2].Value, out preNum);
-            if (tag == "canary" || tag == "nightly" || tag == "dev") return 1;
-            if (tag == "alpha") return 2;
-            if (tag == "beta") return 3;
-            if (tag == "pre" || tag == "preview") return 4;
-            if (tag == "rc") return 5;
-            return 10;
-        }
-
-        private static int GetTrailingLetterScore(string verStr)
-        {
-            if (string.IsNullOrWhiteSpace(verStr)) return 0;
-            if (_rxPrerelease.IsMatch(verStr)) return 0;
-            Match m = _rxTrailingLetter.Match(verStr);
-            if (!m.Success) return 0;
-            char ch = char.ToLowerInvariant(m.Groups[1].Value[0]);
-            return (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 1) : 0;
-        }
-
-        public static long[] GetVersionNumbers(string verStr)
-        {
-            if (string.IsNullOrWhiteSpace(verStr)) return new long[0];
+            if (string.IsNullOrWhiteSpace(verStr)) return "";
             string s = verStr.Trim();
             if (s.StartsWith("<")) s = s.Substring(1).Trim();
-            Match m = _rxVerExtract.Match(s);
-            if (!m.Success) return new long[0];
-            string[] parts = _rxVerSplit.Split(m.Value);
+            int plusIdx = s.IndexOf('+');
+            if (plusIdx > 0) s = s.Substring(0, plusIdx).Trim();
+            return s;
+        }
+
+        private static Match MatchCoreVersionSpan(string cleanVer)
+        {
+            if (string.IsNullOrEmpty(cleanVer)) return Match.Empty;
+            Match m = _rxDottedVer.Match(cleanVer);
+            if (m.Success) return m;
+            m = _rxSingleVer.Match(cleanVer);
+            if (m.Success) return m;
+            return _rxAnyDigits.Match(cleanVer);
+        }
+
+        private static long[] ParseNumericSegments(string dotStr)
+        {
+            if (string.IsNullOrEmpty(dotStr)) return new long[0];
+            string[] parts = dotStr.Split('.');
             var nums = new List<long>(parts.Length);
             foreach (string p in parts)
             {
@@ -114,6 +104,84 @@ namespace DuckUtil
             return nums.ToArray();
         }
 
+        private static int GetPrereleaseRankAndNumbers(string verStr, out long[] preNums, out int trailingLetter)
+        {
+            preNums = new long[0];
+            trailingLetter = 0;
+            string s = StripBuildMetadata(verStr);
+            if (string.IsNullOrEmpty(s)) return 100;
+
+            Match mCore = MatchCoreVersionSpan(s);
+            string prefix = mCore.Success ? s.Substring(0, mCore.Index) : "";
+            string suffix = mCore.Success ? s.Substring(mCore.Index + mCore.Length) : s;
+
+            Match mPre = !string.IsNullOrEmpty(suffix) ? _rxPrereleaseTag.Match(suffix) : Match.Empty;
+            if (!mPre.Success && !string.IsNullOrEmpty(prefix))
+            {
+                mPre = _rxPrereleaseTag.Match(prefix);
+                if (mPre.Success)
+                {
+                    // Do not steal digits from a preceding token if prefix ends right before core version
+                    string tagOnly = mPre.Groups[1].Value.ToLowerInvariant();
+                    return MapPrereleaseTagRank(tagOnly);
+                }
+            }
+            if (mPre.Success)
+            {
+                string tag = mPre.Groups[1].Value.ToLowerInvariant();
+                if (mPre.Groups[2].Success) preNums = ParseNumericSegments(mPre.Groups[2].Value);
+                return MapPrereleaseTagRank(tag);
+            }
+
+            if (!string.IsNullOrEmpty(suffix))
+            {
+                Match mNumPre = _rxNumericPrerelease.Match(suffix.TrimEnd());
+                if (mNumPre.Success)
+                {
+                    preNums = ParseNumericSegments(mNumPre.Groups[1].Value);
+                    return 0;
+                }
+                Match mLet = _rxTrailingLetter.Match(suffix);
+                if (mLet.Success)
+                {
+                    char ch = char.ToLowerInvariant(mLet.Groups[1].Value[0]);
+                    trailingLetter = (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 1) : 0;
+                }
+            }
+
+            return 100;
+        }
+
+        private static int MapPrereleaseTagRank(string tag)
+        {
+            if (tag == "canary" || tag == "nightly" || tag == "dev" || tag == "insider" || tag == "insiders" || tag == "snapshot") return 1;
+            if (tag == "alpha" || tag == "exp" || tag == "experimental") return 2;
+            if (tag == "beta") return 3;
+            if (tag == "pre" || tag == "preview") return 4;
+            if (tag == "rc") return 5;
+            return 10;
+        }
+
+        public static long[] GetVersionNumbers(string verStr)
+        {
+            string s = StripBuildMetadata(verStr);
+            if (string.IsNullOrEmpty(s)) return new long[0];
+            Match m = MatchCoreVersionSpan(s);
+            if (!m.Success) return new long[0];
+            string cap = m.Groups.Count > 1 && m.Groups[1].Success ? m.Groups[1].Value : m.Value;
+            return ParseNumericSegments(cap);
+        }
+
+        private static bool TryGetBracketBuildNumbers(string cleanVer, out long[] brNums)
+        {
+            brNums = new long[0];
+            if (string.IsNullOrEmpty(cleanVer)) return false;
+            Match m = _rxBracketBuildVer.Match(cleanVer);
+            if (!m.Success) return false;
+            brNums = ParseNumericSegments(m.Groups[1].Value);
+            return brNums.Length >= 2 && brNums.Length <= 3 && brNums[0] >= 1000;
+        }
+
         public static int CompareAppVersions(string verA, string verB)
         {
             long[] a = GetVersionNumbers(verA);
@@ -121,6 +189,36 @@ namespace DuckUtil
             if (a.Length == 0 && b.Length == 0) return 0;
             if (a.Length > 0 && b.Length == 0) return 1;
             if (a.Length == 0 && b.Length > 0) return -1;
+
+            long[] brA, brB;
+            bool isBrA = TryGetBracketBuildNumbers(StripBuildMetadata(verA), out brA);
+            bool isBrB = TryGetBracketBuildNumbers(StripBuildMetadata(verB), out brB);
+            if (isBrA != isBrB)
+            {
+                long[] br = isBrA ? brA : brB;
+                long[] full = isBrA ? b : a;
+                if (full.Length > 0 && full[0] < 1000)
+                {
+                    int cmpFullVsBr = 0;
+                    if (full.Length >= 3 && full[2] >= 1000)
+                    {
+                        int tailLen = full.Length - 2;
+                        int maxSeg = Math.Max(tailLen, br.Length);
+                        for (int i = 0; i < maxSeg; i++)
+                        {
+                            long fv = i < tailLen ? full[2 + i] : 0L;
+                            long bv = i < br.Length ? br[i] : 0L;
+                            if (fv > bv) { cmpFullVsBr = 1; break; }
+                            if (fv < bv) { cmpFullVsBr = -1; break; }
+                        }
+                    }
+                    else
+                    {
+                        cmpFullVsBr = 1;
+                    }
+                    return isBrA ? -cmpFullVsBr : cmpFullVsBr;
+                }
+            }
             int maxLen = Math.Max(a.Length, b.Length);
             for (int i = 0; i < maxLen; i++)
             {
@@ -129,14 +227,23 @@ namespace DuckUtil
                 if (va > vb) return 1;
                 if (va < vb) return -1;
             }
-            long preNumA, preNumB;
-            int rankA = GetPrereleaseRank(verA, out preNumA);
-            int rankB = GetPrereleaseRank(verB, out preNumB);
+            long[] preNumsA, preNumsB;
+            int sufA, sufB;
+            int rankA = GetPrereleaseRankAndNumbers(verA, out preNumsA, out sufA);
+            int rankB = GetPrereleaseRankAndNumbers(verB, out preNumsB, out sufB);
             if (rankA > rankB) return 1;
             if (rankA < rankB) return -1;
-            if (rankA < 100 && preNumA != preNumB) return preNumA > preNumB ? 1 : -1;
-            int sufA = GetTrailingLetterScore(verA);
-            int sufB = GetTrailingLetterScore(verB);
+            if (rankA < 100)
+            {
+                int maxPre = Math.Max(preNumsA.Length, preNumsB.Length);
+                for (int i = 0; i < maxPre; i++)
+                {
+                    long pa = i < preNumsA.Length ? preNumsA[i] : 0L;
+                    long pb = i < preNumsB.Length ? preNumsB[i] : 0L;
+                    if (pa > pb) return 1;
+                    if (pa < pb) return -1;
+                }
+            }
             if (sufA > sufB) return 1;
             if (sufA < sufB) return -1;
             return 0;
@@ -152,13 +259,14 @@ namespace DuckUtil
             bool hasDigit = false;
             foreach (char c in av) { if (c >= '0' && c <= '9') { hasDigit = true; break; } }
             if (!hasDigit) return false;
-            if (string.IsNullOrWhiteSpace(installedVer)) return true;
+            if (string.IsNullOrWhiteSpace(installedVer)) return false;
             string iv = installedVer.Trim();
-            if (iv.StartsWith("<")) return true;
+            if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase)) return false;
             bool hasIvDigit = false;
             foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
-            if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
+            if (!hasIvDigit) return false;
             int cmp = CompareAppVersions(av, iv);
+            if (iv.StartsWith("<")) return cmp >= 0;
             return cmp > 0;
         }
 
@@ -222,9 +330,49 @@ namespace DuckUtil
             return pos;
         }
 
+        private static int FindNextColumnStartOrEnd(string line, int pos, int maxEnd)
+        {
+            int limit = (maxEnd > pos && maxEnd <= line.Length) ? maxEnd : line.Length;
+            if (pos < 0 || pos >= limit) return limit;
+            if (char.IsWhiteSpace(line[pos]) || (pos > 0 && char.IsWhiteSpace(line[pos - 1]))) return pos;
+            int j = pos;
+            while (j < limit && !char.IsWhiteSpace(line[j])) j++;
+            while (j < limit && char.IsWhiteSpace(line[j])) j++;
+            return j;
+        }
+
+        private static void SplitTailAvailAndSource(string tail, out string avail, out string src)
+        {
+            avail = "";
+            src = "";
+            if (string.IsNullOrWhiteSpace(tail)) return;
+            string t = tail.Trim();
+            if (IsWingetSourceToken(t))
+            {
+                src = t;
+                return;
+            }
+            int lastSpace = -1;
+            for (int i = t.Length - 1; i >= 0; i--)
+            {
+                if (char.IsWhiteSpace(t[i])) { lastSpace = i; break; }
+            }
+            if (lastSpace > 0)
+            {
+                string lastTok = t.Substring(lastSpace + 1).Trim();
+                if (IsWingetSourceToken(lastTok))
+                {
+                    src = lastTok;
+                    avail = t.Substring(0, lastSpace).Trim();
+                    return;
+                }
+            }
+            avail = t;
+        }
+
         private static string[] SliceRowColumnsByPositions(string line, int cId, int cVer, int cAvail, int cSrc)
         {
-            string appName = "", appId = "", version = "", avail = "";
+            string appName = "", appId = "", version = "", avail = "", src = "";
             if (cId > 0 && line.Length > cId)
             {
                 cId = SnapWingetColumnBoundary(line, cId, 0);
@@ -232,24 +380,77 @@ namespace DuckUtil
                 if (cVer > cId && line.Length > cVer)
                 {
                     cVer = SnapWingetColumnBoundary(line, cVer, cId);
-                    appId = line.Substring(cId, cVer - cId).Trim();
-                    if (cAvail > cVer && line.Length > cAvail)
+                    if (cVer > cId && cVer < line.Length && !char.IsWhiteSpace(line[cVer]) && !char.IsWhiteSpace(line[cVer - 1]))
                     {
-                        cAvail = SnapWingetColumnBoundary(line, cAvail, cVer);
-                        version = line.Substring(cVer, cAvail - cVer).Trim();
-                        if (cSrc > cAvail && line.Length > cSrc)
+                        cVer = FindNextColumnStartOrEnd(line, cVer, line.Length);
+                    }
+                    appId = (cVer < line.Length) ? line.Substring(cId, cVer - cId).Trim() : line.Substring(cId).Trim();
+                    if (cVer < line.Length)
+                    {
+                        if (cAvail > cVer && line.Length > cAvail)
                         {
-                            cSrc = SnapWingetColumnBoundary(line, cSrc, cAvail);
-                            avail = line.Substring(cAvail, cSrc - cAvail).Trim();
+                            // Never cut a contiguous Version token at cAvail; advance past any overflowing Version token
+                            int availStart = FindNextColumnStartOrEnd(line, cAvail, line.Length);
+                            if (availStart <= cVer) availStart = cAvail;
+                            if (availStart < line.Length)
+                            {
+                                string verSlice = line.Substring(cVer, availStart - cVer).Trim();
+                                if (verSlice == "<" || verSlice == ">")
+                                {
+                                    while (availStart < line.Length && char.IsWhiteSpace(line[availStart])) availStart++;
+                                    availStart = FindNextColumnStartOrEnd(line, availStart, line.Length);
+                                }
+                            }
+                            if (availStart >= line.Length)
+                            {
+                                version = line.Substring(cVer).Trim();
+                            }
+                            else
+                            {
+                                version = line.Substring(cVer, availStart - cVer).Trim();
+                                if (cSrc > availStart && line.Length > cSrc)
+                                {
+                                    int srcStart = FindNextColumnStartOrEnd(line, cSrc, line.Length);
+                                    avail = line.Substring(availStart, srcStart - availStart).Trim();
+                                    if (srcStart < line.Length) src = line.Substring(srcStart).Trim();
+                                }
+                                else if (cSrc > 0 && cSrc <= availStart && line.Length > availStart)
+                                {
+                                    SplitTailAvailAndSource(line.Substring(availStart), out avail, out src);
+                                }
+                                else
+                                {
+                                    avail = line.Substring(availStart).Trim();
+                                }
+                            }
+                        }
+                        else if (cAvail > 0 && cVer >= cAvail)
+                        {
+                            // Id overflowed past cAvail: slice Version cleanly first, then split remaining Available/Source
+                            int verEnd = cVer;
+                            while (verEnd < line.Length && !char.IsWhiteSpace(line[verEnd])) verEnd++;
+                            string tok = line.Substring(cVer, verEnd - cVer);
+                            if ((tok == "<" || tok == ">") && verEnd < line.Length)
+                            {
+                                int p = verEnd;
+                                while (p < line.Length && char.IsWhiteSpace(line[p])) p++;
+                                while (p < line.Length && !char.IsWhiteSpace(line[p])) p++;
+                                verEnd = p;
+                            }
+                            version = line.Substring(cVer, verEnd - cVer).Trim();
+                            int availStart = verEnd;
+                            while (availStart < line.Length && char.IsWhiteSpace(line[availStart])) availStart++;
+                            if (availStart < line.Length)
+                            {
+                                string tail = line.Substring(availStart).Trim();
+                                if (cSrc > 0) SplitTailAvailAndSource(tail, out avail, out src);
+                                else avail = tail;
+                            }
                         }
                         else
                         {
-                            avail = line.Substring(cAvail).Trim();
+                            version = line.Substring(cVer).Trim();
                         }
-                    }
-                    else
-                    {
-                        version = line.Substring(cVer).Trim();
                     }
                 }
                 else
@@ -257,7 +458,7 @@ namespace DuckUtil
                     appId = line.Substring(cId).Trim();
                 }
             }
-            return new string[] { appName, appId, version, avail };
+            return new string[] { appName, appId, version, avail, src };
         }
 
         private static int GetCharDisplayWidth(int code)
@@ -322,6 +523,88 @@ namespace DuckUtil
             return SliceRowColumnsByPositions(line, cId, cVer, cAvail, cSrc);
         }
 
+        private static string ResolveWingetRowSource(string appId, string srcCol)
+        {
+            if (!string.IsNullOrWhiteSpace(srcCol))
+            {
+                string s = srcCol.Trim();
+                if (s.Equals("msstore", StringComparison.OrdinalIgnoreCase)) return "msstore";
+                return "winget";
+            }
+            if (!string.IsNullOrWhiteSpace(appId) &&
+                (appId.StartsWith("ARP\\", StringComparison.OrdinalIgnoreCase) || appId.StartsWith("MSIX\\", StringComparison.OrdinalIgnoreCase)))
+            {
+                return "local";
+            }
+            return "winget";
+        }
+
+        private static bool IsWingetSourceToken(string tok)
+        {
+            if (string.IsNullOrWhiteSpace(tok)) return false;
+            return tok.Equals("winget", StringComparison.OrdinalIgnoreCase) ||
+                   tok.Equals("msstore", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static readonly HashSet<string> _wingetHeaderTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Name", "Id", "Version", "Available", "Source", "Match", "Tag", "Command", "Moniker"
+        };
+
+        private static List<int> ParseWingetHeaderOffsets(string headerLine)
+        {
+            var offsets = new List<int>();
+            if (string.IsNullOrEmpty(headerLine)) return offsets;
+
+            MatchCollection singleTokens = Regex.Matches(headerLine, @"\S+");
+            if (singleTokens.Count >= 3)
+            {
+                bool allKnown = true;
+                for (int i = 0; i < singleTokens.Count; i++)
+                {
+                    if (!_wingetHeaderTokens.Contains(singleTokens[i].Value))
+                    {
+                        allKnown = false;
+                        break;
+                    }
+                }
+                if (allKnown)
+                {
+                    for (int i = 0; i < singleTokens.Count; i++)
+                    {
+                        offsets.Add(GetDisplayWidthUpToIndex(headerLine, singleTokens[i].Index));
+                    }
+                    return offsets;
+                }
+            }
+
+            MatchCollection groupedMatches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
+            for (int i = 0; i < groupedMatches.Count; i++)
+            {
+                Match gm = groupedMatches[i];
+                MatchCollection subTokens = Regex.Matches(gm.Value, @"\S+");
+                for (int j = 0; j < subTokens.Count; j++)
+                {
+                    if (j == 0 ||
+                        _wingetHeaderTokens.Contains(subTokens[j].Value) ||
+                        _wingetHeaderTokens.Contains(subTokens[j - 1].Value))
+                    {
+                        offsets.Add(GetDisplayWidthUpToIndex(headerLine, gm.Index + subTokens[j].Index));
+                    }
+                }
+            }
+
+            if (offsets.Count < 3 && singleTokens.Count >= 3)
+            {
+                offsets.Clear();
+                for (int i = 0; i < singleTokens.Count; i++)
+                {
+                    offsets.Add(GetDisplayWidthUpToIndex(headerLine, singleTokens[i].Index));
+                }
+            }
+            return offsets;
+        }
+
         public static List<CatalogSensorItem> ParseWingetListOutput(string rawText, bool allowHeaderless, out bool hasTable)
         {
             hasTable = false;
@@ -365,9 +648,7 @@ namespace DuckUtil
                 }
                 else if (!string.IsNullOrEmpty(headerLine))
                 {
-                    MatchCollection matches = Regex.Matches(headerLine, @"\S+(\s\S+)*");
-                    colOffsetsList = new List<int>(matches.Count);
-                    foreach (Match m in matches) colOffsetsList.Add(GetDisplayWidthUpToIndex(headerLine, m.Index));
+                    colOffsetsList = ParseWingetHeaderOffsets(headerLine);
                 }
                 int[] colOffsets = colOffsetsList.ToArray();
 
@@ -375,7 +656,7 @@ namespace DuckUtil
                 {
                     string line = lines[i];
                     if (string.IsNullOrWhiteSpace(line)) continue;
-                    string appName = "", appId = "", version = "", avail = "";
+                    string appName = "", appId = "", version = "", avail = "", srcCol = "";
 
                     if (colOffsets.Length >= 3)
                     {
@@ -395,6 +676,7 @@ namespace DuckUtil
                             appId = sliced[1];
                             version = sliced[2];
                             avail = sliced[3];
+                            srcCol = sliced.Length >= 5 ? sliced[4] : "";
                         }
                         else
                         {
@@ -403,24 +685,74 @@ namespace DuckUtil
                             appId = sliced[1];
                             version = sliced[2];
                             avail = sliced[3];
+                            srcCol = sliced.Length >= 5 ? sliced[4] : "";
                         }
                     }
 
                     if (string.IsNullOrEmpty(appId) || appId.IndexOf(' ') >= 0)
                     {
-                        string[] cols = Regex.Split(line.Trim(), @"\s{2,}");
-                        if (cols.Length >= 2)
+                        string[] tailCols = null;
+                        if (!string.IsNullOrEmpty(appName) && colOffsets.Length >= 3)
                         {
-                            appName = cols[0].Trim();
-                            appId = cols[1].Trim();
-                            version = cols.Length >= 3 ? cols[2].Trim() : "";
-                            avail = cols.Length >= 4 ? cols[3].Trim() : "";
+                            int nameEnd = line.IndexOf(appName, StringComparison.Ordinal);
+                            int searchFrom = (nameEnd >= 0) ? (nameEnd + appName.Length) : 0;
+                            while (searchFrom < line.Length && char.IsWhiteSpace(line[searchFrom])) searchFrom++;
+                            if (searchFrom < line.Length)
+                            {
+                                string[] tCols = Regex.Split(line.Substring(searchFrom).Trim(), @"\s{2,}");
+                                if (tCols.Length >= 1 && !string.IsNullOrWhiteSpace(tCols[0]))
+                                {
+                                    tailCols = tCols;
+                                }
+                            }
+                        }
+                        if (tailCols != null)
+                        {
+                            appId = tailCols[0].Trim();
+                            version = tailCols.Length >= 2 ? tailCols[1].Trim() : "";
+                            string c3 = tailCols.Length >= 3 ? tailCols[2].Trim() : "";
+                            string c4 = tailCols.Length >= 4 ? tailCols[3].Trim() : "";
+                            if (IsWingetSourceToken(c3) && string.IsNullOrEmpty(c4))
+                            {
+                                srcCol = c3;
+                                avail = "";
+                            }
+                            else
+                            {
+                                avail = c3;
+                                if (!string.IsNullOrEmpty(c4)) srcCol = c4;
+                            }
+                        }
+                        else
+                        {
+                            string[] cols = Regex.Split(line.Trim(), @"\s{2,}");
+                            if (cols.Length >= 2)
+                            {
+                                appName = cols[0].Trim();
+                                appId = cols[1].Trim();
+                                version = cols.Length >= 3 ? cols[2].Trim() : "";
+                                string c3 = cols.Length >= 4 ? cols[3].Trim() : "";
+                                string c4 = cols.Length >= 5 ? cols[4].Trim() : "";
+                                if (IsWingetSourceToken(c3) && string.IsNullOrEmpty(c4))
+                                {
+                                    srcCol = c3;
+                                    avail = "";
+                                }
+                                else
+                                {
+                                    avail = c3;
+                                    if (!string.IsNullOrEmpty(c4)) srcCol = c4;
+                                }
+                            }
                         }
                     }
 
                     if (!string.IsNullOrEmpty(appName) && !string.IsNullOrEmpty(appId))
                     {
+                        if (appId.StartsWith("MSIX\\NotepadPlusPlus_", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (IsWingetSourceToken(avail)) { srcCol = avail; avail = ""; }
                         bool hasUpdate = TestAppUpdateGenuine(version, avail);
+                        string rowSrc = (colOffsets.Length < 5 && string.IsNullOrEmpty(srcCol)) ? "winget" : ResolveWingetRowSource(appId, srcCol);
                         parsed.Add(new CatalogSensorItem
                         {
                             Name = appName,
@@ -429,7 +761,7 @@ namespace DuckUtil
                             Available = hasUpdate ? avail : "",
                             HasUpdate = hasUpdate,
                             CleanName = CleanCatalogAppName(appName),
-                            Source = "winget"
+                            Source = rowSrc
                         });
                     }
                 }
@@ -448,8 +780,12 @@ namespace DuckUtil
                         string appName = cols[0].Trim();
                         string appId = cols[1].Trim();
                         if (!Regex.IsMatch(appId, @"^(ARP|MSIX)\\|\S+\.\S+")) continue;
+                        if (appId.StartsWith("MSIX\\NotepadPlusPlus_", StringComparison.OrdinalIgnoreCase)) continue;
                         string version = cols.Length >= 3 ? cols[2].Trim() : "";
-                        string avail = cols.Length >= 4 ? cols[3].Trim() : "";
+                        string c3 = cols.Length >= 4 ? cols[3].Trim() : "";
+                        string c4 = cols.Length >= 5 ? cols[4].Trim() : "";
+                        string avail = IsWingetSourceToken(c3) ? "" : c3;
+                        string srcCol = IsWingetSourceToken(c3) ? c3 : c4;
                         if (!string.IsNullOrEmpty(appName) && !string.IsNullOrEmpty(appId))
                         {
                             bool hasUpdate = TestAppUpdateGenuine(version, avail);
@@ -461,7 +797,7 @@ namespace DuckUtil
                                 Available = hasUpdate ? avail : "",
                                 HasUpdate = hasUpdate,
                                 CleanName = CleanCatalogAppName(appName),
-                                Source = "winget"
+                                Source = ResolveWingetRowSource(appId, srcCol)
                             });
                         }
                     }
@@ -496,10 +832,14 @@ namespace DuckUtil
                 string userProf = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                 string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-                if (string.Equals(toolKey, "agy", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userProf))
+                if (string.Equals(toolKey, "agy", StringComparison.OrdinalIgnoreCase))
                 {
-                    string agyVerJson = Path.Combine(userProf, @".gemini\bin\agy.version.json");
-                    if (File.Exists(agyVerJson))
+                    string exeDir = Path.GetDirectoryName(exePath);
+                    string localVerJson = !string.IsNullOrEmpty(exeDir) ? Path.Combine(exeDir, "agy.version.json") : "";
+                    string agyVerJson = (!string.IsNullOrEmpty(localVerJson) && File.Exists(localVerJson))
+                        ? localVerJson
+                        : (!string.IsNullOrEmpty(userProf) ? Path.Combine(userProf, @".gemini\bin\agy.version.json") : "");
+                    if (!string.IsNullOrEmpty(agyVerJson) && File.Exists(agyVerJson))
                     {
                         string txt = File.ReadAllText(agyVerJson);
                         Match m = Regex.Match(txt, @"""version""\s*:\s*""([^""]+)""");
@@ -620,6 +960,30 @@ namespace DuckUtil
             return false;
         }
 
+        private static string NormalizeRegistryDisplayVersion(string displayName, string displayVersion)
+        {
+            if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(displayVersion)) return displayVersion;
+            if (displayName.StartsWith("Python ", StringComparison.OrdinalIgnoreCase) &&
+                Regex.IsMatch(displayVersion, @"^\d+\.\d+\.\d{4,}(?:\.\d+)?$"))
+            {
+                Match mPy = Regex.Match(displayName, @"^Python\s+(\d+\.\d+\.\d+(?:\.\d+)?)\b", RegexOptions.IgnoreCase);
+                if (mPy.Success) return mPy.Groups[1].Value;
+            }
+            if ((displayName.IndexOf("Windows Desktop Runtime", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 displayName.IndexOf(".NET SDK", StringComparison.OrdinalIgnoreCase) >= 0) &&
+                Regex.IsMatch(displayVersion, @"^\d+\.\d+\.\d+"))
+            {
+                long[] dvNums = GetVersionNumbers(displayVersion);
+                Match mDn = Regex.Match(displayName, @"\b(\d+\.\d+\.\d+(?:\.\d+)?)\b");
+                if (mDn.Success && dvNums.Length > 0 && dvNums[0] >= 24)
+                {
+                    long[] dnNums = GetVersionNumbers(mDn.Groups[1].Value);
+                    if (dnNums.Length > 0 && dnNums[0] <= 20) return mDn.Groups[1].Value;
+                }
+            }
+            return displayVersion;
+        }
+
         public static List<CatalogSensorItem> ScanCatalogSensors()
         {
             var items = new List<CatalogSensorItem>(256);
@@ -628,12 +992,12 @@ namespace DuckUtil
             {
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X64\"),
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X86\"),
-                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\"),
-                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\")
             };
 
             string vsCodeUserDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Microsoft VS Code");
             bool vsCodeUserExists = Directory.Exists(vsCodeUserDir);
+            var seenUserKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var rt in regTargets)
             {
@@ -647,11 +1011,15 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (rt.Item1 == RegistryHive.CurrentUser && !seenUserKeys.Add(subName)) continue;
                                 using (var sk = uninst.OpenSubKey(subName))
                                 {
                                     if (sk == null) continue;
                                     string parentKey = sk.GetValue("ParentKeyName") as string;
                                     if (!string.IsNullOrEmpty(parentKey)) continue;
+
+                                    string relType = (sk.GetValue("ReleaseType") as string ?? "").Trim();
+                                    if (!string.IsNullOrEmpty(relType) && Regex.IsMatch(relType, @"Update|Hotfix", RegexOptions.IgnoreCase)) continue;
 
                                     string dn = (sk.GetValue("DisplayName") as string ?? "").Trim();
                                     if (string.IsNullOrEmpty(dn)) continue;
@@ -659,7 +1027,11 @@ namespace DuckUtil
                                     var sysComp = sk.GetValue("SystemComponent");
                                     if (sysComp != null && (sysComp.ToString() == "1" || ((sysComp is int) && ((int)sysComp == 1))))
                                     {
-                                        if (dn.IndexOf("Visual Studio", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                        if (dn.IndexOf("Visual Studio Community", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Visual Studio Professional", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Visual Studio Enterprise", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Visual Studio Build Tools", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                            dn.IndexOf("Visual Studio Code", StringComparison.OrdinalIgnoreCase) < 0 &&
                                             dn.IndexOf("Desktop Runtime", StringComparison.OrdinalIgnoreCase) < 0 &&
                                             dn.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) < 0 &&
                                             dn.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) < 0)
@@ -683,8 +1055,9 @@ namespace DuckUtil
 
                                     if (IsBrokenRegistryEntry(uStr, loc)) continue;
 
-                                    string ver = (sk.GetValue("DisplayVersion") as string ?? "Installed").Trim();
-                                    if (string.IsNullOrEmpty(ver)) ver = "Installed";
+                                    string rawVer = (sk.GetValue("DisplayVersion") as string ?? "Installed").Trim();
+                                    if (string.IsNullOrEmpty(rawVer)) rawVer = "Installed";
+                                    string ver = NormalizeRegistryDisplayVersion(dn, rawVer);
                                     string clean = CleanCatalogAppName(dn);
 
                                     items.Add(new CatalogSensorItem
@@ -698,7 +1071,7 @@ namespace DuckUtil
                                         Source = "local"
                                     });
 
-                                    if (dn.IndexOf("Visual Studio Community", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    if (dn.IndexOf("Visual Studio Community 2022", StringComparison.OrdinalIgnoreCase) >= 0)
                                     {
                                         items.Add(new CatalogSensorItem
                                         {
@@ -737,7 +1110,9 @@ namespace DuckUtil
 
                             string[] parts = pkgFull.Split('_');
                             string pkgPrefix = parts.Length > 0 ? parts[0] : pkgFull;
-                            string pkgVer = parts.Length > 1 ? parts[1] : "Installed";
+                            Match mMsixVer = Regex.Match(pkgFull, @"_(\d+(?:\.\d+){1,3})_");
+                            string pkgVer = mMsixVer.Success ? mMsixVer.Groups[1].Value : (parts.Length > 1 ? parts[1] : "Installed");
+                            if (mMsixVer.Success && mMsixVer.Index > 0) pkgPrefix = pkgFull.Substring(0, mMsixVer.Index);
                             string dispName = pkgPrefix;
 
                             try
@@ -1328,6 +1703,10 @@ namespace DuckUtil
             public string Name;
             public string CleanTarget;
             public string CompactTarget;
+            public string PublisherPrefix;
+            public string SecondSegment;
+            public bool HasThreePlusIdParts;
+            public HashSet<string> AliasIdSet;
             public List<AliasPatternPair> CleanAliases;
             public List<AliasPatternPair> AliasEntries;
             public Regex PatternClean;
@@ -1335,6 +1714,14 @@ namespace DuckUtil
             public HashSet<string> TargetTokenSet;
             public bool AllowNoise;
             public bool IsPrev;
+            public bool IsBeta;
+            public bool IsCanary;
+            public bool IsDevChannel;
+            public bool IsNightly;
+            public bool IsAlpha;
+            public bool IsPtb;
+            public bool IsEsr;
+            public bool IsInsiders;
             public bool IsVcRedist;
             public bool IsComm;
             public bool IsPro;
@@ -1367,16 +1754,16 @@ namespace DuckUtil
 
         private static readonly HashSet<string> _matchStopWords = new HashSet<string>(
             new string[] {
-                "microsoft", "windows", "google", "runtime", "desktop", "client", "studio", "server",
+                "microsoft", "windows", "google", "runtime", "desktop", "client", "server",
                 "edition", "community", "x64", "x86", "arm64", "arp", "msix", "machine", "user",
-                "app", "pro", "free", "jdk", "jre", "lts", "cli", "ide", "gui", "vpn", "bit"
+                "app", "pro", "jdk", "jre", "lts", "cli", "ide", "gui", "vpn", "bit"
             }, StringComparer.OrdinalIgnoreCase);
 
         private static readonly Regex _rxTokSplit = new Regex(@"[^a-zA-Z0-9+]+", RegexOptions.Compiled);
         private static readonly Regex _rxSyntheticId = new Regex(@"^(ARP|MSIX|LOCAL)\\", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxAllowNoise = new Regex(@"(Maintenance|Control Panel|Context Menu|AddOn|Installer|Agent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxNoiseName = new Regex(@"(Maintenance Service|Control Panels|Context Menu|SparseApp|SDK AddOn|CoreEditorFonts|Visual Studio Installer|Development Libraries|Standard Library|Test Suite|Tcl/Tk Support|pip Bootstrap)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly Regex _rxNoiseId = new Regex(@"(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxNoiseId = new Regex(@"(MozillaMaintenanceService|ContextMenu|SparseApp|FigmaAgent|NotepadPlusPlus_)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxPyLauncher = new Regex(@"^Python Launcher\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxWordUwp = new Regex(@"\bUWP\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxWordComm = new Regex(@"\bCommunity\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -1387,6 +1774,22 @@ namespace DuckUtil
         private static readonly Regex _rxEndIde = new Regex(@"IDE$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxWordCli = new Regex(@"\bCLI\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxEndCli = new Regex(@"(\.cli|CLI)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordBeta = new Regex(@"\bBeta\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotBeta = new Regex(@"\.Beta(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordCanary = new Regex(@"\bCanary\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotCanary = new Regex(@"\.Canary(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordDevCh = new Regex(@"\b(?:Dev|Developer\s*Edition)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotDevCh = new Regex(@"\.(?:Dev|DeveloperEdition)(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordNightly = new Regex(@"\bNightly\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotNightly = new Regex(@"\.Nightly(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordAlpha = new Regex(@"\bAlpha\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotAlpha = new Regex(@"\.Alpha(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordPtb = new Regex(@"\bPTB\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotPtb = new Regex(@"\.PTB(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordEsr = new Regex(@"\bESR\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotEsr = new Regex(@"\.ESR(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxWordInsiders = new Regex(@"\bInsiders?\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxDotInsiders = new Regex(@"\.Insiders?(?:\.|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxVscName = new Regex(@"VS Code|Visual Studio Code", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxJavaUpdate = new Regex(@"^Java \d+ Update", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex _rxWordJdk = new Regex(@"\bJDK\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -1411,6 +1814,7 @@ namespace DuckUtil
             if (_metaCache.TryGetValue(tId, out cached)) return cached;
 
             string tName = target.Name ?? "";
+            string tNameNoParens = _rxCleanParens.Replace(tName, "").Trim();
             string tCat = target.Category ?? "";
             string cleanTarget = CleanCatalogAppName(tName);
 
@@ -1419,6 +1823,8 @@ namespace DuckUtil
             var queryTokens = new List<string>();
             var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var targetTokenSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var aliasIdSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(tId)) aliasIdSet.Add(tId);
 
             if (cleanTarget.Length >= 4)
             {
@@ -1426,9 +1832,12 @@ namespace DuckUtil
                 for (int i = 0; i < toks.Length; i++)
                 {
                     string qt = toks[i];
-                    if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt))
+                    if (qt.Length >= 2 && !_matchStopWords.Contains(qt))
                     {
-                        if (seenTokens.Add(qt)) queryTokens.Add(qt);
+                        if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && seenTokens.Add(qt))
+                        {
+                            queryTokens.Add(qt);
+                        }
                         targetTokenSet.Add(qt);
                     }
                 }
@@ -1440,6 +1849,7 @@ namespace DuckUtil
                 {
                     string alias = target.Aliases[ai];
                     if (string.IsNullOrWhiteSpace(alias)) continue;
+                    if (alias.IndexOf('.') >= 0 || Regex.IsMatch(alias, @"^9[A-Z0-9]{11}$")) aliasIdSet.Add(alias);
                     string cAl = CleanCatalogAppName(alias);
                     string cmpAl = CompactAlnumKey(cAl.Length > 0 ? cAl : alias);
                     var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Compact = cmpAl, Pattern = null };
@@ -1469,6 +1879,11 @@ namespace DuckUtil
             {
                 queryTokens.Add(compactTarget);
             }
+
+            string[] idSegs = tId.Split('.');
+            string pubPref = idSegs.Length >= 2 ? idSegs[0] : "";
+            string secSeg = idSegs.Length >= 2 ? idSegs[1] : "";
+            bool hasThreePlus = idSegs.Length >= 3;
 
             Regex rxReqPy = null;
             Regex rxReqPyVer = null;
@@ -1520,28 +1935,41 @@ namespace DuckUtil
                 Name = tName,
                 CleanTarget = cleanTarget,
                 CompactTarget = compactTarget,
+                PublisherPrefix = pubPref,
+                SecondSegment = secSeg,
+                HasThreePlusIdParts = hasThreePlus,
+                AliasIdSet = aliasIdSet,
                 CleanAliases = cleanAliases,
                 AliasEntries = aliasEntries,
                 PatternClean = patternClean,
                 QueryTokens = queryTokens,
                 TargetTokenSet = targetTokenSet,
                 AllowNoise = _rxAllowNoise.IsMatch(tName),
-                IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
+                // Strip parenthetical UI notes (e.g. "QuickLook (Space Preview)", "aria2 (Multi-Protocol CLI)") before inferring channel/CLI flags
+                IsPrev = (tNameNoParens.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsBeta = _rxWordBeta.IsMatch(tNameNoParens) || _rxDotBeta.IsMatch(tId),
+                IsCanary = _rxWordCanary.IsMatch(tNameNoParens) || _rxDotCanary.IsMatch(tId),
+                IsDevChannel = _rxWordDevCh.IsMatch(tNameNoParens) || _rxDotDevCh.IsMatch(tId),
+                IsNightly = _rxWordNightly.IsMatch(tNameNoParens) || _rxDotNightly.IsMatch(tId),
+                IsAlpha = _rxWordAlpha.IsMatch(tNameNoParens) || _rxDotAlpha.IsMatch(tId),
+                IsPtb = _rxWordPtb.IsMatch(tNameNoParens) || _rxDotPtb.IsMatch(tId),
+                IsEsr = _rxWordEsr.IsMatch(tNameNoParens) || _rxDotEsr.IsMatch(tId),
+                IsInsiders = _rxWordInsiders.IsMatch(tNameNoParens) || _rxDotInsiders.IsMatch(tId),
                 IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
-                IsComm = _rxWordComm.IsMatch(tName) || _rxDotComm.IsMatch(tId),
-                IsPro = _rxWordPro.IsMatch(tName) || _rxDotPro.IsMatch(tId),
-                IsIde = _rxWordIde.IsMatch(tName) || _rxEndIde.IsMatch(tId),
+                IsComm = _rxWordComm.IsMatch(tNameNoParens) || _rxDotComm.IsMatch(tId),
+                IsPro = _rxWordPro.IsMatch(tNameNoParens) || _rxDotPro.IsMatch(tId),
+                IsIde = _rxWordIde.IsMatch(tNameNoParens) || _rxEndIde.IsMatch(tId),
                 IsAntigravity = tId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0,
-                IsCli = _rxWordCli.IsMatch(tName) || _rxEndCli.IsMatch(tId),
-                IsBt = (tName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0),
-                IsVsc = (tId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(tName),
+                IsCli = _rxWordCli.IsMatch(tNameNoParens) || _rxEndCli.IsMatch(tId),
+                IsBt = (tNameNoParens.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsVsc = (tId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(tNameNoParens),
                 IsVsAny = tId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0,
-                IsEtb = (tId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0),
+                IsEtb = (tId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (tNameNoParens.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0),
                 IsTemurin = tId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0,
                 IsOracleJava = tId.IndexOf("Oracle.Java", StringComparison.OrdinalIgnoreCase) >= 0,
                 IsCorretto = tId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0,
-                IsJdk = _rxWordJdk.IsMatch(tName) || _rxEndJdk.IsMatch(tId),
-                IsJre = _rxWordJre.IsMatch(tName) || _rxEndJre.IsMatch(tId),
+                IsJdk = _rxWordJdk.IsMatch(tNameNoParens) || _rxEndJdk.IsMatch(tId),
+                IsJre = _rxWordJre.IsMatch(tNameNoParens) || _rxEndJre.IsMatch(tId),
                 RxReqPy = rxReqPy,
                 RxReqPyVer = rxReqPyVer,
                 RxReqJava = rxReqJava,
@@ -1563,6 +1991,7 @@ namespace DuckUtil
             if (meta == null || item == null) return false;
             string tId = meta.ID;
             string iName = item.Name ?? "";
+            string iNameNoParens = _rxCleanParens.Replace(iName, "").Trim();
             string iId = item.ID ?? "";
             string iVer = item.Version ?? "";
 
@@ -1576,47 +2005,80 @@ namespace DuckUtil
                 if (!string.Equals(tId, "Python.Launcher", StringComparison.OrdinalIgnoreCase)) return false;
             }
 
-            bool iPrev = (iName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0);
+            bool iPrev = (iNameNoParens.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0);
             if (meta.IsPrev != iPrev && !string.Equals(tId, "Microsoft.PowerToys", StringComparison.OrdinalIgnoreCase)) return false;
+
+            if (meta.IsBeta != (_rxWordBeta.IsMatch(iNameNoParens) || _rxDotBeta.IsMatch(iId))) return false;
+            if (meta.IsCanary != (_rxWordCanary.IsMatch(iNameNoParens) || _rxDotCanary.IsMatch(iId))) return false;
+            if (meta.IsDevChannel != (_rxWordDevCh.IsMatch(iNameNoParens) || _rxDotDevCh.IsMatch(iId))) return false;
+            if (meta.IsNightly != (_rxWordNightly.IsMatch(iNameNoParens) || _rxDotNightly.IsMatch(iId))) return false;
+            if (meta.IsAlpha != (_rxWordAlpha.IsMatch(iNameNoParens) || _rxDotAlpha.IsMatch(iId))) return false;
+            if (meta.IsPtb != (_rxWordPtb.IsMatch(iNameNoParens) || _rxDotPtb.IsMatch(iId))) return false;
+            if (meta.IsEsr != (_rxWordEsr.IsMatch(iNameNoParens) || _rxDotEsr.IsMatch(iId))) return false;
+            if (meta.IsInsiders != (_rxWordInsiders.IsMatch(iNameNoParens) || _rxDotInsiders.IsMatch(iId))) return false;
+
+            if (!_rxSyntheticId.IsMatch(iId) && !meta.AliasIdSet.Contains(iId) && !iId.StartsWith(tId + ".", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(tId, "OpenJS.NodeJS.LTS", StringComparison.OrdinalIgnoreCase) &&
+                    iId.StartsWith("OpenJS.NodeJS", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+                if (meta.PublisherPrefix.Length >= 3 && iId.StartsWith(meta.PublisherPrefix + ".", StringComparison.OrdinalIgnoreCase))
+                {
+                    string[] iSegs = iId.Split('.');
+                    if (iSegs.Length >= 2)
+                    {
+                        if (!string.Equals(iSegs[1], meta.SecondSegment, StringComparison.OrdinalIgnoreCase)) return false;
+                        if (meta.HasThreePlusIdParts) return false;
+                    }
+                }
+            }
 
             if (meta.IsVcRedist && (_rxWordUwp.IsMatch(iName) || iId.IndexOf("VCLibs", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
 
             if (meta.IsComm || meta.IsPro)
             {
-                bool iComm = _rxWordComm.IsMatch(iName) || _rxDotComm.IsMatch(iId);
-                bool iPro = _rxWordPro.IsMatch(iName) || _rxDotPro.IsMatch(iId);
+                bool iComm = _rxWordComm.IsMatch(iNameNoParens) || _rxDotComm.IsMatch(iId);
+                bool iPro = _rxWordPro.IsMatch(iNameNoParens) || _rxDotPro.IsMatch(iId);
                 if ((meta.IsComm && iPro) || (meta.IsPro && iComm)) return false;
             }
 
             if (meta.IsAntigravity || iId.IndexOf("Antigravity", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                bool iIde = _rxWordIde.IsMatch(iName) || _rxEndIde.IsMatch(iId);
+                bool iIde = _rxWordIde.IsMatch(iNameNoParens) || _rxEndIde.IsMatch(iId);
                 if (meta.IsIde != iIde) return false;
             }
 
-            bool iCli = _rxWordCli.IsMatch(iName) || _rxEndCli.IsMatch(iId);
+            bool iCli = _rxWordCli.IsMatch(iNameNoParens) || _rxEndCli.IsMatch(iId);
             if (meta.IsCli != iCli) return false;
 
-            bool iBt = (iName.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0);
+            bool iBt = (iNameNoParens.IndexOf("Build Tools", StringComparison.OrdinalIgnoreCase) >= 0) || (iId.IndexOf("BuildTools", StringComparison.OrdinalIgnoreCase) >= 0);
             if (meta.IsBt != iBt) return false;
 
             if (meta.IsVsAny || iId.IndexOf("VisualStudio", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                bool iVsc = (iId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(iName);
+                bool iVsc = (iId.IndexOf("VisualStudioCode", StringComparison.OrdinalIgnoreCase) >= 0) || _rxVscName.IsMatch(iNameNoParens);
                 if (meta.IsVsc != iVsc) return false;
+                if (meta.IsVsAny && (meta.IsComm || meta.IsPro))
+                {
+                    bool iComm = _rxWordComm.IsMatch(iNameNoParens) || _rxDotComm.IsMatch(iId);
+                    bool iPro = _rxWordPro.IsMatch(iNameNoParens) || _rxDotPro.IsMatch(iId);
+                    if ((meta.IsComm && !iComm) || (meta.IsPro && !iPro)) return false;
+                }
             }
 
-            bool iEtb = (iId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (iName.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0);
+            bool iEtb = (iId.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0) || (iNameNoParens.IndexOf("EverythingToolbar", StringComparison.OrdinalIgnoreCase) >= 0);
             if (meta.IsEtb != iEtb) return false;
 
-            if (meta.IsTemurin && (iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
-            if (meta.IsOracleJava && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+            if (meta.IsTemurin && (iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
+            if (meta.IsOracleJava && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Corretto", StringComparison.OrdinalIgnoreCase) >= 0 || (_rxWordJre.IsMatch(iName) && !_rxJavaUpdate.IsMatch(iName) && iName.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) < 0 && iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) < 0))) return false;
             if (meta.IsCorretto && (iId.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || iId.IndexOf("Oracle", StringComparison.OrdinalIgnoreCase) >= 0 || iName.IndexOf("Temurin", StringComparison.OrdinalIgnoreCase) >= 0 || _rxJavaUpdate.IsMatch(iName))) return false;
 
             if (meta.IsJdk || meta.IsJre)
             {
-                bool iJdk = _rxWordJdk.IsMatch(iName) || _rxEndJdk.IsMatch(iId);
-                bool iJre = _rxWordJre.IsMatch(iName) || _rxEndJre.IsMatch(iId);
+                bool iJdk = _rxWordJdk.IsMatch(iNameNoParens) || _rxEndJdk.IsMatch(iId);
+                bool iJre = _rxWordJre.IsMatch(iNameNoParens) || _rxEndJre.IsMatch(iId);
                 if ((meta.IsJdk && iJre && !iJdk) || (meta.IsJre && iJdk && !iJre)) return false;
             }
 
@@ -1649,9 +2111,82 @@ namespace DuckUtil
                 else if (_rxItemX86.IsMatch(iName) || idForArch.EndsWith(".x86", StringComparison.OrdinalIgnoreCase)) iArch = "x86";
                 else if (_rxItemArm.IsMatch(iName) || idForArch.EndsWith(".arm64", StringComparison.OrdinalIgnoreCase)) iArch = "arm64";
                 if (!string.IsNullOrEmpty(iArch) && !string.Equals(iArch, meta.Arch, StringComparison.OrdinalIgnoreCase)) return false;
+                if (string.IsNullOrEmpty(iArch) && string.Equals(meta.Arch, "x86", StringComparison.OrdinalIgnoreCase)) return false;
             }
 
             return true;
+        }
+
+        private static bool HasNumericVersion(string ver)
+        {
+            if (string.IsNullOrWhiteSpace(ver)) return false;
+            string v = ver.Trim();
+            if (v.Equals("Installed", StringComparison.OrdinalIgnoreCase) || v.Equals("Unknown", StringComparison.OrdinalIgnoreCase)) return false;
+            for (int i = 0; i < v.Length; i++)
+            {
+                if (v[i] >= '0' && v[i] <= '9') return true;
+            }
+            return false;
+        }
+
+        private static CatalogSensorItem SelectPreferredSensorPair(CatalogSensorItem cur, CatalogSensorItem cand)
+        {
+            if (cur == null) return cand;
+            if (cand == null) return cur;
+
+            bool curLocal = string.Equals(cur.Source, "local", StringComparison.OrdinalIgnoreCase);
+            bool candLocal = string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase);
+            int verCmp = CompareAppVersions(cand.Version, cur.Version);
+
+            if (curLocal != candLocal)
+            {
+                CatalogSensorItem locItem = curLocal ? cur : cand;
+                CatalogSensorItem wgItem = curLocal ? cand : cur;
+                if (HasNumericVersion(locItem.Version))
+                {
+                    if (wgItem.HasUpdate && HasNumericVersion(wgItem.Available))
+                    {
+                        if (CompareAppVersions(locItem.Version, wgItem.Available) >= 0) return locItem;
+                        return wgItem;
+                    }
+                    if (!HasNumericVersion(wgItem.Version) || CompareAppVersions(locItem.Version, wgItem.Version) > 0)
+                    {
+                        return locItem;
+                    }
+                }
+                return wgItem;
+            }
+
+            bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
+            bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
+            if (curSyn && !candSyn) return cand;
+            if (!curSyn && candSyn) return cur;
+
+            // Only merge Version/Available when both entries share the same real package ID
+            if (string.Equals(cur.ID ?? "", cand.ID ?? "", StringComparison.OrdinalIgnoreCase))
+            {
+                string bestVer = (verCmp > 0 || string.IsNullOrWhiteSpace(cur.Version)) ? cand.Version : cur.Version;
+                int availCmp = CompareAppVersions(cand.Available, cur.Available);
+                string bestAvail = (availCmp > 0) ? cand.Available : cur.Available;
+                bool mergedUpd = TestAppUpdateGenuine(bestVer, bestAvail);
+                if (!mergedUpd) bestAvail = "";
+                bool useCand = (!cur.HasUpdate && cand.HasUpdate) || (verCmp > 0);
+                CatalogSensorItem baseObj = useCand ? cand : cur;
+                return new CatalogSensorItem
+                {
+                    Name = baseObj.Name,
+                    ID = baseObj.ID,
+                    Version = bestVer,
+                    Available = bestAvail,
+                    HasUpdate = mergedUpd,
+                    CleanName = baseObj.CleanName,
+                    Source = baseObj.Source
+                };
+            }
+
+            if (verCmp > 0) return cand;
+            if (verCmp < 0) return cur;
+            return (!cur.HasUpdate && cand.HasUpdate) ? cand : cur;
         }
 
         private static void SetPreferredEntry(Dictionary<string, CatalogSensorItem> map, string key, CatalogSensorItem cand)
@@ -1663,34 +2198,36 @@ namespace DuckUtil
                 map[key] = cand;
                 return;
             }
-            bool curLocal = string.Equals(cur.Source, "local", StringComparison.OrdinalIgnoreCase);
-            bool candLocal = string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase);
-            if (curLocal && !candLocal) { map[key] = cand; return; }
-            if (!curLocal && candLocal) return;
+            map[key] = SelectPreferredSensorPair(cur, cand);
+        }
 
-            bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
-            bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
-            if (curSyn && !candSyn) { map[key] = cand; return; }
-            if (!curSyn && candSyn) return;
-
-            int verCmp = CompareAppVersions(cand.Version, cur.Version);
-            string bestVer = (verCmp > 0 || string.IsNullOrWhiteSpace(cur.Version)) ? cand.Version : cur.Version;
-            int availCmp = CompareAppVersions(cand.Available, cur.Available);
-            string bestAvail = (availCmp > 0) ? cand.Available : cur.Available;
-            bool mergedUpd = TestAppUpdateGenuine(bestVer, bestAvail);
-            if (!mergedUpd) bestAvail = "";
-            bool useCand = (!cur.HasUpdate && cand.HasUpdate) || (verCmp > 0);
-            CatalogSensorItem baseObj = useCand ? cand : cur;
-            map[key] = new CatalogSensorItem
+        private static void AddBucketEntry(Dictionary<string, List<CatalogSensorItem>> map, string key, CatalogSensorItem cand)
+        {
+            if (string.IsNullOrWhiteSpace(key) || cand == null) return;
+            List<CatalogSensorItem> list;
+            if (!map.TryGetValue(key, out list))
             {
-                Name = baseObj.Name,
-                ID = baseObj.ID,
-                Version = bestVer,
-                Available = bestAvail,
-                HasUpdate = mergedUpd,
-                CleanName = baseObj.CleanName,
-                Source = baseObj.Source
-            };
+                list = new List<CatalogSensorItem>(2);
+                map[key] = list;
+            }
+            list.Add(cand);
+        }
+
+        private static CatalogSensorItem FindBestCompatibleInBucket(CompiledTargetMeta meta, Dictionary<string, List<CatalogSensorItem>> map, string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return null;
+            List<CatalogSensorItem> bucket;
+            if (!map.TryGetValue(key, out bucket)) return null;
+            CatalogSensorItem best = null;
+            for (int i = 0; i < bucket.Count; i++)
+            {
+                CatalogSensorItem cand = bucket[i];
+                if (IsMatchCompatible(meta, cand))
+                {
+                    best = SelectPreferredSensorPair(best, cand);
+                }
+            }
+            return best;
         }
 
         public static double ComputeJaroWinkler(string a, string b)
@@ -1734,36 +2271,102 @@ namespace DuckUtil
             return jaro + (prefix * 0.1 * (1.0 - jaro));
         }
 
+        private static CatalogSensorItem RefineIdMatchWithLocal(
+            CompiledTargetMeta meta,
+            CatalogSensorItem cand,
+            Dictionary<string, CatalogSensorItem> nameMap,
+            Dictionary<string, List<CatalogSensorItem>> cleanNameMap)
+        {
+            if (cand == null || string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase)) return cand;
+            CatalogSensorItem best = cand;
+            CatalogSensorItem alt;
+
+            if (!string.IsNullOrEmpty(cand.Name) && nameMap.TryGetValue(cand.Name, out alt) &&
+                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+            {
+                best = SelectPreferredSensorPair(best, alt);
+            }
+            if (!string.IsNullOrEmpty(meta.Name) && !string.Equals(meta.Name, cand.Name, StringComparison.OrdinalIgnoreCase) &&
+                nameMap.TryGetValue(meta.Name, out alt) &&
+                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+            {
+                best = SelectPreferredSensorPair(best, alt);
+            }
+
+            string[] cleanKeys = new string[] { cand.CleanName ?? "", meta.CleanTarget ?? "" };
+            for (int k = 0; k < cleanKeys.Length; k++)
+            {
+                string ck = cleanKeys[k];
+                if (ck.Length < 2) continue;
+                if (k == 1 && string.Equals(ck, cleanKeys[0], StringComparison.OrdinalIgnoreCase)) continue;
+                List<CatalogSensorItem> bucket;
+                if (cleanNameMap.TryGetValue(ck, out bucket))
+                {
+                    for (int i = 0; i < bucket.Count; i++)
+                    {
+                        CatalogSensorItem loc = bucket[i];
+                        if (string.Equals(loc.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, loc))
+                        {
+                            best = SelectPreferredSensorPair(best, loc);
+                        }
+                    }
+                }
+            }
+            return best;
+        }
+
         private static CatalogSensorItem MatchSingleCatalogTarget(
             CatalogMatchTarget target,
             Dictionary<string, CatalogSensorItem> idMap,
             Dictionary<string, CatalogSensorItem> nameMap,
-            Dictionary<string, CatalogSensorItem> cleanNameMap,
-            Dictionary<string, CatalogSensorItem> compactNameMap,
+            Dictionary<string, List<CatalogSensorItem>> cleanNameMap,
+            Dictionary<string, List<CatalogSensorItem>> compactNameMap,
             Dictionary<string, List<CatalogSensorItem>> tokenIndex,
             Dictionary<CatalogSensorItem, string> itemCompactMap,
-            Dictionary<CatalogSensorItem, HashSet<string>> itemTokenMap)
+            Dictionary<CatalogSensorItem, HashSet<string>> itemNameTokenMap)
         {
             if (target == null) return null;
             string targetId = target.ID ?? "";
             CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
             CatalogSensorItem cand;
 
-            if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+            {
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+            }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
-                if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                }
             }
             if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 AliasPatternPair ap = meta.CleanAliases[a];
                 if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
-                if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand)) return cand;
-                if (ap.Compact.Length >= 4 && compactNameMap.TryGetValue(ap.Compact, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Clean.Length >= 2)
+                {
+                    cand = FindBestCompatibleInBucket(meta, cleanNameMap, ap.Clean);
+                    if (cand != null) return cand;
+                }
+                if (ap.Compact.Length >= 4)
+                {
+                    cand = FindBestCompatibleInBucket(meta, compactNameMap, ap.Compact);
+                    if (cand != null) return cand;
+                }
             }
-            if (meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
-            if (meta.CompactTarget.Length >= 4 && compactNameMap.TryGetValue(meta.CompactTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (meta.CleanTarget.Length >= 2)
+            {
+                cand = FindBestCompatibleInBucket(meta, cleanNameMap, meta.CleanTarget);
+                if (cand != null) return cand;
+            }
+            if (meta.CompactTarget.Length >= 4)
+            {
+                cand = FindBestCompatibleInBucket(meta, compactNameMap, meta.CompactTarget);
+                if (cand != null) return cand;
+            }
 
             if (meta.QueryTokens.Count == 0) return null;
 
@@ -1788,42 +2391,58 @@ namespace DuckUtil
                 CatalogSensorItem item = candidatePool[ci];
                 string iId = item.ID ?? "";
                 string iName = item.Name ?? "";
+                string iNameNoParens = _rxCleanParens.Replace(iName, "").Trim();
                 string iClean = item.CleanName ?? "";
                 int score = 0;
 
                 for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
                 {
                     AliasPatternPair ae = meta.AliasEntries[aeIdx];
-                    if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                    bool isIdLikeAlias = ae.Raw.IndexOf('.') >= 0 || ae.Raw.IndexOf('\\') >= 0;
+                    if (isIdLikeAlias && iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
                     {
                         score = 780;
                         break;
                     }
-                    if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                    string nameForAlias = (ae.Raw.IndexOf('(') >= 0 || _rxItemX64.IsMatch(ae.Raw) || _rxItemX86.IsMatch(ae.Raw) || _rxItemArm.IsMatch(ae.Raw))
+                        ? iName
+                        : iNameNoParens;
+                    if (nameForAlias.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
-                        int cScore = 700 + lenRatio;
-                        if (cScore > score) score = cScore;
+                        Match mAl = ae.Pattern.Match(nameForAlias);
+                        if (mAl.Success && !(mAl.Index >= 4 && nameForAlias.Substring(0, mAl.Index).TrimEnd().EndsWith(" for", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, nameForAlias.Length));
+                            int cScore = 700 + lenRatio;
+                            if (cScore > score) score = cScore;
+                        }
                     }
                 }
 
-                if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
-                    score = 650 + lenRatio;
+                    Match mPc = meta.PatternClean.Match(iClean);
+                    if (mPc.Success &&
+                        !(mPc.Index >= 4 && iClean.Substring(0, mPc.Index).TrimEnd().EndsWith(" for", StringComparison.OrdinalIgnoreCase)) &&
+                        (meta.CleanTarget.Length >= 5 || iClean.StartsWith(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) || (meta.CleanTarget.Length * 2 >= iClean.Length)))
+                    {
+                        int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                        score = 650 + lenRatio;
+                    }
                 }
 
                 if (score == 0 && meta.TargetTokenSet.Count >= 2)
                 {
                     HashSet<string> itSet;
-                    if (itemTokenMap.TryGetValue(item, out itSet) && itSet.Count >= meta.TargetTokenSet.Count)
+                    if (itemNameTokenMap.TryGetValue(item, out itSet) && itSet.Count >= meta.TargetTokenSet.Count)
                     {
                         int hitToks = 0;
                         foreach (string tt in meta.TargetTokenSet)
                         {
                             if (itSet.Contains(tt)) hitToks++;
                         }
-                        if (hitToks == meta.TargetTokenSet.Count)
+                        int minCovPct = meta.TargetTokenSet.Count == 2 ? 66 : 60;
+                        if (hitToks == meta.TargetTokenSet.Count && (hitToks * 100 >= itSet.Count * minCovPct))
                         {
                             int jacc = (hitToks * 30) / Math.Max(1, itSet.Count);
                             score = 670 + jacc;
@@ -1835,20 +2454,24 @@ namespace DuckUtil
                 {
                     string itemCmp;
                     itemCompactMap.TryGetValue(item, out itemCmp);
-                    string idCmp = CompactAlnumKey(iId);
+                    int dotIdx = iId.LastIndexOf('.');
+                    string lastSegCmp = (!_rxSyntheticId.IsMatch(iId) && dotIdx >= 0 && dotIdx + 1 < iId.Length)
+                        ? CompactAlnumKey(iId.Substring(dotIdx + 1))
+                        : "";
                     if ((!string.IsNullOrEmpty(itemCmp) && string.Equals(itemCmp, meta.CompactTarget, StringComparison.Ordinal)) ||
-                        (!string.IsNullOrEmpty(idCmp) && idCmp.EndsWith(meta.CompactTarget, StringComparison.Ordinal)))
+                        (meta.CompactTarget.Length >= 5 && !string.IsNullOrEmpty(lastSegCmp) && string.Equals(lastSegCmp, meta.CompactTarget, StringComparison.Ordinal)))
                     {
                         score = 690;
                     }
-                    else if (!string.IsNullOrEmpty(itemCmp) && meta.CompactTarget.Length >= 5 && itemCmp.Length >= 5)
+                    else if (!string.IsNullOrEmpty(itemCmp) && meta.CompactTarget.Length >= 6 && itemCmp.Length >= 6 &&
+                             meta.CompactTarget[0] == itemCmp[0] && meta.CompactTarget[1] == itemCmp[1])
                     {
                         int maxL = Math.Max(meta.CompactTarget.Length, itemCmp.Length);
                         int minL = Math.Min(meta.CompactTarget.Length, itemCmp.Length);
-                        if (minL * 100 >= maxL * 68)
+                        if (minL * 100 >= maxL * 78)
                         {
                             double jw = ComputeJaroWinkler(meta.CompactTarget, itemCmp);
-                            if (jw >= 0.90)
+                            if (jw >= 0.94)
                             {
                                 score = 610 + (int)Math.Round(jw * 70.0);
                             }
@@ -1888,11 +2511,11 @@ namespace DuckUtil
 
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
-            var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
-            var compactNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var cleanNameMap = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+            var compactNameMap = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
             var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
             var itemCompactMap = new Dictionary<CatalogSensorItem, string>();
-            var itemTokenMap = new Dictionary<CatalogSensorItem, HashSet<string>>();
+            var itemNameTokenMap = new Dictionary<CatalogSensorItem, HashSet<string>>();
 
             for (int i = 0; i < installedItems.Length; i++)
             {
@@ -1904,24 +2527,19 @@ namespace DuckUtil
 
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
-                if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (itClean.Length >= 2) AddBucketEntry(cleanNameMap, itClean, it);
 
                 string itCompact = CompactAlnumKey(itClean.Length > 0 ? itClean : itName);
                 itemCompactMap[it] = itCompact;
-                if (itCompact.Length >= 4) SetPreferredEntry(compactNameMap, itCompact, it);
-
-                if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
-                {
-                    SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
-                }
+                if (itCompact.Length >= 4) AddBucketEntry(compactNameMap, itCompact, it);
 
                 string rawText = itId + " " + itName + " " + itClean;
                 string[] toks = _rxTokSplit.Split(rawText);
-                var seenTok = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var seenIdxTok = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 for (int ti = 0; ti < toks.Length; ti++)
                 {
                     string tk = toks[ti];
-                    if ((tk.Length >= 3 || string.Equals(tk, "7z", StringComparison.OrdinalIgnoreCase)) && seenTok.Add(tk))
+                    if ((tk.Length >= 3 || string.Equals(tk, "7z", StringComparison.OrdinalIgnoreCase)) && seenIdxTok.Add(tk))
                     {
                         List<CatalogSensorItem> bucket;
                         if (!tokenIndex.TryGetValue(tk, out bucket))
@@ -1932,21 +2550,33 @@ namespace DuckUtil
                         bucket.Add(it);
                     }
                 }
-                itemTokenMap[it] = seenTok;
+
+                string nameOnlyText = (itClean.Length > 0 ? itClean : _rxCleanParens.Replace(itName, ""));
+                string[] nameToks = _rxTokSplit.Split(nameOnlyText);
+                var seenNameTok = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int ti = 0; ti < nameToks.Length; ti++)
+                {
+                    string tk = nameToks[ti];
+                    if (tk.Length >= 2 && !_matchStopWords.Contains(tk))
+                    {
+                        seenNameTok.Add(tk);
+                    }
+                }
+                itemNameTokenMap[it] = seenNameTok;
             }
 
             if (targets.Length >= 24)
             {
                 Parallel.For(0, targets.Length, delegate(int tIdx)
                 {
-                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemNameTokenMap);
                 });
             }
             else
             {
                 for (int tIdx = 0; tIdx < targets.Length; tIdx++)
                 {
-                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemNameTokenMap);
                 }
             }
 
