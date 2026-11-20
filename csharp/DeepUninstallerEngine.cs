@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -4249,6 +4251,191 @@ namespace DuckUtil
             {
                 return scmOk;
             }
+        }
+
+        private static bool TryParseRegistryPath(string rawPath, out RegistryHive hive, out string subPath, out bool isCurrentUser)
+        {
+            hive = RegistryHive.LocalMachine;
+            subPath = "";
+            isCurrentUser = false;
+            if (string.IsNullOrWhiteSpace(rawPath)) return false;
+            string p = rawPath.Trim();
+            if (p.StartsWith("Microsoft.PowerShell.Core\\Registry::", StringComparison.OrdinalIgnoreCase))
+            {
+                p = p.Substring("Microsoft.PowerShell.Core\\Registry::".Length);
+            }
+            if (p.StartsWith("Registry::", StringComparison.OrdinalIgnoreCase))
+            {
+                p = p.Substring("Registry::".Length);
+            }
+            if (p.StartsWith("HKLM:\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.LocalMachine; subPath = p.Substring(6); }
+            else if (p.StartsWith("HKEY_LOCAL_MACHINE\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.LocalMachine; subPath = p.Substring(19); }
+            else if (p.StartsWith("HKCU:\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.CurrentUser; subPath = p.Substring(6); isCurrentUser = true; }
+            else if (p.StartsWith("HKEY_CURRENT_USER\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.CurrentUser; subPath = p.Substring(18); isCurrentUser = true; }
+            else if (p.StartsWith("HKCR:\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.ClassesRoot; subPath = p.Substring(6); }
+            else if (p.StartsWith("HKEY_CLASSES_ROOT\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.ClassesRoot; subPath = p.Substring(18); }
+            else if (p.StartsWith("HKU:\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.Users; subPath = p.Substring(5); }
+            else if (p.StartsWith("HKEY_USERS\\", StringComparison.OrdinalIgnoreCase)) { hive = RegistryHive.Users; subPath = p.Substring(11); }
+            else return false;
+
+            subPath = subPath.Trim('\\');
+            int slash = subPath.IndexOf('\\');
+            return slash > 0 && slash < subPath.Length - 1;
+        }
+
+        private static bool RegistrySubKeyExists(RegistryHive hive, string fullSubPath)
+        {
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (var sk = baseKey.OpenSubKey(fullSubPath, false))
+                {
+                    return sk != null;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static bool TryDeleteRegistryTreeDirect(RegistryHive hive, string parentPath, string leafName)
+        {
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (var parentKey = baseKey.OpenSubKey(parentPath, true))
+                {
+                    if (parentKey == null) return true;
+                    parentKey.DeleteSubKeyTree(leafName, false);
+                }
+            }
+            catch {}
+            return !RegistrySubKeyExists(hive, parentPath + "\\" + leafName);
+        }
+
+        private static void GrantRegistryAdminFullControlRecursive(RegistryKey baseKey, string subPath, SecurityIdentifier adminSid, int depth)
+        {
+            if (baseKey == null || string.IsNullOrEmpty(subPath) || depth > 12) return;
+            try
+            {
+                using (var kOwn = baseKey.OpenSubKey(subPath, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.TakeOwnership))
+                {
+                    if (kOwn != null)
+                    {
+                        var rsOwn = new RegistrySecurity();
+                        rsOwn.SetOwner(adminSid);
+                        kOwn.SetAccessControl(rsOwn);
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                using (var kAcl = baseKey.OpenSubKey(subPath, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ReadPermissions | RegistryRights.ChangePermissions))
+                {
+                    if (kAcl != null)
+                    {
+                        var rs = kAcl.GetAccessControl(AccessControlSections.Access);
+                        rs.SetAccessRuleProtection(false, false);
+                        rs.AddAccessRule(new RegistryAccessRule(
+                            adminSid,
+                            RegistryRights.FullControl,
+                            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                            PropagationFlags.None,
+                            AccessControlType.Allow));
+                        kAcl.SetAccessControl(rs);
+                    }
+                }
+            }
+            catch {}
+
+            string[] childNames = null;
+            try
+            {
+                using (var kRead = baseKey.OpenSubKey(subPath, RegistryKeyPermissionCheck.ReadSubTree, RegistryRights.EnumerateSubKeys | RegistryRights.ReadKey))
+                {
+                    if (kRead != null) childNames = kRead.GetSubKeyNames();
+                }
+            }
+            catch {}
+
+            if (childNames != null)
+            {
+                for (int i = 0; i < childNames.Length; i++)
+                {
+                    if (!string.IsNullOrEmpty(childNames[i]))
+                    {
+                        GrantRegistryAdminFullControlRecursive(baseKey, subPath + "\\" + childNames[i], adminSid, depth + 1);
+                    }
+                }
+            }
+        }
+
+        public static bool ForceDeleteRegistryKey(string rawPath)
+        {
+            RegistryHive hive;
+            string subPath;
+            bool isCurrentUser;
+            if (!TryParseRegistryPath(rawPath, out hive, out subPath, out isCurrentUser)) return false;
+
+            int lastSlash = subPath.LastIndexOf('\\');
+            if (lastSlash <= 0 || lastSlash >= subPath.Length - 1) return false;
+            string parentPath = subPath.Substring(0, lastSlash);
+            string leafName = subPath.Substring(lastSlash + 1);
+
+            if (TryDeleteRegistryTreeDirect(hive, parentPath, leafName)) return true;
+
+            string userSid = "";
+            if (isCurrentUser)
+            {
+                try
+                {
+                    using (var wi = WindowsIdentity.GetCurrent())
+                    {
+                        if (wi != null && wi.User != null) userSid = wi.User.Value;
+                    }
+                }
+                catch {}
+            }
+
+            RegistryHive elevHive = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? RegistryHive.Users : hive;
+            string elevParent = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? (userSid + "\\" + parentPath) : parentPath;
+            string elevFull = elevParent + "\\" + leafName;
+            var adminSid = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+
+            EnsureUnlockPrivileges();
+            RunWithSystemOrTrustedInstaller(true, delegate()
+            {
+                if (TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName)) return;
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(elevHive, RegistryView.Registry64))
+                    {
+                        GrantRegistryAdminFullControlRecursive(baseKey, elevFull, adminSid, 0);
+                    }
+                }
+                catch {}
+                TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName);
+            });
+
+            if (!RegistrySubKeyExists(elevHive, elevFull)) return true;
+
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(elevHive, RegistryView.Registry64))
+                {
+                    GrantRegistryAdminFullControlRecursive(baseKey, elevFull, adminSid, 0);
+                }
+            }
+            catch {}
+            return TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName);
+        }
+
+        public static Task<bool> ForceDeleteRegistryKeyAsync(string rawPath)
+        {
+            return Task.Run(delegate() { return ForceDeleteRegistryKey(rawPath); });
         }
 
         private static void RunHiddenProcess(string exe, string args, int timeoutMs)

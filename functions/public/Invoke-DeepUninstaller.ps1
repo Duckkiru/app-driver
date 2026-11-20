@@ -2231,16 +2231,40 @@ function Show-LeftoverReviewDialog {
                                     $neutralizedSvc = [bool]$deepType::NeutralizeSingleServiceOrDriver($svcTargetName)
                                 }
                             }
+                            $usedElevatedRegDel = $false
                             if (Test-Path -LiteralPath $ci.Path) {
                                 if ($neutralizedSvc) {
                                     Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction SilentlyContinue
                                 } else {
-                                    Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                                    $regErr = $null
+                                    try {
+                                        Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                                    } catch {
+                                        $regErr = $_
+                                    }
+                                    if ($null -ne $regErr -and (Test-Path -LiteralPath $ci.Path)) {
+                                        $elevOk = $false
+                                        if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKeyAsync")) {
+                                            $regTask = $deepType::ForceDeleteRegistryKeyAsync([string]$ci.Path)
+                                            [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15)
+                                            if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                                $elevOk = [bool]$regTask.Result
+                                            }
+                                        } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKey")) {
+                                            $elevOk = [bool]$deepType::ForceDeleteRegistryKey([string]$ci.Path)
+                                        }
+                                        if ($elevOk -or -not (Test-Path -LiteralPath $ci.Path)) {
+                                            $usedElevatedRegDel = $true
+                                        } else {
+                                            throw $regErr
+                                        }
+                                    }
                                 }
                             }
                             $removed++
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry: $($ci.Path)"
+                                $elevTag = if ($usedElevatedRegDel) { " (TrustedInstaller)" } else { "" }
+                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry${elevTag}: $($ci.Path)"
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
