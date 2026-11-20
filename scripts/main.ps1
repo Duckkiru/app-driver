@@ -5510,6 +5510,18 @@ function Resolve-ValidatedUpgradeId {
     return [string]$App.ID
 }
 
+function Compare-CatalogVersionsSafe {
+    param([string]$VerA, [string]$VerB)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        return [DuckUtil.AppCatalogEngine]::CompareAppVersions($VerA, $VerB)
+    }
+    if (Get-Command "Compare-AppVersions" -ErrorAction SilentlyContinue) {
+        return (Compare-AppVersions $VerA $VerB)
+    }
+    if ($VerA -eq $VerB) { return 0 }
+    return 0
+}
+
 function Get-WinGetExactPackageState {
     param(
         [Parameter(Mandatory = $true)][string]$Id,
@@ -5528,11 +5540,32 @@ function Get-WinGetExactPackageState {
     $hasUnknown = $false
     $bestVer = ""
     $bestAvail = ""
+    $worstOutdatedVer = ""
     foreach ($it in $items) {
-        if ($it.HasUpdate) { $anyOutdated = $true }
+        if ($it.HasUpdate) {
+            $anyOutdated = $true
+            if ([string]::IsNullOrWhiteSpace($worstOutdatedVer)) { $worstOutdatedVer = [string]$it.Version }
+        }
         if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match '^(<|Unknown)') { $hasUnknown = $true }
-        if ([string]::IsNullOrWhiteSpace($bestVer) -and -not [string]::IsNullOrWhiteSpace($it.Version)) { $bestVer = [string]$it.Version }
-        if ([string]::IsNullOrWhiteSpace($bestAvail) -and -not [string]::IsNullOrWhiteSpace($it.Available)) { $bestAvail = [string]$it.Available }
+        if (-not [string]::IsNullOrWhiteSpace($it.Version)) {
+            if ([string]::IsNullOrWhiteSpace($bestVer) -or (Compare-CatalogVersionsSafe $it.Version $bestVer) -gt 0) {
+                $bestVer = [string]$it.Version
+            }
+        }
+        if (-not [string]::IsNullOrWhiteSpace($it.Available)) {
+            if ([string]::IsNullOrWhiteSpace($bestAvail) -or (Compare-CatalogVersionsSafe $it.Available $bestAvail) -gt 0) {
+                $bestAvail = [string]$it.Available
+            }
+        }
+    }
+    if ($anyOutdated -and -not [string]::IsNullOrWhiteSpace($bestVer) -and -not [string]::IsNullOrWhiteSpace($bestAvail)) {
+        if (("DuckUtil.AppCatalogEngine" -as [type]) -and $null -ne ([DuckUtil.AppCatalogEngine].GetMethod("IsVersionAtLeastAvailable"))) {
+            if ([DuckUtil.AppCatalogEngine]::IsVersionAtLeastAvailable($bestVer, $worstOutdatedVer, $bestAvail)) {
+                $anyOutdated = $false
+            }
+        } elseif ((Compare-CatalogVersionsSafe $bestVer $bestAvail) -ge 0) {
+            $anyOutdated = $false
+        }
     }
     return [PSCustomObject]@{
         Available         = $true
@@ -5723,50 +5756,101 @@ function Invoke-SmartAppUpgrade {
 
     $canSnapshotLoc = ($existingLoc -and $existingLoc -notmatch '(?i)\\WindowsApps(\\|$)' -and $existingLoc -notmatch '(?i)\\Package Cache(\\|$)' -and (Test-Path -LiteralPath $existingLoc))
     $shouldSnapshot = ($null -ne $snapshotType) -and ($canSnapshotLoc -or $targetAppDataDirs.Count -gt 0 -or $hkcuKeys.Count -gt 0)
+    $snapRawHkcuArr = [System.Collections.Generic.List[string]]::new()
+    $snapRegFileArr = [System.Collections.Generic.List[string]]::new()
+    $snapRegMeta    = [System.Collections.Generic.List[object]]::new()
+
     if ($shouldSnapshot) {
-        if (Test-Path -LiteralPath $backupRoot) {
-            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
-
-        if ($canSnapshotLoc) {
-            $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
-            if ($bytes -gt 0) { $hasSnapshots = $true }
-        }
-
+        $adBkpList = [System.Collections.Generic.List[string]]::new()
+        $adIdx = 0
         if (-not $IsBulkUpgrade) {
-            $adIdx = 0
             foreach ($adDir in $targetAppDataDirs) {
                 $adIdx++
-                $adBkpDir = Join-Path $backupRoot "AppData_$adIdx"
-                $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
-                if ($b -gt 0) {
-                    $hasSnapshots = $true
-                    $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
-                }
+                [void]$adBkpList.Add((Join-Path $backupRoot "AppData_$adIdx"))
             }
-
             $rkIdx = 0
             foreach ($rkEntry in $hkcuKeys) {
                 $rkIdx++
                 $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
                 $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
-                try {
-                    $regPsi = New-Object System.Diagnostics.ProcessStartInfo
-                    $regPsi.FileName = "reg.exe"
-                    $regPsi.Arguments = "export `"$rawHkcu`" `"$rf`" /y"
-                    $regPsi.CreateNoWindow = $true
-                    $regPsi.UseShellExecute = $false
-                    $pReg = [System.Diagnostics.Process]::Start($regPsi)
-                    try {
-                        if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $rf)) {
-                            $hasSnapshots = $true
-                            $regFiles.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
-                        }
-                    } finally {
-                        if ($pReg) { try { $pReg.Dispose() } catch {} }
+                [void]$snapRawHkcuArr.Add($rawHkcu)
+                [void]$snapRegFileArr.Add($rf)
+                [void]$snapRegMeta.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
+            }
+        }
+
+        $hasAsyncGuard = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardSnapshotAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        if ($hasAsyncGuard) {
+            $snapTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardSnapshotAsync(
+                $backupRoot,
+                [string]$existingLoc,
+                $locBkp,
+                [bool]$canSnapshotLoc,
+                [string[]]$targetAppDataDirs.ToArray(),
+                [string[]]$adBkpList.ToArray(),
+                [string[]]$snapRawHkcuArr.ToArray(),
+                [string[]]$snapRegFileArr.ToArray(),
+                26214400L
+            )
+            [void](Wait-TaskNonBlocking -Task $snapTask -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
+            if ($snapTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $snapTask.Result) {
+                $sRes = $snapTask.Result
+                $hasSnapshots = [bool]$sRes.HasSnapshots
+                if ($sRes.CopiedAppDataDirs -and $sRes.CopiedAppDataBackups) {
+                    $cLen = [Math]::Min($sRes.CopiedAppDataDirs.Length, $sRes.CopiedAppDataBackups.Length)
+                    for ($ci = 0; $ci -lt $cLen; $ci++) {
+                        $appDataBkps.Add([PSCustomObject]@{ Source = $sRes.CopiedAppDataDirs[$ci]; Backup = $sRes.CopiedAppDataBackups[$ci] })
                     }
-                } catch {}
+                }
+                if ($sRes.ExportedRegIndices) {
+                    foreach ($riIdx in $sRes.ExportedRegIndices) {
+                        if ($riIdx -ge 0 -and $riIdx -lt $snapRegMeta.Count) {
+                            $regFiles.Add($snapRegMeta[$riIdx])
+                        }
+                    }
+                }
+            }
+        } else {
+            if (Test-Path -LiteralPath $backupRoot) {
+                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+
+            if ($canSnapshotLoc) {
+                $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
+                if ($bytes -gt 0) { $hasSnapshots = $true }
+            }
+
+            if (-not $IsBulkUpgrade) {
+                for ($ai = 0; $ai -lt $targetAppDataDirs.Count; $ai++) {
+                    $adDir = $targetAppDataDirs[$ai]
+                    $adBkpDir = $adBkpList[$ai]
+                    $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
+                    if ($b -gt 0) {
+                        $hasSnapshots = $true
+                        $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
+                    }
+                }
+
+                for ($riIdx = 0; $riIdx -lt $snapRegMeta.Count; $riIdx++) {
+                    $metaR = $snapRegMeta[$riIdx]
+                    try {
+                        $regPsi = New-Object System.Diagnostics.ProcessStartInfo
+                        $regPsi.FileName = "reg.exe"
+                        $regPsi.Arguments = "export `"$($metaR.Key)`" `"$($metaR.File)`" /y"
+                        $regPsi.CreateNoWindow = $true
+                        $regPsi.UseShellExecute = $false
+                        $pReg = [System.Diagnostics.Process]::Start($regPsi)
+                        try {
+                            if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $metaR.File)) {
+                                $hasSnapshots = $true
+                                $regFiles.Add($metaR)
+                            }
+                        } finally {
+                            if ($pReg) { try { $pReg.Dispose() } catch {} }
+                        }
+                    } catch {}
+                }
             }
         }
     }
@@ -5845,26 +5929,12 @@ function Invoke-SmartAppUpgrade {
 
     $preInstallerAborted = $alreadyLatest -or ($code -in @(3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
     if ($hasSnapshots) {
+        $regImportTargets = [System.Collections.Generic.List[object]]::new()
+        $regImportFiles   = [System.Collections.Generic.List[string]]::new()
+        $regImportIndices = [System.Collections.Generic.List[int]]::new()
         if (-not $preInstallerAborted) {
-            if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
-                $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
-                if ($restoredLoc -gt 0) {
-                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
-                }
-            }
-
-            if ($snapshotType) {
-                foreach ($item in $appDataBkps) {
-                    if (Test-Path -LiteralPath $item.Backup) {
-                        $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
-                        if ($resAd -gt 0) {
-                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
-                        }
-                    }
-                }
-            }
-
-            foreach ($rfItem in $regFiles) {
+            for ($ri = 0; $ri -lt $regFiles.Count; $ri++) {
+                $rfItem = $regFiles[$ri]
                 if (Test-Path -LiteralPath $rfItem.File) {
                     $needRegRestore = $false
                     if (-not (Test-Path -LiteralPath $rfItem.PSPath)) {
@@ -5876,28 +5946,97 @@ function Invoke-SmartAppUpgrade {
                         } catch {}
                     }
                     if ($needRegRestore) {
-                        try {
-                            $impPsi = New-Object System.Diagnostics.ProcessStartInfo
-                            $impPsi.FileName = "reg.exe"
-                            $impPsi.Arguments = "import `"$($rfItem.File)`""
-                            $impPsi.CreateNoWindow = $true
-                            $impPsi.UseShellExecute = $false
-                            $pImp = [System.Diagnostics.Process]::Start($impPsi)
-                            try {
-                                if ($pImp) { [void]$pImp.WaitForExit(10000) }
-                            } finally {
-                                if ($pImp) { try { $pImp.Dispose() } catch {} }
-                            }
-                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
-                        } catch {}
+                        [void]$regImportTargets.Add($rfItem)
+                        [void]$regImportFiles.Add($rfItem.File)
+                        [void]$regImportIndices.Add($ri)
                     }
                 }
             }
         }
 
-        try {
-            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-        } catch {}
+        $adSrcArr = [System.Collections.Generic.List[string]]::new()
+        $adBkpArr = [System.Collections.Generic.List[string]]::new()
+        foreach ($item in $appDataBkps) {
+            [void]$adSrcArr.Add($item.Source)
+            [void]$adBkpArr.Add($item.Backup)
+        }
+
+        $hasAsyncRestore = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardRestoreAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        if ($hasAsyncRestore) {
+            $restTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardRestoreAsync(
+                $backupRoot,
+                (-not $preInstallerAborted),
+                [string]$existingLoc,
+                $locBkp,
+                [bool]$canSnapshotLoc,
+                [string[]]$adSrcArr.ToArray(),
+                [string[]]$adBkpArr.ToArray(),
+                [string[]]$regImportFiles.ToArray(),
+                [int[]]$regImportIndices.ToArray()
+            )
+            [void](Wait-TaskNonBlocking -Task $restTask -TimeoutSeconds 25)
+            if ($restTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $restTask.Result) {
+                $rRes = $restTask.Result
+                if ($rRes.RestoredLocFiles -gt 0) {
+                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $($rRes.RestoredLocFiles) tệp dữ liệu bị xóa trong thư mục cài đặt."
+                }
+                if ($rRes.RestoredAppDataCounts) {
+                    for ($ai = 0; $ai -lt $rRes.RestoredAppDataCounts.Length; $ai++) {
+                        if ($rRes.RestoredAppDataCounts[$ai] -gt 0 -and $ai -lt $adSrcArr.Count) {
+                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $($rRes.RestoredAppDataCounts[$ai]) tệp dữ liệu/profile trong: $($adSrcArr[$ai])"
+                        }
+                    }
+                }
+                if ($rRes.RestoredRegIndices) {
+                    foreach ($impIdx in $rRes.RestoredRegIndices) {
+                        if ($impIdx -ge 0 -and $impIdx -lt $regFiles.Count) {
+                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($regFiles[$impIdx].Key)"
+                        }
+                    }
+                }
+            }
+        } else {
+            if (-not $preInstallerAborted) {
+                if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
+                    $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
+                    if ($restoredLoc -gt 0) {
+                        Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
+                    }
+                }
+
+                if ($snapshotType) {
+                    foreach ($item in $appDataBkps) {
+                        if (Test-Path -LiteralPath $item.Backup) {
+                            $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
+                            if ($resAd -gt 0) {
+                                Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
+                            }
+                        }
+                    }
+                }
+
+                foreach ($rfItem in $regImportTargets) {
+                    try {
+                        $impPsi = New-Object System.Diagnostics.ProcessStartInfo
+                        $impPsi.FileName = "reg.exe"
+                        $impPsi.Arguments = "import `"$($rfItem.File)`""
+                        $impPsi.CreateNoWindow = $true
+                        $impPsi.UseShellExecute = $false
+                        $pImp = [System.Diagnostics.Process]::Start($impPsi)
+                        try {
+                            if ($pImp) { [void]$pImp.WaitForExit(10000) }
+                        } finally {
+                            if ($pImp) { try { $pImp.Dispose() } catch {} }
+                        }
+                        Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
+                    } catch {}
+                }
+            }
+
+            try {
+                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {}
+        }
     }
 
     if ($code -in @(0, 3010, 1641)) {
@@ -5905,8 +6044,14 @@ function Invoke-SmartAppUpgrade {
         try {
             $postState = Get-WinGetExactPackageState -Id $upgradeId -App $app
             if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
-                if ([string]::IsNullOrWhiteSpace($preVersion) -or $postState.BestVersion -eq $preVersion) {
+                if ([string]::IsNullOrWhiteSpace($preVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $preVersion) -le 0) {
                     Log-Text "   [WARN] $($app.Name): Tiến trình thoát với mã $code nhưng phiên bản vẫn là '$($postState.BestVersion)' (còn bản mới $($postState.BestAvailable))."
+                    return 4
+                }
+            } elseif (-not $postState.AnyFound -or $postState.TimedOut) {
+                $postLocal = Test-CatalogAppInstalledNow -App $app -ProbeWingetId $upgradeId
+                if ($postLocal -and -not [string]::IsNullOrWhiteSpace($preVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $preVersion) -le 0 -and $postLocal.HasUpdate) {
+                    Log-Text "   [WARN] $($app.Name): Chưa ghi nhận thay đổi phiên bản sau nâng cấp (vẫn là '$($postLocal.Version)')."
                     return 4
                 }
             }
@@ -5933,14 +6078,28 @@ function Invoke-CatalogUpgradeWithFallback {
         try { Start-Process $app.FallbackUrl } catch { return 1 }
         return 5
     }
+    $preVer = [string]$Tag.InstalledVersion
+    $targetAvail = if ($Tag.PSObject.Properties['AvailableVersion']) { [string]$Tag.AvailableVersion } else { "" }
+    $probeId = Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)
     $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade
     if ($upCode -notin @(0, 2, 3, -2, -1978335216) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
         Log-Text "   [*] Đang thử cập nhật dự phòng qua GitHub Release ($($app.GitHubRepo))..."
         $ghCode = Invoke-GitHubAssetInstall -App $app
         if ($ghCode -in @(0, 3010, 1641)) {
-            $postState = Get-WinGetExactPackageState -Id (Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)) -App $app
-            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated -and $postState.BestVersion -eq [string]$Tag.InstalledVersion) {
-                return 4
+            $postState = Get-WinGetExactPackageState -Id $probeId -App $app
+            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
+                if ([string]::IsNullOrWhiteSpace($preVer) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $preVer) -le 0) {
+                    Log-Text "   [WARN] $($app.Name): Bộ cài GitHub Release thoát mã $ghCode nhưng WinGet vẫn ghi nhận phiên bản '$($postState.BestVersion)' (còn bản mới $($postState.BestAvailable))."
+                    return 4
+                }
+            }
+            $postLocal = Test-CatalogAppInstalledNow -App $app -ProbeWingetId $probeId
+            if ($postLocal -and -not [string]::IsNullOrWhiteSpace($preVer) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $preVer) -le 0) {
+                $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($targetAvail) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $targetAvail) -lt 0)
+                if ($stillBehindTarget) {
+                    Log-Text "   [WARN] $($app.Name): Bộ cài GitHub Release thoát mã $ghCode nhưng phiên bản trên máy vẫn là '$($postLocal.Version)' (chưa đạt '$targetAvail')."
+                    return 4
+                }
             }
             return 0
         }
@@ -6185,6 +6344,7 @@ Register-Click "btnInstall" {
                 }
                 Wait-SquirrelUpdatersSettle
                 if (-not $script:isWindowClosing) {
+                    if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) { Stop-PreSpawnedWinget }
                     Scan-And-ColorizeApps
                     if (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue) {
                         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "install"
@@ -6272,8 +6432,42 @@ Register-Click "btnUpgradeAll" {
                         } elseif ($bulkCode -ne 0) {
                             $bulkFail++
                         }
-                    } else {
-                        $bulkOk += $safeWingetOutdatedRows.Count
+                    } elseif ($safeWingetOutdatedRows.Count -gt 0) {
+                        $postBulkCap = if (Get-Command "Invoke-WingetListCapture" -ErrorAction SilentlyContinue) {
+                            Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25
+                        } else { $null }
+                        if ($postBulkCap -and $postBulkCap.Available -and -not $postBulkCap.TimedOut -and -not $postBulkCap.WasCanceled -and -not [string]::IsNullOrWhiteSpace($postBulkCap.StdOut)) {
+                            $postBulkParsed = ConvertFrom-WingetListOutput -RawText $postBulkCap.StdOut -AllowHeaderless ($postBulkCap.ExitCode -eq 0)
+                            if ($postBulkParsed -and $postBulkParsed.Items.Count -gt 0) {
+                                $stillOutIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+                                foreach ($pbIt in $postBulkParsed.Items) {
+                                    if ($pbIt -and $pbIt.HasUpdate -and -not [string]::IsNullOrWhiteSpace($pbIt.ID)) {
+                                        [void]$stillOutIds.Add($pbIt.ID)
+                                    }
+                                }
+                                $fallbackAfterBulk = [System.Collections.Generic.List[object]]::new()
+                                foreach ($srCheck in $safeWingetOutdatedRows) {
+                                    $chkTag = $srCheck.Tag
+                                    $chkApp = $chkTag.App
+                                    $chkId = if ($chkTag.DetectedId -and $chkTag.DetectedId -notmatch '^(ARP|MSIX|LOCAL)\\') { [string]$chkTag.DetectedId } else { [string]$chkApp.ID }
+                                    if ($stillOutIds.Contains($chkId) -or ($chkApp -and $chkApp.ID -and $stillOutIds.Contains([string]$chkApp.ID))) {
+                                        [void]$fallbackAfterBulk.Add($srCheck)
+                                    } else {
+                                        $bulkOk++
+                                        if ($chkTag.CheckBox) { $chkTag.CheckBox.IsChecked = $false }
+                                    }
+                                }
+                                if ($fallbackAfterBulk.Count -gt 0) {
+                                    Log-Text "[*] Phát hiện $($fallbackAfterBulk.Count) gói chưa được 'upgrade --all' xử lý triệt để; đang kiểm tra và nâng cấp riêng từng gói..."
+                                    $safeWingetOutdatedRows = $fallbackAfterBulk
+                                    $runPerAppSafeList = $true
+                                }
+                            } else {
+                                $bulkOk += $safeWingetOutdatedRows.Count
+                            }
+                        } else {
+                            $bulkOk += $safeWingetOutdatedRows.Count
+                        }
                     }
 
                     foreach ($stRow in $msStoreOutdatedRows) {
@@ -6363,6 +6557,7 @@ Register-Click "btnUpgradeAll" {
             }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
+                if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) { Stop-PreSpawnedWinget }
                 Scan-And-ColorizeApps
                 if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
                     foreach ($sr in $safeOutdatedRows) {

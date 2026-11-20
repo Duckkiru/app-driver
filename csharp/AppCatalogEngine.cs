@@ -1684,6 +1684,193 @@ namespace DuckUtil
             return restoredCount;
         }
 
+        public class UpgradeGuardSnapshotResult
+        {
+            public bool HasSnapshots { get; set; }
+            public string[] CopiedAppDataDirs { get; set; }
+            public string[] CopiedAppDataBackups { get; set; }
+            public int[] ExportedRegIndices { get; set; }
+        }
+
+        public class UpgradeGuardRestoreResult
+        {
+            public int RestoredLocFiles { get; set; }
+            public int[] RestoredAppDataCounts { get; set; }
+            public int[] RestoredRegIndices { get; set; }
+        }
+
+        public static Task<UpgradeGuardSnapshotResult> UpgradeGuardSnapshotAsync(
+            string backupRoot,
+            string existingLoc,
+            string locBkp,
+            bool canSnapshotLoc,
+            string[] appDataDirs,
+            string[] appDataBkps,
+            string[] hkcuRawKeys,
+            string[] regFiles,
+            long maxBytes)
+        {
+            return Task.Run(delegate()
+            {
+                var res = new UpgradeGuardSnapshotResult();
+                var copiedDirs = new List<string>();
+                var copiedBkps = new List<string>();
+                var exportedIdx = new List<int>();
+                bool hasAny = false;
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(backupRoot))
+                    {
+                        if (Directory.Exists(backupRoot))
+                        {
+                            try { Directory.Delete(backupRoot, true); } catch {}
+                        }
+                        Directory.CreateDirectory(backupRoot);
+                    }
+
+                    if (canSnapshotLoc && !string.IsNullOrWhiteSpace(existingLoc) && !string.IsNullOrWhiteSpace(locBkp))
+                    {
+                        long bLoc = BackupDirectorySnapshot(existingLoc, locBkp, maxBytes, true);
+                        if (bLoc > 0) hasAny = true;
+                    }
+
+                    if (appDataDirs != null && appDataBkps != null)
+                    {
+                        int nAd = Math.Min(appDataDirs.Length, appDataBkps.Length);
+                        for (int i = 0; i < nAd; i++)
+                        {
+                            string adDir = appDataDirs[i];
+                            string adBkp = appDataBkps[i];
+                            if (string.IsNullOrWhiteSpace(adDir) || string.IsNullOrWhiteSpace(adBkp)) continue;
+                            long bAd = BackupDirectorySnapshot(adDir, adBkp, maxBytes, false);
+                            if (bAd > 0)
+                            {
+                                hasAny = true;
+                                copiedDirs.Add(adDir);
+                                copiedBkps.Add(adBkp);
+                            }
+                        }
+                    }
+
+                    if (hkcuRawKeys != null && regFiles != null)
+                    {
+                        int nReg = Math.Min(hkcuRawKeys.Length, regFiles.Length);
+                        for (int i = 0; i < nReg; i++)
+                        {
+                            string rawKey = hkcuRawKeys[i];
+                            string regFile = regFiles[i];
+                            if (string.IsNullOrWhiteSpace(rawKey) || string.IsNullOrWhiteSpace(regFile)) continue;
+                            try
+                            {
+                                var psi = new ProcessStartInfo();
+                                psi.FileName = "reg.exe";
+                                psi.Arguments = "export \"" + rawKey + "\" \"" + regFile + "\" /y";
+                                psi.CreateNoWindow = true;
+                                psi.UseShellExecute = false;
+                                using (Process p = Process.Start(psi))
+                                {
+                                    if (p != null && p.WaitForExit(10000) && p.ExitCode == 0 && File.Exists(regFile))
+                                    {
+                                        hasAny = true;
+                                        exportedIdx.Add(i);
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+
+                res.HasSnapshots = hasAny;
+                res.CopiedAppDataDirs = copiedDirs.ToArray();
+                res.CopiedAppDataBackups = copiedBkps.ToArray();
+                res.ExportedRegIndices = exportedIdx.ToArray();
+                return res;
+            });
+        }
+
+        public static Task<UpgradeGuardRestoreResult> UpgradeGuardRestoreAsync(
+            string backupRoot,
+            bool shouldRestore,
+            string existingLoc,
+            string locBkp,
+            bool canSnapshotLoc,
+            string[] appDataDirs,
+            string[] appDataBkps,
+            string[] regFilesToImport,
+            int[] regImportIndices)
+        {
+            return Task.Run(delegate()
+            {
+                var res = new UpgradeGuardRestoreResult();
+                var adCounts = new List<int>();
+                var impDone = new List<int>();
+
+                try
+                {
+                    if (shouldRestore)
+                    {
+                        if (canSnapshotLoc && !string.IsNullOrWhiteSpace(locBkp) && !string.IsNullOrWhiteSpace(existingLoc) && Directory.Exists(locBkp))
+                        {
+                            res.RestoredLocFiles = RestoreDirectorySnapshot(locBkp, existingLoc);
+                        }
+
+                        if (appDataDirs != null && appDataBkps != null)
+                        {
+                            int nAd = Math.Min(appDataDirs.Length, appDataBkps.Length);
+                            for (int i = 0; i < nAd; i++)
+                            {
+                                int cnt = 0;
+                                if (!string.IsNullOrWhiteSpace(appDataBkps[i]) && !string.IsNullOrWhiteSpace(appDataDirs[i]) && Directory.Exists(appDataBkps[i]))
+                                {
+                                    cnt = RestoreDirectorySnapshot(appDataBkps[i], appDataDirs[i]);
+                                }
+                                adCounts.Add(cnt);
+                            }
+                        }
+
+                        if (regFilesToImport != null && regImportIndices != null)
+                        {
+                            int nImp = Math.Min(regFilesToImport.Length, regImportIndices.Length);
+                            for (int i = 0; i < nImp; i++)
+                            {
+                                string rf = regFilesToImport[i];
+                                if (string.IsNullOrWhiteSpace(rf) || !File.Exists(rf)) continue;
+                                try
+                                {
+                                    var psi = new ProcessStartInfo();
+                                    psi.FileName = "reg.exe";
+                                    psi.Arguments = "import \"" + rf + "\"";
+                                    psi.CreateNoWindow = true;
+                                    psi.UseShellExecute = false;
+                                    using (Process p = Process.Start(psi))
+                                    {
+                                        if (p != null && p.WaitForExit(10000) && p.ExitCode == 0)
+                                        {
+                                            impDone.Add(regImportIndices[i]);
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(backupRoot) && Directory.Exists(backupRoot))
+                    {
+                        try { Directory.Delete(backupRoot, true); } catch {}
+                    }
+                }
+                catch {}
+
+                res.RestoredAppDataCounts = adCounts.ToArray();
+                res.RestoredRegIndices = impDone.ToArray();
+                return res;
+            });
+        }
+
         public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
         {
             return Task.Run(delegate() { return ScanCatalogSensors(); });
@@ -2129,6 +2316,30 @@ namespace DuckUtil
             return false;
         }
 
+        public static bool IsVersionAtLeastAvailable(string installedVer, string wgVer, string wgAvail)
+        {
+            if (!HasNumericVersion(installedVer)) return false;
+            if (!HasNumericVersion(wgAvail)) return false;
+            if (CompareAppVersions(installedVer, wgAvail) >= 0) return true;
+
+            // Truncated Registry DisplayVersion (e.g. "24.09" vs WinGet Available "24.09.1" when WinGet Installed was "24.08")
+            long[] locNums = GetVersionNumbers(installedVer);
+            long[] availNums = GetVersionNumbers(wgAvail);
+            if (locNums.Length >= 2 && locNums.Length < availNums.Length)
+            {
+                bool isPrefix = true;
+                for (int i = 0; i < locNums.Length; i++)
+                {
+                    if (locNums[i] != availNums[i]) { isPrefix = false; break; }
+                }
+                if (isPrefix && HasNumericVersion(wgVer) && CompareAppVersions(installedVer, wgVer) > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static CatalogSensorItem SelectPreferredSensorPair(CatalogSensorItem cur, CatalogSensorItem cand)
         {
             if (cur == null) return cand;
@@ -2146,7 +2357,7 @@ namespace DuckUtil
                 {
                     if (wgItem.HasUpdate && HasNumericVersion(wgItem.Available))
                     {
-                        if (CompareAppVersions(locItem.Version, wgItem.Available) >= 0) return locItem;
+                        if (IsVersionAtLeastAvailable(locItem.Version, wgItem.Version, wgItem.Available)) return locItem;
                         return wgItem;
                     }
                     if (!HasNumericVersion(wgItem.Version) || CompareAppVersions(locItem.Version, wgItem.Version) > 0)
@@ -2159,8 +2370,24 @@ namespace DuckUtil
 
             bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
             bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
-            if (curSyn && !candSyn) return cand;
-            if (!curSyn && candSyn) return cur;
+            if (curSyn != candSyn)
+            {
+                CatalogSensorItem synItem = curSyn ? cur : cand;
+                CatalogSensorItem realItem = curSyn ? cand : cur;
+                if (HasNumericVersion(synItem.Version))
+                {
+                    if (realItem.HasUpdate && HasNumericVersion(realItem.Available))
+                    {
+                        if (IsVersionAtLeastAvailable(synItem.Version, realItem.Version, realItem.Available)) return synItem;
+                        return realItem;
+                    }
+                    if (!HasNumericVersion(realItem.Version) || CompareAppVersions(synItem.Version, realItem.Version) > 0)
+                    {
+                        return synItem;
+                    }
+                }
+                return realItem;
+            }
 
             // Only merge Version/Available when both entries share the same real package ID
             if (string.Equals(cur.ID ?? "", cand.ID ?? "", StringComparison.OrdinalIgnoreCase))
@@ -2271,43 +2498,94 @@ namespace DuckUtil
             return jaro + (prefix * 0.1 * (1.0 - jaro));
         }
 
+        private static bool IsLocalOrSyntheticCandidate(CatalogSensorItem item)
+        {
+            if (item == null) return false;
+            if (string.Equals(item.Source, "local", StringComparison.OrdinalIgnoreCase)) return true;
+            return _rxSyntheticId.IsMatch(item.ID ?? "");
+        }
+
         private static CatalogSensorItem RefineIdMatchWithLocal(
             CompiledTargetMeta meta,
             CatalogSensorItem cand,
             Dictionary<string, CatalogSensorItem> nameMap,
-            Dictionary<string, List<CatalogSensorItem>> cleanNameMap)
+            Dictionary<string, List<CatalogSensorItem>> cleanNameMap,
+            Dictionary<string, List<CatalogSensorItem>> compactNameMap)
         {
             if (cand == null || string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase)) return cand;
             CatalogSensorItem best = cand;
             CatalogSensorItem alt;
 
             if (!string.IsNullOrEmpty(cand.Name) && nameMap.TryGetValue(cand.Name, out alt) &&
-                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+                IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
             {
                 best = SelectPreferredSensorPair(best, alt);
             }
             if (!string.IsNullOrEmpty(meta.Name) && !string.Equals(meta.Name, cand.Name, StringComparison.OrdinalIgnoreCase) &&
                 nameMap.TryGetValue(meta.Name, out alt) &&
-                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+                IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
             {
                 best = SelectPreferredSensorPair(best, alt);
             }
-
-            string[] cleanKeys = new string[] { cand.CleanName ?? "", meta.CleanTarget ?? "" };
-            for (int k = 0; k < cleanKeys.Length; k++)
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
-                string ck = cleanKeys[k];
-                if (ck.Length < 2) continue;
-                if (k == 1 && string.Equals(ck, cleanKeys[0], StringComparison.OrdinalIgnoreCase)) continue;
+                string rawAl = meta.CleanAliases[a].Raw;
+                if (!string.IsNullOrEmpty(rawAl) && nameMap.TryGetValue(rawAl, out alt) &&
+                    IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
+                {
+                    best = SelectPreferredSensorPair(best, alt);
+                }
+            }
+
+            var seenClean = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var cleanKeys = new List<string>(2 + meta.CleanAliases.Count);
+            if (!string.IsNullOrWhiteSpace(cand.CleanName) && cand.CleanName.Length >= 2 && seenClean.Add(cand.CleanName)) cleanKeys.Add(cand.CleanName);
+            if (!string.IsNullOrWhiteSpace(meta.CleanTarget) && meta.CleanTarget.Length >= 2 && seenClean.Add(meta.CleanTarget)) cleanKeys.Add(meta.CleanTarget);
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                string ac = meta.CleanAliases[a].Clean;
+                if (!string.IsNullOrWhiteSpace(ac) && ac.Length >= 2 && seenClean.Add(ac)) cleanKeys.Add(ac);
+            }
+            for (int k = 0; k < cleanKeys.Count; k++)
+            {
                 List<CatalogSensorItem> bucket;
-                if (cleanNameMap.TryGetValue(ck, out bucket))
+                if (cleanNameMap.TryGetValue(cleanKeys[k], out bucket))
                 {
                     for (int i = 0; i < bucket.Count; i++)
                     {
                         CatalogSensorItem loc = bucket[i];
-                        if (string.Equals(loc.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, loc))
+                        if (IsLocalOrSyntheticCandidate(loc) && IsMatchCompatible(meta, loc))
                         {
                             best = SelectPreferredSensorPair(best, loc);
+                        }
+                    }
+                }
+            }
+
+            if (compactNameMap != null)
+            {
+                var seenComp = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var compKeys = new List<string>(2 + meta.CleanAliases.Count);
+                string candComp = CompactAlnumKey(cand.CleanName ?? "");
+                if (candComp.Length >= 4 && seenComp.Add(candComp)) compKeys.Add(candComp);
+                if (meta.CompactTarget.Length >= 4 && seenComp.Add(meta.CompactTarget)) compKeys.Add(meta.CompactTarget);
+                for (int a = 0; a < meta.CleanAliases.Count; a++)
+                {
+                    string acmp = meta.CleanAliases[a].Compact;
+                    if (!string.IsNullOrWhiteSpace(acmp) && acmp.Length >= 4 && seenComp.Add(acmp)) compKeys.Add(acmp);
+                }
+                for (int k = 0; k < compKeys.Count; k++)
+                {
+                    List<CatalogSensorItem> bucket;
+                    if (compactNameMap.TryGetValue(compKeys[k], out bucket))
+                    {
+                        for (int i = 0; i < bucket.Count; i++)
+                        {
+                            CatalogSensorItem loc = bucket[i];
+                            if (IsLocalOrSyntheticCandidate(loc) && IsMatchCompatible(meta, loc))
+                            {
+                                best = SelectPreferredSensorPair(best, loc);
+                            }
                         }
                     }
                 }
@@ -2332,20 +2610,26 @@ namespace DuckUtil
 
             if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
             {
-                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
             }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
                 {
-                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
                 }
             }
-            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
+            {
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
+            }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 AliasPatternPair ap = meta.CleanAliases[a];
-                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
+                }
                 if (ap.Clean.Length >= 2)
                 {
                     cand = FindBestCompatibleInBucket(meta, cleanNameMap, ap.Clean);

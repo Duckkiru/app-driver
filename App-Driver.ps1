@@ -10014,6 +10014,193 @@ namespace DuckUtil
             return restoredCount;
         }
 
+        public class UpgradeGuardSnapshotResult
+        {
+            public bool HasSnapshots { get; set; }
+            public string[] CopiedAppDataDirs { get; set; }
+            public string[] CopiedAppDataBackups { get; set; }
+            public int[] ExportedRegIndices { get; set; }
+        }
+
+        public class UpgradeGuardRestoreResult
+        {
+            public int RestoredLocFiles { get; set; }
+            public int[] RestoredAppDataCounts { get; set; }
+            public int[] RestoredRegIndices { get; set; }
+        }
+
+        public static Task<UpgradeGuardSnapshotResult> UpgradeGuardSnapshotAsync(
+            string backupRoot,
+            string existingLoc,
+            string locBkp,
+            bool canSnapshotLoc,
+            string[] appDataDirs,
+            string[] appDataBkps,
+            string[] hkcuRawKeys,
+            string[] regFiles,
+            long maxBytes)
+        {
+            return Task.Run(delegate()
+            {
+                var res = new UpgradeGuardSnapshotResult();
+                var copiedDirs = new List<string>();
+                var copiedBkps = new List<string>();
+                var exportedIdx = new List<int>();
+                bool hasAny = false;
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(backupRoot))
+                    {
+                        if (Directory.Exists(backupRoot))
+                        {
+                            try { Directory.Delete(backupRoot, true); } catch {}
+                        }
+                        Directory.CreateDirectory(backupRoot);
+                    }
+
+                    if (canSnapshotLoc && !string.IsNullOrWhiteSpace(existingLoc) && !string.IsNullOrWhiteSpace(locBkp))
+                    {
+                        long bLoc = BackupDirectorySnapshot(existingLoc, locBkp, maxBytes, true);
+                        if (bLoc > 0) hasAny = true;
+                    }
+
+                    if (appDataDirs != null && appDataBkps != null)
+                    {
+                        int nAd = Math.Min(appDataDirs.Length, appDataBkps.Length);
+                        for (int i = 0; i < nAd; i++)
+                        {
+                            string adDir = appDataDirs[i];
+                            string adBkp = appDataBkps[i];
+                            if (string.IsNullOrWhiteSpace(adDir) || string.IsNullOrWhiteSpace(adBkp)) continue;
+                            long bAd = BackupDirectorySnapshot(adDir, adBkp, maxBytes, false);
+                            if (bAd > 0)
+                            {
+                                hasAny = true;
+                                copiedDirs.Add(adDir);
+                                copiedBkps.Add(adBkp);
+                            }
+                        }
+                    }
+
+                    if (hkcuRawKeys != null && regFiles != null)
+                    {
+                        int nReg = Math.Min(hkcuRawKeys.Length, regFiles.Length);
+                        for (int i = 0; i < nReg; i++)
+                        {
+                            string rawKey = hkcuRawKeys[i];
+                            string regFile = regFiles[i];
+                            if (string.IsNullOrWhiteSpace(rawKey) || string.IsNullOrWhiteSpace(regFile)) continue;
+                            try
+                            {
+                                var psi = new ProcessStartInfo();
+                                psi.FileName = "reg.exe";
+                                psi.Arguments = "export \"" + rawKey + "\" \"" + regFile + "\" /y";
+                                psi.CreateNoWindow = true;
+                                psi.UseShellExecute = false;
+                                using (Process p = Process.Start(psi))
+                                {
+                                    if (p != null && p.WaitForExit(10000) && p.ExitCode == 0 && File.Exists(regFile))
+                                    {
+                                        hasAny = true;
+                                        exportedIdx.Add(i);
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+
+                res.HasSnapshots = hasAny;
+                res.CopiedAppDataDirs = copiedDirs.ToArray();
+                res.CopiedAppDataBackups = copiedBkps.ToArray();
+                res.ExportedRegIndices = exportedIdx.ToArray();
+                return res;
+            });
+        }
+
+        public static Task<UpgradeGuardRestoreResult> UpgradeGuardRestoreAsync(
+            string backupRoot,
+            bool shouldRestore,
+            string existingLoc,
+            string locBkp,
+            bool canSnapshotLoc,
+            string[] appDataDirs,
+            string[] appDataBkps,
+            string[] regFilesToImport,
+            int[] regImportIndices)
+        {
+            return Task.Run(delegate()
+            {
+                var res = new UpgradeGuardRestoreResult();
+                var adCounts = new List<int>();
+                var impDone = new List<int>();
+
+                try
+                {
+                    if (shouldRestore)
+                    {
+                        if (canSnapshotLoc && !string.IsNullOrWhiteSpace(locBkp) && !string.IsNullOrWhiteSpace(existingLoc) && Directory.Exists(locBkp))
+                        {
+                            res.RestoredLocFiles = RestoreDirectorySnapshot(locBkp, existingLoc);
+                        }
+
+                        if (appDataDirs != null && appDataBkps != null)
+                        {
+                            int nAd = Math.Min(appDataDirs.Length, appDataBkps.Length);
+                            for (int i = 0; i < nAd; i++)
+                            {
+                                int cnt = 0;
+                                if (!string.IsNullOrWhiteSpace(appDataBkps[i]) && !string.IsNullOrWhiteSpace(appDataDirs[i]) && Directory.Exists(appDataBkps[i]))
+                                {
+                                    cnt = RestoreDirectorySnapshot(appDataBkps[i], appDataDirs[i]);
+                                }
+                                adCounts.Add(cnt);
+                            }
+                        }
+
+                        if (regFilesToImport != null && regImportIndices != null)
+                        {
+                            int nImp = Math.Min(regFilesToImport.Length, regImportIndices.Length);
+                            for (int i = 0; i < nImp; i++)
+                            {
+                                string rf = regFilesToImport[i];
+                                if (string.IsNullOrWhiteSpace(rf) || !File.Exists(rf)) continue;
+                                try
+                                {
+                                    var psi = new ProcessStartInfo();
+                                    psi.FileName = "reg.exe";
+                                    psi.Arguments = "import \"" + rf + "\"";
+                                    psi.CreateNoWindow = true;
+                                    psi.UseShellExecute = false;
+                                    using (Process p = Process.Start(psi))
+                                    {
+                                        if (p != null && p.WaitForExit(10000) && p.ExitCode == 0)
+                                        {
+                                            impDone.Add(regImportIndices[i]);
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(backupRoot) && Directory.Exists(backupRoot))
+                    {
+                        try { Directory.Delete(backupRoot, true); } catch {}
+                    }
+                }
+                catch {}
+
+                res.RestoredAppDataCounts = adCounts.ToArray();
+                res.RestoredRegIndices = impDone.ToArray();
+                return res;
+            });
+        }
+
         public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
         {
             return Task.Run(delegate() { return ScanCatalogSensors(); });
@@ -10459,6 +10646,30 @@ namespace DuckUtil
             return false;
         }
 
+        public static bool IsVersionAtLeastAvailable(string installedVer, string wgVer, string wgAvail)
+        {
+            if (!HasNumericVersion(installedVer)) return false;
+            if (!HasNumericVersion(wgAvail)) return false;
+            if (CompareAppVersions(installedVer, wgAvail) >= 0) return true;
+
+            // Truncated Registry DisplayVersion (e.g. "24.09" vs WinGet Available "24.09.1" when WinGet Installed was "24.08")
+            long[] locNums = GetVersionNumbers(installedVer);
+            long[] availNums = GetVersionNumbers(wgAvail);
+            if (locNums.Length >= 2 && locNums.Length < availNums.Length)
+            {
+                bool isPrefix = true;
+                for (int i = 0; i < locNums.Length; i++)
+                {
+                    if (locNums[i] != availNums[i]) { isPrefix = false; break; }
+                }
+                if (isPrefix && HasNumericVersion(wgVer) && CompareAppVersions(installedVer, wgVer) > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static CatalogSensorItem SelectPreferredSensorPair(CatalogSensorItem cur, CatalogSensorItem cand)
         {
             if (cur == null) return cand;
@@ -10476,7 +10687,7 @@ namespace DuckUtil
                 {
                     if (wgItem.HasUpdate && HasNumericVersion(wgItem.Available))
                     {
-                        if (CompareAppVersions(locItem.Version, wgItem.Available) >= 0) return locItem;
+                        if (IsVersionAtLeastAvailable(locItem.Version, wgItem.Version, wgItem.Available)) return locItem;
                         return wgItem;
                     }
                     if (!HasNumericVersion(wgItem.Version) || CompareAppVersions(locItem.Version, wgItem.Version) > 0)
@@ -10489,8 +10700,24 @@ namespace DuckUtil
 
             bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
             bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
-            if (curSyn && !candSyn) return cand;
-            if (!curSyn && candSyn) return cur;
+            if (curSyn != candSyn)
+            {
+                CatalogSensorItem synItem = curSyn ? cur : cand;
+                CatalogSensorItem realItem = curSyn ? cand : cur;
+                if (HasNumericVersion(synItem.Version))
+                {
+                    if (realItem.HasUpdate && HasNumericVersion(realItem.Available))
+                    {
+                        if (IsVersionAtLeastAvailable(synItem.Version, realItem.Version, realItem.Available)) return synItem;
+                        return realItem;
+                    }
+                    if (!HasNumericVersion(realItem.Version) || CompareAppVersions(synItem.Version, realItem.Version) > 0)
+                    {
+                        return synItem;
+                    }
+                }
+                return realItem;
+            }
 
             // Only merge Version/Available when both entries share the same real package ID
             if (string.Equals(cur.ID ?? "", cand.ID ?? "", StringComparison.OrdinalIgnoreCase))
@@ -10601,43 +10828,94 @@ namespace DuckUtil
             return jaro + (prefix * 0.1 * (1.0 - jaro));
         }
 
+        private static bool IsLocalOrSyntheticCandidate(CatalogSensorItem item)
+        {
+            if (item == null) return false;
+            if (string.Equals(item.Source, "local", StringComparison.OrdinalIgnoreCase)) return true;
+            return _rxSyntheticId.IsMatch(item.ID ?? "");
+        }
+
         private static CatalogSensorItem RefineIdMatchWithLocal(
             CompiledTargetMeta meta,
             CatalogSensorItem cand,
             Dictionary<string, CatalogSensorItem> nameMap,
-            Dictionary<string, List<CatalogSensorItem>> cleanNameMap)
+            Dictionary<string, List<CatalogSensorItem>> cleanNameMap,
+            Dictionary<string, List<CatalogSensorItem>> compactNameMap)
         {
             if (cand == null || string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase)) return cand;
             CatalogSensorItem best = cand;
             CatalogSensorItem alt;
 
             if (!string.IsNullOrEmpty(cand.Name) && nameMap.TryGetValue(cand.Name, out alt) &&
-                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+                IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
             {
                 best = SelectPreferredSensorPair(best, alt);
             }
             if (!string.IsNullOrEmpty(meta.Name) && !string.Equals(meta.Name, cand.Name, StringComparison.OrdinalIgnoreCase) &&
                 nameMap.TryGetValue(meta.Name, out alt) &&
-                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+                IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
             {
                 best = SelectPreferredSensorPair(best, alt);
             }
-
-            string[] cleanKeys = new string[] { cand.CleanName ?? "", meta.CleanTarget ?? "" };
-            for (int k = 0; k < cleanKeys.Length; k++)
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
-                string ck = cleanKeys[k];
-                if (ck.Length < 2) continue;
-                if (k == 1 && string.Equals(ck, cleanKeys[0], StringComparison.OrdinalIgnoreCase)) continue;
+                string rawAl = meta.CleanAliases[a].Raw;
+                if (!string.IsNullOrEmpty(rawAl) && nameMap.TryGetValue(rawAl, out alt) &&
+                    IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
+                {
+                    best = SelectPreferredSensorPair(best, alt);
+                }
+            }
+
+            var seenClean = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var cleanKeys = new List<string>(2 + meta.CleanAliases.Count);
+            if (!string.IsNullOrWhiteSpace(cand.CleanName) && cand.CleanName.Length >= 2 && seenClean.Add(cand.CleanName)) cleanKeys.Add(cand.CleanName);
+            if (!string.IsNullOrWhiteSpace(meta.CleanTarget) && meta.CleanTarget.Length >= 2 && seenClean.Add(meta.CleanTarget)) cleanKeys.Add(meta.CleanTarget);
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                string ac = meta.CleanAliases[a].Clean;
+                if (!string.IsNullOrWhiteSpace(ac) && ac.Length >= 2 && seenClean.Add(ac)) cleanKeys.Add(ac);
+            }
+            for (int k = 0; k < cleanKeys.Count; k++)
+            {
                 List<CatalogSensorItem> bucket;
-                if (cleanNameMap.TryGetValue(ck, out bucket))
+                if (cleanNameMap.TryGetValue(cleanKeys[k], out bucket))
                 {
                     for (int i = 0; i < bucket.Count; i++)
                     {
                         CatalogSensorItem loc = bucket[i];
-                        if (string.Equals(loc.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, loc))
+                        if (IsLocalOrSyntheticCandidate(loc) && IsMatchCompatible(meta, loc))
                         {
                             best = SelectPreferredSensorPair(best, loc);
+                        }
+                    }
+                }
+            }
+
+            if (compactNameMap != null)
+            {
+                var seenComp = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var compKeys = new List<string>(2 + meta.CleanAliases.Count);
+                string candComp = CompactAlnumKey(cand.CleanName ?? "");
+                if (candComp.Length >= 4 && seenComp.Add(candComp)) compKeys.Add(candComp);
+                if (meta.CompactTarget.Length >= 4 && seenComp.Add(meta.CompactTarget)) compKeys.Add(meta.CompactTarget);
+                for (int a = 0; a < meta.CleanAliases.Count; a++)
+                {
+                    string acmp = meta.CleanAliases[a].Compact;
+                    if (!string.IsNullOrWhiteSpace(acmp) && acmp.Length >= 4 && seenComp.Add(acmp)) compKeys.Add(acmp);
+                }
+                for (int k = 0; k < compKeys.Count; k++)
+                {
+                    List<CatalogSensorItem> bucket;
+                    if (compactNameMap.TryGetValue(compKeys[k], out bucket))
+                    {
+                        for (int i = 0; i < bucket.Count; i++)
+                        {
+                            CatalogSensorItem loc = bucket[i];
+                            if (IsLocalOrSyntheticCandidate(loc) && IsMatchCompatible(meta, loc))
+                            {
+                                best = SelectPreferredSensorPair(best, loc);
+                            }
                         }
                     }
                 }
@@ -10662,20 +10940,26 @@ namespace DuckUtil
 
             if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
             {
-                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
             }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
                 {
-                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
                 }
             }
-            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
+            {
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
+            }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 AliasPatternPair ap = meta.CleanAliases[a];
-                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
+                }
                 if (ap.Clean.Length >= 2)
                 {
                     cand = FindBestCompatibleInBucket(meta, cleanNameMap, ap.Clean);
@@ -13021,8 +13305,9 @@ namespace DuckUtil
 
         public static void PrewarmElevationCache()
         {
-            ElevationPidProvider provider = CustomElevationPidProvider;
-            if (provider == null) return;
+            bool onThreadPool = false;
+            try { onThreadPool = Thread.CurrentThread.IsThreadPoolThread; } catch {}
+            ElevationPidProvider provider = onThreadPool ? null : CustomElevationPidProvider;
             lock (_tiLock)
             {
                 if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
@@ -13032,9 +13317,60 @@ namespace DuckUtil
                 if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
                 {
                     _lastTiLookupAtUtc = DateTime.UtcNow;
-                    try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                    if (provider != null)
+                    {
+                        try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                    }
+                    else
+                    {
+                        _cachedTiPid = FindProcessIdByNameFast("TrustedInstaller");
+                    }
                 }
             }
+        }
+
+        public static Task PrewarmElevationCacheAsync()
+        {
+            return Task.Run(delegate()
+            {
+                lock (_tiLock)
+                {
+                    if (_cachedTiPid > 4 && IsProcessAliveFast(_cachedTiPid))
+                    {
+                        return;
+                    }
+                    _cachedTiPid = 0;
+                    if ((DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds < 12)
+                    {
+                        return;
+                    }
+                    _lastTiLookupAtUtc = DateTime.UtcNow;
+                    int found = FindProcessIdByNameFast("TrustedInstaller");
+                    if (found <= 4)
+                    {
+                        try
+                        {
+                            var psi = new ProcessStartInfo();
+                            psi.FileName = "sc.exe";
+                            psi.Arguments = "start TrustedInstaller";
+                            psi.UseShellExecute = false;
+                            psi.CreateNoWindow = true;
+                            using (Process p = Process.Start(psi))
+                            {
+                                if (p != null) p.WaitForExit(2500);
+                            }
+                            for (int attempt = 0; attempt < 6; attempt++)
+                            {
+                                found = FindProcessIdByNameFast("TrustedInstaller");
+                                if (found > 4) break;
+                                Thread.Sleep(120);
+                            }
+                        }
+                        catch {}
+                    }
+                    _cachedTiPid = found;
+                }
+            });
         }
 
         private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
@@ -21666,6 +22002,193 @@ namespace DuckUtil
             return restoredCount;
         }
 
+        public class UpgradeGuardSnapshotResult
+        {
+            public bool HasSnapshots { get; set; }
+            public string[] CopiedAppDataDirs { get; set; }
+            public string[] CopiedAppDataBackups { get; set; }
+            public int[] ExportedRegIndices { get; set; }
+        }
+
+        public class UpgradeGuardRestoreResult
+        {
+            public int RestoredLocFiles { get; set; }
+            public int[] RestoredAppDataCounts { get; set; }
+            public int[] RestoredRegIndices { get; set; }
+        }
+
+        public static Task<UpgradeGuardSnapshotResult> UpgradeGuardSnapshotAsync(
+            string backupRoot,
+            string existingLoc,
+            string locBkp,
+            bool canSnapshotLoc,
+            string[] appDataDirs,
+            string[] appDataBkps,
+            string[] hkcuRawKeys,
+            string[] regFiles,
+            long maxBytes)
+        {
+            return Task.Run(delegate()
+            {
+                var res = new UpgradeGuardSnapshotResult();
+                var copiedDirs = new List<string>();
+                var copiedBkps = new List<string>();
+                var exportedIdx = new List<int>();
+                bool hasAny = false;
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(backupRoot))
+                    {
+                        if (Directory.Exists(backupRoot))
+                        {
+                            try { Directory.Delete(backupRoot, true); } catch {}
+                        }
+                        Directory.CreateDirectory(backupRoot);
+                    }
+
+                    if (canSnapshotLoc && !string.IsNullOrWhiteSpace(existingLoc) && !string.IsNullOrWhiteSpace(locBkp))
+                    {
+                        long bLoc = BackupDirectorySnapshot(existingLoc, locBkp, maxBytes, true);
+                        if (bLoc > 0) hasAny = true;
+                    }
+
+                    if (appDataDirs != null && appDataBkps != null)
+                    {
+                        int nAd = Math.Min(appDataDirs.Length, appDataBkps.Length);
+                        for (int i = 0; i < nAd; i++)
+                        {
+                            string adDir = appDataDirs[i];
+                            string adBkp = appDataBkps[i];
+                            if (string.IsNullOrWhiteSpace(adDir) || string.IsNullOrWhiteSpace(adBkp)) continue;
+                            long bAd = BackupDirectorySnapshot(adDir, adBkp, maxBytes, false);
+                            if (bAd > 0)
+                            {
+                                hasAny = true;
+                                copiedDirs.Add(adDir);
+                                copiedBkps.Add(adBkp);
+                            }
+                        }
+                    }
+
+                    if (hkcuRawKeys != null && regFiles != null)
+                    {
+                        int nReg = Math.Min(hkcuRawKeys.Length, regFiles.Length);
+                        for (int i = 0; i < nReg; i++)
+                        {
+                            string rawKey = hkcuRawKeys[i];
+                            string regFile = regFiles[i];
+                            if (string.IsNullOrWhiteSpace(rawKey) || string.IsNullOrWhiteSpace(regFile)) continue;
+                            try
+                            {
+                                var psi = new ProcessStartInfo();
+                                psi.FileName = "reg.exe";
+                                psi.Arguments = "export \"" + rawKey + "\" \"" + regFile + "\" /y";
+                                psi.CreateNoWindow = true;
+                                psi.UseShellExecute = false;
+                                using (Process p = Process.Start(psi))
+                                {
+                                    if (p != null && p.WaitForExit(10000) && p.ExitCode == 0 && File.Exists(regFile))
+                                    {
+                                        hasAny = true;
+                                        exportedIdx.Add(i);
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+
+                res.HasSnapshots = hasAny;
+                res.CopiedAppDataDirs = copiedDirs.ToArray();
+                res.CopiedAppDataBackups = copiedBkps.ToArray();
+                res.ExportedRegIndices = exportedIdx.ToArray();
+                return res;
+            });
+        }
+
+        public static Task<UpgradeGuardRestoreResult> UpgradeGuardRestoreAsync(
+            string backupRoot,
+            bool shouldRestore,
+            string existingLoc,
+            string locBkp,
+            bool canSnapshotLoc,
+            string[] appDataDirs,
+            string[] appDataBkps,
+            string[] regFilesToImport,
+            int[] regImportIndices)
+        {
+            return Task.Run(delegate()
+            {
+                var res = new UpgradeGuardRestoreResult();
+                var adCounts = new List<int>();
+                var impDone = new List<int>();
+
+                try
+                {
+                    if (shouldRestore)
+                    {
+                        if (canSnapshotLoc && !string.IsNullOrWhiteSpace(locBkp) && !string.IsNullOrWhiteSpace(existingLoc) && Directory.Exists(locBkp))
+                        {
+                            res.RestoredLocFiles = RestoreDirectorySnapshot(locBkp, existingLoc);
+                        }
+
+                        if (appDataDirs != null && appDataBkps != null)
+                        {
+                            int nAd = Math.Min(appDataDirs.Length, appDataBkps.Length);
+                            for (int i = 0; i < nAd; i++)
+                            {
+                                int cnt = 0;
+                                if (!string.IsNullOrWhiteSpace(appDataBkps[i]) && !string.IsNullOrWhiteSpace(appDataDirs[i]) && Directory.Exists(appDataBkps[i]))
+                                {
+                                    cnt = RestoreDirectorySnapshot(appDataBkps[i], appDataDirs[i]);
+                                }
+                                adCounts.Add(cnt);
+                            }
+                        }
+
+                        if (regFilesToImport != null && regImportIndices != null)
+                        {
+                            int nImp = Math.Min(regFilesToImport.Length, regImportIndices.Length);
+                            for (int i = 0; i < nImp; i++)
+                            {
+                                string rf = regFilesToImport[i];
+                                if (string.IsNullOrWhiteSpace(rf) || !File.Exists(rf)) continue;
+                                try
+                                {
+                                    var psi = new ProcessStartInfo();
+                                    psi.FileName = "reg.exe";
+                                    psi.Arguments = "import \"" + rf + "\"";
+                                    psi.CreateNoWindow = true;
+                                    psi.UseShellExecute = false;
+                                    using (Process p = Process.Start(psi))
+                                    {
+                                        if (p != null && p.WaitForExit(10000) && p.ExitCode == 0)
+                                        {
+                                            impDone.Add(regImportIndices[i]);
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(backupRoot) && Directory.Exists(backupRoot))
+                    {
+                        try { Directory.Delete(backupRoot, true); } catch {}
+                    }
+                }
+                catch {}
+
+                res.RestoredAppDataCounts = adCounts.ToArray();
+                res.RestoredRegIndices = impDone.ToArray();
+                return res;
+            });
+        }
+
         public static Task<List<CatalogSensorItem>> ScanCatalogSensorsAsync()
         {
             return Task.Run(delegate() { return ScanCatalogSensors(); });
@@ -22111,6 +22634,30 @@ namespace DuckUtil
             return false;
         }
 
+        public static bool IsVersionAtLeastAvailable(string installedVer, string wgVer, string wgAvail)
+        {
+            if (!HasNumericVersion(installedVer)) return false;
+            if (!HasNumericVersion(wgAvail)) return false;
+            if (CompareAppVersions(installedVer, wgAvail) >= 0) return true;
+
+            // Truncated Registry DisplayVersion (e.g. "24.09" vs WinGet Available "24.09.1" when WinGet Installed was "24.08")
+            long[] locNums = GetVersionNumbers(installedVer);
+            long[] availNums = GetVersionNumbers(wgAvail);
+            if (locNums.Length >= 2 && locNums.Length < availNums.Length)
+            {
+                bool isPrefix = true;
+                for (int i = 0; i < locNums.Length; i++)
+                {
+                    if (locNums[i] != availNums[i]) { isPrefix = false; break; }
+                }
+                if (isPrefix && HasNumericVersion(wgVer) && CompareAppVersions(installedVer, wgVer) > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static CatalogSensorItem SelectPreferredSensorPair(CatalogSensorItem cur, CatalogSensorItem cand)
         {
             if (cur == null) return cand;
@@ -22128,7 +22675,7 @@ namespace DuckUtil
                 {
                     if (wgItem.HasUpdate && HasNumericVersion(wgItem.Available))
                     {
-                        if (CompareAppVersions(locItem.Version, wgItem.Available) >= 0) return locItem;
+                        if (IsVersionAtLeastAvailable(locItem.Version, wgItem.Version, wgItem.Available)) return locItem;
                         return wgItem;
                     }
                     if (!HasNumericVersion(wgItem.Version) || CompareAppVersions(locItem.Version, wgItem.Version) > 0)
@@ -22141,8 +22688,24 @@ namespace DuckUtil
 
             bool curSyn = _rxSyntheticId.IsMatch(cur.ID ?? "");
             bool candSyn = _rxSyntheticId.IsMatch(cand.ID ?? "");
-            if (curSyn && !candSyn) return cand;
-            if (!curSyn && candSyn) return cur;
+            if (curSyn != candSyn)
+            {
+                CatalogSensorItem synItem = curSyn ? cur : cand;
+                CatalogSensorItem realItem = curSyn ? cand : cur;
+                if (HasNumericVersion(synItem.Version))
+                {
+                    if (realItem.HasUpdate && HasNumericVersion(realItem.Available))
+                    {
+                        if (IsVersionAtLeastAvailable(synItem.Version, realItem.Version, realItem.Available)) return synItem;
+                        return realItem;
+                    }
+                    if (!HasNumericVersion(realItem.Version) || CompareAppVersions(synItem.Version, realItem.Version) > 0)
+                    {
+                        return synItem;
+                    }
+                }
+                return realItem;
+            }
 
             // Only merge Version/Available when both entries share the same real package ID
             if (string.Equals(cur.ID ?? "", cand.ID ?? "", StringComparison.OrdinalIgnoreCase))
@@ -22253,43 +22816,94 @@ namespace DuckUtil
             return jaro + (prefix * 0.1 * (1.0 - jaro));
         }
 
+        private static bool IsLocalOrSyntheticCandidate(CatalogSensorItem item)
+        {
+            if (item == null) return false;
+            if (string.Equals(item.Source, "local", StringComparison.OrdinalIgnoreCase)) return true;
+            return _rxSyntheticId.IsMatch(item.ID ?? "");
+        }
+
         private static CatalogSensorItem RefineIdMatchWithLocal(
             CompiledTargetMeta meta,
             CatalogSensorItem cand,
             Dictionary<string, CatalogSensorItem> nameMap,
-            Dictionary<string, List<CatalogSensorItem>> cleanNameMap)
+            Dictionary<string, List<CatalogSensorItem>> cleanNameMap,
+            Dictionary<string, List<CatalogSensorItem>> compactNameMap)
         {
             if (cand == null || string.Equals(cand.Source, "local", StringComparison.OrdinalIgnoreCase)) return cand;
             CatalogSensorItem best = cand;
             CatalogSensorItem alt;
 
             if (!string.IsNullOrEmpty(cand.Name) && nameMap.TryGetValue(cand.Name, out alt) &&
-                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+                IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
             {
                 best = SelectPreferredSensorPair(best, alt);
             }
             if (!string.IsNullOrEmpty(meta.Name) && !string.Equals(meta.Name, cand.Name, StringComparison.OrdinalIgnoreCase) &&
                 nameMap.TryGetValue(meta.Name, out alt) &&
-                string.Equals(alt.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, alt))
+                IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
             {
                 best = SelectPreferredSensorPair(best, alt);
             }
-
-            string[] cleanKeys = new string[] { cand.CleanName ?? "", meta.CleanTarget ?? "" };
-            for (int k = 0; k < cleanKeys.Length; k++)
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
-                string ck = cleanKeys[k];
-                if (ck.Length < 2) continue;
-                if (k == 1 && string.Equals(ck, cleanKeys[0], StringComparison.OrdinalIgnoreCase)) continue;
+                string rawAl = meta.CleanAliases[a].Raw;
+                if (!string.IsNullOrEmpty(rawAl) && nameMap.TryGetValue(rawAl, out alt) &&
+                    IsLocalOrSyntheticCandidate(alt) && IsMatchCompatible(meta, alt))
+                {
+                    best = SelectPreferredSensorPair(best, alt);
+                }
+            }
+
+            var seenClean = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var cleanKeys = new List<string>(2 + meta.CleanAliases.Count);
+            if (!string.IsNullOrWhiteSpace(cand.CleanName) && cand.CleanName.Length >= 2 && seenClean.Add(cand.CleanName)) cleanKeys.Add(cand.CleanName);
+            if (!string.IsNullOrWhiteSpace(meta.CleanTarget) && meta.CleanTarget.Length >= 2 && seenClean.Add(meta.CleanTarget)) cleanKeys.Add(meta.CleanTarget);
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                string ac = meta.CleanAliases[a].Clean;
+                if (!string.IsNullOrWhiteSpace(ac) && ac.Length >= 2 && seenClean.Add(ac)) cleanKeys.Add(ac);
+            }
+            for (int k = 0; k < cleanKeys.Count; k++)
+            {
                 List<CatalogSensorItem> bucket;
-                if (cleanNameMap.TryGetValue(ck, out bucket))
+                if (cleanNameMap.TryGetValue(cleanKeys[k], out bucket))
                 {
                     for (int i = 0; i < bucket.Count; i++)
                     {
                         CatalogSensorItem loc = bucket[i];
-                        if (string.Equals(loc.Source, "local", StringComparison.OrdinalIgnoreCase) && IsMatchCompatible(meta, loc))
+                        if (IsLocalOrSyntheticCandidate(loc) && IsMatchCompatible(meta, loc))
                         {
                             best = SelectPreferredSensorPair(best, loc);
+                        }
+                    }
+                }
+            }
+
+            if (compactNameMap != null)
+            {
+                var seenComp = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var compKeys = new List<string>(2 + meta.CleanAliases.Count);
+                string candComp = CompactAlnumKey(cand.CleanName ?? "");
+                if (candComp.Length >= 4 && seenComp.Add(candComp)) compKeys.Add(candComp);
+                if (meta.CompactTarget.Length >= 4 && seenComp.Add(meta.CompactTarget)) compKeys.Add(meta.CompactTarget);
+                for (int a = 0; a < meta.CleanAliases.Count; a++)
+                {
+                    string acmp = meta.CleanAliases[a].Compact;
+                    if (!string.IsNullOrWhiteSpace(acmp) && acmp.Length >= 4 && seenComp.Add(acmp)) compKeys.Add(acmp);
+                }
+                for (int k = 0; k < compKeys.Count; k++)
+                {
+                    List<CatalogSensorItem> bucket;
+                    if (compactNameMap.TryGetValue(compKeys[k], out bucket))
+                    {
+                        for (int i = 0; i < bucket.Count; i++)
+                        {
+                            CatalogSensorItem loc = bucket[i];
+                            if (IsLocalOrSyntheticCandidate(loc) && IsMatchCompatible(meta, loc))
+                            {
+                                best = SelectPreferredSensorPair(best, loc);
+                            }
                         }
                     }
                 }
@@ -22314,20 +22928,26 @@ namespace DuckUtil
 
             if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
             {
-                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
             }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
                 {
-                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap);
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
                 }
             }
-            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
+            {
+                return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
+            }
             for (int a = 0; a < meta.CleanAliases.Count; a++)
             {
                 AliasPatternPair ap = meta.CleanAliases[a];
-                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
+                {
+                    return RefineIdMatchWithLocal(meta, cand, nameMap, cleanNameMap, compactNameMap);
+                }
                 if (ap.Clean.Length >= 2)
                 {
                     cand = FindBestCompatibleInBucket(meta, cleanNameMap, ap.Clean);
@@ -24693,8 +25313,9 @@ namespace DuckUtil
 
         public static void PrewarmElevationCache()
         {
-            ElevationPidProvider provider = CustomElevationPidProvider;
-            if (provider == null) return;
+            bool onThreadPool = false;
+            try { onThreadPool = Thread.CurrentThread.IsThreadPoolThread; } catch {}
+            ElevationPidProvider provider = onThreadPool ? null : CustomElevationPidProvider;
             lock (_tiLock)
             {
                 if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
@@ -24704,9 +25325,60 @@ namespace DuckUtil
                 if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
                 {
                     _lastTiLookupAtUtc = DateTime.UtcNow;
-                    try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                    if (provider != null)
+                    {
+                        try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                    }
+                    else
+                    {
+                        _cachedTiPid = FindProcessIdByNameFast("TrustedInstaller");
+                    }
                 }
             }
+        }
+
+        public static Task PrewarmElevationCacheAsync()
+        {
+            return Task.Run(delegate()
+            {
+                lock (_tiLock)
+                {
+                    if (_cachedTiPid > 4 && IsProcessAliveFast(_cachedTiPid))
+                    {
+                        return;
+                    }
+                    _cachedTiPid = 0;
+                    if ((DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds < 12)
+                    {
+                        return;
+                    }
+                    _lastTiLookupAtUtc = DateTime.UtcNow;
+                    int found = FindProcessIdByNameFast("TrustedInstaller");
+                    if (found <= 4)
+                    {
+                        try
+                        {
+                            var psi = new ProcessStartInfo();
+                            psi.FileName = "sc.exe";
+                            psi.Arguments = "start TrustedInstaller";
+                            psi.UseShellExecute = false;
+                            psi.CreateNoWindow = true;
+                            using (Process p = Process.Start(psi))
+                            {
+                                if (p != null) p.WaitForExit(2500);
+                            }
+                            for (int attempt = 0; attempt < 6; attempt++)
+                            {
+                                found = FindProcessIdByNameFast("TrustedInstaller");
+                                if (found > 4) break;
+                                Thread.Sleep(120);
+                            }
+                        }
+                        catch {}
+                    }
+                    _cachedTiPid = found;
+                }
+            });
         }
 
         private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)
@@ -29311,6 +29983,25 @@ function Slice-WingetRowColumnsByPositions {
     return @($appName, $appId, $version, $avail, $src)
 }
 
+function Test-VersionAtLeastAvailable {
+    param([string]$InstalledVer, [string]$WgVer, [string]$WgAvail)
+    if ([string]::IsNullOrWhiteSpace($InstalledVer) -or $InstalledVer -match '^(Installed|Unknown)$' -or $InstalledVer -notmatch '\d') { return $false }
+    if ([string]::IsNullOrWhiteSpace($WgAvail) -or $WgAvail -match '^(Installed|Unknown)$' -or $WgAvail -notmatch '\d') { return $false }
+    if ((Compare-AppVersions $InstalledVer $WgAvail) -ge 0) { return $true }
+    $locNums = @(Get-VersionNumbers $InstalledVer)
+    $availNums = @(Get-VersionNumbers $WgAvail)
+    if ($locNums.Count -ge 2 -and $locNums.Count -lt $availNums.Count) {
+        $isPrefix = $true
+        for ($i = 0; $i -lt $locNums.Count; $i++) {
+            if ($locNums[$i] -ne $availNums[$i]) { $isPrefix = $false; break }
+        }
+        if ($isPrefix -and -not [string]::IsNullOrWhiteSpace($WgVer) -and ($WgVer -match '\d') -and ((Compare-AppVersions $InstalledVer $WgVer) -gt 0)) {
+            return $true
+        }
+    }
+    return $false
+}
+
 function Set-PreferredMapEntry {
     param($Map, [string]$Key, $Candidate)
     if ([string]::IsNullOrWhiteSpace($Key) -or $null -eq $Candidate) { return }
@@ -29322,21 +30013,45 @@ function Set-PreferredMapEntry {
     $curIsLocal = ($cur.Source -eq "local")
     $candIsLocal = ($Candidate.Source -eq "local")
 
-    if ($curIsLocal -and -not $candIsLocal) {
-        $Map[$Key] = $Candidate
-        return
-    }
-    if (-not $curIsLocal -and $candIsLocal) {
+    if ($curIsLocal -ne $candIsLocal) {
+        $locItem = if ($curIsLocal) { $cur } else { $Candidate }
+        $wgItem = if ($curIsLocal) { $Candidate } else { $cur }
+        $hasLocNum = (-not [string]::IsNullOrWhiteSpace($locItem.Version) -and $locItem.Version -notmatch '^(Installed|Unknown)$' -and $locItem.Version -match '\d')
+        $hasWgVerNum = (-not [string]::IsNullOrWhiteSpace($wgItem.Version) -and $wgItem.Version -notmatch '^(Installed|Unknown)$' -and $wgItem.Version -match '\d')
+        $hasWgAvailNum = (-not [string]::IsNullOrWhiteSpace($wgItem.Available) -and $wgItem.Available -notmatch '^(Installed|Unknown)$' -and $wgItem.Available -match '\d')
+        if ($hasLocNum) {
+            if ($wgItem.HasUpdate -and $hasWgAvailNum) {
+                $Map[$Key] = if (Test-VersionAtLeastAvailable -InstalledVer $locItem.Version -WgVer $wgItem.Version -WgAvail $wgItem.Available) { $locItem } else { $wgItem }
+                return
+            }
+            if (-not $hasWgVerNum -or (Compare-AppVersions $locItem.Version $wgItem.Version) -gt 0) {
+                $Map[$Key] = $locItem
+                return
+            }
+        }
+        $Map[$Key] = $wgItem
         return
     }
 
     $curIsSynthetic = ($cur.ID -match '^(ARP|MSIX|LOCAL)\\')
     $candIsSynthetic = ($Candidate.ID -match '^(ARP|MSIX|LOCAL)\\')
-    if ($curIsSynthetic -and -not $candIsSynthetic) {
-        $Map[$Key] = $Candidate
-        return
-    }
-    if (-not $curIsSynthetic -and $candIsSynthetic) {
+    if ($curIsSynthetic -ne $candIsSynthetic) {
+        $synItem = if ($curIsSynthetic) { $cur } else { $Candidate }
+        $realItem = if ($curIsSynthetic) { $Candidate } else { $cur }
+        $hasSynNum = (-not [string]::IsNullOrWhiteSpace($synItem.Version) -and $synItem.Version -notmatch '^(Installed|Unknown)$' -and $synItem.Version -match '\d')
+        $hasRealVerNum = (-not [string]::IsNullOrWhiteSpace($realItem.Version) -and $realItem.Version -notmatch '^(Installed|Unknown)$' -and $realItem.Version -match '\d')
+        $hasRealAvailNum = (-not [string]::IsNullOrWhiteSpace($realItem.Available) -and $realItem.Available -notmatch '^(Installed|Unknown)$' -and $realItem.Available -match '\d')
+        if ($hasSynNum) {
+            if ($realItem.HasUpdate -and $hasRealAvailNum) {
+                $Map[$Key] = if (Test-VersionAtLeastAvailable -InstalledVer $synItem.Version -WgVer $realItem.Version -WgAvail $realItem.Available) { $synItem } else { $realItem }
+                return
+            }
+            if (-not $hasRealVerNum -or (Compare-AppVersions $synItem.Version $realItem.Version) -gt 0) {
+                $Map[$Key] = $synItem
+                return
+            }
+        }
+        $Map[$Key] = $realItem
         return
     }
 
@@ -30471,7 +31186,12 @@ function Apply-InstalledDatabaseToRows {
                 $effectiveAvailable = [string]$info.Available
                 if (-not $effectiveHasUpdate -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
                     $snapOut = $prevOutdatedSnapshot[$ri]
-                    if ([string]$info.Version -eq $snapOut.Version) {
+                    $stillOut = if (-not [string]::IsNullOrWhiteSpace($snapOut.Available)) {
+                        [DuckUtil.AppCatalogEngine]::TestAppUpdateGenuine([string]$info.Version, [string]$snapOut.Available)
+                    } else {
+                        [string]$info.Version -eq $snapOut.Version
+                    }
+                    if ($stillOut) {
                         $effectiveHasUpdate = $true
                         $effectiveAvailable = $snapOut.Available
                     }
@@ -30482,6 +31202,11 @@ function Apply-InstalledDatabaseToRows {
                 $prevDet = $tag.DetectedId
                 $tag.DetectedId = $info.ID
                 $tag.InstalledVersion = $info.Version
+                if ($tag.PSObject.Properties['AvailableVersion']) {
+                    $tag.AvailableVersion = if ($effectiveHasUpdate) { $effectiveAvailable } else { $null }
+                } else {
+                    Add-Member -InputObject $tag -NotePropertyName AvailableVersion -NotePropertyValue $(if ($effectiveHasUpdate) { $effectiveAvailable } else { $null }) -Force
+                }
 
                 if ($effectiveHasUpdate) {
                     $countOutdated++
@@ -30519,6 +31244,7 @@ function Apply-InstalledDatabaseToRows {
                 $prevStatus = $tag.Status
                 $tag.DetectedId = $null
                 $tag.InstalledVersion = $null
+                if ($tag.PSObject.Properties['AvailableVersion']) { $tag.AvailableVersion = $null }
                 $badgeStillShown = ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed)
                 if ($prevStatus -ne "NONE" -or $badgeStillShown) {
                     $tag.Status = "NONE"
@@ -30686,13 +31412,23 @@ function Apply-InstalledDatabaseToRows {
             $effAvail = [string]$info.Available
             if (-not $effHasUpd -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
                 $snapOutPs = $prevOutdatedSnapshot[$ri]
-                if ([string]$info.Version -eq $snapOutPs.Version) {
+                $stillOutPs = if (-not [string]::IsNullOrWhiteSpace($snapOutPs.Available)) {
+                    Test-AppUpdateGenuine -InstalledVer ([string]$info.Version) -AvailableVer ([string]$snapOutPs.Available)
+                } else {
+                    [string]$info.Version -eq $snapOutPs.Version
+                }
+                if ($stillOutPs) {
                     $effHasUpd = $true
                     $effAvail = $snapOutPs.Available
                 }
             }
             $row.Tag.DetectedId = $info.ID
             $row.Tag.InstalledVersion = $info.Version
+            if ($row.Tag.PSObject.Properties['AvailableVersion']) {
+                $row.Tag.AvailableVersion = if ($effHasUpd) { $effAvail } else { $null }
+            } else {
+                Add-Member -InputObject $row.Tag -NotePropertyName AvailableVersion -NotePropertyValue $(if ($effHasUpd) { $effAvail } else { $null }) -Force
+            }
 
             if ($effHasUpd) {
                 $countOutdated++
@@ -30726,6 +31462,7 @@ function Apply-InstalledDatabaseToRows {
             $prevStatus = $row.Tag.Status
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null
+            if ($row.Tag.PSObject.Properties['AvailableVersion']) { $row.Tag.AvailableVersion = $null }
             if ($prevStatus -ne "NONE") {
                 $row.Tag.Status = "NONE"
                 if ($tb) {
@@ -30963,7 +31700,7 @@ function Scan-And-ColorizeApps {
         }
 
         if (& $cancelBlock) { return }
-        $preserveOutdated = [bool]((-not $wingetOk) -and $script:hasCompletedAppScan)
+        $preserveOutdated = [bool]((-not $wingetOk) -and (-not $ForceSourceRefresh) -and $script:hasCompletedAppScan)
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock -PreserveOutdatedOnLocalFallback:$preserveOutdated
         if (($finalStats.PSObject.Properties['Canceled'] -and $finalStats.Canceled) -or (& $cancelBlock)) { return }
         if (-not $Quiet -and $progressBar) {
@@ -32495,7 +33232,13 @@ function Invoke-ForceStopPathLockers {
     $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
     if (-not $deepType) { return $resObj }
 
-    if ($null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+    if ($null -ne $deepType.GetMethod("PrewarmElevationCacheAsync") -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))) {
+        try {
+            $pwTask = $deepType::PrewarmElevationCacheAsync()
+            $pwCancel = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+            [void](Wait-TaskNonBlocking -Task $pwTask -TimeoutSeconds 4 -CancelCheck $pwCancel)
+        } catch {}
+    } elseif ($null -ne $deepType.GetMethod("PrewarmElevationCache")) {
         try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
     }
 
@@ -33197,7 +33940,12 @@ function Show-LeftoverReviewDialog {
         try {
             $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
             $canWaitAsync = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
-            if ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+            if ($deepType -and $canWaitAsync -and $null -ne $deepType.GetMethod("PrewarmElevationCacheAsync")) {
+                try {
+                    $pwTaskDlg = $deepType::PrewarmElevationCacheAsync()
+                    [void](Wait-TaskNonBlocking -Task $pwTaskDlg -TimeoutSeconds 4)
+                } catch {}
+            } elseif ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
                 try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
             }
             $hasSilentRecycle = ($null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilently"))
@@ -33299,7 +34047,15 @@ function Show-LeftoverReviewDialog {
                                 $psiTask.UseShellExecute = $false
                                 $psiTask.CreateNoWindow = $true
                                 $pTask = [System.Diagnostics.Process]::Start($psiTask)
-                                if ($pTask) { [void]$pTask.WaitForExit(5000); $pTask.Dispose() }
+                                if ($pTask) {
+                                    if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("WaitForProcessExitAsync")) {
+                                        $tWaitTask = $deepType::WaitForProcessExitAsync($pTask)
+                                        [void](Wait-TaskNonBlocking -Task $tWaitTask -TimeoutSeconds 5)
+                                    } else {
+                                        [void]$pTask.WaitForExit(5000)
+                                    }
+                                    $pTask.Dispose()
+                                }
                             } catch {}
                             if (-not (Test-Path -LiteralPath $ci.Path)) {
                                 $removed++
@@ -33705,7 +34461,10 @@ function Invoke-DeepAppUninstall {
 
     $canWaitNonBlocking = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
     $deepEngT = "DuckUtil.DeepUninstallerEngine" -as [type]
-    if ($deepEngT -and $null -ne $deepEngT.GetMethod("PrewarmElevationCache")) {
+    $prewarmTask = $null
+    if ($deepEngT -and $canWaitNonBlocking -and $null -ne $deepEngT.GetMethod("PrewarmElevationCacheAsync")) {
+        try { $prewarmTask = $deepEngT::PrewarmElevationCacheAsync() } catch {}
+    } elseif ($deepEngT -and $null -ne $deepEngT.GetMethod("PrewarmElevationCache")) {
         try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
     }
 
@@ -39715,6 +40474,18 @@ function Resolve-ValidatedUpgradeId {
     return [string]$App.ID
 }
 
+function Compare-CatalogVersionsSafe {
+    param([string]$VerA, [string]$VerB)
+    if ("DuckUtil.AppCatalogEngine" -as [type]) {
+        return [DuckUtil.AppCatalogEngine]::CompareAppVersions($VerA, $VerB)
+    }
+    if (Get-Command "Compare-AppVersions" -ErrorAction SilentlyContinue) {
+        return (Compare-AppVersions $VerA $VerB)
+    }
+    if ($VerA -eq $VerB) { return 0 }
+    return 0
+}
+
 function Get-WinGetExactPackageState {
     param(
         [Parameter(Mandatory = $true)][string]$Id,
@@ -39733,11 +40504,32 @@ function Get-WinGetExactPackageState {
     $hasUnknown = $false
     $bestVer = ""
     $bestAvail = ""
+    $worstOutdatedVer = ""
     foreach ($it in $items) {
-        if ($it.HasUpdate) { $anyOutdated = $true }
+        if ($it.HasUpdate) {
+            $anyOutdated = $true
+            if ([string]::IsNullOrWhiteSpace($worstOutdatedVer)) { $worstOutdatedVer = [string]$it.Version }
+        }
         if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match '^(<|Unknown)') { $hasUnknown = $true }
-        if ([string]::IsNullOrWhiteSpace($bestVer) -and -not [string]::IsNullOrWhiteSpace($it.Version)) { $bestVer = [string]$it.Version }
-        if ([string]::IsNullOrWhiteSpace($bestAvail) -and -not [string]::IsNullOrWhiteSpace($it.Available)) { $bestAvail = [string]$it.Available }
+        if (-not [string]::IsNullOrWhiteSpace($it.Version)) {
+            if ([string]::IsNullOrWhiteSpace($bestVer) -or (Compare-CatalogVersionsSafe $it.Version $bestVer) -gt 0) {
+                $bestVer = [string]$it.Version
+            }
+        }
+        if (-not [string]::IsNullOrWhiteSpace($it.Available)) {
+            if ([string]::IsNullOrWhiteSpace($bestAvail) -or (Compare-CatalogVersionsSafe $it.Available $bestAvail) -gt 0) {
+                $bestAvail = [string]$it.Available
+            }
+        }
+    }
+    if ($anyOutdated -and -not [string]::IsNullOrWhiteSpace($bestVer) -and -not [string]::IsNullOrWhiteSpace($bestAvail)) {
+        if (("DuckUtil.AppCatalogEngine" -as [type]) -and $null -ne ([DuckUtil.AppCatalogEngine].GetMethod("IsVersionAtLeastAvailable"))) {
+            if ([DuckUtil.AppCatalogEngine]::IsVersionAtLeastAvailable($bestVer, $worstOutdatedVer, $bestAvail)) {
+                $anyOutdated = $false
+            }
+        } elseif ((Compare-CatalogVersionsSafe $bestVer $bestAvail) -ge 0) {
+            $anyOutdated = $false
+        }
     }
     return [PSCustomObject]@{
         Available         = $true
@@ -39928,50 +40720,101 @@ function Invoke-SmartAppUpgrade {
 
     $canSnapshotLoc = ($existingLoc -and $existingLoc -notmatch '(?i)\\WindowsApps(\\|$)' -and $existingLoc -notmatch '(?i)\\Package Cache(\\|$)' -and (Test-Path -LiteralPath $existingLoc))
     $shouldSnapshot = ($null -ne $snapshotType) -and ($canSnapshotLoc -or $targetAppDataDirs.Count -gt 0 -or $hkcuKeys.Count -gt 0)
+    $snapRawHkcuArr = [System.Collections.Generic.List[string]]::new()
+    $snapRegFileArr = [System.Collections.Generic.List[string]]::new()
+    $snapRegMeta    = [System.Collections.Generic.List[object]]::new()
+
     if ($shouldSnapshot) {
-        if (Test-Path -LiteralPath $backupRoot) {
-            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
-
-        if ($canSnapshotLoc) {
-            $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
-            if ($bytes -gt 0) { $hasSnapshots = $true }
-        }
-
+        $adBkpList = [System.Collections.Generic.List[string]]::new()
+        $adIdx = 0
         if (-not $IsBulkUpgrade) {
-            $adIdx = 0
             foreach ($adDir in $targetAppDataDirs) {
                 $adIdx++
-                $adBkpDir = Join-Path $backupRoot "AppData_$adIdx"
-                $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
-                if ($b -gt 0) {
-                    $hasSnapshots = $true
-                    $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
-                }
+                [void]$adBkpList.Add((Join-Path $backupRoot "AppData_$adIdx"))
             }
-
             $rkIdx = 0
             foreach ($rkEntry in $hkcuKeys) {
                 $rkIdx++
                 $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
                 $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
-                try {
-                    $regPsi = New-Object System.Diagnostics.ProcessStartInfo
-                    $regPsi.FileName = "reg.exe"
-                    $regPsi.Arguments = "export `"$rawHkcu`" `"$rf`" /y"
-                    $regPsi.CreateNoWindow = $true
-                    $regPsi.UseShellExecute = $false
-                    $pReg = [System.Diagnostics.Process]::Start($regPsi)
-                    try {
-                        if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $rf)) {
-                            $hasSnapshots = $true
-                            $regFiles.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
-                        }
-                    } finally {
-                        if ($pReg) { try { $pReg.Dispose() } catch {} }
+                [void]$snapRawHkcuArr.Add($rawHkcu)
+                [void]$snapRegFileArr.Add($rf)
+                [void]$snapRegMeta.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
+            }
+        }
+
+        $hasAsyncGuard = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardSnapshotAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        if ($hasAsyncGuard) {
+            $snapTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardSnapshotAsync(
+                $backupRoot,
+                [string]$existingLoc,
+                $locBkp,
+                [bool]$canSnapshotLoc,
+                [string[]]$targetAppDataDirs.ToArray(),
+                [string[]]$adBkpList.ToArray(),
+                [string[]]$snapRawHkcuArr.ToArray(),
+                [string[]]$snapRegFileArr.ToArray(),
+                26214400L
+            )
+            [void](Wait-TaskNonBlocking -Task $snapTask -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
+            if ($snapTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $snapTask.Result) {
+                $sRes = $snapTask.Result
+                $hasSnapshots = [bool]$sRes.HasSnapshots
+                if ($sRes.CopiedAppDataDirs -and $sRes.CopiedAppDataBackups) {
+                    $cLen = [Math]::Min($sRes.CopiedAppDataDirs.Length, $sRes.CopiedAppDataBackups.Length)
+                    for ($ci = 0; $ci -lt $cLen; $ci++) {
+                        $appDataBkps.Add([PSCustomObject]@{ Source = $sRes.CopiedAppDataDirs[$ci]; Backup = $sRes.CopiedAppDataBackups[$ci] })
                     }
-                } catch {}
+                }
+                if ($sRes.ExportedRegIndices) {
+                    foreach ($riIdx in $sRes.ExportedRegIndices) {
+                        if ($riIdx -ge 0 -and $riIdx -lt $snapRegMeta.Count) {
+                            $regFiles.Add($snapRegMeta[$riIdx])
+                        }
+                    }
+                }
+            }
+        } else {
+            if (Test-Path -LiteralPath $backupRoot) {
+                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+
+            if ($canSnapshotLoc) {
+                $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
+                if ($bytes -gt 0) { $hasSnapshots = $true }
+            }
+
+            if (-not $IsBulkUpgrade) {
+                for ($ai = 0; $ai -lt $targetAppDataDirs.Count; $ai++) {
+                    $adDir = $targetAppDataDirs[$ai]
+                    $adBkpDir = $adBkpList[$ai]
+                    $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
+                    if ($b -gt 0) {
+                        $hasSnapshots = $true
+                        $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
+                    }
+                }
+
+                for ($riIdx = 0; $riIdx -lt $snapRegMeta.Count; $riIdx++) {
+                    $metaR = $snapRegMeta[$riIdx]
+                    try {
+                        $regPsi = New-Object System.Diagnostics.ProcessStartInfo
+                        $regPsi.FileName = "reg.exe"
+                        $regPsi.Arguments = "export `"$($metaR.Key)`" `"$($metaR.File)`" /y"
+                        $regPsi.CreateNoWindow = $true
+                        $regPsi.UseShellExecute = $false
+                        $pReg = [System.Diagnostics.Process]::Start($regPsi)
+                        try {
+                            if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $metaR.File)) {
+                                $hasSnapshots = $true
+                                $regFiles.Add($metaR)
+                            }
+                        } finally {
+                            if ($pReg) { try { $pReg.Dispose() } catch {} }
+                        }
+                    } catch {}
+                }
             }
         }
     }
@@ -40050,26 +40893,12 @@ function Invoke-SmartAppUpgrade {
 
     $preInstallerAborted = $alreadyLatest -or ($code -in @(3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
     if ($hasSnapshots) {
+        $regImportTargets = [System.Collections.Generic.List[object]]::new()
+        $regImportFiles   = [System.Collections.Generic.List[string]]::new()
+        $regImportIndices = [System.Collections.Generic.List[int]]::new()
         if (-not $preInstallerAborted) {
-            if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
-                $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
-                if ($restoredLoc -gt 0) {
-                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
-                }
-            }
-
-            if ($snapshotType) {
-                foreach ($item in $appDataBkps) {
-                    if (Test-Path -LiteralPath $item.Backup) {
-                        $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
-                        if ($resAd -gt 0) {
-                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
-                        }
-                    }
-                }
-            }
-
-            foreach ($rfItem in $regFiles) {
+            for ($ri = 0; $ri -lt $regFiles.Count; $ri++) {
+                $rfItem = $regFiles[$ri]
                 if (Test-Path -LiteralPath $rfItem.File) {
                     $needRegRestore = $false
                     if (-not (Test-Path -LiteralPath $rfItem.PSPath)) {
@@ -40081,28 +40910,97 @@ function Invoke-SmartAppUpgrade {
                         } catch {}
                     }
                     if ($needRegRestore) {
-                        try {
-                            $impPsi = New-Object System.Diagnostics.ProcessStartInfo
-                            $impPsi.FileName = "reg.exe"
-                            $impPsi.Arguments = "import `"$($rfItem.File)`""
-                            $impPsi.CreateNoWindow = $true
-                            $impPsi.UseShellExecute = $false
-                            $pImp = [System.Diagnostics.Process]::Start($impPsi)
-                            try {
-                                if ($pImp) { [void]$pImp.WaitForExit(10000) }
-                            } finally {
-                                if ($pImp) { try { $pImp.Dispose() } catch {} }
-                            }
-                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
-                        } catch {}
+                        [void]$regImportTargets.Add($rfItem)
+                        [void]$regImportFiles.Add($rfItem.File)
+                        [void]$regImportIndices.Add($ri)
                     }
                 }
             }
         }
 
-        try {
-            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-        } catch {}
+        $adSrcArr = [System.Collections.Generic.List[string]]::new()
+        $adBkpArr = [System.Collections.Generic.List[string]]::new()
+        foreach ($item in $appDataBkps) {
+            [void]$adSrcArr.Add($item.Source)
+            [void]$adBkpArr.Add($item.Backup)
+        }
+
+        $hasAsyncRestore = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardRestoreAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        if ($hasAsyncRestore) {
+            $restTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardRestoreAsync(
+                $backupRoot,
+                (-not $preInstallerAborted),
+                [string]$existingLoc,
+                $locBkp,
+                [bool]$canSnapshotLoc,
+                [string[]]$adSrcArr.ToArray(),
+                [string[]]$adBkpArr.ToArray(),
+                [string[]]$regImportFiles.ToArray(),
+                [int[]]$regImportIndices.ToArray()
+            )
+            [void](Wait-TaskNonBlocking -Task $restTask -TimeoutSeconds 25)
+            if ($restTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $restTask.Result) {
+                $rRes = $restTask.Result
+                if ($rRes.RestoredLocFiles -gt 0) {
+                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredLocFiles) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                }
+                if ($rRes.RestoredAppDataCounts) {
+                    for ($ai = 0; $ai -lt $rRes.RestoredAppDataCounts.Length; $ai++) {
+                        if ($rRes.RestoredAppDataCounts[$ai] -gt 0 -and $ai -lt $adSrcArr.Count) {
+                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredAppDataCounts[$ai]) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($adSrcArr[$ai])"
+                        }
+                    }
+                }
+                if ($rRes.RestoredRegIndices) {
+                    foreach ($impIdx in $rRes.RestoredRegIndices) {
+                        if ($impIdx -ge 0 -and $impIdx -lt $regFiles.Count) {
+                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($regFiles[$impIdx].Key)"
+                        }
+                    }
+                }
+            }
+        } else {
+            if (-not $preInstallerAborted) {
+                if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
+                    $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
+                    if ($restoredLoc -gt 0) {
+                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                    }
+                }
+
+                if ($snapshotType) {
+                    foreach ($item in $appDataBkps) {
+                        if (Test-Path -LiteralPath $item.Backup) {
+                            $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
+                            if ($resAd -gt 0) {
+                                Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
+                            }
+                        }
+                    }
+                }
+
+                foreach ($rfItem in $regImportTargets) {
+                    try {
+                        $impPsi = New-Object System.Diagnostics.ProcessStartInfo
+                        $impPsi.FileName = "reg.exe"
+                        $impPsi.Arguments = "import `"$($rfItem.File)`""
+                        $impPsi.CreateNoWindow = $true
+                        $impPsi.UseShellExecute = $false
+                        $pImp = [System.Diagnostics.Process]::Start($impPsi)
+                        try {
+                            if ($pImp) { [void]$pImp.WaitForExit(10000) }
+                        } finally {
+                            if ($pImp) { try { $pImp.Dispose() } catch {} }
+                        }
+                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
+                    } catch {}
+                }
+            }
+
+            try {
+                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {}
+        }
     }
 
     if ($code -in @(0, 3010, 1641)) {
@@ -40110,8 +41008,14 @@ function Invoke-SmartAppUpgrade {
         try {
             $postState = Get-WinGetExactPackageState -Id $upgradeId -App $app
             if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
-                if ([string]::IsNullOrWhiteSpace($preVersion) -or $postState.BestVersion -eq $preVersion) {
+                if ([string]::IsNullOrWhiteSpace($preVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $preVersion) -le 0) {
                     Log-Text "   [WARN] $($app.Name): Ti$([char]0x1EBF)n tr$([char]0x00EC)nh tho$([char]0x00E1)t v$([char]0x1EDB)i m$([char]0x00E3) $code nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n v$([char]0x1EAB)n l$([char]0x00E0) '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))."
+                    return 4
+                }
+            } elseif (-not $postState.AnyFound -or $postState.TimedOut) {
+                $postLocal = Test-CatalogAppInstalledNow -App $app -ProbeWingetId $upgradeId
+                if ($postLocal -and -not [string]::IsNullOrWhiteSpace($preVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $preVersion) -le 0 -and $postLocal.HasUpdate) {
+                    Log-Text "   [WARN] $($app.Name): Ch$([char]0x01B0)a ghi nh$([char]0x1EAD)n thay $([char]0x0111)$([char]0x1ED5)i phi$([char]0x00EA)n b$([char]0x1EA3)n sau n$([char]0x00E2)ng c$([char]0x1EA5)p (v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)')."
                     return 4
                 }
             }
@@ -40138,14 +41042,28 @@ function Invoke-CatalogUpgradeWithFallback {
         try { Start-Process $app.FallbackUrl } catch { return 1 }
         return 5
     }
+    $preVer = [string]$Tag.InstalledVersion
+    $targetAvail = if ($Tag.PSObject.Properties['AvailableVersion']) { [string]$Tag.AvailableVersion } else { "" }
+    $probeId = Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)
     $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade
     if ($upCode -notin @(0, 2, 3, -2, -1978335216) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
         Log-Text "   [*] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x1EAD)p nh$([char]0x1EAD)t d$([char]0x1EF1) ph$([char]0x00F2)ng qua GitHub Release ($($app.GitHubRepo))..."
         $ghCode = Invoke-GitHubAssetInstall -App $app
         if ($ghCode -in @(0, 3010, 1641)) {
-            $postState = Get-WinGetExactPackageState -Id (Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)) -App $app
-            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated -and $postState.BestVersion -eq [string]$Tag.InstalledVersion) {
-                return 4
+            $postState = Get-WinGetExactPackageState -Id $probeId -App $app
+            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
+                if ([string]::IsNullOrWhiteSpace($preVer) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $preVer) -le 0) {
+                    Log-Text "   [WARN] $($app.Name): B$([char]0x1ED9) c$([char]0x00E0)i GitHub Release tho$([char]0x00E1)t m$([char]0x00E3) $ghCode nh$([char]0x01B0)ng WinGet v$([char]0x1EAB)n ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))."
+                    return 4
+                }
+            }
+            $postLocal = Test-CatalogAppInstalledNow -App $app -ProbeWingetId $probeId
+            if ($postLocal -and -not [string]::IsNullOrWhiteSpace($preVer) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $preVer) -le 0) {
+                $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($targetAvail) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $targetAvail) -lt 0)
+                if ($stillBehindTarget) {
+                    Log-Text "   [WARN] $($app.Name): B$([char]0x1ED9) c$([char]0x00E0)i GitHub Release tho$([char]0x00E1)t m$([char]0x00E3) $ghCode nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n tr$([char]0x00EA)n m$([char]0x00E1)y v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)' (ch$([char]0x01B0)a $([char]0x0111)$([char]0x1EA1)t '$targetAvail')."
+                    return 4
+                }
             }
             return 0
         }
@@ -40390,6 +41308,7 @@ Register-Click "btnInstall" {
                 }
                 Wait-SquirrelUpdatersSettle
                 if (-not $script:isWindowClosing) {
+                    if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) { Stop-PreSpawnedWinget }
                     Scan-And-ColorizeApps
                     if (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue) {
                         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "install"
@@ -40477,8 +41396,42 @@ Register-Click "btnUpgradeAll" {
                         } elseif ($bulkCode -ne 0) {
                             $bulkFail++
                         }
-                    } else {
-                        $bulkOk += $safeWingetOutdatedRows.Count
+                    } elseif ($safeWingetOutdatedRows.Count -gt 0) {
+                        $postBulkCap = if (Get-Command "Invoke-WingetListCapture" -ErrorAction SilentlyContinue) {
+                            Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25
+                        } else { $null }
+                        if ($postBulkCap -and $postBulkCap.Available -and -not $postBulkCap.TimedOut -and -not $postBulkCap.WasCanceled -and -not [string]::IsNullOrWhiteSpace($postBulkCap.StdOut)) {
+                            $postBulkParsed = ConvertFrom-WingetListOutput -RawText $postBulkCap.StdOut -AllowHeaderless ($postBulkCap.ExitCode -eq 0)
+                            if ($postBulkParsed -and $postBulkParsed.Items.Count -gt 0) {
+                                $stillOutIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+                                foreach ($pbIt in $postBulkParsed.Items) {
+                                    if ($pbIt -and $pbIt.HasUpdate -and -not [string]::IsNullOrWhiteSpace($pbIt.ID)) {
+                                        [void]$stillOutIds.Add($pbIt.ID)
+                                    }
+                                }
+                                $fallbackAfterBulk = [System.Collections.Generic.List[object]]::new()
+                                foreach ($srCheck in $safeWingetOutdatedRows) {
+                                    $chkTag = $srCheck.Tag
+                                    $chkApp = $chkTag.App
+                                    $chkId = if ($chkTag.DetectedId -and $chkTag.DetectedId -notmatch '^(ARP|MSIX|LOCAL)\\') { [string]$chkTag.DetectedId } else { [string]$chkApp.ID }
+                                    if ($stillOutIds.Contains($chkId) -or ($chkApp -and $chkApp.ID -and $stillOutIds.Contains([string]$chkApp.ID))) {
+                                        [void]$fallbackAfterBulk.Add($srCheck)
+                                    } else {
+                                        $bulkOk++
+                                        if ($chkTag.CheckBox) { $chkTag.CheckBox.IsChecked = $false }
+                                    }
+                                }
+                                if ($fallbackAfterBulk.Count -gt 0) {
+                                    Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($fallbackAfterBulk.Count) g$([char]0x00F3)i ch$([char]0x01B0)a $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c 'upgrade --all' x$([char]0x1EED) l$([char]0x00FD) tri$([char]0x1EC7)t $([char]0x0111)$([char]0x1EC3); $([char]0x0111)ang ki$([char]0x1EC3)m tra v$([char]0x00E0) n$([char]0x00E2)ng c$([char]0x1EA5)p ri$([char]0x00EA)ng t$([char]0x1EEB)ng g$([char]0x00F3)i..."
+                                    $safeWingetOutdatedRows = $fallbackAfterBulk
+                                    $runPerAppSafeList = $true
+                                }
+                            } else {
+                                $bulkOk += $safeWingetOutdatedRows.Count
+                            }
+                        } else {
+                            $bulkOk += $safeWingetOutdatedRows.Count
+                        }
                     }
 
                     foreach ($stRow in $msStoreOutdatedRows) {
@@ -40568,6 +41521,7 @@ Register-Click "btnUpgradeAll" {
             }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
+                if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) { Stop-PreSpawnedWinget }
                 Scan-And-ColorizeApps
                 if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
                     foreach ($sr in $safeOutdatedRows) {

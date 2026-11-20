@@ -2112,8 +2112,9 @@ namespace DuckUtil
 
         public static void PrewarmElevationCache()
         {
-            ElevationPidProvider provider = CustomElevationPidProvider;
-            if (provider == null) return;
+            bool onThreadPool = false;
+            try { onThreadPool = Thread.CurrentThread.IsThreadPoolThread; } catch {}
+            ElevationPidProvider provider = onThreadPool ? null : CustomElevationPidProvider;
             lock (_tiLock)
             {
                 if (_cachedTiPid > 4 && !IsProcessAliveFast(_cachedTiPid))
@@ -2123,9 +2124,60 @@ namespace DuckUtil
                 if (_cachedTiPid <= 4 && (DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds >= 12)
                 {
                     _lastTiLookupAtUtc = DateTime.UtcNow;
-                    try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                    if (provider != null)
+                    {
+                        try { _cachedTiPid = provider(true); } catch { _cachedTiPid = 0; }
+                    }
+                    else
+                    {
+                        _cachedTiPid = FindProcessIdByNameFast("TrustedInstaller");
+                    }
                 }
             }
+        }
+
+        public static Task PrewarmElevationCacheAsync()
+        {
+            return Task.Run(delegate()
+            {
+                lock (_tiLock)
+                {
+                    if (_cachedTiPid > 4 && IsProcessAliveFast(_cachedTiPid))
+                    {
+                        return;
+                    }
+                    _cachedTiPid = 0;
+                    if ((DateTime.UtcNow - _lastTiLookupAtUtc).TotalSeconds < 12)
+                    {
+                        return;
+                    }
+                    _lastTiLookupAtUtc = DateTime.UtcNow;
+                    int found = FindProcessIdByNameFast("TrustedInstaller");
+                    if (found <= 4)
+                    {
+                        try
+                        {
+                            var psi = new ProcessStartInfo();
+                            psi.FileName = "sc.exe";
+                            psi.Arguments = "start TrustedInstaller";
+                            psi.UseShellExecute = false;
+                            psi.CreateNoWindow = true;
+                            using (Process p = Process.Start(psi))
+                            {
+                                if (p != null) p.WaitForExit(2500);
+                            }
+                            for (int attempt = 0; attempt < 6; attempt++)
+                            {
+                                found = FindProcessIdByNameFast("TrustedInstaller");
+                                if (found > 4) break;
+                                Thread.Sleep(120);
+                            }
+                        }
+                        catch {}
+                    }
+                    _cachedTiPid = found;
+                }
+            });
         }
 
         private static IntPtr TryAcquireSystemOrTrustedInstallerToken(bool preferTrustedInstaller)

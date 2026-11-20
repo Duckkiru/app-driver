@@ -1438,7 +1438,13 @@ function Invoke-ForceStopPathLockers {
     $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
     if (-not $deepType) { return $resObj }
 
-    if ($null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+    if ($null -ne $deepType.GetMethod("PrewarmElevationCacheAsync") -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))) {
+        try {
+            $pwTask = $deepType::PrewarmElevationCacheAsync()
+            $pwCancel = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+            [void](Wait-TaskNonBlocking -Task $pwTask -TimeoutSeconds 4 -CancelCheck $pwCancel)
+        } catch {}
+    } elseif ($null -ne $deepType.GetMethod("PrewarmElevationCache")) {
         try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
     }
 
@@ -2140,7 +2146,12 @@ function Show-LeftoverReviewDialog {
         try {
             $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
             $canWaitAsync = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
-            if ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
+            if ($deepType -and $canWaitAsync -and $null -ne $deepType.GetMethod("PrewarmElevationCacheAsync")) {
+                try {
+                    $pwTaskDlg = $deepType::PrewarmElevationCacheAsync()
+                    [void](Wait-TaskNonBlocking -Task $pwTaskDlg -TimeoutSeconds 4)
+                } catch {}
+            } elseif ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
                 try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
             }
             $hasSilentRecycle = ($null -ne $deepType -and $null -ne $deepType.GetMethod("MoveToRecycleBinSilently"))
@@ -2242,7 +2253,15 @@ function Show-LeftoverReviewDialog {
                                 $psiTask.UseShellExecute = $false
                                 $psiTask.CreateNoWindow = $true
                                 $pTask = [System.Diagnostics.Process]::Start($psiTask)
-                                if ($pTask) { [void]$pTask.WaitForExit(5000); $pTask.Dispose() }
+                                if ($pTask) {
+                                    if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("WaitForProcessExitAsync")) {
+                                        $tWaitTask = $deepType::WaitForProcessExitAsync($pTask)
+                                        [void](Wait-TaskNonBlocking -Task $tWaitTask -TimeoutSeconds 5)
+                                    } else {
+                                        [void]$pTask.WaitForExit(5000)
+                                    }
+                                    $pTask.Dispose()
+                                }
                             } catch {}
                             if (-not (Test-Path -LiteralPath $ci.Path)) {
                                 $removed++
@@ -2648,7 +2667,10 @@ function Invoke-DeepAppUninstall {
 
     $canWaitNonBlocking = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
     $deepEngT = "DuckUtil.DeepUninstallerEngine" -as [type]
-    if ($deepEngT -and $null -ne $deepEngT.GetMethod("PrewarmElevationCache")) {
+    $prewarmTask = $null
+    if ($deepEngT -and $canWaitNonBlocking -and $null -ne $deepEngT.GetMethod("PrewarmElevationCacheAsync")) {
+        try { $prewarmTask = $deepEngT::PrewarmElevationCacheAsync() } catch {}
+    } elseif ($deepEngT -and $null -ne $deepEngT.GetMethod("PrewarmElevationCache")) {
         try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
     }
 

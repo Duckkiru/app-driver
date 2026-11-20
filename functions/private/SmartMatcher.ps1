@@ -351,6 +351,25 @@ function Slice-WingetRowColumnsByPositions {
     return @($appName, $appId, $version, $avail, $src)
 }
 
+function Test-VersionAtLeastAvailable {
+    param([string]$InstalledVer, [string]$WgVer, [string]$WgAvail)
+    if ([string]::IsNullOrWhiteSpace($InstalledVer) -or $InstalledVer -match '^(Installed|Unknown)$' -or $InstalledVer -notmatch '\d') { return $false }
+    if ([string]::IsNullOrWhiteSpace($WgAvail) -or $WgAvail -match '^(Installed|Unknown)$' -or $WgAvail -notmatch '\d') { return $false }
+    if ((Compare-AppVersions $InstalledVer $WgAvail) -ge 0) { return $true }
+    $locNums = @(Get-VersionNumbers $InstalledVer)
+    $availNums = @(Get-VersionNumbers $WgAvail)
+    if ($locNums.Count -ge 2 -and $locNums.Count -lt $availNums.Count) {
+        $isPrefix = $true
+        for ($i = 0; $i -lt $locNums.Count; $i++) {
+            if ($locNums[$i] -ne $availNums[$i]) { $isPrefix = $false; break }
+        }
+        if ($isPrefix -and -not [string]::IsNullOrWhiteSpace($WgVer) -and ($WgVer -match '\d') -and ((Compare-AppVersions $InstalledVer $WgVer) -gt 0)) {
+            return $true
+        }
+    }
+    return $false
+}
+
 function Set-PreferredMapEntry {
     param($Map, [string]$Key, $Candidate)
     if ([string]::IsNullOrWhiteSpace($Key) -or $null -eq $Candidate) { return }
@@ -362,21 +381,45 @@ function Set-PreferredMapEntry {
     $curIsLocal = ($cur.Source -eq "local")
     $candIsLocal = ($Candidate.Source -eq "local")
 
-    if ($curIsLocal -and -not $candIsLocal) {
-        $Map[$Key] = $Candidate
-        return
-    }
-    if (-not $curIsLocal -and $candIsLocal) {
+    if ($curIsLocal -ne $candIsLocal) {
+        $locItem = if ($curIsLocal) { $cur } else { $Candidate }
+        $wgItem = if ($curIsLocal) { $Candidate } else { $cur }
+        $hasLocNum = (-not [string]::IsNullOrWhiteSpace($locItem.Version) -and $locItem.Version -notmatch '^(Installed|Unknown)$' -and $locItem.Version -match '\d')
+        $hasWgVerNum = (-not [string]::IsNullOrWhiteSpace($wgItem.Version) -and $wgItem.Version -notmatch '^(Installed|Unknown)$' -and $wgItem.Version -match '\d')
+        $hasWgAvailNum = (-not [string]::IsNullOrWhiteSpace($wgItem.Available) -and $wgItem.Available -notmatch '^(Installed|Unknown)$' -and $wgItem.Available -match '\d')
+        if ($hasLocNum) {
+            if ($wgItem.HasUpdate -and $hasWgAvailNum) {
+                $Map[$Key] = if (Test-VersionAtLeastAvailable -InstalledVer $locItem.Version -WgVer $wgItem.Version -WgAvail $wgItem.Available) { $locItem } else { $wgItem }
+                return
+            }
+            if (-not $hasWgVerNum -or (Compare-AppVersions $locItem.Version $wgItem.Version) -gt 0) {
+                $Map[$Key] = $locItem
+                return
+            }
+        }
+        $Map[$Key] = $wgItem
         return
     }
 
     $curIsSynthetic = ($cur.ID -match '^(ARP|MSIX|LOCAL)\\')
     $candIsSynthetic = ($Candidate.ID -match '^(ARP|MSIX|LOCAL)\\')
-    if ($curIsSynthetic -and -not $candIsSynthetic) {
-        $Map[$Key] = $Candidate
-        return
-    }
-    if (-not $curIsSynthetic -and $candIsSynthetic) {
+    if ($curIsSynthetic -ne $candIsSynthetic) {
+        $synItem = if ($curIsSynthetic) { $cur } else { $Candidate }
+        $realItem = if ($curIsSynthetic) { $Candidate } else { $cur }
+        $hasSynNum = (-not [string]::IsNullOrWhiteSpace($synItem.Version) -and $synItem.Version -notmatch '^(Installed|Unknown)$' -and $synItem.Version -match '\d')
+        $hasRealVerNum = (-not [string]::IsNullOrWhiteSpace($realItem.Version) -and $realItem.Version -notmatch '^(Installed|Unknown)$' -and $realItem.Version -match '\d')
+        $hasRealAvailNum = (-not [string]::IsNullOrWhiteSpace($realItem.Available) -and $realItem.Available -notmatch '^(Installed|Unknown)$' -and $realItem.Available -match '\d')
+        if ($hasSynNum) {
+            if ($realItem.HasUpdate -and $hasRealAvailNum) {
+                $Map[$Key] = if (Test-VersionAtLeastAvailable -InstalledVer $synItem.Version -WgVer $realItem.Version -WgAvail $realItem.Available) { $synItem } else { $realItem }
+                return
+            }
+            if (-not $hasRealVerNum -or (Compare-AppVersions $synItem.Version $realItem.Version) -gt 0) {
+                $Map[$Key] = $synItem
+                return
+            }
+        }
+        $Map[$Key] = $realItem
         return
     }
 
@@ -1511,7 +1554,12 @@ function Apply-InstalledDatabaseToRows {
                 $effectiveAvailable = [string]$info.Available
                 if (-not $effectiveHasUpdate -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
                     $snapOut = $prevOutdatedSnapshot[$ri]
-                    if ([string]$info.Version -eq $snapOut.Version) {
+                    $stillOut = if (-not [string]::IsNullOrWhiteSpace($snapOut.Available)) {
+                        [DuckUtil.AppCatalogEngine]::TestAppUpdateGenuine([string]$info.Version, [string]$snapOut.Available)
+                    } else {
+                        [string]$info.Version -eq $snapOut.Version
+                    }
+                    if ($stillOut) {
                         $effectiveHasUpdate = $true
                         $effectiveAvailable = $snapOut.Available
                     }
@@ -1522,6 +1570,11 @@ function Apply-InstalledDatabaseToRows {
                 $prevDet = $tag.DetectedId
                 $tag.DetectedId = $info.ID
                 $tag.InstalledVersion = $info.Version
+                if ($tag.PSObject.Properties['AvailableVersion']) {
+                    $tag.AvailableVersion = if ($effectiveHasUpdate) { $effectiveAvailable } else { $null }
+                } else {
+                    Add-Member -InputObject $tag -NotePropertyName AvailableVersion -NotePropertyValue $(if ($effectiveHasUpdate) { $effectiveAvailable } else { $null }) -Force
+                }
 
                 if ($effectiveHasUpdate) {
                     $countOutdated++
@@ -1559,6 +1612,7 @@ function Apply-InstalledDatabaseToRows {
                 $prevStatus = $tag.Status
                 $tag.DetectedId = $null
                 $tag.InstalledVersion = $null
+                if ($tag.PSObject.Properties['AvailableVersion']) { $tag.AvailableVersion = $null }
                 $badgeStillShown = ($updateBadge -and $updateBadge.Visibility -ne [System.Windows.Visibility]::Collapsed)
                 if ($prevStatus -ne "NONE" -or $badgeStillShown) {
                     $tag.Status = "NONE"
@@ -1726,13 +1780,23 @@ function Apply-InstalledDatabaseToRows {
             $effAvail = [string]$info.Available
             if (-not $effHasUpd -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
                 $snapOutPs = $prevOutdatedSnapshot[$ri]
-                if ([string]$info.Version -eq $snapOutPs.Version) {
+                $stillOutPs = if (-not [string]::IsNullOrWhiteSpace($snapOutPs.Available)) {
+                    Test-AppUpdateGenuine -InstalledVer ([string]$info.Version) -AvailableVer ([string]$snapOutPs.Available)
+                } else {
+                    [string]$info.Version -eq $snapOutPs.Version
+                }
+                if ($stillOutPs) {
                     $effHasUpd = $true
                     $effAvail = $snapOutPs.Available
                 }
             }
             $row.Tag.DetectedId = $info.ID
             $row.Tag.InstalledVersion = $info.Version
+            if ($row.Tag.PSObject.Properties['AvailableVersion']) {
+                $row.Tag.AvailableVersion = if ($effHasUpd) { $effAvail } else { $null }
+            } else {
+                Add-Member -InputObject $row.Tag -NotePropertyName AvailableVersion -NotePropertyValue $(if ($effHasUpd) { $effAvail } else { $null }) -Force
+            }
 
             if ($effHasUpd) {
                 $countOutdated++
@@ -1766,6 +1830,7 @@ function Apply-InstalledDatabaseToRows {
             $prevStatus = $row.Tag.Status
             $row.Tag.DetectedId = $null
             $row.Tag.InstalledVersion = $null
+            if ($row.Tag.PSObject.Properties['AvailableVersion']) { $row.Tag.AvailableVersion = $null }
             if ($prevStatus -ne "NONE") {
                 $row.Tag.Status = "NONE"
                 if ($tb) {
@@ -2003,7 +2068,7 @@ function Scan-And-ColorizeApps {
         }
 
         if (& $cancelBlock) { return }
-        $preserveOutdated = [bool]((-not $wingetOk) -and $script:hasCompletedAppScan)
+        $preserveOutdated = [bool]((-not $wingetOk) -and (-not $ForceSourceRefresh) -and $script:hasCompletedAppScan)
         $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock -PreserveOutdatedOnLocalFallback:$preserveOutdated
         if (($finalStats.PSObject.Properties['Canceled'] -and $finalStats.Canceled) -or (& $cancelBlock)) { return }
         if (-not $Quiet -and $progressBar) {
