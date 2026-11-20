@@ -4933,7 +4933,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnDeepUninstall" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t (0)" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnDeepUninstall" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t" Style="{StaticResource ActionButton}"
                                             Background="#7F1D1D" Foreground="#FEE2E2" Padding="14,7"
                                             ToolTip="G&#x1EE1; &#x1EE9;ng d&#x1EE5;ng &#x0111;&#x00E3; ch&#x1ECD;n: h&#x1ED7; tr&#x1EE3; g&#x1EE1; chu&#x1EA9;n theo h&#x00E3;ng (t&#x1EF1; g&#x1EAF;n c&#x1EDD; im l&#x1EB7;ng) ho&#x1EB7;c b&#x1EAD;t Bu&#x1ED9;c d&#x1EEB;ng &amp; X&#x00F3;a tr&#x1EF1;c ti&#x1EBF;p (t&#x1EAF;t ti&#x1EBF;n tr&#x00EC;nh/service/task/handle, b&#x1ECF; qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng) ngay trong h&#x1ED9;p tho&#x1EA1;i x&#x00E1;c nh&#x1EAD;n."
                                             ToolTipService.InitialShowDelay="500"/>
@@ -33674,6 +33674,11 @@ function Set-ActiveTab {
         if ($script:cardDescriptors -and $script:cardDescriptors.Count -gt 0) {
             try { Sync-Tab0ViewportAssets } catch {}
         }
+        if ($txtSelectionCount -and $allCheckBoxes) {
+            $sel0 = 0
+            foreach ($cb in $allCheckBoxes) { if ($cb.IsChecked -eq $true) { $sel0++ } }
+            $txtSelectionCount.Text = "$sel0 app $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
+        }
     } elseif ($index -eq 1) {
         if (-not $script:uninstallerLoadedOnce -or $script:uninstallerStale) {
             $needForceRefresh = [bool]$script:uninstallerStale
@@ -33706,6 +33711,9 @@ function Set-ActiveTab {
             if ($script:uninstIconsPipelineNeedsStart -and (Get-Command "Start-UninstallerIconPipelineIfNeeded" -ErrorAction SilentlyContinue)) {
                 Start-UninstallerIconPipelineIfNeeded
             }
+        }
+        if (Get-Command "Update-UninstallerSelectionCount" -ErrorAction SilentlyContinue) {
+            Update-UninstallerSelectionCount
         }
     }
     if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
@@ -34280,8 +34288,11 @@ function Update-UninstallerSelectionButtons {
     param([int]$Count)
     if ($script:suppressUninstallerSelectionCount -or $script:isWindowClosing) { return }
     if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i ($Count)" } else { "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ($Count)" }
+        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Th$([char]0x00EA)m v$([char]0x00E0)o h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i" } else { "G$([char]0x1EE1) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t" }
         $btnDeepUninstall.IsEnabled = ($Count -gt 0)
+    }
+    if ($txtSelectionCount -and $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible) {
+        $txtSelectionCount.Text = "$Count app $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
     }
 }
 
@@ -35632,7 +35643,7 @@ function Update-SelectionCount {
             $selectedCount++
         }
     }
-    if ($txtSelectionCount) {
+    if ($txtSelectionCount -and (-not $script:tabPages -or $script:tabPages.Count -eq 0 -or -not $script:tabPages[0] -or $script:tabPages[0].Visibility -eq [System.Windows.Visibility]::Visible)) {
         $txtSelectionCount.Text = "$selectedCount app $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
     }
     if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {

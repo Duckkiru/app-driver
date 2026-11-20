@@ -1423,6 +1423,11 @@ function Set-ActiveTab {
         if ($script:cardDescriptors -and $script:cardDescriptors.Count -gt 0) {
             try { Sync-Tab0ViewportAssets } catch {}
         }
+        if ($txtSelectionCount -and $allCheckBoxes) {
+            $sel0 = 0
+            foreach ($cb in $allCheckBoxes) { if ($cb.IsChecked -eq $true) { $sel0++ } }
+            $txtSelectionCount.Text = "$sel0 app được chọn"
+        }
     } elseif ($index -eq 1) {
         if (-not $script:uninstallerLoadedOnce -or $script:uninstallerStale) {
             $needForceRefresh = [bool]$script:uninstallerStale
@@ -1455,6 +1460,9 @@ function Set-ActiveTab {
             if ($script:uninstIconsPipelineNeedsStart -and (Get-Command "Start-UninstallerIconPipelineIfNeeded" -ErrorAction SilentlyContinue)) {
                 Start-UninstallerIconPipelineIfNeeded
             }
+        }
+        if (Get-Command "Update-UninstallerSelectionCount" -ErrorAction SilentlyContinue) {
+            Update-UninstallerSelectionCount
         }
     }
     if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
@@ -2029,8 +2037,11 @@ function Update-UninstallerSelectionButtons {
     param([int]$Count)
     if ($script:suppressUninstallerSelectionCount -or $script:isWindowClosing) { return }
     if ($btnDeepUninstall) {
-        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Thêm vào hàng đợi ($Count)" } else { "Gỡ cài đặt ($Count)" }
+        $btnDeepUninstall.Content = if ($script:isUninstallingQueue) { "+ Thêm vào hàng đợi" } else { "Gỡ cài đặt" }
         $btnDeepUninstall.IsEnabled = ($Count -gt 0)
+    }
+    if ($txtSelectionCount -and $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible) {
+        $txtSelectionCount.Text = "$Count app được chọn"
     }
 }
 
@@ -3381,7 +3392,7 @@ function Update-SelectionCount {
             $selectedCount++
         }
     }
-    if ($txtSelectionCount) {
+    if ($txtSelectionCount -and (-not $script:tabPages -or $script:tabPages.Count -eq 0 -or -not $script:tabPages[0] -or $script:tabPages[0].Visibility -eq [System.Windows.Visibility]::Visible)) {
         $txtSelectionCount.Text = "$selectedCount app được chọn"
     }
     if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {

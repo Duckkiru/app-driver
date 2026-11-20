@@ -554,7 +554,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnDeepUninstall" Content="Gỡ cài đặt (0)" Style="{StaticResource ActionButton}"
+                                    <Button Name="btnDeepUninstall" Content="Gỡ cài đặt" Style="{StaticResource ActionButton}"
                                             Background="#7F1D1D" Foreground="#FEE2E2" Padding="14,7"
                                             ToolTip="Gỡ ứng dụng đã chọn: hỗ trợ gỡ chuẩn theo hãng (tự gắn cờ im lặng) hoặc bật Buộc dừng &amp; Xóa trực tiếp (tắt tiến trình/service/task/handle, bỏ qua trình gỡ hãng) ngay trong hộp thoại xác nhận."
                                             ToolTipService.InitialShowDelay="500"/>
