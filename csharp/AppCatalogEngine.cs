@@ -580,7 +580,7 @@ namespace DuckUtil
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X64\"),
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X86\"),
                 Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\"),
-                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
             };
 
             string vsCodeUserDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Microsoft VS Code");
@@ -853,7 +853,10 @@ namespace DuckUtil
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string[] extraDirs = new string[]
+            string progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string progFilesW64 = Environment.GetEnvironmentVariable("ProgramW6432");
+            string neovimDir = Path.Combine(!string.IsNullOrEmpty(progFilesW64) ? progFilesW64 : progFiles, @"Neovim\bin");
+            var extraDirList = new List<string>
             {
                 Path.Combine(localAppData, @"agy\bin"),
                 Path.Combine(userProfile, @".gemini\bin"),
@@ -863,15 +866,25 @@ namespace DuckUtil
                 Path.Combine(appData, "npm"),
                 Path.Combine(localAppData, @"Programs\Ollama"),
                 Path.Combine(localAppData, @"Microsoft\WinGet\Links"),
-                Path.Combine(localAppData, @"Programs\Python\Python313\Scripts"),
-                Path.Combine(localAppData, @"Programs\Python\Python312\Scripts"),
                 Path.Combine(userProfile, @".bun\bin"),
                 Path.Combine(localAppData, @"pnpm"),
                 Path.Combine(localAppData, @"Programs\oh-my-posh\bin"),
-                @"C:\Program Files\Neovim\bin",
+                neovimDir,
                 Path.Combine(localAppData, @"Android\Sdk\platform-tools")
             };
-            foreach (string ed in extraDirs)
+            try
+            {
+                string pyBase = Path.Combine(localAppData, @"Programs\Python");
+                if (Directory.Exists(pyBase))
+                {
+                    foreach (string pySub in Directory.GetDirectories(pyBase, "Python3*"))
+                    {
+                        extraDirList.Add(Path.Combine(pySub, "Scripts"));
+                    }
+                }
+            }
+            catch {}
+            foreach (string ed in extraDirList)
             {
                 if (!string.IsNullOrEmpty(ed) && seenDirs.Add(ed) && Directory.Exists(ed))
                 {
@@ -1191,7 +1204,8 @@ namespace DuckUtil
                 return 0;
             try
             {
-                if (!Directory.Exists(backupDir)) return 0;
+                if (!Directory.Exists(backupDir) || IsReparsePoint(backupDir)) return 0;
+                if (Directory.Exists(targetDir) && IsReparsePoint(targetDir)) return 0;
             }
             catch { return 0; }
 
@@ -1210,6 +1224,7 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (IsReparsePoint(file)) continue;
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
                                 if (File.Exists(destFile)) continue;
@@ -1229,7 +1244,10 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub))
+                                {
+                                    nextLevel.Add(sub);
+                                }
                             }
                         }
                     }
@@ -1619,6 +1637,15 @@ namespace DuckUtil
             var results = new CatalogSensorItem[targets.Length];
             if (installedItems == null || installedItems.Length == 0) return results;
 
+            if (_metaCache.Count < targets.Length)
+            {
+                Parallel.For(0, targets.Length, i =>
+                {
+                    CatalogMatchTarget t = targets[i];
+                    if (t != null) GetOrBuildTargetMeta(t);
+                });
+            }
+
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
@@ -1634,7 +1661,7 @@ namespace DuckUtil
 
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
-                if (itClean.Length >= 3) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
                 if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
                 {
                     SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
@@ -1705,7 +1732,7 @@ namespace DuckUtil
                             matched = cand;
                             break;
                         }
-                        if (ap.Clean.Length >= 3 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
+                        if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
                         {
                             matched = cand;
                             break;

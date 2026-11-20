@@ -5,45 +5,71 @@
         Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
     }
 
-    Start-Sleep -Milliseconds 1500
-
-    Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
-    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-
-    $sdPath = "C:\Windows\SoftwareDistribution"
-    $sdRenamed = $true
-    if (Test-Path -LiteralPath $sdPath) {
-        Get-ChildItem -LiteralPath "C:\Windows" -Filter "SoftwareDistribution.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    $sdRenamed = $false
+    $crRenamed = $false
+    try {
+        $deadline = [DateTime]::UtcNow.AddMilliseconds(3000)
+        $hasForms = ($null -ne ('System.Windows.Forms.Application' -as [type]))
+        while ([DateTime]::UtcNow -lt $deadline) {
+            if ($script:isWindowClosing) { break }
+            $stillRunning = $false
+            foreach ($s in $services) {
+                try {
+                    $svc = Get-Service -Name $s -ErrorAction SilentlyContinue
+                    if ($svc -and "$($svc.Status)" -ne 'Stopped') {
+                        $stillRunning = $true
+                        break
+                    }
+                } catch {}
+            }
+            if (-not $stillRunning) { break }
+            if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
+            Start-Sleep -Milliseconds 120
         }
-        $backupSD = "SoftwareDistribution.bak_$stamp"
-        Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $sdPath) {
-            $sdRenamed = $false
-            Log-Text "[WARN] Không thể đổi tên SoftwareDistribution (tệp đang bị khóa bởi tiến trình khác)."
+
+        if (-not $script:isWindowClosing) {
+            Log-Text "[*] Đang làm mới bộ nhớ đệm SoftwareDistribution và Catroot2..."
+            $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $winDir = if ($env:SystemRoot) { $env:SystemRoot } elseif ($env:WINDIR) { $env:WINDIR } else { "C:\Windows" }
+            $sys32Dir = Join-Path $winDir "System32"
+
+            $sdPath = Join-Path $winDir "SoftwareDistribution"
+            $sdRenamed = $true
+            if (Test-Path -LiteralPath $sdPath) {
+                Get-ChildItem -LiteralPath $winDir -Filter "SoftwareDistribution.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                $backupSD = "SoftwareDistribution.bak_$stamp"
+                Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $sdPath) {
+                    $sdRenamed = $false
+                    Log-Text "[WARN] Không thể đổi tên SoftwareDistribution (tệp đang bị khóa bởi tiến trình khác)."
+                }
+            }
+
+            $crPath = Join-Path $sys32Dir "catroot2"
+            $crRenamed = $true
+            if (Test-Path -LiteralPath $crPath) {
+                Get-ChildItem -LiteralPath $sys32Dir -Filter "catroot2.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                $backupCR = "catroot2.bak_$stamp"
+                Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $crPath) {
+                    $crRenamed = $false
+                    Log-Text "[WARN] Không thể đổi tên catroot2 (tệp đang bị khóa)."
+                }
+            }
         }
+    } finally {
+        Log-Text "[*] Khởi động lại các dịch vụ hệ thống..."
+        Start-Service -Name "cryptsvc" -ErrorAction SilentlyContinue
+        Start-Service -Name "bits" -ErrorAction SilentlyContinue
+        Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+        Start-Service -Name "dosvc" -ErrorAction SilentlyContinue
     }
 
-    $crPath = "C:\Windows\System32\catroot2"
-    $crRenamed = $true
-    if (Test-Path -LiteralPath $crPath) {
-        Get-ChildItem -LiteralPath "C:\Windows\System32" -Filter "catroot2.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        $backupCR = "catroot2.bak_$stamp"
-        Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $crPath) {
-            $crRenamed = $false
-            Log-Text "[WARN] Không thể đổi tên catroot2 (tệp đang bị khóa)."
-        }
-    }
-
-    Log-Text "[*] Khởi động lại các dịch vụ hệ thống..."
-    Start-Service -Name "cryptsvc" -ErrorAction SilentlyContinue
-    Start-Service -Name "bits" -ErrorAction SilentlyContinue
-    Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
-    Start-Service -Name "dosvc" -ErrorAction SilentlyContinue
-
+    if ($script:isWindowClosing) { return }
     if ($sdRenamed -and $crRenamed) {
         Log-Text "[OK] Đã khởi tạo lại dịch vụ Windows Update và xóa sạch cache thành công!"
     } else {
@@ -110,14 +136,27 @@ function Reset-NetworkInterfaceStack {
 }
 
 function Clear-SystemTempFiles {
-    $tempPaths = @($env:TEMP, "C:\Windows\Temp")
+    $winDir = if ($env:SystemRoot) { $env:SystemRoot } elseif ($env:WINDIR) { $env:WINDIR } else { "C:\Windows" }
+    $tempPaths = @($env:TEMP, (Join-Path $winDir "Temp")) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    $removedCount = 0
+    $skippedCount = 0
     foreach ($p in $tempPaths) {
         if (Test-Path -LiteralPath $p) {
             Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                if (($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    $skippedCount++
+                    return
+                }
+                try {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
+                    $removedCount++
+                } catch {
+                    $skippedCount++
+                }
             }
         }
     }
+    Log-Text "[OK] Đã dọn $removedCount mục tệp tạm hệ thống ($skippedCount mục đang sử dụng/bỏ qua)."
 }
 
 function Clear-SystemEventLogs {

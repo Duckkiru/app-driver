@@ -481,8 +481,31 @@ function Test-MatchCompatible {
     return $true
 }
 
-$script:isScanningApps = $false
-$script:hasCompletedAppScan = $false
+$script:isScanningApps         = $false
+$script:isAutoRefreshing       = $false
+$script:cancelAutoScan         = $false
+$script:pendingManualAppRefresh = $false
+$script:autoScanGeneration     = 0
+$script:activeAutoScanGen      = 0
+$script:hasCompletedAppScan    = $false
+$script:lastAppScanSignature   = ""
+$script:lastLocalScanSig       = ""
+$script:lastLocalInstalledCnt  = -1
+$script:autoScanWingetProcess  = $null
+
+function Stop-ActiveAutoScan {
+    $script:autoScanGeneration++
+    $script:cancelAutoScan = $true
+    $pAuto = $script:autoScanWingetProcess
+    $script:autoScanWingetProcess = $null
+    if ($null -ne $pAuto) {
+        try {
+            $hasEx = try { $pAuto.HasExited } catch { $true }
+            if (-not $hasEx) { $pAuto.Kill() }
+        } catch {}
+        try { $pAuto.Dispose() } catch {}
+    }
+}
 
 function Stop-PreSpawnedWinget {
     $job = $script:preSpawnedWinget
@@ -502,7 +525,7 @@ function Start-WingetBackgroundPreScan {
         if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) { return }
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
+        $pinfo.Arguments = "list --source winget --disable-interactivity --accept-source-agreements"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -516,7 +539,7 @@ function Start-WingetBackgroundPreScan {
                 ReadTask  = $p.StandardOutput.ReadToEndAsync()
                 ErrTask   = $p.StandardError.ReadToEndAsync()
                 Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-                Arguments = "list --disable-interactivity --accept-source-agreements"
+                Arguments = "list --source winget --disable-interactivity --accept-source-agreements"
             }
         }
     } catch {
@@ -527,17 +550,24 @@ function Start-WingetBackgroundPreScan {
 function Invoke-WingetListCapture {
     param(
         [string]$Arguments = "list --disable-interactivity --accept-source-agreements",
-        [int]$TimeoutSeconds = 35
+        [int]$TimeoutSeconds = 35,
+        [scriptblock]$CancelCheck = $null,
+        [switch]$TrackAsAuto
     )
 
-    if ($script:isWindowClosing) {
+    $isCanceledNow = $script:isWindowClosing
+    if (-not $isCanceledNow -and $CancelCheck) {
+        try { $isCanceledNow = [bool](& $CancelCheck) } catch {}
+    }
+    if ($isCanceledNow) {
         Stop-PreSpawnedWinget
         return [PSCustomObject]@{
-            Available = $true
-            TimedOut  = $true
-            ExitCode  = -1
-            StdOut    = ""
-            StdErr    = ""
+            Available   = $true
+            TimedOut    = $true
+            WasCanceled = $true
+            ExitCode    = -1
+            StdOut      = ""
+            StdErr      = ""
         }
     }
 
@@ -548,10 +578,11 @@ function Invoke-WingetListCapture {
     $rawList = ""
     $errList = ""
     $timedOut = $false
+    $wasCanceled = $false
     $exitCode = -1
 
     try {
-        if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
+        if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
             $job = $script:preSpawnedWinget
             $script:preSpawnedWinget = $null
             $p = $job.Process
@@ -559,16 +590,17 @@ function Invoke-WingetListCapture {
             $errTask = $job.ErrTask
             $sw = $job.Stopwatch
         } else {
-            if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -ge 30) {
+            if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -ge 30) {
                 Stop-PreSpawnedWinget
             }
             if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
                 return [PSCustomObject]@{
-                    Available = $false
-                    TimedOut  = $false
-                    ExitCode  = -1
-                    StdOut    = ""
-                    StdErr    = ""
+                    Available   = $false
+                    TimedOut    = $false
+                    WasCanceled = $false
+                    ExitCode    = -1
+                    StdOut      = ""
+                    StdErr      = ""
                 }
             }
 
@@ -586,6 +618,9 @@ function Invoke-WingetListCapture {
             if ($null -eq $p) {
                 throw "Không thể khởi động tiến trình winget."
             }
+            if ($TrackAsAuto) {
+                $script:autoScanWingetProcess = $p
+            }
             $readTask = $p.StandardOutput.ReadToEndAsync()
             $errTask  = $p.StandardError.ReadToEndAsync()
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -594,55 +629,69 @@ function Invoke-WingetListCapture {
         if ((Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $null -ne $readTask -and $null -ne $errTask) {
             $bothTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]](@($readTask, $errTask)))
             $remSec = [Math]::Max(0.1, ($TimeoutSeconds - $sw.Elapsed.TotalSeconds))
-            $completedOk = Wait-TaskNonBlocking -Task $bothTask -TimeoutSeconds $remSec
-            if (-not $completedOk -or $script:isWindowClosing -or -not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+            $completedOk = Wait-TaskNonBlocking -Task $bothTask -TimeoutSeconds $remSec -CancelCheck $CancelCheck
+            $cancelHit = $script:isWindowClosing
+            if (-not $cancelHit -and $CancelCheck) {
+                try { $cancelHit = [bool](& $CancelCheck) } catch {}
+            }
+            if ($cancelHit) {
+                $wasCanceled = $true
+                $timedOut = $true
+                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+            } elseif (-not $completedOk -or -not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
                 $timedOut = $true
                 try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
             }
         } else {
             while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-                if ($script:isWindowClosing -or $sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                $cancelHit = $script:isWindowClosing
+                if (-not $cancelHit -and $CancelCheck) {
+                    try { $cancelHit = [bool](& $CancelCheck) } catch {}
+                }
+                if ($cancelHit -or $sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                    $wasCanceled = $cancelHit
                     $timedOut = $true
                     try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
                     break
                 }
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                if ($script:isWindowClosing) {
-                    $timedOut = $true
-                    try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                    break
-                }
                 Start-Sleep -Milliseconds 15
             }
         }
 
-        if (-not $script:isWindowClosing) {
+        if (-not $script:isWindowClosing -and -not $wasCanceled) {
             try {
                 if ($null -ne $p -and -not $p.HasExited) { $p.WaitForExit(1000) | Out-Null }
             } catch {}
         }
-        if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-            $rawList = $readTask.Result
-        }
-        if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-            $errList = $errTask.Result
-        }
-        $hasExited = try { $null -ne $p -and $p.HasExited } catch { $false }
-        if ($hasExited) {
-            $exitCode = try { $p.ExitCode } catch { -1 }
+        if (-not $wasCanceled) {
+            if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $rawList = $readTask.Result
+            }
+            if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $errList = $errTask.Result
+            }
+            $hasExited = try { $null -ne $p -and $p.HasExited } catch { $false }
+            if ($hasExited) {
+                $exitCode = try { $p.ExitCode } catch { -1 }
+            }
         }
     } finally {
+        if ($TrackAsAuto -and $script:autoScanWingetProcess -eq $p) {
+            $script:autoScanWingetProcess = $null
+        }
         if ($null -ne $p) {
             try { $p.Dispose() } catch {}
         }
     }
 
     return [PSCustomObject]@{
-        Available = $true
-        TimedOut  = $timedOut
-        ExitCode  = $exitCode
-        StdOut    = $rawList
-        StdErr    = $errList
+        Available   = $true
+        TimedOut    = $timedOut
+        WasCanceled = $wasCanceled
+        ExitCode    = $exitCode
+        StdOut      = $rawList
+        StdErr      = $errList
     }
 }
 
@@ -825,18 +874,23 @@ function Get-ExecutableCleanVersion {
 }
 
 function Get-LocalInstalledEntries {
-    param([switch]$SkipAppx)
+    param(
+        [switch]$SkipAppx,
+        [scriptblock]$CancelCheck = $null
+    )
     if ("DuckUtil.AppCatalogEngine" -as [type]) {
         try {
             $csType = [DuckUtil.AppCatalogEngine]
             if ($null -ne $csType.GetMethod("ScanCatalogSensorsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
                 $scanTask = $csType::ScanCatalogSensorsAsync()
-                if (Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 30) {
+                if (Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 30 -CancelCheck $CancelCheck) {
                     if ($scanTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                         return $scanTask.Result
                     }
                 }
-                if ($script:isWindowClosing) { return @() }
+                $canceledNow = $script:isWindowClosing
+                if (-not $canceledNow -and $CancelCheck) { try { $canceledNow = [bool](& $CancelCheck) } catch {} }
+                if ($canceledNow) { return @() }
             }
             return [DuckUtil.AppCatalogEngine]::ScanCatalogSensors()
         } catch {}
@@ -966,10 +1020,21 @@ function Get-LocalInstalledEntries {
         }
     }
 
+    $pyScriptsYtdlp = [System.Collections.Generic.List[string]]::new()
+    try {
+        $pyRoot = "$env:LOCALAPPDATA\Programs\Python"
+        if ([System.IO.Directory]::Exists($pyRoot)) {
+            foreach ($pyDir in [System.IO.Directory]::GetDirectories($pyRoot, "Python3*")) {
+                $pyScriptsYtdlp.Add((Join-Path $pyDir "Scripts\yt-dlp.exe"))
+            }
+        }
+    } catch {}
+    $neovimRoot = if ($env:ProgramW6432) { $env:ProgramW6432 } elseif ($env:ProgramFiles) { $env:ProgramFiles } else { "C:\Program Files" }
+
     $cliProbes = @(
         @{ ID = "Google.AntigravityCLI";     Name = "Antigravity CLI";       Cmd = "agy.exe";         Paths = @("$env:LOCALAPPDATA\agy\bin\agy.exe") },
         @{ ID = "astral-sh.uv";              Name = "uv (Python Manager)";   Cmd = "uv.exe";          Paths = @("$env:USERPROFILE\.local\bin\uv.exe", "$env:USERPROFILE\.cargo\bin\uv.exe") },
-        @{ ID = "yt-dlp.yt-dlp";             Name = "yt-dlp";                Cmd = "yt-dlp.exe";      Paths = @("$env:LOCALAPPDATA\Programs\Python\Python313\Scripts\yt-dlp.exe", "$env:LOCALAPPDATA\Programs\Python\Python312\Scripts\yt-dlp.exe") },
+        @{ ID = "yt-dlp.yt-dlp";             Name = "yt-dlp";                Cmd = "yt-dlp.exe";      Paths = @($pyScriptsYtdlp) },
         @{ ID = "Gyan.FFmpeg";               Name = "FFmpeg";                Cmd = "ffmpeg.exe";      Paths = @() },
         @{ ID = "aria2.aria2";               Name = "aria2";                 Cmd = "aria2c.exe";      Paths = @() },
         @{ ID = "Rclone.Rclone";             Name = "Rclone";                Cmd = "rclone.exe";      Paths = @() },
@@ -978,7 +1043,7 @@ function Get-LocalInstalledEntries {
         @{ ID = "Yarn.Yarn";                 Name = "Yarn";                  Cmd = "yarn.cmd";        Paths = @("$env:APPDATA\npm\yarn.cmd") },
         @{ ID = "Fastfetch-cli.Fastfetch";   Name = "Fastfetch";             Cmd = "fastfetch.exe";   Paths = @() },
         @{ ID = "JanDeDobbeleer.OhMyPosh";   Name = "Oh My Posh";            Cmd = "oh-my-posh.exe";  Paths = @("$env:LOCALAPPDATA\Programs\oh-my-posh\bin\oh-my-posh.exe") },
-        @{ ID = "Neovim.Neovim";             Name = "Neovim";                Cmd = "nvim.exe";        Paths = @("C:\Program Files\Neovim\bin\nvim.exe") },
+        @{ ID = "Neovim.Neovim";             Name = "Neovim";                Cmd = "nvim.exe";        Paths = @("$neovimRoot\Neovim\bin\nvim.exe") },
         @{ ID = "Google.PlatformTools";      Name = "ADB & Fastboot";        Cmd = "adb.exe";         Paths = @("$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe") },
         @{ ID = "Gitleaks.Gitleaks";         Name = "Gitleaks";              Cmd = "gitleaks.exe";    Paths = @() }
     )
@@ -1094,8 +1159,31 @@ function Apply-InstalledDatabaseToRows {
         $IdMap,
         $NameMap,
         $CleanNameMap,
-        $InstalledList
+        $InstalledList,
+        [scriptblock]$CancelCheck = $null,
+        [switch]$PreserveOutdatedOnLocalFallback
     )
+
+    $prevOutdatedSnapshot = $null
+    if ($PreserveOutdatedOnLocalFallback -and $allItemBorders -and $allItemBorders.Count -gt 0) {
+        $prevOutdatedSnapshot = @{}
+        for ($pi = 0; $pi -lt $allItemBorders.Count; $pi++) {
+            $pt = $allItemBorders[$pi].Tag
+            if ($pt -and $pt.Status -eq "OUTDATED") {
+                $prevAv = ""
+                if ($pt.UpdateText -and -not [string]::IsNullOrWhiteSpace($pt.UpdateText.Text)) {
+                    $rawAv = [string]$pt.UpdateText.Text
+                    if ($rawAv.StartsWith("↑ ") -and $rawAv -ne "↑ Mới") {
+                        $prevAv = $rawAv.Substring(2).Trim()
+                    }
+                }
+                $prevOutdatedSnapshot[$pi] = @{
+                    Version   = [string]$pt.InstalledVersion
+                    Available = $prevAv
+                }
+            }
+        }
+    }
 
     $countInstalled = 0
     $countLatest = 0
@@ -1126,9 +1214,11 @@ function Apply-InstalledDatabaseToRows {
         $matchedArr = $null
         if ($null -ne $csMatchType.GetMethod("MatchCatalogAppsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
             $mTask = [DuckUtil.AppCatalogEngine]::MatchCatalogAppsAsync($targets, $sensorArr)
-            [void](Wait-TaskNonBlocking -Task $mTask -TimeoutSeconds 15)
-            if ($script:isWindowClosing) {
-                return [PSCustomObject]@{ Installed = 0; Latest = 0; Outdated = 0 }
+            [void](Wait-TaskNonBlocking -Task $mTask -TimeoutSeconds 15 -CancelCheck $CancelCheck)
+            $canceledApply = $script:isWindowClosing
+            if (-not $canceledApply -and $CancelCheck) { try { $canceledApply = [bool](& $CancelCheck) } catch {} }
+            if ($canceledApply) {
+                return [PSCustomObject]@{ Installed = 0; Latest = 0; Outdated = 0; Canceled = $true }
             }
             if ($mTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                 $matchedArr = $mTask.Result
@@ -1151,15 +1241,25 @@ function Apply-InstalledDatabaseToRows {
 
             if ($null -ne $info) {
                 $countInstalled++
+                $effectiveHasUpdate = [bool]($info.HasUpdate -eq $true)
+                $effectiveAvailable = [string]$info.Available
+                if (-not $effectiveHasUpdate -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
+                    $snapOut = $prevOutdatedSnapshot[$ri]
+                    if ([string]$info.Version -eq $snapOut.Version) {
+                        $effectiveHasUpdate = $true
+                        $effectiveAvailable = $snapOut.Available
+                    }
+                }
+
                 $prevStatus = $tag.Status
                 $prevVer = $tag.InstalledVersion
                 $prevDet = $tag.DetectedId
                 $tag.DetectedId = $info.ID
                 $tag.InstalledVersion = $info.Version
 
-                if ($info.HasUpdate -eq $true) {
+                if ($effectiveHasUpdate) {
                     $countOutdated++
-                    $newBadgeTxt = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
+                    $newBadgeTxt = if ($effectiveAvailable) { "↑ $effectiveAvailable" } else { "↑ Mới" }
                     if ($prevStatus -ne "OUTDATED" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID -or ($updateText -and $updateText.Text -ne $newBadgeTxt)) {
                         $tag.Status = "OUTDATED"
                         if ($tb) {
@@ -1171,7 +1271,7 @@ function Apply-InstalledDatabaseToRows {
                             $updateText.Text = $newBadgeTxt
                             $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                         }
-                        $row.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                        $row.ToolTip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $effectiveAvailable`nID phát hiện: $($info.ID)"
                     }
                 } else {
                     $countLatest++
@@ -1269,7 +1369,7 @@ function Apply-InstalledDatabaseToRows {
                 return $match
             }
             $cleanAlias = $alPair.Clean
-            if ($cleanAlias.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+            if ($cleanAlias.Length -ge 2 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                 $lookupCache[$targetId] = $match
                 return $match
             }
@@ -1341,7 +1441,8 @@ function Apply-InstalledDatabaseToRows {
     $countLatest = 0
     $countOutdated = 0
 
-    foreach ($row in $allItemBorders) {
+    for ($ri = 0; $ri -lt $allItemBorders.Count; $ri++) {
+        $row = $allItemBorders[$ri]
         $app = $row.Tag.App
         $grid = $row.Child
         $tb = if ($row.Tag.NameText) { $row.Tag.NameText } elseif ($grid -and $grid.Children.Count -gt 2) { $grid.Children[2] } else { $null }
@@ -1353,10 +1454,19 @@ function Apply-InstalledDatabaseToRows {
 
         if ($info) {
             $countInstalled++
+            $effHasUpd = [bool]($info.HasUpdate -eq $true)
+            $effAvail = [string]$info.Available
+            if (-not $effHasUpd -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
+                $snapOutPs = $prevOutdatedSnapshot[$ri]
+                if ([string]$info.Version -eq $snapOutPs.Version) {
+                    $effHasUpd = $true
+                    $effAvail = $snapOutPs.Available
+                }
+            }
             $row.Tag.DetectedId = $info.ID
             $row.Tag.InstalledVersion = $info.Version
 
-            if ($info.HasUpdate -eq $true) {
+            if ($effHasUpd) {
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
                 if ($tb) {
@@ -1365,10 +1475,10 @@ function Apply-InstalledDatabaseToRows {
                     $tb.TextDecorations = $null
                 }
                 if ($updateBadge -and $updateText) {
-                    $updateText.Text = if ($info.Available) { "↑ $($info.Available)" } else { "↑ Mới" }
+                    $updateText.Text = if ($effAvail) { "↑ $effAvail" } else { "↑ Mới" }
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                 }
-                $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $($info.Available)`nID phát hiện: $($info.ID)"
+                $tip = "$idnPrefix$($app.Name)`nĐang cài: $($info.Version)`nCó bản mới: $effAvail`nID phát hiện: $($info.ID)"
                 $row.ToolTip = $tip
             } else {
                 $countLatest++
@@ -1412,22 +1522,52 @@ function Apply-InstalledDatabaseToRows {
 }
 
 function Scan-And-ColorizeApps {
+    param([switch]$Quiet)
     if ($script:isWindowClosing) { return }
-    if ($script:isScanningApps) {
-        Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
-        return
+    if ($Quiet) {
+        if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller -or $script:isUninstallingQueue -or $script:isAutoRefreshing) {
+            return
+        }
+        $script:isAutoRefreshing = $true
+        $script:cancelAutoScan = $false
+        $script:autoScanGeneration++
+        $script:activeAutoScanGen = $script:autoScanGeneration
+    } else {
+        if ($script:isAutoRefreshing -and (Get-Command "Stop-ActiveAutoScan" -ErrorAction SilentlyContinue)) {
+            Stop-ActiveAutoScan
+            $script:isAutoRefreshing = $false
+            $script:cancelAutoScan = $false
+        }
+        if ($script:isScanningApps) {
+            Log-Text "[!] Tiến trình quét ứng dụng đang chạy, bỏ qua yêu cầu trùng lặp."
+            return
+        }
+    }
+
+    $cancelBlock = if ($Quiet) {
+        { $script:isWindowClosing -or $script:cancelAutoScan -or ($script:autoScanGeneration -ne $script:activeAutoScanGen) }
+    } else {
+        { $script:isWindowClosing }
     }
 
     $script:isScanningApps = $true
     try {
-        Log-Text "[SCAN] Đang quét hệ thống (Registry, Runtimes, CLI & WinGet)..."
-        if ($txtStatus) { $txtStatus.Text = "Đang quét hệ thống..." }
-        if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-        if ($script:isWindowClosing) { return }
+        if (-not $Quiet) {
+            Log-Text "[SCAN] Đang quét hệ thống (Registry, Runtimes, CLI & WinGet)..."
+            if ($txtStatus) { $txtStatus.Text = "Đang quét hệ thống..." }
+            if ($btnScanInstalled) {
+                $btnScanInstalled.Content = "Đang làm mới..."
+                $btnScanInstalled.IsEnabled = $false
+            }
+            if ($progressBar) {
+                $progressBar.Value = 0
+                $progressBar.IsIndeterminate = $true
+            }
+        }
+        if (& $cancelBlock) { return }
 
-        $localItems = Get-LocalInstalledEntries -SkipAppx
-        if ($script:isWindowClosing) { return }
+        $localItems = Get-LocalInstalledEntries -SkipAppx -CancelCheck $cancelBlock
+        if (& $cancelBlock) { return }
         $useCsFastMatcher = ($null -ne ("DuckUtil.AppCatalogEngine" -as [type])) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("MatchCatalogApps")))
         $idMap        = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
         $nameMap      = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
@@ -1439,19 +1579,26 @@ function Scan-And-ColorizeApps {
             if (-not $useCsFastMatcher) {
                 if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
                 if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
-                if ($locObj.CleanName.Length -ge 3) {
+                if ($locObj.CleanName.Length -ge 2) {
                     if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
                 }
             }
         }
 
-        if ($allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
-            $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
+        $localSigParts = [System.Collections.Generic.List[string]]::new($installedList.Count)
+        foreach ($locS in $installedList) {
+            $localSigParts.Add("$($locS.ID)=$($locS.Version)")
+        }
+        $localSigParts.Sort([System.StringComparer]::OrdinalIgnoreCase)
+        $localFingerprint = ($localSigParts -join ';')
+        $localChanged = ($localFingerprint -ne $script:lastLocalScanSig)
+
+        if (-not $Quiet -and $allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
+            $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock
+            if (& $cancelBlock) { return }
             if ($txtStatus) {
                 $txtStatus.Text = "Tìm thấy $($preStats.Installed) ứng dụng • đang kiểm tra cập nhật..."
             }
-            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-            if ($script:isWindowClosing) { return }
         }
 
         $wingetItems = [System.Collections.Generic.List[object]]::new()
@@ -1459,29 +1606,30 @@ function Scan-And-ColorizeApps {
         $wingetMissing = $false
 
         try {
-            $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
-            if ($script:isWindowClosing) { return }
+            $wgTimeout = if ($Quiet) { 14 } else { 35 }
+            $primary = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds $wgTimeout -CancelCheck $cancelBlock -TrackAsAuto:$Quiet
+            if ($primary.WasCanceled -or (& $cancelBlock)) { return }
             if (-not $primary.Available) {
                 $wingetMissing = $true
-                Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry, Runtimes & Appx."
+                if (-not $Quiet) { Log-Text "[WARN] Chưa có WinGet; chuyển sang quét cục bộ qua Registry, Runtimes & Appx." }
             } else {
                 $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
                 if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
                     $wingetItems = $parsedPrimary.Items
                     $wingetOk = $true
-                } else {
+                } elseif (-not $Quiet) {
                     if ($primary.TimedOut) {
-                        Log-Text "[WARN] WinGet (tất cả nguồn) quá thời gian chờ (35s); đang thử lại với nguồn --source winget..."
+                        Log-Text "[WARN] WinGet (--source winget) quá thời gian chờ (35s); đang thử lại toàn nguồn..."
                     } else {
-                        Log-Text "[WARN] WinGet (tất cả nguồn) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại --source winget..."
+                        Log-Text "[WARN] WinGet (--source winget) trả về mã $($primary.ExitCode) ($($parsedPrimary.Items.Count) dòng); đang thử lại toàn nguồn..."
                         if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
                             Log-Text "[stderr] $($primary.StdErr.Trim())"
                         }
                     }
 
-                    if ($script:isWindowClosing) { return }
-                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
-                    if ($script:isWindowClosing) { return }
+                    if (& $cancelBlock) { return }
+                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25 -CancelCheck $cancelBlock -TrackAsAuto:$Quiet
+                    if ($fallbackWg.WasCanceled -or (& $cancelBlock)) { return }
                     $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
 
                     if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
@@ -1497,19 +1645,23 @@ function Scan-And-ColorizeApps {
                 }
             }
         } catch {
-            Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)"
+            if (-not $Quiet) { Log-Text "[!] Lỗi khi gọi WinGet: $($_.Exception.Message)" }
         }
 
-        if ($script:isWindowClosing) { return }
+        if (& $cancelBlock) { return }
+
+        if ($Quiet -and -not $wingetOk -and -not $localChanged -and $script:hasCompletedAppScan) {
+            return
+        }
 
         if ((-not $wingetOk -or $wingetItems.Count -lt 5) -and -not ("DuckUtil.AppCatalogEngine" -as [type])) {
             $appxItems = Get-LocalInstalledEntries
-            if ($script:isWindowClosing) { return }
+            if (& $cancelBlock) { return }
             foreach ($ax in $appxItems) {
                 $installedList.Add($ax)
                 Set-PreferredMapEntry $idMap $ax.ID $ax
                 Set-PreferredMapEntry $nameMap $ax.Name $ax
-                if ($ax.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $ax.CleanName $ax }
+                if ($ax.CleanName.Length -ge 2) { Set-PreferredMapEntry $cleanNameMap $ax.CleanName $ax }
             }
         }
 
@@ -1521,7 +1673,7 @@ function Scan-And-ColorizeApps {
             if (-not $useCsFastMatcher) {
                 if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
                 if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
-                if ($itemObj.CleanName.Length -ge 3) {
+                if ($itemObj.CleanName.Length -ge 2) {
                     if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
                 }
 
@@ -1532,16 +1684,34 @@ function Scan-And-ColorizeApps {
         }
 
         if ($installedList.Count -eq 0 -and -not $wingetOk) {
-            Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
-            if ($txtStatus -and -not $script:hasCompletedAppScan) {
-                $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Quét lại máy" }
+            if (-not $Quiet) {
+                Log-Text "[!] Không nhận được danh sách ứng dụng từ cả WinGet lẫn cục bộ. Giữ nguyên trạng thái hiện tại."
+                if ($txtStatus -and -not $script:hasCompletedAppScan) {
+                    $txtStatus.Text = if ($wingetMissing) { "Thiếu WinGet | Quét thất bại" } else { "Lỗi quét WinGet | Hãy thử Quét lại máy" }
+                }
             }
             return
         }
 
-        if ($script:isWindowClosing) { return }
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
+        if (& $cancelBlock) { return }
+        $preserveOutdated = [bool]($Quiet -and -not $wingetOk)
+        $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock -PreserveOutdatedOnLocalFallback:$preserveOutdated
+        if (($finalStats.PSObject.Properties['Canceled'] -and $finalStats.Canceled) -or (& $cancelBlock)) { return }
+        if (-not $Quiet -and $progressBar) {
+            $progressBar.IsIndeterminate = $false
+            $progressBar.Value = 0
+        }
+
+        $script:lastLocalScanSig = $localFingerprint
+        $prevInstalledCnt = $script:lastLocalInstalledCnt
+        $script:lastLocalInstalledCnt = [int]$finalStats.Installed
+        $newSig = "$($finalStats.Installed)|$($finalStats.Latest)|$($finalStats.Outdated)|$wingetOk"
+        $sigChanged = ($newSig -ne $script:lastAppScanSignature)
+        $script:lastAppScanSignature = $newSig
+
+        if ($prevInstalledCnt -ge 0 -and $prevInstalledCnt -ne $finalStats.Installed) {
+            $script:uninstallerStale = $true
+        }
 
         $script:hasCompletedAppScan = $true
         if (Get-Command "Try-EnableCompletedCardCaches" -ErrorAction SilentlyContinue) {
@@ -1549,15 +1719,52 @@ function Scan-And-ColorizeApps {
         }
         $modeTag = if (-not $wingetOk) { " [Dự phòng Registry/Appx]" } else { "" }
         $summary = "Đã quét xong: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
-        Log-Text "[OK] $summary"
-        if ($txtStatus) {
+        if (-not $Quiet) {
+            Log-Text "[OK] $summary"
+        } elseif ($sigChanged) {
+            Log-Text "[AUTO] Làm mới: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
+        }
+        if ($txtStatus -and (-not $Quiet -or $sigChanged -or -not $script:isActionRunning)) {
             $txtStatus.Text = "$($finalStats.Installed) đã cài • $($finalStats.Latest) mới nhất • $($finalStats.Outdated) cần cập nhật" + $(if (-not $wingetOk) { " [Dự phòng]" } else { "" })
         }
     } finally {
-        $script:isScanningApps = $false
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        $autoWasPreempted = $Quiet -and ($script:autoScanGeneration -ne $script:activeAutoScanGen)
+        if (-not $autoWasPreempted) {
+            $script:isScanningApps = $false
+        }
+        if ($Quiet) {
+            if (-not $autoWasPreempted) {
+                $script:isAutoRefreshing = $false
+                $script:cancelAutoScan = $false
+            }
+        } else {
+            if ($btnScanInstalled) {
+                $btnScanInstalled.Content = "Làm mới"
+                $btnScanInstalled.IsEnabled = $true
+            }
+            if ($progressBar) {
+                $progressBar.IsIndeterminate = $false
+                $progressBar.Value = 0
+            }
+        }
+        if (-not $script:isWindowClosing -and -not $autoWasPreempted -and (Get-Command "Reset-AutoAppRefreshTimer" -ErrorAction SilentlyContinue)) {
+            try { Reset-AutoAppRefreshTimer -FromAutoTick:$Quiet } catch {}
+        }
         if (-not $script:isWindowClosing -and (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue)) {
             Flush-PendingIconCache
+        }
+        if ($script:pendingManualAppRefresh -and -not $script:isWindowClosing -and -not $script:isScanningApps -and $window -and $window.Dispatcher) {
+            $script:pendingManualAppRefresh = $false
+            $window.Dispatcher.BeginInvoke(
+                [System.Windows.Threading.DispatcherPriority]::Background,
+                [Action]{
+                    if (-not $script:isWindowClosing -and -not $script:isActionRunning -and -not $script:isScanningApps) {
+                        Invoke-GuardedAction "Quét ứng dụng" -DeferExpand -AllowDuringUninstallerLoad {
+                            Scan-And-ColorizeApps
+                        }
+                    }
+                }
+            ) | Out-Null
         }
     }
 }

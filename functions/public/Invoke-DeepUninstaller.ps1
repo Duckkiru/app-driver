@@ -291,7 +291,7 @@ function Find-AppLeftovers {
         if ($AppEntry.RegistryPath -and (Test-Path -LiteralPath $AppEntry.RegistryPath)) {
             if ($seenPaths.Add($AppEntry.RegistryPath)) {
                 $leftovers.Add([PSCustomObject]@{
-                    Type              = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
+                    Type              = "Registry b$([char]0x1ECB) l$([char]0x1ED7)i"
                     Confidence        = "An to$([char]0x00E0)n 100%"
                     AppName           = $AppEntry.DisplayName
                     Path              = $AppEntry.RegistryPath
@@ -450,7 +450,7 @@ function Find-AppLeftovers {
                     $szTask1 = $deepTypeLo::GetDirectorySizeFastAsync($loc, 4)
                     [void](Wait-TaskNonBlocking -Task $szTask1 -TimeoutSeconds 20)
                     if ($szTask1.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dirSize = [long]$szTask1.Result }
-                } else {
+                } elseif (-not $script:isWindowClosing) {
                     $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($loc, 4)
                 }
                 $leftovers.Add([PSCustomObject]@{
@@ -480,7 +480,7 @@ function Find-AppLeftovers {
                     $szTask2 = $deepTypeLo::GetDirectorySizeFastAsync($dataLoc, 4)
                     [void](Wait-TaskNonBlocking -Task $szTask2 -TimeoutSeconds 20)
                     if ($szTask2.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dataSize = [long]$szTask2.Result }
-                } else {
+                } elseif (-not $script:isWindowClosing) {
                     $dataSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($dataLoc, 4)
                 }
                 $leftovers.Add([PSCustomObject]@{
@@ -498,8 +498,9 @@ function Find-AppLeftovers {
     }
 
     $localLowRoot = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE "AppData\LocalLow" } else { "" }
+    $progDataRoot = if ($env:ProgramData) { $env:ProgramData } else { "" }
     $folderRoots = [System.Collections.Generic.List[string]]::new()
-    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
+    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "Programs" } else { "" }), $progDataRoot)) {
         if ($baseRoot -and (Test-Path -LiteralPath $baseRoot)) {
             $folderRoots.Add($baseRoot)
         }
@@ -511,10 +512,16 @@ function Find-AppLeftovers {
         }
     }
     foreach ($vf in ($vendorFolders | Select-Object -Unique)) {
-        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, "C:\ProgramData")) {
+        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, $progDataRoot)) {
             if ($baseRoot) {
                 $pubSub = Join-Path $baseRoot $vf
-                if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
+                if (Test-Path -LiteralPath $pubSub) {
+                    $isPubReparse = $false
+                    try {
+                        if (([System.IO.File]::GetAttributes($pubSub) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isPubReparse = $true }
+                    } catch {}
+                    if (-not $isPubReparse) { $folderRoots.Add($pubSub) }
+                }
             }
         }
     }
@@ -528,8 +535,18 @@ function Find-AppLeftovers {
             if (Test-PathClaimedByActiveApp -CandidateName $kw -ActiveApps $activeApps) { continue }
             $candidatePath = Join-Path $root $kw
             if (Test-Path -LiteralPath $candidatePath) {
+                $isRawReparse = $false
+                try {
+                    if (([System.IO.File]::GetAttributes($candidatePath) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isRawReparse = $true }
+                } catch {}
+                if ($isRawReparse) { continue }
                 $fullPath = Resolve-PathSafe -Path $candidatePath
                 if (-not $fullPath) { continue }
+                $isReparseCand = $false
+                try {
+                    if (([System.IO.File]::GetAttributes($fullPath) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isReparseCand = $true }
+                } catch {}
+                if ($isReparseCand) { continue }
                 $isSafe = $true
                 foreach ($ex in $exclusions) {
                     if ($fullPath -like "*\$ex\*" -or $fullPath -like "*\$ex") { $isSafe = $false; break }
@@ -540,7 +557,7 @@ function Find-AppLeftovers {
                         $szTask3 = $deepTypeLo::GetDirectorySizeFastAsync($fullPath, 4)
                         [void](Wait-TaskNonBlocking -Task $szTask3 -TimeoutSeconds 20)
                         if ($szTask3.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dirSize = [long]$szTask3.Result }
-                    } else {
+                    } elseif (-not $script:isWindowClosing) {
                         $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
                     }
                     $leftovers.Add([PSCustomObject]@{
@@ -597,7 +614,7 @@ function Find-AppLeftovers {
                 foreach ($lnk in $scTask.Result) {
                     if ($seenPaths.Add($lnk)) {
                         $leftovers.Add([PSCustomObject]@{
-                            Type              = "Shortcut ch$([char]0x1EBF)t"
+                            Type              = "Shortcut h$([char]0x1ECF)ng"
                             Confidence        = "An to$([char]0x00E0)n 100%"
                             AppName           = $AppEntry.DisplayName
                             Path              = $lnk
@@ -631,7 +648,7 @@ function Find-AppLeftovers {
                         }
                         if ($matchesApp -and $seenPaths.Add($lnk)) {
                             $leftovers.Add([PSCustomObject]@{
-                                Type              = "Shortcut ch$([char]0x1EBF)t"
+                                Type              = "Shortcut h$([char]0x1ECF)ng"
                                 Confidence        = "An to$([char]0x00E0)n 100%"
                                 AppName           = $AppEntry.DisplayName
                                 Path              = $lnk
@@ -677,7 +694,7 @@ function Find-AppLeftovers {
                     $runDisplayPath = "$rk -> [$($p.Name)]"
                     if ($seenPaths.Add($runDisplayPath)) {
                         $leftovers.Add([PSCustomObject]@{
-                            Type              = "Startup m$([char]0x1ED3) c$([char]0x00F4)i"
+                            Type              = "Startup c$([char]0x00F2)n s$([char]0x00F3)t"
                             Confidence        = "An to$([char]0x00E0)n 100%"
                             AppName           = $AppEntry.DisplayName
                             Path              = $rk
@@ -711,7 +728,7 @@ function Find-AppLeftovers {
                 }
                 if ($isSafe -and $seenPaths.Add($regPath)) {
                     $leftovers.Add([PSCustomObject]@{
-                        Type              = "Registry m$([char]0x1ED3) c$([char]0x00F4)i"
+                        Type              = "Registry c$([char]0x00F2)n s$([char]0x00F3)t"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $AppEntry.DisplayName
                         Path              = $regPath
@@ -728,7 +745,7 @@ function Find-AppLeftovers {
     if ($AppEntry.RegistryPath -and (Test-Path -LiteralPath $AppEntry.RegistryPath)) {
         if ($seenPaths.Add($AppEntry.RegistryPath)) {
             $leftovers.Add([PSCustomObject]@{
-                Type              = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
+                Type              = "Registry b$([char]0x1ECB) l$([char]0x1ED7)i"
                 Confidence        = "An to$([char]0x00E0)n 100%"
                 AppName           = $AppEntry.DisplayName
                 Path              = $AppEntry.RegistryPath
@@ -776,7 +793,7 @@ function Find-AppLeftovers {
                             $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                             if ($seenPaths.Add($regSvcPath)) {
                                 $leftovers.Add([PSCustomObject]@{
-                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Type              = "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t"
                                     Confidence        = "An to$([char]0x00E0)n 100%"
                                     AppName           = $AppEntry.DisplayName
                                     Path              = $regSvcPath
@@ -789,7 +806,7 @@ function Find-AppLeftovers {
                             if ($seenPaths.Add($img)) {
                                 $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
                                 $leftovers.Add([PSCustomObject]@{
-                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Type              = "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t"
                                     Confidence        = "An to$([char]0x00E0)n 100%"
                                     AppName           = $AppEntry.DisplayName
                                     Path              = $img
@@ -859,8 +876,11 @@ function Find-SystemOrphanLeftovers {
             }
         }
     } catch {
-        $programRoots.Add("C:\Program Files")
-        $programRoots.Add("C:\Program Files (x86)")
+        foreach ($fallbackPf in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+            if (-not [string]::IsNullOrWhiteSpace($fallbackPf) -and [System.IO.Directory]::Exists($fallbackPf) -and -not $programRoots.Contains($fallbackPf)) {
+                $programRoots.Add($fallbackPf)
+            }
+        }
     }
     $localProgs = Join-Path $env:LOCALAPPDATA "Programs"
     if ([System.IO.Directory]::Exists($localProgs)) { $programRoots.Add($localProgs) }
@@ -1011,7 +1031,7 @@ function Find-SystemOrphanLeftovers {
             if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
                 if ($seenPaths.Add($app.RegistryPath)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type              = "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                        Type              = "[Registry c$([char]0x00F2)n s$([char]0x00F3)t]"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $app.DisplayName
                         Path              = $app.RegistryPath
@@ -1032,10 +1052,10 @@ function Find-SystemOrphanLeftovers {
             foreach ($lo in $appLeftovers) {
                 $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
                 if ($seenPaths.Add($dedupKey)) {
-                    $badgeType = if ($lo.Type -like "*Driver Ring 0*") {
-                        "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                    $badgeType = if ($lo.Type -like "*Driver*") {
+                        "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
                     } elseif ($lo.IsRegistry) {
-                        "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                        "[Registry c$([char]0x00F2)n s$([char]0x00F3)t]"
                     } else {
                         "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
                     }
@@ -1059,7 +1079,7 @@ function Find-SystemOrphanLeftovers {
             foreach ($hr in $hollowProgTask.Result) {
                 if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
+                        Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $hr.AppName
                         Path              = $hr.Path
@@ -1093,7 +1113,7 @@ function Find-SystemOrphanLeftovers {
             foreach ($dl in $deadLnkTask.Result) {
                 if ($dl -and $dl.LnkPath -and $seenPaths.Add($dl.LnkPath)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                        Type              = "[Shortcut h$([char]0x1ECF)ng]"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $dl.AppName
                         Path              = $dl.LnkPath
@@ -1133,7 +1153,7 @@ function Find-SystemOrphanLeftovers {
                 if ($hollowSize -ge 0L) {
                     if ($seenPaths.Add($sd)) {
                         $orphans.Add([PSCustomObject]@{
-                            Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
+                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
                             Confidence        = "An to$([char]0x00E0)n 100%"
                             AppName           = $dirName
                             Path              = $sd
@@ -1183,7 +1203,7 @@ function Find-SystemOrphanLeftovers {
                             if (-not [System.IO.File]::Exists($target)) {
                                 if ($seenPaths.Add($lnk)) {
                                     $orphans.Add([PSCustomObject]@{
-                                        Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                                        Type              = "[Shortcut h$([char]0x1ECF)ng]"
                                         Confidence        = "An to$([char]0x00E0)n 100%"
                                         AppName           = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
                                         Path              = $lnk
@@ -1261,7 +1281,7 @@ function Find-SystemOrphanLeftovers {
                         $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                         if ($seenPaths.Add($regSvcPath)) {
                             $orphans.Add([PSCustomObject]@{
-                                Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                Type              = "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
                                 Confidence        = "An to$([char]0x00E0)n 100%"
                                 AppName           = "$drvVendor ($($se.ServiceName))"
                                 Path              = $regSvcPath
@@ -1274,7 +1294,7 @@ function Find-SystemOrphanLeftovers {
                         if ($seenPaths.Add($img)) {
                             $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
                             $orphans.Add([PSCustomObject]@{
-                                Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                Type              = "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
                                 Confidence        = "An to$([char]0x00E0)n 100%"
                                 AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
                                 Path              = $img
@@ -1296,7 +1316,8 @@ function Find-SystemOrphanLeftovers {
 function Invoke-ForceStopPathLockers {
     param(
         [Parameter(Mandatory = $true)][string]$TargetPath,
-        [bool]$IncludeServicesAndTasks = $true
+        [bool]$IncludeServicesAndTasks = $true,
+        [switch]$AllowCancel
     )
 
     $resObj = [PSCustomObject]@{
@@ -1323,10 +1344,11 @@ function Invoke-ForceStopPathLockers {
     $hasForceStop = @($deepType.GetMethods() | Where-Object { $_.Name -eq "ForceStopDirectoryLockers" -and $_.GetParameters().Count -eq 2 }).Count -gt 0
     if ($hasForceStopAsync) {
         $fsTask = $deepType::ForceStopDirectoryLockersAsync($TargetPath, $IncludeServicesAndTasks)
-        [void](Wait-TaskNonBlocking -Task $fsTask -TimeoutSeconds 45)
+        $fsCancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+        [void](Wait-TaskNonBlocking -Task $fsTask -TimeoutSeconds 45 -CancelCheck $fsCancelCb)
         $rpt = if ($fsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
             $fsTask.Result
-        } elseif ($hasForceStop -and -not $script:isWindowClosing) {
+        } elseif ($hasForceStop -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
             $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
         } else { $null }
     } elseif ($hasForceStop) {
@@ -1450,14 +1472,58 @@ function Show-LeftoverReviewDialog {
             $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
         }
     }
-    $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0A0E15")
-    $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
+    if (-not $script:loDialogPalette) {
+        $bcCache = New-Object System.Windows.Media.BrushConverter
+        $mkC = {
+            param([string]$hex)
+            $br = $bcCache.ConvertFromString($hex)
+            if ($br -and $br.CanFreeze) { $br.Freeze() }
+            return $br
+        }
+        $script:loDialogPalette = @{
+            Bg           = & $mkC "#0A0E15"
+            Fg           = & $mkC "#F1F5F9"
+            TitleFg      = & $mkC "#38BDF8"
+            ItemBg       = & $mkC "#101520"
+            ItemBorder   = & $mkC "#1E293B"
+            White        = & $mkC "#FFFFFF"
+            ConfBg       = & $mkC "#064E3B"
+            ConfBorder   = & $mkC "#059669"
+            ConfFg       = & $mkC "#6EE7B7"
+            ItemTitleFg  = & $mkC "#E2E8F0"
+            PathFg       = & $mkC "#64748B"
+            SizeRegFg    = & $mkC "#94A3B8"
+            SizeFileFg   = & $mkC "#38BDF8"
+            BtnBg        = & $mkC "#1E293B"
+            BtnFg        = & $mkC "#CBD5E1"
+            BottomBg     = & $mkC "#0D121B"
+            WarnFg       = & $mkC "#FBBF24"
+            DelBg        = & $mkC "#991B1B"
+            DelFg        = & $mkC "#FEE2E2"
+            DelBorder    = & $mkC "#DC2626"
+            BadgeMap     = @{
+                "Ring0"    = (& $mkC "#B91C1C")
+                "Registry" = (& $mkC "#DC2626")
+                "Startup"  = (& $mkC "#E11D48")
+                "AppData"  = (& $mkC "#D97706")
+                "Hollow"   = (& $mkC "#2563EB")
+                "Shortcut" = (& $mkC "#7C3AED")
+                "Dump"     = (& $mkC "#9333EA")
+                "Default"  = (& $mkC "#0D9488")
+            }
+        }
+    }
+    $pal = $script:loDialogPalette
+
+    $dialog.Background = $pal.Bg
+    $dialog.Foreground = $pal.Fg
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
 
     try {
-        $rdXaml = @'
+        if (-not $script:loDialogResources) {
+            $rdXaml = @'
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Style TargetType="{x:Type CheckBox}">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -1519,7 +1585,11 @@ function Show-LeftoverReviewDialog {
     </Style>
 </ResourceDictionary>
 '@
-        $dialog.Resources = [System.Windows.Markup.XamlReader]::Parse($rdXaml)
+            $script:loDialogResources = [System.Windows.Markup.XamlReader]::Parse($rdXaml)
+        }
+        if ($script:loDialogResources) {
+            $dialog.Resources = $script:loDialogResources
+        }
     } catch {}
 
     $rootGrid = New-Object System.Windows.Controls.Grid
@@ -1536,7 +1606,7 @@ function Show-LeftoverReviewDialog {
     $titleBlock.Text = $Title
     $titleBlock.FontSize = 15
     $titleBlock.FontWeight = [System.Windows.FontWeights]::Bold
-    $titleBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    $titleBlock.Foreground = $pal.TitleFg
     $headerPanel.Children.Add($titleBlock) | Out-Null
     [System.Windows.Controls.Grid]::SetRow($headerPanel, 0)
     $rootGrid.Children.Add($headerPanel) | Out-Null
@@ -1553,35 +1623,19 @@ function Show-LeftoverReviewDialog {
     $itemsStack = New-Object System.Windows.Controls.StackPanel
     $itemCheckBoxes = [System.Collections.Generic.List[System.Windows.Controls.CheckBox]]::new()
 
-    $bcLo = New-Object System.Windows.Media.BrushConverter
-    $mkLoBrush = {
-        param([string]$hex)
-        $br = $bcLo.ConvertFromString($hex)
-        if ($br -and $br.CanFreeze) { $br.Freeze() }
-        return $br
-    }
-    $brLoItemBg     = & $mkLoBrush "#101520"
-    $brLoItemBorder = & $mkLoBrush "#1E293B"
-    $brLoWhite      = & $mkLoBrush "#FFFFFF"
-    $brLoConfBg     = & $mkLoBrush "#064E3B"
-    $brLoConfBorder = & $mkLoBrush "#059669"
-    $brLoConfFg     = & $mkLoBrush "#6EE7B7"
-    $brLoTitleFg    = & $mkLoBrush "#E2E8F0"
-    $brLoPathFg     = & $mkLoBrush "#64748B"
-    $brLoSizeRegFg  = & $mkLoBrush "#94A3B8"
-    $brLoSizeFileFg = & $mkLoBrush "#38BDF8"
-    $brLoBtnBg      = & $mkLoBrush "#1E293B"
-    $brLoBtnFg      = & $mkLoBrush "#CBD5E1"
-    $brLoBadgeMap   = @{
-        "Ring0"    = (& $mkLoBrush "#B91C1C")
-        "Registry" = (& $mkLoBrush "#DC2626")
-        "Startup"  = (& $mkLoBrush "#E11D48")
-        "AppData"  = (& $mkLoBrush "#D97706")
-        "Hollow"   = (& $mkLoBrush "#2563EB")
-        "Shortcut" = (& $mkLoBrush "#7C3AED")
-        "Dump"     = (& $mkLoBrush "#9333EA")
-        "Default"  = (& $mkLoBrush "#0D9488")
-    }
+    $brLoItemBg     = $pal.ItemBg
+    $brLoItemBorder = $pal.ItemBorder
+    $brLoWhite      = $pal.White
+    $brLoConfBg     = $pal.ConfBg
+    $brLoConfBorder = $pal.ConfBorder
+    $brLoConfFg     = $pal.ConfFg
+    $brLoTitleFg    = $pal.ItemTitleFg
+    $brLoPathFg     = $pal.PathFg
+    $brLoSizeRegFg  = $pal.SizeRegFg
+    $brLoSizeFileFg = $pal.SizeFileFg
+    $brLoBtnBg      = $pal.BtnBg
+    $brLoBtnFg      = $pal.BtnFg
+    $brLoBadgeMap   = $pal.BadgeMap
 
     $itemsStack.AddHandler(
         [System.Windows.Controls.Primitives.ButtonBase]::ClickEvent,
@@ -1614,10 +1668,11 @@ function Show-LeftoverReviewDialog {
 
     foreach ($item in $Items) {
         $badgeKey = switch -Wildcard ($item.Type) {
-            "*Driver Ring 0*" { "Ring0" }
+            "*Driver*" { "Ring0" }
             "*Registry*" { "Registry" }
             "*Startup*" { "Startup" }
             "*R$([char]0x00E1)c AppData*" { "AppData" }
+            "*Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng*" { "Hollow" }
             "*V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c*" { "Hollow" }
             "*Shortcut*" { "Shortcut" }
             "*Crash Dump*" { "Dump" }
@@ -1775,8 +1830,8 @@ function Show-LeftoverReviewDialog {
     $rootGrid.Children.Add($scrollViewer) | Out-Null
 
     $bottomBar = New-Object System.Windows.Controls.Border
-    $bottomBar.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D121B")
-    $bottomBar.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+    $bottomBar.Background = $pal.BottomBg
+    $bottomBar.BorderBrush = $pal.ItemBorder
     $bottomBar.BorderThickness = New-Object System.Windows.Thickness(0, 1, 0, 0)
     $bottomBar.Padding = New-Object System.Windows.Thickness(18, 10, 18, 10)
 
@@ -1792,19 +1847,19 @@ function Show-LeftoverReviewDialog {
     $summaryText = New-Object System.Windows.Controls.TextBlock
     $summaryText.FontSize = 12
     $summaryText.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $summaryText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+    $summaryText.Foreground = $pal.ItemTitleFg
 
     $chkRecycleBin = New-Object System.Windows.Controls.CheckBox
     $chkRecycleBin.IsChecked = $true
     $chkRecycleBin.Margin = New-Object System.Windows.Thickness(0, 5, 0, 0)
-    $chkRecycleBin.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $chkRecycleBin.Foreground = $pal.SizeRegFg
     $chkRecycleBin.FontSize = 11.5
     $chkRecycleBin.Content = "Chuy$([char]0x1EC3)n file/th$([char]0x01B0) m$([char]0x1EE5)c v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c Windows (An to$([char]0x00E0)n, kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c n$([char]0x1EBF)u c$([char]0x1EA7)n)"
 
     $chkForceStop = New-Object System.Windows.Controls.CheckBox
     $chkForceStop.IsChecked = [bool]$ForceStopByDefault
     $chkForceStop.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
-    $chkForceStop.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FBBF24")
+    $chkForceStop.Foreground = $pal.WarnFg
     $chkForceStop.FontSize = 11.5
     $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a (kh$([char]0x00F4)ng hi$([char]0x1EC7)n popup Windows)"
 
@@ -1876,19 +1931,26 @@ function Show-LeftoverReviewDialog {
     $btnCancel.Content = "H$([char]0x1EE7)y b$([char]0x1ECF)"
     $btnCancel.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
     $btnCancel.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-    $btnCancel.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
-    $btnCancel.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $btnCancel.Background = $pal.ItemBorder
+    $btnCancel.Foreground = $pal.SizeRegFg
     $btnCancel.Add_Click({ $dialog.Close() })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
     $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0 }
+    $dialogBusyState = [PSCustomObject]@{ IsDeleting = $false }
+    $dialog.Add_Closing({
+        param($s, $e)
+        if ($dialogBusyState.IsDeleting -and -not $script:isWindowClosing) {
+            $e.Cancel = $true
+        }
+    })
 
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "X$([char]0x00F3)a S$([char]0x1EA1)ch M$([char]0x1EE5)c $([char]0x0110)$([char]0x00E3) Ch$([char]0x1ECD)n"
     $btnDelete.Padding = New-Object System.Windows.Thickness(14, 6, 14, 6)
-    $btnDelete.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#991B1B")
-    $btnDelete.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FEE2E2")
-    $btnDelete.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#DC2626")
+    $btnDelete.Background = $pal.DelBg
+    $btnDelete.Foreground = $pal.DelFg
+    $btnDelete.BorderBrush = $pal.DelBorder
     $btnDelete.FontWeight = [System.Windows.FontWeights]::Bold
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
@@ -1908,6 +1970,7 @@ function Show-LeftoverReviewDialog {
         $rebootTotal = 0
         $accessDeniedTotal = 0
 
+        $dialogBusyState.IsDeleting = $true
         $btnDelete.IsEnabled = $false
         if ($btnCancel) { $btnCancel.IsEnabled = $false }
         if ($btnSelectAll) { $btnSelectAll.IsEnabled = $false }
@@ -2127,8 +2190,10 @@ function Show-LeftoverReviewDialog {
             $dialogResult.FreedBytes = $freed
             $dialogResult.RebootScheduled = $rebootTotal
             $dialogResult.AccessDeniedCount = $accessDeniedTotal
+            $dialogBusyState.IsDeleting = $false
             $dialog.Close()
         } finally {
+            $dialogBusyState.IsDeleting = $false
             $btnDelete.IsEnabled = $true
             if ($btnCancel) { $btnCancel.IsEnabled = $true }
             if ($btnSelectAll) { $btnSelectAll.IsEnabled = $true }
@@ -2383,14 +2448,19 @@ function Invoke-DeepAppUninstall {
         $AllInstalledApps
     } elseif ($canWaitNonBlocking -and $deepEngT -and $null -ne $deepEngT.GetMethod("GetInstalledAppsAsync")) {
         $appsTask = $deepEngT::GetInstalledAppsAsync()
-        [void](Wait-TaskNonBlocking -Task $appsTask -TimeoutSeconds 45)
+        $appsCancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+        [void](Wait-TaskNonBlocking -Task $appsTask -TimeoutSeconds 45 -CancelCheck $appsCancelCb)
         if ($appsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
             @($appsTask.Result)
-        } else {
+        } elseif (-not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
             Get-SystemInstalledAppsFast
+        } else {
+            @()
         }
-    } else {
+    } elseif (-not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
         Get-SystemInstalledAppsFast
+    } else {
+        @()
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
@@ -2399,7 +2469,7 @@ function Invoke-DeepAppUninstall {
         $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             $safeLoc = $loc
-            [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true)
+            [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true -AllowCancel:$AllowCancel)
         }
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
@@ -2476,7 +2546,7 @@ function Invoke-DeepAppUninstall {
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
-        [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true)
+        [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true -AllowCancel:$AllowCancel)
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 

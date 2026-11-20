@@ -93,8 +93,9 @@ if (-not $isCompanion -or -not $isAdmin) {
             $forwarded = foreach ($arg in $args) {
                 if ($arg -eq '--companion') { continue }
                 $argStr = "$arg"
-                if ($argStr -match '[\s"]') {
-                    '`"' + ($argStr -replace '"', '\"') + '`"'
+                if ([string]::IsNullOrEmpty($argStr) -or $argStr -match '[\s"]') {
+                    $escaped = ($argStr -replace '(\\*)"', '$1$1\"') -replace '(\\+)$', '$1$1'
+                    '"' + $escaped + '"'
                 } else {
                     $argStr
                 }
@@ -168,8 +169,6 @@ if (-not $isCompanion -or -not $isAdmin) {
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
             $elevationSuccess = $true
-            Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
-            Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
             return
         } catch {
             if (Test-UacCancelled $_) {
@@ -193,8 +192,6 @@ if (-not $isCompanion -or -not $isAdmin) {
             }
             Start-Process @startParams
             $elevationSuccess = $true
-            Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
-            Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
             return
         } catch {
             if (Test-UacCancelled $_) {
@@ -216,8 +213,6 @@ if (-not $isCompanion -or -not $isAdmin) {
                     }
                     Start-Process @fallbackParams
                     $elevationSuccess = $true
-                    Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
-                    Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
                     return
                 } catch {
                     if (Test-UacCancelled $_) {
@@ -251,31 +246,6 @@ if ($Host -and $Host.UI -and $Host.UI.RawUI) {
 }
 
 try {
-    if (-not ('DuckUtil.ConsoleHelper' -as [type])) {
-        Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-namespace DuckUtil {
-    public static class ConsoleHelper {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetStdHandle(int nStdHandle);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
-        public static void DisableQuickEdit() {
-            IntPtr h = GetStdHandle(-10);
-            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
-            uint mode;
-            if (GetConsoleMode(h, out mode)) {
-                uint next = (mode & ~0x0040u) | 0x0080u;
-                if (next != mode) SetConsoleMode(h, next);
-            }
-        }
-    }
-}
-"@ -ErrorAction SilentlyContinue
-    }
     if ('DuckUtil.ConsoleHelper' -as [type]) {
         [DuckUtil.ConsoleHelper]::DisableQuickEdit()
     }

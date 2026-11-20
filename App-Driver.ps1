@@ -93,8 +93,9 @@ if (-not $isCompanion -or -not $isAdmin) {
             $forwarded = foreach ($arg in $args) {
                 if ($arg -eq '--companion') { continue }
                 $argStr = "$arg"
-                if ($argStr -match '[\s"]') {
-                    '`"' + ($argStr -replace '"', '\"') + '`"'
+                if ([string]::IsNullOrEmpty($argStr) -or $argStr -match '[\s"]') {
+                    $escaped = ($argStr -replace '(\\*)"', '$1$1\"') -replace '(\\+)$', '$1$1'
+                    '"' + $escaped + '"'
                 } else {
                     $argStr
                 }
@@ -168,8 +169,6 @@ if (-not $isCompanion -or -not $isAdmin) {
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
             $elevationSuccess = $true
-            Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
-            Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
             return
         } catch {
             if (Test-UacCancelled $_) {
@@ -193,8 +192,6 @@ if (-not $isCompanion -or -not $isAdmin) {
             }
             Start-Process @startParams
             $elevationSuccess = $true
-            Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
-            Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
             return
         } catch {
             if (Test-UacCancelled $_) {
@@ -216,8 +213,6 @@ if (-not $isCompanion -or -not $isAdmin) {
                     }
                     Start-Process @fallbackParams
                     $elevationSuccess = $true
-                    Write-Host "`n[OK] $([char]0x0110)$([char]0x00E3) tri$([char]0x1EC7)u h$([char]0x1ED3)i App-Driver trong c$([char]0x1EED)a s$([char]0x1ED5) ri$([char]0x00EA)ng." -ForegroundColor Green
-                    Write-Host "[*] C$([char]0x1EED)a s$([char]0x1ED5) PowerShell n$([char]0x00E0)y v$([char]0x1EAB)n m$([char]0x1EDF) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c nh$([char]0x1EAD)p l$([char]0x1EC7)nh.`n" -ForegroundColor DarkGray
                     return
                 } catch {
                     if (Test-UacCancelled $_) {
@@ -251,31 +246,6 @@ if ($Host -and $Host.UI -and $Host.UI.RawUI) {
 }
 
 try {
-    if (-not ('DuckUtil.ConsoleHelper' -as [type])) {
-        Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-namespace DuckUtil {
-    public static class ConsoleHelper {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetStdHandle(int nStdHandle);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
-        public static void DisableQuickEdit() {
-            IntPtr h = GetStdHandle(-10);
-            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
-            uint mode;
-            if (GetConsoleMode(h, out mode)) {
-                uint next = (mode & ~0x0040u) | 0x0080u;
-                if (next != mode) SetConsoleMode(h, next);
-            }
-        }
-    }
-}
-"@ -ErrorAction SilentlyContinue
-    }
     if ('DuckUtil.ConsoleHelper' -as [type]) {
         [DuckUtil.ConsoleHelper]::DisableQuickEdit()
     }
@@ -2594,7 +2564,6 @@ $appsRawJson = @'
     "Domain":  "g-helper.com",
     "Aliases":  [
             "G-Helper",
-            "g-helper",
             "seerge.g-helper"
           ],
     "Category":  "Optimization \u0026 Tuning",
@@ -4821,19 +4790,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         <ScrollViewer Grid.Column="1" Name="AppsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                             <Grid Name="CardsContainer">
-                                <Grid Name="CardsMasonryHost">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
-                                    <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
-                                    <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
-                                </Grid>
-
-                                <StackPanel Name="GroupMasonrySection" Visibility="Collapsed">
-                                    <Border Name="GroupFilterBanner" Background="#111722" BorderBrush="#2B394F"
+                                <StackPanel Name="AllAndGroupHost">
+                                    <Border Name="GroupFilterBanner" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
                                             BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,8">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
@@ -4851,6 +4809,19 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                         </Grid>
                                     </Border>
 
+                                    <Grid Name="CardsMasonryHost" Margin="4,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Name="CardsCol0" Margin="0,0,4,0"/>
+                                        <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                                        <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Name="GroupMasonrySection" Visibility="Collapsed">
                                     <Grid Name="GroupMasonryHost">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -4890,13 +4861,15 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="15"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="15"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" Name="SingleCatCol0"/>
+                                            <Border Grid.Column="1" Name="SingleCatDivider0" Width="1" Background="#253349" HorizontalAlignment="Center" Margin="0,2" IsHitTestVisible="False" SnapsToDevicePixels="True"/>
                                             <StackPanel Grid.Column="2" Name="SingleCatCol1"/>
+                                            <Border Grid.Column="3" Name="SingleCatDivider1" Width="1" Background="#253349" HorizontalAlignment="Center" Margin="0,2" IsHitTestVisible="False" SnapsToDevicePixels="True"/>
                                             <StackPanel Grid.Column="4" Name="SingleCatCol2"/>
                                         </Grid>
                                     </StackPanel>
@@ -4974,7 +4947,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnFilterUninstAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
-                                            <Button Name="btnFilterUninstBroken" Content="X&#x00F3;a sai c&#x00E1;ch / L&#x1ED7;i" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnFilterUninstBroken" Content="B&#x1ECB; l&#x1ED7;i / C&#x00F2;n s&#x00F3;t" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
                                     <TextBlock Text="S&#x1EAF;p x&#x1EBF;p:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
@@ -5220,7 +5193,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 "@
 
 function Import-CachedCSharpType {
-    param([string]$TypeName, [string]$SourceCode, [string]$Prefix, [string[]]$ReferencedAssemblies = @(), [string]$RequiredMethod = "")
+    param([string]$TypeName, [string]$SourceCode, [string]$Prefix, [string[]]$ReferencedAssemblies = @(), [string]$RequiredMethod = "", [scriptblock]$RefsResolver = $null)
     $existingType = $TypeName -as [type]
     if ($existingType -and ([string]::IsNullOrWhiteSpace($RequiredMethod) -or $null -ne $existingType.GetMethod($RequiredMethod))) { return }
     try {
@@ -5230,16 +5203,18 @@ function Import-CachedCSharpType {
         $hashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($SourceCode + "|" + $PSVersionTable.PSVersion.ToString()))
         $sha.Dispose()
         $hashHex = ([System.BitConverter]::ToString($hashBytes)).Replace("-", "").Substring(0, 16)
-        $dllName = "${Prefix}_${hashHex}.dll"
+        $rtTag = if ($PSVersionTable.PSEdition) { $PSVersionTable.PSEdition } else { "Desktop" }
+        $rtPrefix = "${Prefix}_${rtTag}"
+        $dllName = "${rtPrefix}_${hashHex}.dll"
         $dllPath = Join-Path $cacheDir $dllName
         try {
-            foreach ($oldDll in [System.IO.Directory]::GetFiles($cacheDir, "${Prefix}_*.dll")) {
+            foreach ($oldDll in [System.IO.Directory]::GetFiles($cacheDir, "${rtPrefix}_*.dll")) {
                 if (-not [System.IO.Path]::GetFileName($oldDll).Equals($dllName, [System.StringComparison]::OrdinalIgnoreCase)) {
                     try { [System.IO.File]::Delete($oldDll) } catch {}
                 }
             }
         } catch {}
-        if ([System.IO.File]::Exists($dllPath)) {
+        if ([System.IO.File]::Exists($dllPath) -and ([System.IO.FileInfo]::new($dllPath)).Length -gt 0) {
             try {
                 [System.Reflection.Assembly]::LoadFrom($dllPath) | Out-Null
                 $loadedType = $TypeName -as [type]
@@ -5247,15 +5222,19 @@ function Import-CachedCSharpType {
                 try { [System.IO.File]::Delete($dllPath) } catch {}
             } catch {}
         }
+        $resolvedRefs = $ReferencedAssemblies
+        if ((-not $resolvedRefs -or $resolvedRefs.Count -eq 0) -and $RefsResolver) { $resolvedRefs = @(& $RefsResolver) }
         $addParams = @{ TypeDefinition = $SourceCode; OutputAssembly = $dllPath; ErrorAction = "Stop" }
-        if ($ReferencedAssemblies -and $ReferencedAssemblies.Count -gt 0) { $addParams["ReferencedAssemblies"] = $ReferencedAssemblies }
+        if ($resolvedRefs -and $resolvedRefs.Count -gt 0) { $addParams["ReferencedAssemblies"] = $resolvedRefs }
         Add-Type @addParams | Out-Null
         [System.Reflection.Assembly]::LoadFrom($dllPath) | Out-Null
-    } catch {}
+    } catch { try { if ([System.IO.File]::Exists($dllPath)) { [System.IO.File]::Delete($dllPath) } } catch {} }
     if (-not ($TypeName -as [type])) {
         try {
-            if ($ReferencedAssemblies -and $ReferencedAssemblies.Count -gt 0) {
-                Add-Type -TypeDefinition $SourceCode -ReferencedAssemblies $ReferencedAssemblies -ErrorAction SilentlyContinue
+            $resolvedRefs = $ReferencedAssemblies
+            if ((-not $resolvedRefs -or $resolvedRefs.Count -eq 0) -and $RefsResolver) { $resolvedRefs = @(& $RefsResolver) }
+            if ($resolvedRefs -and $resolvedRefs.Count -gt 0) {
+                Add-Type -TypeDefinition $SourceCode -ReferencedAssemblies $resolvedRefs -ErrorAction SilentlyContinue
             } else {
                 Add-Type -TypeDefinition $SourceCode -ErrorAction SilentlyContinue
             }
@@ -5263,24 +5242,25 @@ function Import-CachedCSharpType {
     }
 }
 
-$wpfSmoothRefs = @(
-    [System.Windows.Controls.ScrollViewer].Assembly.Location,
-    [System.Windows.UIElement].Assembly.Location,
-    [System.Windows.DependencyObject].Assembly.Location,
-    [System.Windows.Markup.IQueryAmbient].Assembly.Location,
-    [System.Diagnostics.Stopwatch].Assembly.Location,
-    [System.Drawing.Icon].Assembly.Location,
-    [System.Net.Http.HttpClient].Assembly.Location,
-    [System.Object].Assembly.Location
-) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
-if ($PSVersionTable.PSEdition -eq "Core") {
-    try {
-        $refDllsCore = @([System.IO.Directory]::GetFiles((Join-Path $PSHOME "ref"), "*.dll"))
-        $loadedExtraCore = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and -not [string]::IsNullOrWhiteSpace($_.Location) -and $_.GetName().Name -match "^(Presentation|WindowsBase|System\.Drawing|System\.Private\.Windows|DirectWriteForwarder|ReachFramework|UIAutomation)" } | ForEach-Object { $_.Location })
-        $coreAllRefs = @($refDllsCore + $loadedExtraCore + $wpfSmoothRefs | Select-Object -Unique)
-    } catch { $coreAllRefs = $wpfSmoothRefs }
-} else {
-    $coreAllRefs = $wpfSmoothRefs
+$resolveCoreRefs = {
+    $wpfSmoothRefs = @(
+        [System.Windows.Controls.ScrollViewer].Assembly.Location,
+        [System.Windows.UIElement].Assembly.Location,
+        [System.Windows.DependencyObject].Assembly.Location,
+        [System.Windows.Markup.IQueryAmbient].Assembly.Location,
+        [System.Diagnostics.Stopwatch].Assembly.Location,
+        [System.Drawing.Icon].Assembly.Location,
+        [System.Net.Http.HttpClient].Assembly.Location,
+        [System.Object].Assembly.Location
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    if ($PSVersionTable.PSEdition -eq "Core") {
+        try {
+            $refDllsCore = @([System.IO.Directory]::GetFiles((Join-Path $PSHOME "ref"), "*.dll"))
+            $loadedExtraCore = @([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { -not $_.IsDynamic -and -not [string]::IsNullOrWhiteSpace($_.Location) -and $_.GetName().Name -match "^(Presentation|WindowsBase|System\.Drawing|System\.Private\.Windows|DirectWriteForwarder|ReachFramework|UIAutomation)" } | ForEach-Object { $_.Location })
+            return @($refDllsCore + $loadedExtraCore + $wpfSmoothRefs | Select-Object -Unique)
+        } catch { return $wpfSmoothRefs }
+    }
+    return $wpfSmoothRefs
 }
 
 if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
@@ -5311,6 +5291,24 @@ using System.Windows;
 using System;
 
 namespace DuckUtil {
+    public static class ConsoleHelper {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        public static void DisableQuickEdit() {
+            IntPtr h = GetStdHandle(-10);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+            uint mode;
+            if (GetConsoleMode(h, out mode)) {
+                uint next = (mode & ~0x0040u) | 0x0080u;
+                if (next != mode) SetConsoleMode(h, next);
+            }
+        }
+    }
+
     public sealed class SmoothScrollController {
         private readonly ScrollViewer _sv;
         private double _currentOffset;
@@ -5773,6 +5771,22 @@ namespace DuckUtil {
             }
         }
 
+        private static void WriteBytesAtomic(string destPath, byte[] data) {
+            if (string.IsNullOrEmpty(destPath) || data == null || data.Length == 0 || File.Exists(destPath)) return;
+            string tmpPath = destPath + ".tmp." + Guid.NewGuid().ToString("N");
+            try {
+                string dir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllBytes(tmpPath, data);
+                if (!File.Exists(destPath)) {
+                    File.Move(tmpPath, destPath);
+                }
+            } catch {
+            } finally {
+                try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch {}
+            }
+        }
+
         private static void RemoteWorkerLoop() {
             try {
                 while (true) {
@@ -5799,16 +5813,16 @@ namespace DuckUtil {
                             byte[] dl = DownloadBytesWithTimeout(job.Url, 2500);
                             if (dl != null && dl.Length > 230 && dl.Length != 588) {
                                 ready = DecodeFrozenPngOrIcoBitmap(dl);
-                                if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
-                                    try { File.WriteAllBytes(job.DestPath, dl); } catch {}
+                                if (ready != null) {
+                                    WriteBytesAtomic(job.DestPath, dl);
                                 }
                             }
                             if (ready == null && !string.IsNullOrWhiteSpace(job.FallbackUrl) && Volatile.Read(ref _remoteGen) == gen) {
                                 byte[] dl2 = DownloadBytesWithTimeout(job.FallbackUrl, 2500);
                                 if (dl2 != null && dl2.Length > 230 && dl2.Length != 588) {
                                     ready = DecodeFrozenPngOrIcoBitmap(dl2);
-                                    if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
-                                        try { File.WriteAllBytes(job.DestPath, dl2); } catch {}
+                                    if (ready != null) {
+                                        WriteBytesAtomic(job.DestPath, dl2);
                                     }
                                 }
                             }
@@ -6218,7 +6232,7 @@ namespace DuckUtil {
             var statusTb = new TextBlock();
             statusTb.FontSize = 10.5;
             statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = isBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+            statusTb.Text = isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
             statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
@@ -6276,7 +6290,7 @@ namespace DuckUtil {
         private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
         private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
         private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
-        private static readonly CornerRadius _ccRow = new CornerRadius(1);
+        private static readonly CornerRadius _ccRow = new CornerRadius(2);
 
         public static CatalogRowVisual CreateCatalogRow(
             string appName,
@@ -6303,6 +6317,7 @@ namespace DuckUtil {
             rowBorder.CornerRadius = _ccRow;
             rowBorder.Padding = _ctRowPad;
             rowBorder.Margin = _ctRowMgn;
+            rowBorder.SnapsToDevicePixels = true;
             if (rowStyle != null) rowBorder.Style = rowStyle;
             rowBorder.Cursor = Cursors.Hand;
             if (!string.IsNullOrEmpty(rowToolTip)) {
@@ -6589,6 +6604,145 @@ namespace DuckUtil {
             outOpenBtn = openBtn;
             return itemBorderEl;
         }
+
+        public static void DistributeRowsToColumns(Panel rowsStack, Panel[] cols, System.Collections.IList rows) {
+            if (cols == null || cols.Length == 0 || rows == null) return;
+            for (int c = 0; c < cols.Length; c++) {
+                if (cols[c] != null) cols[c].Children.Clear();
+            }
+            if (rowsStack != null) {
+                rowsStack.Children.Clear();
+            }
+            int n = rows.Count;
+            int colCnt = cols.Length;
+            int baseCnt = n / colCnt;
+            int rem = n % colCnt;
+            int offset = 0;
+            for (int ci = 0; ci < colCnt; ci++) {
+                int take = baseCnt + (ci < rem ? 1 : 0);
+                Panel cp = cols[ci];
+                for (int k = 0; k < take && (offset + k) < n; k++) {
+                    UIElement el = rows[offset + k] as UIElement;
+                    if (el != null && cp != null) cp.Children.Add(el);
+                }
+                offset += take;
+            }
+        }
+
+        public static void RestoreRowsFromColumns(Panel rowsStack, Panel[] cols, System.Collections.IList rows) {
+            if (cols != null) {
+                for (int c = 0; c < cols.Length; c++) {
+                    if (cols[c] != null) cols[c].Children.Clear();
+                }
+            }
+            if (rowsStack != null && rows != null) {
+                rowsStack.Children.Clear();
+                for (int i = 0; i < rows.Count; i++) {
+                    UIElement el = rows[i] as UIElement;
+                    if (el != null) rowsStack.Children.Add(el);
+                }
+            }
+        }
+    }
+
+    public sealed class MasonryPanel : Panel {
+        private int _columns = 3;
+        private double _columnSpacing = 8.0;
+
+        public int Columns {
+            get { return _columns; }
+            set {
+                int clamped = value < 1 ? 1 : value;
+                if (_columns != clamped) {
+                    _columns = clamped;
+                    InvalidateMeasure();
+                }
+            }
+        }
+
+        public double ColumnSpacing {
+            get { return _columnSpacing; }
+            set {
+                double clamped = value < 0.0 ? 0.0 : value;
+                if (Math.Abs(_columnSpacing - clamped) > 0.01) {
+                    _columnSpacing = clamped;
+                    InvalidateMeasure();
+                }
+            }
+        }
+
+        protected override System.Windows.Size MeasureOverride(System.Windows.Size availableSize) {
+            int cols = _columns < 1 ? 1 : _columns;
+            double totalW = (double.IsInfinity(availableSize.Width) || double.IsNaN(availableSize.Width) || availableSize.Width <= 0.0)
+                ? 900.0
+                : availableSize.Width;
+            double spacing = _columnSpacing;
+            double availCols = Math.Max(1.0, totalW - (cols - 1) * spacing);
+            double colW = Math.Floor(availCols / cols);
+            if (colW < 1.0) colW = availCols / cols;
+
+            System.Windows.Size childConstraint = new System.Windows.Size(colW, double.PositiveInfinity);
+            double[] colHeights = new double[cols];
+            UIElementCollection children = InternalChildren;
+            int count = children.Count;
+
+            for (int i = 0; i < count; i++) {
+                UIElement child = children[i];
+                if (child == null || child.Visibility == Visibility.Collapsed) continue;
+                child.Measure(childConstraint);
+                int bestCol = 0;
+                double minH = colHeights[0];
+                for (int c = 1; c < cols; c++) {
+                    if (colHeights[c] < minH) {
+                        minH = colHeights[c];
+                        bestCol = c;
+                    }
+                }
+                colHeights[bestCol] += child.DesiredSize.Height;
+            }
+
+            double maxH = 0.0;
+            for (int c = 0; c < cols; c++) {
+                if (colHeights[c] > maxH) maxH = colHeights[c];
+            }
+            return new System.Windows.Size(totalW, maxH);
+        }
+
+        protected override System.Windows.Size ArrangeOverride(System.Windows.Size finalSize) {
+            int cols = _columns < 1 ? 1 : _columns;
+            double totalW = finalSize.Width > 0.0 ? finalSize.Width : 900.0;
+            double spacing = _columnSpacing;
+            double availCols = Math.Max(1.0, totalW - (cols - 1) * spacing);
+            double colW = Math.Floor(availCols / cols);
+            if (colW < 1.0) colW = availCols / cols;
+            double colStep = colW + spacing;
+
+            double[] colHeights = new double[cols];
+            UIElementCollection children = InternalChildren;
+            int count = children.Count;
+
+            for (int i = 0; i < count; i++) {
+                UIElement child = children[i];
+                if (child == null || child.Visibility == Visibility.Collapsed) continue;
+                int bestCol = 0;
+                double minH = colHeights[0];
+                for (int c = 1; c < cols; c++) {
+                    if (colHeights[c] < minH) {
+                        minH = colHeights[c];
+                        bestCol = c;
+                    }
+                }
+                double h = child.DesiredSize.Height;
+                child.Arrange(new System.Windows.Rect(bestCol * colStep, minH, colW, h));
+                colHeights[bestCol] = minH + h;
+            }
+
+            double maxH = 0.0;
+            for (int c = 0; c < cols; c++) {
+                if (colHeights[c] > maxH) maxH = colHeights[c];
+            }
+            return new System.Windows.Size(totalW, maxH);
+        }
     }
 
     public sealed class UninstVirtualItem {
@@ -6745,6 +6899,9 @@ namespace DuckUtil {
         private readonly Dictionary<int, UninstRowSlot> _activeSlots = new Dictionary<int, UninstRowSlot>();
         private readonly Stack<UninstRowSlot> _freeSlots = new Stack<UninstRowSlot>();
         private readonly DispatcherTimer _iconTimer;
+        private readonly RoutedEventHandler _checkedHandler;
+        private readonly RoutedEventHandler _uncheckedHandler;
+        private readonly MouseButtonEventHandler _mouseUpHandler;
 
         private int _lastStart = -1;
         private int _lastEnd = -1;
@@ -6752,6 +6909,7 @@ namespace DuckUtil {
         private double _panelWidth = 0.0;
         private bool _suppressCheckEvents = false;
         private bool _isStopped = false;
+        private bool _eventsAttached = false;
         private int _lastTotalSourceCount = 0;
 
         public Func<bool> CanInteract;
@@ -6811,19 +6969,47 @@ namespace DuckUtil {
             _folderBg = folderBg;
             _folderBorder = folderBorder;
 
+            _checkedHandler = new RoutedEventHandler(OnRowCheckBoxChecked);
+            _uncheckedHandler = new RoutedEventHandler(OnRowCheckBoxUnchecked);
+            _mouseUpHandler = new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp);
+
+            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
+            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
+            AttachEvents();
+        }
+
+        private void AttachEvents() {
+            if (_eventsAttached) return;
+            _eventsAttached = true;
             if (_sv != null) {
                 _sv.ScrollChanged += OnScrollChanged;
             }
             if (_canvas != null) {
                 _canvas.SizeChanged += OnCanvasSizeChanged;
-                _canvas.AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(OnRowCheckBoxChecked));
-                _canvas.AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(OnRowCheckBoxUnchecked));
-                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp));
+                _canvas.AddHandler(ToggleButton.CheckedEvent, _checkedHandler);
+                _canvas.AddHandler(ToggleButton.UncheckedEvent, _uncheckedHandler);
+                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, _mouseUpHandler);
             }
+            if (_iconTimer != null) {
+                _iconTimer.Tick += OnIconTimerTick;
+            }
+        }
 
-            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
-            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
-            _iconTimer.Tick += OnIconTimerTick;
+        private void DetachEvents() {
+            if (!_eventsAttached) return;
+            _eventsAttached = false;
+            if (_sv != null) {
+                _sv.ScrollChanged -= OnScrollChanged;
+            }
+            if (_canvas != null) {
+                _canvas.SizeChanged -= OnCanvasSizeChanged;
+                _canvas.RemoveHandler(ToggleButton.CheckedEvent, _checkedHandler);
+                _canvas.RemoveHandler(ToggleButton.UncheckedEvent, _uncheckedHandler);
+                _canvas.RemoveHandler(UIElement.MouseLeftButtonUpEvent, _mouseUpHandler);
+            }
+            if (_iconTimer != null) {
+                _iconTimer.Tick -= OnIconTimerTick;
+            }
         }
 
         public static Task<List<UninstVirtualItem>> BuildVirtualItemsAsync(
@@ -6989,6 +7175,7 @@ namespace DuckUtil {
 
         public void SetItems(List<UninstVirtualItem> items, int totalSourceCount) {
             _isStopped = false;
+            AttachEvents();
             _iconTimer.Stop();
             UnbindAllSlots();
             _allItems.Clear();
@@ -7410,7 +7597,7 @@ namespace DuckUtil {
                 slot.BadgeTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _badgeFg;
                 slot.StatusBorder.Background = item.IsBrokenOrphan ? _statusBrokenBg : _statusOkBg;
                 slot.StatusBorder.BorderBrush = item.IsBrokenOrphan ? _statusBrokenBorder : _statusOkBorder;
-                slot.StatusTb.Text = item.IsBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+                slot.StatusTb.Text = item.IsBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
                 slot.StatusTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _statusOkFg;
             }
 
@@ -7707,6 +7894,7 @@ namespace DuckUtil {
         public void Stop() {
             _isStopped = true;
             try { _iconTimer.Stop(); } catch {}
+            DetachEvents();
         }
     }
 }
@@ -8283,7 +8471,7 @@ namespace DuckUtil
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X64\"),
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X86\"),
                 Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\"),
-                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
             };
 
             string vsCodeUserDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Microsoft VS Code");
@@ -8556,7 +8744,10 @@ namespace DuckUtil
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string[] extraDirs = new string[]
+            string progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string progFilesW64 = Environment.GetEnvironmentVariable("ProgramW6432");
+            string neovimDir = Path.Combine(!string.IsNullOrEmpty(progFilesW64) ? progFilesW64 : progFiles, @"Neovim\bin");
+            var extraDirList = new List<string>
             {
                 Path.Combine(localAppData, @"agy\bin"),
                 Path.Combine(userProfile, @".gemini\bin"),
@@ -8566,15 +8757,25 @@ namespace DuckUtil
                 Path.Combine(appData, "npm"),
                 Path.Combine(localAppData, @"Programs\Ollama"),
                 Path.Combine(localAppData, @"Microsoft\WinGet\Links"),
-                Path.Combine(localAppData, @"Programs\Python\Python313\Scripts"),
-                Path.Combine(localAppData, @"Programs\Python\Python312\Scripts"),
                 Path.Combine(userProfile, @".bun\bin"),
                 Path.Combine(localAppData, @"pnpm"),
                 Path.Combine(localAppData, @"Programs\oh-my-posh\bin"),
-                @"C:\Program Files\Neovim\bin",
+                neovimDir,
                 Path.Combine(localAppData, @"Android\Sdk\platform-tools")
             };
-            foreach (string ed in extraDirs)
+            try
+            {
+                string pyBase = Path.Combine(localAppData, @"Programs\Python");
+                if (Directory.Exists(pyBase))
+                {
+                    foreach (string pySub in Directory.GetDirectories(pyBase, "Python3*"))
+                    {
+                        extraDirList.Add(Path.Combine(pySub, "Scripts"));
+                    }
+                }
+            }
+            catch {}
+            foreach (string ed in extraDirList)
             {
                 if (!string.IsNullOrEmpty(ed) && seenDirs.Add(ed) && Directory.Exists(ed))
                 {
@@ -8894,7 +9095,8 @@ namespace DuckUtil
                 return 0;
             try
             {
-                if (!Directory.Exists(backupDir)) return 0;
+                if (!Directory.Exists(backupDir) || IsReparsePoint(backupDir)) return 0;
+                if (Directory.Exists(targetDir) && IsReparsePoint(targetDir)) return 0;
             }
             catch { return 0; }
 
@@ -8913,6 +9115,7 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (IsReparsePoint(file)) continue;
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
                                 if (File.Exists(destFile)) continue;
@@ -8932,7 +9135,10 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub))
+                                {
+                                    nextLevel.Add(sub);
+                                }
                             }
                         }
                     }
@@ -9322,6 +9528,15 @@ namespace DuckUtil
             var results = new CatalogSensorItem[targets.Length];
             if (installedItems == null || installedItems.Length == 0) return results;
 
+            if (_metaCache.Count < targets.Length)
+            {
+                Parallel.For(0, targets.Length, i =>
+                {
+                    CatalogMatchTarget t = targets[i];
+                    if (t != null) GetOrBuildTargetMeta(t);
+                });
+            }
+
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
@@ -9337,7 +9552,7 @@ namespace DuckUtil
 
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
-                if (itClean.Length >= 3) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
                 if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
                 {
                     SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
@@ -9408,7 +9623,7 @@ namespace DuckUtil
                             matched = cand;
                             break;
                         }
-                        if (ap.Clean.Length >= 3 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
+                        if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
                         {
                             matched = cand;
                             break;
@@ -9970,6 +10185,44 @@ namespace DuckUtil
 
         [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
         private static extern int SHFileOperationX64(ref SHFILEOPSTRUCT_X64 lpFileOp);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WIN32_FIND_DATAW
+        {
+            public uint dwFileAttributes;
+            public uint ftCreationTimeLow;
+            public uint ftCreationTimeHigh;
+            public uint ftLastAccessTimeLow;
+            public uint ftLastAccessTimeHigh;
+            public uint ftLastWriteTimeLow;
+            public uint ftLastWriteTimeHigh;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindFirstFileExW(string lpFileName, int fInfoLevelId, out WIN32_FIND_DATAW lpFindFileData, int fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool FindNextFileW(IntPtr hFindFile, out WIN32_FIND_DATAW lpFindFileData);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FindClose(IntPtr hFindFile);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern uint GetFileAttributesW(string lpFileName);
+
+        private static readonly IntPtr INVALID_FIND_HANDLE = new IntPtr(-1);
+        private const uint W32_FILE_ATTRIBUTE_DIRECTORY = 0x10;
+        private const uint W32_FILE_ATTRIBUTE_REPARSE_POINT = 0x400;
+        private const uint W32_INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF;
+
         private static Dictionary<string, string> _cachedDirIndex;
         private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
         private static readonly object _dirIndexLock = new object();
@@ -11180,7 +11433,13 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
+                uint rootAttr = GetFileAttributesW(rootPath);
+                if (rootAttr == W32_INVALID_FILE_ATTRIBUTES ||
+                    (rootAttr & W32_FILE_ATTRIBUTE_DIRECTORY) == 0 ||
+                    (rootAttr & W32_FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                {
+                    return 0L;
+                }
             }
             catch { return 0L; }
 
@@ -11191,31 +11450,49 @@ namespace DuckUtil
             for (int depth = 0; depth <= maxDepth; depth++)
             {
                 var nextLevel = new List<string>();
-                foreach (var dir in currentLevel)
+                for (int di = 0; di < currentLevel.Count; di++)
                 {
+                    string dir = currentLevel[di];
+                    string search = dir.EndsWith("\\", StringComparison.Ordinal) ? (dir + "*") : (dir + "\\*");
+                    WIN32_FIND_DATAW fd;
+                    IntPtr h = INVALID_FIND_HANDLE;
                     try
                     {
-                        foreach (var file in Directory.EnumerateFiles(dir))
+                        h = FindFirstFileExW(search, 1, out fd, 0, IntPtr.Zero, 2);
+                        if (h == INVALID_FIND_HANDLE)
                         {
-                            try
+                            h = FindFirstFileExW(search, 0, out fd, 0, IntPtr.Zero, 0);
+                        }
+                        if (h == INVALID_FIND_HANDLE) continue;
+
+                        do
+                        {
+                            string name = fd.cFileName;
+                            if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                            if ((fd.dwFileAttributes & W32_FILE_ATTRIBUTE_DIRECTORY) != 0)
                             {
-                                var fi = new FileInfo(file);
-                                totalSize += fi.Length;
+                                if (depth < maxDepth && (fd.dwFileAttributes & W32_FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                                {
+                                    nextLevel.Add(dir.EndsWith("\\", StringComparison.Ordinal) ? (dir + name) : (dir + "\\" + name));
+                                }
+                            }
+                            else
+                            {
+                                totalSize += ((long)fd.nFileSizeHigh << 32) | (uint)fd.nFileSizeLow;
                                 fileCount++;
                                 if (fileCount >= maxFiles) return totalSize;
                             }
-                            catch {}
                         }
-
-                        if (depth < maxDepth)
-                        {
-                            foreach (var sub in Directory.EnumerateDirectories(dir))
-                            {
-                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
-                            }
-                        }
+                        while (FindNextFileW(h, out fd));
                     }
                     catch {}
+                    finally
+                    {
+                        if (h != INVALID_FIND_HANDLE)
+                        {
+                            try { FindClose(h); } catch {}
+                        }
+                    }
                 }
                 if (nextLevel.Count == 0) break;
                 currentLevel = nextLevel;
@@ -12702,6 +12979,7 @@ namespace DuckUtil
             bool isDir = Directory.Exists(norm);
             bool isFile = !isDir && File.Exists(norm);
             if (!isDir && !isFile) return true;
+            if (IsReparsePoint(norm)) return false;
             if (!IsSafeLockTargetDirectory(isDir ? norm : Path.GetDirectoryName(norm))) return false;
 
             try
@@ -13178,8 +13456,14 @@ namespace DuckUtil
                 try
                 {
                     mp.Kill();
-                    mp.WaitForExit(1500);
-                    terminated = true;
+                    if (mp.WaitForExit(1500) || mp.HasExited)
+                    {
+                        terminated = true;
+                    }
+                    else
+                    {
+                        terminated = TryTaskkillPidTree(pid);
+                    }
                 }
                 catch
                 {
@@ -13778,11 +14062,17 @@ namespace DuckUtil
                             catch {}
                             try
                             {
-                                File.SetAttributes(taskFile, FileAttributes.Normal);
-                                File.Delete(taskFile);
+                                if (File.Exists(taskFile))
+                                {
+                                    File.SetAttributes(taskFile, FileAttributes.Normal);
+                                    File.Delete(taskFile);
+                                }
                             }
                             catch {}
-                            removed++;
+                            if (!File.Exists(taskFile))
+                            {
+                                removed++;
+                            }
                         }
                     }
                     catch {}
@@ -14562,7 +14852,8 @@ namespace DuckUtil
                 return 0;
             try
             {
-                if (!Directory.Exists(backupDir)) return 0;
+                if (!Directory.Exists(backupDir) || IsReparsePoint(backupDir)) return 0;
+                if (Directory.Exists(targetDir) && IsReparsePoint(targetDir)) return 0;
             }
             catch { return 0; }
 
@@ -14581,6 +14872,7 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (IsReparsePoint(file)) continue;
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
                                 if (File.Exists(destFile)) continue;
@@ -14600,7 +14892,10 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub))
+                                {
+                                    nextLevel.Add(sub);
+                                }
                             }
                         }
                     }
@@ -15015,7 +15310,7 @@ namespace DuckUtil
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -ReferencedAssemblies $coreAllRefs -RequiredMethod "CreateLeftoverItemRow"
+        Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -RequiredMethod "RestoreRowsFromColumns" -RefsResolver $resolveCoreRefs
     } catch {}
 }
 
@@ -15030,6 +15325,7 @@ using System.Drawing;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15043,6 +15339,24 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace DuckUtil {
+    public static class ConsoleHelper {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        public static void DisableQuickEdit() {
+            IntPtr h = GetStdHandle(-10);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+            uint mode;
+            if (GetConsoleMode(h, out mode)) {
+                uint next = (mode & ~0x0040u) | 0x0080u;
+                if (next != mode) SetConsoleMode(h, next);
+            }
+        }
+    }
+
     public sealed class SmoothScrollController {
         private readonly ScrollViewer _sv;
         private double _currentOffset;
@@ -15505,6 +15819,22 @@ namespace DuckUtil {
             }
         }
 
+        private static void WriteBytesAtomic(string destPath, byte[] data) {
+            if (string.IsNullOrEmpty(destPath) || data == null || data.Length == 0 || File.Exists(destPath)) return;
+            string tmpPath = destPath + ".tmp." + Guid.NewGuid().ToString("N");
+            try {
+                string dir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllBytes(tmpPath, data);
+                if (!File.Exists(destPath)) {
+                    File.Move(tmpPath, destPath);
+                }
+            } catch {
+            } finally {
+                try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch {}
+            }
+        }
+
         private static void RemoteWorkerLoop() {
             try {
                 while (true) {
@@ -15531,16 +15861,16 @@ namespace DuckUtil {
                             byte[] dl = DownloadBytesWithTimeout(job.Url, 2500);
                             if (dl != null && dl.Length > 230 && dl.Length != 588) {
                                 ready = DecodeFrozenPngOrIcoBitmap(dl);
-                                if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
-                                    try { File.WriteAllBytes(job.DestPath, dl); } catch {}
+                                if (ready != null) {
+                                    WriteBytesAtomic(job.DestPath, dl);
                                 }
                             }
                             if (ready == null && !string.IsNullOrWhiteSpace(job.FallbackUrl) && Volatile.Read(ref _remoteGen) == gen) {
                                 byte[] dl2 = DownloadBytesWithTimeout(job.FallbackUrl, 2500);
                                 if (dl2 != null && dl2.Length > 230 && dl2.Length != 588) {
                                     ready = DecodeFrozenPngOrIcoBitmap(dl2);
-                                    if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
-                                        try { File.WriteAllBytes(job.DestPath, dl2); } catch {}
+                                    if (ready != null) {
+                                        WriteBytesAtomic(job.DestPath, dl2);
                                     }
                                 }
                             }
@@ -15950,7 +16280,7 @@ namespace DuckUtil {
             var statusTb = new TextBlock();
             statusTb.FontSize = 10.5;
             statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = isBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+            statusTb.Text = isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
             statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
@@ -16008,7 +16338,7 @@ namespace DuckUtil {
         private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
         private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
         private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
-        private static readonly CornerRadius _ccRow = new CornerRadius(1);
+        private static readonly CornerRadius _ccRow = new CornerRadius(2);
 
         public static CatalogRowVisual CreateCatalogRow(
             string appName,
@@ -16035,6 +16365,7 @@ namespace DuckUtil {
             rowBorder.CornerRadius = _ccRow;
             rowBorder.Padding = _ctRowPad;
             rowBorder.Margin = _ctRowMgn;
+            rowBorder.SnapsToDevicePixels = true;
             if (rowStyle != null) rowBorder.Style = rowStyle;
             rowBorder.Cursor = Cursors.Hand;
             if (!string.IsNullOrEmpty(rowToolTip)) {
@@ -16321,6 +16652,145 @@ namespace DuckUtil {
             outOpenBtn = openBtn;
             return itemBorderEl;
         }
+
+        public static void DistributeRowsToColumns(Panel rowsStack, Panel[] cols, System.Collections.IList rows) {
+            if (cols == null || cols.Length == 0 || rows == null) return;
+            for (int c = 0; c < cols.Length; c++) {
+                if (cols[c] != null) cols[c].Children.Clear();
+            }
+            if (rowsStack != null) {
+                rowsStack.Children.Clear();
+            }
+            int n = rows.Count;
+            int colCnt = cols.Length;
+            int baseCnt = n / colCnt;
+            int rem = n % colCnt;
+            int offset = 0;
+            for (int ci = 0; ci < colCnt; ci++) {
+                int take = baseCnt + (ci < rem ? 1 : 0);
+                Panel cp = cols[ci];
+                for (int k = 0; k < take && (offset + k) < n; k++) {
+                    UIElement el = rows[offset + k] as UIElement;
+                    if (el != null && cp != null) cp.Children.Add(el);
+                }
+                offset += take;
+            }
+        }
+
+        public static void RestoreRowsFromColumns(Panel rowsStack, Panel[] cols, System.Collections.IList rows) {
+            if (cols != null) {
+                for (int c = 0; c < cols.Length; c++) {
+                    if (cols[c] != null) cols[c].Children.Clear();
+                }
+            }
+            if (rowsStack != null && rows != null) {
+                rowsStack.Children.Clear();
+                for (int i = 0; i < rows.Count; i++) {
+                    UIElement el = rows[i] as UIElement;
+                    if (el != null) rowsStack.Children.Add(el);
+                }
+            }
+        }
+    }
+
+    public sealed class MasonryPanel : Panel {
+        private int _columns = 3;
+        private double _columnSpacing = 8.0;
+
+        public int Columns {
+            get { return _columns; }
+            set {
+                int clamped = value < 1 ? 1 : value;
+                if (_columns != clamped) {
+                    _columns = clamped;
+                    InvalidateMeasure();
+                }
+            }
+        }
+
+        public double ColumnSpacing {
+            get { return _columnSpacing; }
+            set {
+                double clamped = value < 0.0 ? 0.0 : value;
+                if (Math.Abs(_columnSpacing - clamped) > 0.01) {
+                    _columnSpacing = clamped;
+                    InvalidateMeasure();
+                }
+            }
+        }
+
+        protected override System.Windows.Size MeasureOverride(System.Windows.Size availableSize) {
+            int cols = _columns < 1 ? 1 : _columns;
+            double totalW = (double.IsInfinity(availableSize.Width) || double.IsNaN(availableSize.Width) || availableSize.Width <= 0.0)
+                ? 900.0
+                : availableSize.Width;
+            double spacing = _columnSpacing;
+            double availCols = Math.Max(1.0, totalW - (cols - 1) * spacing);
+            double colW = Math.Floor(availCols / cols);
+            if (colW < 1.0) colW = availCols / cols;
+
+            System.Windows.Size childConstraint = new System.Windows.Size(colW, double.PositiveInfinity);
+            double[] colHeights = new double[cols];
+            UIElementCollection children = InternalChildren;
+            int count = children.Count;
+
+            for (int i = 0; i < count; i++) {
+                UIElement child = children[i];
+                if (child == null || child.Visibility == Visibility.Collapsed) continue;
+                child.Measure(childConstraint);
+                int bestCol = 0;
+                double minH = colHeights[0];
+                for (int c = 1; c < cols; c++) {
+                    if (colHeights[c] < minH) {
+                        minH = colHeights[c];
+                        bestCol = c;
+                    }
+                }
+                colHeights[bestCol] += child.DesiredSize.Height;
+            }
+
+            double maxH = 0.0;
+            for (int c = 0; c < cols; c++) {
+                if (colHeights[c] > maxH) maxH = colHeights[c];
+            }
+            return new System.Windows.Size(totalW, maxH);
+        }
+
+        protected override System.Windows.Size ArrangeOverride(System.Windows.Size finalSize) {
+            int cols = _columns < 1 ? 1 : _columns;
+            double totalW = finalSize.Width > 0.0 ? finalSize.Width : 900.0;
+            double spacing = _columnSpacing;
+            double availCols = Math.Max(1.0, totalW - (cols - 1) * spacing);
+            double colW = Math.Floor(availCols / cols);
+            if (colW < 1.0) colW = availCols / cols;
+            double colStep = colW + spacing;
+
+            double[] colHeights = new double[cols];
+            UIElementCollection children = InternalChildren;
+            int count = children.Count;
+
+            for (int i = 0; i < count; i++) {
+                UIElement child = children[i];
+                if (child == null || child.Visibility == Visibility.Collapsed) continue;
+                int bestCol = 0;
+                double minH = colHeights[0];
+                for (int c = 1; c < cols; c++) {
+                    if (colHeights[c] < minH) {
+                        minH = colHeights[c];
+                        bestCol = c;
+                    }
+                }
+                double h = child.DesiredSize.Height;
+                child.Arrange(new System.Windows.Rect(bestCol * colStep, minH, colW, h));
+                colHeights[bestCol] = minH + h;
+            }
+
+            double maxH = 0.0;
+            for (int c = 0; c < cols; c++) {
+                if (colHeights[c] > maxH) maxH = colHeights[c];
+            }
+            return new System.Windows.Size(totalW, maxH);
+        }
     }
 
     public sealed class UninstVirtualItem {
@@ -16477,6 +16947,9 @@ namespace DuckUtil {
         private readonly Dictionary<int, UninstRowSlot> _activeSlots = new Dictionary<int, UninstRowSlot>();
         private readonly Stack<UninstRowSlot> _freeSlots = new Stack<UninstRowSlot>();
         private readonly DispatcherTimer _iconTimer;
+        private readonly RoutedEventHandler _checkedHandler;
+        private readonly RoutedEventHandler _uncheckedHandler;
+        private readonly MouseButtonEventHandler _mouseUpHandler;
 
         private int _lastStart = -1;
         private int _lastEnd = -1;
@@ -16484,6 +16957,7 @@ namespace DuckUtil {
         private double _panelWidth = 0.0;
         private bool _suppressCheckEvents = false;
         private bool _isStopped = false;
+        private bool _eventsAttached = false;
         private int _lastTotalSourceCount = 0;
 
         public Func<bool> CanInteract;
@@ -16543,19 +17017,47 @@ namespace DuckUtil {
             _folderBg = folderBg;
             _folderBorder = folderBorder;
 
+            _checkedHandler = new RoutedEventHandler(OnRowCheckBoxChecked);
+            _uncheckedHandler = new RoutedEventHandler(OnRowCheckBoxUnchecked);
+            _mouseUpHandler = new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp);
+
+            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
+            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
+            AttachEvents();
+        }
+
+        private void AttachEvents() {
+            if (_eventsAttached) return;
+            _eventsAttached = true;
             if (_sv != null) {
                 _sv.ScrollChanged += OnScrollChanged;
             }
             if (_canvas != null) {
                 _canvas.SizeChanged += OnCanvasSizeChanged;
-                _canvas.AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(OnRowCheckBoxChecked));
-                _canvas.AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(OnRowCheckBoxUnchecked));
-                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp));
+                _canvas.AddHandler(ToggleButton.CheckedEvent, _checkedHandler);
+                _canvas.AddHandler(ToggleButton.UncheckedEvent, _uncheckedHandler);
+                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, _mouseUpHandler);
             }
+            if (_iconTimer != null) {
+                _iconTimer.Tick += OnIconTimerTick;
+            }
+        }
 
-            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
-            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
-            _iconTimer.Tick += OnIconTimerTick;
+        private void DetachEvents() {
+            if (!_eventsAttached) return;
+            _eventsAttached = false;
+            if (_sv != null) {
+                _sv.ScrollChanged -= OnScrollChanged;
+            }
+            if (_canvas != null) {
+                _canvas.SizeChanged -= OnCanvasSizeChanged;
+                _canvas.RemoveHandler(ToggleButton.CheckedEvent, _checkedHandler);
+                _canvas.RemoveHandler(ToggleButton.UncheckedEvent, _uncheckedHandler);
+                _canvas.RemoveHandler(UIElement.MouseLeftButtonUpEvent, _mouseUpHandler);
+            }
+            if (_iconTimer != null) {
+                _iconTimer.Tick -= OnIconTimerTick;
+            }
         }
 
         public static Task<List<UninstVirtualItem>> BuildVirtualItemsAsync(
@@ -16721,6 +17223,7 @@ namespace DuckUtil {
 
         public void SetItems(List<UninstVirtualItem> items, int totalSourceCount) {
             _isStopped = false;
+            AttachEvents();
             _iconTimer.Stop();
             UnbindAllSlots();
             _allItems.Clear();
@@ -17142,7 +17645,7 @@ namespace DuckUtil {
                 slot.BadgeTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _badgeFg;
                 slot.StatusBorder.Background = item.IsBrokenOrphan ? _statusBrokenBg : _statusOkBg;
                 slot.StatusBorder.BorderBrush = item.IsBrokenOrphan ? _statusBrokenBorder : _statusOkBorder;
-                slot.StatusTb.Text = item.IsBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+                slot.StatusTb.Text = item.IsBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
                 slot.StatusTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _statusOkFg;
             }
 
@@ -17439,13 +17942,16 @@ namespace DuckUtil {
         public void Stop() {
             _isStopped = true;
             try { _iconTimer.Stop(); } catch {}
+            DetachEvents();
         }
     }
 }
 '@
-        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -ReferencedAssemblies $coreAllRefs -RequiredMethod "AttachFrameWake"
+        Import-CachedCSharpType -TypeName "DuckUtil.SmoothScrollController" -SourceCode $smoothScrollCs -Prefix "DuckSmooth" -RequiredMethod "AttachFrameWake" -RefsResolver $resolveCoreRefs
     } catch {}
 }
+
+if ("DuckUtil.ConsoleHelper" -as [type]) { try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {} }
 
 if (-not ("DuckUtil.AppCatalogEngine" -as [type])) {
     try {
@@ -18032,7 +18538,7 @@ namespace DuckUtil
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X64\"),
                 Tuple.Create(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\Machine\X86\"),
                 Tuple.Create(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X64\"),
-                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry64, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
+                Tuple.Create(RegistryHive.CurrentUser, RegistryView.Registry32, @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"ARP\User\X86\")
             };
 
             string vsCodeUserDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Microsoft VS Code");
@@ -18305,7 +18811,10 @@ namespace DuckUtil
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string[] extraDirs = new string[]
+            string progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string progFilesW64 = Environment.GetEnvironmentVariable("ProgramW6432");
+            string neovimDir = Path.Combine(!string.IsNullOrEmpty(progFilesW64) ? progFilesW64 : progFiles, @"Neovim\bin");
+            var extraDirList = new List<string>
             {
                 Path.Combine(localAppData, @"agy\bin"),
                 Path.Combine(userProfile, @".gemini\bin"),
@@ -18315,15 +18824,25 @@ namespace DuckUtil
                 Path.Combine(appData, "npm"),
                 Path.Combine(localAppData, @"Programs\Ollama"),
                 Path.Combine(localAppData, @"Microsoft\WinGet\Links"),
-                Path.Combine(localAppData, @"Programs\Python\Python313\Scripts"),
-                Path.Combine(localAppData, @"Programs\Python\Python312\Scripts"),
                 Path.Combine(userProfile, @".bun\bin"),
                 Path.Combine(localAppData, @"pnpm"),
                 Path.Combine(localAppData, @"Programs\oh-my-posh\bin"),
-                @"C:\Program Files\Neovim\bin",
+                neovimDir,
                 Path.Combine(localAppData, @"Android\Sdk\platform-tools")
             };
-            foreach (string ed in extraDirs)
+            try
+            {
+                string pyBase = Path.Combine(localAppData, @"Programs\Python");
+                if (Directory.Exists(pyBase))
+                {
+                    foreach (string pySub in Directory.GetDirectories(pyBase, "Python3*"))
+                    {
+                        extraDirList.Add(Path.Combine(pySub, "Scripts"));
+                    }
+                }
+            }
+            catch {}
+            foreach (string ed in extraDirList)
             {
                 if (!string.IsNullOrEmpty(ed) && seenDirs.Add(ed) && Directory.Exists(ed))
                 {
@@ -18643,7 +19162,8 @@ namespace DuckUtil
                 return 0;
             try
             {
-                if (!Directory.Exists(backupDir)) return 0;
+                if (!Directory.Exists(backupDir) || IsReparsePoint(backupDir)) return 0;
+                if (Directory.Exists(targetDir) && IsReparsePoint(targetDir)) return 0;
             }
             catch { return 0; }
 
@@ -18662,6 +19182,7 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (IsReparsePoint(file)) continue;
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
                                 if (File.Exists(destFile)) continue;
@@ -18681,7 +19202,10 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub))
+                                {
+                                    nextLevel.Add(sub);
+                                }
                             }
                         }
                     }
@@ -19071,6 +19595,15 @@ namespace DuckUtil
             var results = new CatalogSensorItem[targets.Length];
             if (installedItems == null || installedItems.Length == 0) return results;
 
+            if (_metaCache.Count < targets.Length)
+            {
+                Parallel.For(0, targets.Length, i =>
+                {
+                    CatalogMatchTarget t = targets[i];
+                    if (t != null) GetOrBuildTargetMeta(t);
+                });
+            }
+
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
@@ -19086,7 +19619,7 @@ namespace DuckUtil
 
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
-                if (itClean.Length >= 3) SetPreferredEntry(cleanNameMap, itClean, it);
+                if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
                 if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
                 {
                     SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
@@ -19157,7 +19690,7 @@ namespace DuckUtil
                             matched = cand;
                             break;
                         }
-                        if (ap.Clean.Length >= 3 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
+                        if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
                         {
                             matched = cand;
                             break;
@@ -19739,6 +20272,44 @@ namespace DuckUtil
 
         [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
         private static extern int SHFileOperationX64(ref SHFILEOPSTRUCT_X64 lpFileOp);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WIN32_FIND_DATAW
+        {
+            public uint dwFileAttributes;
+            public uint ftCreationTimeLow;
+            public uint ftCreationTimeHigh;
+            public uint ftLastAccessTimeLow;
+            public uint ftLastAccessTimeHigh;
+            public uint ftLastWriteTimeLow;
+            public uint ftLastWriteTimeHigh;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindFirstFileExW(string lpFileName, int fInfoLevelId, out WIN32_FIND_DATAW lpFindFileData, int fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool FindNextFileW(IntPtr hFindFile, out WIN32_FIND_DATAW lpFindFileData);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FindClose(IntPtr hFindFile);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern uint GetFileAttributesW(string lpFileName);
+
+        private static readonly IntPtr INVALID_FIND_HANDLE = new IntPtr(-1);
+        private const uint W32_FILE_ATTRIBUTE_DIRECTORY = 0x10;
+        private const uint W32_FILE_ATTRIBUTE_REPARSE_POINT = 0x400;
+        private const uint W32_INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF;
+
         private static Dictionary<string, string> _cachedDirIndex;
         private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
         private static readonly object _dirIndexLock = new object();
@@ -20949,7 +21520,13 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
+                uint rootAttr = GetFileAttributesW(rootPath);
+                if (rootAttr == W32_INVALID_FILE_ATTRIBUTES ||
+                    (rootAttr & W32_FILE_ATTRIBUTE_DIRECTORY) == 0 ||
+                    (rootAttr & W32_FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                {
+                    return 0L;
+                }
             }
             catch { return 0L; }
 
@@ -20960,31 +21537,49 @@ namespace DuckUtil
             for (int depth = 0; depth <= maxDepth; depth++)
             {
                 var nextLevel = new List<string>();
-                foreach (var dir in currentLevel)
+                for (int di = 0; di < currentLevel.Count; di++)
                 {
+                    string dir = currentLevel[di];
+                    string search = dir.EndsWith("\\", StringComparison.Ordinal) ? (dir + "*") : (dir + "\\*");
+                    WIN32_FIND_DATAW fd;
+                    IntPtr h = INVALID_FIND_HANDLE;
                     try
                     {
-                        foreach (var file in Directory.EnumerateFiles(dir))
+                        h = FindFirstFileExW(search, 1, out fd, 0, IntPtr.Zero, 2);
+                        if (h == INVALID_FIND_HANDLE)
                         {
-                            try
+                            h = FindFirstFileExW(search, 0, out fd, 0, IntPtr.Zero, 0);
+                        }
+                        if (h == INVALID_FIND_HANDLE) continue;
+
+                        do
+                        {
+                            string name = fd.cFileName;
+                            if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                            if ((fd.dwFileAttributes & W32_FILE_ATTRIBUTE_DIRECTORY) != 0)
                             {
-                                var fi = new FileInfo(file);
-                                totalSize += fi.Length;
+                                if (depth < maxDepth && (fd.dwFileAttributes & W32_FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                                {
+                                    nextLevel.Add(dir.EndsWith("\\", StringComparison.Ordinal) ? (dir + name) : (dir + "\\" + name));
+                                }
+                            }
+                            else
+                            {
+                                totalSize += ((long)fd.nFileSizeHigh << 32) | (uint)fd.nFileSizeLow;
                                 fileCount++;
                                 if (fileCount >= maxFiles) return totalSize;
                             }
-                            catch {}
                         }
-
-                        if (depth < maxDepth)
-                        {
-                            foreach (var sub in Directory.EnumerateDirectories(dir))
-                            {
-                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
-                            }
-                        }
+                        while (FindNextFileW(h, out fd));
                     }
                     catch {}
+                    finally
+                    {
+                        if (h != INVALID_FIND_HANDLE)
+                        {
+                            try { FindClose(h); } catch {}
+                        }
+                    }
                 }
                 if (nextLevel.Count == 0) break;
                 currentLevel = nextLevel;
@@ -22471,6 +23066,7 @@ namespace DuckUtil
             bool isDir = Directory.Exists(norm);
             bool isFile = !isDir && File.Exists(norm);
             if (!isDir && !isFile) return true;
+            if (IsReparsePoint(norm)) return false;
             if (!IsSafeLockTargetDirectory(isDir ? norm : Path.GetDirectoryName(norm))) return false;
 
             try
@@ -22947,8 +23543,14 @@ namespace DuckUtil
                 try
                 {
                     mp.Kill();
-                    mp.WaitForExit(1500);
-                    terminated = true;
+                    if (mp.WaitForExit(1500) || mp.HasExited)
+                    {
+                        terminated = true;
+                    }
+                    else
+                    {
+                        terminated = TryTaskkillPidTree(pid);
+                    }
                 }
                 catch
                 {
@@ -23547,11 +24149,17 @@ namespace DuckUtil
                             catch {}
                             try
                             {
-                                File.SetAttributes(taskFile, FileAttributes.Normal);
-                                File.Delete(taskFile);
+                                if (File.Exists(taskFile))
+                                {
+                                    File.SetAttributes(taskFile, FileAttributes.Normal);
+                                    File.Delete(taskFile);
+                                }
                             }
                             catch {}
-                            removed++;
+                            if (!File.Exists(taskFile))
+                            {
+                                removed++;
+                            }
                         }
                     }
                     catch {}
@@ -24331,7 +24939,8 @@ namespace DuckUtil
                 return 0;
             try
             {
-                if (!Directory.Exists(backupDir)) return 0;
+                if (!Directory.Exists(backupDir) || IsReparsePoint(backupDir)) return 0;
+                if (Directory.Exists(targetDir) && IsReparsePoint(targetDir)) return 0;
             }
             catch { return 0; }
 
@@ -24350,6 +24959,7 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (IsReparsePoint(file)) continue;
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
                                 if (File.Exists(destFile)) continue;
@@ -24369,7 +24979,10 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub))
+                                {
+                                    nextLevel.Add(sub);
+                                }
                             }
                         }
                     }
@@ -24800,9 +25413,20 @@ function Stop-ChildProcessTree {
         if (-not $hasExited) {
             $pidToKill = try { $Proc.Id } catch { 0 }
             if ($pidToKill -gt 0) {
+                $tkProc = $null
                 try {
-                    Start-Process "taskkill.exe" -ArgumentList "/F /T /PID $pidToKill" -NoNewWindow -Wait -ErrorAction SilentlyContinue
-                } catch {}
+                    $psi = New-Object System.Diagnostics.ProcessStartInfo
+                    $psi.FileName = "taskkill.exe"
+                    $psi.Arguments = "/F /T /PID $pidToKill"
+                    $psi.CreateNoWindow = $true
+                    $psi.UseShellExecute = $false
+                    $tkProc = [System.Diagnostics.Process]::Start($psi)
+                    if ($tkProc -and -not $tkProc.WaitForExit(3000)) {
+                        try { $tkProc.Kill() } catch {}
+                    }
+                } catch {} finally {
+                    if ($tkProc) { try { $tkProc.Dispose() } catch {} }
+                }
             }
             try { $Proc.Kill() } catch {}
         }
@@ -25544,8 +26168,31 @@ function Test-MatchCompatible {
     return $true
 }
 
-$script:isScanningApps = $false
-$script:hasCompletedAppScan = $false
+$script:isScanningApps         = $false
+$script:isAutoRefreshing       = $false
+$script:cancelAutoScan         = $false
+$script:pendingManualAppRefresh = $false
+$script:autoScanGeneration     = 0
+$script:activeAutoScanGen      = 0
+$script:hasCompletedAppScan    = $false
+$script:lastAppScanSignature   = ""
+$script:lastLocalScanSig       = ""
+$script:lastLocalInstalledCnt  = -1
+$script:autoScanWingetProcess  = $null
+
+function Stop-ActiveAutoScan {
+    $script:autoScanGeneration++
+    $script:cancelAutoScan = $true
+    $pAuto = $script:autoScanWingetProcess
+    $script:autoScanWingetProcess = $null
+    if ($null -ne $pAuto) {
+        try {
+            $hasEx = try { $pAuto.HasExited } catch { $true }
+            if (-not $hasEx) { $pAuto.Kill() }
+        } catch {}
+        try { $pAuto.Dispose() } catch {}
+    }
+}
 
 function Stop-PreSpawnedWinget {
     $job = $script:preSpawnedWinget
@@ -25565,7 +26212,7 @@ function Start-WingetBackgroundPreScan {
         if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) { return }
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "winget"
-        $pinfo.Arguments = "list --disable-interactivity --accept-source-agreements"
+        $pinfo.Arguments = "list --source winget --disable-interactivity --accept-source-agreements"
         $pinfo.RedirectStandardOutput = $true
         $pinfo.RedirectStandardError = $true
         $pinfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -25579,7 +26226,7 @@ function Start-WingetBackgroundPreScan {
                 ReadTask  = $p.StandardOutput.ReadToEndAsync()
                 ErrTask   = $p.StandardError.ReadToEndAsync()
                 Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-                Arguments = "list --disable-interactivity --accept-source-agreements"
+                Arguments = "list --source winget --disable-interactivity --accept-source-agreements"
             }
         }
     } catch {
@@ -25590,17 +26237,24 @@ function Start-WingetBackgroundPreScan {
 function Invoke-WingetListCapture {
     param(
         [string]$Arguments = "list --disable-interactivity --accept-source-agreements",
-        [int]$TimeoutSeconds = 35
+        [int]$TimeoutSeconds = 35,
+        [scriptblock]$CancelCheck = $null,
+        [switch]$TrackAsAuto
     )
 
-    if ($script:isWindowClosing) {
+    $isCanceledNow = $script:isWindowClosing
+    if (-not $isCanceledNow -and $CancelCheck) {
+        try { $isCanceledNow = [bool](& $CancelCheck) } catch {}
+    }
+    if ($isCanceledNow) {
         Stop-PreSpawnedWinget
         return [PSCustomObject]@{
-            Available = $true
-            TimedOut  = $true
-            ExitCode  = -1
-            StdOut    = ""
-            StdErr    = ""
+            Available   = $true
+            TimedOut    = $true
+            WasCanceled = $true
+            ExitCode    = -1
+            StdOut      = ""
+            StdErr      = ""
         }
     }
 
@@ -25611,10 +26265,11 @@ function Invoke-WingetListCapture {
     $rawList = ""
     $errList = ""
     $timedOut = $false
+    $wasCanceled = $false
     $exitCode = -1
 
     try {
-        if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
+        if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Arguments -eq $Arguments -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -lt 30) {
             $job = $script:preSpawnedWinget
             $script:preSpawnedWinget = $null
             $p = $job.Process
@@ -25622,16 +26277,17 @@ function Invoke-WingetListCapture {
             $errTask = $job.ErrTask
             $sw = $job.Stopwatch
         } else {
-            if ($null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -ge 30) {
+            if (-not $TrackAsAuto -and $null -ne $script:preSpawnedWinget -and $script:preSpawnedWinget.Stopwatch.Elapsed.TotalSeconds -ge 30) {
                 Stop-PreSpawnedWinget
             }
             if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
                 return [PSCustomObject]@{
-                    Available = $false
-                    TimedOut  = $false
-                    ExitCode  = -1
-                    StdOut    = ""
-                    StdErr    = ""
+                    Available   = $false
+                    TimedOut    = $false
+                    WasCanceled = $false
+                    ExitCode    = -1
+                    StdOut      = ""
+                    StdErr      = ""
                 }
             }
 
@@ -25649,6 +26305,9 @@ function Invoke-WingetListCapture {
             if ($null -eq $p) {
                 throw "Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh winget."
             }
+            if ($TrackAsAuto) {
+                $script:autoScanWingetProcess = $p
+            }
             $readTask = $p.StandardOutput.ReadToEndAsync()
             $errTask  = $p.StandardError.ReadToEndAsync()
             $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -25657,55 +26316,69 @@ function Invoke-WingetListCapture {
         if ((Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $null -ne $readTask -and $null -ne $errTask) {
             $bothTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]](@($readTask, $errTask)))
             $remSec = [Math]::Max(0.1, ($TimeoutSeconds - $sw.Elapsed.TotalSeconds))
-            $completedOk = Wait-TaskNonBlocking -Task $bothTask -TimeoutSeconds $remSec
-            if (-not $completedOk -or $script:isWindowClosing -or -not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
+            $completedOk = Wait-TaskNonBlocking -Task $bothTask -TimeoutSeconds $remSec -CancelCheck $CancelCheck
+            $cancelHit = $script:isWindowClosing
+            if (-not $cancelHit -and $CancelCheck) {
+                try { $cancelHit = [bool](& $CancelCheck) } catch {}
+            }
+            if ($cancelHit) {
+                $wasCanceled = $true
+                $timedOut = $true
+                try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
+            } elseif (-not $completedOk -or -not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
                 $timedOut = $true
                 try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
             }
         } else {
             while (-not $readTask.IsCompleted -or -not $errTask.IsCompleted) {
-                if ($script:isWindowClosing -or $sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                $cancelHit = $script:isWindowClosing
+                if (-not $cancelHit -and $CancelCheck) {
+                    try { $cancelHit = [bool](& $CancelCheck) } catch {}
+                }
+                if ($cancelHit -or $sw.Elapsed.TotalSeconds -gt $TimeoutSeconds) {
+                    $wasCanceled = $cancelHit
                     $timedOut = $true
                     try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
                     break
                 }
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                if ($script:isWindowClosing) {
-                    $timedOut = $true
-                    try { if ($null -ne $p -and -not $p.HasExited) { $p.Kill() } } catch {}
-                    break
-                }
                 Start-Sleep -Milliseconds 15
             }
         }
 
-        if (-not $script:isWindowClosing) {
+        if (-not $script:isWindowClosing -and -not $wasCanceled) {
             try {
                 if ($null -ne $p -and -not $p.HasExited) { $p.WaitForExit(1000) | Out-Null }
             } catch {}
         }
-        if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-            $rawList = $readTask.Result
-        }
-        if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-            $errList = $errTask.Result
-        }
-        $hasExited = try { $null -ne $p -and $p.HasExited } catch { $false }
-        if ($hasExited) {
-            $exitCode = try { $p.ExitCode } catch { -1 }
+        if (-not $wasCanceled) {
+            if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $rawList = $readTask.Result
+            }
+            if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $errList = $errTask.Result
+            }
+            $hasExited = try { $null -ne $p -and $p.HasExited } catch { $false }
+            if ($hasExited) {
+                $exitCode = try { $p.ExitCode } catch { -1 }
+            }
         }
     } finally {
+        if ($TrackAsAuto -and $script:autoScanWingetProcess -eq $p) {
+            $script:autoScanWingetProcess = $null
+        }
         if ($null -ne $p) {
             try { $p.Dispose() } catch {}
         }
     }
 
     return [PSCustomObject]@{
-        Available = $true
-        TimedOut  = $timedOut
-        ExitCode  = $exitCode
-        StdOut    = $rawList
-        StdErr    = $errList
+        Available   = $true
+        TimedOut    = $timedOut
+        WasCanceled = $wasCanceled
+        ExitCode    = $exitCode
+        StdOut      = $rawList
+        StdErr      = $errList
     }
 }
 
@@ -25888,18 +26561,23 @@ function Get-ExecutableCleanVersion {
 }
 
 function Get-LocalInstalledEntries {
-    param([switch]$SkipAppx)
+    param(
+        [switch]$SkipAppx,
+        [scriptblock]$CancelCheck = $null
+    )
     if ("DuckUtil.AppCatalogEngine" -as [type]) {
         try {
             $csType = [DuckUtil.AppCatalogEngine]
             if ($null -ne $csType.GetMethod("ScanCatalogSensorsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
                 $scanTask = $csType::ScanCatalogSensorsAsync()
-                if (Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 30) {
+                if (Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 30 -CancelCheck $CancelCheck) {
                     if ($scanTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                         return $scanTask.Result
                     }
                 }
-                if ($script:isWindowClosing) { return @() }
+                $canceledNow = $script:isWindowClosing
+                if (-not $canceledNow -and $CancelCheck) { try { $canceledNow = [bool](& $CancelCheck) } catch {} }
+                if ($canceledNow) { return @() }
             }
             return [DuckUtil.AppCatalogEngine]::ScanCatalogSensors()
         } catch {}
@@ -26029,10 +26707,21 @@ function Get-LocalInstalledEntries {
         }
     }
 
+    $pyScriptsYtdlp = [System.Collections.Generic.List[string]]::new()
+    try {
+        $pyRoot = "$env:LOCALAPPDATA\Programs\Python"
+        if ([System.IO.Directory]::Exists($pyRoot)) {
+            foreach ($pyDir in [System.IO.Directory]::GetDirectories($pyRoot, "Python3*")) {
+                $pyScriptsYtdlp.Add((Join-Path $pyDir "Scripts\yt-dlp.exe"))
+            }
+        }
+    } catch {}
+    $neovimRoot = if ($env:ProgramW6432) { $env:ProgramW6432 } elseif ($env:ProgramFiles) { $env:ProgramFiles } else { "C:\Program Files" }
+
     $cliProbes = @(
         @{ ID = "Google.AntigravityCLI";     Name = "Antigravity CLI";       Cmd = "agy.exe";         Paths = @("$env:LOCALAPPDATA\agy\bin\agy.exe") },
         @{ ID = "astral-sh.uv";              Name = "uv (Python Manager)";   Cmd = "uv.exe";          Paths = @("$env:USERPROFILE\.local\bin\uv.exe", "$env:USERPROFILE\.cargo\bin\uv.exe") },
-        @{ ID = "yt-dlp.yt-dlp";             Name = "yt-dlp";                Cmd = "yt-dlp.exe";      Paths = @("$env:LOCALAPPDATA\Programs\Python\Python313\Scripts\yt-dlp.exe", "$env:LOCALAPPDATA\Programs\Python\Python312\Scripts\yt-dlp.exe") },
+        @{ ID = "yt-dlp.yt-dlp";             Name = "yt-dlp";                Cmd = "yt-dlp.exe";      Paths = @($pyScriptsYtdlp) },
         @{ ID = "Gyan.FFmpeg";               Name = "FFmpeg";                Cmd = "ffmpeg.exe";      Paths = @() },
         @{ ID = "aria2.aria2";               Name = "aria2";                 Cmd = "aria2c.exe";      Paths = @() },
         @{ ID = "Rclone.Rclone";             Name = "Rclone";                Cmd = "rclone.exe";      Paths = @() },
@@ -26041,7 +26730,7 @@ function Get-LocalInstalledEntries {
         @{ ID = "Yarn.Yarn";                 Name = "Yarn";                  Cmd = "yarn.cmd";        Paths = @("$env:APPDATA\npm\yarn.cmd") },
         @{ ID = "Fastfetch-cli.Fastfetch";   Name = "Fastfetch";             Cmd = "fastfetch.exe";   Paths = @() },
         @{ ID = "JanDeDobbeleer.OhMyPosh";   Name = "Oh My Posh";            Cmd = "oh-my-posh.exe";  Paths = @("$env:LOCALAPPDATA\Programs\oh-my-posh\bin\oh-my-posh.exe") },
-        @{ ID = "Neovim.Neovim";             Name = "Neovim";                Cmd = "nvim.exe";        Paths = @("C:\Program Files\Neovim\bin\nvim.exe") },
+        @{ ID = "Neovim.Neovim";             Name = "Neovim";                Cmd = "nvim.exe";        Paths = @("$neovimRoot\Neovim\bin\nvim.exe") },
         @{ ID = "Google.PlatformTools";      Name = "ADB & Fastboot";        Cmd = "adb.exe";         Paths = @("$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe") },
         @{ ID = "Gitleaks.Gitleaks";         Name = "Gitleaks";              Cmd = "gitleaks.exe";    Paths = @() }
     )
@@ -26157,8 +26846,31 @@ function Apply-InstalledDatabaseToRows {
         $IdMap,
         $NameMap,
         $CleanNameMap,
-        $InstalledList
+        $InstalledList,
+        [scriptblock]$CancelCheck = $null,
+        [switch]$PreserveOutdatedOnLocalFallback
     )
+
+    $prevOutdatedSnapshot = $null
+    if ($PreserveOutdatedOnLocalFallback -and $allItemBorders -and $allItemBorders.Count -gt 0) {
+        $prevOutdatedSnapshot = @{}
+        for ($pi = 0; $pi -lt $allItemBorders.Count; $pi++) {
+            $pt = $allItemBorders[$pi].Tag
+            if ($pt -and $pt.Status -eq "OUTDATED") {
+                $prevAv = ""
+                if ($pt.UpdateText -and -not [string]::IsNullOrWhiteSpace($pt.UpdateText.Text)) {
+                    $rawAv = [string]$pt.UpdateText.Text
+                    if ($rawAv.StartsWith("$([char]0x2191) ") -and $rawAv -ne "$([char]0x2191) M$([char]0x1EDB)i") {
+                        $prevAv = $rawAv.Substring(2).Trim()
+                    }
+                }
+                $prevOutdatedSnapshot[$pi] = @{
+                    Version   = [string]$pt.InstalledVersion
+                    Available = $prevAv
+                }
+            }
+        }
+    }
 
     $countInstalled = 0
     $countLatest = 0
@@ -26189,9 +26901,11 @@ function Apply-InstalledDatabaseToRows {
         $matchedArr = $null
         if ($null -ne $csMatchType.GetMethod("MatchCatalogAppsAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) -and $window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
             $mTask = [DuckUtil.AppCatalogEngine]::MatchCatalogAppsAsync($targets, $sensorArr)
-            [void](Wait-TaskNonBlocking -Task $mTask -TimeoutSeconds 15)
-            if ($script:isWindowClosing) {
-                return [PSCustomObject]@{ Installed = 0; Latest = 0; Outdated = 0 }
+            [void](Wait-TaskNonBlocking -Task $mTask -TimeoutSeconds 15 -CancelCheck $CancelCheck)
+            $canceledApply = $script:isWindowClosing
+            if (-not $canceledApply -and $CancelCheck) { try { $canceledApply = [bool](& $CancelCheck) } catch {} }
+            if ($canceledApply) {
+                return [PSCustomObject]@{ Installed = 0; Latest = 0; Outdated = 0; Canceled = $true }
             }
             if ($mTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                 $matchedArr = $mTask.Result
@@ -26214,15 +26928,25 @@ function Apply-InstalledDatabaseToRows {
 
             if ($null -ne $info) {
                 $countInstalled++
+                $effectiveHasUpdate = [bool]($info.HasUpdate -eq $true)
+                $effectiveAvailable = [string]$info.Available
+                if (-not $effectiveHasUpdate -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
+                    $snapOut = $prevOutdatedSnapshot[$ri]
+                    if ([string]$info.Version -eq $snapOut.Version) {
+                        $effectiveHasUpdate = $true
+                        $effectiveAvailable = $snapOut.Available
+                    }
+                }
+
                 $prevStatus = $tag.Status
                 $prevVer = $tag.InstalledVersion
                 $prevDet = $tag.DetectedId
                 $tag.DetectedId = $info.ID
                 $tag.InstalledVersion = $info.Version
 
-                if ($info.HasUpdate -eq $true) {
+                if ($effectiveHasUpdate) {
                     $countOutdated++
-                    $newBadgeTxt = if ($info.Available) { "$([char]0x2191) $($info.Available)" } else { "$([char]0x2191) M$([char]0x1EDB)i" }
+                    $newBadgeTxt = if ($effectiveAvailable) { "$([char]0x2191) $effectiveAvailable" } else { "$([char]0x2191) M$([char]0x1EDB)i" }
                     if ($prevStatus -ne "OUTDATED" -or $prevVer -ne $info.Version -or $prevDet -ne $info.ID -or ($updateText -and $updateText.Text -ne $newBadgeTxt)) {
                         $tag.Status = "OUTDATED"
                         if ($tb) {
@@ -26234,7 +26958,7 @@ function Apply-InstalledDatabaseToRows {
                             $updateText.Text = $newBadgeTxt
                             $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                         }
-                        $row.ToolTip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $($info.Available)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
+                        $row.ToolTip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $effectiveAvailable`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
                     }
                 } else {
                     $countLatest++
@@ -26332,7 +27056,7 @@ function Apply-InstalledDatabaseToRows {
                 return $match
             }
             $cleanAlias = $alPair.Clean
-            if ($cleanAlias.Length -ge 3 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
+            if ($cleanAlias.Length -ge 2 -and $CleanNameMap.TryGetValue($cleanAlias, [ref]$match) -and (Test-MatchCompatible $targetApp $match)) {
                 $lookupCache[$targetId] = $match
                 return $match
             }
@@ -26404,7 +27128,8 @@ function Apply-InstalledDatabaseToRows {
     $countLatest = 0
     $countOutdated = 0
 
-    foreach ($row in $allItemBorders) {
+    for ($ri = 0; $ri -lt $allItemBorders.Count; $ri++) {
+        $row = $allItemBorders[$ri]
         $app = $row.Tag.App
         $grid = $row.Child
         $tb = if ($row.Tag.NameText) { $row.Tag.NameText } elseif ($grid -and $grid.Children.Count -gt 2) { $grid.Children[2] } else { $null }
@@ -26416,10 +27141,19 @@ function Apply-InstalledDatabaseToRows {
 
         if ($info) {
             $countInstalled++
+            $effHasUpd = [bool]($info.HasUpdate -eq $true)
+            $effAvail = [string]$info.Available
+            if (-not $effHasUpd -and $prevOutdatedSnapshot -and $prevOutdatedSnapshot.ContainsKey($ri)) {
+                $snapOutPs = $prevOutdatedSnapshot[$ri]
+                if ([string]$info.Version -eq $snapOutPs.Version) {
+                    $effHasUpd = $true
+                    $effAvail = $snapOutPs.Available
+                }
+            }
             $row.Tag.DetectedId = $info.ID
             $row.Tag.InstalledVersion = $info.Version
 
-            if ($info.HasUpdate -eq $true) {
+            if ($effHasUpd) {
                 $countOutdated++
                 $row.Tag.Status = "OUTDATED"
                 if ($tb) {
@@ -26428,10 +27162,10 @@ function Apply-InstalledDatabaseToRows {
                     $tb.TextDecorations = $null
                 }
                 if ($updateBadge -and $updateText) {
-                    $updateText.Text = if ($info.Available) { "$([char]0x2191) $($info.Available)" } else { "$([char]0x2191) M$([char]0x1EDB)i" }
+                    $updateText.Text = if ($effAvail) { "$([char]0x2191) $effAvail" } else { "$([char]0x2191) M$([char]0x1EDB)i" }
                     $updateBadge.Visibility = [System.Windows.Visibility]::Visible
                 }
-                $tip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $($info.Available)`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
+                $tip = "$idnPrefix$($app.Name)`n$([char]0x0110)ang c$([char]0x00E0)i: $($info.Version)`nC$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i: $effAvail`nID ph$([char]0x00E1)t hi$([char]0x1EC7)n: $($info.ID)"
                 $row.ToolTip = $tip
             } else {
                 $countLatest++
@@ -26475,22 +27209,52 @@ function Apply-InstalledDatabaseToRows {
 }
 
 function Scan-And-ColorizeApps {
+    param([switch]$Quiet)
     if ($script:isWindowClosing) { return }
-    if ($script:isScanningApps) {
-        Log-Text "[!] Ti$([char]0x1EBF)n tr$([char]0x00EC)nh qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang ch$([char]0x1EA1)y, b$([char]0x1ECF) qua y$([char]0x00EA)u c$([char]0x1EA7)u tr$([char]0x00F9)ng l$([char]0x1EB7)p."
-        return
+    if ($Quiet) {
+        if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller -or $script:isUninstallingQueue -or $script:isAutoRefreshing) {
+            return
+        }
+        $script:isAutoRefreshing = $true
+        $script:cancelAutoScan = $false
+        $script:autoScanGeneration++
+        $script:activeAutoScanGen = $script:autoScanGeneration
+    } else {
+        if ($script:isAutoRefreshing -and (Get-Command "Stop-ActiveAutoScan" -ErrorAction SilentlyContinue)) {
+            Stop-ActiveAutoScan
+            $script:isAutoRefreshing = $false
+            $script:cancelAutoScan = $false
+        }
+        if ($script:isScanningApps) {
+            Log-Text "[!] Ti$([char]0x1EBF)n tr$([char]0x00EC)nh qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang ch$([char]0x1EA1)y, b$([char]0x1ECF) qua y$([char]0x00EA)u c$([char]0x1EA7)u tr$([char]0x00F9)ng l$([char]0x1EB7)p."
+            return
+        }
+    }
+
+    $cancelBlock = if ($Quiet) {
+        { $script:isWindowClosing -or $script:cancelAutoScan -or ($script:autoScanGeneration -ne $script:activeAutoScanGen) }
+    } else {
+        { $script:isWindowClosing }
     }
 
     $script:isScanningApps = $true
     try {
-        Log-Text "[SCAN] $([char]0x0110)ang qu$([char]0x00E9)t h$([char]0x1EC7) th$([char]0x1ED1)ng (Registry, Runtimes, CLI & WinGet)..."
-        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t h$([char]0x1EC7) th$([char]0x1ED1)ng..." }
-        if ($progressBar) { $progressBar.IsIndeterminate = $true }
-        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-        if ($script:isWindowClosing) { return }
+        if (-not $Quiet) {
+            Log-Text "[SCAN] $([char]0x0110)ang qu$([char]0x00E9)t h$([char]0x1EC7) th$([char]0x1ED1)ng (Registry, Runtimes, CLI & WinGet)..."
+            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t h$([char]0x1EC7) th$([char]0x1ED1)ng..." }
+            if ($btnScanInstalled) {
+                $btnScanInstalled.Content = "$([char]0x0110)ang l$([char]0x00E0)m m$([char]0x1EDB)i..."
+                $btnScanInstalled.IsEnabled = $false
+            }
+            if ($progressBar) {
+                $progressBar.Value = 0
+                $progressBar.IsIndeterminate = $true
+            }
+        }
+        if (& $cancelBlock) { return }
 
-        $localItems = Get-LocalInstalledEntries -SkipAppx
-        if ($script:isWindowClosing) { return }
+        $localItems = Get-LocalInstalledEntries -SkipAppx -CancelCheck $cancelBlock
+        if (& $cancelBlock) { return }
         $useCsFastMatcher = ($null -ne ("DuckUtil.AppCatalogEngine" -as [type])) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("MatchCatalogApps")))
         $idMap        = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
         $nameMap      = if (-not $useCsFastMatcher) { [System.Collections.Generic.Dictionary[string, object]]::new([System.StringComparer]::OrdinalIgnoreCase) } else { $null }
@@ -26502,19 +27266,26 @@ function Scan-And-ColorizeApps {
             if (-not $useCsFastMatcher) {
                 if ($locObj.ID -and -not $idMap.ContainsKey($locObj.ID)) { $idMap[$locObj.ID] = $locObj } else { Set-PreferredMapEntry $idMap $locObj.ID $locObj }
                 if ($locObj.Name -and -not $nameMap.ContainsKey($locObj.Name)) { $nameMap[$locObj.Name] = $locObj } else { Set-PreferredMapEntry $nameMap $locObj.Name $locObj }
-                if ($locObj.CleanName.Length -ge 3) {
+                if ($locObj.CleanName.Length -ge 2) {
                     if (-not $cleanNameMap.ContainsKey($locObj.CleanName)) { $cleanNameMap[$locObj.CleanName] = $locObj } else { Set-PreferredMapEntry $cleanNameMap $locObj.CleanName $locObj }
                 }
             }
         }
 
-        if ($allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
-            $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
+        $localSigParts = [System.Collections.Generic.List[string]]::new($installedList.Count)
+        foreach ($locS in $installedList) {
+            $localSigParts.Add("$($locS.ID)=$($locS.Version)")
+        }
+        $localSigParts.Sort([System.StringComparer]::OrdinalIgnoreCase)
+        $localFingerprint = ($localSigParts -join ';')
+        $localChanged = ($localFingerprint -ne $script:lastLocalScanSig)
+
+        if (-not $Quiet -and $allItemBorders -and $allItemBorders.Count -gt 0 -and -not $script:hasCompletedAppScan) {
+            $preStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock
+            if (& $cancelBlock) { return }
             if ($txtStatus) {
                 $txtStatus.Text = "T$([char]0x00EC)m th$([char]0x1EA5)y $($preStats.Installed) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x2022) $([char]0x0111)ang ki$([char]0x1EC3)m tra c$([char]0x1EAD)p nh$([char]0x1EAD)t..."
             }
-            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-            if ($script:isWindowClosing) { return }
         }
 
         $wingetItems = [System.Collections.Generic.List[object]]::new()
@@ -26522,29 +27293,30 @@ function Scan-And-ColorizeApps {
         $wingetMissing = $false
 
         try {
-            $primary = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 35
-            if ($script:isWindowClosing) { return }
+            $wgTimeout = if ($Quiet) { 14 } else { 35 }
+            $primary = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds $wgTimeout -CancelCheck $cancelBlock -TrackAsAuto:$Quiet
+            if ($primary.WasCanceled -or (& $cancelBlock)) { return }
             if (-not $primary.Available) {
                 $wingetMissing = $true
-                Log-Text "[WARN] Ch$([char]0x01B0)a c$([char]0x00F3) WinGet; chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t c$([char]0x1EE5)c b$([char]0x1ED9) qua Registry, Runtimes & Appx."
+                if (-not $Quiet) { Log-Text "[WARN] Ch$([char]0x01B0)a c$([char]0x00F3) WinGet; chuy$([char]0x1EC3)n sang qu$([char]0x00E9)t c$([char]0x1EE5)c b$([char]0x1ED9) qua Registry, Runtimes & Appx." }
             } else {
                 $parsedPrimary = ConvertFrom-WingetListOutput -RawText $primary.StdOut -AllowHeaderless ($primary.ExitCode -eq 0 -and -not $primary.TimedOut)
                 if (-not $primary.TimedOut -and $primary.ExitCode -eq 0 -and $parsedPrimary.Items.Count -gt 0) {
                     $wingetItems = $parsedPrimary.Items
                     $wingetOk = $true
-                } else {
+                } elseif (-not $Quiet) {
                     if ($primary.TimedOut) {
-                        Log-Text "[WARN] WinGet (t$([char]0x1EA5)t c$([char]0x1EA3) ngu$([char]0x1ED3)n) qu$([char]0x00E1) th$([char]0x1EDD)i gian ch$([char]0x1EDD) (35s); $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i v$([char]0x1EDB)i ngu$([char]0x1ED3)n --source winget..."
+                        Log-Text "[WARN] WinGet (--source winget) qu$([char]0x00E1) th$([char]0x1EDD)i gian ch$([char]0x1EDD) (35s); $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i to$([char]0x00E0)n ngu$([char]0x1ED3)n..."
                     } else {
-                        Log-Text "[WARN] WinGet (t$([char]0x1EA5)t c$([char]0x1EA3) ngu$([char]0x1ED3)n) tr$([char]0x1EA3) v$([char]0x1EC1) m$([char]0x00E3) $($primary.ExitCode) ($($parsedPrimary.Items.Count) d$([char]0x00F2)ng); $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i --source winget..."
+                        Log-Text "[WARN] WinGet (--source winget) tr$([char]0x1EA3) v$([char]0x1EC1) m$([char]0x00E3) $($primary.ExitCode) ($($parsedPrimary.Items.Count) d$([char]0x00F2)ng); $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i to$([char]0x00E0)n ngu$([char]0x1ED3)n..."
                         if (-not [string]::IsNullOrWhiteSpace($primary.StdErr)) {
                             Log-Text "[stderr] $($primary.StdErr.Trim())"
                         }
                     }
 
-                    if ($script:isWindowClosing) { return }
-                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 20
-                    if ($script:isWindowClosing) { return }
+                    if (& $cancelBlock) { return }
+                    $fallbackWg = Invoke-WingetListCapture -Arguments "list --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25 -CancelCheck $cancelBlock -TrackAsAuto:$Quiet
+                    if ($fallbackWg.WasCanceled -or (& $cancelBlock)) { return }
                     $parsedFallback = ConvertFrom-WingetListOutput -RawText $fallbackWg.StdOut -AllowHeaderless ($fallbackWg.ExitCode -eq 0 -and -not $fallbackWg.TimedOut)
 
                     if (-not $fallbackWg.TimedOut -and $fallbackWg.ExitCode -eq 0 -and $parsedFallback.Items.Count -gt 0) {
@@ -26560,19 +27332,23 @@ function Scan-And-ColorizeApps {
                 }
             }
         } catch {
-            Log-Text "[!] L$([char]0x1ED7)i khi g$([char]0x1ECD)i WinGet: $($_.Exception.Message)"
+            if (-not $Quiet) { Log-Text "[!] L$([char]0x1ED7)i khi g$([char]0x1ECD)i WinGet: $($_.Exception.Message)" }
         }
 
-        if ($script:isWindowClosing) { return }
+        if (& $cancelBlock) { return }
+
+        if ($Quiet -and -not $wingetOk -and -not $localChanged -and $script:hasCompletedAppScan) {
+            return
+        }
 
         if ((-not $wingetOk -or $wingetItems.Count -lt 5) -and -not ("DuckUtil.AppCatalogEngine" -as [type])) {
             $appxItems = Get-LocalInstalledEntries
-            if ($script:isWindowClosing) { return }
+            if (& $cancelBlock) { return }
             foreach ($ax in $appxItems) {
                 $installedList.Add($ax)
                 Set-PreferredMapEntry $idMap $ax.ID $ax
                 Set-PreferredMapEntry $nameMap $ax.Name $ax
-                if ($ax.CleanName.Length -ge 3) { Set-PreferredMapEntry $cleanNameMap $ax.CleanName $ax }
+                if ($ax.CleanName.Length -ge 2) { Set-PreferredMapEntry $cleanNameMap $ax.CleanName $ax }
             }
         }
 
@@ -26584,7 +27360,7 @@ function Scan-And-ColorizeApps {
             if (-not $useCsFastMatcher) {
                 if ($itemObj.ID -and -not $idMap.ContainsKey($itemObj.ID)) { $idMap[$itemObj.ID] = $itemObj } else { Set-PreferredMapEntry $idMap $itemObj.ID $itemObj }
                 if ($itemObj.Name -and -not $nameMap.ContainsKey($itemObj.Name)) { $nameMap[$itemObj.Name] = $itemObj } else { Set-PreferredMapEntry $nameMap $itemObj.Name $itemObj }
-                if ($itemObj.CleanName.Length -ge 3) {
+                if ($itemObj.CleanName.Length -ge 2) {
                     if (-not $cleanNameMap.ContainsKey($itemObj.CleanName)) { $cleanNameMap[$itemObj.CleanName] = $itemObj } else { Set-PreferredMapEntry $cleanNameMap $itemObj.CleanName $itemObj }
                 }
 
@@ -26595,16 +27371,34 @@ function Scan-And-ColorizeApps {
         }
 
         if ($installedList.Count -eq 0 -and -not $wingetOk) {
-            Log-Text "[!] Kh$([char]0x00F4)ng nh$([char]0x1EAD)n $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng t$([char]0x1EEB) c$([char]0x1EA3) WinGet l$([char]0x1EAB)n c$([char]0x1EE5)c b$([char]0x1ED9). Gi$([char]0x1EEF) nguy$([char]0x00EA)n tr$([char]0x1EA1)ng th$([char]0x00E1)i hi$([char]0x1EC7)n t$([char]0x1EA1)i."
-            if ($txtStatus -and -not $script:hasCompletedAppScan) {
-                $txtStatus.Text = if ($wingetMissing) { "Thi$([char]0x1EBF)u WinGet | Qu$([char]0x00E9)t th$([char]0x1EA5)t b$([char]0x1EA1)i" } else { "L$([char]0x1ED7)i qu$([char]0x00E9)t WinGet | H$([char]0x00E3)y th$([char]0x1EED) Qu$([char]0x00E9)t l$([char]0x1EA1)i m$([char]0x00E1)y" }
+            if (-not $Quiet) {
+                Log-Text "[!] Kh$([char]0x00F4)ng nh$([char]0x1EAD)n $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng t$([char]0x1EEB) c$([char]0x1EA3) WinGet l$([char]0x1EAB)n c$([char]0x1EE5)c b$([char]0x1ED9). Gi$([char]0x1EEF) nguy$([char]0x00EA)n tr$([char]0x1EA1)ng th$([char]0x00E1)i hi$([char]0x1EC7)n t$([char]0x1EA1)i."
+                if ($txtStatus -and -not $script:hasCompletedAppScan) {
+                    $txtStatus.Text = if ($wingetMissing) { "Thi$([char]0x1EBF)u WinGet | Qu$([char]0x00E9)t th$([char]0x1EA5)t b$([char]0x1EA1)i" } else { "L$([char]0x1ED7)i qu$([char]0x00E9)t WinGet | H$([char]0x00E3)y th$([char]0x1EED) Qu$([char]0x00E9)t l$([char]0x1EA1)i m$([char]0x00E1)y" }
+                }
             }
             return
         }
 
-        if ($script:isWindowClosing) { return }
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
-        $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList
+        if (& $cancelBlock) { return }
+        $preserveOutdated = [bool]($Quiet -and -not $wingetOk)
+        $finalStats = Apply-InstalledDatabaseToRows -IdMap $idMap -NameMap $nameMap -CleanNameMap $cleanNameMap -InstalledList $installedList -CancelCheck $cancelBlock -PreserveOutdatedOnLocalFallback:$preserveOutdated
+        if (($finalStats.PSObject.Properties['Canceled'] -and $finalStats.Canceled) -or (& $cancelBlock)) { return }
+        if (-not $Quiet -and $progressBar) {
+            $progressBar.IsIndeterminate = $false
+            $progressBar.Value = 0
+        }
+
+        $script:lastLocalScanSig = $localFingerprint
+        $prevInstalledCnt = $script:lastLocalInstalledCnt
+        $script:lastLocalInstalledCnt = [int]$finalStats.Installed
+        $newSig = "$($finalStats.Installed)|$($finalStats.Latest)|$($finalStats.Outdated)|$wingetOk"
+        $sigChanged = ($newSig -ne $script:lastAppScanSignature)
+        $script:lastAppScanSignature = $newSig
+
+        if ($prevInstalledCnt -ge 0 -and $prevInstalledCnt -ne $finalStats.Installed) {
+            $script:uninstallerStale = $true
+        }
 
         $script:hasCompletedAppScan = $true
         if (Get-Command "Try-EnableCompletedCardCaches" -ErrorAction SilentlyContinue) {
@@ -26612,15 +27406,52 @@ function Scan-And-ColorizeApps {
         }
         $modeTag = if (-not $wingetOk) { " [D$([char]0x1EF1) ph$([char]0x00F2)ng Registry/Appx]" } else { "" }
         $summary = "$([char]0x0110)$([char]0x00E3) qu$([char]0x00E9)t xong: $($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i ($($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t)$modeTag"
-        Log-Text "[OK] $summary"
-        if ($txtStatus) {
+        if (-not $Quiet) {
+            Log-Text "[OK] $summary"
+        } elseif ($sigChanged) {
+            Log-Text "[AUTO] L$([char]0x00E0)m m$([char]0x1EDB)i: $($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i ($($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t)$modeTag"
+        }
+        if ($txtStatus -and (-not $Quiet -or $sigChanged -or -not $script:isActionRunning)) {
             $txtStatus.Text = "$($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i $([char]0x2022) $($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t $([char]0x2022) $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t" + $(if (-not $wingetOk) { " [D$([char]0x1EF1) ph$([char]0x00F2)ng]" } else { "" })
         }
     } finally {
-        $script:isScanningApps = $false
-        if ($progressBar) { $progressBar.IsIndeterminate = $false }
+        $autoWasPreempted = $Quiet -and ($script:autoScanGeneration -ne $script:activeAutoScanGen)
+        if (-not $autoWasPreempted) {
+            $script:isScanningApps = $false
+        }
+        if ($Quiet) {
+            if (-not $autoWasPreempted) {
+                $script:isAutoRefreshing = $false
+                $script:cancelAutoScan = $false
+            }
+        } else {
+            if ($btnScanInstalled) {
+                $btnScanInstalled.Content = "L$([char]0x00E0)m m$([char]0x1EDB)i"
+                $btnScanInstalled.IsEnabled = $true
+            }
+            if ($progressBar) {
+                $progressBar.IsIndeterminate = $false
+                $progressBar.Value = 0
+            }
+        }
+        if (-not $script:isWindowClosing -and -not $autoWasPreempted -and (Get-Command "Reset-AutoAppRefreshTimer" -ErrorAction SilentlyContinue)) {
+            try { Reset-AutoAppRefreshTimer -FromAutoTick:$Quiet } catch {}
+        }
         if (-not $script:isWindowClosing -and (Get-Command "Flush-PendingIconCache" -ErrorAction SilentlyContinue)) {
             Flush-PendingIconCache
+        }
+        if ($script:pendingManualAppRefresh -and -not $script:isWindowClosing -and -not $script:isScanningApps -and $window -and $window.Dispatcher) {
+            $script:pendingManualAppRefresh = $false
+            $window.Dispatcher.BeginInvoke(
+                [System.Windows.Threading.DispatcherPriority]::Background,
+                [Action]{
+                    if (-not $script:isWindowClosing -and -not $script:isActionRunning -and -not $script:isScanningApps) {
+                        Invoke-GuardedAction "Qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand -AllowDuringUninstallerLoad {
+                            Scan-And-ColorizeApps
+                        }
+                    }
+                }
+            ) | Out-Null
         }
     }
 }
@@ -26918,7 +27749,7 @@ function Find-AppLeftovers {
         if ($AppEntry.RegistryPath -and (Test-Path -LiteralPath $AppEntry.RegistryPath)) {
             if ($seenPaths.Add($AppEntry.RegistryPath)) {
                 $leftovers.Add([PSCustomObject]@{
-                    Type              = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
+                    Type              = "Registry b$([char]0x1ECB) l$([char]0x1ED7)i"
                     Confidence        = "An to$([char]0x00E0)n 100%"
                     AppName           = $AppEntry.DisplayName
                     Path              = $AppEntry.RegistryPath
@@ -27077,7 +27908,7 @@ function Find-AppLeftovers {
                     $szTask1 = $deepTypeLo::GetDirectorySizeFastAsync($loc, 4)
                     [void](Wait-TaskNonBlocking -Task $szTask1 -TimeoutSeconds 20)
                     if ($szTask1.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dirSize = [long]$szTask1.Result }
-                } else {
+                } elseif (-not $script:isWindowClosing) {
                     $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($loc, 4)
                 }
                 $leftovers.Add([PSCustomObject]@{
@@ -27107,7 +27938,7 @@ function Find-AppLeftovers {
                     $szTask2 = $deepTypeLo::GetDirectorySizeFastAsync($dataLoc, 4)
                     [void](Wait-TaskNonBlocking -Task $szTask2 -TimeoutSeconds 20)
                     if ($szTask2.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dataSize = [long]$szTask2.Result }
-                } else {
+                } elseif (-not $script:isWindowClosing) {
                     $dataSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($dataLoc, 4)
                 }
                 $leftovers.Add([PSCustomObject]@{
@@ -27125,8 +27956,9 @@ function Find-AppLeftovers {
     }
 
     $localLowRoot = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE "AppData\LocalLow" } else { "" }
+    $progDataRoot = if ($env:ProgramData) { $env:ProgramData } else { "" }
     $folderRoots = [System.Collections.Generic.List[string]]::new()
-    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, (Join-Path $env:LOCALAPPDATA "Programs"), "C:\ProgramData")) {
+    foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "Programs" } else { "" }), $progDataRoot)) {
         if ($baseRoot -and (Test-Path -LiteralPath $baseRoot)) {
             $folderRoots.Add($baseRoot)
         }
@@ -27138,10 +27970,16 @@ function Find-AppLeftovers {
         }
     }
     foreach ($vf in ($vendorFolders | Select-Object -Unique)) {
-        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, "C:\ProgramData")) {
+        foreach ($baseRoot in @($env:APPDATA, $env:LOCALAPPDATA, $localLowRoot, $progDataRoot)) {
             if ($baseRoot) {
                 $pubSub = Join-Path $baseRoot $vf
-                if (Test-Path -LiteralPath $pubSub) { $folderRoots.Add($pubSub) }
+                if (Test-Path -LiteralPath $pubSub) {
+                    $isPubReparse = $false
+                    try {
+                        if (([System.IO.File]::GetAttributes($pubSub) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isPubReparse = $true }
+                    } catch {}
+                    if (-not $isPubReparse) { $folderRoots.Add($pubSub) }
+                }
             }
         }
     }
@@ -27155,8 +27993,18 @@ function Find-AppLeftovers {
             if (Test-PathClaimedByActiveApp -CandidateName $kw -ActiveApps $activeApps) { continue }
             $candidatePath = Join-Path $root $kw
             if (Test-Path -LiteralPath $candidatePath) {
+                $isRawReparse = $false
+                try {
+                    if (([System.IO.File]::GetAttributes($candidatePath) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isRawReparse = $true }
+                } catch {}
+                if ($isRawReparse) { continue }
                 $fullPath = Resolve-PathSafe -Path $candidatePath
                 if (-not $fullPath) { continue }
+                $isReparseCand = $false
+                try {
+                    if (([System.IO.File]::GetAttributes($fullPath) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isReparseCand = $true }
+                } catch {}
+                if ($isReparseCand) { continue }
                 $isSafe = $true
                 foreach ($ex in $exclusions) {
                     if ($fullPath -like "*\$ex\*" -or $fullPath -like "*\$ex") { $isSafe = $false; break }
@@ -27167,7 +28015,7 @@ function Find-AppLeftovers {
                         $szTask3 = $deepTypeLo::GetDirectorySizeFastAsync($fullPath, 4)
                         [void](Wait-TaskNonBlocking -Task $szTask3 -TimeoutSeconds 20)
                         if ($szTask3.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $dirSize = [long]$szTask3.Result }
-                    } else {
+                    } elseif (-not $script:isWindowClosing) {
                         $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
                     }
                     $leftovers.Add([PSCustomObject]@{
@@ -27224,7 +28072,7 @@ function Find-AppLeftovers {
                 foreach ($lnk in $scTask.Result) {
                     if ($seenPaths.Add($lnk)) {
                         $leftovers.Add([PSCustomObject]@{
-                            Type              = "Shortcut ch$([char]0x1EBF)t"
+                            Type              = "Shortcut h$([char]0x1ECF)ng"
                             Confidence        = "An to$([char]0x00E0)n 100%"
                             AppName           = $AppEntry.DisplayName
                             Path              = $lnk
@@ -27258,7 +28106,7 @@ function Find-AppLeftovers {
                         }
                         if ($matchesApp -and $seenPaths.Add($lnk)) {
                             $leftovers.Add([PSCustomObject]@{
-                                Type              = "Shortcut ch$([char]0x1EBF)t"
+                                Type              = "Shortcut h$([char]0x1ECF)ng"
                                 Confidence        = "An to$([char]0x00E0)n 100%"
                                 AppName           = $AppEntry.DisplayName
                                 Path              = $lnk
@@ -27304,7 +28152,7 @@ function Find-AppLeftovers {
                     $runDisplayPath = "$rk -> [$($p.Name)]"
                     if ($seenPaths.Add($runDisplayPath)) {
                         $leftovers.Add([PSCustomObject]@{
-                            Type              = "Startup m$([char]0x1ED3) c$([char]0x00F4)i"
+                            Type              = "Startup c$([char]0x00F2)n s$([char]0x00F3)t"
                             Confidence        = "An to$([char]0x00E0)n 100%"
                             AppName           = $AppEntry.DisplayName
                             Path              = $rk
@@ -27338,7 +28186,7 @@ function Find-AppLeftovers {
                 }
                 if ($isSafe -and $seenPaths.Add($regPath)) {
                     $leftovers.Add([PSCustomObject]@{
-                        Type              = "Registry m$([char]0x1ED3) c$([char]0x00F4)i"
+                        Type              = "Registry c$([char]0x00F2)n s$([char]0x00F3)t"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $AppEntry.DisplayName
                         Path              = $regPath
@@ -27355,7 +28203,7 @@ function Find-AppLeftovers {
     if ($AppEntry.RegistryPath -and (Test-Path -LiteralPath $AppEntry.RegistryPath)) {
         if ($seenPaths.Add($AppEntry.RegistryPath)) {
             $leftovers.Add([PSCustomObject]@{
-                Type              = "Registry g$([char]0x1EE1) b$([char]0x1ECF) h$([char]0x1ECF)ng"
+                Type              = "Registry b$([char]0x1ECB) l$([char]0x1ED7)i"
                 Confidence        = "An to$([char]0x00E0)n 100%"
                 AppName           = $AppEntry.DisplayName
                 Path              = $AppEntry.RegistryPath
@@ -27403,7 +28251,7 @@ function Find-AppLeftovers {
                             $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                             if ($seenPaths.Add($regSvcPath)) {
                                 $leftovers.Add([PSCustomObject]@{
-                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Type              = "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t"
                                     Confidence        = "An to$([char]0x00E0)n 100%"
                                     AppName           = $AppEntry.DisplayName
                                     Path              = $regSvcPath
@@ -27416,7 +28264,7 @@ function Find-AppLeftovers {
                             if ($seenPaths.Add($img)) {
                                 $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
                                 $leftovers.Add([PSCustomObject]@{
-                                    Type              = "Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i"
+                                    Type              = "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t"
                                     Confidence        = "An to$([char]0x00E0)n 100%"
                                     AppName           = $AppEntry.DisplayName
                                     Path              = $img
@@ -27486,8 +28334,11 @@ function Find-SystemOrphanLeftovers {
             }
         }
     } catch {
-        $programRoots.Add("C:\Program Files")
-        $programRoots.Add("C:\Program Files (x86)")
+        foreach ($fallbackPf in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+            if (-not [string]::IsNullOrWhiteSpace($fallbackPf) -and [System.IO.Directory]::Exists($fallbackPf) -and -not $programRoots.Contains($fallbackPf)) {
+                $programRoots.Add($fallbackPf)
+            }
+        }
     }
     $localProgs = Join-Path $env:LOCALAPPDATA "Programs"
     if ([System.IO.Directory]::Exists($localProgs)) { $programRoots.Add($localProgs) }
@@ -27638,7 +28489,7 @@ function Find-SystemOrphanLeftovers {
             if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
                 if ($seenPaths.Add($app.RegistryPath)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type              = "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                        Type              = "[Registry c$([char]0x00F2)n s$([char]0x00F3)t]"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $app.DisplayName
                         Path              = $app.RegistryPath
@@ -27659,10 +28510,10 @@ function Find-SystemOrphanLeftovers {
             foreach ($lo in $appLeftovers) {
                 $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
                 if ($seenPaths.Add($dedupKey)) {
-                    $badgeType = if ($lo.Type -like "*Driver Ring 0*") {
-                        "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                    $badgeType = if ($lo.Type -like "*Driver*") {
+                        "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
                     } elseif ($lo.IsRegistry) {
-                        "[Registry m$([char]0x1ED3) c$([char]0x00F4)i]"
+                        "[Registry c$([char]0x00F2)n s$([char]0x00F3)t]"
                     } else {
                         "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
                     }
@@ -27686,7 +28537,7 @@ function Find-SystemOrphanLeftovers {
             foreach ($hr in $hollowProgTask.Result) {
                 if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
+                        Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $hr.AppName
                         Path              = $hr.Path
@@ -27720,7 +28571,7 @@ function Find-SystemOrphanLeftovers {
             foreach ($dl in $deadLnkTask.Result) {
                 if ($dl -and $dl.LnkPath -and $seenPaths.Add($dl.LnkPath)) {
                     $orphans.Add([PSCustomObject]@{
-                        Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                        Type              = "[Shortcut h$([char]0x1ECF)ng]"
                         Confidence        = "An to$([char]0x00E0)n 100%"
                         AppName           = $dl.AppName
                         Path              = $dl.LnkPath
@@ -27760,7 +28611,7 @@ function Find-SystemOrphanLeftovers {
                 if ($hollowSize -ge 0L) {
                     if ($seenPaths.Add($sd)) {
                         $orphans.Add([PSCustomObject]@{
-                            Type              = "[V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
+                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
                             Confidence        = "An to$([char]0x00E0)n 100%"
                             AppName           = $dirName
                             Path              = $sd
@@ -27810,7 +28661,7 @@ function Find-SystemOrphanLeftovers {
                             if (-not [System.IO.File]::Exists($target)) {
                                 if ($seenPaths.Add($lnk)) {
                                     $orphans.Add([PSCustomObject]@{
-                                        Type              = "[Shortcut ch$([char]0x1EBF)t]"
+                                        Type              = "[Shortcut h$([char]0x1ECF)ng]"
                                         Confidence        = "An to$([char]0x00E0)n 100%"
                                         AppName           = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
                                         Path              = $lnk
@@ -27888,7 +28739,7 @@ function Find-SystemOrphanLeftovers {
                         $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
                         if ($seenPaths.Add($regSvcPath)) {
                             $orphans.Add([PSCustomObject]@{
-                                Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                Type              = "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
                                 Confidence        = "An to$([char]0x00E0)n 100%"
                                 AppName           = "$drvVendor ($($se.ServiceName))"
                                 Path              = $regSvcPath
@@ -27901,7 +28752,7 @@ function Find-SystemOrphanLeftovers {
                         if ($seenPaths.Add($img)) {
                             $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
                             $orphans.Add([PSCustomObject]@{
-                                Type              = "[Driver Ring 0 m$([char]0x1ED3) c$([char]0x00F4)i]"
+                                Type              = "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
                                 Confidence        = "An to$([char]0x00E0)n 100%"
                                 AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
                                 Path              = $img
@@ -27923,7 +28774,8 @@ function Find-SystemOrphanLeftovers {
 function Invoke-ForceStopPathLockers {
     param(
         [Parameter(Mandatory = $true)][string]$TargetPath,
-        [bool]$IncludeServicesAndTasks = $true
+        [bool]$IncludeServicesAndTasks = $true,
+        [switch]$AllowCancel
     )
 
     $resObj = [PSCustomObject]@{
@@ -27950,10 +28802,11 @@ function Invoke-ForceStopPathLockers {
     $hasForceStop = @($deepType.GetMethods() | Where-Object { $_.Name -eq "ForceStopDirectoryLockers" -and $_.GetParameters().Count -eq 2 }).Count -gt 0
     if ($hasForceStopAsync) {
         $fsTask = $deepType::ForceStopDirectoryLockersAsync($TargetPath, $IncludeServicesAndTasks)
-        [void](Wait-TaskNonBlocking -Task $fsTask -TimeoutSeconds 45)
+        $fsCancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+        [void](Wait-TaskNonBlocking -Task $fsTask -TimeoutSeconds 45 -CancelCheck $fsCancelCb)
         $rpt = if ($fsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
             $fsTask.Result
-        } elseif ($hasForceStop -and -not $script:isWindowClosing) {
+        } elseif ($hasForceStop -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
             $deepType::ForceStopDirectoryLockers($TargetPath, $IncludeServicesAndTasks)
         } else { $null }
     } elseif ($hasForceStop) {
@@ -28077,14 +28930,58 @@ function Show-LeftoverReviewDialog {
             $dialog.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterScreen
         }
     }
-    $dialog.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0A0E15")
-    $dialog.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#F1F5F9")
+    if (-not $script:loDialogPalette) {
+        $bcCache = New-Object System.Windows.Media.BrushConverter
+        $mkC = {
+            param([string]$hex)
+            $br = $bcCache.ConvertFromString($hex)
+            if ($br -and $br.CanFreeze) { $br.Freeze() }
+            return $br
+        }
+        $script:loDialogPalette = @{
+            Bg           = & $mkC "#0A0E15"
+            Fg           = & $mkC "#F1F5F9"
+            TitleFg      = & $mkC "#38BDF8"
+            ItemBg       = & $mkC "#101520"
+            ItemBorder   = & $mkC "#1E293B"
+            White        = & $mkC "#FFFFFF"
+            ConfBg       = & $mkC "#064E3B"
+            ConfBorder   = & $mkC "#059669"
+            ConfFg       = & $mkC "#6EE7B7"
+            ItemTitleFg  = & $mkC "#E2E8F0"
+            PathFg       = & $mkC "#64748B"
+            SizeRegFg    = & $mkC "#94A3B8"
+            SizeFileFg   = & $mkC "#38BDF8"
+            BtnBg        = & $mkC "#1E293B"
+            BtnFg        = & $mkC "#CBD5E1"
+            BottomBg     = & $mkC "#0D121B"
+            WarnFg       = & $mkC "#FBBF24"
+            DelBg        = & $mkC "#991B1B"
+            DelFg        = & $mkC "#FEE2E2"
+            DelBorder    = & $mkC "#DC2626"
+            BadgeMap     = @{
+                "Ring0"    = (& $mkC "#B91C1C")
+                "Registry" = (& $mkC "#DC2626")
+                "Startup"  = (& $mkC "#E11D48")
+                "AppData"  = (& $mkC "#D97706")
+                "Hollow"   = (& $mkC "#2563EB")
+                "Shortcut" = (& $mkC "#7C3AED")
+                "Dump"     = (& $mkC "#9333EA")
+                "Default"  = (& $mkC "#0D9488")
+            }
+        }
+    }
+    $pal = $script:loDialogPalette
+
+    $dialog.Background = $pal.Bg
+    $dialog.Foreground = $pal.Fg
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
 
     try {
-        $rdXaml = @'
+        if (-not $script:loDialogResources) {
+            $rdXaml = @'
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Style TargetType="{x:Type CheckBox}">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -28146,7 +29043,11 @@ function Show-LeftoverReviewDialog {
     </Style>
 </ResourceDictionary>
 '@
-        $dialog.Resources = [System.Windows.Markup.XamlReader]::Parse($rdXaml)
+            $script:loDialogResources = [System.Windows.Markup.XamlReader]::Parse($rdXaml)
+        }
+        if ($script:loDialogResources) {
+            $dialog.Resources = $script:loDialogResources
+        }
     } catch {}
 
     $rootGrid = New-Object System.Windows.Controls.Grid
@@ -28163,7 +29064,7 @@ function Show-LeftoverReviewDialog {
     $titleBlock.Text = $Title
     $titleBlock.FontSize = 15
     $titleBlock.FontWeight = [System.Windows.FontWeights]::Bold
-    $titleBlock.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#38BDF8")
+    $titleBlock.Foreground = $pal.TitleFg
     $headerPanel.Children.Add($titleBlock) | Out-Null
     [System.Windows.Controls.Grid]::SetRow($headerPanel, 0)
     $rootGrid.Children.Add($headerPanel) | Out-Null
@@ -28180,35 +29081,19 @@ function Show-LeftoverReviewDialog {
     $itemsStack = New-Object System.Windows.Controls.StackPanel
     $itemCheckBoxes = [System.Collections.Generic.List[System.Windows.Controls.CheckBox]]::new()
 
-    $bcLo = New-Object System.Windows.Media.BrushConverter
-    $mkLoBrush = {
-        param([string]$hex)
-        $br = $bcLo.ConvertFromString($hex)
-        if ($br -and $br.CanFreeze) { $br.Freeze() }
-        return $br
-    }
-    $brLoItemBg     = & $mkLoBrush "#101520"
-    $brLoItemBorder = & $mkLoBrush "#1E293B"
-    $brLoWhite      = & $mkLoBrush "#FFFFFF"
-    $brLoConfBg     = & $mkLoBrush "#064E3B"
-    $brLoConfBorder = & $mkLoBrush "#059669"
-    $brLoConfFg     = & $mkLoBrush "#6EE7B7"
-    $brLoTitleFg    = & $mkLoBrush "#E2E8F0"
-    $brLoPathFg     = & $mkLoBrush "#64748B"
-    $brLoSizeRegFg  = & $mkLoBrush "#94A3B8"
-    $brLoSizeFileFg = & $mkLoBrush "#38BDF8"
-    $brLoBtnBg      = & $mkLoBrush "#1E293B"
-    $brLoBtnFg      = & $mkLoBrush "#CBD5E1"
-    $brLoBadgeMap   = @{
-        "Ring0"    = (& $mkLoBrush "#B91C1C")
-        "Registry" = (& $mkLoBrush "#DC2626")
-        "Startup"  = (& $mkLoBrush "#E11D48")
-        "AppData"  = (& $mkLoBrush "#D97706")
-        "Hollow"   = (& $mkLoBrush "#2563EB")
-        "Shortcut" = (& $mkLoBrush "#7C3AED")
-        "Dump"     = (& $mkLoBrush "#9333EA")
-        "Default"  = (& $mkLoBrush "#0D9488")
-    }
+    $brLoItemBg     = $pal.ItemBg
+    $brLoItemBorder = $pal.ItemBorder
+    $brLoWhite      = $pal.White
+    $brLoConfBg     = $pal.ConfBg
+    $brLoConfBorder = $pal.ConfBorder
+    $brLoConfFg     = $pal.ConfFg
+    $brLoTitleFg    = $pal.ItemTitleFg
+    $brLoPathFg     = $pal.PathFg
+    $brLoSizeRegFg  = $pal.SizeRegFg
+    $brLoSizeFileFg = $pal.SizeFileFg
+    $brLoBtnBg      = $pal.BtnBg
+    $brLoBtnFg      = $pal.BtnFg
+    $brLoBadgeMap   = $pal.BadgeMap
 
     $itemsStack.AddHandler(
         [System.Windows.Controls.Primitives.ButtonBase]::ClickEvent,
@@ -28241,10 +29126,11 @@ function Show-LeftoverReviewDialog {
 
     foreach ($item in $Items) {
         $badgeKey = switch -Wildcard ($item.Type) {
-            "*Driver Ring 0*" { "Ring0" }
+            "*Driver*" { "Ring0" }
             "*Registry*" { "Registry" }
             "*Startup*" { "Startup" }
             "*R$([char]0x00E1)c AppData*" { "AppData" }
+            "*Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng*" { "Hollow" }
             "*V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c*" { "Hollow" }
             "*Shortcut*" { "Shortcut" }
             "*Crash Dump*" { "Dump" }
@@ -28402,8 +29288,8 @@ function Show-LeftoverReviewDialog {
     $rootGrid.Children.Add($scrollViewer) | Out-Null
 
     $bottomBar = New-Object System.Windows.Controls.Border
-    $bottomBar.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0D121B")
-    $bottomBar.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
+    $bottomBar.Background = $pal.BottomBg
+    $bottomBar.BorderBrush = $pal.ItemBorder
     $bottomBar.BorderThickness = New-Object System.Windows.Thickness(0, 1, 0, 0)
     $bottomBar.Padding = New-Object System.Windows.Thickness(18, 10, 18, 10)
 
@@ -28419,19 +29305,19 @@ function Show-LeftoverReviewDialog {
     $summaryText = New-Object System.Windows.Controls.TextBlock
     $summaryText.FontSize = 12
     $summaryText.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $summaryText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E2E8F0")
+    $summaryText.Foreground = $pal.ItemTitleFg
 
     $chkRecycleBin = New-Object System.Windows.Controls.CheckBox
     $chkRecycleBin.IsChecked = $true
     $chkRecycleBin.Margin = New-Object System.Windows.Thickness(0, 5, 0, 0)
-    $chkRecycleBin.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $chkRecycleBin.Foreground = $pal.SizeRegFg
     $chkRecycleBin.FontSize = 11.5
     $chkRecycleBin.Content = "Chuy$([char]0x1EC3)n file/th$([char]0x01B0) m$([char]0x1EE5)c v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c Windows (An to$([char]0x00E0)n, kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c n$([char]0x1EBF)u c$([char]0x1EA7)n)"
 
     $chkForceStop = New-Object System.Windows.Controls.CheckBox
     $chkForceStop.IsChecked = [bool]$ForceStopByDefault
     $chkForceStop.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
-    $chkForceStop.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FBBF24")
+    $chkForceStop.Foreground = $pal.WarnFg
     $chkForceStop.FontSize = 11.5
     $chkForceStop.Content = "Bu$([char]0x1ED9)c d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh & d$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)ang gi$([char]0x1EEF) t$([char]0x1EC7)p tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a (kh$([char]0x00F4)ng hi$([char]0x1EC7)n popup Windows)"
 
@@ -28503,19 +29389,26 @@ function Show-LeftoverReviewDialog {
     $btnCancel.Content = "H$([char]0x1EE7)y b$([char]0x1ECF)"
     $btnCancel.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
     $btnCancel.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
-    $btnCancel.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#1E293B")
-    $btnCancel.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#94A3B8")
+    $btnCancel.Background = $pal.ItemBorder
+    $btnCancel.Foreground = $pal.SizeRegFg
     $btnCancel.Add_Click({ $dialog.Close() })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
     $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0 }
+    $dialogBusyState = [PSCustomObject]@{ IsDeleting = $false }
+    $dialog.Add_Closing({
+        param($s, $e)
+        if ($dialogBusyState.IsDeleting -and -not $script:isWindowClosing) {
+            $e.Cancel = $true
+        }
+    })
 
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "X$([char]0x00F3)a S$([char]0x1EA1)ch M$([char]0x1EE5)c $([char]0x0110)$([char]0x00E3) Ch$([char]0x1ECD)n"
     $btnDelete.Padding = New-Object System.Windows.Thickness(14, 6, 14, 6)
-    $btnDelete.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#991B1B")
-    $btnDelete.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FEE2E2")
-    $btnDelete.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#DC2626")
+    $btnDelete.Background = $pal.DelBg
+    $btnDelete.Foreground = $pal.DelFg
+    $btnDelete.BorderBrush = $pal.DelBorder
     $btnDelete.FontWeight = [System.Windows.FontWeights]::Bold
     $btnDelete.Add_Click({
         $checkedItems = @($itemCheckBoxes | Where-Object { $_.IsChecked } | ForEach-Object { $_.Tag })
@@ -28535,6 +29428,7 @@ function Show-LeftoverReviewDialog {
         $rebootTotal = 0
         $accessDeniedTotal = 0
 
+        $dialogBusyState.IsDeleting = $true
         $btnDelete.IsEnabled = $false
         if ($btnCancel) { $btnCancel.IsEnabled = $false }
         if ($btnSelectAll) { $btnSelectAll.IsEnabled = $false }
@@ -28754,8 +29648,10 @@ function Show-LeftoverReviewDialog {
             $dialogResult.FreedBytes = $freed
             $dialogResult.RebootScheduled = $rebootTotal
             $dialogResult.AccessDeniedCount = $accessDeniedTotal
+            $dialogBusyState.IsDeleting = $false
             $dialog.Close()
         } finally {
+            $dialogBusyState.IsDeleting = $false
             $btnDelete.IsEnabled = $true
             if ($btnCancel) { $btnCancel.IsEnabled = $true }
             if ($btnSelectAll) { $btnSelectAll.IsEnabled = $true }
@@ -29010,14 +29906,19 @@ function Invoke-DeepAppUninstall {
         $AllInstalledApps
     } elseif ($canWaitNonBlocking -and $deepEngT -and $null -ne $deepEngT.GetMethod("GetInstalledAppsAsync")) {
         $appsTask = $deepEngT::GetInstalledAppsAsync()
-        [void](Wait-TaskNonBlocking -Task $appsTask -TimeoutSeconds 45)
+        $appsCancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+        [void](Wait-TaskNonBlocking -Task $appsTask -TimeoutSeconds 45 -CancelCheck $appsCancelCb)
         if ($appsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
             @($appsTask.Result)
-        } else {
+        } elseif (-not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
             Get-SystemInstalledAppsFast
+        } else {
+            @()
         }
-    } else {
+    } elseif (-not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
         Get-SystemInstalledAppsFast
+    } else {
+        @()
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
@@ -29026,7 +29927,7 @@ function Invoke-DeepAppUninstall {
         $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             $safeLoc = $loc
-            [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true)
+            [void](Invoke-ForceStopPathLockers -TargetPath $loc -IncludeServicesAndTasks:$true -AllowCancel:$AllowCancel)
         }
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
@@ -29103,7 +30004,7 @@ function Invoke-DeepAppUninstall {
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if ($safeLoc -and (Test-Path -LiteralPath $safeLoc)) {
-        [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true)
+        [void](Invoke-ForceStopPathLockers -TargetPath $safeLoc -IncludeServicesAndTasks:$true -AllowCancel:$AllowCancel)
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
@@ -29168,6 +30069,7 @@ function Invoke-PnpDeviceRescan {
 
 function Invoke-PnpDriverStoreCleanup {
     Log-Text "[*] $([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch danh s$([char]0x00E1)ch g$([char]0x00F3)i Driver OEM b$([char]0x00EA)n th$([char]0x1EE9) ba (pnputil /enum-drivers)..."
+    $p = $null
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "pnputil.exe"
@@ -29179,8 +30081,12 @@ function Invoke-PnpDriverStoreCleanup {
         $p = [System.Diagnostics.Process]::Start($pinfo)
         $outTask = $p.StandardOutput.ReadToEndAsync()
         $errTask = $p.StandardError.ReadToEndAsync()
-        $p.WaitForExit()
-        $raw = $outTask.Result
+        if (-not $p.WaitForExit(15000)) {
+            try { $p.Kill() } catch {}
+            Log-Text "[!] H$([char]0x1EBF)t th$([char]0x1EDD)i gian li$([char]0x1EC7)t k$([char]0x00EA) DriverStore (pnputil /enum-drivers)."
+            return
+        }
+        $raw = if ($outTask.Wait(1000)) { $outTask.Result } else { "" }
 
         $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, "(?i)(?:Published Name|T$([char]0x00EA)n $([char]0x0111)$([char]0x00E3) ph$([char]0x00E1)t h$([char]0x00E0)nh):\s*(oem\d+\.inf)")
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
@@ -29194,8 +30100,12 @@ function Invoke-PnpDriverStoreCleanup {
         $deletedCount = 0
         $inUseCount = 0
         $errorCount = 0
+        $userAborted = $false
+        $hasForms = ($null -ne ('System.Windows.Forms.Application' -as [type]))
 
         foreach ($inf in $oemList) {
+            if ($script:isWindowClosing -or $script:cancelRequested) { $userAborted = $true; break }
+            $delP = $null
             try {
                 $delPinfo = New-Object System.Diagnostics.ProcessStartInfo
                 $delPinfo.FileName = "pnputil.exe"
@@ -29208,10 +30118,32 @@ function Invoke-PnpDriverStoreCleanup {
 
                 $delOutTask = $delP.StandardOutput.ReadToEndAsync()
                 $delErrTask = $delP.StandardError.ReadToEndAsync()
-                $delP.WaitForExit()
+                $delDeadline = [DateTime]::UtcNow.AddSeconds(30)
+                $timedOutDel = $false
+                while (-not $delP.WaitForExit(150)) {
+                    if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
+                    if ($script:isWindowClosing -or $script:cancelRequested) {
+                        $userAborted = $true
+                        try { $delP.Kill() } catch {}
+                        try { [void]$delP.WaitForExit(500) } catch {}
+                        break
+                    }
+                    if ([DateTime]::UtcNow -ge $delDeadline) {
+                        $timedOutDel = $true
+                        try { $delP.Kill() } catch {}
+                        try { [void]$delP.WaitForExit(500) } catch {}
+                        break
+                    }
+                }
+                if ($userAborted) { break }
+                if ($timedOutDel) {
+                    $errorCount++
+                    Log-Text "   [WARN - Qu$([char]0x00E1) th$([char]0x1EDD)i gian x$([char]0x1EED) l$([char]0x00FD) g$([char]0x00F3)i $inf]"
+                    continue
+                }
 
-                $delOut = $delOutTask.Result
-                $delErr = $delErrTask.Result
+                $delOut = if ($delOutTask.Wait(1000)) { $delOutTask.Result } else { "" }
+                $delErr = if ($delErrTask.Wait(1000)) { $delErrTask.Result } else { "" }
                 $combined = ($delOut + "`n" + $delErr).Trim()
 
                 if ($delP.ExitCode -eq 0 -or $combined -match "deleted successfully|$([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a th$([char]0x00E0)nh c$([char]0x00F4)ng") {
@@ -29228,20 +30160,26 @@ function Invoke-PnpDriverStoreCleanup {
             } catch {
                 $errorCount++
                 Log-Text "   [!] L$([char]0x1ED7)i ngo$([char]0x1EA1)i l$([char]0x1EC7) khi x$([char]0x1EED) l$([char]0x00FD) ${inf}: $($_.Exception.Message)"
+            } finally {
+                if ($delP) { try { $delP.Dispose() } catch {} }
             }
-            [System.Windows.Forms.Application]::DoEvents()
+            if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
         }
 
-        if ($deletedCount -gt 0) {
+        if ($userAborted) {
+            Log-Text "[!] $([char]0x0110)$([char]0x00E3) d$([char]0x1EEB)ng d$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore theo y$([char]0x00EA)u c$([char]0x1EA7)u ($([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a: $deletedCount, b$([char]0x1ECF) qua: $inUseCount, l$([char]0x1ED7)i: $errorCount)."
+        } elseif ($deletedCount -gt 0) {
             Log-Text "[OK] Ho$([char]0x00E0)n t$([char]0x1EA5)t! $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $deletedCount g$([char]0x00F3)i driver OEM c$([char]0x0169) kh$([char]0x00F4)ng c$([char]0x00F2)n s$([char]0x1EED) d$([char]0x1EE5)ng ($inUseCount g$([char]0x00F3)i $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n)."
-        } else {
+        } elseif ($errorCount -eq 0) {
             Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) $($oemList.Count) g$([char]0x00F3)i driver OEM $([char]0x0111)$([char]0x1EC1)u $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n."
         }
-        if ($errorCount -gt 0) {
+        if ($errorCount -gt 0 -and -not $userAborted) {
             Log-Text "[!] C$([char]0x00F3) $errorCount g$([char]0x00F3)i driver g$([char]0x1EB7)p l$([char]0x1ED7)i trong qu$([char]0x00E1) tr$([char]0x00EC)nh x$([char]0x1EED) l$([char]0x00FD)."
         }
     } catch {
         Log-Text "[!] L$([char]0x1ED7)i khi d$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore: $($_.Exception.Message)"
+    } finally {
+        if ($p) { try { $p.Dispose() } catch {} }
     }
 }
 
@@ -29294,45 +30232,71 @@ function Reset-WindowsUpdateEngine {
         Stop-Service -Name $s -Force -ErrorAction SilentlyContinue
     }
 
-    Start-Sleep -Milliseconds 1500
-
-    Log-Text "[*] $([char]0x0110)ang l$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m SoftwareDistribution v$([char]0x00E0) Catroot2..."
-    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-
-    $sdPath = "C:\Windows\SoftwareDistribution"
-    $sdRenamed = $true
-    if (Test-Path -LiteralPath $sdPath) {
-        Get-ChildItem -LiteralPath "C:\Windows" -Filter "SoftwareDistribution.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    $sdRenamed = $false
+    $crRenamed = $false
+    try {
+        $deadline = [DateTime]::UtcNow.AddMilliseconds(3000)
+        $hasForms = ($null -ne ('System.Windows.Forms.Application' -as [type]))
+        while ([DateTime]::UtcNow -lt $deadline) {
+            if ($script:isWindowClosing) { break }
+            $stillRunning = $false
+            foreach ($s in $services) {
+                try {
+                    $svc = Get-Service -Name $s -ErrorAction SilentlyContinue
+                    if ($svc -and "$($svc.Status)" -ne 'Stopped') {
+                        $stillRunning = $true
+                        break
+                    }
+                } catch {}
+            }
+            if (-not $stillRunning) { break }
+            if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
+            Start-Sleep -Milliseconds 120
         }
-        $backupSD = "SoftwareDistribution.bak_$stamp"
-        Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $sdPath) {
-            $sdRenamed = $false
-            Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x0111)$([char]0x1ED5)i t$([char]0x00EA)n SoftwareDistribution (t$([char]0x1EC7)p $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a b$([char]0x1EDF)i ti$([char]0x1EBF)n tr$([char]0x00EC)nh kh$([char]0x00E1)c)."
+
+        if (-not $script:isWindowClosing) {
+            Log-Text "[*] $([char]0x0110)ang l$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m SoftwareDistribution v$([char]0x00E0) Catroot2..."
+            $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $winDir = if ($env:SystemRoot) { $env:SystemRoot } elseif ($env:WINDIR) { $env:WINDIR } else { "C:\Windows" }
+            $sys32Dir = Join-Path $winDir "System32"
+
+            $sdPath = Join-Path $winDir "SoftwareDistribution"
+            $sdRenamed = $true
+            if (Test-Path -LiteralPath $sdPath) {
+                Get-ChildItem -LiteralPath $winDir -Filter "SoftwareDistribution.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                $backupSD = "SoftwareDistribution.bak_$stamp"
+                Rename-Item -LiteralPath $sdPath -NewName $backupSD -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $sdPath) {
+                    $sdRenamed = $false
+                    Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x0111)$([char]0x1ED5)i t$([char]0x00EA)n SoftwareDistribution (t$([char]0x1EC7)p $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a b$([char]0x1EDF)i ti$([char]0x1EBF)n tr$([char]0x00EC)nh kh$([char]0x00E1)c)."
+                }
+            }
+
+            $crPath = Join-Path $sys32Dir "catroot2"
+            $crRenamed = $true
+            if (Test-Path -LiteralPath $crPath) {
+                Get-ChildItem -LiteralPath $sys32Dir -Filter "catroot2.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                $backupCR = "catroot2.bak_$stamp"
+                Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $crPath) {
+                    $crRenamed = $false
+                    Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x0111)$([char]0x1ED5)i t$([char]0x00EA)n catroot2 (t$([char]0x1EC7)p $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a)."
+                }
+            }
         }
+    } finally {
+        Log-Text "[*] Kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i c$([char]0x00E1)c d$([char]0x1ECB)ch v$([char]0x1EE5) h$([char]0x1EC7) th$([char]0x1ED1)ng..."
+        Start-Service -Name "cryptsvc" -ErrorAction SilentlyContinue
+        Start-Service -Name "bits" -ErrorAction SilentlyContinue
+        Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
+        Start-Service -Name "dosvc" -ErrorAction SilentlyContinue
     }
 
-    $crPath = "C:\Windows\System32\catroot2"
-    $crRenamed = $true
-    if (Test-Path -LiteralPath $crPath) {
-        Get-ChildItem -LiteralPath "C:\Windows\System32" -Filter "catroot2.bak_*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        $backupCR = "catroot2.bak_$stamp"
-        Rename-Item -LiteralPath $crPath -NewName $backupCR -Force -ErrorAction SilentlyContinue
-        if (Test-Path -LiteralPath $crPath) {
-            $crRenamed = $false
-            Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x0111)$([char]0x1ED5)i t$([char]0x00EA)n catroot2 (t$([char]0x1EC7)p $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a)."
-        }
-    }
-
-    Log-Text "[*] Kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i c$([char]0x00E1)c d$([char]0x1ECB)ch v$([char]0x1EE5) h$([char]0x1EC7) th$([char]0x1ED1)ng..."
-    Start-Service -Name "cryptsvc" -ErrorAction SilentlyContinue
-    Start-Service -Name "bits" -ErrorAction SilentlyContinue
-    Start-Service -Name "wuauserv" -ErrorAction SilentlyContinue
-    Start-Service -Name "dosvc" -ErrorAction SilentlyContinue
-
+    if ($script:isWindowClosing) { return }
     if ($sdRenamed -and $crRenamed) {
         Log-Text "[OK] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i t$([char]0x1EA1)o l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update v$([char]0x00E0) x$([char]0x00F3)a s$([char]0x1EA1)ch cache th$([char]0x00E0)nh c$([char]0x00F4)ng!"
     } else {
@@ -29399,14 +30363,27 @@ function Reset-NetworkInterfaceStack {
 }
 
 function Clear-SystemTempFiles {
-    $tempPaths = @($env:TEMP, "C:\Windows\Temp")
+    $winDir = if ($env:SystemRoot) { $env:SystemRoot } elseif ($env:WINDIR) { $env:WINDIR } else { "C:\Windows" }
+    $tempPaths = @($env:TEMP, (Join-Path $winDir "Temp")) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    $removedCount = 0
+    $skippedCount = 0
     foreach ($p in $tempPaths) {
         if (Test-Path -LiteralPath $p) {
             Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                if (($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    $skippedCount++
+                    return
+                }
+                try {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
+                    $removedCount++
+                } catch {
+                    $skippedCount++
+                }
             }
         }
     }
+    Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n $removedCount m$([char]0x1EE5)c t$([char]0x1EC7)p t$([char]0x1EA1)m h$([char]0x1EC7) th$([char]0x1ED1)ng ($skippedCount m$([char]0x1EE5)c $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng/b$([char]0x1ECF) qua)."
 }
 
 function Clear-SystemEventLogs {
@@ -29444,6 +30421,7 @@ $btnCancelAction   = $window.FindName("btnCancelAction")
 $borderQueueBadge  = $window.FindName("borderQueueBadge")
 $txtQueueBadge     = $window.FindName("txtQueueBadge")
 $progressBar       = $window.FindName("progressBar")
+$btnScanInstalled  = $window.FindName("btnScanInstalled")
 $txtSelectionCount = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
@@ -29458,7 +30436,10 @@ $script:brushHeaderCntBg = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushHeaderCntFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x8A, 0x9E, 0xB8)); $script:brushHeaderCntFg.Freeze()
 $script:brushSeparator   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x27, 0x34, 0x4A)); $script:brushSeparator.Freeze()
 
-$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x19, 0x22, 0x34)); $script:brushRowHover.Freeze()
+$script:brushRowBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x14, 0x1C, 0x2B)); $script:brushRowBg.Freeze()
+$script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x27, 0x3B)); $script:brushRowHover.Freeze()
+$script:brushRowBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3E)); $script:brushRowBorder.Freeze()
+$script:brushRowHoverBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x35, 0x50, 0x75)); $script:brushRowHoverBdr.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
 $script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
 $script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Arial")
@@ -29477,11 +30458,14 @@ $script:brushIconBadgeLightBg   = [System.Windows.Media.SolidColorBrush]::new([S
 $script:brushIconBadgeBorder    = [System.Windows.Media.Brushes]::Transparent
 
 $script:styleAppRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
-$script:styleAppRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushTransparent)))
+$script:styleAppRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushRowBg)))
+$script:styleAppRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushRowBorder)))
+$script:styleAppRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderThicknessProperty, ([System.Windows.Thickness]::new(1)))))
 $trigRowHover = New-Object System.Windows.Trigger
 $trigRowHover.Property = [System.Windows.UIElement]::IsMouseOverProperty
 $trigRowHover.Value = $true
 $trigRowHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushRowHover)))
+$trigRowHover.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushRowHoverBdr)))
 $script:styleAppRow.Triggers.Add($trigRowHover)
 $script:styleAppRow.Seal()
 
@@ -29537,6 +30521,10 @@ if (-not ("DuckUtil.SmoothScrollController" -as [type])) {
             }
         }
     } catch {}
+}
+
+if ('DuckUtil.ConsoleHelper' -as [type]) {
+    try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {}
 }
 
 $appsScrollViewer = $window.FindName("AppsScrollViewer")
@@ -29640,27 +30628,23 @@ $script:allCardsPreparedInAllCols = $false
 $script:currentGroupInHostKey     = ""
 $script:activeBorrowedCards       = [System.Collections.Generic.List[hashtable]]::new()
 $script:tab0AllAssetsSettled      = $false
+$script:uninstallerStale          = $false
 $script:lastScrollSyncOffset      = -9999.0
 $script:uiPipeType                = "DuckUtil.UiAssetPipeline" -as [type]
 $script:uiPipeHasIncremental      = ($null -ne $script:uiPipeType) -and ($null -ne $script:uiPipeType.GetMethod("EnqueueRemoteIcons"))
 
 function Try-EnableCompletedCardCaches {
-    if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:sharedCardCache) { return }
+    if ($script:isWindowClosing -or -not $script:hasCompletedAppScan) { return }
     $isIdleNow = $script:uiPipeHasIncremental -and [DuckUtil.UiAssetPipeline]::IsRemoteIdle
     $allSettled = $true
     foreach ($cd in $script:cardDescriptors) {
         if (-not $cd.Attached -or -not $cd.IconsEnqueued) {
             $allSettled = $false
+            break
         }
-        if ($cd -eq $script:activeSingleCatDesc -or -not $cd.Attached -or $cd.CacheEnabled) {
-            if (-not $cd.CacheEnabled) { $allSettled = $false }
-            continue
-        }
-        if ($cd.TotalIcons -eq 0 -or ($cd.IconsEnqueued -and ($cd.LoadedIcons -ge $cd.TotalIcons -or $isIdleNow))) {
-            $cd.Card.CacheMode = $script:sharedCardCache
-            $cd.CacheEnabled = $true
-        } else {
+        if ($cd.TotalIcons -gt 0 -and $cd.LoadedIcons -lt $cd.TotalIcons -and -not $isIdleNow) {
             $allSettled = $false
+            break
         }
     }
     if ($allSettled -and $script:activeCatalogCategory -eq "__ALL__") {
@@ -29901,7 +30885,7 @@ $marginRowBorder  = New-Object System.Windows.Thickness(0, 1, 0, 1)
 $paddingRow       = New-Object System.Windows.Thickness(5, 0, 4, 0)
 $marginIcon       = New-Object System.Windows.Thickness(7, 0, 8, 0)
 $cornerCard       = New-Object System.Windows.CornerRadius(2)
-$cornerRow        = New-Object System.Windows.CornerRadius(1)
+$cornerRow        = New-Object System.Windows.CornerRadius(2)
 $thicknessZero    = New-Object System.Windows.Thickness(0)
 $thicknessOne     = New-Object System.Windows.Thickness(1)
 
@@ -29994,6 +30978,7 @@ $script:uninstallQueuedKeys = [System.Collections.Generic.HashSet[string]]::new(
 $script:isUpdatingUninstaller = $false
 $script:isSortingUninstaller = $false
 $script:uninstallerLoadQueued = $false
+$script:pendingForceUninstallerLoad = $false
 $script:deferredUninstallerLoad = $false
 $script:suppressUninstallerSelectionCount = $false
 if (-not (Get-Variable -Name isWindowClosing -Scope Script -ErrorAction SilentlyContinue)) {
@@ -30004,9 +30989,12 @@ if (-not (Get-Variable -Name isScanningApps -Scope Script -ErrorAction SilentlyC
 }
 
 Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
-if (-not ('DuckUtil.WpfWin32Window' -as [type])) {
+
+function Get-WpfOwnerWin32Window {
+    if (-not $window -or $script:isWindowClosing) { return $null }
     try {
-        Add-Type -TypeDefinition @"
+        if (-not ('DuckUtil.WpfWin32Window' -as [type])) {
+            Add-Type -TypeDefinition @"
 using System;
 using System.Windows.Forms;
 namespace DuckUtil {
@@ -30017,12 +31005,7 @@ namespace DuckUtil {
     }
 }
 "@ -ReferencedAssemblies ([System.Windows.Forms.IWin32Window].Assembly.Location) -ErrorAction SilentlyContinue
-    } catch {}
-}
-
-function Get-WpfOwnerWin32Window {
-    if (-not $window -or $script:isWindowClosing) { return $null }
-    try {
+        }
         $hwnd = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
         if ($hwnd -ne [IntPtr]::Zero -and ('DuckUtil.WpfWin32Window' -as [type])) {
             return (New-Object DuckUtil.WpfWin32Window($hwnd))
@@ -30516,11 +31499,22 @@ function Invoke-GuardedAction {
     param(
         [string]$ActionName,
         [scriptblock]$Action,
-        [switch]$DeferExpand
+        [switch]$DeferExpand,
+        [switch]$AllowDuringUninstallerLoad
     )
     if ($script:isWindowClosing) { return }
-    if ($script:isActionRunning -or $script:isScanningApps -or $script:isUpdatingUninstaller -or $script:isUninstallingQueue) {
+    if ($script:isAutoRefreshing -and (Get-Command "Stop-ActiveAutoScan" -ErrorAction SilentlyContinue)) {
+        Stop-ActiveAutoScan
+        $script:isAutoRefreshing = $false
+        $script:cancelAutoScan = $false
+        $script:isScanningApps = $false
+    }
+    $busyUninstaller = (-not $AllowDuringUninstallerLoad) -and $script:isUpdatingUninstaller
+    if ($script:isActionRunning -or $script:isScanningApps -or $busyUninstaller -or $script:isUninstallingQueue) {
         Log-Text "[WARN] $([char]0x0110)ang c$([char]0x00F3) m$([char]0x1ED9)t t$([char]0x00E1)c v$([char]0x1EE5) kh$([char]0x00E1)c $([char]0x0111)ang th$([char]0x1EF1)c thi ($ActionName). Vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i!"
+        if ($DeferExpand -and -not $script:isActionRunning -and -not $script:isUninstallingQueue -and $txtStatus) {
+            $txtStatus.Text = "$([char]0x0110)ang c$([char]0x00F3) t$([char]0x00E1)c v$([char]0x1EE5) n$([char]0x1EC1)n kh$([char]0x00E1)c ch$([char]0x1EA1)y ($ActionName), vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i..."
+        }
         return
     }
     if (-not $DeferExpand) {
@@ -30536,7 +31530,11 @@ function Invoke-GuardedAction {
         $script:isActionRunning = $false
         $script:cancelRequested = $false
         $script:isScanningApps = $false
-        $script:isUpdatingUninstaller = $false
+        $script:isAutoRefreshing = $false
+        $script:cancelAutoScan = $false
+        if (-not $AllowDuringUninstallerLoad) {
+            $script:isUpdatingUninstaller = $false
+        }
         $script:suppressSelectionCount = $false
         $script:suppressUninstallerSelectionCount = $false
         if ($btnCancelAction) {
@@ -30550,19 +31548,29 @@ function Invoke-GuardedAction {
             try { $borderQueueBadge.Visibility = [System.Windows.Visibility]::Collapsed } catch {}
         }
         if ($progressBar) {
-            try { $progressBar.IsIndeterminate = $false } catch {}
+            try {
+                $progressBar.IsIndeterminate = $false
+                $progressBar.Value = 0
+            } catch {}
         }
         if (-not $script:isWindowClosing) {
             try { Flush-PendingIconCache -MaxDecode 6 } catch {}
             if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0 -and $script:iconSyncTimer) {
                 try { $script:iconSyncTimer.Start() } catch {}
             }
-            if (-not $script:uninstallerLoadedOnce -and ($script:deferredUninstallerLoad -or ($script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible))) {
+            if ((-not $script:uninstallerLoadedOnce -or $script:uninstallerStale) -and ($script:deferredUninstallerLoad -or ($script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible))) {
+                $script:pendingForceUninstallerLoad = [bool]$script:uninstallerStale
                 $script:deferredUninstallerLoad = $false
+                $script:uninstallerStale = $false
                 if ($window -and $window.Dispatcher) {
                     $window.Dispatcher.BeginInvoke(
                         [System.Windows.Threading.DispatcherPriority]::Background,
-                        [Action]{ Update-UninstallerList }
+                        [Action]{
+                            if ($script:isWindowClosing) { return }
+                            $fUninst = [bool]$script:pendingForceUninstallerLoad
+                            $script:pendingForceUninstallerLoad = $false
+                            Update-UninstallerList -Force:$fUninst
+                        }
                     ) | Out-Null
                 }
             }
@@ -30666,19 +31674,25 @@ function Set-ActiveTab {
             try { Sync-Tab0ViewportAssets } catch {}
         }
     } elseif ($index -eq 1) {
-        if (-not $script:uninstallerLoadedOnce) {
+        if (-not $script:uninstallerLoadedOnce -or $script:uninstallerStale) {
+            $needForceRefresh = [bool]$script:uninstallerStale
             if ($script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller) {
                 $script:deferredUninstallerLoad = $true
-                if ($txtUninstallerSummary) {
+                if ($txtUninstallerSummary -and -not $script:uninstallerLoadedOnce) {
                     $txtUninstallerSummary.Text = "$([char]0x0110)ang ch$([char]0x1EDD) t$([char]0x00E1)c v$([char]0x1EE5) hi$([char]0x1EC7)n t$([char]0x1EA1)i ho$([char]0x00E0)n t$([char]0x1EA5)t $([char]0x0111)$([char]0x1EC3) t$([char]0x1EA3)i danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng..."
                 }
             } elseif (-not $script:uninstallerLoadQueued -and $window -and $window.Dispatcher) {
                 $script:uninstallerLoadQueued = $true
+                $script:pendingForceUninstallerLoad = [bool]$needForceRefresh
+                $script:uninstallerStale = $false
                 $window.Dispatcher.BeginInvoke(
                     [System.Windows.Threading.DispatcherPriority]::Loaded,
                     [Action]{
                         $script:uninstallerLoadQueued = $false
-                        Update-UninstallerList
+                        if ($script:isWindowClosing) { return }
+                        $fUninst = [bool]$script:pendingForceUninstallerLoad
+                        $script:pendingForceUninstallerLoad = $false
+                        Update-UninstallerList -Force:$fUninst
                     }
                 ) | Out-Null
             }
@@ -30692,6 +31706,9 @@ function Set-ActiveTab {
                 Start-UninstallerIconPipelineIfNeeded
             }
         }
+    }
+    if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
+        Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "tab"
     }
 }
 
@@ -31319,7 +32336,7 @@ function Apply-UninstallerFilter {
         if ($txtUninstallerSummary -and $stats) {
             $vMb = [double]$stats.VisibleBytes / 1MB
             $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
-            $txtUninstallerSummary.Text = "$([char]0x0110)ang hi$([char]0x1EC3)n th$([char]0x1ECB) $($stats.VisibleCount) / $($stats.TotalCount) $([char]0x1EE9)ng d$([char]0x1EE5)ng (T$([char]0x1ED5)ng: $totalSizeStr $([char]0x2022) $($stats.BrokenCount) l$([char]0x1ED7)i/m$([char]0x1ED3) c$([char]0x00F4)i)"
+            $txtUninstallerSummary.Text = "$([char]0x0110)ang hi$([char]0x1EC3)n th$([char]0x1ECB) $($stats.VisibleCount) / $($stats.TotalCount) $([char]0x1EE9)ng d$([char]0x1EE5)ng (T$([char]0x1ED5)ng: $totalSizeStr $([char]0x2022) $($stats.BrokenCount) b$([char]0x1ECB) l$([char]0x1ED7)i / c$([char]0x00F2)n s$([char]0x00F3)t)"
         }
         Update-UninstallerSelectionButtons -Count $(if ($stats) { [int]$stats.SelectedCount } else { 0 })
         return
@@ -31371,7 +32388,7 @@ function Apply-UninstallerFilter {
         $total = $script:cachedUninstallerApps.Count
         $vMb = [double]$visibleBytes / 1MB
         $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
-        $txtUninstallerSummary.Text = "$([char]0x0110)ang hi$([char]0x1EC3)n th$([char]0x1ECB) $visibleCount / $total $([char]0x1EE9)ng d$([char]0x1EE5)ng (T$([char]0x1ED5)ng: $totalSizeStr $([char]0x2022) $brokenCount l$([char]0x1ED7)i/m$([char]0x1ED3) c$([char]0x00F4)i)"
+        $txtUninstallerSummary.Text = "$([char]0x0110)ang hi$([char]0x1EC3)n th$([char]0x1ECB) $visibleCount / $total $([char]0x1EE9)ng d$([char]0x1EE5)ng (T$([char]0x1ED5)ng: $totalSizeStr $([char]0x2022) $brokenCount b$([char]0x1ECB) l$([char]0x1ED7)i / c$([char]0x00F2)n s$([char]0x00F3)t)"
     }
     Update-UninstallerSelectionCount
 }
@@ -31872,7 +32889,7 @@ function Update-UninstallerList {
                 if ($app.IsBrokenOrphan) {
                     $statusBorder.Background = $script:brushUninstStatusBrokenBg
                     $statusBorder.BorderBrush = $script:brushUninstStatusBrokenBorder
-                    $statusTb.Text = "X$([char]0x00F3)a sai c$([char]0x00E1)ch"
+                    $statusTb.Text = "L$([char]0x1ED7)i / C$([char]0x00F2)n s$([char]0x00F3)t"
                     $statusTb.Foreground = $script:brushUninstBadgeBrokenFg
                 } else {
                     $statusBorder.Background = $script:brushUninstStatusOkBg
@@ -32328,6 +33345,19 @@ function Start-UninstallQueueExecution {
 
     if (-not $script:isWindowClosing -and $completedApps -gt 0) {
         Update-UninstallerList -Force
+        if (-not $script:isWindowClosing -and $window -and $window.Dispatcher) {
+            $window.Dispatcher.BeginInvoke(
+                [System.Windows.Threading.DispatcherPriority]::Background,
+                [Action]{
+                    if (-not $script:isWindowClosing -and (Get-Command "Scan-And-ColorizeApps" -ErrorAction SilentlyContinue)) {
+                        Scan-And-ColorizeApps -Quiet
+                    }
+                    if (-not $script:isWindowClosing -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
+                        Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "uninstall"
+                    }
+                }
+            ) | Out-Null
+        }
     }
 }
 
@@ -32478,9 +33508,9 @@ if ($btnForceStopUninstall) {
 
 if ($btnScanOrphans) {
     $btnScanOrphans.Add_Click({
-        Invoke-GuardedAction "Qu$([char]0x00E9)t r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) & App x$([char]0x00F3)a sai c$([char]0x00E1)ch" -DeferExpand {
+        Invoke-GuardedAction "Qu$([char]0x00E9)t t$([char]0x1EC7)p r$([char]0x00E1)c & d$([char]0x1EEF) li$([char]0x1EC7)u c$([char]0x00F2)n s$([char]0x00F3)t" -DeferExpand {
             if ($script:isWindowClosing) { return }
-            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0) & driver Ring-0 m$([char]0x1ED3) c$([char]0x00F4)i..." }
+            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang qu$([char]0x00E9)t t$([char]0x1EC7)p r$([char]0x00E1)c, Registry & driver c$([char]0x00F2)n s$([char]0x00F3)t..." }
             if ($progressBar) { $progressBar.IsIndeterminate = $true }
             try {
                 if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
@@ -32488,16 +33518,16 @@ if ($btnScanOrphans) {
                     if ($progressBar) { $progressBar.IsIndeterminate = $false }
                     if ($script:isWindowClosing) { return }
                     if ($orphans.Count -eq 0) {
-                        if ($txtStatus) { $txtStatus.Text = "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)" }
+                        if ($txtStatus) { $txtStatus.Text = "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n d$([char]0x1EEF) li$([char]0x1EC7)u r$([char]0x00E1)c c$([char]0x00F2)n s$([char]0x00F3)t" }
                         Show-OwnedMessageBox `
-                            -Text "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p tin r$([char]0x00E1)c ho$([char]0x1EB7)c $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o b$([char]0x1ECB) x$([char]0x00F3)a sai c$([char]0x00E1)ch tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng!" `
-                            -Caption "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0)" `
+                            -Text "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p r$([char]0x00E1)c, Registry hay $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x00E0)o b$([char]0x1ECB) l$([char]0x1ED7)i/c$([char]0x00F2)n s$([char]0x00F3)t tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng!" `
+                            -Caption "Qu$([char]0x00E9)t T$([char]0x1EC7)p R$([char]0x00E1)c & D$([char]0x1EEF) Li$([char]0x1EC7)u C$([char]0x00F2)n S$([char]0x00F3)t" `
                             -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
                             -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
                     } else {
-                        if ($txtStatus) { $txtStatus.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($orphans.Count) m$([char]0x1EE5)c r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)" }
+                        if ($txtStatus) { $txtStatus.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($orphans.Count) m$([char]0x1EE5)c d$([char]0x1EEF) li$([char]0x1EC7)u c$([char]0x00F2)n s$([char]0x00F3)t" }
                         if (-not $script:isWindowClosing -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
-                            Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Qu$([char]0x00E9)t R$([char]0x00E1)c T$([char]0x1ED3)n D$([char]0x01B0) & App X$([char]0x00F3)a Sai C$([char]0x00E1)ch"
+                            Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Qu$([char]0x00E9)t T$([char]0x1EC7)p R$([char]0x00E1)c & D$([char]0x1EEF) Li$([char]0x1EC7)u C$([char]0x00F2)n S$([char]0x00F3)t"
                         }
                         if (-not $script:isWindowClosing) {
                             Update-UninstallerList -Force
@@ -32506,7 +33536,7 @@ if ($btnScanOrphans) {
                 }
             } finally {
                 if ($progressBar) { $progressBar.IsIndeterminate = $false }
-                if ($txtStatus -and -not $script:isWindowClosing -and $txtStatus.Text -like "$([char]0x0110)ang qu$([char]0x00E9)t r$([char]0x00E1)c*") {
+                if ($txtStatus -and -not $script:isWindowClosing -and $txtStatus.Text -like "$([char]0x0110)ang qu$([char]0x00E9)t t$([char]0x1EC7)p r$([char]0x00E1)c*") {
                     $txtStatus.Text = "S$([char]0x1EB5)n s$([char]0x00E0)ng"
                 }
             }
@@ -32618,8 +33648,12 @@ function Update-SelectionCount {
     if ($txtSelectionCount) {
         $txtSelectionCount.Text = "$selectedCount app $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
     }
+    if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
+        Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "selection"
+    }
 }
 
+$allAndGroupHost      = $window.FindName("AllAndGroupHost")
 $cardsMasonryHost     = $window.FindName("CardsMasonryHost")
 $groupMasonrySection  = $window.FindName("GroupMasonrySection")
 $groupMasonryHost     = $window.FindName("GroupMasonryHost")
@@ -32644,6 +33678,8 @@ $script:singleCatCols = @(
     $window.FindName("SingleCatCol1"),
     $window.FindName("SingleCatCol2")
 )
+$script:singleCatDivider0 = $window.FindName("SingleCatDivider0")
+$script:singleCatDivider1 = $window.FindName("SingleCatDivider1")
 $script:groupCols = @(
     $window.FindName("GroupCol0"),
     $window.FindName("GroupCol1"),
@@ -32654,6 +33690,23 @@ $cardCols = @(
     $window.FindName("CardsCol1"),
     $window.FindName("CardsCol2")
 ) | Where-Object { $null -ne $_ }
+
+$script:masonryPanel    = $null
+$script:hasMasonryPanel = $false
+if ($cardsMasonryHost -and ("DuckUtil.MasonryPanel" -as [type])) {
+    try {
+        $cardsMasonryHost.ColumnDefinitions.Clear()
+        $cardsMasonryHost.Children.Clear()
+        $script:masonryPanel = [DuckUtil.MasonryPanel]::new()
+        $script:masonryPanel.Columns = 3
+        $script:masonryPanel.ColumnSpacing = 8.0
+        [void]$cardsMasonryHost.Children.Add($script:masonryPanel)
+        $script:hasMasonryPanel = $true
+    } catch {
+        $script:masonryPanel = $null
+        $script:hasMasonryPanel = $false
+    }
+}
 
 $script:remoteBmpCache = [System.Collections.Generic.Dictionary[string, System.Windows.Media.Imaging.BitmapImage]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
@@ -32683,6 +33736,9 @@ $script:linkClickHandler = [System.Windows.Input.MouseButtonEventHandler]{
         $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
         try {
             Start-Process $targetUrl
+            if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
+                Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "external-link"
+            }
         } catch {
             Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) trang web: $targetUrl"
         }
@@ -32756,6 +33812,9 @@ if ($cardsContainer -and $script:hasFastCatalogRowBuilder) {
                         $targetUrl = if ($domain.StartsWith("http")) { $domain } else { "https://$domain" }
                         try {
                             Start-Process $targetUrl
+                            if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
+                                Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "external-link"
+                            }
                         } catch {
                             Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) trang web: $targetUrl"
                         }
@@ -32800,9 +33859,6 @@ foreach ($cat in $categories) {
     $cardBorder.Padding = $paddingCard
     $cardBorder.Height = [double]::NaN
     $cardBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
-    if (-not $script:hasFastCatalogRowBuilder) {
-        $cardBorder.CacheMode = $script:sharedCardCache
-    }
 
     $cardStack = [System.Windows.Controls.StackPanel]::new()
     $appsInCat = $appsByCategory[$cat]
@@ -33211,7 +34267,12 @@ foreach ($cat in $categories) {
 
     $cardBorder.Child = $cardStack
 
-    if (-not $script:hasFastCatalogRowBuilder -or $cardEstTop -lt 950.0) {
+    if ($script:hasMasonryPanel -and $script:masonryPanel) {
+        [void]$script:masonryPanel.Children.Add($cardBorder)
+        $cardDesc.Attached = $true
+        $cardDesc.ColPanel = $script:masonryPanel
+        $cardDesc.AllColPanel = $script:masonryPanel
+    } elseif (-not $script:hasFastCatalogRowBuilder -or $cardEstTop -lt 950.0) {
         if ($targetColPanel) {
             $targetColPanel.Children.Add($cardBorder) | Out-Null
         }
@@ -33473,6 +34534,10 @@ function Update-SidebarVisuals {
 
 function Ensure-AllMasonryReady {
     if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() }
+    if ($script:hasMasonryPanel) {
+        $script:allCardsPreparedInAllCols = $true
+        return
+    }
     if ($script:allCardsPreparedInAllCols) { return }
     foreach ($cd in $script:cardDescriptors) {
         if (-not $cd.Attached -and $cd.AllColPanel) {
@@ -33487,7 +34552,8 @@ function Ensure-AllMasonryReady {
 }
 
 function Restore-BorrowedGroupCards {
-    if ($script:activeBorrowedCards.Count -eq 0) {
+    if ($script:hasMasonryPanel -or $script:activeBorrowedCards.Count -eq 0) {
+        $script:activeBorrowedCards.Clear()
         $script:currentGroupInHostKey = ""
         return
     }
@@ -33550,20 +34616,21 @@ function Set-ActiveCatalogCategory {
         if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
         return
     }
+    if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
+        Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "category"
+    }
 
     $wasSingleDesc = $script:activeSingleCatDesc
     if ($wasSingleDesc) {
         if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
-        foreach ($scCol in $script:singleCatCols) {
-            if ($scCol) { $scCol.Children.Clear() }
-        }
-        foreach ($r in $wasSingleDesc.Rows) {
-            [void]$wasSingleDesc.RowsStack.Children.Add($r)
-        }
-        if ($wasSingleDesc.TotalIcons -eq 0 -or $wasSingleDesc.LoadedIcons -ge $wasSingleDesc.TotalIcons) {
-            if ($script:sharedCardCache) {
-                $wasSingleDesc.Card.CacheMode = $script:sharedCardCache
-                $wasSingleDesc.CacheEnabled = $true
+        if ($script:uiPipeType -and $null -ne $script:uiPipeType.GetMethod("RestoreRowsFromColumns")) {
+            [DuckUtil.UiAssetPipeline]::RestoreRowsFromColumns($wasSingleDesc.RowsStack, [System.Windows.Controls.Panel[]]$script:singleCatCols, $wasSingleDesc.Rows)
+        } else {
+            foreach ($scCol in $script:singleCatCols) {
+                if ($scCol) { $scCol.Children.Clear() }
+            }
+            foreach ($r in $wasSingleDesc.Rows) {
+                [void]$wasSingleDesc.RowsStack.Children.Add($r)
             }
         }
         $script:activeSingleCatDesc = $null
@@ -33584,11 +34651,75 @@ function Set-ActiveCatalogCategory {
     Update-SidebarVisuals -Animate $true
     if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
 
+    if ($script:hasMasonryPanel -and $script:masonryPanel) {
+        if ($targetKey -eq "__ALL__") {
+            if ($groupFilterBanner -and $groupFilterBanner.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                $groupFilterBanner.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            foreach ($cdItem in $script:cardDescriptors) {
+                if ($cdItem.Card.Visibility -ne [System.Windows.Visibility]::Visible) {
+                    $cdItem.Card.Visibility = [System.Windows.Visibility]::Visible
+                }
+            }
+            $script:masonryPanel.Columns = 3
+            $script:currentGroupInHostKey = ""
+            $script:activeMasonryDescriptors = $null
+            $script:activeAllowedCategories = $null
+            if ($allAndGroupHost -and $allAndGroupHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+                $allAndGroupHost.Visibility = [System.Windows.Visibility]::Visible
+            }
+            if ($cardsMasonryHost -and $cardsMasonryHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+                $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
+            }
+            if (-not $script:tab0AllAssetsSettled) {
+                Sync-Tab0ViewportAssets
+            }
+            return
+        }
+
+        if ($isGroupTarget) {
+            $grp = $script:catalogGroupByKey[$targetKey]
+            $grpDescs = [System.Collections.Generic.List[hashtable]]::new()
+            $catSet = $grp.CategorySet
+            foreach ($cdItem in $script:cardDescriptors) {
+                if ($catSet.Contains($cdItem.Category)) {
+                    if ($cdItem.Card.Visibility -ne [System.Windows.Visibility]::Visible) {
+                        $cdItem.Card.Visibility = [System.Windows.Visibility]::Visible
+                    }
+                    [void]$grpDescs.Add($cdItem)
+                } elseif ($cdItem.Card.Visibility -ne [System.Windows.Visibility]::Collapsed) {
+                    $cdItem.Card.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
+            $colLimit = if ($grpDescs.Count -le 2) { 2 } else { 3 }
+            $script:masonryPanel.Columns = $colLimit
+            $script:currentGroupInHostKey = $targetKey
+            $script:activeMasonryDescriptors = $grpDescs
+            $script:activeAllowedCategories = $catSet
+            if ($txtGroupFilterTitle) { $txtGroupFilterTitle.Text = $grp.Title }
+            if ($txtGroupFilterMeta) { $txtGroupFilterMeta.Text = "$($grp.Categories.Count) danh m$([char]0x1EE5)c  $([char]0x00B7)  $($grp.AppCount) $([char]0x1EE9)ng d$([char]0x1EE5)ng" }
+            if ($groupFilterBanner -and $groupFilterBanner.Visibility -ne [System.Windows.Visibility]::Visible) {
+                $groupFilterBanner.Visibility = [System.Windows.Visibility]::Visible
+            }
+            if ($allAndGroupHost -and $allAndGroupHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+                $allAndGroupHost.Visibility = [System.Windows.Visibility]::Visible
+            }
+            if ($cardsMasonryHost -and $cardsMasonryHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+                $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
+            }
+            foreach ($cdItem in $grpDescs) { Enqueue-CardIconsNow -CardDesc $cdItem }
+            Schedule-DeferredIconDecode -MaxDecode 48
+            return
+        }
+    }
+
     if ($targetKey -eq "__ALL__") {
+        if ($groupFilterBanner) { $groupFilterBanner.Visibility = [System.Windows.Visibility]::Collapsed }
         if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
         Restore-BorrowedGroupCards
         $script:activeMasonryDescriptors = $null
         $script:activeAllowedCategories = $null
+        if ($allAndGroupHost) { $allAndGroupHost.Visibility = [System.Windows.Visibility]::Visible }
         if ($cardsMasonryHost) {
             $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
         }
@@ -33656,6 +34787,8 @@ function Set-ActiveCatalogCategory {
         }
 
         $script:activeAllowedCategories = $grp.CategorySet
+        if ($allAndGroupHost) { $allAndGroupHost.Visibility = [System.Windows.Visibility]::Visible }
+        if ($groupFilterBanner) { $groupFilterBanner.Visibility = [System.Windows.Visibility]::Visible }
         if ($groupMasonrySection) {
             $groupMasonrySection.Visibility = [System.Windows.Visibility]::Visible
         }
@@ -33668,24 +34801,30 @@ function Set-ActiveCatalogCategory {
     [void]$singleSet.Add([string]$targetKey)
     $script:activeAllowedCategories = $singleSet
 
-    if ($cd.Card) {
-        $cd.Card.CacheMode = $null
-        $cd.CacheEnabled = $false
-    }
-    $cd.RowsStack.Children.Clear()
-
-    $n = $cd.Rows.Count
-    $colCnt = [Math]::Max(1, $script:singleCatCols.Count)
-    $base = [int][Math]::Floor($n / $colCnt)
-    $rem = $n % $colCnt
-    $offset = 0
-    for ($ci = 0; $ci -lt $colCnt; $ci++) {
-        $take = $base + $(if ($ci -lt $rem) { 1 } else { 0 })
-        $colPanel = $script:singleCatCols[$ci]
-        for ($k = 0; $k -lt $take -and ($offset + $k) -lt $n; $k++) {
-            if ($colPanel) { [void]$colPanel.Children.Add($cd.Rows[$offset + $k]) }
+    if ($script:uiPipeType -and $null -ne $script:uiPipeType.GetMethod("DistributeRowsToColumns")) {
+        [DuckUtil.UiAssetPipeline]::DistributeRowsToColumns($cd.RowsStack, [System.Windows.Controls.Panel[]]$script:singleCatCols, $cd.Rows)
+    } else {
+        $cd.RowsStack.Children.Clear()
+        $nRows = $cd.Rows.Count
+        $colCnt = [Math]::Max(1, $script:singleCatCols.Count)
+        $base = [int][Math]::Floor($nRows / $colCnt)
+        $rem = $nRows % $colCnt
+        $offset = 0
+        for ($ci = 0; $ci -lt $colCnt; $ci++) {
+            $take = $base + $(if ($ci -lt $rem) { 1 } else { 0 })
+            $colPanel = $script:singleCatCols[$ci]
+            for ($k = 0; $k -lt $take -and ($offset + $k) -lt $nRows; $k++) {
+                if ($colPanel) { [void]$colPanel.Children.Add($cd.Rows[$offset + $k]) }
+            }
+            $offset += $take
         }
-        $offset += $take
+    }
+    $n = $cd.Rows.Count
+    if ($script:singleCatDivider0) {
+        $script:singleCatDivider0.Visibility = if ($n -ge 2) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+    }
+    if ($script:singleCatDivider1) {
+        $script:singleCatDivider1.Visibility = if ($n -ge 3) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
     }
 
     $parentGrpKey = $null
@@ -33704,6 +34843,8 @@ function Set-ActiveCatalogCategory {
 
     if ($txtSingleCatTitle) { $txtSingleCatTitle.Text = $targetKey }
     if ($txtSingleCatCount) { $txtSingleCatCount.Text = "$n $([char]0x1EE9)ng d$([char]0x1EE5)ng" }
+    if ($allAndGroupHost) { $allAndGroupHost.Visibility = [System.Windows.Visibility]::Collapsed }
+    if ($groupFilterBanner) { $groupFilterBanner.Visibility = [System.Windows.Visibility]::Collapsed }
     if ($cardsMasonryHost) { $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Collapsed }
     if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
     if ($singleCategoryHost) {
@@ -33868,7 +35009,13 @@ if ($btnSingleCatBack) {
 }
 
 Register-Click "btnScanInstalled" {
-    Invoke-GuardedAction "Qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" {
+    if (-not $script:isWindowClosing -and $script:isScanningApps -and -not $script:isAutoRefreshing -and -not $script:isActionRunning) {
+        $script:pendingManualAppRefresh = $true
+        if ($btnScanInstalled) { $btnScanInstalled.Content = "$([char]0x0110)ang ch$([char]0x1EDD)..." }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ho$([char]0x00E0)n t$([char]0x1EA5)t l$([char]0x01B0)$([char]0x1EE3)t qu$([char]0x00E9)t tr$([char]0x01B0)$([char]0x1EDB)c $([char]0x0111)$([char]0x00F3), s$([char]0x1EBD) t$([char]0x1EF1) l$([char]0x00E0)m m$([char]0x1EDB)i ti$([char]0x1EBF)p..." }
+        return
+    }
+    Invoke-GuardedAction "Qu$([char]0x00E9)t $([char]0x1EE9)ng d$([char]0x1EE5)ng" -DeferExpand -AllowDuringUninstallerLoad {
         Scan-And-ColorizeApps
     }
 }
@@ -33887,8 +35034,34 @@ function Clear-AllCheckBoxes {
     Update-SelectionCount
 }
 
+function Get-SilentInstallerArgsForFile {
+    param(
+        [string]$Path,
+        [string]$FrameworkOverride = ""
+    )
+    if ([string]::IsNullOrWhiteSpace($Path)) { return "--silent-install" }
+    if ($Path -match '\.msi$') {
+        return "/i `"$Path`" /qn /norestart"
+    }
+    $fw = $FrameworkOverride
+    if ([string]::IsNullOrWhiteSpace($fw) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
+        try { $fw = [DuckUtil.DeepUninstallerEngine]::DetectInstallerFramework($Path) } catch { $fw = "" }
+    }
+    switch ($fw) {
+        "InnoSetup" { return "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" }
+        "NSIS"      { return "/S" }
+        "WiX"       { return "/install /quiet /norestart" }
+        "BitRock"   { return "--mode unattended" }
+        "Squirrel"  { return "--silent" }
+        default     { return "--silent-install" }
+    }
+}
+
 function Invoke-GitHubAssetInstall {
     param($App)
+    $tmpDir = $null
+    $prevProgPref = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
     try {
         Log-Text "   -> $([char]0x0110)ang t$([char]0x00EC)m b$([char]0x1EA3)n ph$([char]0x00E1)t h$([char]0x00E0)nh m$([char]0x1EDB)i nh$([char]0x1EA5)t t$([char]0x1EEB) GitHub ($($App.GitHubRepo))..."
         $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
@@ -33897,21 +35070,34 @@ function Invoke-GitHubAssetInstall {
             Log-Text "   [!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1ED9) c$([char]0x00E0)i ph$([char]0x00F9) h$([char]0x1EE3)p tr$([char]0x00EA)n GitHub Release."
             return -1
         }
-        $dlPath = Join-Path $env:TEMP $asset.name
-        Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $($asset.name)..."
+        $safeName = [System.IO.Path]::GetFileName([string]$asset.name)
+        if ([string]::IsNullOrWhiteSpace($safeName) -or $safeName -notmatch '\.(msi|exe)$' -or [string]$asset.browser_download_url -notmatch '^https://') {
+            Log-Text "   [*] T$([char]0x1EC7)p ph$([char]0x00E1)t h$([char]0x00E0)nh '$safeName' kh$([char]0x00F4)ng ph$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p .exe/.msi."
+            return -1
+        }
+        if ($script:cancelRequested) { return -2 }
+        if ($script:isWindowClosing) { return -1 }
+        $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+        [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
+        $dlPath = Join-Path $tmpDir $safeName
+        Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $safeName..."
         Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
-        try {
-            if ($dlPath -match '\.msi$') {
-                return (Run-CliStream "msiexec.exe" "/i `"$dlPath`" /qn /norestart" -IsolateStdin -AllowCancel)
-            } else {
-                return (Run-CliStream $dlPath "--silent-install" -IsolateStdin -AllowCancel)
-            }
-        } finally {
-            if (Test-Path -LiteralPath $dlPath) { Remove-Item -LiteralPath $dlPath -Force -ErrorAction SilentlyContinue }
+        if ($script:cancelRequested) { return -2 }
+        if ($script:isWindowClosing) { return -1 }
+        $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath
+        if ($dlPath -match '\.msi$') {
+            return (Run-CliStream "msiexec.exe" $silentArgs -IsolateStdin -AllowCancel)
+        } else {
+            return (Run-CliStream $dlPath $silentArgs -IsolateStdin -AllowCancel)
         }
     } catch {
         Log-Text "   [!] L$([char]0x1ED7)i t$([char]0x1EA3)i/c$([char]0x00E0)i t$([char]0x1EEB) GitHub: $($_.Exception.Message)"
         return -1
+    } finally {
+        $ProgressPreference = $prevProgPref
+        if ($tmpDir -and (Test-Path -LiteralPath $tmpDir)) {
+            Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -33931,34 +35117,28 @@ function Clear-WinGetTempInstallers {
     }
 
     $removedCount = 0
-    $freedBytes = [long]0
     foreach ($wingetTemp in $RootPaths) {
         if ([string]::IsNullOrWhiteSpace($wingetTemp) -or -not (Test-Path -LiteralPath $wingetTemp)) { continue }
+        $isRootReparse = $false
+        try {
+            if (([System.IO.File]::GetAttributes($wingetTemp) -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { $isRootReparse = $true }
+        } catch {}
+        if ($isRootReparse) { continue }
 
         $entries = Get-ChildItem -LiteralPath $wingetTemp -Force -ErrorAction SilentlyContinue
         foreach ($entry in $entries) {
             if ($entry.Name -ieq "cache") { continue }
-
-            $entryBytes = [long]0
-            if ($entry.PSIsContainer) {
-                $measure = Get-ChildItem -LiteralPath $entry.FullName -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
-                if ($measure -and $null -ne $measure.Sum) { $entryBytes = [long]$measure.Sum }
-            } else {
-                $entryBytes = [long]$entry.Length
-            }
-
+            if (($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { continue }
             try {
                 Remove-Item -LiteralPath $entry.FullName -Recurse -Force -ErrorAction Stop
                 $removedCount++
-                $freedBytes += $entryBytes
             } catch {
             }
         }
     }
 
     if ($removedCount -gt 0) {
-        $freedMB = [math]::Round($freedBytes / 1MB, 1)
-        Log-Text "[CLEAN] $([char]0x0110)$([char]0x00E3) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng d$([char]0x1ECD)n $removedCount th$([char]0x01B0) m$([char]0x1EE5)c/t$([char]0x1EC7)p b$([char]0x1ED9) c$([char]0x00E0)i WinGet t$([char]0x1ED3)n d$([char]0x01B0) ($freedMB MB)."
+        Log-Text "[CLEAN] $([char]0x0110)$([char]0x00E3) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng d$([char]0x1ECD)n $removedCount th$([char]0x01B0) m$([char]0x1EE5)c/t$([char]0x1EC7)p b$([char]0x1ED9) c$([char]0x00E0)i WinGet t$([char]0x1ED3)n d$([char]0x01B0)."
     }
 }
 
@@ -34005,6 +35185,33 @@ function Wait-WindowsInstallerReady {
     return $false
 }
 
+function Get-WinGetSourceArgument {
+    param($App, [string]$Id = "")
+    if ($App -and $App.Source -eq "msstore") { return " --source msstore" }
+    if (-not [string]::IsNullOrWhiteSpace($Id)) {
+        if ($Id -match '^9[A-Z0-9]{11}$') { return " --source msstore" }
+        if ($Id -notmatch '^(ARP|MSIX|LOCAL)\\') { return " --source winget" }
+    }
+    return ""
+}
+
+function Test-IsStandardInstallLocation {
+    param([string]$InstallPath)
+    if ([string]::IsNullOrWhiteSpace($InstallPath)) { return $true }
+    $norm = try { [System.IO.Path]::GetFullPath($InstallPath).TrimEnd('\') + '\' } catch { $InstallPath.Trim().TrimEnd('\') + '\' }
+    $stdRoots = @()
+    foreach ($rootCand in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:SystemRoot)) {
+        if (-not [string]::IsNullOrWhiteSpace($rootCand)) { $stdRoots += ($rootCand.TrimEnd('\') + '\') }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        $stdRoots += (Join-Path $env:LOCALAPPDATA "Programs").TrimEnd('\') + '\'
+    }
+    foreach ($sr in $stdRoots) {
+        if ($norm.StartsWith($sr, [System.StringComparison]::OrdinalIgnoreCase)) { return $true }
+    }
+    return $false
+}
+
 function Invoke-WinGetWithMsiRetry {
     param([Parameter(Mandatory = $true)][string]$Arguments)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
@@ -34022,8 +35229,22 @@ function Invoke-WinGetWithMsiRetry {
     return $code
 }
 
+function Invoke-WinGetSourceAware {
+    param(
+        [Parameter(Mandatory = $true)][string]$BaseArguments,
+        $App = $null,
+        [string]$Id = ""
+    )
+    $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
+    $code = Invoke-WinGetWithMsiRetry -Arguments ($BaseArguments + $srcArg)
+    if ($code -eq -1978335212 -and -not [string]::IsNullOrWhiteSpace($srcArg) -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+        $code = Invoke-WinGetWithMsiRetry -Arguments $BaseArguments
+    }
+    return $code
+}
+
 function Wait-SquirrelUpdatersSettle {
-    param([int]$MaxWaitMs = 4000)
+    param([int]$MaxWaitMs = 1500)
     $deadline = [DateTime]::UtcNow.AddMilliseconds($MaxWaitMs)
     while ([DateTime]::UtcNow -lt $deadline) {
         if ($script:isWindowClosing -or $script:cancelRequested) { break }
@@ -34117,6 +35338,46 @@ function Find-RegistryMatchForCatalogApp {
     return $bestCand
 }
 
+function Resolve-AppInstallLocation {
+    param($App, $RegMatch)
+    $loc = $null
+    if ($RegMatch -and -not [string]::IsNullOrWhiteSpace($RegMatch.InstallLocation) -and (Test-Path -LiteralPath $RegMatch.InstallLocation)) {
+        $loc = $RegMatch.InstallLocation.Trim().TrimEnd('\')
+    }
+    if (-not $loc -and $RegMatch) {
+        $uCmd = if ($RegMatch.QuietUninstallString) { $RegMatch.QuietUninstallString } else { $RegMatch.UninstallString }
+        if ($uCmd) {
+            $uExe = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
+                (Split-CommandLineExecutableAndArgs -CommandLine $uCmd).Exe
+            } elseif ($uCmd.StartsWith('"')) {
+                $q2 = $uCmd.IndexOf('"', 1)
+                if ($q2 -gt 1) { $uCmd.Substring(1, $q2 - 1) } else { $uCmd.Trim('"') }
+            } else {
+                ($uCmd -split '\s+')[0]
+            }
+            if ($uExe -and (Test-Path -LiteralPath $uExe)) {
+                $pDir = [System.IO.Path]::GetDirectoryName($uExe)
+                if ($pDir -and (Test-Path -LiteralPath $pDir)) {
+                    $loc = $pDir
+                }
+            }
+        }
+    }
+    if (-not $loc -and $App) {
+        foreach ($sc in @(
+            (Join-Path $env:LOCALAPPDATA "Programs\$($App.Name)"),
+            (Join-Path $env:ProgramFiles $App.Name),
+            (Join-Path ${env:ProgramFiles(x86)} $App.Name)
+        )) {
+            if ($sc -and (Test-Path -LiteralPath $sc)) {
+                $loc = $sc
+                break
+            }
+        }
+    }
+    return $loc
+}
+
 function Invoke-SmartAppUpgrade {
     param($Tag, [switch]$IsBulkUpgrade)
     if (-not $Tag) { return 1 }
@@ -34138,45 +35399,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     $regMatch = Find-RegistryMatchForCatalogApp -App $app -InstalledList $instApps -DetectedId $Tag.DetectedId
-
-    $existingLoc = $null
-    if ($regMatch -and -not [string]::IsNullOrWhiteSpace($regMatch.InstallLocation) -and (Test-Path -LiteralPath $regMatch.InstallLocation)) {
-        $existingLoc = $regMatch.InstallLocation.Trim().TrimEnd('\')
-    }
-
-    if (-not $existingLoc -and $regMatch) {
-        $uCmd = if ($regMatch.QuietUninstallString) { $regMatch.QuietUninstallString } else { $regMatch.UninstallString }
-        if ($uCmd) {
-            $uExe = if (Get-Command Split-CommandLineExecutableAndArgs -ErrorAction SilentlyContinue) {
-                (Split-CommandLineExecutableAndArgs -CommandLine $uCmd).Exe
-            } elseif ($uCmd.StartsWith('"')) {
-                $q2 = $uCmd.IndexOf('"', 1)
-                if ($q2 -gt 1) { $uCmd.Substring(1, $q2 - 1) } else { $uCmd.Trim('"') }
-            } else {
-                ($uCmd -split '\s+')[0]
-            }
-            if ($uExe -and (Test-Path -LiteralPath $uExe)) {
-                $pDir = [System.IO.Path]::GetDirectoryName($uExe)
-                if ($pDir -and (Test-Path -LiteralPath $pDir)) {
-                    $existingLoc = $pDir
-                }
-            }
-        }
-    }
-
-    if (-not $existingLoc) {
-        $stdCandidates = @(
-            (Join-Path $env:LOCALAPPDATA "Programs\$($app.Name)"),
-            (Join-Path $env:ProgramFiles $app.Name),
-            (Join-Path ${env:ProgramFiles(x86)} $app.Name)
-        )
-        foreach ($sc in $stdCandidates) {
-            if ($sc -and (Test-Path -LiteralPath $sc)) {
-                $existingLoc = $sc
-                break
-            }
-        }
-    }
+    $existingLoc = Resolve-AppInstallLocation -App $app -RegMatch $regMatch
 
     if ($existingLoc -and ("DuckUtil.AppCatalogEngine" -as [type])) {
         if ([DuckUtil.AppCatalogEngine]::HasCrackOrPatchIndicators($existingLoc)) {
@@ -34205,21 +35428,9 @@ function Invoke-SmartAppUpgrade {
         $scope = "user"
     }
 
-    $nameVariations = [System.Collections.Generic.List[string]]::new()
-    $nameVariations.Add($app.Name)
-    $nameVariations.Add($app.ID)
-    if ($app.Aliases) {
-        foreach ($al in $app.Aliases) {
-            if (-not [string]::IsNullOrWhiteSpace($al) -and -not $nameVariations.Contains($al)) {
-                $nameVariations.Add($al)
-            }
-        }
-    }
-    if ($regMatch -and $regMatch.Publisher) {
-        $pub = $regMatch.Publisher.Trim()
-        if ($pub -and -not ($pub -match 'Microsoft|Windows|Corporation')) {
-            $nameVariations.Add((Join-Path $pub $app.Name))
-        }
+    $needCustomLocArg = $false
+    if ($existingLoc -and -not (Test-IsStandardInstallLocation $existingLoc)) {
+        $needCustomLocArg = $true
     }
 
     $normalizedExistingLoc = if ($existingLoc) {
@@ -34227,43 +35438,59 @@ function Invoke-SmartAppUpgrade {
     } else { "" }
 
     $targetAppDataDirs = [System.Collections.Generic.List[string]]::new()
-    $seenSnapshotDirs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    if ($normalizedExistingLoc) { [void]$seenSnapshotDirs.Add($normalizedExistingLoc) }
-    foreach ($nv in $nameVariations) {
-        if ([string]::IsNullOrWhiteSpace($nv)) { continue }
-        foreach ($rootDir in @($env:APPDATA, $env:LOCALAPPDATA)) {
-            if ([string]::IsNullOrWhiteSpace($rootDir)) { continue }
-            $candDir = Join-Path $rootDir $nv
-            if (Test-Path -LiteralPath $candDir) {
-                $normCand = try { [System.IO.Path]::GetFullPath($candDir).TrimEnd('\') } catch { $candDir.TrimEnd('\') }
-                if ($seenSnapshotDirs.Add($normCand)) {
-                    $targetAppDataDirs.Add($normCand)
+    if (-not $IsBulkUpgrade) {
+        $nameVariations = [System.Collections.Generic.List[string]]::new()
+        $nameVariations.Add($app.Name)
+        $nameVariations.Add($app.ID)
+        if ($app.Aliases) {
+            foreach ($al in $app.Aliases) {
+                if (-not [string]::IsNullOrWhiteSpace($al) -and -not $nameVariations.Contains($al)) {
+                    $nameVariations.Add($al)
+                }
+            }
+        }
+        if ($regMatch -and $regMatch.Publisher) {
+            $pub = $regMatch.Publisher.Trim()
+            if ($pub -and -not ($pub -match 'Microsoft|Windows|Corporation')) {
+                $nameVariations.Add((Join-Path $pub $app.Name))
+            }
+        }
+
+        $seenSnapshotDirs = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        if ($normalizedExistingLoc) { [void]$seenSnapshotDirs.Add($normalizedExistingLoc) }
+        foreach ($nv in $nameVariations) {
+            if ([string]::IsNullOrWhiteSpace($nv)) { continue }
+            foreach ($rootDir in @($env:APPDATA, $env:LOCALAPPDATA)) {
+                if ([string]::IsNullOrWhiteSpace($rootDir)) { continue }
+                $candDir = Join-Path $rootDir $nv
+                if (Test-Path -LiteralPath $candDir) {
+                    $normCand = try { [System.IO.Path]::GetFullPath($candDir).TrimEnd('\') } catch { $candDir.TrimEnd('\') }
+                    if ($seenSnapshotDirs.Add($normCand)) {
+                        $targetAppDataDirs.Add($normCand)
+                    }
                 }
             }
         }
     }
 
     $hkcuKeys = [System.Collections.Generic.List[object]]::new()
-    $seenHkcu = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($nv in $nameVariations) {
-        if ([string]::IsNullOrWhiteSpace($nv)) { continue }
-        $rk = "HKCU:\Software\$nv"
-        if ($seenHkcu.Add($rk) -and (Test-Path -LiteralPath $rk)) {
-            $hadData = $false
-            try {
-                $kObj = Get-Item -LiteralPath $rk -ErrorAction SilentlyContinue
-                if ($kObj -and ($kObj.ValueCount -gt 0 -or $kObj.SubKeyCount -gt 0)) { $hadData = $true }
-            } catch {}
-            $hkcuKeys.Add([PSCustomObject]@{ PSPath = $rk; HadData = $hadData })
+    if (-not $IsBulkUpgrade) {
+        $seenHkcu = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+        foreach ($nv in @($app.Name, $app.ID)) {
+            if ([string]::IsNullOrWhiteSpace($nv)) { continue }
+            $rk = "HKCU:\Software\$nv"
+            if ($seenHkcu.Add($rk) -and (Test-Path -LiteralPath $rk)) {
+                $hadData = $false
+                try {
+                    $kObj = Get-Item -LiteralPath $rk -ErrorAction SilentlyContinue
+                    if ($kObj -and ($kObj.ValueCount -gt 0 -or $kObj.SubKeyCount -gt 0)) { $hadData = $true }
+                } catch {}
+                $hkcuKeys.Add([PSCustomObject]@{ PSPath = $rk; HadData = $hadData })
+            }
         }
     }
 
     $backupRoot = Join-Path $env:TEMP "AppDriver_UpgradeGuard\$($app.ID)"
-    if (Test-Path -LiteralPath $backupRoot) {
-        Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-    }
-    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
-
     $snapshotType = if ("DuckUtil.AppCatalogEngine" -as [type]) {
         [DuckUtil.AppCatalogEngine]
     } elseif ("DuckUtil.DeepUninstallerEngine" -as [type]) {
@@ -34272,72 +35499,91 @@ function Invoke-SmartAppUpgrade {
 
     $hasSnapshots = $false
     $locBkp = Join-Path $backupRoot "InstallLocation"
-    if ($existingLoc -and (Test-Path -LiteralPath $existingLoc) -and $snapshotType) {
-        $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 104857600L, $true)
-        if ($bytes -gt 0) { $hasSnapshots = $true }
-    }
-
     $appDataBkps = [System.Collections.Generic.List[object]]::new()
-    $adIdx = 0
-    if ($snapshotType) {
-        foreach ($adDir in $targetAppDataDirs) {
-            $adIdx++
-            $adBkpDir = Join-Path $backupRoot "AppData_$adIdx"
-            $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 104857600L, $false)
-            if ($b -gt 0) {
-                $hasSnapshots = $true
-                $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
+    $regFiles = [System.Collections.Generic.List[object]]::new()
+
+    $shouldSnapshot = ($null -ne $snapshotType) -and ($existingLoc -or $targetAppDataDirs.Count -gt 0 -or $hkcuKeys.Count -gt 0)
+    if ($shouldSnapshot) {
+        if (Test-Path -LiteralPath $backupRoot) {
+            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+
+        if ($existingLoc -and (Test-Path -LiteralPath $existingLoc)) {
+            $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
+            if ($bytes -gt 0) { $hasSnapshots = $true }
+        }
+
+        if (-not $IsBulkUpgrade) {
+            $adIdx = 0
+            foreach ($adDir in $targetAppDataDirs) {
+                $adIdx++
+                $adBkpDir = Join-Path $backupRoot "AppData_$adIdx"
+                $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
+                if ($b -gt 0) {
+                    $hasSnapshots = $true
+                    $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
+                }
+            }
+
+            $rkIdx = 0
+            foreach ($rkEntry in $hkcuKeys) {
+                $rkIdx++
+                $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
+                $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
+                try {
+                    $regPsi = New-Object System.Diagnostics.ProcessStartInfo
+                    $regPsi.FileName = "reg.exe"
+                    $regPsi.Arguments = "export `"$rawHkcu`" `"$rf`" /y"
+                    $regPsi.CreateNoWindow = $true
+                    $regPsi.UseShellExecute = $false
+                    $pReg = [System.Diagnostics.Process]::Start($regPsi)
+                    try {
+                        if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $rf)) {
+                            $hasSnapshots = $true
+                            $regFiles.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
+                        }
+                    } finally {
+                        if ($pReg) { try { $pReg.Dispose() } catch {} }
+                    }
+                } catch {}
             }
         }
     }
 
-    $regFiles = [System.Collections.Generic.List[object]]::new()
-    $rkIdx = 0
-    foreach ($rkEntry in $hkcuKeys) {
-        $rkIdx++
-        $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
-        $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
-        try {
-            $pReg = Start-Process "reg.exe" -ArgumentList "export `"$rawHkcu`" `"$rf`" /y" -Wait -NoNewWindow -PassThru -ErrorAction SilentlyContinue
-            if ($pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $rf)) {
-                $hasSnapshots = $true
-                $regFiles.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
-            }
-        } catch {}
-    }
-
     if ($hasSnapshots) {
-        Log-Text "[*] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t UpgradeDataGuard: Ch$([char]0x1EE5)p snapshot d$([char]0x1EEF) li$([char]0x1EC7)u c$([char]0x00E1) nh$([char]0x00E2)n & c$([char]0x1EA5)u h$([char]0x00EC)nh tr$([char]0x01B0)$([char]0x1EDB)c khi n$([char]0x00E2)ng c$([char]0x1EA5)p."
+        Log-Text "[*] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t UpgradeDataGuard: Ch$([char]0x1EE5)p snapshot c$([char]0x1EA5)u h$([char]0x00EC)nh tr$([char]0x01B0)$([char]0x1EDB)c khi n$([char]0x00E2)ng c$([char]0x1EA5)p."
     }
 
     $baseUpArgs = "upgrade --id `"$upgradeId`" --exact --silent --accept-package-agreements --accept-source-agreements"
     $upArgs = $baseUpArgs
-    if ($existingLoc) {
+    if ($needCustomLocArg -and $existingLoc) {
         $upArgs += " --location `"$existingLoc`""
     }
     if ($scope) {
         $upArgs += " --scope $scope"
     }
 
-    $code = Invoke-WinGetWithMsiRetry -Arguments $upArgs
+    $code = Invoke-WinGetSourceAware -BaseArguments $upArgs -App $app -Id $upgradeId
     if ($code -ne 0 -and $scope) {
         Log-Text "[!] N$([char]0x00E2)ng c$([char]0x1EA5)p theo scope '$scope' kh$([char]0x00F4)ng th$([char]0x00E0)nh c$([char]0x00F4)ng (Code: $code), $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i b$([char]0x1ECF) gi$([char]0x1EDB)i h$([char]0x1EA1)n scope..."
         $upArgsNoScope = $baseUpArgs
-        if ($existingLoc) {
+        if ($needCustomLocArg -and $existingLoc) {
             $upArgsNoScope += " --location `"$existingLoc`""
         }
-        $code = Invoke-WinGetWithMsiRetry -Arguments $upArgsNoScope
+        $code = Invoke-WinGetSourceAware -BaseArguments $upArgsNoScope -App $app -Id $upgradeId
     }
 
-    if ($code -ne 0 -and $existingLoc) {
+    if ($code -ne 0 -and $needCustomLocArg -and $existingLoc) {
         Log-Text "[!] N$([char]0x00E2)ng c$([char]0x1EA5)p k$([char]0x00E8)m $([char]0x0111)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n c$([char]0x1ED1) $([char]0x0111)$([char]0x1ECB)nh kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng (Code: $code), $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i c$([char]0x1EA5)u h$([char]0x00EC)nh m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh..."
-        $code = Invoke-WinGetWithMsiRetry -Arguments $baseUpArgs
+        $code = Invoke-WinGetSourceAware -BaseArguments $baseUpArgs -App $app -Id $upgradeId
     }
 
     $alreadyLatest = $false
     if ($code -eq -1978335189) {
         try {
-            $probeCap = Invoke-WingetListCapture -Arguments "list --id `"$upgradeId`" --exact --disable-interactivity --accept-source-agreements" -TimeoutSeconds 12
+            $probeSrcArg = Get-WinGetSourceArgument -App $app -Id $upgradeId
+            $probeCap = Invoke-WingetListCapture -Arguments ("list --id `"$upgradeId`" --exact$probeSrcArg --disable-interactivity --accept-source-agreements") -TimeoutSeconds 12
             if ($probeCap.Available -and -not $probeCap.TimedOut) {
                 $probeParsed = ConvertFrom-WingetListOutput -RawText $probeCap.StdOut -AllowHeaderless $true
                 $probeItem = if ($probeParsed -and $probeParsed.Items.Count -gt 0) {
@@ -34351,11 +35597,11 @@ function Invoke-SmartAppUpgrade {
                     Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($probeItem.Available) nh$([char]0x01B0)ng kh$([char]0x00E1)c scope c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t; $([char]0x0111)ang n$([char]0x00E2)ng c$([char]0x1EA5)p tr$([char]0x1EF1)c ti$([char]0x1EBF)p (--force)..."
                     $baseForceArgs = "install --id `"$upgradeId`" --exact --silent --force --accept-package-agreements --accept-source-agreements"
                     $forceArgs = $baseForceArgs
-                    if ($existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
+                    if ($needCustomLocArg -and $existingLoc) { $forceArgs += " --location `"$existingLoc`"" }
                     if ($scope) { $forceArgs += " --scope $scope" }
-                    $code = Invoke-WinGetWithMsiRetry -Arguments $forceArgs
-                    if ($code -ne 0 -and ($existingLoc -or $scope)) {
-                        $code = Invoke-WinGetWithMsiRetry -Arguments $baseForceArgs
+                    $code = Invoke-WinGetSourceAware -BaseArguments $forceArgs -App $app -Id $upgradeId
+                    if ($code -ne 0 -and (($needCustomLocArg -and $existingLoc) -or $scope)) {
+                        $code = Invoke-WinGetSourceAware -BaseArguments $baseForceArgs -App $app -Id $upgradeId
                     }
                 }
             }
@@ -34396,7 +35642,17 @@ function Invoke-SmartAppUpgrade {
                     }
                     if ($needRegRestore) {
                         try {
-                            Start-Process "reg.exe" -ArgumentList "import `"$($rfItem.File)`"" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+                            $impPsi = New-Object System.Diagnostics.ProcessStartInfo
+                            $impPsi.FileName = "reg.exe"
+                            $impPsi.Arguments = "import `"$($rfItem.File)`""
+                            $impPsi.CreateNoWindow = $true
+                            $impPsi.UseShellExecute = $false
+                            $pImp = [System.Diagnostics.Process]::Start($impPsi)
+                            try {
+                                if ($pImp) { [void]$pImp.WaitForExit(10000) }
+                            } finally {
+                                if ($pImp) { try { $pImp.Dispose() } catch {} }
+                            }
                             Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
                         } catch {}
                     }
@@ -34485,15 +35741,22 @@ Register-Click "btnInstall" {
 
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
                     $code = Invoke-GitHubAssetInstall -App $app
+                    if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.ID)) {
+                        Log-Text "   [*] Th$([char]0x1EED) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t d$([char]0x1EF1) ph$([char]0x00F2)ng qua WinGet ($($app.ID))..."
+                        $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
+                        $code = Invoke-WinGetSourceAware -BaseArguments $wgArgs -App $app -Id $app.ID
+                    }
                 } else {
                     $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
-                    if ($app.Source -eq "msstore") { $wgArgs += " --source msstore" }
-                    $code = Invoke-WinGetWithMsiRetry -Arguments $wgArgs
+                    $code = Invoke-WinGetSourceAware -BaseArguments $wgArgs -App $app -Id $app.ID
                 }
 
-                if ($code -eq 0) {
-                    Log-Text "   [OK - HO$([char]0x00C0)N TH$([char]0x00C0)NH] $($app.Name)"
+                if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
+                    $okNote = if ($code -eq 3010 -or $code -eq 1641) { " (C$([char]0x1EA7)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i)" } else { "" }
+                    Log-Text "   [OK - HO$([char]0x00C0)N TH$([char]0x00C0)NH] $($app.Name)$okNote"
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
+                } elseif ($code -eq -2 -or $code -eq 1602 -or $script:cancelRequested) {
+                    Log-Text "   [!] $([char]0x0110)$([char]0x00E3) h$([char]0x1EE7)y c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($app.Name)."
                 } else {
                     Log-Text "   [ERR - L$([char]0x1ED6)I] $($app.Name) (Exit Code: $code)"
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
@@ -34508,11 +35771,15 @@ Register-Click "btnInstall" {
         if (-not $script:isWindowClosing) {
             Update-SelectionCount
             if ($txtStatus) { $txtStatus.Text = "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t & C$([char]0x1EAD)p nh$([char]0x1EAD)t ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
-            if ($progressBar) { $progressBar.Value = 100 }
+            if ($progressBar) { $progressBar.Value = 0 }
             if ($didAnyAction) {
+                if ($script:uninstallerLoadedOnce) { $script:uninstallerStale = $true }
                 Wait-SquirrelUpdatersSettle
                 if (-not $script:isWindowClosing) {
                     Scan-And-ColorizeApps
+                    if (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue) {
+                        Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "install"
+                    }
                 }
             }
         }
@@ -34534,29 +35801,77 @@ Register-Click "btnUpgradeAll" {
 
         try {
             $outdatedRows = @($allItemBorders | Where-Object { $_.Tag -and $_.Tag.Status -eq "OUTDATED" })
+            $crackBlockedCount = 0
+            $safeOutdatedRows = [System.Collections.Generic.List[object]]::new()
+            $msStoreOutdatedRows = [System.Collections.Generic.List[object]]::new()
             if ($outdatedRows.Count -gt 0) {
-                $totalOut = $outdatedRows.Count
-                $idxOut = 0
+                $instAppsBulk = if ($script:cachedUninstallerApps -and $script:cachedUninstallerApps.Count -gt 0) {
+                    $script:cachedUninstallerApps
+                } elseif ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+                    [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
+                } else { @() }
+                $hasCrackChecker = [bool]("DuckUtil.AppCatalogEngine" -as [type])
+
                 foreach ($row in $outdatedRows) {
-                    if ($script:isWindowClosing -or $script:cancelRequested) { break }
-                    $idxOut++
                     $tagOut = $row.Tag
-                    if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
-                    if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..." }
-                    Log-Text "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p b$([char]0x1EA3)o to$([char]0x00E0)n d$([char]0x1EEF) li$([char]0x1EC7)u: $($tagOut.App.Name)..."
-                    $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut -IsBulkUpgrade
-                    if ($codeOut -eq 0) {
-                        Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($tagOut.App.Name)"
-                        if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
-                    } elseif ($codeOut -eq 2) {
-                        Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($tagOut.App.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
+                    $appOut = $tagOut.App
+                    $isCracked = $false
+                    if ($hasCrackChecker -and $appOut) {
+                        $regM = Find-RegistryMatchForCatalogApp -App $appOut -InstalledList $instAppsBulk -DetectedId $tagOut.DetectedId
+                        $locM = Resolve-AppInstallLocation -App $appOut -RegMatch $regM
+                        if ($locM -and [DuckUtil.AppCatalogEngine]::HasCrackOrPatchIndicators($locM)) {
+                            $isCracked = $true
+                        }
+                    }
+                    if ($isCracked) {
+                        $crackBlockedCount++
+                        Log-Text "[SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng b$([char]0x1ECF) qua $($appOut.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } else {
-                        Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                        [void]$safeOutdatedRows.Add($row)
+                        if (($appOut -and $appOut.Source -eq "msstore") -or ($tagOut.DetectedId -match '^9[A-Z0-9]{11}$')) {
+                            [void]$msStoreOutdatedRows.Add($row)
+                        }
                     }
                 }
-            } elseif (-not $script:isWindowClosing -and -not $script:cancelRequested) {
-                Run-CliStream "winget" "upgrade --all --silent --accept-package-agreements --accept-source-agreements" -IsolateStdin -AllowCancel
+            }
+
+            if (-not $script:isWindowClosing -and -not $script:cancelRequested) {
+                if ($crackBlockedCount -eq 0 -and ($outdatedRows.Count -eq 0 -or $safeOutdatedRows.Count -gt 0)) {
+                    if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p to$([char]0x00E0)n b$([char]0x1ED9) $([char]0x1EE9)ng d$([char]0x1EE5)ng (nhanh - an to$([char]0x00E0)n)..." }
+                    Log-Text "[*] $([char]0x0110)$([char]0x00E3) ki$([char]0x1EC3)m tra b$([char]0x1EA3)o v$([char]0x1EC7) Crack/Patch xong (0 c$([char]0x1EA3)nh b$([char]0x00E1)o) - ch$([char]0x1EA1)y n$([char]0x00E2)ng c$([char]0x1EA5)p g$([char]0x1ED9)p t$([char]0x1ED1)c $([char]0x0111)$([char]0x1ED9) cao..."
+                    $bulkCode = Invoke-WinGetWithMsiRetry -Arguments "upgrade --all --source winget --silent --accept-package-agreements --accept-source-agreements"
+                    foreach ($stRow in $msStoreOutdatedRows) {
+                        if ($script:isWindowClosing -or $script:cancelRequested) { break }
+                        [void](Invoke-SmartAppUpgrade -Tag $stRow.Tag -IsBulkUpgrade)
+                    }
+                    if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
+                        foreach ($sr in $safeOutdatedRows) {
+                            if ($sr.Tag -and $sr.Tag.CheckBox) { $sr.Tag.CheckBox.IsChecked = $false }
+                        }
+                    }
+                } elseif ($safeOutdatedRows.Count -gt 0) {
+                    $totalOut = $safeOutdatedRows.Count
+                    $idxOut = 0
+                    foreach ($row in $safeOutdatedRows) {
+                        if ($script:isWindowClosing -or $script:cancelRequested) { break }
+                        $idxOut++
+                        $tagOut = $row.Tag
+                        if ($progressBar) { $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100) }
+                        if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..." }
+                        Log-Text "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..."
+                        $codeOut = Invoke-SmartAppUpgrade -Tag $tagOut -IsBulkUpgrade
+                        if ($codeOut -eq 0) {
+                            Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($tagOut.App.Name)"
+                            if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
+                        } elseif ($codeOut -eq 2) {
+                            Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($tagOut.App.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
+                            if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
+                        } else {
+                            Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P HO$([char]0x1EB6)C $([char]0x0110)$([char]0x00C3) M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                        }
+                    }
+                }
             }
         } finally {
             Clear-WinGetTempInstallers
@@ -34564,11 +35879,21 @@ Register-Click "btnUpgradeAll" {
         }
 
         if (-not $script:isWindowClosing) {
-            if ($txtStatus) { $txtStatus.Text = "N$([char]0x00E2)ng c$([char]0x1EA5)p ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
-            Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c n$([char]0x00E2)ng c$([char]0x1EA5)p l$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t."
+            if ($progressBar) { $progressBar.Value = 0 }
+            if ($script:cancelRequested) {
+                if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) h$([char]0x1EE7)y n$([char]0x00E2)ng c$([char]0x1EA5)p theo y$([char]0x00EA)u c$([char]0x1EA7)u." }
+                Log-Text "[!] $([char]0x0110)$([char]0x00E3) d$([char]0x1EEB)ng ti$([char]0x1EBF)n tr$([char]0x00EC)nh n$([char]0x00E2)ng c$([char]0x1EA5)p theo y$([char]0x00EA)u c$([char]0x1EA7)u."
+            } else {
+                if ($txtStatus) { $txtStatus.Text = "N$([char]0x00E2)ng c$([char]0x1EA5)p ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
+                Log-Text "[OK] Ho$([char]0x00E0)n t$([char]0x1EA5)t ti$([char]0x1EBF)n tr$([char]0x00EC)nh n$([char]0x00E2)ng c$([char]0x1EA5)p ph$([char]0x1EA7)n m$([char]0x1EC1)m."
+            }
+            if ($script:uninstallerLoadedOnce) { $script:uninstallerStale = $true }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
                 Scan-And-ColorizeApps
+                if (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue) {
+                    Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 2 -Reason "upgrade-all"
+                }
             }
         }
     }
@@ -34846,6 +36171,10 @@ function Stop-AllBackgroundWork {
     if ($script:uninstallQueue) { try { $script:uninstallQueue.Clear() } catch {} }
     if ($script:uninstallQueuedKeys) { try { $script:uninstallQueuedKeys.Clear() } catch {} }
     try { Stop-ActiveWaitFrames } catch {}
+    $script:pendingManualAppRefresh = $false
+    $script:autoRefreshFollowUpRemaining = 0
+    try { if ($script:autoAppRefreshTimer) { $script:autoAppRefreshTimer.Stop() } } catch {}
+    try { if (Get-Command "Stop-ActiveAutoScan" -ErrorAction SilentlyContinue) { Stop-ActiveAutoScan } } catch {}
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
@@ -34881,13 +36210,26 @@ if ($window -and $window.Dispatcher) {
         $script:cancelRequested = $false
         $script:isUninstallingQueue = $false
         $script:isScanningApps = $false
+        $script:isAutoRefreshing = $false
+        $script:cancelAutoScan = $false
+        $script:pendingManualAppRefresh = $false
         $script:isUpdatingUninstaller = $false
         $script:isSortingUninstaller = $false
         $script:uninstallerLoadQueued = $false
+        $script:pendingForceUninstallerLoad = $false
         $script:suppressSelectionCount = $false
         $script:suppressUninstallerSelectionCount = $false
+        if ($btnScanInstalled) {
+            try {
+                $btnScanInstalled.Content = "L$([char]0x00E0)m m$([char]0x1EDB)i"
+                $btnScanInstalled.IsEnabled = $true
+            } catch {}
+        }
         if ($progressBar) {
-            try { $progressBar.IsIndeterminate = $false } catch {}
+            try {
+                $progressBar.IsIndeterminate = $false
+                $progressBar.Value = 0
+            } catch {}
         }
         if ($script:isWindowClosing) {
             try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
@@ -34973,6 +36315,126 @@ $script:iconSyncTimer.Add_Tick({
     }
 })
 
+$script:autoAppRefreshIntervalSec    = 12
+$script:autoRefreshFollowUpRemaining = 0
+$script:lastAutoRefreshStampUtc      = [DateTime]::MinValue
+$script:lastWindowDeactivatedUtc     = [DateTime]::MinValue
+$script:windowWasDeactivated         = $false
+$script:lastUiInteractionStampUtc    = [DateTime]::MinValue
+$script:lastTimerArmedUtcTicks       = 0L
+$script:autoAppRefreshTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:autoAppRefreshTimer.Interval = [TimeSpan]::FromSeconds($script:autoAppRefreshIntervalSec)
+$script:autoAppRefreshTimer.Add_Tick({
+    if ($script:autoAppRefreshTimer) { $script:autoAppRefreshTimer.Stop() }
+    if ($script:isWindowClosing) {
+        $script:autoRefreshFollowUpRemaining = 0
+        return
+    }
+    if (-not $script:hasCompletedAppScan -or $script:isScanningApps -or $script:isActionRunning -or $script:isUpdatingUninstaller -or $script:isUninstallingQueue -or $script:isAutoRefreshing -or $window.WindowState -eq [System.Windows.WindowState]::Minimized) {
+        if ($script:autoRefreshFollowUpRemaining -gt 0 -and $script:autoAppRefreshTimer) {
+            try {
+                $script:lastTimerArmedUtcTicks = [DateTime]::UtcNow.Ticks
+                $script:autoAppRefreshTimer.Interval = [TimeSpan]::FromSeconds($script:autoAppRefreshIntervalSec)
+                $script:autoAppRefreshTimer.Start()
+            } catch {}
+        }
+        return
+    }
+    $script:lastAutoRefreshStampUtc = [DateTime]::UtcNow
+    if (Get-Command "Scan-And-ColorizeApps" -ErrorAction SilentlyContinue) {
+        Scan-And-ColorizeApps -Quiet
+    }
+})
+
+function Schedule-AutoAppRefresh {
+    param(
+        [int]$DelaySeconds = 0,
+        [int]$FollowUpPasses = 1,
+        [string]$Reason = ""
+    )
+    $nowUtc = [DateTime]::UtcNow
+    $script:lastUiInteractionStampUtc = $nowUtc
+    if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:autoAppRefreshTimer) { return }
+
+    if ($FollowUpPasses -gt $script:autoRefreshFollowUpRemaining) {
+        $script:autoRefreshFollowUpRemaining = $FollowUpPasses
+    }
+    if ($script:autoRefreshFollowUpRemaining -lt 1) {
+        $script:autoRefreshFollowUpRemaining = 1
+    }
+
+    $effDelay = if ($DelaySeconds -gt 0) { $DelaySeconds } else { $script:autoAppRefreshIntervalSec }
+    if ($DelaySeconds -le 0 -and $script:autoAppRefreshTimer.IsEnabled -and ($nowUtc.Ticks - $script:lastTimerArmedUtcTicks) -lt 10000000L) {
+        return
+    }
+    if ($effDelay -eq $script:autoAppRefreshIntervalSec -and $script:autoAppRefreshTimer.IsEnabled -and ($nowUtc.Ticks - $script:lastTimerArmedUtcTicks) -lt 10000000L) {
+        return
+    }
+    try {
+        $script:lastTimerArmedUtcTicks = $nowUtc.Ticks
+        $script:autoAppRefreshTimer.Stop()
+        $script:autoAppRefreshTimer.Interval = [TimeSpan]::FromSeconds($effDelay)
+        $script:autoAppRefreshTimer.Start()
+    } catch {}
+}
+
+function Reset-AutoAppRefreshTimer {
+    param([switch]$FromAutoTick)
+    $nowUtc = [DateTime]::UtcNow
+    $script:lastAutoRefreshStampUtc = $nowUtc
+    if ($script:isWindowClosing -or -not $script:hasCompletedAppScan -or -not $script:autoAppRefreshTimer) {
+        $script:autoRefreshFollowUpRemaining = 0
+        return
+    }
+    if ($FromAutoTick) {
+        $script:autoRefreshFollowUpRemaining = [Math]::Max(0, $script:autoRefreshFollowUpRemaining - 1)
+        if ($script:autoRefreshFollowUpRemaining -le 0) {
+            try { $script:autoAppRefreshTimer.Stop() } catch {}
+            return
+        }
+    } elseif ($script:autoRefreshFollowUpRemaining -lt 1) {
+        $script:autoRefreshFollowUpRemaining = 1
+    }
+    try {
+        $script:lastTimerArmedUtcTicks = $nowUtc.Ticks
+        $script:autoAppRefreshTimer.Stop()
+        $script:autoAppRefreshTimer.Interval = [TimeSpan]::FromSeconds($script:autoAppRefreshIntervalSec)
+        $script:autoAppRefreshTimer.Start()
+    } catch {}
+}
+
+if ($window) {
+    $window.Add_Deactivated({
+        $script:windowWasDeactivated = $true
+        $script:lastWindowDeactivatedUtc = [DateTime]::UtcNow
+    })
+    $window.Add_Activated({
+        if ($script:isWindowClosing -or -not $script:hasCompletedAppScan) { return }
+        if ($script:windowWasDeactivated) {
+            $script:windowWasDeactivated = $false
+            $nowUtc = [DateTime]::UtcNow
+            $awaySec = ($nowUtc - $script:lastWindowDeactivatedUtc).TotalSeconds
+            $sinceScanSec = ($nowUtc - $script:lastAutoRefreshStampUtc).TotalSeconds
+            if ($awaySec -ge 10 -and $sinceScanSec -ge $script:autoAppRefreshIntervalSec) {
+                Schedule-AutoAppRefresh -DelaySeconds 2 -FollowUpPasses 2 -Reason "focus-return"
+            } elseif ($awaySec -ge 5) {
+                Schedule-AutoAppRefresh -DelaySeconds $script:autoAppRefreshIntervalSec -FollowUpPasses 1 -Reason "focus-return-cooldown"
+            }
+        }
+    })
+    $window.Add_StateChanged({
+        if ($script:isWindowClosing -or -not $script:hasCompletedAppScan) { return }
+        if ($window.WindowState -ne [System.Windows.WindowState]::Minimized) {
+            $nowUtc = [DateTime]::UtcNow
+            if (($nowUtc - $script:lastAutoRefreshStampUtc).TotalSeconds -ge $script:autoAppRefreshIntervalSec) {
+                Schedule-AutoAppRefresh -DelaySeconds 2 -FollowUpPasses 1 -Reason "window-restore"
+            } else {
+                Schedule-AutoAppRefresh -DelaySeconds $script:autoAppRefreshIntervalSec -FollowUpPasses 1 -Reason "window-restore"
+            }
+        }
+    })
+}
+
 $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
@@ -34980,7 +36442,13 @@ $window.Add_ContentRendered({
         Log-Text "[OK] S$([char]0x1EB5)n s$([char]0x00E0)ng ($($allItemBorders.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng / $($categories.Count) danh m$([char]0x1EE5)c)."
         if ($script:hasFastCatalogRowBuilder) {
             Sync-Tab0ViewportAssets
-            if ($script:deferredCardTimer) { $script:deferredCardTimer.Start() }
+            if ($script:hasMasonryPanel) {
+                if ($script:offscreenPrewarmTimer -and -not $script:tab0AllAssetsSettled) {
+                    $script:offscreenPrewarmTimer.Start()
+                }
+            } elseif ($script:deferredCardTimer) {
+                $script:deferredCardTimer.Start()
+            }
         }
         Flush-PendingIconCache -MaxDecode 24
         if ($script:pendingIconSaves -and $script:pendingIconSaves.Count -gt 0 -and -not $script:iconSyncTimer.IsEnabled) {
@@ -34998,12 +36466,15 @@ $window.Add_ContentRendered({
                     $script:isScanningApps = $false
                 }
                 if ($script:isWindowClosing) { return }
+                Reset-AutoAppRefreshTimer
                 $window.Dispatcher.BeginInvoke(
-                    [System.Windows.Threading.DispatcherPriority]::ContextIdle,
+                    [System.Windows.Threading.DispatcherPriority]::Background,
                     [Action]{
-                        if (-not $script:isWindowClosing -and (-not $script:uninstallerLoadedOnce -or $script:deferredUninstallerLoad)) {
+                        if (-not $script:isWindowClosing -and (-not $script:uninstallerLoadedOnce -or $script:deferredUninstallerLoad -or $script:uninstallerStale)) {
+                            $forceLoadUninst = [bool]$script:uninstallerStale
                             $script:deferredUninstallerLoad = $false
-                            Update-UninstallerList
+                            $script:uninstallerStale = $false
+                            Update-UninstallerList -Force:$forceLoadUninst
                         }
                     }
                 ) | Out-Null

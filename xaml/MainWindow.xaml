@@ -411,19 +411,8 @@
                         <ScrollViewer Grid.Column="1" Name="AppsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                                       CanContentScroll="False" PanningMode="VerticalOnly" Padding="10,10">
                             <Grid Name="CardsContainer">
-                                <Grid Name="CardsMasonryHost">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Name="CardsCol0" Margin="4,0"/>
-                                    <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
-                                    <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0"/>
-                                </Grid>
-
-                                <StackPanel Name="GroupMasonrySection" Visibility="Collapsed">
-                                    <Border Name="GroupFilterBanner" Background="#111722" BorderBrush="#2B394F"
+                                <StackPanel Name="AllAndGroupHost">
+                                    <Border Name="GroupFilterBanner" Visibility="Collapsed" Background="#111722" BorderBrush="#2B394F"
                                             BorderThickness="1" CornerRadius="2" Margin="4,0,4,10" Padding="12,8">
                                         <Grid>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
@@ -441,6 +430,19 @@
                                         </Grid>
                                     </Border>
 
+                                    <Grid Name="CardsMasonryHost" Margin="4,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Name="CardsCol0" Margin="0,0,4,0"/>
+                                        <StackPanel Grid.Column="1" Name="CardsCol1" Margin="4,0"/>
+                                        <StackPanel Grid.Column="2" Name="CardsCol2" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel Name="GroupMasonrySection" Visibility="Collapsed">
                                     <Grid Name="GroupMasonryHost">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -480,13 +482,15 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="15"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="15"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" Name="SingleCatCol0"/>
+                                            <Border Grid.Column="1" Name="SingleCatDivider0" Width="1" Background="#253349" HorizontalAlignment="Center" Margin="0,2" IsHitTestVisible="False" SnapsToDevicePixels="True"/>
                                             <StackPanel Grid.Column="2" Name="SingleCatCol1"/>
+                                            <Border Grid.Column="3" Name="SingleCatDivider1" Width="1" Background="#253349" HorizontalAlignment="Center" Margin="0,2" IsHitTestVisible="False" SnapsToDevicePixels="True"/>
                                             <StackPanel Grid.Column="4" Name="SingleCatCol2"/>
                                         </Grid>
                                     </StackPanel>
@@ -564,7 +568,7 @@
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
                                                     Background="#1E293B" Foreground="#38BDF8"/>
-                                            <Button Name="btnFilterUninstBroken" Content="Xóa sai cách / Lỗi" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnFilterUninstBroken" Content="Bị lỗi / Còn sót" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
                                     <TextBlock Text="Sắp xếp:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>

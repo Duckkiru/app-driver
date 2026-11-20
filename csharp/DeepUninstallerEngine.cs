@@ -485,6 +485,44 @@ namespace DuckUtil
 
         [DllImport("shell32.dll", EntryPoint = "SHFileOperationW", CharSet = CharSet.Unicode)]
         private static extern int SHFileOperationX64(ref SHFILEOPSTRUCT_X64 lpFileOp);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WIN32_FIND_DATAW
+        {
+            public uint dwFileAttributes;
+            public uint ftCreationTimeLow;
+            public uint ftCreationTimeHigh;
+            public uint ftLastAccessTimeLow;
+            public uint ftLastAccessTimeHigh;
+            public uint ftLastWriteTimeLow;
+            public uint ftLastWriteTimeHigh;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindFirstFileExW(string lpFileName, int fInfoLevelId, out WIN32_FIND_DATAW lpFindFileData, int fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool FindNextFileW(IntPtr hFindFile, out WIN32_FIND_DATAW lpFindFileData);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FindClose(IntPtr hFindFile);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern uint GetFileAttributesW(string lpFileName);
+
+        private static readonly IntPtr INVALID_FIND_HANDLE = new IntPtr(-1);
+        private const uint W32_FILE_ATTRIBUTE_DIRECTORY = 0x10;
+        private const uint W32_FILE_ATTRIBUTE_REPARSE_POINT = 0x400;
+        private const uint W32_INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF;
+
         private static Dictionary<string, string> _cachedDirIndex;
         private static DateTime _dirIndexBuiltAt = DateTime.MinValue;
         private static readonly object _dirIndexLock = new object();
@@ -1695,7 +1733,13 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootPath)) return 0L;
             try
             {
-                if (!Directory.Exists(rootPath) || IsReparsePoint(rootPath)) return 0L;
+                uint rootAttr = GetFileAttributesW(rootPath);
+                if (rootAttr == W32_INVALID_FILE_ATTRIBUTES ||
+                    (rootAttr & W32_FILE_ATTRIBUTE_DIRECTORY) == 0 ||
+                    (rootAttr & W32_FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                {
+                    return 0L;
+                }
             }
             catch { return 0L; }
 
@@ -1706,31 +1750,49 @@ namespace DuckUtil
             for (int depth = 0; depth <= maxDepth; depth++)
             {
                 var nextLevel = new List<string>();
-                foreach (var dir in currentLevel)
+                for (int di = 0; di < currentLevel.Count; di++)
                 {
+                    string dir = currentLevel[di];
+                    string search = dir.EndsWith("\\", StringComparison.Ordinal) ? (dir + "*") : (dir + "\\*");
+                    WIN32_FIND_DATAW fd;
+                    IntPtr h = INVALID_FIND_HANDLE;
                     try
                     {
-                        foreach (var file in Directory.EnumerateFiles(dir))
+                        h = FindFirstFileExW(search, 1, out fd, 0, IntPtr.Zero, 2);
+                        if (h == INVALID_FIND_HANDLE)
                         {
-                            try
+                            h = FindFirstFileExW(search, 0, out fd, 0, IntPtr.Zero, 0);
+                        }
+                        if (h == INVALID_FIND_HANDLE) continue;
+
+                        do
+                        {
+                            string name = fd.cFileName;
+                            if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                            if ((fd.dwFileAttributes & W32_FILE_ATTRIBUTE_DIRECTORY) != 0)
                             {
-                                var fi = new FileInfo(file);
-                                totalSize += fi.Length;
+                                if (depth < maxDepth && (fd.dwFileAttributes & W32_FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                                {
+                                    nextLevel.Add(dir.EndsWith("\\", StringComparison.Ordinal) ? (dir + name) : (dir + "\\" + name));
+                                }
+                            }
+                            else
+                            {
+                                totalSize += ((long)fd.nFileSizeHigh << 32) | (uint)fd.nFileSizeLow;
                                 fileCount++;
                                 if (fileCount >= maxFiles) return totalSize;
                             }
-                            catch {}
                         }
-
-                        if (depth < maxDepth)
-                        {
-                            foreach (var sub in Directory.EnumerateDirectories(dir))
-                            {
-                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
-                            }
-                        }
+                        while (FindNextFileW(h, out fd));
                     }
                     catch {}
+                    finally
+                    {
+                        if (h != INVALID_FIND_HANDLE)
+                        {
+                            try { FindClose(h); } catch {}
+                        }
+                    }
                 }
                 if (nextLevel.Count == 0) break;
                 currentLevel = nextLevel;
@@ -3217,6 +3279,7 @@ namespace DuckUtil
             bool isDir = Directory.Exists(norm);
             bool isFile = !isDir && File.Exists(norm);
             if (!isDir && !isFile) return true;
+            if (IsReparsePoint(norm)) return false;
             if (!IsSafeLockTargetDirectory(isDir ? norm : Path.GetDirectoryName(norm))) return false;
 
             try
@@ -3693,8 +3756,14 @@ namespace DuckUtil
                 try
                 {
                     mp.Kill();
-                    mp.WaitForExit(1500);
-                    terminated = true;
+                    if (mp.WaitForExit(1500) || mp.HasExited)
+                    {
+                        terminated = true;
+                    }
+                    else
+                    {
+                        terminated = TryTaskkillPidTree(pid);
+                    }
                 }
                 catch
                 {
@@ -4293,11 +4362,17 @@ namespace DuckUtil
                             catch {}
                             try
                             {
-                                File.SetAttributes(taskFile, FileAttributes.Normal);
-                                File.Delete(taskFile);
+                                if (File.Exists(taskFile))
+                                {
+                                    File.SetAttributes(taskFile, FileAttributes.Normal);
+                                    File.Delete(taskFile);
+                                }
                             }
                             catch {}
-                            removed++;
+                            if (!File.Exists(taskFile))
+                            {
+                                removed++;
+                            }
                         }
                     }
                     catch {}
@@ -5077,7 +5152,8 @@ namespace DuckUtil
                 return 0;
             try
             {
-                if (!Directory.Exists(backupDir)) return 0;
+                if (!Directory.Exists(backupDir) || IsReparsePoint(backupDir)) return 0;
+                if (Directory.Exists(targetDir) && IsReparsePoint(targetDir)) return 0;
             }
             catch { return 0; }
 
@@ -5096,6 +5172,7 @@ namespace DuckUtil
                         {
                             try
                             {
+                                if (IsReparsePoint(file)) continue;
                                 string relPath = file.Substring(bkpLen).TrimStart('\\');
                                 string destFile = Path.Combine(targetDir, relPath);
                                 if (File.Exists(destFile)) continue;
@@ -5115,7 +5192,10 @@ namespace DuckUtil
                         {
                             foreach (var sub in Directory.EnumerateDirectories(dir))
                             {
-                                nextLevel.Add(sub);
+                                if (!IsReparsePoint(sub))
+                                {
+                                    nextLevel.Add(sub);
+                                }
                             }
                         }
                     }

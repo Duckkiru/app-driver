@@ -10,9 +10,20 @@ function Stop-ChildProcessTree {
         if (-not $hasExited) {
             $pidToKill = try { $Proc.Id } catch { 0 }
             if ($pidToKill -gt 0) {
+                $tkProc = $null
                 try {
-                    Start-Process "taskkill.exe" -ArgumentList "/F /T /PID $pidToKill" -NoNewWindow -Wait -ErrorAction SilentlyContinue
-                } catch {}
+                    $psi = New-Object System.Diagnostics.ProcessStartInfo
+                    $psi.FileName = "taskkill.exe"
+                    $psi.Arguments = "/F /T /PID $pidToKill"
+                    $psi.CreateNoWindow = $true
+                    $psi.UseShellExecute = $false
+                    $tkProc = [System.Diagnostics.Process]::Start($psi)
+                    if ($tkProc -and -not $tkProc.WaitForExit(3000)) {
+                        try { $tkProc.Kill() } catch {}
+                    }
+                } catch {} finally {
+                    if ($tkProc) { try { $tkProc.Dispose() } catch {} }
+                }
             }
             try { $Proc.Kill() } catch {}
         }

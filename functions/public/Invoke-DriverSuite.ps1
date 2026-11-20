@@ -21,6 +21,7 @@ function Invoke-PnpDeviceRescan {
 
 function Invoke-PnpDriverStoreCleanup {
     Log-Text "[*] Đang phân tích danh sách gói Driver OEM bên thứ ba (pnputil /enum-drivers)..."
+    $p = $null
     try {
         $pinfo = New-Object System.Diagnostics.ProcessStartInfo
         $pinfo.FileName = "pnputil.exe"
@@ -32,8 +33,12 @@ function Invoke-PnpDriverStoreCleanup {
         $p = [System.Diagnostics.Process]::Start($pinfo)
         $outTask = $p.StandardOutput.ReadToEndAsync()
         $errTask = $p.StandardError.ReadToEndAsync()
-        $p.WaitForExit()
-        $raw = $outTask.Result
+        if (-not $p.WaitForExit(15000)) {
+            try { $p.Kill() } catch {}
+            Log-Text "[!] Hết thời gian liệt kê DriverStore (pnputil /enum-drivers)."
+            return
+        }
+        $raw = if ($outTask.Wait(1000)) { $outTask.Result } else { "" }
 
         $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?i)(?:Published Name|Tên đã phát hành):\s*(oem\d+\.inf)')
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
@@ -47,8 +52,12 @@ function Invoke-PnpDriverStoreCleanup {
         $deletedCount = 0
         $inUseCount = 0
         $errorCount = 0
+        $userAborted = $false
+        $hasForms = ($null -ne ('System.Windows.Forms.Application' -as [type]))
 
         foreach ($inf in $oemList) {
+            if ($script:isWindowClosing -or $script:cancelRequested) { $userAborted = $true; break }
+            $delP = $null
             try {
                 $delPinfo = New-Object System.Diagnostics.ProcessStartInfo
                 $delPinfo.FileName = "pnputil.exe"
@@ -61,10 +70,32 @@ function Invoke-PnpDriverStoreCleanup {
 
                 $delOutTask = $delP.StandardOutput.ReadToEndAsync()
                 $delErrTask = $delP.StandardError.ReadToEndAsync()
-                $delP.WaitForExit()
+                $delDeadline = [DateTime]::UtcNow.AddSeconds(30)
+                $timedOutDel = $false
+                while (-not $delP.WaitForExit(150)) {
+                    if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
+                    if ($script:isWindowClosing -or $script:cancelRequested) {
+                        $userAborted = $true
+                        try { $delP.Kill() } catch {}
+                        try { [void]$delP.WaitForExit(500) } catch {}
+                        break
+                    }
+                    if ([DateTime]::UtcNow -ge $delDeadline) {
+                        $timedOutDel = $true
+                        try { $delP.Kill() } catch {}
+                        try { [void]$delP.WaitForExit(500) } catch {}
+                        break
+                    }
+                }
+                if ($userAborted) { break }
+                if ($timedOutDel) {
+                    $errorCount++
+                    Log-Text "   [WARN - Quá thời gian xử lý gói $inf]"
+                    continue
+                }
 
-                $delOut = $delOutTask.Result
-                $delErr = $delErrTask.Result
+                $delOut = if ($delOutTask.Wait(1000)) { $delOutTask.Result } else { "" }
+                $delErr = if ($delErrTask.Wait(1000)) { $delErrTask.Result } else { "" }
                 $combined = ($delOut + "`n" + $delErr).Trim()
 
                 if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
@@ -81,20 +112,26 @@ function Invoke-PnpDriverStoreCleanup {
             } catch {
                 $errorCount++
                 Log-Text "   [!] Lỗi ngoại lệ khi xử lý ${inf}: $($_.Exception.Message)"
+            } finally {
+                if ($delP) { try { $delP.Dispose() } catch {} }
             }
-            [System.Windows.Forms.Application]::DoEvents()
+            if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
         }
 
-        if ($deletedCount -gt 0) {
+        if ($userAborted) {
+            Log-Text "[!] Đã dừng dọn dẹp DriverStore theo yêu cầu (đã xóa: $deletedCount, bỏ qua: $inUseCount, lỗi: $errorCount)."
+        } elseif ($deletedCount -gt 0) {
             Log-Text "[OK] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
-        } else {
+        } elseif ($errorCount -eq 0) {
             Log-Text "[OK] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
         }
-        if ($errorCount -gt 0) {
+        if ($errorCount -gt 0 -and -not $userAborted) {
             Log-Text "[!] Có $errorCount gói driver gặp lỗi trong quá trình xử lý."
         }
     } catch {
         Log-Text "[!] Lỗi khi dọn dẹp DriverStore: $($_.Exception.Message)"
+    } finally {
+        if ($p) { try { $p.Dispose() } catch {} }
     }
 }
 

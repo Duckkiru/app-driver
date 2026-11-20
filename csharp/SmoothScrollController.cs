@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,24 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace DuckUtil {
+    public static class ConsoleHelper {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        public static void DisableQuickEdit() {
+            IntPtr h = GetStdHandle(-10);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+            uint mode;
+            if (GetConsoleMode(h, out mode)) {
+                uint next = (mode & ~0x0040u) | 0x0080u;
+                if (next != mode) SetConsoleMode(h, next);
+            }
+        }
+    }
+
     public sealed class SmoothScrollController {
         private readonly ScrollViewer _sv;
         private double _currentOffset;
@@ -481,6 +500,22 @@ namespace DuckUtil {
             }
         }
 
+        private static void WriteBytesAtomic(string destPath, byte[] data) {
+            if (string.IsNullOrEmpty(destPath) || data == null || data.Length == 0 || File.Exists(destPath)) return;
+            string tmpPath = destPath + ".tmp." + Guid.NewGuid().ToString("N");
+            try {
+                string dir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllBytes(tmpPath, data);
+                if (!File.Exists(destPath)) {
+                    File.Move(tmpPath, destPath);
+                }
+            } catch {
+            } finally {
+                try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch {}
+            }
+        }
+
         private static void RemoteWorkerLoop() {
             try {
                 while (true) {
@@ -507,16 +542,16 @@ namespace DuckUtil {
                             byte[] dl = DownloadBytesWithTimeout(job.Url, 2500);
                             if (dl != null && dl.Length > 230 && dl.Length != 588) {
                                 ready = DecodeFrozenPngOrIcoBitmap(dl);
-                                if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
-                                    try { File.WriteAllBytes(job.DestPath, dl); } catch {}
+                                if (ready != null) {
+                                    WriteBytesAtomic(job.DestPath, dl);
                                 }
                             }
                             if (ready == null && !string.IsNullOrWhiteSpace(job.FallbackUrl) && Volatile.Read(ref _remoteGen) == gen) {
                                 byte[] dl2 = DownloadBytesWithTimeout(job.FallbackUrl, 2500);
                                 if (dl2 != null && dl2.Length > 230 && dl2.Length != 588) {
                                     ready = DecodeFrozenPngOrIcoBitmap(dl2);
-                                    if (ready != null && !string.IsNullOrEmpty(job.DestPath) && !File.Exists(job.DestPath)) {
-                                        try { File.WriteAllBytes(job.DestPath, dl2); } catch {}
+                                    if (ready != null) {
+                                        WriteBytesAtomic(job.DestPath, dl2);
                                     }
                                 }
                             }
@@ -926,7 +961,7 @@ namespace DuckUtil {
             var statusTb = new TextBlock();
             statusTb.FontSize = 10.5;
             statusTb.FontWeight = FontWeights.SemiBold;
-            statusTb.Text = isBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+            statusTb.Text = isBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
             statusTb.Foreground = isBrokenOrphan ? badgeBrokenFg : statusOkFg;
             statusBorder.Child = statusTb;
             Grid.SetColumn(statusBorder, 5);
@@ -984,7 +1019,7 @@ namespace DuckUtil {
         private static readonly Thickness _ctUpdPad = new Thickness(5, 1, 5, 1);
         private static readonly Thickness _ctUpdMgn = new Thickness(2, 0, 4, 0);
         private static readonly Thickness _ctLinkMgn = new Thickness(0, -1, 0, 0);
-        private static readonly CornerRadius _ccRow = new CornerRadius(1);
+        private static readonly CornerRadius _ccRow = new CornerRadius(2);
 
         public static CatalogRowVisual CreateCatalogRow(
             string appName,
@@ -1011,6 +1046,7 @@ namespace DuckUtil {
             rowBorder.CornerRadius = _ccRow;
             rowBorder.Padding = _ctRowPad;
             rowBorder.Margin = _ctRowMgn;
+            rowBorder.SnapsToDevicePixels = true;
             if (rowStyle != null) rowBorder.Style = rowStyle;
             rowBorder.Cursor = Cursors.Hand;
             if (!string.IsNullOrEmpty(rowToolTip)) {
@@ -1297,6 +1333,145 @@ namespace DuckUtil {
             outOpenBtn = openBtn;
             return itemBorderEl;
         }
+
+        public static void DistributeRowsToColumns(Panel rowsStack, Panel[] cols, System.Collections.IList rows) {
+            if (cols == null || cols.Length == 0 || rows == null) return;
+            for (int c = 0; c < cols.Length; c++) {
+                if (cols[c] != null) cols[c].Children.Clear();
+            }
+            if (rowsStack != null) {
+                rowsStack.Children.Clear();
+            }
+            int n = rows.Count;
+            int colCnt = cols.Length;
+            int baseCnt = n / colCnt;
+            int rem = n % colCnt;
+            int offset = 0;
+            for (int ci = 0; ci < colCnt; ci++) {
+                int take = baseCnt + (ci < rem ? 1 : 0);
+                Panel cp = cols[ci];
+                for (int k = 0; k < take && (offset + k) < n; k++) {
+                    UIElement el = rows[offset + k] as UIElement;
+                    if (el != null && cp != null) cp.Children.Add(el);
+                }
+                offset += take;
+            }
+        }
+
+        public static void RestoreRowsFromColumns(Panel rowsStack, Panel[] cols, System.Collections.IList rows) {
+            if (cols != null) {
+                for (int c = 0; c < cols.Length; c++) {
+                    if (cols[c] != null) cols[c].Children.Clear();
+                }
+            }
+            if (rowsStack != null && rows != null) {
+                rowsStack.Children.Clear();
+                for (int i = 0; i < rows.Count; i++) {
+                    UIElement el = rows[i] as UIElement;
+                    if (el != null) rowsStack.Children.Add(el);
+                }
+            }
+        }
+    }
+
+    public sealed class MasonryPanel : Panel {
+        private int _columns = 3;
+        private double _columnSpacing = 8.0;
+
+        public int Columns {
+            get { return _columns; }
+            set {
+                int clamped = value < 1 ? 1 : value;
+                if (_columns != clamped) {
+                    _columns = clamped;
+                    InvalidateMeasure();
+                }
+            }
+        }
+
+        public double ColumnSpacing {
+            get { return _columnSpacing; }
+            set {
+                double clamped = value < 0.0 ? 0.0 : value;
+                if (Math.Abs(_columnSpacing - clamped) > 0.01) {
+                    _columnSpacing = clamped;
+                    InvalidateMeasure();
+                }
+            }
+        }
+
+        protected override System.Windows.Size MeasureOverride(System.Windows.Size availableSize) {
+            int cols = _columns < 1 ? 1 : _columns;
+            double totalW = (double.IsInfinity(availableSize.Width) || double.IsNaN(availableSize.Width) || availableSize.Width <= 0.0)
+                ? 900.0
+                : availableSize.Width;
+            double spacing = _columnSpacing;
+            double availCols = Math.Max(1.0, totalW - (cols - 1) * spacing);
+            double colW = Math.Floor(availCols / cols);
+            if (colW < 1.0) colW = availCols / cols;
+
+            System.Windows.Size childConstraint = new System.Windows.Size(colW, double.PositiveInfinity);
+            double[] colHeights = new double[cols];
+            UIElementCollection children = InternalChildren;
+            int count = children.Count;
+
+            for (int i = 0; i < count; i++) {
+                UIElement child = children[i];
+                if (child == null || child.Visibility == Visibility.Collapsed) continue;
+                child.Measure(childConstraint);
+                int bestCol = 0;
+                double minH = colHeights[0];
+                for (int c = 1; c < cols; c++) {
+                    if (colHeights[c] < minH) {
+                        minH = colHeights[c];
+                        bestCol = c;
+                    }
+                }
+                colHeights[bestCol] += child.DesiredSize.Height;
+            }
+
+            double maxH = 0.0;
+            for (int c = 0; c < cols; c++) {
+                if (colHeights[c] > maxH) maxH = colHeights[c];
+            }
+            return new System.Windows.Size(totalW, maxH);
+        }
+
+        protected override System.Windows.Size ArrangeOverride(System.Windows.Size finalSize) {
+            int cols = _columns < 1 ? 1 : _columns;
+            double totalW = finalSize.Width > 0.0 ? finalSize.Width : 900.0;
+            double spacing = _columnSpacing;
+            double availCols = Math.Max(1.0, totalW - (cols - 1) * spacing);
+            double colW = Math.Floor(availCols / cols);
+            if (colW < 1.0) colW = availCols / cols;
+            double colStep = colW + spacing;
+
+            double[] colHeights = new double[cols];
+            UIElementCollection children = InternalChildren;
+            int count = children.Count;
+
+            for (int i = 0; i < count; i++) {
+                UIElement child = children[i];
+                if (child == null || child.Visibility == Visibility.Collapsed) continue;
+                int bestCol = 0;
+                double minH = colHeights[0];
+                for (int c = 1; c < cols; c++) {
+                    if (colHeights[c] < minH) {
+                        minH = colHeights[c];
+                        bestCol = c;
+                    }
+                }
+                double h = child.DesiredSize.Height;
+                child.Arrange(new System.Windows.Rect(bestCol * colStep, minH, colW, h));
+                colHeights[bestCol] = minH + h;
+            }
+
+            double maxH = 0.0;
+            for (int c = 0; c < cols; c++) {
+                if (colHeights[c] > maxH) maxH = colHeights[c];
+            }
+            return new System.Windows.Size(totalW, maxH);
+        }
     }
 
     public sealed class UninstVirtualItem {
@@ -1453,6 +1628,9 @@ namespace DuckUtil {
         private readonly Dictionary<int, UninstRowSlot> _activeSlots = new Dictionary<int, UninstRowSlot>();
         private readonly Stack<UninstRowSlot> _freeSlots = new Stack<UninstRowSlot>();
         private readonly DispatcherTimer _iconTimer;
+        private readonly RoutedEventHandler _checkedHandler;
+        private readonly RoutedEventHandler _uncheckedHandler;
+        private readonly MouseButtonEventHandler _mouseUpHandler;
 
         private int _lastStart = -1;
         private int _lastEnd = -1;
@@ -1460,6 +1638,7 @@ namespace DuckUtil {
         private double _panelWidth = 0.0;
         private bool _suppressCheckEvents = false;
         private bool _isStopped = false;
+        private bool _eventsAttached = false;
         private int _lastTotalSourceCount = 0;
 
         public Func<bool> CanInteract;
@@ -1519,19 +1698,47 @@ namespace DuckUtil {
             _folderBg = folderBg;
             _folderBorder = folderBorder;
 
+            _checkedHandler = new RoutedEventHandler(OnRowCheckBoxChecked);
+            _uncheckedHandler = new RoutedEventHandler(OnRowCheckBoxUnchecked);
+            _mouseUpHandler = new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp);
+
+            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
+            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
+            AttachEvents();
+        }
+
+        private void AttachEvents() {
+            if (_eventsAttached) return;
+            _eventsAttached = true;
             if (_sv != null) {
                 _sv.ScrollChanged += OnScrollChanged;
             }
             if (_canvas != null) {
                 _canvas.SizeChanged += OnCanvasSizeChanged;
-                _canvas.AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(OnRowCheckBoxChecked));
-                _canvas.AddHandler(ToggleButton.UncheckedEvent, new RoutedEventHandler(OnRowCheckBoxUnchecked));
-                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, new MouseButtonEventHandler(OnCanvasMouseLeftButtonUp));
+                _canvas.AddHandler(ToggleButton.CheckedEvent, _checkedHandler);
+                _canvas.AddHandler(ToggleButton.UncheckedEvent, _uncheckedHandler);
+                _canvas.AddHandler(UIElement.MouseLeftButtonUpEvent, _mouseUpHandler);
             }
+            if (_iconTimer != null) {
+                _iconTimer.Tick += OnIconTimerTick;
+            }
+        }
 
-            _iconTimer = new DispatcherTimer(DispatcherPriority.Background);
-            _iconTimer.Interval = TimeSpan.FromMilliseconds(33);
-            _iconTimer.Tick += OnIconTimerTick;
+        private void DetachEvents() {
+            if (!_eventsAttached) return;
+            _eventsAttached = false;
+            if (_sv != null) {
+                _sv.ScrollChanged -= OnScrollChanged;
+            }
+            if (_canvas != null) {
+                _canvas.SizeChanged -= OnCanvasSizeChanged;
+                _canvas.RemoveHandler(ToggleButton.CheckedEvent, _checkedHandler);
+                _canvas.RemoveHandler(ToggleButton.UncheckedEvent, _uncheckedHandler);
+                _canvas.RemoveHandler(UIElement.MouseLeftButtonUpEvent, _mouseUpHandler);
+            }
+            if (_iconTimer != null) {
+                _iconTimer.Tick -= OnIconTimerTick;
+            }
         }
 
         public static Task<List<UninstVirtualItem>> BuildVirtualItemsAsync(
@@ -1697,6 +1904,7 @@ namespace DuckUtil {
 
         public void SetItems(List<UninstVirtualItem> items, int totalSourceCount) {
             _isStopped = false;
+            AttachEvents();
             _iconTimer.Stop();
             UnbindAllSlots();
             _allItems.Clear();
@@ -2118,7 +2326,7 @@ namespace DuckUtil {
                 slot.BadgeTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _badgeFg;
                 slot.StatusBorder.Background = item.IsBrokenOrphan ? _statusBrokenBg : _statusOkBg;
                 slot.StatusBorder.BorderBrush = item.IsBrokenOrphan ? _statusBrokenBorder : _statusOkBorder;
-                slot.StatusTb.Text = item.IsBrokenOrphan ? "X\u00F3a sai c\u00E1ch" : "B\u00ECnh th\u01B0\u1EDDng";
+                slot.StatusTb.Text = item.IsBrokenOrphan ? "L\u1ED7i / C\u00F2n s\u00F3t" : "B\u00ECnh th\u01B0\u1EDDng";
                 slot.StatusTb.Foreground = item.IsBrokenOrphan ? _badgeBrokenFg : _statusOkFg;
             }
 
@@ -2415,6 +2623,7 @@ namespace DuckUtil {
         public void Stop() {
             _isStopped = true;
             try { _iconTimer.Stop(); } catch {}
+            DetachEvents();
         }
     }
 }
