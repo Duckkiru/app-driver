@@ -39,7 +39,8 @@ namespace DuckUtil
         private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
         private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
-        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(canary|nightly|dev|alpha|beta|preview|pre|rc)(?:[.+_-]*(\d+))?(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTrailingLetter = new Regex(@"^\s*v?\d+(?:[.+_-]\d+)*([a-z])(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
 
         public static string CleanCatalogAppName(string name)
@@ -54,6 +55,46 @@ namespace DuckUtil
             }
             c = _rxMultiSpace.Replace(c, " ").Trim();
             return c;
+        }
+
+        private static string CompactAlnumKey(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            for (int i = 0; i < s.Length; i++)
+            {
+                char ch = s[i];
+                if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) sb.Append(ch);
+                else if (ch >= 'A' && ch <= 'Z') sb.Append((char)(ch + 32));
+                else if (ch == '+') sb.Append('p');
+            }
+            return sb.ToString();
+        }
+
+        private static int GetPrereleaseRank(string verStr, out long preNum)
+        {
+            preNum = 0L;
+            if (string.IsNullOrWhiteSpace(verStr)) return 100;
+            Match m = _rxPrerelease.Match(verStr);
+            if (!m.Success) return 100;
+            string tag = m.Groups[1].Value.ToLowerInvariant();
+            if (m.Groups[2].Success) long.TryParse(m.Groups[2].Value, out preNum);
+            if (tag == "canary" || tag == "nightly" || tag == "dev") return 1;
+            if (tag == "alpha") return 2;
+            if (tag == "beta") return 3;
+            if (tag == "pre" || tag == "preview") return 4;
+            if (tag == "rc") return 5;
+            return 10;
+        }
+
+        private static int GetTrailingLetterScore(string verStr)
+        {
+            if (string.IsNullOrWhiteSpace(verStr)) return 0;
+            if (_rxPrerelease.IsMatch(verStr)) return 0;
+            Match m = _rxTrailingLetter.Match(verStr);
+            if (!m.Success) return 0;
+            char ch = char.ToLowerInvariant(m.Groups[1].Value[0]);
+            return (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 1) : 0;
         }
 
         public static long[] GetVersionNumbers(string verStr)
@@ -88,6 +129,16 @@ namespace DuckUtil
                 if (va > vb) return 1;
                 if (va < vb) return -1;
             }
+            long preNumA, preNumB;
+            int rankA = GetPrereleaseRank(verA, out preNumA);
+            int rankB = GetPrereleaseRank(verB, out preNumB);
+            if (rankA > rankB) return 1;
+            if (rankA < rankB) return -1;
+            if (rankA < 100 && preNumA != preNumB) return preNumA > preNumB ? 1 : -1;
+            int sufA = GetTrailingLetterScore(verA);
+            int sufB = GetTrailingLetterScore(verB);
+            if (sufA > sufB) return 1;
+            if (sufA < sufB) return -1;
             return 0;
         }
 
@@ -108,9 +159,7 @@ namespace DuckUtil
             foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
             if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
             int cmp = CompareAppVersions(av, iv);
-            if (cmp > 0) return true;
-            if (cmp == 0 && _rxPrerelease.IsMatch(iv) && !_rxPrerelease.IsMatch(av)) return true;
-            return false;
+            return cmp > 0;
         }
 
         private static int GetDisplayWidthUpToIndex(string s, int charIdx)
@@ -1269,6 +1318,7 @@ namespace DuckUtil
         {
             public string Raw;
             public string Clean;
+            public string Compact;
             public Regex Pattern;
         }
 
@@ -1277,10 +1327,12 @@ namespace DuckUtil
             public string ID;
             public string Name;
             public string CleanTarget;
+            public string CompactTarget;
             public List<AliasPatternPair> CleanAliases;
             public List<AliasPatternPair> AliasEntries;
             public Regex PatternClean;
             public List<string> QueryTokens;
+            public HashSet<string> TargetTokenSet;
             public bool AllowNoise;
             public bool IsPrev;
             public bool IsVcRedist;
@@ -1366,6 +1418,7 @@ namespace DuckUtil
             var aliasEntries = new List<AliasPatternPair>();
             var queryTokens = new List<string>();
             var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetTokenSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (cleanTarget.Length >= 4)
             {
@@ -1373,9 +1426,10 @@ namespace DuckUtil
                 for (int i = 0; i < toks.Length; i++)
                 {
                     string qt = toks[i];
-                    if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                    if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt))
                     {
-                        queryTokens.Add(qt);
+                        if (seenTokens.Add(qt)) queryTokens.Add(qt);
+                        targetTokenSet.Add(qt);
                     }
                 }
             }
@@ -1387,7 +1441,8 @@ namespace DuckUtil
                     string alias = target.Aliases[ai];
                     if (string.IsNullOrWhiteSpace(alias)) continue;
                     string cAl = CleanCatalogAppName(alias);
-                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Pattern = null };
+                    string cmpAl = CompactAlnumKey(cAl.Length > 0 ? cAl : alias);
+                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Compact = cmpAl, Pattern = null };
                     cleanAliases.Add(pair);
                     if (alias.Length >= 4)
                     {
@@ -1397,7 +1452,7 @@ namespace DuckUtil
                         for (int i = 0; i < toks.Length; i++)
                         {
                             string qt = toks[i];
-                            if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                            if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
                             {
                                 queryTokens.Add(qt);
                             }
@@ -1409,6 +1464,11 @@ namespace DuckUtil
             Regex patternClean = (cleanTarget.Length >= 4)
                 ? new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(cleanTarget) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase)
                 : null;
+            string compactTarget = CompactAlnumKey(cleanTarget);
+            if (compactTarget.Length >= 4 && seenTokens.Add(compactTarget))
+            {
+                queryTokens.Add(compactTarget);
+            }
 
             Regex rxReqPy = null;
             Regex rxReqPyVer = null;
@@ -1459,10 +1519,12 @@ namespace DuckUtil
                 ID = tId,
                 Name = tName,
                 CleanTarget = cleanTarget,
+                CompactTarget = compactTarget,
                 CleanAliases = cleanAliases,
                 AliasEntries = aliasEntries,
                 PatternClean = patternClean,
                 QueryTokens = queryTokens,
+                TargetTokenSet = targetTokenSet,
                 AllowNoise = _rxAllowNoise.IsMatch(tName),
                 IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
                 IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
@@ -1631,6 +1693,184 @@ namespace DuckUtil
             };
         }
 
+        public static double ComputeJaroWinkler(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return 0.0;
+            if (string.Equals(a, b, StringComparison.Ordinal)) return 1.0;
+            int lenA = a.Length;
+            int lenB = b.Length;
+            int matchDist = Math.Max(0, (Math.Max(lenA, lenB) / 2) - 1);
+            bool[] matchedA = new bool[lenA];
+            bool[] matchedB = new bool[lenB];
+            int matches = 0;
+            for (int i = 0; i < lenA; i++)
+            {
+                int start = Math.Max(0, i - matchDist);
+                int end = Math.Min(i + matchDist + 1, lenB);
+                for (int j = start; j < end; j++)
+                {
+                    if (matchedB[j] || a[i] != b[j]) continue;
+                    matchedA[i] = true;
+                    matchedB[j] = true;
+                    matches++;
+                    break;
+                }
+            }
+            if (matches == 0) return 0.0;
+            int t = 0;
+            int k = 0;
+            for (int i = 0; i < lenA; i++)
+            {
+                if (!matchedA[i]) continue;
+                while (!matchedB[k]) k++;
+                if (a[i] != b[k]) t++;
+                k++;
+            }
+            double m = matches;
+            double jaro = ((m / lenA) + (m / lenB) + ((m - (t / 2.0)) / m)) / 3.0;
+            int prefix = 0;
+            int maxPref = Math.Min(4, Math.Min(lenA, lenB));
+            while (prefix < maxPref && a[prefix] == b[prefix]) prefix++;
+            return jaro + (prefix * 0.1 * (1.0 - jaro));
+        }
+
+        private static CatalogSensorItem MatchSingleCatalogTarget(
+            CatalogMatchTarget target,
+            Dictionary<string, CatalogSensorItem> idMap,
+            Dictionary<string, CatalogSensorItem> nameMap,
+            Dictionary<string, CatalogSensorItem> cleanNameMap,
+            Dictionary<string, CatalogSensorItem> compactNameMap,
+            Dictionary<string, List<CatalogSensorItem>> tokenIndex,
+            Dictionary<CatalogSensorItem, string> itemCompactMap,
+            Dictionary<CatalogSensorItem, HashSet<string>> itemTokenMap)
+        {
+            if (target == null) return null;
+            string targetId = target.ID ?? "";
+            CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
+            CatalogSensorItem cand;
+
+            if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            }
+            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                AliasPatternPair ap = meta.CleanAliases[a];
+                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Compact.Length >= 4 && compactNameMap.TryGetValue(ap.Compact, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            }
+            if (meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (meta.CompactTarget.Length >= 4 && compactNameMap.TryGetValue(meta.CompactTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+
+            if (meta.QueryTokens.Count == 0) return null;
+
+            var candidatePool = new List<CatalogSensorItem>();
+            var seenCand = new HashSet<CatalogSensorItem>();
+            for (int q = 0; q < meta.QueryTokens.Count; q++)
+            {
+                List<CatalogSensorItem> bucket;
+                if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
+                {
+                    for (int bi = 0; bi < bucket.Count; bi++)
+                    {
+                        if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
+                    }
+                }
+            }
+
+            CatalogSensorItem bestCand = null;
+            int bestScore = 0;
+            for (int ci = 0; ci < candidatePool.Count; ci++)
+            {
+                CatalogSensorItem item = candidatePool[ci];
+                string iId = item.ID ?? "";
+                string iName = item.Name ?? "";
+                string iClean = item.CleanName ?? "";
+                int score = 0;
+
+                for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
+                {
+                    AliasPatternPair ae = meta.AliasEntries[aeIdx];
+                    if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                    {
+                        score = 780;
+                        break;
+                    }
+                    if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                    {
+                        int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
+                        int cScore = 700 + lenRatio;
+                        if (cScore > score) score = cScore;
+                    }
+                }
+
+                if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                {
+                    int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                    score = 650 + lenRatio;
+                }
+
+                if (score == 0 && meta.TargetTokenSet.Count >= 2)
+                {
+                    HashSet<string> itSet;
+                    if (itemTokenMap.TryGetValue(item, out itSet) && itSet.Count >= meta.TargetTokenSet.Count)
+                    {
+                        int hitToks = 0;
+                        foreach (string tt in meta.TargetTokenSet)
+                        {
+                            if (itSet.Contains(tt)) hitToks++;
+                        }
+                        if (hitToks == meta.TargetTokenSet.Count)
+                        {
+                            int jacc = (hitToks * 30) / Math.Max(1, itSet.Count);
+                            score = 670 + jacc;
+                        }
+                    }
+                }
+
+                if (score == 0 && meta.CompactTarget.Length >= 4)
+                {
+                    string itemCmp;
+                    itemCompactMap.TryGetValue(item, out itemCmp);
+                    string idCmp = CompactAlnumKey(iId);
+                    if ((!string.IsNullOrEmpty(itemCmp) && string.Equals(itemCmp, meta.CompactTarget, StringComparison.Ordinal)) ||
+                        (!string.IsNullOrEmpty(idCmp) && idCmp.EndsWith(meta.CompactTarget, StringComparison.Ordinal)))
+                    {
+                        score = 690;
+                    }
+                    else if (!string.IsNullOrEmpty(itemCmp) && meta.CompactTarget.Length >= 5 && itemCmp.Length >= 5)
+                    {
+                        int maxL = Math.Max(meta.CompactTarget.Length, itemCmp.Length);
+                        int minL = Math.Min(meta.CompactTarget.Length, itemCmp.Length);
+                        if (minL * 100 >= maxL * 68)
+                        {
+                            double jw = ComputeJaroWinkler(meta.CompactTarget, itemCmp);
+                            if (jw >= 0.90)
+                            {
+                                score = 610 + (int)Math.Round(jw * 70.0);
+                            }
+                        }
+                    }
+                }
+
+                if (score > 0)
+                {
+                    if (item.HasUpdate) score += 15;
+                    if (!_rxSyntheticId.IsMatch(iId)) score += 10;
+                    if (score > bestScore && IsMatchCompatible(meta, item))
+                    {
+                        bestScore = score;
+                        bestCand = item;
+                    }
+                }
+            }
+
+            return bestCand;
+        }
+
         public static CatalogSensorItem[] MatchCatalogApps(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
         {
             if (targets == null || targets.Length == 0) return new CatalogSensorItem[0];
@@ -1649,7 +1889,10 @@ namespace DuckUtil
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var compactNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+            var itemCompactMap = new Dictionary<CatalogSensorItem, string>();
+            var itemTokenMap = new Dictionary<CatalogSensorItem, HashSet<string>>();
 
             for (int i = 0; i < installedItems.Length; i++)
             {
@@ -1662,6 +1905,11 @@ namespace DuckUtil
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
                 if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
+
+                string itCompact = CompactAlnumKey(itClean.Length > 0 ? itClean : itName);
+                itemCompactMap[it] = itCompact;
+                if (itCompact.Length >= 4) SetPreferredEntry(compactNameMap, itCompact, it);
+
                 if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
                 {
                     SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
@@ -1673,7 +1921,7 @@ namespace DuckUtil
                 for (int ti = 0; ti < toks.Length; ti++)
                 {
                     string tk = toks[ti];
-                    if (tk.Length >= 3 && seenTok.Add(tk))
+                    if ((tk.Length >= 3 || string.Equals(tk, "7z", StringComparison.OrdinalIgnoreCase)) && seenTok.Add(tk))
                     {
                         List<CatalogSensorItem> bucket;
                         if (!tokenIndex.TryGetValue(tk, out bucket))
@@ -1684,130 +1932,22 @@ namespace DuckUtil
                         bucket.Add(it);
                     }
                 }
+                itemTokenMap[it] = seenTok;
             }
 
-            var lookupCache = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
-            for (int tIdx = 0; tIdx < targets.Length; tIdx++)
+            if (targets.Length >= 24)
             {
-                CatalogMatchTarget target = targets[tIdx];
-                if (target == null) continue;
-                string targetId = target.ID ?? "";
-                CatalogSensorItem cachedRes;
-                if (lookupCache.TryGetValue(targetId, out cachedRes))
+                Parallel.For(0, targets.Length, delegate(int tIdx)
                 {
-                    results[tIdx] = cachedRes;
-                    continue;
-                }
-
-                CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
-                CatalogSensorItem matched = null;
-                CatalogSensorItem cand;
-
-                if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
+                });
+            }
+            else
+            {
+                for (int tIdx = 0; tIdx < targets.Length; tIdx++)
                 {
-                    matched = cand;
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
                 }
-                if (matched == null)
-                {
-                    for (int a = 0; a < meta.CleanAliases.Count; a++)
-                    {
-                        if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                    }
-                }
-                if (matched == null && !string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
-                {
-                    matched = cand;
-                }
-                if (matched == null)
-                {
-                    for (int a = 0; a < meta.CleanAliases.Count; a++)
-                    {
-                        AliasPatternPair ap = meta.CleanAliases[a];
-                        if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                        if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                    }
-                }
-                if (matched == null && meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand))
-                {
-                    matched = cand;
-                }
-
-                if (matched == null && meta.QueryTokens.Count > 0)
-                {
-                    var candidatePool = new List<CatalogSensorItem>();
-                    var seenCand = new HashSet<CatalogSensorItem>();
-                    for (int q = 0; q < meta.QueryTokens.Count; q++)
-                    {
-                        List<CatalogSensorItem> bucket;
-                        if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
-                        {
-                            for (int bi = 0; bi < bucket.Count; bi++)
-                            {
-                                if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
-                            }
-                        }
-                    }
-
-                    CatalogSensorItem bestCand = null;
-                    int bestScore = 0;
-                    for (int ci = 0; ci < candidatePool.Count; ci++)
-                    {
-                        CatalogSensorItem item = candidatePool[ci];
-                        string iId = item.ID ?? "";
-                        string iName = item.Name ?? "";
-                        string iClean = item.CleanName ?? "";
-                        int score = 0;
-
-                        for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
-                        {
-                            AliasPatternPair ae = meta.AliasEntries[aeIdx];
-                            if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
-                            {
-                                score = 780;
-                                break;
-                            }
-                            if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
-                            {
-                                int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
-                                int cScore = 700 + lenRatio;
-                                if (cScore > score) score = cScore;
-                            }
-                        }
-
-                        if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
-                        {
-                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
-                            score = 650 + lenRatio;
-                        }
-
-                        if (score > 0)
-                        {
-                            if (item.HasUpdate) score += 15;
-                            if (!_rxSyntheticId.IsMatch(iId)) score += 10;
-                            if (score > bestScore && IsMatchCompatible(meta, item))
-                            {
-                                bestScore = score;
-                                bestCand = item;
-                            }
-                        }
-                    }
-                    matched = bestCand;
-                }
-
-                lookupCache[targetId] = matched;
-                results[tIdx] = matched;
             }
 
             return results;

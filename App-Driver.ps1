@@ -4734,6 +4734,38 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             Foreground="#38BDF8" BorderBrush="#29527D"/>
                                 </StackPanel>
 
+                                <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
+                                        Padding="8,4" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Grid Width="220">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                              Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                              Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
+                                        <TextBlock Grid.Column="1" Text="T&#x00EC;m &#x1EE9;ng d&#x1EE5;ng..." Foreground="#475569" FontSize="11.5"
+                                                   VerticalAlignment="Center" IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=txtCatalogSearch}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Grid.Column="1" Name="txtCatalogSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
+                                                 ToolTip="T&#x00EC;m nhanh &#x1EE9;ng d&#x1EE5;ng (kh&#x00F4;ng d&#x1EA5;u, g&#x1EA7;n &#x0111;&#x00FA;ng, t&#x00EA;n g&#x00F3;i WinGet/ID)..." ToolTipService.InitialShowDelay="3000"/>
+                                        <Button Grid.Column="2" Name="btnClearCatalogSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
+                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="3000"/>
+                                    </Grid>
+                                </Border>
+
                                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                                     <Button Name="btnSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
                                     <Button Name="btnDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Margin="0"/>
@@ -5272,12 +5304,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Controls.Primitives;
@@ -6643,6 +6677,243 @@ namespace DuckUtil {
                 }
             }
         }
+
+        private static readonly HttpClient _downloadClient = CreateDownloadClient();
+
+        private static HttpClient CreateDownloadClient() {
+            if (Environment.Version.Major == 4) {
+                try {
+                    Type spm = Type.GetType("System.Net.ServicePointManager, System");
+                    if (spm != null) {
+                        PropertyInfo prop = spm.GetProperty("SecurityProtocol", BindingFlags.Public | BindingFlags.Static);
+                        if (prop != null) {
+                            int cur = Convert.ToInt32(prop.GetValue(null, null));
+                            object val = Enum.ToObject(prop.PropertyType, cur | 3072);
+                            prop.SetValue(null, val, null);
+                        }
+                    }
+                } catch {}
+            }
+            var handler = new HttpClientHandler();
+            try { handler.AllowAutoRedirect = true; } catch {}
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMinutes(3);
+            try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DuckUtil"); } catch {}
+            return client;
+        }
+
+        public static string NormalizeSearchFold(string input) {
+            if (string.IsNullOrWhiteSpace(input)) return "";
+            string norm = input.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(norm.Length);
+            bool prevSpace = true;
+            for (int i = 0; i < norm.Length; i++) {
+                char ch = norm[i];
+                if (ch == '\u0111' || ch == '\u0110') {
+                    sb.Append('d');
+                    prevSpace = false;
+                    continue;
+                }
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (uc == UnicodeCategory.NonSpacingMark) continue;
+                if (ch >= 'A' && ch <= 'Z') {
+                    sb.Append((char)(ch + 32));
+                    prevSpace = false;
+                } else if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+                    sb.Append(ch);
+                    prevSpace = false;
+                } else if (!prevSpace) {
+                    sb.Append(' ');
+                    prevSpace = true;
+                }
+            }
+            if (sb.Length > 0 && sb[sb.Length - 1] == ' ') sb.Length--;
+            return sb.ToString();
+        }
+
+        public static string CompactSearchAlnum(string folded) {
+            if (string.IsNullOrEmpty(folded)) return "";
+            var sb = new StringBuilder(folded.Length);
+            for (int i = 0; i < folded.Length; i++) {
+                char c = folded[i];
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
+        public static string[] SplitFoldedTokens(string folded) {
+            if (string.IsNullOrEmpty(folded)) return new string[0];
+            return folded.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private static int BoundedDamerauDistance(string a, string b, int maxDist) {
+            int n = a.Length;
+            int m = b.Length;
+            if (Math.Abs(n - m) > maxDist) return maxDist + 1;
+            int[] prevPrev = new int[m + 1];
+            int[] prev = new int[m + 1];
+            int[] curr = new int[m + 1];
+            for (int j = 0; j <= m; j++) prev[j] = j;
+            for (int i = 1; i <= n; i++) {
+                curr[0] = i;
+                int rowMin = curr[0];
+                char ai = a[i - 1];
+                for (int j = 1; j <= m; j++) {
+                    char bj = b[j - 1];
+                    int cost = (ai == bj) ? 0 : 1;
+                    int val = Math.Min(Math.Min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+                    if (i > 1 && j > 1 && ai == b[j - 2] && a[i - 2] == bj) {
+                        int trans = prevPrev[j - 2] + 1;
+                        if (trans < val) val = trans;
+                    }
+                    curr[j] = val;
+                    if (val < rowMin) rowMin = val;
+                }
+                if (rowMin > maxDist) return maxDist + 1;
+                int[] tmp = prevPrev;
+                prevPrev = prev;
+                prev = curr;
+                curr = tmp;
+            }
+            return prev[m];
+        }
+
+        public static int ScoreSearchQuery(
+            string foldedQuery,
+            string compactQuery,
+            string[] qTokens,
+            string foldedName,
+            string compactName,
+            string foldedHaystack,
+            string compactHaystack,
+            string[] nameWords)
+        {
+            if (string.IsNullOrEmpty(foldedQuery)) return 1;
+            if (foldedName == foldedQuery || (!string.IsNullOrEmpty(compactQuery) && compactName == compactQuery)) {
+                return 1000;
+            }
+            if (!string.IsNullOrEmpty(foldedName)) {
+                if (foldedName.StartsWith(foldedQuery, StringComparison.Ordinal)) return 880;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 2 && compactName.StartsWith(compactQuery, StringComparison.Ordinal)) return 840;
+                if (foldedName.IndexOf(" " + foldedQuery, StringComparison.Ordinal) >= 0) return 760;
+                if (foldedName.IndexOf(foldedQuery, StringComparison.Ordinal) >= 0) return 700;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 3 && compactName.IndexOf(compactQuery, StringComparison.Ordinal) >= 0) return 680;
+            }
+            if (!string.IsNullOrEmpty(foldedHaystack)) {
+                if (foldedHaystack.IndexOf(foldedQuery, StringComparison.Ordinal) >= 0) return 610;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 3 && compactHaystack.IndexOf(compactQuery, StringComparison.Ordinal) >= 0) return 580;
+            }
+            if (qTokens != null && qTokens.Length >= 2 && !string.IsNullOrEmpty(foldedHaystack)) {
+                int hits = 0;
+                int nameHits = 0;
+                for (int qi = 0; qi < qTokens.Length; qi++) {
+                    string qt = qTokens[qi];
+                    if (foldedHaystack.IndexOf(qt, StringComparison.Ordinal) >= 0) {
+                        hits++;
+                        if (!string.IsNullOrEmpty(foldedName) && foldedName.IndexOf(qt, StringComparison.Ordinal) >= 0) nameHits++;
+                    }
+                }
+                if (hits == qTokens.Length) return 500 + Math.Min(80, nameHits * 25);
+            }
+            if (qTokens != null && qTokens.Length == 1 && nameWords != null && nameWords.Length > 0) {
+                string qt = qTokens[0];
+                int maxDist = qt.Length >= 7 ? 2 : (qt.Length >= 4 ? 1 : 0);
+                if (maxDist > 0) {
+                    int bestDist = maxDist + 1;
+                    for (int wi = 0; wi < nameWords.Length; wi++) {
+                        string w = nameWords[wi];
+                        if (w.Length < 3) continue;
+                        int d = BoundedDamerauDistance(qt, w, maxDist);
+                        if (d < bestDist) bestDist = d;
+                    }
+                    if (bestDist <= maxDist) return 420 - (bestDist * 60);
+                }
+            }
+            return 0;
+        }
+
+        private static string UnescapeJsonString(string raw) {
+            if (string.IsNullOrEmpty(raw) || raw.IndexOf('\\') < 0) return raw ?? "";
+            var sb = new StringBuilder(raw.Length);
+            for (int i = 0; i < raw.Length; i++) {
+                char c = raw[i];
+                if (c == '\\' && i + 1 < raw.Length) {
+                    char n = raw[++i];
+                    if (n == '"' || n == '\\' || n == '/') sb.Append(n);
+                    else if (n == 'n') sb.Append('\n');
+                    else if (n == 'r') sb.Append('\r');
+                    else if (n == 't') sb.Append('\t');
+                    else if (n == 'u' && i + 4 < raw.Length) {
+                        int code;
+                        if (int.TryParse(raw.Substring(i + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out code)) {
+                            sb.Append((char)code);
+                            i += 4;
+                        }
+                    } else sb.Append(n);
+                } else {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static readonly Regex _rxGhAssetPair = new Regex(
+            @"""name""\s*:\s*""((?:\\.|[^""])*)""[\s\S]{0,1200}?""browser_download_url""\s*:\s*""((?:\\.|[^""])*)""",
+            RegexOptions.Compiled);
+
+        public static async Task<string> PrefetchGitHubReleaseAssetAsync(string repo, string assetRegex, string destDir, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(assetRegex) || string.IsNullOrWhiteSpace(destDir)) return "";
+            try {
+                ct.ThrowIfCancellationRequested();
+                string apiUrl = "https://api.github.com/repos/" + repo.Trim('/') + "/releases/latest";
+                string json = "";
+                using (HttpResponseMessage apiResp = await _downloadClient.GetAsync(apiUrl, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false)) {
+                    if (!apiResp.IsSuccessStatusCode || apiResp.Content == null) return "";
+                    json = await apiResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                if (string.IsNullOrEmpty(json)) return "";
+                int assetsIdx = json.IndexOf("\"assets\"", StringComparison.Ordinal);
+                string scanSlice = assetsIdx >= 0 ? json.Substring(assetsIdx) : json;
+                var rxAsset = new Regex(assetRegex, RegexOptions.IgnoreCase);
+                string matchedName = "";
+                string matchedUrl = "";
+                foreach (Match m in _rxGhAssetPair.Matches(scanSlice)) {
+                    string candName = UnescapeJsonString(m.Groups[1].Value);
+                    string candUrl = UnescapeJsonString(m.Groups[2].Value);
+                    if (rxAsset.IsMatch(candName)) {
+                        matchedName = candName;
+                        matchedUrl = candUrl;
+                        break;
+                    }
+                }
+                if (string.IsNullOrWhiteSpace(matchedName) || string.IsNullOrWhiteSpace(matchedUrl)) return "";
+                string safeName = Path.GetFileName(matchedName);
+                if (string.IsNullOrWhiteSpace(safeName)) return "";
+                bool isInstaller = safeName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || safeName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
+                if (!isInstaller || !matchedUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return "";
+
+                ct.ThrowIfCancellationRequested();
+                Directory.CreateDirectory(destDir);
+                string outFile = Path.Combine(destDir, safeName);
+                using (HttpResponseMessage dlResp = await _downloadClient.GetAsync(matchedUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) return "";
+                    using (Stream src = await dlResp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
+                return File.Exists(outFile) ? outFile : "";
+            } catch {
+                try {
+                    if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
+                } catch {}
+                return "";
+            }
+        }
     }
 
     public sealed class MasonryPanel : Panel {
@@ -6759,6 +7030,12 @@ namespace DuckUtil {
         public string DataLocation { get; set; }
         public string UninstallString { get; set; }
         public string SearchText { get; set; }
+        public string FoldedName { get; set; }
+        public string CompactName { get; set; }
+        public string FoldedSearch { get; set; }
+        public string CompactSearch { get; set; }
+        public string[] SearchWords { get; set; }
+        public int LastSearchScore { get; set; }
         public string IconTarget { get; set; }
         public string QueueKey { get; set; }
         public string BadgeLetter { get; set; }
@@ -7100,6 +7377,8 @@ namespace DuckUtil {
 
                     string iconTarget = ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, msiExe);
 
+                    string foldedName = UiAssetPipeline.NormalizeSearchFold(dispName);
+                    string foldedSearch = UiAssetPipeline.NormalizeSearchFold(searchIdx);
                     result.Add(new UninstVirtualItem {
                         App = app,
                         Id = id,
@@ -7114,6 +7393,11 @@ namespace DuckUtil {
                         DataLocation = dataLoc,
                         UninstallString = uninstStr,
                         SearchText = searchIdx,
+                        FoldedName = foldedName,
+                        CompactName = UiAssetPipeline.CompactSearchAlnum(foldedName),
+                        FoldedSearch = foldedSearch,
+                        CompactSearch = UiAssetPipeline.CompactSearchAlnum(foldedSearch),
+                        SearchWords = UiAssetPipeline.SplitFoldedTokens(foldedName),
                         IconTarget = iconTarget,
                         QueueKey = queueKey,
                         BadgeLetter = badgeLetter,
@@ -7217,8 +7501,10 @@ namespace DuckUtil {
                 }
             }
 
-            string q = string.IsNullOrWhiteSpace(query) ? "" : query.Trim().ToLowerInvariant();
-            bool hasQ = q.Length > 0;
+            string foldedQ = UiAssetPipeline.NormalizeSearchFold(query);
+            string compactQ = UiAssetPipeline.CompactSearchAlnum(foldedQ);
+            string[] qTokens = UiAssetPipeline.SplitFoldedTokens(foldedQ);
+            bool hasQ = foldedQ.Length > 0;
 
             _visibleItems.Clear();
             int brokenCount = 0;
@@ -7232,10 +7518,36 @@ namespace DuckUtil {
                 if (it.IsSelected) selCount++;
 
                 if (brokenOnly && !it.IsBrokenOrphan) continue;
-                if (hasQ && (it.SearchText == null || it.SearchText.IndexOf(q, StringComparison.Ordinal) < 0)) continue;
+                if (hasQ) {
+                    int score = UiAssetPipeline.ScoreSearchQuery(
+                        foldedQ,
+                        compactQ,
+                        qTokens,
+                        it.FoldedName ?? "",
+                        it.CompactName ?? "",
+                        it.FoldedSearch ?? (it.SearchText ?? ""),
+                        it.CompactSearch ?? "",
+                        it.SearchWords
+                    );
+                    if (score <= 0) continue;
+                    it.LastSearchScore = score;
+                } else {
+                    it.LastSearchScore = 0;
+                }
 
                 _visibleItems.Add(it);
                 if (it.SizeBytes > 0) visibleBytes += it.SizeBytes;
+            }
+            if (hasQ && _visibleItems.Count > 1) {
+                _visibleItems.Sort(delegate(UninstVirtualItem a, UninstVirtualItem b) {
+                    int sc = b.LastSearchScore.CompareTo(a.LastSearchScore);
+                    if (sc != 0) return sc;
+                    if (sortBySize) {
+                        int szc = b.SizeBytes.CompareTo(a.SizeBytes);
+                        if (szc != 0) return szc;
+                    }
+                    return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+                });
             }
             _selectedCount = selCount;
 
@@ -7930,7 +8242,8 @@ namespace DuckUtil
         private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
         private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
-        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(canary|nightly|dev|alpha|beta|preview|pre|rc)(?:[.+_-]*(\d+))?(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTrailingLetter = new Regex(@"^\s*v?\d+(?:[.+_-]\d+)*([a-z])(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
 
         public static string CleanCatalogAppName(string name)
@@ -7945,6 +8258,46 @@ namespace DuckUtil
             }
             c = _rxMultiSpace.Replace(c, " ").Trim();
             return c;
+        }
+
+        private static string CompactAlnumKey(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            for (int i = 0; i < s.Length; i++)
+            {
+                char ch = s[i];
+                if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) sb.Append(ch);
+                else if (ch >= 'A' && ch <= 'Z') sb.Append((char)(ch + 32));
+                else if (ch == '+') sb.Append('p');
+            }
+            return sb.ToString();
+        }
+
+        private static int GetPrereleaseRank(string verStr, out long preNum)
+        {
+            preNum = 0L;
+            if (string.IsNullOrWhiteSpace(verStr)) return 100;
+            Match m = _rxPrerelease.Match(verStr);
+            if (!m.Success) return 100;
+            string tag = m.Groups[1].Value.ToLowerInvariant();
+            if (m.Groups[2].Success) long.TryParse(m.Groups[2].Value, out preNum);
+            if (tag == "canary" || tag == "nightly" || tag == "dev") return 1;
+            if (tag == "alpha") return 2;
+            if (tag == "beta") return 3;
+            if (tag == "pre" || tag == "preview") return 4;
+            if (tag == "rc") return 5;
+            return 10;
+        }
+
+        private static int GetTrailingLetterScore(string verStr)
+        {
+            if (string.IsNullOrWhiteSpace(verStr)) return 0;
+            if (_rxPrerelease.IsMatch(verStr)) return 0;
+            Match m = _rxTrailingLetter.Match(verStr);
+            if (!m.Success) return 0;
+            char ch = char.ToLowerInvariant(m.Groups[1].Value[0]);
+            return (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 1) : 0;
         }
 
         public static long[] GetVersionNumbers(string verStr)
@@ -7979,6 +8332,16 @@ namespace DuckUtil
                 if (va > vb) return 1;
                 if (va < vb) return -1;
             }
+            long preNumA, preNumB;
+            int rankA = GetPrereleaseRank(verA, out preNumA);
+            int rankB = GetPrereleaseRank(verB, out preNumB);
+            if (rankA > rankB) return 1;
+            if (rankA < rankB) return -1;
+            if (rankA < 100 && preNumA != preNumB) return preNumA > preNumB ? 1 : -1;
+            int sufA = GetTrailingLetterScore(verA);
+            int sufB = GetTrailingLetterScore(verB);
+            if (sufA > sufB) return 1;
+            if (sufA < sufB) return -1;
             return 0;
         }
 
@@ -7999,9 +8362,7 @@ namespace DuckUtil
             foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
             if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
             int cmp = CompareAppVersions(av, iv);
-            if (cmp > 0) return true;
-            if (cmp == 0 && _rxPrerelease.IsMatch(iv) && !_rxPrerelease.IsMatch(av)) return true;
-            return false;
+            return cmp > 0;
         }
 
         private static int GetDisplayWidthUpToIndex(string s, int charIdx)
@@ -9160,6 +9521,7 @@ namespace DuckUtil
         {
             public string Raw;
             public string Clean;
+            public string Compact;
             public Regex Pattern;
         }
 
@@ -9168,10 +9530,12 @@ namespace DuckUtil
             public string ID;
             public string Name;
             public string CleanTarget;
+            public string CompactTarget;
             public List<AliasPatternPair> CleanAliases;
             public List<AliasPatternPair> AliasEntries;
             public Regex PatternClean;
             public List<string> QueryTokens;
+            public HashSet<string> TargetTokenSet;
             public bool AllowNoise;
             public bool IsPrev;
             public bool IsVcRedist;
@@ -9257,6 +9621,7 @@ namespace DuckUtil
             var aliasEntries = new List<AliasPatternPair>();
             var queryTokens = new List<string>();
             var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetTokenSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (cleanTarget.Length >= 4)
             {
@@ -9264,9 +9629,10 @@ namespace DuckUtil
                 for (int i = 0; i < toks.Length; i++)
                 {
                     string qt = toks[i];
-                    if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                    if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt))
                     {
-                        queryTokens.Add(qt);
+                        if (seenTokens.Add(qt)) queryTokens.Add(qt);
+                        targetTokenSet.Add(qt);
                     }
                 }
             }
@@ -9278,7 +9644,8 @@ namespace DuckUtil
                     string alias = target.Aliases[ai];
                     if (string.IsNullOrWhiteSpace(alias)) continue;
                     string cAl = CleanCatalogAppName(alias);
-                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Pattern = null };
+                    string cmpAl = CompactAlnumKey(cAl.Length > 0 ? cAl : alias);
+                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Compact = cmpAl, Pattern = null };
                     cleanAliases.Add(pair);
                     if (alias.Length >= 4)
                     {
@@ -9288,7 +9655,7 @@ namespace DuckUtil
                         for (int i = 0; i < toks.Length; i++)
                         {
                             string qt = toks[i];
-                            if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                            if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
                             {
                                 queryTokens.Add(qt);
                             }
@@ -9300,6 +9667,11 @@ namespace DuckUtil
             Regex patternClean = (cleanTarget.Length >= 4)
                 ? new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(cleanTarget) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase)
                 : null;
+            string compactTarget = CompactAlnumKey(cleanTarget);
+            if (compactTarget.Length >= 4 && seenTokens.Add(compactTarget))
+            {
+                queryTokens.Add(compactTarget);
+            }
 
             Regex rxReqPy = null;
             Regex rxReqPyVer = null;
@@ -9350,10 +9722,12 @@ namespace DuckUtil
                 ID = tId,
                 Name = tName,
                 CleanTarget = cleanTarget,
+                CompactTarget = compactTarget,
                 CleanAliases = cleanAliases,
                 AliasEntries = aliasEntries,
                 PatternClean = patternClean,
                 QueryTokens = queryTokens,
+                TargetTokenSet = targetTokenSet,
                 AllowNoise = _rxAllowNoise.IsMatch(tName),
                 IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
                 IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
@@ -9522,6 +9896,184 @@ namespace DuckUtil
             };
         }
 
+        public static double ComputeJaroWinkler(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return 0.0;
+            if (string.Equals(a, b, StringComparison.Ordinal)) return 1.0;
+            int lenA = a.Length;
+            int lenB = b.Length;
+            int matchDist = Math.Max(0, (Math.Max(lenA, lenB) / 2) - 1);
+            bool[] matchedA = new bool[lenA];
+            bool[] matchedB = new bool[lenB];
+            int matches = 0;
+            for (int i = 0; i < lenA; i++)
+            {
+                int start = Math.Max(0, i - matchDist);
+                int end = Math.Min(i + matchDist + 1, lenB);
+                for (int j = start; j < end; j++)
+                {
+                    if (matchedB[j] || a[i] != b[j]) continue;
+                    matchedA[i] = true;
+                    matchedB[j] = true;
+                    matches++;
+                    break;
+                }
+            }
+            if (matches == 0) return 0.0;
+            int t = 0;
+            int k = 0;
+            for (int i = 0; i < lenA; i++)
+            {
+                if (!matchedA[i]) continue;
+                while (!matchedB[k]) k++;
+                if (a[i] != b[k]) t++;
+                k++;
+            }
+            double m = matches;
+            double jaro = ((m / lenA) + (m / lenB) + ((m - (t / 2.0)) / m)) / 3.0;
+            int prefix = 0;
+            int maxPref = Math.Min(4, Math.Min(lenA, lenB));
+            while (prefix < maxPref && a[prefix] == b[prefix]) prefix++;
+            return jaro + (prefix * 0.1 * (1.0 - jaro));
+        }
+
+        private static CatalogSensorItem MatchSingleCatalogTarget(
+            CatalogMatchTarget target,
+            Dictionary<string, CatalogSensorItem> idMap,
+            Dictionary<string, CatalogSensorItem> nameMap,
+            Dictionary<string, CatalogSensorItem> cleanNameMap,
+            Dictionary<string, CatalogSensorItem> compactNameMap,
+            Dictionary<string, List<CatalogSensorItem>> tokenIndex,
+            Dictionary<CatalogSensorItem, string> itemCompactMap,
+            Dictionary<CatalogSensorItem, HashSet<string>> itemTokenMap)
+        {
+            if (target == null) return null;
+            string targetId = target.ID ?? "";
+            CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
+            CatalogSensorItem cand;
+
+            if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            }
+            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                AliasPatternPair ap = meta.CleanAliases[a];
+                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Compact.Length >= 4 && compactNameMap.TryGetValue(ap.Compact, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            }
+            if (meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (meta.CompactTarget.Length >= 4 && compactNameMap.TryGetValue(meta.CompactTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+
+            if (meta.QueryTokens.Count == 0) return null;
+
+            var candidatePool = new List<CatalogSensorItem>();
+            var seenCand = new HashSet<CatalogSensorItem>();
+            for (int q = 0; q < meta.QueryTokens.Count; q++)
+            {
+                List<CatalogSensorItem> bucket;
+                if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
+                {
+                    for (int bi = 0; bi < bucket.Count; bi++)
+                    {
+                        if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
+                    }
+                }
+            }
+
+            CatalogSensorItem bestCand = null;
+            int bestScore = 0;
+            for (int ci = 0; ci < candidatePool.Count; ci++)
+            {
+                CatalogSensorItem item = candidatePool[ci];
+                string iId = item.ID ?? "";
+                string iName = item.Name ?? "";
+                string iClean = item.CleanName ?? "";
+                int score = 0;
+
+                for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
+                {
+                    AliasPatternPair ae = meta.AliasEntries[aeIdx];
+                    if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                    {
+                        score = 780;
+                        break;
+                    }
+                    if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                    {
+                        int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
+                        int cScore = 700 + lenRatio;
+                        if (cScore > score) score = cScore;
+                    }
+                }
+
+                if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                {
+                    int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                    score = 650 + lenRatio;
+                }
+
+                if (score == 0 && meta.TargetTokenSet.Count >= 2)
+                {
+                    HashSet<string> itSet;
+                    if (itemTokenMap.TryGetValue(item, out itSet) && itSet.Count >= meta.TargetTokenSet.Count)
+                    {
+                        int hitToks = 0;
+                        foreach (string tt in meta.TargetTokenSet)
+                        {
+                            if (itSet.Contains(tt)) hitToks++;
+                        }
+                        if (hitToks == meta.TargetTokenSet.Count)
+                        {
+                            int jacc = (hitToks * 30) / Math.Max(1, itSet.Count);
+                            score = 670 + jacc;
+                        }
+                    }
+                }
+
+                if (score == 0 && meta.CompactTarget.Length >= 4)
+                {
+                    string itemCmp;
+                    itemCompactMap.TryGetValue(item, out itemCmp);
+                    string idCmp = CompactAlnumKey(iId);
+                    if ((!string.IsNullOrEmpty(itemCmp) && string.Equals(itemCmp, meta.CompactTarget, StringComparison.Ordinal)) ||
+                        (!string.IsNullOrEmpty(idCmp) && idCmp.EndsWith(meta.CompactTarget, StringComparison.Ordinal)))
+                    {
+                        score = 690;
+                    }
+                    else if (!string.IsNullOrEmpty(itemCmp) && meta.CompactTarget.Length >= 5 && itemCmp.Length >= 5)
+                    {
+                        int maxL = Math.Max(meta.CompactTarget.Length, itemCmp.Length);
+                        int minL = Math.Min(meta.CompactTarget.Length, itemCmp.Length);
+                        if (minL * 100 >= maxL * 68)
+                        {
+                            double jw = ComputeJaroWinkler(meta.CompactTarget, itemCmp);
+                            if (jw >= 0.90)
+                            {
+                                score = 610 + (int)Math.Round(jw * 70.0);
+                            }
+                        }
+                    }
+                }
+
+                if (score > 0)
+                {
+                    if (item.HasUpdate) score += 15;
+                    if (!_rxSyntheticId.IsMatch(iId)) score += 10;
+                    if (score > bestScore && IsMatchCompatible(meta, item))
+                    {
+                        bestScore = score;
+                        bestCand = item;
+                    }
+                }
+            }
+
+            return bestCand;
+        }
+
         public static CatalogSensorItem[] MatchCatalogApps(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
         {
             if (targets == null || targets.Length == 0) return new CatalogSensorItem[0];
@@ -9540,7 +10092,10 @@ namespace DuckUtil
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var compactNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+            var itemCompactMap = new Dictionary<CatalogSensorItem, string>();
+            var itemTokenMap = new Dictionary<CatalogSensorItem, HashSet<string>>();
 
             for (int i = 0; i < installedItems.Length; i++)
             {
@@ -9553,6 +10108,11 @@ namespace DuckUtil
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
                 if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
+
+                string itCompact = CompactAlnumKey(itClean.Length > 0 ? itClean : itName);
+                itemCompactMap[it] = itCompact;
+                if (itCompact.Length >= 4) SetPreferredEntry(compactNameMap, itCompact, it);
+
                 if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
                 {
                     SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
@@ -9564,7 +10124,7 @@ namespace DuckUtil
                 for (int ti = 0; ti < toks.Length; ti++)
                 {
                     string tk = toks[ti];
-                    if (tk.Length >= 3 && seenTok.Add(tk))
+                    if ((tk.Length >= 3 || string.Equals(tk, "7z", StringComparison.OrdinalIgnoreCase)) && seenTok.Add(tk))
                     {
                         List<CatalogSensorItem> bucket;
                         if (!tokenIndex.TryGetValue(tk, out bucket))
@@ -9575,130 +10135,22 @@ namespace DuckUtil
                         bucket.Add(it);
                     }
                 }
+                itemTokenMap[it] = seenTok;
             }
 
-            var lookupCache = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
-            for (int tIdx = 0; tIdx < targets.Length; tIdx++)
+            if (targets.Length >= 24)
             {
-                CatalogMatchTarget target = targets[tIdx];
-                if (target == null) continue;
-                string targetId = target.ID ?? "";
-                CatalogSensorItem cachedRes;
-                if (lookupCache.TryGetValue(targetId, out cachedRes))
+                Parallel.For(0, targets.Length, delegate(int tIdx)
                 {
-                    results[tIdx] = cachedRes;
-                    continue;
-                }
-
-                CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
-                CatalogSensorItem matched = null;
-                CatalogSensorItem cand;
-
-                if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
+                });
+            }
+            else
+            {
+                for (int tIdx = 0; tIdx < targets.Length; tIdx++)
                 {
-                    matched = cand;
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
                 }
-                if (matched == null)
-                {
-                    for (int a = 0; a < meta.CleanAliases.Count; a++)
-                    {
-                        if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                    }
-                }
-                if (matched == null && !string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
-                {
-                    matched = cand;
-                }
-                if (matched == null)
-                {
-                    for (int a = 0; a < meta.CleanAliases.Count; a++)
-                    {
-                        AliasPatternPair ap = meta.CleanAliases[a];
-                        if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                        if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                    }
-                }
-                if (matched == null && meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand))
-                {
-                    matched = cand;
-                }
-
-                if (matched == null && meta.QueryTokens.Count > 0)
-                {
-                    var candidatePool = new List<CatalogSensorItem>();
-                    var seenCand = new HashSet<CatalogSensorItem>();
-                    for (int q = 0; q < meta.QueryTokens.Count; q++)
-                    {
-                        List<CatalogSensorItem> bucket;
-                        if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
-                        {
-                            for (int bi = 0; bi < bucket.Count; bi++)
-                            {
-                                if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
-                            }
-                        }
-                    }
-
-                    CatalogSensorItem bestCand = null;
-                    int bestScore = 0;
-                    for (int ci = 0; ci < candidatePool.Count; ci++)
-                    {
-                        CatalogSensorItem item = candidatePool[ci];
-                        string iId = item.ID ?? "";
-                        string iName = item.Name ?? "";
-                        string iClean = item.CleanName ?? "";
-                        int score = 0;
-
-                        for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
-                        {
-                            AliasPatternPair ae = meta.AliasEntries[aeIdx];
-                            if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
-                            {
-                                score = 780;
-                                break;
-                            }
-                            if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
-                            {
-                                int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
-                                int cScore = 700 + lenRatio;
-                                if (cScore > score) score = cScore;
-                            }
-                        }
-
-                        if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
-                        {
-                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
-                            score = 650 + lenRatio;
-                        }
-
-                        if (score > 0)
-                        {
-                            if (item.HasUpdate) score += 15;
-                            if (!_rxSyntheticId.IsMatch(iId)) score += 10;
-                            if (score > bestScore && IsMatchCompatible(meta, item))
-                            {
-                                bestScore = score;
-                                bestCand = item;
-                            }
-                        }
-                    }
-                    matched = bestCand;
-                }
-
-                lookupCache[targetId] = matched;
-                results[tIdx] = matched;
             }
 
             return results;
@@ -9768,6 +10220,16 @@ namespace DuckUtil
     {
         public List<ServiceScanEntry> AllServices { get; set; }
         public List<ServiceScanEntry> RogueDrivers { get; set; }
+    }
+
+    public class DeepResidualArtifact
+    {
+        public string ArtifactKind { get; set; }
+        public string Path { get; set; }
+        public string RegistryValueName { get; set; }
+        public long SizeBytes { get; set; }
+        public bool IsRegistry { get; set; }
+        public string ConfidenceTier { get; set; }
     }
     public class InstalledAppInfo
     {
@@ -14964,9 +15426,14 @@ namespace DuckUtil
                 try
                 {
                     var fvi = FileVersionInfo.GetVersionInfo(exePath);
-                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "");
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "") + " " + (fvi.CompanyName ?? "");
                     if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
                         return "InnoSetup";
+                    if (desc.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "InstallShield";
+                    if (desc.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("Caphyon", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "AdvancedInstaller";
                 }
                 catch {}
             }
@@ -15002,6 +15469,27 @@ namespace DuckUtil
                 uni.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "InnoSetup";
+            }
+            if (ascii.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "InstallShield";
+            }
+            if (ascii.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("Caphyon", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "AdvancedInstaller";
+            }
+            if (ascii.IndexOf("Qt Installer Framework", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Qt Installer Framework", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "QtIFW";
+            }
+            if (ascii.IndexOf(";!@Install@!UTF-8!", StringComparison.Ordinal) >= 0 ||
+                ascii.IndexOf("7zS.sfx", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "7zSFX";
             }
             return "";
         }
@@ -15122,31 +15610,154 @@ namespace DuckUtil
             });
         }
 
+        private static string ReadNullTermBytes(byte[] buf, int offset, int maxEnd, bool isUnicode)
+        {
+            if (buf == null || offset < 0 || offset >= maxEnd) return "";
+            if (isUnicode)
+            {
+                int pos = offset;
+                while (pos + 1 < maxEnd)
+                {
+                    if (buf[pos] == 0 && buf[pos + 1] == 0) break;
+                    pos += 2;
+                }
+                if (pos <= offset) return "";
+                return System.Text.Encoding.Unicode.GetString(buf, offset, pos - offset);
+            }
+            else
+            {
+                int pos = offset;
+                while (pos < maxEnd && buf[pos] != 0) pos++;
+                if (pos <= offset) return "";
+                return System.Text.Encoding.Default.GetString(buf, offset, pos - offset);
+            }
+        }
+
+        private static bool TryExtractLnkTargetFast(string lnkPath, out string targetPath)
+        {
+            targetPath = null;
+            try
+            {
+                byte[] data = File.ReadAllBytes(lnkPath);
+                if (data == null || data.Length < 0x50) return false;
+                if (BitConverter.ToInt32(data, 0) != 0x4C) return false;
+                uint linkFlags = BitConverter.ToUInt32(data, 0x14);
+                int offset = 0x4C;
+
+                if ((linkFlags & 0x01u) != 0)
+                {
+                    if (offset + 2 > data.Length) return false;
+                    int idListSize = BitConverter.ToUInt16(data, offset);
+                    offset += 2 + idListSize;
+                }
+
+                if ((linkFlags & 0x02u) == 0 || offset + 0x1C > data.Length) return false;
+
+                int linkInfoStart = offset;
+                int linkInfoSize = BitConverter.ToInt32(data, linkInfoStart);
+                int linkInfoHdrSize = BitConverter.ToInt32(data, linkInfoStart + 4);
+                uint linkInfoFlags = BitConverter.ToUInt32(data, linkInfoStart + 8);
+                if (linkInfoSize <= 0 || linkInfoStart + linkInfoSize > data.Length) return false;
+                if ((linkInfoFlags & 0x01u) == 0) return false;
+
+                int infoEnd = linkInfoStart + linkInfoSize;
+                string basePath = "";
+                string suffix = "";
+
+                if (linkInfoHdrSize >= 0x24 && linkInfoStart + 0x24 <= infoEnd)
+                {
+                    int localUniOff = BitConverter.ToInt32(data, linkInfoStart + 0x1C);
+                    int sufUniOff = BitConverter.ToInt32(data, linkInfoStart + 0x20);
+                    if (localUniOff > 0) basePath = ReadNullTermBytes(data, linkInfoStart + localUniOff, infoEnd, true);
+                    if (sufUniOff > 0) suffix = ReadNullTermBytes(data, linkInfoStart + sufUniOff, infoEnd, true);
+                }
+
+                if (string.IsNullOrEmpty(basePath))
+                {
+                    int localOff = BitConverter.ToInt32(data, linkInfoStart + 0x10);
+                    int sufOff = BitConverter.ToInt32(data, linkInfoStart + 0x18);
+                    if (localOff > 0) basePath = ReadNullTermBytes(data, linkInfoStart + localOff, infoEnd, false);
+                    if (sufOff > 0) suffix = ReadNullTermBytes(data, linkInfoStart + sufOff, infoEnd, false);
+                }
+
+                if (string.IsNullOrEmpty(basePath)) return false;
+                string combined = string.IsNullOrEmpty(suffix) ? basePath : (basePath + suffix);
+                combined = combined.Trim();
+                if (combined.Length >= 3 && char.IsLetter(combined[0]) && combined[1] == ':' && combined[2] == '\\')
+                {
+                    targetPath = combined;
+                    return true;
+                }
+            }
+            catch {}
+            return false;
+        }
+
         public static Task<List<DeadShortcutResult>> ScanDeadShortcutsAsync(string[] rootDirs)
         {
             var tcs = new TaskCompletionSource<List<DeadShortcutResult>>();
             Thread t = new Thread(delegate()
             {
                 var results = new List<DeadShortcutResult>();
+                var needComFallback = new List<string>();
                 object wsh = null;
                 Type wshType = null;
                 try
                 {
                     if (rootDirs != null && rootDirs.Length > 0)
                     {
-                        wshType = Type.GetTypeFromProgID("WScript.Shell");
-                        if (wshType != null)
+                        var allLnks = new List<string>();
+                        for (int ri = 0; ri < rootDirs.Length; ri++)
                         {
-                            wsh = Activator.CreateInstance(wshType);
+                            string root = rootDirs[ri];
+                            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                            allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
                         }
-                        if (wsh != null)
+
+                        var fastDead = new ConcurrentBag<DeadShortcutResult>();
+                        var fallbackBag = new ConcurrentBag<string>();
+                        if (allLnks.Count > 0)
                         {
-                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            Parallel.For(0, allLnks.Count, delegate(int li)
                             {
-                                string root = rootDirs[ri];
-                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
-                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                string lnk = allLnks[li];
+                                string target;
+                                if (TryExtractLnkTargetFast(lnk, out target))
                                 {
+                                    if (!string.IsNullOrEmpty(target) &&
+                                        target.Length >= 7 &&
+                                        char.IsLetter(target[0]) &&
+                                        target[1] == ':' &&
+                                        target[2] == '\\' &&
+                                        target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                        !File.Exists(target))
+                                    {
+                                        fastDead.Add(new DeadShortcutResult
+                                        {
+                                            LnkPath = lnk,
+                                            AppName = Path.GetFileNameWithoutExtension(lnk) ?? lnk
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    fallbackBag.Add(lnk);
+                                }
+                            });
+                        }
+
+                        results.AddRange(fastDead);
+                        needComFallback.AddRange(fallbackBag);
+
+                        if (needComFallback.Count > 0)
+                        {
+                            wshType = Type.GetTypeFromProgID("WScript.Shell");
+                            if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                            if (wsh != null)
+                            {
+                                for (int fi = 0; fi < needComFallback.Count; fi++)
+                                {
+                                    string lnk = needComFallback[fi];
                                     object sc = null;
                                     try
                                     {
@@ -15250,18 +15861,54 @@ namespace DuckUtil
                 {
                     if (rootDirs != null && rootDirs.Length > 0)
                     {
-                        wshType = Type.GetTypeFromProgID("WScript.Shell");
-                        if (wshType != null) wsh = Activator.CreateInstance(wshType);
-                        if (wsh != null)
+                        bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
+                        bool hasClean = !string.IsNullOrEmpty(cleanAppName);
+                        var allLnks = new List<string>();
+                        for (int ri = 0; ri < rootDirs.Length; ri++)
                         {
-                            bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
-                            bool hasClean = !string.IsNullOrEmpty(cleanAppName);
-                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            string root = rootDirs[ri];
+                            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                            allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
+                        }
+
+                        var fastHits = new ConcurrentBag<string>();
+                        var fallbackLnks = new ConcurrentBag<string>();
+                        if (allLnks.Count > 0)
+                        {
+                            Parallel.For(0, allLnks.Count, delegate(int li)
                             {
-                                string root = rootDirs[ri];
-                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
-                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                string lnk = allLnks[li];
+                                string target;
+                                if (TryExtractLnkTargetFast(lnk, out target))
                                 {
+                                    string lnkName = Path.GetFileNameWithoutExtension(lnk) ?? "";
+                                    if (hasPrefix && !string.IsNullOrEmpty(target) && target.StartsWith(targetLocPrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        fastHits.Add(lnk);
+                                    }
+                                    else if (hasClean && lnkName.Equals(cleanAppName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(target) && !File.Exists(target) && !Directory.Exists(target))
+                                    {
+                                        fastHits.Add(lnk);
+                                    }
+                                }
+                                else
+                                {
+                                    fallbackLnks.Add(lnk);
+                                }
+                            });
+                        }
+
+                        results.AddRange(fastHits);
+                        var fbList = new List<string>(fallbackLnks);
+                        if (fbList.Count > 0)
+                        {
+                            wshType = Type.GetTypeFromProgID("WScript.Shell");
+                            if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                            if (wsh != null)
+                            {
+                                for (int fi = 0; fi < fbList.Count; fi++)
+                                {
+                                    string lnk = fbList[fi];
                                     object sc = null;
                                     try
                                     {
@@ -15307,6 +15954,183 @@ namespace DuckUtil
             t.Start();
             return tcs.Task;
         }
+
+        private static bool IsSafeResidualTargetPrefix(string targetLocPrefix)
+        {
+            if (string.IsNullOrWhiteSpace(targetLocPrefix)) return false;
+            string p = targetLocPrefix.Trim().TrimEnd('\\');
+            if (p.Length < 4 || p[1] != ':' || p[2] != '\\') return false;
+            string[] parts = p.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return false;
+            string rootName = parts[1];
+            if (rootName.Equals("Windows", StringComparison.OrdinalIgnoreCase)) return false;
+            if ((rootName.Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("ProgramData", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("Users", StringComparison.OrdinalIgnoreCase)) && parts.Length < 3)
+            {
+                return false;
+            }
+            string lastSeg = parts[parts.Length - 1];
+            if (lastSeg.Equals("Roaming", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Local", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("LocalLow", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Programs", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static List<DeepResidualArtifact> ScanDeepAppResidualsFast(string targetLocPrefix)
+        {
+            var results = new List<DeepResidualArtifact>();
+            if (!IsSafeResidualTargetPrefix(targetLocPrefix)) return results;
+            string normPrefix = targetLocPrefix.Trim().TrimEnd('\\') + "\\";
+
+            var appPathHives = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\App Paths", "HKCU:\\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", "HKLM:\\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", "HKLM:\\")
+            };
+
+            foreach (var target in appPathHives)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(target.Hive, target.View))
+                    using (var root = baseKey.OpenSubKey(target.SubKey, false))
+                    {
+                        if (root == null) continue;
+                        string fullSub = target.SubKey;
+                        if (target.Hive == RegistryHive.LocalMachine && target.View == RegistryView.Registry32 &&
+                            fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                            fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                        }
+                        foreach (string subName in root.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var sk = root.OpenSubKey(subName, false))
+                                {
+                                    if (sk == null) continue;
+                                    string defVal = ((sk.GetValue("") as string) ?? "").Trim().Trim('\"');
+                                    string pVal = ((sk.GetValue("Path") as string) ?? "").Trim().Trim('\"');
+                                    bool matchDef = defVal.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase);
+                                    bool matchPath = !string.IsNullOrEmpty(pVal) &&
+                                        (pVal.Equals(normPrefix.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) || pVal.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase));
+                                    if (matchDef || matchPath)
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "RegistryAppPath",
+                                            Path = target.Scope + fullSub + "\\" + subName,
+                                            RegistryValueName = "",
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                using (var hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Default))
+                {
+                    string[] valRegPaths = new string[]
+                    {
+                        @"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache",
+                        @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
+                    };
+                    foreach (string vrp in valRegPaths)
+                    {
+                        try
+                        {
+                            using (var rk = hkcu.OpenSubKey(vrp, false))
+                            {
+                                if (rk == null) continue;
+                                foreach (string vn in rk.GetValueNames())
+                                {
+                                    if (!string.IsNullOrEmpty(vn) && vn.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "RegistryCache",
+                                            Path = "HKCU:\\" + vrp,
+                                            RegistryValueName = vn,
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string tasksDir = string.IsNullOrEmpty(winDir) ? "" : Path.Combine(winDir, @"System32\Tasks");
+                if (!string.IsNullOrEmpty(tasksDir) && Directory.Exists(tasksDir))
+                {
+                    var xmlFiles = EnumerateFilesSafe(tasksDir, "*", 4);
+                    var hitTasks = new ConcurrentBag<DeepResidualArtifact>();
+                    if (xmlFiles.Count > 0)
+                    {
+                        Parallel.For(0, xmlFiles.Count, delegate(int ti)
+                        {
+                            string tf = xmlFiles[ti];
+                            try
+                            {
+                                string rel = tf.Substring(tasksDir.Length).TrimStart('\\');
+                                if (rel.StartsWith("Microsoft\\", StringComparison.OrdinalIgnoreCase)) return;
+                                var fi = new FileInfo(tf);
+                                if (fi.Length <= 0 || fi.Length > 262144) return;
+                                string txt = File.ReadAllText(tf);
+                                if (txt.IndexOf(normPrefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    hitTasks.Add(new DeepResidualArtifact
+                                    {
+                                        ArtifactKind = "ScheduledTask",
+                                        Path = tf,
+                                        RegistryValueName = "\\" + rel,
+                                        SizeBytes = fi.Length,
+                                        IsRegistry = false,
+                                        ConfidenceTier = "Safe100"
+                                    });
+                                }
+                            }
+                            catch {}
+                        });
+                    }
+                    results.AddRange(hitTasks);
+                }
+            }
+            catch {}
+
+            return results;
+        }
+
+        public static Task<List<DeepResidualArtifact>> ScanDeepAppResidualsFastAsync(string targetLocPrefix)
+        {
+            return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
+        }
     }
 }
 '@
@@ -15322,10 +16146,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16691,6 +17517,243 @@ namespace DuckUtil {
                 }
             }
         }
+
+        private static readonly HttpClient _downloadClient = CreateDownloadClient();
+
+        private static HttpClient CreateDownloadClient() {
+            if (Environment.Version.Major == 4) {
+                try {
+                    Type spm = Type.GetType("System.Net.ServicePointManager, System");
+                    if (spm != null) {
+                        PropertyInfo prop = spm.GetProperty("SecurityProtocol", BindingFlags.Public | BindingFlags.Static);
+                        if (prop != null) {
+                            int cur = Convert.ToInt32(prop.GetValue(null, null));
+                            object val = Enum.ToObject(prop.PropertyType, cur | 3072);
+                            prop.SetValue(null, val, null);
+                        }
+                    }
+                } catch {}
+            }
+            var handler = new HttpClientHandler();
+            try { handler.AllowAutoRedirect = true; } catch {}
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMinutes(3);
+            try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DuckUtil"); } catch {}
+            return client;
+        }
+
+        public static string NormalizeSearchFold(string input) {
+            if (string.IsNullOrWhiteSpace(input)) return "";
+            string norm = input.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(norm.Length);
+            bool prevSpace = true;
+            for (int i = 0; i < norm.Length; i++) {
+                char ch = norm[i];
+                if (ch == '\u0111' || ch == '\u0110') {
+                    sb.Append('d');
+                    prevSpace = false;
+                    continue;
+                }
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (uc == UnicodeCategory.NonSpacingMark) continue;
+                if (ch >= 'A' && ch <= 'Z') {
+                    sb.Append((char)(ch + 32));
+                    prevSpace = false;
+                } else if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+                    sb.Append(ch);
+                    prevSpace = false;
+                } else if (!prevSpace) {
+                    sb.Append(' ');
+                    prevSpace = true;
+                }
+            }
+            if (sb.Length > 0 && sb[sb.Length - 1] == ' ') sb.Length--;
+            return sb.ToString();
+        }
+
+        public static string CompactSearchAlnum(string folded) {
+            if (string.IsNullOrEmpty(folded)) return "";
+            var sb = new StringBuilder(folded.Length);
+            for (int i = 0; i < folded.Length; i++) {
+                char c = folded[i];
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
+        public static string[] SplitFoldedTokens(string folded) {
+            if (string.IsNullOrEmpty(folded)) return new string[0];
+            return folded.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private static int BoundedDamerauDistance(string a, string b, int maxDist) {
+            int n = a.Length;
+            int m = b.Length;
+            if (Math.Abs(n - m) > maxDist) return maxDist + 1;
+            int[] prevPrev = new int[m + 1];
+            int[] prev = new int[m + 1];
+            int[] curr = new int[m + 1];
+            for (int j = 0; j <= m; j++) prev[j] = j;
+            for (int i = 1; i <= n; i++) {
+                curr[0] = i;
+                int rowMin = curr[0];
+                char ai = a[i - 1];
+                for (int j = 1; j <= m; j++) {
+                    char bj = b[j - 1];
+                    int cost = (ai == bj) ? 0 : 1;
+                    int val = Math.Min(Math.Min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+                    if (i > 1 && j > 1 && ai == b[j - 2] && a[i - 2] == bj) {
+                        int trans = prevPrev[j - 2] + 1;
+                        if (trans < val) val = trans;
+                    }
+                    curr[j] = val;
+                    if (val < rowMin) rowMin = val;
+                }
+                if (rowMin > maxDist) return maxDist + 1;
+                int[] tmp = prevPrev;
+                prevPrev = prev;
+                prev = curr;
+                curr = tmp;
+            }
+            return prev[m];
+        }
+
+        public static int ScoreSearchQuery(
+            string foldedQuery,
+            string compactQuery,
+            string[] qTokens,
+            string foldedName,
+            string compactName,
+            string foldedHaystack,
+            string compactHaystack,
+            string[] nameWords)
+        {
+            if (string.IsNullOrEmpty(foldedQuery)) return 1;
+            if (foldedName == foldedQuery || (!string.IsNullOrEmpty(compactQuery) && compactName == compactQuery)) {
+                return 1000;
+            }
+            if (!string.IsNullOrEmpty(foldedName)) {
+                if (foldedName.StartsWith(foldedQuery, StringComparison.Ordinal)) return 880;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 2 && compactName.StartsWith(compactQuery, StringComparison.Ordinal)) return 840;
+                if (foldedName.IndexOf(" " + foldedQuery, StringComparison.Ordinal) >= 0) return 760;
+                if (foldedName.IndexOf(foldedQuery, StringComparison.Ordinal) >= 0) return 700;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 3 && compactName.IndexOf(compactQuery, StringComparison.Ordinal) >= 0) return 680;
+            }
+            if (!string.IsNullOrEmpty(foldedHaystack)) {
+                if (foldedHaystack.IndexOf(foldedQuery, StringComparison.Ordinal) >= 0) return 610;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 3 && compactHaystack.IndexOf(compactQuery, StringComparison.Ordinal) >= 0) return 580;
+            }
+            if (qTokens != null && qTokens.Length >= 2 && !string.IsNullOrEmpty(foldedHaystack)) {
+                int hits = 0;
+                int nameHits = 0;
+                for (int qi = 0; qi < qTokens.Length; qi++) {
+                    string qt = qTokens[qi];
+                    if (foldedHaystack.IndexOf(qt, StringComparison.Ordinal) >= 0) {
+                        hits++;
+                        if (!string.IsNullOrEmpty(foldedName) && foldedName.IndexOf(qt, StringComparison.Ordinal) >= 0) nameHits++;
+                    }
+                }
+                if (hits == qTokens.Length) return 500 + Math.Min(80, nameHits * 25);
+            }
+            if (qTokens != null && qTokens.Length == 1 && nameWords != null && nameWords.Length > 0) {
+                string qt = qTokens[0];
+                int maxDist = qt.Length >= 7 ? 2 : (qt.Length >= 4 ? 1 : 0);
+                if (maxDist > 0) {
+                    int bestDist = maxDist + 1;
+                    for (int wi = 0; wi < nameWords.Length; wi++) {
+                        string w = nameWords[wi];
+                        if (w.Length < 3) continue;
+                        int d = BoundedDamerauDistance(qt, w, maxDist);
+                        if (d < bestDist) bestDist = d;
+                    }
+                    if (bestDist <= maxDist) return 420 - (bestDist * 60);
+                }
+            }
+            return 0;
+        }
+
+        private static string UnescapeJsonString(string raw) {
+            if (string.IsNullOrEmpty(raw) || raw.IndexOf('\\') < 0) return raw ?? "";
+            var sb = new StringBuilder(raw.Length);
+            for (int i = 0; i < raw.Length; i++) {
+                char c = raw[i];
+                if (c == '\\' && i + 1 < raw.Length) {
+                    char n = raw[++i];
+                    if (n == '"' || n == '\\' || n == '/') sb.Append(n);
+                    else if (n == 'n') sb.Append('\n');
+                    else if (n == 'r') sb.Append('\r');
+                    else if (n == 't') sb.Append('\t');
+                    else if (n == 'u' && i + 4 < raw.Length) {
+                        int code;
+                        if (int.TryParse(raw.Substring(i + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out code)) {
+                            sb.Append((char)code);
+                            i += 4;
+                        }
+                    } else sb.Append(n);
+                } else {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static readonly Regex _rxGhAssetPair = new Regex(
+            @"""name""\s*:\s*""((?:\\.|[^""])*)""[\s\S]{0,1200}?""browser_download_url""\s*:\s*""((?:\\.|[^""])*)""",
+            RegexOptions.Compiled);
+
+        public static async Task<string> PrefetchGitHubReleaseAssetAsync(string repo, string assetRegex, string destDir, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(assetRegex) || string.IsNullOrWhiteSpace(destDir)) return "";
+            try {
+                ct.ThrowIfCancellationRequested();
+                string apiUrl = "https://api.github.com/repos/" + repo.Trim('/') + "/releases/latest";
+                string json = "";
+                using (HttpResponseMessage apiResp = await _downloadClient.GetAsync(apiUrl, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false)) {
+                    if (!apiResp.IsSuccessStatusCode || apiResp.Content == null) return "";
+                    json = await apiResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                if (string.IsNullOrEmpty(json)) return "";
+                int assetsIdx = json.IndexOf("\"assets\"", StringComparison.Ordinal);
+                string scanSlice = assetsIdx >= 0 ? json.Substring(assetsIdx) : json;
+                var rxAsset = new Regex(assetRegex, RegexOptions.IgnoreCase);
+                string matchedName = "";
+                string matchedUrl = "";
+                foreach (Match m in _rxGhAssetPair.Matches(scanSlice)) {
+                    string candName = UnescapeJsonString(m.Groups[1].Value);
+                    string candUrl = UnescapeJsonString(m.Groups[2].Value);
+                    if (rxAsset.IsMatch(candName)) {
+                        matchedName = candName;
+                        matchedUrl = candUrl;
+                        break;
+                    }
+                }
+                if (string.IsNullOrWhiteSpace(matchedName) || string.IsNullOrWhiteSpace(matchedUrl)) return "";
+                string safeName = Path.GetFileName(matchedName);
+                if (string.IsNullOrWhiteSpace(safeName)) return "";
+                bool isInstaller = safeName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || safeName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
+                if (!isInstaller || !matchedUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return "";
+
+                ct.ThrowIfCancellationRequested();
+                Directory.CreateDirectory(destDir);
+                string outFile = Path.Combine(destDir, safeName);
+                using (HttpResponseMessage dlResp = await _downloadClient.GetAsync(matchedUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) return "";
+                    using (Stream src = await dlResp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
+                return File.Exists(outFile) ? outFile : "";
+            } catch {
+                try {
+                    if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
+                } catch {}
+                return "";
+            }
+        }
     }
 
     public sealed class MasonryPanel : Panel {
@@ -16807,6 +17870,12 @@ namespace DuckUtil {
         public string DataLocation { get; set; }
         public string UninstallString { get; set; }
         public string SearchText { get; set; }
+        public string FoldedName { get; set; }
+        public string CompactName { get; set; }
+        public string FoldedSearch { get; set; }
+        public string CompactSearch { get; set; }
+        public string[] SearchWords { get; set; }
+        public int LastSearchScore { get; set; }
         public string IconTarget { get; set; }
         public string QueueKey { get; set; }
         public string BadgeLetter { get; set; }
@@ -17148,6 +18217,8 @@ namespace DuckUtil {
 
                     string iconTarget = ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, msiExe);
 
+                    string foldedName = UiAssetPipeline.NormalizeSearchFold(dispName);
+                    string foldedSearch = UiAssetPipeline.NormalizeSearchFold(searchIdx);
                     result.Add(new UninstVirtualItem {
                         App = app,
                         Id = id,
@@ -17162,6 +18233,11 @@ namespace DuckUtil {
                         DataLocation = dataLoc,
                         UninstallString = uninstStr,
                         SearchText = searchIdx,
+                        FoldedName = foldedName,
+                        CompactName = UiAssetPipeline.CompactSearchAlnum(foldedName),
+                        FoldedSearch = foldedSearch,
+                        CompactSearch = UiAssetPipeline.CompactSearchAlnum(foldedSearch),
+                        SearchWords = UiAssetPipeline.SplitFoldedTokens(foldedName),
                         IconTarget = iconTarget,
                         QueueKey = queueKey,
                         BadgeLetter = badgeLetter,
@@ -17265,8 +18341,10 @@ namespace DuckUtil {
                 }
             }
 
-            string q = string.IsNullOrWhiteSpace(query) ? "" : query.Trim().ToLowerInvariant();
-            bool hasQ = q.Length > 0;
+            string foldedQ = UiAssetPipeline.NormalizeSearchFold(query);
+            string compactQ = UiAssetPipeline.CompactSearchAlnum(foldedQ);
+            string[] qTokens = UiAssetPipeline.SplitFoldedTokens(foldedQ);
+            bool hasQ = foldedQ.Length > 0;
 
             _visibleItems.Clear();
             int brokenCount = 0;
@@ -17280,10 +18358,36 @@ namespace DuckUtil {
                 if (it.IsSelected) selCount++;
 
                 if (brokenOnly && !it.IsBrokenOrphan) continue;
-                if (hasQ && (it.SearchText == null || it.SearchText.IndexOf(q, StringComparison.Ordinal) < 0)) continue;
+                if (hasQ) {
+                    int score = UiAssetPipeline.ScoreSearchQuery(
+                        foldedQ,
+                        compactQ,
+                        qTokens,
+                        it.FoldedName ?? "",
+                        it.CompactName ?? "",
+                        it.FoldedSearch ?? (it.SearchText ?? ""),
+                        it.CompactSearch ?? "",
+                        it.SearchWords
+                    );
+                    if (score <= 0) continue;
+                    it.LastSearchScore = score;
+                } else {
+                    it.LastSearchScore = 0;
+                }
 
                 _visibleItems.Add(it);
                 if (it.SizeBytes > 0) visibleBytes += it.SizeBytes;
+            }
+            if (hasQ && _visibleItems.Count > 1) {
+                _visibleItems.Sort(delegate(UninstVirtualItem a, UninstVirtualItem b) {
+                    int sc = b.LastSearchScore.CompareTo(a.LastSearchScore);
+                    if (sc != 0) return sc;
+                    if (sortBySize) {
+                        int szc = b.SizeBytes.CompareTo(a.SizeBytes);
+                        if (szc != 0) return szc;
+                    }
+                    return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+                });
             }
             _selectedCount = selCount;
 
@@ -17997,7 +19101,8 @@ namespace DuckUtil
         private static readonly Regex _rxVerExtract = new Regex(@"\d+(?:[.+_-]\d+)*", RegexOptions.Compiled);
         private static readonly Regex _rxVerSplit = new Regex(@"[.+_-]", RegexOptions.Compiled);
         private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
-        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxPrerelease = new Regex(@"(?:^|[-.+_])(canary|nightly|dev|alpha|beta|preview|pre|rc)(?:[.+_-]*(\d+))?(?:$|[-.+_\d])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _rxTrailingLetter = new Regex(@"^\s*v?\d+(?:[.+_-]\d+)*([a-z])(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly string[] _cleanTerms = new string[] { " browser", " desktop", " lts", " client", " free", " ce", " community", " end-user", " stable", " edition", " x64", " x86", " 64-bit", " 32-bit" };
 
         public static string CleanCatalogAppName(string name)
@@ -18012,6 +19117,46 @@ namespace DuckUtil
             }
             c = _rxMultiSpace.Replace(c, " ").Trim();
             return c;
+        }
+
+        private static string CompactAlnumKey(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            var sb = new System.Text.StringBuilder(s.Length);
+            for (int i = 0; i < s.Length; i++)
+            {
+                char ch = s[i];
+                if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) sb.Append(ch);
+                else if (ch >= 'A' && ch <= 'Z') sb.Append((char)(ch + 32));
+                else if (ch == '+') sb.Append('p');
+            }
+            return sb.ToString();
+        }
+
+        private static int GetPrereleaseRank(string verStr, out long preNum)
+        {
+            preNum = 0L;
+            if (string.IsNullOrWhiteSpace(verStr)) return 100;
+            Match m = _rxPrerelease.Match(verStr);
+            if (!m.Success) return 100;
+            string tag = m.Groups[1].Value.ToLowerInvariant();
+            if (m.Groups[2].Success) long.TryParse(m.Groups[2].Value, out preNum);
+            if (tag == "canary" || tag == "nightly" || tag == "dev") return 1;
+            if (tag == "alpha") return 2;
+            if (tag == "beta") return 3;
+            if (tag == "pre" || tag == "preview") return 4;
+            if (tag == "rc") return 5;
+            return 10;
+        }
+
+        private static int GetTrailingLetterScore(string verStr)
+        {
+            if (string.IsNullOrWhiteSpace(verStr)) return 0;
+            if (_rxPrerelease.IsMatch(verStr)) return 0;
+            Match m = _rxTrailingLetter.Match(verStr);
+            if (!m.Success) return 0;
+            char ch = char.ToLowerInvariant(m.Groups[1].Value[0]);
+            return (ch >= 'a' && ch <= 'z') ? (ch - 'a' + 1) : 0;
         }
 
         public static long[] GetVersionNumbers(string verStr)
@@ -18046,6 +19191,16 @@ namespace DuckUtil
                 if (va > vb) return 1;
                 if (va < vb) return -1;
             }
+            long preNumA, preNumB;
+            int rankA = GetPrereleaseRank(verA, out preNumA);
+            int rankB = GetPrereleaseRank(verB, out preNumB);
+            if (rankA > rankB) return 1;
+            if (rankA < rankB) return -1;
+            if (rankA < 100 && preNumA != preNumB) return preNumA > preNumB ? 1 : -1;
+            int sufA = GetTrailingLetterScore(verA);
+            int sufB = GetTrailingLetterScore(verB);
+            if (sufA > sufB) return 1;
+            if (sufA < sufB) return -1;
             return 0;
         }
 
@@ -18066,9 +19221,7 @@ namespace DuckUtil
             foreach (char c in iv) { if (c >= '0' && c <= '9') { hasIvDigit = true; break; } }
             if (iv.Equals("Unknown", StringComparison.OrdinalIgnoreCase) || iv.Equals("Installed", StringComparison.OrdinalIgnoreCase) || !hasIvDigit) return true;
             int cmp = CompareAppVersions(av, iv);
-            if (cmp > 0) return true;
-            if (cmp == 0 && _rxPrerelease.IsMatch(iv) && !_rxPrerelease.IsMatch(av)) return true;
-            return false;
+            return cmp > 0;
         }
 
         private static int GetDisplayWidthUpToIndex(string s, int charIdx)
@@ -19227,6 +20380,7 @@ namespace DuckUtil
         {
             public string Raw;
             public string Clean;
+            public string Compact;
             public Regex Pattern;
         }
 
@@ -19235,10 +20389,12 @@ namespace DuckUtil
             public string ID;
             public string Name;
             public string CleanTarget;
+            public string CompactTarget;
             public List<AliasPatternPair> CleanAliases;
             public List<AliasPatternPair> AliasEntries;
             public Regex PatternClean;
             public List<string> QueryTokens;
+            public HashSet<string> TargetTokenSet;
             public bool AllowNoise;
             public bool IsPrev;
             public bool IsVcRedist;
@@ -19324,6 +20480,7 @@ namespace DuckUtil
             var aliasEntries = new List<AliasPatternPair>();
             var queryTokens = new List<string>();
             var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetTokenSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (cleanTarget.Length >= 4)
             {
@@ -19331,9 +20488,10 @@ namespace DuckUtil
                 for (int i = 0; i < toks.Length; i++)
                 {
                     string qt = toks[i];
-                    if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                    if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt))
                     {
-                        queryTokens.Add(qt);
+                        if (seenTokens.Add(qt)) queryTokens.Add(qt);
+                        targetTokenSet.Add(qt);
                     }
                 }
             }
@@ -19345,7 +20503,8 @@ namespace DuckUtil
                     string alias = target.Aliases[ai];
                     if (string.IsNullOrWhiteSpace(alias)) continue;
                     string cAl = CleanCatalogAppName(alias);
-                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Pattern = null };
+                    string cmpAl = CompactAlnumKey(cAl.Length > 0 ? cAl : alias);
+                    var pair = new AliasPatternPair { Raw = alias, Clean = cAl, Compact = cmpAl, Pattern = null };
                     cleanAliases.Add(pair);
                     if (alias.Length >= 4)
                     {
@@ -19355,7 +20514,7 @@ namespace DuckUtil
                         for (int i = 0; i < toks.Length; i++)
                         {
                             string qt = toks[i];
-                            if (qt.Length >= 3 && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
+                            if ((qt.Length >= 3 || string.Equals(qt, "7z", StringComparison.OrdinalIgnoreCase)) && !_matchStopWords.Contains(qt) && seenTokens.Add(qt))
                             {
                                 queryTokens.Add(qt);
                             }
@@ -19367,6 +20526,11 @@ namespace DuckUtil
             Regex patternClean = (cleanTarget.Length >= 4)
                 ? new Regex(@"(?<![a-zA-Z0-9])" + Regex.Escape(cleanTarget) + @"(?![a-zA-Z0-9])", RegexOptions.IgnoreCase)
                 : null;
+            string compactTarget = CompactAlnumKey(cleanTarget);
+            if (compactTarget.Length >= 4 && seenTokens.Add(compactTarget))
+            {
+                queryTokens.Add(compactTarget);
+            }
 
             Regex rxReqPy = null;
             Regex rxReqPyVer = null;
@@ -19417,10 +20581,12 @@ namespace DuckUtil
                 ID = tId,
                 Name = tName,
                 CleanTarget = cleanTarget,
+                CompactTarget = compactTarget,
                 CleanAliases = cleanAliases,
                 AliasEntries = aliasEntries,
                 PatternClean = patternClean,
                 QueryTokens = queryTokens,
+                TargetTokenSet = targetTokenSet,
                 AllowNoise = _rxAllowNoise.IsMatch(tName),
                 IsPrev = (tName.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0) || (tId.IndexOf("Preview", StringComparison.OrdinalIgnoreCase) >= 0),
                 IsVcRedist = (tId.IndexOf("VCRedist", StringComparison.OrdinalIgnoreCase) >= 0) || (tName.IndexOf("VC++", StringComparison.OrdinalIgnoreCase) >= 0),
@@ -19589,6 +20755,184 @@ namespace DuckUtil
             };
         }
 
+        public static double ComputeJaroWinkler(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return 0.0;
+            if (string.Equals(a, b, StringComparison.Ordinal)) return 1.0;
+            int lenA = a.Length;
+            int lenB = b.Length;
+            int matchDist = Math.Max(0, (Math.Max(lenA, lenB) / 2) - 1);
+            bool[] matchedA = new bool[lenA];
+            bool[] matchedB = new bool[lenB];
+            int matches = 0;
+            for (int i = 0; i < lenA; i++)
+            {
+                int start = Math.Max(0, i - matchDist);
+                int end = Math.Min(i + matchDist + 1, lenB);
+                for (int j = start; j < end; j++)
+                {
+                    if (matchedB[j] || a[i] != b[j]) continue;
+                    matchedA[i] = true;
+                    matchedB[j] = true;
+                    matches++;
+                    break;
+                }
+            }
+            if (matches == 0) return 0.0;
+            int t = 0;
+            int k = 0;
+            for (int i = 0; i < lenA; i++)
+            {
+                if (!matchedA[i]) continue;
+                while (!matchedB[k]) k++;
+                if (a[i] != b[k]) t++;
+                k++;
+            }
+            double m = matches;
+            double jaro = ((m / lenA) + (m / lenB) + ((m - (t / 2.0)) / m)) / 3.0;
+            int prefix = 0;
+            int maxPref = Math.Min(4, Math.Min(lenA, lenB));
+            while (prefix < maxPref && a[prefix] == b[prefix]) prefix++;
+            return jaro + (prefix * 0.1 * (1.0 - jaro));
+        }
+
+        private static CatalogSensorItem MatchSingleCatalogTarget(
+            CatalogMatchTarget target,
+            Dictionary<string, CatalogSensorItem> idMap,
+            Dictionary<string, CatalogSensorItem> nameMap,
+            Dictionary<string, CatalogSensorItem> cleanNameMap,
+            Dictionary<string, CatalogSensorItem> compactNameMap,
+            Dictionary<string, List<CatalogSensorItem>> tokenIndex,
+            Dictionary<CatalogSensorItem, string> itemCompactMap,
+            Dictionary<CatalogSensorItem, HashSet<string>> itemTokenMap)
+        {
+            if (target == null) return null;
+            string targetId = target.ID ?? "";
+            CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
+            CatalogSensorItem cand;
+
+            if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            }
+            if (!string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            for (int a = 0; a < meta.CleanAliases.Count; a++)
+            {
+                AliasPatternPair ap = meta.CleanAliases[a];
+                if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand)) return cand;
+                if (ap.Compact.Length >= 4 && compactNameMap.TryGetValue(ap.Compact, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            }
+            if (meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+            if (meta.CompactTarget.Length >= 4 && compactNameMap.TryGetValue(meta.CompactTarget, out cand) && IsMatchCompatible(meta, cand)) return cand;
+
+            if (meta.QueryTokens.Count == 0) return null;
+
+            var candidatePool = new List<CatalogSensorItem>();
+            var seenCand = new HashSet<CatalogSensorItem>();
+            for (int q = 0; q < meta.QueryTokens.Count; q++)
+            {
+                List<CatalogSensorItem> bucket;
+                if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
+                {
+                    for (int bi = 0; bi < bucket.Count; bi++)
+                    {
+                        if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
+                    }
+                }
+            }
+
+            CatalogSensorItem bestCand = null;
+            int bestScore = 0;
+            for (int ci = 0; ci < candidatePool.Count; ci++)
+            {
+                CatalogSensorItem item = candidatePool[ci];
+                string iId = item.ID ?? "";
+                string iName = item.Name ?? "";
+                string iClean = item.CleanName ?? "";
+                int score = 0;
+
+                for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
+                {
+                    AliasPatternPair ae = meta.AliasEntries[aeIdx];
+                    if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
+                    {
+                        score = 780;
+                        break;
+                    }
+                    if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
+                    {
+                        int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
+                        int cScore = 700 + lenRatio;
+                        if (cScore > score) score = cScore;
+                    }
+                }
+
+                if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
+                {
+                    int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
+                    score = 650 + lenRatio;
+                }
+
+                if (score == 0 && meta.TargetTokenSet.Count >= 2)
+                {
+                    HashSet<string> itSet;
+                    if (itemTokenMap.TryGetValue(item, out itSet) && itSet.Count >= meta.TargetTokenSet.Count)
+                    {
+                        int hitToks = 0;
+                        foreach (string tt in meta.TargetTokenSet)
+                        {
+                            if (itSet.Contains(tt)) hitToks++;
+                        }
+                        if (hitToks == meta.TargetTokenSet.Count)
+                        {
+                            int jacc = (hitToks * 30) / Math.Max(1, itSet.Count);
+                            score = 670 + jacc;
+                        }
+                    }
+                }
+
+                if (score == 0 && meta.CompactTarget.Length >= 4)
+                {
+                    string itemCmp;
+                    itemCompactMap.TryGetValue(item, out itemCmp);
+                    string idCmp = CompactAlnumKey(iId);
+                    if ((!string.IsNullOrEmpty(itemCmp) && string.Equals(itemCmp, meta.CompactTarget, StringComparison.Ordinal)) ||
+                        (!string.IsNullOrEmpty(idCmp) && idCmp.EndsWith(meta.CompactTarget, StringComparison.Ordinal)))
+                    {
+                        score = 690;
+                    }
+                    else if (!string.IsNullOrEmpty(itemCmp) && meta.CompactTarget.Length >= 5 && itemCmp.Length >= 5)
+                    {
+                        int maxL = Math.Max(meta.CompactTarget.Length, itemCmp.Length);
+                        int minL = Math.Min(meta.CompactTarget.Length, itemCmp.Length);
+                        if (minL * 100 >= maxL * 68)
+                        {
+                            double jw = ComputeJaroWinkler(meta.CompactTarget, itemCmp);
+                            if (jw >= 0.90)
+                            {
+                                score = 610 + (int)Math.Round(jw * 70.0);
+                            }
+                        }
+                    }
+                }
+
+                if (score > 0)
+                {
+                    if (item.HasUpdate) score += 15;
+                    if (!_rxSyntheticId.IsMatch(iId)) score += 10;
+                    if (score > bestScore && IsMatchCompatible(meta, item))
+                    {
+                        bestScore = score;
+                        bestCand = item;
+                    }
+                }
+            }
+
+            return bestCand;
+        }
+
         public static CatalogSensorItem[] MatchCatalogApps(CatalogMatchTarget[] targets, CatalogSensorItem[] installedItems)
         {
             if (targets == null || targets.Length == 0) return new CatalogSensorItem[0];
@@ -19607,7 +20951,10 @@ namespace DuckUtil
             var idMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var nameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var cleanNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
+            var compactNameMap = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
             var tokenIndex = new Dictionary<string, List<CatalogSensorItem>>(StringComparer.OrdinalIgnoreCase);
+            var itemCompactMap = new Dictionary<CatalogSensorItem, string>();
+            var itemTokenMap = new Dictionary<CatalogSensorItem, HashSet<string>>();
 
             for (int i = 0; i < installedItems.Length; i++)
             {
@@ -19620,6 +20967,11 @@ namespace DuckUtil
                 if (!string.IsNullOrWhiteSpace(itId)) SetPreferredEntry(idMap, itId, it);
                 if (!string.IsNullOrWhiteSpace(itName)) SetPreferredEntry(nameMap, itName, it);
                 if (itClean.Length >= 2) SetPreferredEntry(cleanNameMap, itClean, it);
+
+                string itCompact = CompactAlnumKey(itClean.Length > 0 ? itClean : itName);
+                itemCompactMap[it] = itCompact;
+                if (itCompact.Length >= 4) SetPreferredEntry(compactNameMap, itCompact, it);
+
                 if (string.Equals(itId, "Microsoft.VisualStudio.Community.Insiders", StringComparison.OrdinalIgnoreCase))
                 {
                     SetPreferredEntry(idMap, "Microsoft.VisualStudio.2022.Community", it);
@@ -19631,7 +20983,7 @@ namespace DuckUtil
                 for (int ti = 0; ti < toks.Length; ti++)
                 {
                     string tk = toks[ti];
-                    if (tk.Length >= 3 && seenTok.Add(tk))
+                    if ((tk.Length >= 3 || string.Equals(tk, "7z", StringComparison.OrdinalIgnoreCase)) && seenTok.Add(tk))
                     {
                         List<CatalogSensorItem> bucket;
                         if (!tokenIndex.TryGetValue(tk, out bucket))
@@ -19642,130 +20994,22 @@ namespace DuckUtil
                         bucket.Add(it);
                     }
                 }
+                itemTokenMap[it] = seenTok;
             }
 
-            var lookupCache = new Dictionary<string, CatalogSensorItem>(StringComparer.OrdinalIgnoreCase);
-            for (int tIdx = 0; tIdx < targets.Length; tIdx++)
+            if (targets.Length >= 24)
             {
-                CatalogMatchTarget target = targets[tIdx];
-                if (target == null) continue;
-                string targetId = target.ID ?? "";
-                CatalogSensorItem cachedRes;
-                if (lookupCache.TryGetValue(targetId, out cachedRes))
+                Parallel.For(0, targets.Length, delegate(int tIdx)
                 {
-                    results[tIdx] = cachedRes;
-                    continue;
-                }
-
-                CompiledTargetMeta meta = GetOrBuildTargetMeta(target);
-                CatalogSensorItem matched = null;
-                CatalogSensorItem cand;
-
-                if (idMap.TryGetValue(targetId, out cand) && IsMatchCompatible(meta, cand))
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
+                });
+            }
+            else
+            {
+                for (int tIdx = 0; tIdx < targets.Length; tIdx++)
                 {
-                    matched = cand;
+                    results[tIdx] = MatchSingleCatalogTarget(targets[tIdx], idMap, nameMap, cleanNameMap, compactNameMap, tokenIndex, itemCompactMap, itemTokenMap);
                 }
-                if (matched == null)
-                {
-                    for (int a = 0; a < meta.CleanAliases.Count; a++)
-                    {
-                        if (idMap.TryGetValue(meta.CleanAliases[a].Raw, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                    }
-                }
-                if (matched == null && !string.IsNullOrEmpty(meta.Name) && nameMap.TryGetValue(meta.Name, out cand) && IsMatchCompatible(meta, cand))
-                {
-                    matched = cand;
-                }
-                if (matched == null)
-                {
-                    for (int a = 0; a < meta.CleanAliases.Count; a++)
-                    {
-                        AliasPatternPair ap = meta.CleanAliases[a];
-                        if (nameMap.TryGetValue(ap.Raw, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                        if (ap.Clean.Length >= 2 && cleanNameMap.TryGetValue(ap.Clean, out cand) && IsMatchCompatible(meta, cand))
-                        {
-                            matched = cand;
-                            break;
-                        }
-                    }
-                }
-                if (matched == null && meta.CleanTarget.Length >= 2 && cleanNameMap.TryGetValue(meta.CleanTarget, out cand) && IsMatchCompatible(meta, cand))
-                {
-                    matched = cand;
-                }
-
-                if (matched == null && meta.QueryTokens.Count > 0)
-                {
-                    var candidatePool = new List<CatalogSensorItem>();
-                    var seenCand = new HashSet<CatalogSensorItem>();
-                    for (int q = 0; q < meta.QueryTokens.Count; q++)
-                    {
-                        List<CatalogSensorItem> bucket;
-                        if (tokenIndex.TryGetValue(meta.QueryTokens[q], out bucket))
-                        {
-                            for (int bi = 0; bi < bucket.Count; bi++)
-                            {
-                                if (seenCand.Add(bucket[bi])) candidatePool.Add(bucket[bi]);
-                            }
-                        }
-                    }
-
-                    CatalogSensorItem bestCand = null;
-                    int bestScore = 0;
-                    for (int ci = 0; ci < candidatePool.Count; ci++)
-                    {
-                        CatalogSensorItem item = candidatePool[ci];
-                        string iId = item.ID ?? "";
-                        string iName = item.Name ?? "";
-                        string iClean = item.CleanName ?? "";
-                        int score = 0;
-
-                        for (int aeIdx = 0; aeIdx < meta.AliasEntries.Count; aeIdx++)
-                        {
-                            AliasPatternPair ae = meta.AliasEntries[aeIdx];
-                            if (iId.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iId))
-                            {
-                                score = 780;
-                                break;
-                            }
-                            if (iName.IndexOf(ae.Raw, StringComparison.OrdinalIgnoreCase) >= 0 && ae.Pattern.IsMatch(iName))
-                            {
-                                int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iName.Length));
-                                int cScore = 700 + lenRatio;
-                                if (cScore > score) score = cScore;
-                            }
-                        }
-
-                        if (score == 0 && meta.PatternClean != null && iClean.IndexOf(meta.CleanTarget, StringComparison.OrdinalIgnoreCase) >= 0 && meta.PatternClean.IsMatch(iClean))
-                        {
-                            int lenRatio = Math.Min(40, (meta.CleanTarget.Length * 40) / Math.Max(1, iClean.Length));
-                            score = 650 + lenRatio;
-                        }
-
-                        if (score > 0)
-                        {
-                            if (item.HasUpdate) score += 15;
-                            if (!_rxSyntheticId.IsMatch(iId)) score += 10;
-                            if (score > bestScore && IsMatchCompatible(meta, item))
-                            {
-                                bestScore = score;
-                                bestCand = item;
-                            }
-                        }
-                    }
-                    matched = bestCand;
-                }
-
-                lookupCache[targetId] = matched;
-                results[tIdx] = matched;
             }
 
             return results;
@@ -19855,6 +21099,16 @@ namespace DuckUtil
     {
         public List<ServiceScanEntry> AllServices { get; set; }
         public List<ServiceScanEntry> RogueDrivers { get; set; }
+    }
+
+    public class DeepResidualArtifact
+    {
+        public string ArtifactKind { get; set; }
+        public string Path { get; set; }
+        public string RegistryValueName { get; set; }
+        public long SizeBytes { get; set; }
+        public bool IsRegistry { get; set; }
+        public string ConfidenceTier { get; set; }
     }
     public class InstalledAppInfo
     {
@@ -25051,9 +26305,14 @@ namespace DuckUtil
                 try
                 {
                     var fvi = FileVersionInfo.GetVersionInfo(exePath);
-                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "");
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "") + " " + (fvi.CompanyName ?? "");
                     if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
                         return "InnoSetup";
+                    if (desc.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "InstallShield";
+                    if (desc.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("Caphyon", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "AdvancedInstaller";
                 }
                 catch {}
             }
@@ -25089,6 +26348,27 @@ namespace DuckUtil
                 uni.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "InnoSetup";
+            }
+            if (ascii.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "InstallShield";
+            }
+            if (ascii.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("Caphyon", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "AdvancedInstaller";
+            }
+            if (ascii.IndexOf("Qt Installer Framework", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Qt Installer Framework", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "QtIFW";
+            }
+            if (ascii.IndexOf(";!@Install@!UTF-8!", StringComparison.Ordinal) >= 0 ||
+                ascii.IndexOf("7zS.sfx", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "7zSFX";
             }
             return "";
         }
@@ -25209,31 +26489,154 @@ namespace DuckUtil
             });
         }
 
+        private static string ReadNullTermBytes(byte[] buf, int offset, int maxEnd, bool isUnicode)
+        {
+            if (buf == null || offset < 0 || offset >= maxEnd) return "";
+            if (isUnicode)
+            {
+                int pos = offset;
+                while (pos + 1 < maxEnd)
+                {
+                    if (buf[pos] == 0 && buf[pos + 1] == 0) break;
+                    pos += 2;
+                }
+                if (pos <= offset) return "";
+                return System.Text.Encoding.Unicode.GetString(buf, offset, pos - offset);
+            }
+            else
+            {
+                int pos = offset;
+                while (pos < maxEnd && buf[pos] != 0) pos++;
+                if (pos <= offset) return "";
+                return System.Text.Encoding.Default.GetString(buf, offset, pos - offset);
+            }
+        }
+
+        private static bool TryExtractLnkTargetFast(string lnkPath, out string targetPath)
+        {
+            targetPath = null;
+            try
+            {
+                byte[] data = File.ReadAllBytes(lnkPath);
+                if (data == null || data.Length < 0x50) return false;
+                if (BitConverter.ToInt32(data, 0) != 0x4C) return false;
+                uint linkFlags = BitConverter.ToUInt32(data, 0x14);
+                int offset = 0x4C;
+
+                if ((linkFlags & 0x01u) != 0)
+                {
+                    if (offset + 2 > data.Length) return false;
+                    int idListSize = BitConverter.ToUInt16(data, offset);
+                    offset += 2 + idListSize;
+                }
+
+                if ((linkFlags & 0x02u) == 0 || offset + 0x1C > data.Length) return false;
+
+                int linkInfoStart = offset;
+                int linkInfoSize = BitConverter.ToInt32(data, linkInfoStart);
+                int linkInfoHdrSize = BitConverter.ToInt32(data, linkInfoStart + 4);
+                uint linkInfoFlags = BitConverter.ToUInt32(data, linkInfoStart + 8);
+                if (linkInfoSize <= 0 || linkInfoStart + linkInfoSize > data.Length) return false;
+                if ((linkInfoFlags & 0x01u) == 0) return false;
+
+                int infoEnd = linkInfoStart + linkInfoSize;
+                string basePath = "";
+                string suffix = "";
+
+                if (linkInfoHdrSize >= 0x24 && linkInfoStart + 0x24 <= infoEnd)
+                {
+                    int localUniOff = BitConverter.ToInt32(data, linkInfoStart + 0x1C);
+                    int sufUniOff = BitConverter.ToInt32(data, linkInfoStart + 0x20);
+                    if (localUniOff > 0) basePath = ReadNullTermBytes(data, linkInfoStart + localUniOff, infoEnd, true);
+                    if (sufUniOff > 0) suffix = ReadNullTermBytes(data, linkInfoStart + sufUniOff, infoEnd, true);
+                }
+
+                if (string.IsNullOrEmpty(basePath))
+                {
+                    int localOff = BitConverter.ToInt32(data, linkInfoStart + 0x10);
+                    int sufOff = BitConverter.ToInt32(data, linkInfoStart + 0x18);
+                    if (localOff > 0) basePath = ReadNullTermBytes(data, linkInfoStart + localOff, infoEnd, false);
+                    if (sufOff > 0) suffix = ReadNullTermBytes(data, linkInfoStart + sufOff, infoEnd, false);
+                }
+
+                if (string.IsNullOrEmpty(basePath)) return false;
+                string combined = string.IsNullOrEmpty(suffix) ? basePath : (basePath + suffix);
+                combined = combined.Trim();
+                if (combined.Length >= 3 && char.IsLetter(combined[0]) && combined[1] == ':' && combined[2] == '\\')
+                {
+                    targetPath = combined;
+                    return true;
+                }
+            }
+            catch {}
+            return false;
+        }
+
         public static Task<List<DeadShortcutResult>> ScanDeadShortcutsAsync(string[] rootDirs)
         {
             var tcs = new TaskCompletionSource<List<DeadShortcutResult>>();
             Thread t = new Thread(delegate()
             {
                 var results = new List<DeadShortcutResult>();
+                var needComFallback = new List<string>();
                 object wsh = null;
                 Type wshType = null;
                 try
                 {
                     if (rootDirs != null && rootDirs.Length > 0)
                     {
-                        wshType = Type.GetTypeFromProgID("WScript.Shell");
-                        if (wshType != null)
+                        var allLnks = new List<string>();
+                        for (int ri = 0; ri < rootDirs.Length; ri++)
                         {
-                            wsh = Activator.CreateInstance(wshType);
+                            string root = rootDirs[ri];
+                            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                            allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
                         }
-                        if (wsh != null)
+
+                        var fastDead = new ConcurrentBag<DeadShortcutResult>();
+                        var fallbackBag = new ConcurrentBag<string>();
+                        if (allLnks.Count > 0)
                         {
-                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            Parallel.For(0, allLnks.Count, delegate(int li)
                             {
-                                string root = rootDirs[ri];
-                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
-                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                string lnk = allLnks[li];
+                                string target;
+                                if (TryExtractLnkTargetFast(lnk, out target))
                                 {
+                                    if (!string.IsNullOrEmpty(target) &&
+                                        target.Length >= 7 &&
+                                        char.IsLetter(target[0]) &&
+                                        target[1] == ':' &&
+                                        target[2] == '\\' &&
+                                        target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                        !File.Exists(target))
+                                    {
+                                        fastDead.Add(new DeadShortcutResult
+                                        {
+                                            LnkPath = lnk,
+                                            AppName = Path.GetFileNameWithoutExtension(lnk) ?? lnk
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    fallbackBag.Add(lnk);
+                                }
+                            });
+                        }
+
+                        results.AddRange(fastDead);
+                        needComFallback.AddRange(fallbackBag);
+
+                        if (needComFallback.Count > 0)
+                        {
+                            wshType = Type.GetTypeFromProgID("WScript.Shell");
+                            if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                            if (wsh != null)
+                            {
+                                for (int fi = 0; fi < needComFallback.Count; fi++)
+                                {
+                                    string lnk = needComFallback[fi];
                                     object sc = null;
                                     try
                                     {
@@ -25337,18 +26740,54 @@ namespace DuckUtil
                 {
                     if (rootDirs != null && rootDirs.Length > 0)
                     {
-                        wshType = Type.GetTypeFromProgID("WScript.Shell");
-                        if (wshType != null) wsh = Activator.CreateInstance(wshType);
-                        if (wsh != null)
+                        bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
+                        bool hasClean = !string.IsNullOrEmpty(cleanAppName);
+                        var allLnks = new List<string>();
+                        for (int ri = 0; ri < rootDirs.Length; ri++)
                         {
-                            bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
-                            bool hasClean = !string.IsNullOrEmpty(cleanAppName);
-                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            string root = rootDirs[ri];
+                            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                            allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
+                        }
+
+                        var fastHits = new ConcurrentBag<string>();
+                        var fallbackLnks = new ConcurrentBag<string>();
+                        if (allLnks.Count > 0)
+                        {
+                            Parallel.For(0, allLnks.Count, delegate(int li)
                             {
-                                string root = rootDirs[ri];
-                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
-                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                string lnk = allLnks[li];
+                                string target;
+                                if (TryExtractLnkTargetFast(lnk, out target))
                                 {
+                                    string lnkName = Path.GetFileNameWithoutExtension(lnk) ?? "";
+                                    if (hasPrefix && !string.IsNullOrEmpty(target) && target.StartsWith(targetLocPrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        fastHits.Add(lnk);
+                                    }
+                                    else if (hasClean && lnkName.Equals(cleanAppName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(target) && !File.Exists(target) && !Directory.Exists(target))
+                                    {
+                                        fastHits.Add(lnk);
+                                    }
+                                }
+                                else
+                                {
+                                    fallbackLnks.Add(lnk);
+                                }
+                            });
+                        }
+
+                        results.AddRange(fastHits);
+                        var fbList = new List<string>(fallbackLnks);
+                        if (fbList.Count > 0)
+                        {
+                            wshType = Type.GetTypeFromProgID("WScript.Shell");
+                            if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                            if (wsh != null)
+                            {
+                                for (int fi = 0; fi < fbList.Count; fi++)
+                                {
+                                    string lnk = fbList[fi];
                                     object sc = null;
                                     try
                                     {
@@ -25393,6 +26832,183 @@ namespace DuckUtil
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
             return tcs.Task;
+        }
+
+        private static bool IsSafeResidualTargetPrefix(string targetLocPrefix)
+        {
+            if (string.IsNullOrWhiteSpace(targetLocPrefix)) return false;
+            string p = targetLocPrefix.Trim().TrimEnd('\\');
+            if (p.Length < 4 || p[1] != ':' || p[2] != '\\') return false;
+            string[] parts = p.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return false;
+            string rootName = parts[1];
+            if (rootName.Equals("Windows", StringComparison.OrdinalIgnoreCase)) return false;
+            if ((rootName.Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("ProgramData", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("Users", StringComparison.OrdinalIgnoreCase)) && parts.Length < 3)
+            {
+                return false;
+            }
+            string lastSeg = parts[parts.Length - 1];
+            if (lastSeg.Equals("Roaming", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Local", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("LocalLow", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Programs", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static List<DeepResidualArtifact> ScanDeepAppResidualsFast(string targetLocPrefix)
+        {
+            var results = new List<DeepResidualArtifact>();
+            if (!IsSafeResidualTargetPrefix(targetLocPrefix)) return results;
+            string normPrefix = targetLocPrefix.Trim().TrimEnd('\\') + "\\";
+
+            var appPathHives = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\App Paths", "HKCU:\\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", "HKLM:\\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", "HKLM:\\")
+            };
+
+            foreach (var target in appPathHives)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(target.Hive, target.View))
+                    using (var root = baseKey.OpenSubKey(target.SubKey, false))
+                    {
+                        if (root == null) continue;
+                        string fullSub = target.SubKey;
+                        if (target.Hive == RegistryHive.LocalMachine && target.View == RegistryView.Registry32 &&
+                            fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                            fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                        }
+                        foreach (string subName in root.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var sk = root.OpenSubKey(subName, false))
+                                {
+                                    if (sk == null) continue;
+                                    string defVal = ((sk.GetValue("") as string) ?? "").Trim().Trim('\"');
+                                    string pVal = ((sk.GetValue("Path") as string) ?? "").Trim().Trim('\"');
+                                    bool matchDef = defVal.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase);
+                                    bool matchPath = !string.IsNullOrEmpty(pVal) &&
+                                        (pVal.Equals(normPrefix.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) || pVal.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase));
+                                    if (matchDef || matchPath)
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "RegistryAppPath",
+                                            Path = target.Scope + fullSub + "\\" + subName,
+                                            RegistryValueName = "",
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                using (var hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Default))
+                {
+                    string[] valRegPaths = new string[]
+                    {
+                        @"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache",
+                        @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
+                    };
+                    foreach (string vrp in valRegPaths)
+                    {
+                        try
+                        {
+                            using (var rk = hkcu.OpenSubKey(vrp, false))
+                            {
+                                if (rk == null) continue;
+                                foreach (string vn in rk.GetValueNames())
+                                {
+                                    if (!string.IsNullOrEmpty(vn) && vn.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "RegistryCache",
+                                            Path = "HKCU:\\" + vrp,
+                                            RegistryValueName = vn,
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string tasksDir = string.IsNullOrEmpty(winDir) ? "" : Path.Combine(winDir, @"System32\Tasks");
+                if (!string.IsNullOrEmpty(tasksDir) && Directory.Exists(tasksDir))
+                {
+                    var xmlFiles = EnumerateFilesSafe(tasksDir, "*", 4);
+                    var hitTasks = new ConcurrentBag<DeepResidualArtifact>();
+                    if (xmlFiles.Count > 0)
+                    {
+                        Parallel.For(0, xmlFiles.Count, delegate(int ti)
+                        {
+                            string tf = xmlFiles[ti];
+                            try
+                            {
+                                string rel = tf.Substring(tasksDir.Length).TrimStart('\\');
+                                if (rel.StartsWith("Microsoft\\", StringComparison.OrdinalIgnoreCase)) return;
+                                var fi = new FileInfo(tf);
+                                if (fi.Length <= 0 || fi.Length > 262144) return;
+                                string txt = File.ReadAllText(tf);
+                                if (txt.IndexOf(normPrefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    hitTasks.Add(new DeepResidualArtifact
+                                    {
+                                        ArtifactKind = "ScheduledTask",
+                                        Path = tf,
+                                        RegistryValueName = "\\" + rel,
+                                        SizeBytes = fi.Length,
+                                        IsRegistry = false,
+                                        ConfidenceTier = "Safe100"
+                                    });
+                                }
+                            }
+                            catch {}
+                        });
+                    }
+                    results.AddRange(hitTasks);
+                }
+            }
+            catch {}
+
+            return results;
+        }
+
+        public static Task<List<DeepResidualArtifact>> ScanDeepAppResidualsFastAsync(string targetLocPrefix)
+        {
+            return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
         }
     }
 }
@@ -28018,9 +29634,16 @@ function Find-AppLeftovers {
                     } elseif (-not $script:isWindowClosing) {
                         $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
                     }
+                    $folderConf = if ($kw.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -or ($root -ne $env:APPDATA -and $root -ne $env:LOCALAPPDATA -and $root -ne $localLowRoot -and $root -ne $progDataRoot)) {
+                        "An to$([char]0x00E0)n 100%"
+                    } elseif ($kw.Length -ge 6) {
+                        "Tin c$([char]0x1EAD)y cao"
+                    } else {
+                        "N$([char]0x00EA)n ki$([char]0x1EC3)m tra"
+                    }
                     $leftovers.Add([PSCustomObject]@{
                         Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        Confidence        = $folderConf
                         AppName           = $AppEntry.DisplayName
                         Path              = $fullPath
                         SizeBytes         = [long]$dirSize
@@ -28064,6 +29687,19 @@ function Find-AppLeftovers {
         [Environment]::GetFolderPath('CommonPrograms')
     )
     $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
+    $isSafeTargetLoc = $false
+    if ($targetLocPrefix) {
+        $locNoSlash = $targetLocPrefix.TrimEnd('\')
+        $isSafeTargetLoc = (Test-SafeAppDirectoryForCleanup -Path $locNoSlash -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)
+    }
+    $hasDeepResidualsAsync = ($canWaitLo -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("ScanDeepAppResidualsFastAsync"))
+    $resTask = $null
+    if ($isSafeTargetLoc -and $hasDeepResidualsAsync) {
+        try {
+            $resTask = $deepTypeLo::ScanDeepAppResidualsFastAsync($targetLocPrefix)
+        } catch { $resTask = $null }
+    }
+
     if ($hasAppScAsyncLo) {
         try {
             $scTask = $deepTypeLo::ScanAppShortcutsAsync($shortcutDirs, $targetLocPrefix, $cleanName)
@@ -28185,9 +29821,14 @@ function Find-AppLeftovers {
                     if ($kw -eq $ex) { $isSafe = $false; break }
                 }
                 if ($isSafe -and $seenPaths.Add($regPath)) {
+                    $regConf = if ($kw.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -or $kw.Length -ge 6) {
+                        "Tin c$([char]0x1EAD)y cao"
+                    } else {
+                        "N$([char]0x00EA)n ki$([char]0x1EC3)m tra"
+                    }
                     $leftovers.Add([PSCustomObject]@{
                         Type              = "Registry c$([char]0x00F2)n s$([char]0x00F3)t"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        Confidence        = $regConf
                         AppName           = $AppEntry.DisplayName
                         Path              = $regPath
                         SizeBytes         = 0L
@@ -28213,6 +29854,83 @@ function Find-AppLeftovers {
                 RegistryValueName = ""
             })
         }
+    }
+
+    if ($resTask -or ($isSafeTargetLoc -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("ScanDeepAppResidualsFast"))) {
+        try {
+            $deepArtifacts = $null
+            if ($resTask) {
+                [void](Wait-TaskNonBlocking -Task $resTask -TimeoutSeconds 15)
+                if ($resTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $deepArtifacts = $resTask.Result
+                }
+            } elseif (-not $script:isWindowClosing) {
+                $deepArtifacts = [DuckUtil.DeepUninstallerEngine]::ScanDeepAppResidualsFast($targetLocPrefix)
+            }
+            if ($null -ne $deepArtifacts) {
+                foreach ($art in $deepArtifacts) {
+                    $artDedup = if ($art.IsRegistry -and $art.RegistryValueName) { "$($art.Path)->$($art.RegistryValueName)" } else { $art.Path }
+                    if ($seenPaths.Add($artDedup)) {
+                        $artType = switch ($art.ArtifactKind) {
+                            "ScheduledTask" { "Task c$([char]0x00F2)n s$([char]0x00F3)t" }
+                            "RegistryAppPath" { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+                            "RegistryCache" { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+                            default { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+                        }
+                        $leftovers.Add([PSCustomObject]@{
+                            Type              = $artType
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $AppEntry.DisplayName
+                            Path              = $art.Path
+                            SizeBytes         = [long]$art.SizeBytes
+                            SizeMB            = [math]::Round($art.SizeBytes / 1MB, 2)
+                            IsRegistry        = [bool]$art.IsRegistry
+                            RegistryValueName = if ($art.IsRegistry) { [string]$art.RegistryValueName } else { "" }
+                            TaskName          = if ($art.ArtifactKind -eq "ScheduledTask") { [string]$art.RegistryValueName } else { "" }
+                        })
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    if ($isSafeTargetLoc -and ($null -ne $deepTypeLo)) {
+        try {
+            $svcListApp = $PreloadedServices
+            if ($null -eq $svcListApp) {
+                if ($canWaitLo -and $deepTypeLo.GetMethod("ScanServicesAndDriversAsync")) {
+                    $sTaskApp = $deepTypeLo::ScanServicesAndDriversAsync()
+                    [void](Wait-TaskNonBlocking -Task $sTaskApp -TimeoutSeconds 15)
+                    if ($sTaskApp.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $svcListApp = $sTaskApp.Result }
+                } elseif ($deepTypeLo.GetMethod("ScanServicesAndDrivers")) {
+                    $svcListApp = $deepTypeLo::ScanServicesAndDrivers()
+                }
+            }
+            if ($null -ne $svcListApp) {
+                foreach ($se in $svcListApp) {
+                    if ($script:isWindowClosing) { break }
+                    if ($se.IsKernelDriver) { continue }
+                    $img = $se.ResolvedImagePath
+                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
+                    if ($img.StartsWith($targetLocPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
+                        if ($seenPaths.Add($regSvcPath)) {
+                            $leftovers.Add([PSCustomObject]@{
+                                Type              = "Service c$([char]0x00F2)n s$([char]0x00F3)t"
+                                Confidence        = "An to$([char]0x00E0)n 100%"
+                                AppName           = $AppEntry.DisplayName
+                                Path              = $regSvcPath
+                                SizeBytes         = 0L
+                                SizeMB            = 0.0
+                                IsRegistry        = $true
+                                RegistryValueName = ""
+                            })
+                        }
+                    }
+                }
+                $PreloadedServices = $svcListApp
+            }
+        } catch {}
     }
 
     $appHint = "$($AppEntry.DisplayName) $($AppEntry.Publisher) $($AppEntry.InstallLocation)"
@@ -28948,6 +30666,12 @@ function Show-LeftoverReviewDialog {
             ConfBg       = & $mkC "#064E3B"
             ConfBorder   = & $mkC "#059669"
             ConfFg       = & $mkC "#6EE7B7"
+            ConfHighBg   = & $mkC "#0C4A6E"
+            ConfHighBdr  = & $mkC "#0284C7"
+            ConfHighFg   = & $mkC "#7DD3FC"
+            ConfChkBg    = & $mkC "#451A03"
+            ConfChkBdr   = & $mkC "#D97706"
+            ConfChkFg    = & $mkC "#FCD34D"
             ItemTitleFg  = & $mkC "#E2E8F0"
             PathFg       = & $mkC "#64748B"
             SizeRegFg    = & $mkC "#94A3B8"
@@ -28961,6 +30685,8 @@ function Show-LeftoverReviewDialog {
             DelBorder    = & $mkC "#DC2626"
             BadgeMap     = @{
                 "Ring0"    = (& $mkC "#B91C1C")
+                "Service"  = (& $mkC "#C2410C")
+                "Task"     = (& $mkC "#EA580C")
                 "Registry" = (& $mkC "#DC2626")
                 "Startup"  = (& $mkC "#E11D48")
                 "AppData"  = (& $mkC "#D97706")
@@ -29127,6 +30853,8 @@ function Show-LeftoverReviewDialog {
     foreach ($item in $Items) {
         $badgeKey = switch -Wildcard ($item.Type) {
             "*Driver*" { "Ring0" }
+            "*Service*" { "Service" }
+            "*Task*" { "Task" }
             "*Registry*" { "Registry" }
             "*Startup*" { "Startup" }
             "*R$([char]0x00E1)c AppData*" { "AppData" }
@@ -29141,6 +30869,12 @@ function Show-LeftoverReviewDialog {
         $safeSizeMb = if ($null -ne $item.SizeMB) { try { [double]$item.SizeMB } catch { 0.0 } } else { 0.0 }
         $sizeLabel = if ($item.IsRegistry) { "Registry" } else { "$([string]::Format('{0:N2}', $safeSizeMb)) MB" }
         $confLabel = if ($item.Confidence) { [string]$item.Confidence } else { "An to$([char]0x00E0)n 100%" }
+        $isConfCheck = ($confLabel -like "*ki$([char]0x1EC3)m tra*")
+        $isConfHigh = (-not $isConfCheck) -and ($confLabel -like "*cao*")
+        $rowConfBg = if ($isConfCheck -and $pal.ConfChkBg) { $pal.ConfChkBg } elseif ($isConfHigh -and $pal.ConfHighBg) { $pal.ConfHighBg } else { $brLoConfBg }
+        $rowConfBdr = if ($isConfCheck -and $pal.ConfChkBdr) { $pal.ConfChkBdr } elseif ($isConfHigh -and $pal.ConfHighBdr) { $pal.ConfHighBdr } else { $brLoConfBorder }
+        $rowConfFg = if ($isConfCheck -and $pal.ConfChkFg) { $pal.ConfChkFg } elseif ($isConfHigh -and $pal.ConfHighFg) { $pal.ConfHighFg } else { $brLoConfFg }
+        $defChecked = (-not $isConfCheck)
 
         if ($hasFastLoRow) {
             $outCb = $null
@@ -29157,9 +30891,9 @@ function Show-LeftoverReviewDialog {
                 $brLoItemBorder,
                 $badgeBrush,
                 $brLoWhite,
-                $brLoConfBg,
-                $brLoConfBorder,
-                $brLoConfFg,
+                $rowConfBg,
+                $rowConfBdr,
+                $rowConfFg,
                 $brLoTitleFg,
                 $brLoPathFg,
                 $brLoSizeRegFg,
@@ -29169,6 +30903,7 @@ function Show-LeftoverReviewDialog {
                 [ref]$outCb,
                 [ref]$outBtn
             )
+            if ($outCb -and -not $defChecked) { $outCb.IsChecked = $false }
             $itemCheckBoxes.Add($outCb)
             $itemsStack.Children.Add($itemBorder) | Out-Null
             continue
@@ -29195,7 +30930,7 @@ function Show-LeftoverReviewDialog {
         $itemGrid.ColumnDefinitions.Add($c4) | Out-Null
 
         $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.IsChecked = $true
+        $cb.IsChecked = $defChecked
         $cb.Tag = $item
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $cb.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
@@ -29222,8 +30957,8 @@ function Show-LeftoverReviewDialog {
         $badgeStack.Children.Add($badgeBorder) | Out-Null
 
         $confBorder = New-Object System.Windows.Controls.Border
-        $confBorder.Background = $brLoConfBg
-        $confBorder.BorderBrush = $brLoConfBorder
+        $confBorder.Background = $rowConfBg
+        $confBorder.BorderBrush = $rowConfBdr
         $confBorder.BorderThickness = New-Object System.Windows.Thickness(1)
         $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $confBorder.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
@@ -29231,7 +30966,7 @@ function Show-LeftoverReviewDialog {
         $confText = New-Object System.Windows.Controls.TextBlock
         $confText.Text = $confLabel
         $confText.FontSize = 9.5
-        $confText.Foreground = $brLoConfFg
+        $confText.Foreground = $rowConfFg
         $confBorder.Child = $confText
         $badgeStack.Children.Add($confBorder) | Out-Null
 
@@ -29529,6 +31264,25 @@ function Show-LeftoverReviewDialog {
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
+                        if ($ci.PSObject.Properties['TaskName'] -and -not [string]::IsNullOrWhiteSpace($ci.TaskName)) {
+                            $safeTaskName = ($ci.TaskName -replace '"', '')
+                            try {
+                                $psiTask = New-Object System.Diagnostics.ProcessStartInfo
+                                $psiTask.FileName = "schtasks.exe"
+                                $psiTask.Arguments = "/Delete /TN `"$safeTaskName`" /F"
+                                $psiTask.UseShellExecute = $false
+                                $psiTask.CreateNoWindow = $true
+                                $pTask = [System.Diagnostics.Process]::Start($psiTask)
+                                if ($pTask) { [void]$pTask.WaitForExit(5000); $pTask.Dispose() }
+                            } catch {}
+                            if (-not (Test-Path -LiteralPath $ci.Path)) {
+                                $removed++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Scheduled Task: $($ci.TaskName)"
+                                }
+                                continue
+                            }
+                        }
                         $hasExplorerLock = $batchExplorerLock
                         if ($useForceStop -and -not $usedBatchForceStop) {
                             $stopInfo = Invoke-ForceStopPathLockers -TargetPath $ci.Path -IncludeServicesAndTasks:$true
@@ -29832,6 +31586,33 @@ function Resolve-SilentUninstallPlan {
                     $isSilent = $true
                 } elseif ($newArgs -match '(?i)--uninstall') {
                     $newArgs = "$newArgs -s".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "InstallShield" {
+                if ($newArgs -match '(?i)(^|\s)(/s|/quiet|/qn)(\s|$)') {
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /s /v`"/qn /norestart`"".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "AdvancedInstaller" {
+                if ($newArgs -match '(?i)(^|\s)(/quiet|/qn|/exenoui)(\s|$)') {
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /exenoui /qn /norestart".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "QtIFW" {
+                if ($newArgs -match '(?i)--confirm-command') {
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs --confirm-command".Trim()
                     $addedFlags = $true
                     $isSilent = $true
                 }
@@ -30420,9 +32201,11 @@ $txtStatus         = $window.FindName("txtStatus")
 $btnCancelAction   = $window.FindName("btnCancelAction")
 $borderQueueBadge  = $window.FindName("borderQueueBadge")
 $txtQueueBadge     = $window.FindName("txtQueueBadge")
-$progressBar       = $window.FindName("progressBar")
-$btnScanInstalled  = $window.FindName("btnScanInstalled")
-$txtSelectionCount = $window.FindName("txtSelectionCount")
+$progressBar           = $window.FindName("progressBar")
+$btnScanInstalled      = $window.FindName("btnScanInstalled")
+$txtCatalogSearch      = $window.FindName("txtCatalogSearch")
+$btnClearCatalogSearch = $window.FindName("btnClearCatalogSearch")
+$txtSelectionCount     = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
@@ -33192,6 +34975,7 @@ if ($btnCancelAction) {
         if ($script:uninstallQueuedKeys) { $script:uninstallQueuedKeys.Clear() }
         if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5) theo y$([char]0x00EA)u c$([char]0x1EA7)u..." }
         Log-Text "[STOP] $([char]0x0110)$([char]0x00E3) nh$([char]0x1EAD)n y$([char]0x00EA)u c$([char]0x1EA7)u d$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5) & x$([char]0x00F3)a h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i!"
+        try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
         try { Stop-ActiveChildProcess } catch {}
         try { Stop-ActiveWaitFrames } catch {}
     })
@@ -34598,6 +36382,29 @@ function Toggle-SidebarGroupExpanded {
 function Set-ActiveCatalogCategory {
     param([string]$CategoryKey)
     if ($script:isWindowClosing) { return }
+    if ($txtCatalogSearch -and -not [string]::IsNullOrWhiteSpace($txtCatalogSearch.Text)) {
+        $script:suppressCatalogSearchOnce = $true
+        try {
+            if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() }
+            $txtCatalogSearch.Text = ""
+            if ($script:cardDescriptors) {
+                foreach ($cdReset in $script:cardDescriptors) {
+                    if ($cdReset -and $cdReset.Rows) {
+                        foreach ($rReset in $cdReset.Rows) {
+                            if ($rReset -and $rReset.Visibility -ne [System.Windows.Visibility]::Visible) {
+                                $rReset.Visibility = [System.Windows.Visibility]::Visible
+                            }
+                        }
+                    }
+                    if ($cdReset -and $cdReset.Card -and $cdReset.Card.Visibility -ne [System.Windows.Visibility]::Visible) {
+                        $cdReset.Card.Visibility = [System.Windows.Visibility]::Visible
+                    }
+                }
+            }
+        } finally {
+            $script:suppressCatalogSearchOnce = $false
+        }
+    }
     $targetKey = if ([string]::IsNullOrWhiteSpace($CategoryKey)) { "__ALL__" } else { $CategoryKey }
 
     $isGroupTarget = $targetKey.StartsWith("__GROUP__:")
@@ -34855,6 +36662,189 @@ function Set-ActiveCatalogCategory {
     Schedule-DeferredIconDecode -MaxDecode 32
 }
 
+$script:catalogSearchIndex = $null
+$script:suppressCatalogSearchOnce = $false
+$script:preSearchCategoryKey = ""
+$script:catalogSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:catalogSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(65)
+
+function Ensure-CatalogSearchIndex {
+    if ($null -ne $script:catalogSearchIndex) { return }
+    $script:catalogSearchIndex = [System.Collections.Generic.Dictionary[object, hashtable]]::new()
+    if (-not $script:cardDescriptors) { return }
+    $hasPipeSearch = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("NormalizeSearchFold")))
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd -or -not $cd.Rows) { continue }
+        foreach ($row in $cd.Rows) {
+            if (-not $row -or -not $row.Tag -or -not $row.Tag.App) { continue }
+            $appObj = $row.Tag.App
+            $aliasJoined = if ($appObj.Aliases) { ($appObj.Aliases -join " ") } else { "" }
+            $haystack = "$($appObj.Name) $($appObj.ID) $($appObj.Category) $aliasJoined $($appObj.Desc)"
+            if ($hasPipeSearch) {
+                $fName = [DuckUtil.UiAssetPipeline]::NormalizeSearchFold([string]$appObj.Name)
+                $fHay = [DuckUtil.UiAssetPipeline]::NormalizeSearchFold($haystack)
+                $script:catalogSearchIndex[$row] = @{
+                    FoldedName      = $fName
+                    CompactName     = [DuckUtil.UiAssetPipeline]::CompactSearchAlnum($fName)
+                    FoldedHaystack  = $fHay
+                    CompactHaystack = [DuckUtil.UiAssetPipeline]::CompactSearchAlnum($fHay)
+                    NameWords       = [DuckUtil.UiAssetPipeline]::SplitFoldedTokens($fName)
+                }
+            } else {
+                $fLow = ([string]$appObj.Name).ToLowerInvariant()
+                $script:catalogSearchIndex[$row] = @{
+                    FoldedName      = $fLow
+                    CompactName     = ($fLow -replace '[^a-z0-9]', '')
+                    FoldedHaystack  = $haystack.ToLowerInvariant()
+                    CompactHaystack = ($haystack.ToLowerInvariant() -replace '[^a-z0-9]', '')
+                    NameWords       = @($fLow -split '\s+' | Where-Object { $_ })
+                }
+            }
+        }
+    }
+}
+
+function Apply-CatalogSearchFilter {
+    if ($script:isWindowClosing -or -not $script:cardDescriptors) { return }
+    $rawQuery = if ($txtCatalogSearch) { [string]$txtCatalogSearch.Text } else { "" }
+    $hasPipeSearch = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("ScoreSearchQuery")))
+    $foldedQ = if ($hasPipeSearch) { [DuckUtil.UiAssetPipeline]::NormalizeSearchFold($rawQuery) } else { ($rawQuery.Trim().ToLowerInvariant()) }
+
+    if ([string]::IsNullOrEmpty($foldedQ)) {
+        foreach ($cd in $script:cardDescriptors) {
+            if ($cd.Rows) {
+                foreach ($r in $cd.Rows) {
+                    if ($r.Visibility -ne [System.Windows.Visibility]::Visible) {
+                        $r.Visibility = [System.Windows.Visibility]::Visible
+                    }
+                }
+            }
+        }
+        $restoreKey = if ($script:preSearchCategoryKey) { $script:preSearchCategoryKey } else { $script:activeCatalogCategory }
+        $script:preSearchCategoryKey = ""
+        $script:activeCatalogCategory = ""
+        Set-ActiveCatalogCategory $(if ($restoreKey) { $restoreKey } else { "__ALL__" })
+        return
+    }
+
+    Ensure-CatalogSearchIndex
+    if ([string]::IsNullOrEmpty($script:preSearchCategoryKey)) {
+        $script:preSearchCategoryKey = if ($script:activeCatalogCategory) { $script:activeCatalogCategory } else { "__ALL__" }
+    }
+
+    if ($script:activeSingleCatDesc) {
+        $wasSingle = $script:activeSingleCatDesc
+        if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($script:uiPipeType -and $null -ne $script:uiPipeType.GetMethod("RestoreRowsFromColumns")) {
+            [DuckUtil.UiAssetPipeline]::RestoreRowsFromColumns($wasSingle.RowsStack, [System.Windows.Controls.Panel[]]$script:singleCatCols, $wasSingle.Rows)
+        } else {
+            foreach ($scCol in $script:singleCatCols) { if ($scCol) { $scCol.Children.Clear() } }
+            foreach ($r in $wasSingle.Rows) { [void]$wasSingle.RowsStack.Children.Add($r) }
+        }
+        $script:activeSingleCatDesc = $null
+    }
+
+    if (-not $script:hasMasonryPanel) {
+        if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
+        Restore-BorrowedGroupCards
+        Ensure-AllMasonryReady
+    }
+    if ($allAndGroupHost -and $allAndGroupHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+        $allAndGroupHost.Visibility = [System.Windows.Visibility]::Visible
+    }
+    if ($cardsMasonryHost -and $cardsMasonryHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+        $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
+    }
+
+    $compactQ = if ($hasPipeSearch) { [DuckUtil.UiAssetPipeline]::CompactSearchAlnum($foldedQ) } else { ($foldedQ -replace '[^a-z0-9]', '') }
+    $qTokens = if ($hasPipeSearch) { [DuckUtil.UiAssetPipeline]::SplitFoldedTokens($foldedQ) } else { @($foldedQ -split '\s+' | Where-Object { $_ }) }
+
+    $matchedApps = 0
+    $matchedCats = 0
+    $matchedCards = [System.Collections.Generic.List[hashtable]]::new()
+
+    foreach ($cd in $script:cardDescriptors) {
+        $cardHits = 0
+        if ($cd.Rows) {
+            foreach ($row in $cd.Rows) {
+                $idx = $null
+                [void]$script:catalogSearchIndex.TryGetValue($row, [ref]$idx)
+                $score = 0
+                if ($idx) {
+                    if ($hasPipeSearch) {
+                        $score = [DuckUtil.UiAssetPipeline]::ScoreSearchQuery(
+                            $foldedQ,
+                            $compactQ,
+                            $qTokens,
+                            $idx.FoldedName,
+                            $idx.CompactName,
+                            $idx.FoldedHaystack,
+                            $idx.CompactHaystack,
+                            $idx.NameWords
+                        )
+                    } elseif ($idx.FoldedHaystack.Contains($foldedQ)) {
+                        $score = 1
+                    }
+                }
+                if ($score -gt 0) {
+                    if ($row.Visibility -ne [System.Windows.Visibility]::Visible) { $row.Visibility = [System.Windows.Visibility]::Visible }
+                    $cardHits++
+                    $matchedApps++
+                } else {
+                    if ($row.Visibility -ne [System.Windows.Visibility]::Collapsed) { $row.Visibility = [System.Windows.Visibility]::Collapsed }
+                }
+            }
+        }
+        if ($cardHits -gt 0) {
+            $matchedCats++
+            if ($cd.Card.Visibility -ne [System.Windows.Visibility]::Visible) { $cd.Card.Visibility = [System.Windows.Visibility]::Visible }
+            [void]$matchedCards.Add($cd)
+        } else {
+            if ($cd.Card.Visibility -ne [System.Windows.Visibility]::Collapsed) { $cd.Card.Visibility = [System.Windows.Visibility]::Collapsed }
+        }
+    }
+
+    if ($script:hasMasonryPanel -and $script:masonryPanel) {
+        $script:masonryPanel.Columns = if ($matchedCats -le 1) { 1 } elseif ($matchedCats -eq 2) { 2 } else { 3 }
+        $script:activeMasonryDescriptors = $matchedCards
+    }
+    $script:activeAllowedCategories = $null
+    if ($txtGroupFilterTitle) { $txtGroupFilterTitle.Text = "K$([char]0x1EBF)t qu$([char]0x1EA3) t$([char]0x00EC)m ki$([char]0x1EBF)m: '$rawQuery'" }
+    if ($txtGroupFilterMeta) { $txtGroupFilterMeta.Text = "$matchedApps $([char]0x1EE9)ng d$([char]0x1EE5)ng  $([char]0x00B7)  $matchedCats danh m$([char]0x1EE5)c" }
+    if ($groupFilterBanner -and $groupFilterBanner.Visibility -ne [System.Windows.Visibility]::Visible) {
+        $groupFilterBanner.Visibility = [System.Windows.Visibility]::Visible
+    }
+    if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
+    foreach ($mc in $matchedCards) { Enqueue-CardIconsNow -CardDesc $mc }
+    Schedule-DeferredIconDecode -MaxDecode 48
+}
+
+$script:catalogSearchDebounceTimer.Add_Tick({
+    $script:catalogSearchDebounceTimer.Stop()
+    if ($script:isWindowClosing) { return }
+    Apply-CatalogSearchFilter
+})
+
+if ($txtCatalogSearch) {
+    $txtCatalogSearch.Add_TextChanged({
+        if ($script:isWindowClosing -or $script:suppressCatalogSearchOnce) { return }
+        $script:catalogSearchDebounceTimer.Stop()
+        $script:catalogSearchDebounceTimer.Start()
+    })
+}
+
+if ($btnClearCatalogSearch) {
+    $btnClearCatalogSearch.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $script:catalogSearchDebounceTimer.Stop()
+        if ($txtCatalogSearch) {
+            $script:suppressCatalogSearchOnce = $true
+            try { $txtCatalogSearch.Text = "" } finally { $script:suppressCatalogSearchOnce = $false }
+        }
+        Apply-CatalogSearchFilter
+    })
+}
+
 if ($categorySidebarTop -and $categorySidebarPanel) {
     $allDesc = New-SidebarNavRow -Key "__ALL__" -Label "T$([char]0x1EA5)t c$([char]0x1EA3)" -Count $allItemBorders.Count -Role "Root"
     [void]$categorySidebarTop.Children.Add($allDesc.Border)
@@ -35048,40 +37038,54 @@ function Get-SilentInstallerArgsForFile {
         try { $fw = [DuckUtil.DeepUninstallerEngine]::DetectInstallerFramework($Path) } catch { $fw = "" }
     }
     switch ($fw) {
-        "InnoSetup" { return "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" }
-        "NSIS"      { return "/S" }
-        "WiX"       { return "/install /quiet /norestart" }
-        "BitRock"   { return "--mode unattended" }
-        "Squirrel"  { return "--silent" }
-        default     { return "--silent-install" }
+        "InnoSetup"         { return "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" }
+        "NSIS"              { return "/S" }
+        "WiX"               { return "/install /quiet /norestart" }
+        "BitRock"           { return "--mode unattended" }
+        "Squirrel"          { return "--silent" }
+        "InstallShield"     { return "/s /v`"/qn /norestart`"" }
+        "AdvancedInstaller" { return "/exenoui /qn /norestart" }
+        "QtIFW"             { return "--accept-licenses --confirm-command" }
+        "7zSFX"             { return "-y" }
+        default             { return "--silent-install" }
     }
 }
 
 function Invoke-GitHubAssetInstall {
-    param($App)
+    param(
+        $App,
+        [string]$PreDownloadedPath = ""
+    )
     $tmpDir = $null
     $prevProgPref = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
     try {
-        Log-Text "   -> $([char]0x0110)ang t$([char]0x00EC)m b$([char]0x1EA3)n ph$([char]0x00E1)t h$([char]0x00E0)nh m$([char]0x1EDB)i nh$([char]0x1EA5)t t$([char]0x1EEB) GitHub ($($App.GitHubRepo))..."
-        $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
-        $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
-        if (-not $asset) {
-            Log-Text "   [!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1ED9) c$([char]0x00E0)i ph$([char]0x00F9) h$([char]0x1EE3)p tr$([char]0x00EA)n GitHub Release."
-            return -1
+        $dlPath = ""
+        if (-not [string]::IsNullOrWhiteSpace($PreDownloadedPath) -and (Test-Path -LiteralPath $PreDownloadedPath)) {
+            $dlPath = $PreDownloadedPath
+            $tmpDir = Split-Path -Parent $dlPath
+            Log-Text "   [PREFETCH] $([char]0x0110)$([char]0x00E3) t$([char]0x1EA3)i s$([char]0x1EB5)n b$([char]0x1ED9) c$([char]0x00E0)i: $([System.IO.Path]::GetFileName($dlPath))"
+        } else {
+            Log-Text "   -> $([char]0x0110)ang t$([char]0x00EC)m b$([char]0x1EA3)n ph$([char]0x00E1)t h$([char]0x00E0)nh m$([char]0x1EDB)i nh$([char]0x1EA5)t t$([char]0x1EEB) GitHub ($($App.GitHubRepo))..."
+            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
+            $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
+            if (-not $asset) {
+                Log-Text "   [!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1ED9) c$([char]0x00E0)i ph$([char]0x00F9) h$([char]0x1EE3)p tr$([char]0x00EA)n GitHub Release."
+                return -1
+            }
+            $safeName = [System.IO.Path]::GetFileName([string]$asset.name)
+            if ([string]::IsNullOrWhiteSpace($safeName) -or $safeName -notmatch '\.(msi|exe)$' -or [string]$asset.browser_download_url -notmatch '^https://') {
+                Log-Text "   [*] T$([char]0x1EC7)p ph$([char]0x00E1)t h$([char]0x00E0)nh '$safeName' kh$([char]0x00F4)ng ph$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p .exe/.msi."
+                return -1
+            }
+            if ($script:cancelRequested) { return -2 }
+            if ($script:isWindowClosing) { return -1 }
+            $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+            [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
+            $dlPath = Join-Path $tmpDir $safeName
+            Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $safeName..."
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
         }
-        $safeName = [System.IO.Path]::GetFileName([string]$asset.name)
-        if ([string]::IsNullOrWhiteSpace($safeName) -or $safeName -notmatch '\.(msi|exe)$' -or [string]$asset.browser_download_url -notmatch '^https://') {
-            Log-Text "   [*] T$([char]0x1EC7)p ph$([char]0x00E1)t h$([char]0x00E0)nh '$safeName' kh$([char]0x00F4)ng ph$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p .exe/.msi."
-            return -1
-        }
-        if ($script:cancelRequested) { return -2 }
-        if ($script:isWindowClosing) { return -1 }
-        $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
-        [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
-        $dlPath = Join-Path $tmpDir $safeName
-        Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $safeName..."
-        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
         if ($script:cancelRequested) { return -2 }
         if ($script:isWindowClosing) { return -1 }
         $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath
@@ -35694,6 +37698,34 @@ Register-Click "btnInstall" {
         Log-Text "[INSTALL & UPGRADE] X$([char]0x1EEC) L$([char]0x00DD) $total $([char]0x1EE8)NG D$([char]0x1EE4)NG $([char]0x0110)$([char]0x00C3) $([char]0x0110)$([char]0x00C1)NH D$([char]0x1EA4)U"
         Log-Text "=========================================================="
 
+        $prefetchCts = $null
+        $prefetchQueue = [System.Collections.Generic.Queue[object]]::new()
+        $prefetchSlots = @{}
+        $prefetchDirs = [System.Collections.Generic.List[string]]::new()
+        $hasPrefetchApi = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("PrefetchGitHubReleaseAssetAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        if ($hasPrefetchApi -and $selectedTags.Count -ge 2) {
+            foreach ($pt in $selectedTags) {
+                if ($pt.Status -ne "LATEST" -and $pt.Status -ne "OUTDATED" -and $pt.App -and -not ($pt.App.BrowserDownload -eq $true) -and -not [string]::IsNullOrWhiteSpace($pt.App.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($pt.App.AssetRegex)) {
+                    $prefetchQueue.Enqueue($pt.App)
+                }
+            }
+            if ($prefetchQueue.Count -ge 2) {
+                $prefetchCts = [System.Threading.CancellationTokenSource]::new()
+                $script:activePrefetchCts = $prefetchCts
+                for ($pfInit = 0; $pfInit -lt 2 -and $prefetchQueue.Count -gt 0; $pfInit++) {
+                    $pfApp = $prefetchQueue.Dequeue()
+                    $pfDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+                    [void]$prefetchDirs.Add($pfDir)
+                    $prefetchSlots[[string]$pfApp.ID] = @{
+                        Dir  = $pfDir
+                        Task = [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$pfApp.GitHubRepo, [string]$pfApp.AssetRegex, $pfDir, $prefetchCts.Token)
+                    }
+                }
+            } else {
+                $prefetchQueue.Clear()
+            }
+        }
+
         try {
             foreach ($tag in $selectedTags) {
                 if ($script:isWindowClosing -or $script:cancelRequested) { break }
@@ -35740,7 +37772,32 @@ Register-Click "btnInstall" {
                 }
 
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
-                    $code = Invoke-GitHubAssetInstall -App $app
+                    $preDlPath = ""
+                    $pfSlot = $null
+                    if ($prefetchSlots.ContainsKey([string]$app.ID)) {
+                        $pfSlot = $prefetchSlots[[string]$app.ID]
+                        $prefetchSlots.Remove([string]$app.ID) | Out-Null
+                    }
+                    while ($prefetchCts -and $prefetchQueue.Count -gt 0 -and $prefetchSlots.Count -lt 2 -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                        $nextPfApp = $prefetchQueue.Dequeue()
+                        $nextPfDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+                        [void]$prefetchDirs.Add($nextPfDir)
+                        $prefetchSlots[[string]$nextPfApp.ID] = @{
+                            Dir  = $nextPfDir
+                            Task = [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$nextPfApp.GitHubRepo, [string]$nextPfApp.AssetRegex, $nextPfDir, $prefetchCts.Token)
+                        }
+                    }
+                    if ($pfSlot -and $pfSlot.Task) {
+                        [void](Wait-TaskNonBlocking -Task $pfSlot.Task -TimeoutSeconds 120 -CancelCheck { [bool]$script:cancelRequested })
+                        if ($pfSlot.Task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                            $preDlPath = [string]$pfSlot.Task.Result
+                        }
+                    }
+                    if ($script:cancelRequested -or $script:isWindowClosing) {
+                        $code = if ($script:cancelRequested) { -2 } else { -1 }
+                    } else {
+                        $code = Invoke-GitHubAssetInstall -App $app -PreDownloadedPath $preDlPath
+                    }
                     if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.ID)) {
                         Log-Text "   [*] Th$([char]0x1EED) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t d$([char]0x1EF1) ph$([char]0x00F2)ng qua WinGet ($($app.ID))..."
                         $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
@@ -35766,6 +37823,16 @@ Register-Click "btnInstall" {
                 }
             }
         } finally {
+            $script:activePrefetchCts = $null
+            if ($prefetchCts) {
+                try { $prefetchCts.Cancel() } catch {}
+                try { $prefetchCts.Dispose() } catch {}
+            }
+            foreach ($pDir in $prefetchDirs) {
+                if ($pDir -and (Test-Path -LiteralPath $pDir)) {
+                    Remove-Item -LiteralPath $pDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
             Clear-WinGetTempInstallers
         }
         if (-not $script:isWindowClosing) {
@@ -36178,6 +38245,8 @@ function Stop-AllBackgroundWork {
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
     try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
     try { if ($script:offscreenPrewarmTimer) { $script:offscreenPrewarmTimer.Stop() } } catch {}

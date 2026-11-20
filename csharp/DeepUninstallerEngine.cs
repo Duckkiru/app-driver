@@ -69,6 +69,16 @@ namespace DuckUtil
         public List<ServiceScanEntry> AllServices { get; set; }
         public List<ServiceScanEntry> RogueDrivers { get; set; }
     }
+
+    public class DeepResidualArtifact
+    {
+        public string ArtifactKind { get; set; }
+        public string Path { get; set; }
+        public string RegistryValueName { get; set; }
+        public long SizeBytes { get; set; }
+        public bool IsRegistry { get; set; }
+        public string ConfidenceTier { get; set; }
+    }
     public class InstalledAppInfo
     {
         public string Id { get; set; }
@@ -5264,9 +5274,14 @@ namespace DuckUtil
                 try
                 {
                     var fvi = FileVersionInfo.GetVersionInfo(exePath);
-                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "");
+                    string desc = (fvi.FileDescription ?? "") + " " + (fvi.ProductName ?? "") + " " + (fvi.CompanyName ?? "");
                     if (desc.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
                         return "InnoSetup";
+                    if (desc.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "InstallShield";
+                    if (desc.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        desc.IndexOf("Caphyon", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return "AdvancedInstaller";
                 }
                 catch {}
             }
@@ -5302,6 +5317,27 @@ namespace DuckUtil
                 uni.IndexOf("Inno Setup", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return "InnoSetup";
+            }
+            if (ascii.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("InstallShield", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "InstallShield";
+            }
+            if (ascii.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Advanced Installer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                ascii.IndexOf("Caphyon", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "AdvancedInstaller";
+            }
+            if (ascii.IndexOf("Qt Installer Framework", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                uni.IndexOf("Qt Installer Framework", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "QtIFW";
+            }
+            if (ascii.IndexOf(";!@Install@!UTF-8!", StringComparison.Ordinal) >= 0 ||
+                ascii.IndexOf("7zS.sfx", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "7zSFX";
             }
             return "";
         }
@@ -5422,31 +5458,154 @@ namespace DuckUtil
             });
         }
 
+        private static string ReadNullTermBytes(byte[] buf, int offset, int maxEnd, bool isUnicode)
+        {
+            if (buf == null || offset < 0 || offset >= maxEnd) return "";
+            if (isUnicode)
+            {
+                int pos = offset;
+                while (pos + 1 < maxEnd)
+                {
+                    if (buf[pos] == 0 && buf[pos + 1] == 0) break;
+                    pos += 2;
+                }
+                if (pos <= offset) return "";
+                return System.Text.Encoding.Unicode.GetString(buf, offset, pos - offset);
+            }
+            else
+            {
+                int pos = offset;
+                while (pos < maxEnd && buf[pos] != 0) pos++;
+                if (pos <= offset) return "";
+                return System.Text.Encoding.Default.GetString(buf, offset, pos - offset);
+            }
+        }
+
+        private static bool TryExtractLnkTargetFast(string lnkPath, out string targetPath)
+        {
+            targetPath = null;
+            try
+            {
+                byte[] data = File.ReadAllBytes(lnkPath);
+                if (data == null || data.Length < 0x50) return false;
+                if (BitConverter.ToInt32(data, 0) != 0x4C) return false;
+                uint linkFlags = BitConverter.ToUInt32(data, 0x14);
+                int offset = 0x4C;
+
+                if ((linkFlags & 0x01u) != 0)
+                {
+                    if (offset + 2 > data.Length) return false;
+                    int idListSize = BitConverter.ToUInt16(data, offset);
+                    offset += 2 + idListSize;
+                }
+
+                if ((linkFlags & 0x02u) == 0 || offset + 0x1C > data.Length) return false;
+
+                int linkInfoStart = offset;
+                int linkInfoSize = BitConverter.ToInt32(data, linkInfoStart);
+                int linkInfoHdrSize = BitConverter.ToInt32(data, linkInfoStart + 4);
+                uint linkInfoFlags = BitConverter.ToUInt32(data, linkInfoStart + 8);
+                if (linkInfoSize <= 0 || linkInfoStart + linkInfoSize > data.Length) return false;
+                if ((linkInfoFlags & 0x01u) == 0) return false;
+
+                int infoEnd = linkInfoStart + linkInfoSize;
+                string basePath = "";
+                string suffix = "";
+
+                if (linkInfoHdrSize >= 0x24 && linkInfoStart + 0x24 <= infoEnd)
+                {
+                    int localUniOff = BitConverter.ToInt32(data, linkInfoStart + 0x1C);
+                    int sufUniOff = BitConverter.ToInt32(data, linkInfoStart + 0x20);
+                    if (localUniOff > 0) basePath = ReadNullTermBytes(data, linkInfoStart + localUniOff, infoEnd, true);
+                    if (sufUniOff > 0) suffix = ReadNullTermBytes(data, linkInfoStart + sufUniOff, infoEnd, true);
+                }
+
+                if (string.IsNullOrEmpty(basePath))
+                {
+                    int localOff = BitConverter.ToInt32(data, linkInfoStart + 0x10);
+                    int sufOff = BitConverter.ToInt32(data, linkInfoStart + 0x18);
+                    if (localOff > 0) basePath = ReadNullTermBytes(data, linkInfoStart + localOff, infoEnd, false);
+                    if (sufOff > 0) suffix = ReadNullTermBytes(data, linkInfoStart + sufOff, infoEnd, false);
+                }
+
+                if (string.IsNullOrEmpty(basePath)) return false;
+                string combined = string.IsNullOrEmpty(suffix) ? basePath : (basePath + suffix);
+                combined = combined.Trim();
+                if (combined.Length >= 3 && char.IsLetter(combined[0]) && combined[1] == ':' && combined[2] == '\\')
+                {
+                    targetPath = combined;
+                    return true;
+                }
+            }
+            catch {}
+            return false;
+        }
+
         public static Task<List<DeadShortcutResult>> ScanDeadShortcutsAsync(string[] rootDirs)
         {
             var tcs = new TaskCompletionSource<List<DeadShortcutResult>>();
             Thread t = new Thread(delegate()
             {
                 var results = new List<DeadShortcutResult>();
+                var needComFallback = new List<string>();
                 object wsh = null;
                 Type wshType = null;
                 try
                 {
                     if (rootDirs != null && rootDirs.Length > 0)
                     {
-                        wshType = Type.GetTypeFromProgID("WScript.Shell");
-                        if (wshType != null)
+                        var allLnks = new List<string>();
+                        for (int ri = 0; ri < rootDirs.Length; ri++)
                         {
-                            wsh = Activator.CreateInstance(wshType);
+                            string root = rootDirs[ri];
+                            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                            allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
                         }
-                        if (wsh != null)
+
+                        var fastDead = new ConcurrentBag<DeadShortcutResult>();
+                        var fallbackBag = new ConcurrentBag<string>();
+                        if (allLnks.Count > 0)
                         {
-                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            Parallel.For(0, allLnks.Count, delegate(int li)
                             {
-                                string root = rootDirs[ri];
-                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
-                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                string lnk = allLnks[li];
+                                string target;
+                                if (TryExtractLnkTargetFast(lnk, out target))
                                 {
+                                    if (!string.IsNullOrEmpty(target) &&
+                                        target.Length >= 7 &&
+                                        char.IsLetter(target[0]) &&
+                                        target[1] == ':' &&
+                                        target[2] == '\\' &&
+                                        target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                        !File.Exists(target))
+                                    {
+                                        fastDead.Add(new DeadShortcutResult
+                                        {
+                                            LnkPath = lnk,
+                                            AppName = Path.GetFileNameWithoutExtension(lnk) ?? lnk
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    fallbackBag.Add(lnk);
+                                }
+                            });
+                        }
+
+                        results.AddRange(fastDead);
+                        needComFallback.AddRange(fallbackBag);
+
+                        if (needComFallback.Count > 0)
+                        {
+                            wshType = Type.GetTypeFromProgID("WScript.Shell");
+                            if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                            if (wsh != null)
+                            {
+                                for (int fi = 0; fi < needComFallback.Count; fi++)
+                                {
+                                    string lnk = needComFallback[fi];
                                     object sc = null;
                                     try
                                     {
@@ -5550,18 +5709,54 @@ namespace DuckUtil
                 {
                     if (rootDirs != null && rootDirs.Length > 0)
                     {
-                        wshType = Type.GetTypeFromProgID("WScript.Shell");
-                        if (wshType != null) wsh = Activator.CreateInstance(wshType);
-                        if (wsh != null)
+                        bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
+                        bool hasClean = !string.IsNullOrEmpty(cleanAppName);
+                        var allLnks = new List<string>();
+                        for (int ri = 0; ri < rootDirs.Length; ri++)
                         {
-                            bool hasPrefix = !string.IsNullOrEmpty(targetLocPrefix);
-                            bool hasClean = !string.IsNullOrEmpty(cleanAppName);
-                            for (int ri = 0; ri < rootDirs.Length; ri++)
+                            string root = rootDirs[ri];
+                            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                            allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
+                        }
+
+                        var fastHits = new ConcurrentBag<string>();
+                        var fallbackLnks = new ConcurrentBag<string>();
+                        if (allLnks.Count > 0)
+                        {
+                            Parallel.For(0, allLnks.Count, delegate(int li)
                             {
-                                string root = rootDirs[ri];
-                                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
-                                foreach (string lnk in EnumerateFilesSafe(root, "*.lnk", 6))
+                                string lnk = allLnks[li];
+                                string target;
+                                if (TryExtractLnkTargetFast(lnk, out target))
                                 {
+                                    string lnkName = Path.GetFileNameWithoutExtension(lnk) ?? "";
+                                    if (hasPrefix && !string.IsNullOrEmpty(target) && target.StartsWith(targetLocPrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        fastHits.Add(lnk);
+                                    }
+                                    else if (hasClean && lnkName.Equals(cleanAppName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(target) && !File.Exists(target) && !Directory.Exists(target))
+                                    {
+                                        fastHits.Add(lnk);
+                                    }
+                                }
+                                else
+                                {
+                                    fallbackLnks.Add(lnk);
+                                }
+                            });
+                        }
+
+                        results.AddRange(fastHits);
+                        var fbList = new List<string>(fallbackLnks);
+                        if (fbList.Count > 0)
+                        {
+                            wshType = Type.GetTypeFromProgID("WScript.Shell");
+                            if (wshType != null) wsh = Activator.CreateInstance(wshType);
+                            if (wsh != null)
+                            {
+                                for (int fi = 0; fi < fbList.Count; fi++)
+                                {
+                                    string lnk = fbList[fi];
                                     object sc = null;
                                     try
                                     {
@@ -5606,6 +5801,183 @@ namespace DuckUtil
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
             return tcs.Task;
+        }
+
+        private static bool IsSafeResidualTargetPrefix(string targetLocPrefix)
+        {
+            if (string.IsNullOrWhiteSpace(targetLocPrefix)) return false;
+            string p = targetLocPrefix.Trim().TrimEnd('\\');
+            if (p.Length < 4 || p[1] != ':' || p[2] != '\\') return false;
+            string[] parts = p.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return false;
+            string rootName = parts[1];
+            if (rootName.Equals("Windows", StringComparison.OrdinalIgnoreCase)) return false;
+            if ((rootName.Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("ProgramData", StringComparison.OrdinalIgnoreCase) ||
+                 rootName.Equals("Users", StringComparison.OrdinalIgnoreCase)) && parts.Length < 3)
+            {
+                return false;
+            }
+            string lastSeg = parts[parts.Length - 1];
+            if (lastSeg.Equals("Roaming", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Local", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("LocalLow", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Temp", StringComparison.OrdinalIgnoreCase) ||
+                lastSeg.Equals("Programs", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public static List<DeepResidualArtifact> ScanDeepAppResidualsFast(string targetLocPrefix)
+        {
+            var results = new List<DeepResidualArtifact>();
+            if (!IsSafeResidualTargetPrefix(targetLocPrefix)) return results;
+            string normPrefix = targetLocPrefix.Trim().TrimEnd('\\') + "\\";
+
+            var appPathHives = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\App Paths", "HKCU:\\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", "HKLM:\\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", "HKLM:\\")
+            };
+
+            foreach (var target in appPathHives)
+            {
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(target.Hive, target.View))
+                    using (var root = baseKey.OpenSubKey(target.SubKey, false))
+                    {
+                        if (root == null) continue;
+                        string fullSub = target.SubKey;
+                        if (target.Hive == RegistryHive.LocalMachine && target.View == RegistryView.Registry32 &&
+                            fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                            fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                        }
+                        foreach (string subName in root.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var sk = root.OpenSubKey(subName, false))
+                                {
+                                    if (sk == null) continue;
+                                    string defVal = ((sk.GetValue("") as string) ?? "").Trim().Trim('\"');
+                                    string pVal = ((sk.GetValue("Path") as string) ?? "").Trim().Trim('\"');
+                                    bool matchDef = defVal.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase);
+                                    bool matchPath = !string.IsNullOrEmpty(pVal) &&
+                                        (pVal.Equals(normPrefix.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase) || pVal.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase));
+                                    if (matchDef || matchPath)
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "RegistryAppPath",
+                                            Path = target.Scope + fullSub + "\\" + subName,
+                                            RegistryValueName = "",
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                using (var hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Default))
+                {
+                    string[] valRegPaths = new string[]
+                    {
+                        @"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache",
+                        @"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
+                    };
+                    foreach (string vrp in valRegPaths)
+                    {
+                        try
+                        {
+                            using (var rk = hkcu.OpenSubKey(vrp, false))
+                            {
+                                if (rk == null) continue;
+                                foreach (string vn in rk.GetValueNames())
+                                {
+                                    if (!string.IsNullOrEmpty(vn) && vn.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "RegistryCache",
+                                            Path = "HKCU:\\" + vrp,
+                                            RegistryValueName = vn,
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string tasksDir = string.IsNullOrEmpty(winDir) ? "" : Path.Combine(winDir, @"System32\Tasks");
+                if (!string.IsNullOrEmpty(tasksDir) && Directory.Exists(tasksDir))
+                {
+                    var xmlFiles = EnumerateFilesSafe(tasksDir, "*", 4);
+                    var hitTasks = new ConcurrentBag<DeepResidualArtifact>();
+                    if (xmlFiles.Count > 0)
+                    {
+                        Parallel.For(0, xmlFiles.Count, delegate(int ti)
+                        {
+                            string tf = xmlFiles[ti];
+                            try
+                            {
+                                string rel = tf.Substring(tasksDir.Length).TrimStart('\\');
+                                if (rel.StartsWith("Microsoft\\", StringComparison.OrdinalIgnoreCase)) return;
+                                var fi = new FileInfo(tf);
+                                if (fi.Length <= 0 || fi.Length > 262144) return;
+                                string txt = File.ReadAllText(tf);
+                                if (txt.IndexOf(normPrefix, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    hitTasks.Add(new DeepResidualArtifact
+                                    {
+                                        ArtifactKind = "ScheduledTask",
+                                        Path = tf,
+                                        RegistryValueName = "\\" + rel,
+                                        SizeBytes = fi.Length,
+                                        IsRegistry = false,
+                                        ConfidenceTier = "Safe100"
+                                    });
+                                }
+                            }
+                            catch {}
+                        });
+                    }
+                    results.AddRange(hitTasks);
+                }
+            }
+            catch {}
+
+            return results;
+        }
+
+        public static Task<List<DeepResidualArtifact>> ScanDeepAppResidualsFastAsync(string targetLocPrefix)
+        {
+            return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
         }
     }
 }

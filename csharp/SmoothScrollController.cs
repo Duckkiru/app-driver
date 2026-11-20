@@ -3,10 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1372,6 +1374,243 @@ namespace DuckUtil {
                 }
             }
         }
+
+        private static readonly HttpClient _downloadClient = CreateDownloadClient();
+
+        private static HttpClient CreateDownloadClient() {
+            if (Environment.Version.Major == 4) {
+                try {
+                    Type spm = Type.GetType("System.Net.ServicePointManager, System");
+                    if (spm != null) {
+                        PropertyInfo prop = spm.GetProperty("SecurityProtocol", BindingFlags.Public | BindingFlags.Static);
+                        if (prop != null) {
+                            int cur = Convert.ToInt32(prop.GetValue(null, null));
+                            object val = Enum.ToObject(prop.PropertyType, cur | 3072);
+                            prop.SetValue(null, val, null);
+                        }
+                    }
+                } catch {}
+            }
+            var handler = new HttpClientHandler();
+            try { handler.AllowAutoRedirect = true; } catch {}
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromMinutes(3);
+            try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DuckUtil"); } catch {}
+            return client;
+        }
+
+        public static string NormalizeSearchFold(string input) {
+            if (string.IsNullOrWhiteSpace(input)) return "";
+            string norm = input.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(norm.Length);
+            bool prevSpace = true;
+            for (int i = 0; i < norm.Length; i++) {
+                char ch = norm[i];
+                if (ch == '\u0111' || ch == '\u0110') {
+                    sb.Append('d');
+                    prevSpace = false;
+                    continue;
+                }
+                UnicodeCategory uc = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (uc == UnicodeCategory.NonSpacingMark) continue;
+                if (ch >= 'A' && ch <= 'Z') {
+                    sb.Append((char)(ch + 32));
+                    prevSpace = false;
+                } else if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+                    sb.Append(ch);
+                    prevSpace = false;
+                } else if (!prevSpace) {
+                    sb.Append(' ');
+                    prevSpace = true;
+                }
+            }
+            if (sb.Length > 0 && sb[sb.Length - 1] == ' ') sb.Length--;
+            return sb.ToString();
+        }
+
+        public static string CompactSearchAlnum(string folded) {
+            if (string.IsNullOrEmpty(folded)) return "";
+            var sb = new StringBuilder(folded.Length);
+            for (int i = 0; i < folded.Length; i++) {
+                char c = folded[i];
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
+        public static string[] SplitFoldedTokens(string folded) {
+            if (string.IsNullOrEmpty(folded)) return new string[0];
+            return folded.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private static int BoundedDamerauDistance(string a, string b, int maxDist) {
+            int n = a.Length;
+            int m = b.Length;
+            if (Math.Abs(n - m) > maxDist) return maxDist + 1;
+            int[] prevPrev = new int[m + 1];
+            int[] prev = new int[m + 1];
+            int[] curr = new int[m + 1];
+            for (int j = 0; j <= m; j++) prev[j] = j;
+            for (int i = 1; i <= n; i++) {
+                curr[0] = i;
+                int rowMin = curr[0];
+                char ai = a[i - 1];
+                for (int j = 1; j <= m; j++) {
+                    char bj = b[j - 1];
+                    int cost = (ai == bj) ? 0 : 1;
+                    int val = Math.Min(Math.Min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+                    if (i > 1 && j > 1 && ai == b[j - 2] && a[i - 2] == bj) {
+                        int trans = prevPrev[j - 2] + 1;
+                        if (trans < val) val = trans;
+                    }
+                    curr[j] = val;
+                    if (val < rowMin) rowMin = val;
+                }
+                if (rowMin > maxDist) return maxDist + 1;
+                int[] tmp = prevPrev;
+                prevPrev = prev;
+                prev = curr;
+                curr = tmp;
+            }
+            return prev[m];
+        }
+
+        public static int ScoreSearchQuery(
+            string foldedQuery,
+            string compactQuery,
+            string[] qTokens,
+            string foldedName,
+            string compactName,
+            string foldedHaystack,
+            string compactHaystack,
+            string[] nameWords)
+        {
+            if (string.IsNullOrEmpty(foldedQuery)) return 1;
+            if (foldedName == foldedQuery || (!string.IsNullOrEmpty(compactQuery) && compactName == compactQuery)) {
+                return 1000;
+            }
+            if (!string.IsNullOrEmpty(foldedName)) {
+                if (foldedName.StartsWith(foldedQuery, StringComparison.Ordinal)) return 880;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 2 && compactName.StartsWith(compactQuery, StringComparison.Ordinal)) return 840;
+                if (foldedName.IndexOf(" " + foldedQuery, StringComparison.Ordinal) >= 0) return 760;
+                if (foldedName.IndexOf(foldedQuery, StringComparison.Ordinal) >= 0) return 700;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 3 && compactName.IndexOf(compactQuery, StringComparison.Ordinal) >= 0) return 680;
+            }
+            if (!string.IsNullOrEmpty(foldedHaystack)) {
+                if (foldedHaystack.IndexOf(foldedQuery, StringComparison.Ordinal) >= 0) return 610;
+                if (!string.IsNullOrEmpty(compactQuery) && compactQuery.Length >= 3 && compactHaystack.IndexOf(compactQuery, StringComparison.Ordinal) >= 0) return 580;
+            }
+            if (qTokens != null && qTokens.Length >= 2 && !string.IsNullOrEmpty(foldedHaystack)) {
+                int hits = 0;
+                int nameHits = 0;
+                for (int qi = 0; qi < qTokens.Length; qi++) {
+                    string qt = qTokens[qi];
+                    if (foldedHaystack.IndexOf(qt, StringComparison.Ordinal) >= 0) {
+                        hits++;
+                        if (!string.IsNullOrEmpty(foldedName) && foldedName.IndexOf(qt, StringComparison.Ordinal) >= 0) nameHits++;
+                    }
+                }
+                if (hits == qTokens.Length) return 500 + Math.Min(80, nameHits * 25);
+            }
+            if (qTokens != null && qTokens.Length == 1 && nameWords != null && nameWords.Length > 0) {
+                string qt = qTokens[0];
+                int maxDist = qt.Length >= 7 ? 2 : (qt.Length >= 4 ? 1 : 0);
+                if (maxDist > 0) {
+                    int bestDist = maxDist + 1;
+                    for (int wi = 0; wi < nameWords.Length; wi++) {
+                        string w = nameWords[wi];
+                        if (w.Length < 3) continue;
+                        int d = BoundedDamerauDistance(qt, w, maxDist);
+                        if (d < bestDist) bestDist = d;
+                    }
+                    if (bestDist <= maxDist) return 420 - (bestDist * 60);
+                }
+            }
+            return 0;
+        }
+
+        private static string UnescapeJsonString(string raw) {
+            if (string.IsNullOrEmpty(raw) || raw.IndexOf('\\') < 0) return raw ?? "";
+            var sb = new StringBuilder(raw.Length);
+            for (int i = 0; i < raw.Length; i++) {
+                char c = raw[i];
+                if (c == '\\' && i + 1 < raw.Length) {
+                    char n = raw[++i];
+                    if (n == '"' || n == '\\' || n == '/') sb.Append(n);
+                    else if (n == 'n') sb.Append('\n');
+                    else if (n == 'r') sb.Append('\r');
+                    else if (n == 't') sb.Append('\t');
+                    else if (n == 'u' && i + 4 < raw.Length) {
+                        int code;
+                        if (int.TryParse(raw.Substring(i + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out code)) {
+                            sb.Append((char)code);
+                            i += 4;
+                        }
+                    } else sb.Append(n);
+                } else {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static readonly Regex _rxGhAssetPair = new Regex(
+            @"""name""\s*:\s*""((?:\\.|[^""])*)""[\s\S]{0,1200}?""browser_download_url""\s*:\s*""((?:\\.|[^""])*)""",
+            RegexOptions.Compiled);
+
+        public static async Task<string> PrefetchGitHubReleaseAssetAsync(string repo, string assetRegex, string destDir, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(assetRegex) || string.IsNullOrWhiteSpace(destDir)) return "";
+            try {
+                ct.ThrowIfCancellationRequested();
+                string apiUrl = "https://api.github.com/repos/" + repo.Trim('/') + "/releases/latest";
+                string json = "";
+                using (HttpResponseMessage apiResp = await _downloadClient.GetAsync(apiUrl, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false)) {
+                    if (!apiResp.IsSuccessStatusCode || apiResp.Content == null) return "";
+                    json = await apiResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                if (string.IsNullOrEmpty(json)) return "";
+                int assetsIdx = json.IndexOf("\"assets\"", StringComparison.Ordinal);
+                string scanSlice = assetsIdx >= 0 ? json.Substring(assetsIdx) : json;
+                var rxAsset = new Regex(assetRegex, RegexOptions.IgnoreCase);
+                string matchedName = "";
+                string matchedUrl = "";
+                foreach (Match m in _rxGhAssetPair.Matches(scanSlice)) {
+                    string candName = UnescapeJsonString(m.Groups[1].Value);
+                    string candUrl = UnescapeJsonString(m.Groups[2].Value);
+                    if (rxAsset.IsMatch(candName)) {
+                        matchedName = candName;
+                        matchedUrl = candUrl;
+                        break;
+                    }
+                }
+                if (string.IsNullOrWhiteSpace(matchedName) || string.IsNullOrWhiteSpace(matchedUrl)) return "";
+                string safeName = Path.GetFileName(matchedName);
+                if (string.IsNullOrWhiteSpace(safeName)) return "";
+                bool isInstaller = safeName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || safeName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
+                if (!isInstaller || !matchedUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return "";
+
+                ct.ThrowIfCancellationRequested();
+                Directory.CreateDirectory(destDir);
+                string outFile = Path.Combine(destDir, safeName);
+                using (HttpResponseMessage dlResp = await _downloadClient.GetAsync(matchedUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) return "";
+                    using (Stream src = await dlResp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
+                return File.Exists(outFile) ? outFile : "";
+            } catch {
+                try {
+                    if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
+                } catch {}
+                return "";
+            }
+        }
     }
 
     public sealed class MasonryPanel : Panel {
@@ -1488,6 +1727,12 @@ namespace DuckUtil {
         public string DataLocation { get; set; }
         public string UninstallString { get; set; }
         public string SearchText { get; set; }
+        public string FoldedName { get; set; }
+        public string CompactName { get; set; }
+        public string FoldedSearch { get; set; }
+        public string CompactSearch { get; set; }
+        public string[] SearchWords { get; set; }
+        public int LastSearchScore { get; set; }
         public string IconTarget { get; set; }
         public string QueueKey { get; set; }
         public string BadgeLetter { get; set; }
@@ -1829,6 +2074,8 @@ namespace DuckUtil {
 
                     string iconTarget = ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, msiExe);
 
+                    string foldedName = UiAssetPipeline.NormalizeSearchFold(dispName);
+                    string foldedSearch = UiAssetPipeline.NormalizeSearchFold(searchIdx);
                     result.Add(new UninstVirtualItem {
                         App = app,
                         Id = id,
@@ -1843,6 +2090,11 @@ namespace DuckUtil {
                         DataLocation = dataLoc,
                         UninstallString = uninstStr,
                         SearchText = searchIdx,
+                        FoldedName = foldedName,
+                        CompactName = UiAssetPipeline.CompactSearchAlnum(foldedName),
+                        FoldedSearch = foldedSearch,
+                        CompactSearch = UiAssetPipeline.CompactSearchAlnum(foldedSearch),
+                        SearchWords = UiAssetPipeline.SplitFoldedTokens(foldedName),
                         IconTarget = iconTarget,
                         QueueKey = queueKey,
                         BadgeLetter = badgeLetter,
@@ -1946,8 +2198,10 @@ namespace DuckUtil {
                 }
             }
 
-            string q = string.IsNullOrWhiteSpace(query) ? "" : query.Trim().ToLowerInvariant();
-            bool hasQ = q.Length > 0;
+            string foldedQ = UiAssetPipeline.NormalizeSearchFold(query);
+            string compactQ = UiAssetPipeline.CompactSearchAlnum(foldedQ);
+            string[] qTokens = UiAssetPipeline.SplitFoldedTokens(foldedQ);
+            bool hasQ = foldedQ.Length > 0;
 
             _visibleItems.Clear();
             int brokenCount = 0;
@@ -1961,10 +2215,36 @@ namespace DuckUtil {
                 if (it.IsSelected) selCount++;
 
                 if (brokenOnly && !it.IsBrokenOrphan) continue;
-                if (hasQ && (it.SearchText == null || it.SearchText.IndexOf(q, StringComparison.Ordinal) < 0)) continue;
+                if (hasQ) {
+                    int score = UiAssetPipeline.ScoreSearchQuery(
+                        foldedQ,
+                        compactQ,
+                        qTokens,
+                        it.FoldedName ?? "",
+                        it.CompactName ?? "",
+                        it.FoldedSearch ?? (it.SearchText ?? ""),
+                        it.CompactSearch ?? "",
+                        it.SearchWords
+                    );
+                    if (score <= 0) continue;
+                    it.LastSearchScore = score;
+                } else {
+                    it.LastSearchScore = 0;
+                }
 
                 _visibleItems.Add(it);
                 if (it.SizeBytes > 0) visibleBytes += it.SizeBytes;
+            }
+            if (hasQ && _visibleItems.Count > 1) {
+                _visibleItems.Sort(delegate(UninstVirtualItem a, UninstVirtualItem b) {
+                    int sc = b.LastSearchScore.CompareTo(a.LastSearchScore);
+                    if (sc != 0) return sc;
+                    if (sortBySize) {
+                        int szc = b.SizeBytes.CompareTo(a.SizeBytes);
+                        if (szc != 0) return szc;
+                    }
+                    return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+                });
             }
             _selectedCount = selCount;
 

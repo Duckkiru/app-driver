@@ -560,9 +560,16 @@ function Find-AppLeftovers {
                     } elseif (-not $script:isWindowClosing) {
                         $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($fullPath, 4)
                     }
+                    $folderConf = if ($kw.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -or ($root -ne $env:APPDATA -and $root -ne $env:LOCALAPPDATA -and $root -ne $localLowRoot -and $root -ne $progDataRoot)) {
+                        "An to$([char]0x00E0)n 100%"
+                    } elseif ($kw.Length -ge 6) {
+                        "Tin c$([char]0x1EAD)y cao"
+                    } else {
+                        "N$([char]0x00EA)n ki$([char]0x1EC3)m tra"
+                    }
                     $leftovers.Add([PSCustomObject]@{
                         Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        Confidence        = $folderConf
                         AppName           = $AppEntry.DisplayName
                         Path              = $fullPath
                         SizeBytes         = [long]$dirSize
@@ -606,6 +613,19 @@ function Find-AppLeftovers {
         [Environment]::GetFolderPath('CommonPrograms')
     )
     $targetLocPrefix = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
+    $isSafeTargetLoc = $false
+    if ($targetLocPrefix) {
+        $locNoSlash = $targetLocPrefix.TrimEnd('\')
+        $isSafeTargetLoc = (Test-SafeAppDirectoryForCleanup -Path $locNoSlash -AppEntry $AppEntry -Keywords $ownerKeywords.ToArray() -AllInstalledApps $AllInstalledApps)
+    }
+    $hasDeepResidualsAsync = ($canWaitLo -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("ScanDeepAppResidualsFastAsync"))
+    $resTask = $null
+    if ($isSafeTargetLoc -and $hasDeepResidualsAsync) {
+        try {
+            $resTask = $deepTypeLo::ScanDeepAppResidualsFastAsync($targetLocPrefix)
+        } catch { $resTask = $null }
+    }
+
     if ($hasAppScAsyncLo) {
         try {
             $scTask = $deepTypeLo::ScanAppShortcutsAsync($shortcutDirs, $targetLocPrefix, $cleanName)
@@ -727,9 +747,14 @@ function Find-AppLeftovers {
                     if ($kw -eq $ex) { $isSafe = $false; break }
                 }
                 if ($isSafe -and $seenPaths.Add($regPath)) {
+                    $regConf = if ($kw.Equals($cleanName, [System.StringComparison]::OrdinalIgnoreCase) -or $kw.Length -ge 6) {
+                        "Tin c$([char]0x1EAD)y cao"
+                    } else {
+                        "N$([char]0x00EA)n ki$([char]0x1EC3)m tra"
+                    }
                     $leftovers.Add([PSCustomObject]@{
                         Type              = "Registry c$([char]0x00F2)n s$([char]0x00F3)t"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        Confidence        = $regConf
                         AppName           = $AppEntry.DisplayName
                         Path              = $regPath
                         SizeBytes         = 0L
@@ -755,6 +780,83 @@ function Find-AppLeftovers {
                 RegistryValueName = ""
             })
         }
+    }
+
+    if ($resTask -or ($isSafeTargetLoc -and $null -ne $deepTypeLo -and $null -ne $deepTypeLo.GetMethod("ScanDeepAppResidualsFast"))) {
+        try {
+            $deepArtifacts = $null
+            if ($resTask) {
+                [void](Wait-TaskNonBlocking -Task $resTask -TimeoutSeconds 15)
+                if ($resTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $deepArtifacts = $resTask.Result
+                }
+            } elseif (-not $script:isWindowClosing) {
+                $deepArtifacts = [DuckUtil.DeepUninstallerEngine]::ScanDeepAppResidualsFast($targetLocPrefix)
+            }
+            if ($null -ne $deepArtifacts) {
+                foreach ($art in $deepArtifacts) {
+                    $artDedup = if ($art.IsRegistry -and $art.RegistryValueName) { "$($art.Path)->$($art.RegistryValueName)" } else { $art.Path }
+                    if ($seenPaths.Add($artDedup)) {
+                        $artType = switch ($art.ArtifactKind) {
+                            "ScheduledTask" { "Task c$([char]0x00F2)n s$([char]0x00F3)t" }
+                            "RegistryAppPath" { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+                            "RegistryCache" { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+                            default { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+                        }
+                        $leftovers.Add([PSCustomObject]@{
+                            Type              = $artType
+                            Confidence        = "An to$([char]0x00E0)n 100%"
+                            AppName           = $AppEntry.DisplayName
+                            Path              = $art.Path
+                            SizeBytes         = [long]$art.SizeBytes
+                            SizeMB            = [math]::Round($art.SizeBytes / 1MB, 2)
+                            IsRegistry        = [bool]$art.IsRegistry
+                            RegistryValueName = if ($art.IsRegistry) { [string]$art.RegistryValueName } else { "" }
+                            TaskName          = if ($art.ArtifactKind -eq "ScheduledTask") { [string]$art.RegistryValueName } else { "" }
+                        })
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    if ($isSafeTargetLoc -and ($null -ne $deepTypeLo)) {
+        try {
+            $svcListApp = $PreloadedServices
+            if ($null -eq $svcListApp) {
+                if ($canWaitLo -and $deepTypeLo.GetMethod("ScanServicesAndDriversAsync")) {
+                    $sTaskApp = $deepTypeLo::ScanServicesAndDriversAsync()
+                    [void](Wait-TaskNonBlocking -Task $sTaskApp -TimeoutSeconds 15)
+                    if ($sTaskApp.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $svcListApp = $sTaskApp.Result }
+                } elseif ($deepTypeLo.GetMethod("ScanServicesAndDrivers")) {
+                    $svcListApp = $deepTypeLo::ScanServicesAndDrivers()
+                }
+            }
+            if ($null -ne $svcListApp) {
+                foreach ($se in $svcListApp) {
+                    if ($script:isWindowClosing) { break }
+                    if ($se.IsKernelDriver) { continue }
+                    $img = $se.ResolvedImagePath
+                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
+                    if ($img.StartsWith($targetLocPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
+                        if ($seenPaths.Add($regSvcPath)) {
+                            $leftovers.Add([PSCustomObject]@{
+                                Type              = "Service c$([char]0x00F2)n s$([char]0x00F3)t"
+                                Confidence        = "An to$([char]0x00E0)n 100%"
+                                AppName           = $AppEntry.DisplayName
+                                Path              = $regSvcPath
+                                SizeBytes         = 0L
+                                SizeMB            = 0.0
+                                IsRegistry        = $true
+                                RegistryValueName = ""
+                            })
+                        }
+                    }
+                }
+                $PreloadedServices = $svcListApp
+            }
+        } catch {}
     }
 
     $appHint = "$($AppEntry.DisplayName) $($AppEntry.Publisher) $($AppEntry.InstallLocation)"
@@ -1490,6 +1592,12 @@ function Show-LeftoverReviewDialog {
             ConfBg       = & $mkC "#064E3B"
             ConfBorder   = & $mkC "#059669"
             ConfFg       = & $mkC "#6EE7B7"
+            ConfHighBg   = & $mkC "#0C4A6E"
+            ConfHighBdr  = & $mkC "#0284C7"
+            ConfHighFg   = & $mkC "#7DD3FC"
+            ConfChkBg    = & $mkC "#451A03"
+            ConfChkBdr   = & $mkC "#D97706"
+            ConfChkFg    = & $mkC "#FCD34D"
             ItemTitleFg  = & $mkC "#E2E8F0"
             PathFg       = & $mkC "#64748B"
             SizeRegFg    = & $mkC "#94A3B8"
@@ -1503,6 +1611,8 @@ function Show-LeftoverReviewDialog {
             DelBorder    = & $mkC "#DC2626"
             BadgeMap     = @{
                 "Ring0"    = (& $mkC "#B91C1C")
+                "Service"  = (& $mkC "#C2410C")
+                "Task"     = (& $mkC "#EA580C")
                 "Registry" = (& $mkC "#DC2626")
                 "Startup"  = (& $mkC "#E11D48")
                 "AppData"  = (& $mkC "#D97706")
@@ -1669,6 +1779,8 @@ function Show-LeftoverReviewDialog {
     foreach ($item in $Items) {
         $badgeKey = switch -Wildcard ($item.Type) {
             "*Driver*" { "Ring0" }
+            "*Service*" { "Service" }
+            "*Task*" { "Task" }
             "*Registry*" { "Registry" }
             "*Startup*" { "Startup" }
             "*R$([char]0x00E1)c AppData*" { "AppData" }
@@ -1683,6 +1795,12 @@ function Show-LeftoverReviewDialog {
         $safeSizeMb = if ($null -ne $item.SizeMB) { try { [double]$item.SizeMB } catch { 0.0 } } else { 0.0 }
         $sizeLabel = if ($item.IsRegistry) { "Registry" } else { "$([string]::Format('{0:N2}', $safeSizeMb)) MB" }
         $confLabel = if ($item.Confidence) { [string]$item.Confidence } else { "An to$([char]0x00E0)n 100%" }
+        $isConfCheck = ($confLabel -like "*ki$([char]0x1EC3)m tra*")
+        $isConfHigh = (-not $isConfCheck) -and ($confLabel -like "*cao*")
+        $rowConfBg = if ($isConfCheck -and $pal.ConfChkBg) { $pal.ConfChkBg } elseif ($isConfHigh -and $pal.ConfHighBg) { $pal.ConfHighBg } else { $brLoConfBg }
+        $rowConfBdr = if ($isConfCheck -and $pal.ConfChkBdr) { $pal.ConfChkBdr } elseif ($isConfHigh -and $pal.ConfHighBdr) { $pal.ConfHighBdr } else { $brLoConfBorder }
+        $rowConfFg = if ($isConfCheck -and $pal.ConfChkFg) { $pal.ConfChkFg } elseif ($isConfHigh -and $pal.ConfHighFg) { $pal.ConfHighFg } else { $brLoConfFg }
+        $defChecked = (-not $isConfCheck)
 
         if ($hasFastLoRow) {
             $outCb = $null
@@ -1699,9 +1817,9 @@ function Show-LeftoverReviewDialog {
                 $brLoItemBorder,
                 $badgeBrush,
                 $brLoWhite,
-                $brLoConfBg,
-                $brLoConfBorder,
-                $brLoConfFg,
+                $rowConfBg,
+                $rowConfBdr,
+                $rowConfFg,
                 $brLoTitleFg,
                 $brLoPathFg,
                 $brLoSizeRegFg,
@@ -1711,6 +1829,7 @@ function Show-LeftoverReviewDialog {
                 [ref]$outCb,
                 [ref]$outBtn
             )
+            if ($outCb -and -not $defChecked) { $outCb.IsChecked = $false }
             $itemCheckBoxes.Add($outCb)
             $itemsStack.Children.Add($itemBorder) | Out-Null
             continue
@@ -1737,7 +1856,7 @@ function Show-LeftoverReviewDialog {
         $itemGrid.ColumnDefinitions.Add($c4) | Out-Null
 
         $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.IsChecked = $true
+        $cb.IsChecked = $defChecked
         $cb.Tag = $item
         $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $cb.Margin = New-Object System.Windows.Thickness(0, 0, 10, 0)
@@ -1764,8 +1883,8 @@ function Show-LeftoverReviewDialog {
         $badgeStack.Children.Add($badgeBorder) | Out-Null
 
         $confBorder = New-Object System.Windows.Controls.Border
-        $confBorder.Background = $brLoConfBg
-        $confBorder.BorderBrush = $brLoConfBorder
+        $confBorder.Background = $rowConfBg
+        $confBorder.BorderBrush = $rowConfBdr
         $confBorder.BorderThickness = New-Object System.Windows.Thickness(1)
         $confBorder.CornerRadius = New-Object System.Windows.CornerRadius(4)
         $confBorder.Padding = New-Object System.Windows.Thickness(5, 1, 5, 1)
@@ -1773,7 +1892,7 @@ function Show-LeftoverReviewDialog {
         $confText = New-Object System.Windows.Controls.TextBlock
         $confText.Text = $confLabel
         $confText.FontSize = 9.5
-        $confText.Foreground = $brLoConfFg
+        $confText.Foreground = $rowConfFg
         $confBorder.Child = $confText
         $badgeStack.Children.Add($confBorder) | Out-Null
 
@@ -2071,6 +2190,25 @@ function Show-LeftoverReviewDialog {
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
+                        if ($ci.PSObject.Properties['TaskName'] -and -not [string]::IsNullOrWhiteSpace($ci.TaskName)) {
+                            $safeTaskName = ($ci.TaskName -replace '"', '')
+                            try {
+                                $psiTask = New-Object System.Diagnostics.ProcessStartInfo
+                                $psiTask.FileName = "schtasks.exe"
+                                $psiTask.Arguments = "/Delete /TN `"$safeTaskName`" /F"
+                                $psiTask.UseShellExecute = $false
+                                $psiTask.CreateNoWindow = $true
+                                $pTask = [System.Diagnostics.Process]::Start($psiTask)
+                                if ($pTask) { [void]$pTask.WaitForExit(5000); $pTask.Dispose() }
+                            } catch {}
+                            if (-not (Test-Path -LiteralPath $ci.Path)) {
+                                $removed++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Scheduled Task: $($ci.TaskName)"
+                                }
+                                continue
+                            }
+                        }
                         $hasExplorerLock = $batchExplorerLock
                         if ($useForceStop -and -not $usedBatchForceStop) {
                             $stopInfo = Invoke-ForceStopPathLockers -TargetPath $ci.Path -IncludeServicesAndTasks:$true
@@ -2374,6 +2512,33 @@ function Resolve-SilentUninstallPlan {
                     $isSilent = $true
                 } elseif ($newArgs -match '(?i)--uninstall') {
                     $newArgs = "$newArgs -s".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "InstallShield" {
+                if ($newArgs -match '(?i)(^|\s)(/s|/quiet|/qn)(\s|$)') {
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /s /v`"/qn /norestart`"".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "AdvancedInstaller" {
+                if ($newArgs -match '(?i)(^|\s)(/quiet|/qn|/exenoui)(\s|$)') {
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs /exenoui /qn /norestart".Trim()
+                    $addedFlags = $true
+                    $isSilent = $true
+                }
+            }
+            "QtIFW" {
+                if ($newArgs -match '(?i)--confirm-command') {
+                    $isSilent = $true
+                } else {
+                    $newArgs = "$newArgs --confirm-command".Trim()
                     $addedFlags = $true
                     $isSilent = $true
                 }

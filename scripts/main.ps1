@@ -22,9 +22,11 @@ $txtStatus         = $window.FindName("txtStatus")
 $btnCancelAction   = $window.FindName("btnCancelAction")
 $borderQueueBadge  = $window.FindName("borderQueueBadge")
 $txtQueueBadge     = $window.FindName("txtQueueBadge")
-$progressBar       = $window.FindName("progressBar")
-$btnScanInstalled  = $window.FindName("btnScanInstalled")
-$txtSelectionCount = $window.FindName("txtSelectionCount")
+$progressBar           = $window.FindName("progressBar")
+$btnScanInstalled      = $window.FindName("btnScanInstalled")
+$txtCatalogSearch      = $window.FindName("txtCatalogSearch")
+$btnClearCatalogSearch = $window.FindName("btnClearCatalogSearch")
+$txtSelectionCount     = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
@@ -2794,6 +2796,7 @@ if ($btnCancelAction) {
         if ($script:uninstallQueuedKeys) { $script:uninstallQueuedKeys.Clear() }
         if ($txtStatus) { $txtStatus.Text = "Đang dừng tác vụ theo yêu cầu..." }
         Log-Text "[STOP] Đã nhận yêu cầu dừng tác vụ & xóa hàng đợi!"
+        try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
         try { Stop-ActiveChildProcess } catch {}
         try { Stop-ActiveWaitFrames } catch {}
     })
@@ -4200,6 +4203,29 @@ function Toggle-SidebarGroupExpanded {
 function Set-ActiveCatalogCategory {
     param([string]$CategoryKey)
     if ($script:isWindowClosing) { return }
+    if ($txtCatalogSearch -and -not [string]::IsNullOrWhiteSpace($txtCatalogSearch.Text)) {
+        $script:suppressCatalogSearchOnce = $true
+        try {
+            if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() }
+            $txtCatalogSearch.Text = ""
+            if ($script:cardDescriptors) {
+                foreach ($cdReset in $script:cardDescriptors) {
+                    if ($cdReset -and $cdReset.Rows) {
+                        foreach ($rReset in $cdReset.Rows) {
+                            if ($rReset -and $rReset.Visibility -ne [System.Windows.Visibility]::Visible) {
+                                $rReset.Visibility = [System.Windows.Visibility]::Visible
+                            }
+                        }
+                    }
+                    if ($cdReset -and $cdReset.Card -and $cdReset.Card.Visibility -ne [System.Windows.Visibility]::Visible) {
+                        $cdReset.Card.Visibility = [System.Windows.Visibility]::Visible
+                    }
+                }
+            }
+        } finally {
+            $script:suppressCatalogSearchOnce = $false
+        }
+    }
     $targetKey = if ([string]::IsNullOrWhiteSpace($CategoryKey)) { "__ALL__" } else { $CategoryKey }
 
     $isGroupTarget = $targetKey.StartsWith("__GROUP__:")
@@ -4457,6 +4483,189 @@ function Set-ActiveCatalogCategory {
     Schedule-DeferredIconDecode -MaxDecode 32
 }
 
+$script:catalogSearchIndex = $null
+$script:suppressCatalogSearchOnce = $false
+$script:preSearchCategoryKey = ""
+$script:catalogSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:catalogSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(65)
+
+function Ensure-CatalogSearchIndex {
+    if ($null -ne $script:catalogSearchIndex) { return }
+    $script:catalogSearchIndex = [System.Collections.Generic.Dictionary[object, hashtable]]::new()
+    if (-not $script:cardDescriptors) { return }
+    $hasPipeSearch = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("NormalizeSearchFold")))
+    foreach ($cd in $script:cardDescriptors) {
+        if (-not $cd -or -not $cd.Rows) { continue }
+        foreach ($row in $cd.Rows) {
+            if (-not $row -or -not $row.Tag -or -not $row.Tag.App) { continue }
+            $appObj = $row.Tag.App
+            $aliasJoined = if ($appObj.Aliases) { ($appObj.Aliases -join " ") } else { "" }
+            $haystack = "$($appObj.Name) $($appObj.ID) $($appObj.Category) $aliasJoined $($appObj.Desc)"
+            if ($hasPipeSearch) {
+                $fName = [DuckUtil.UiAssetPipeline]::NormalizeSearchFold([string]$appObj.Name)
+                $fHay = [DuckUtil.UiAssetPipeline]::NormalizeSearchFold($haystack)
+                $script:catalogSearchIndex[$row] = @{
+                    FoldedName      = $fName
+                    CompactName     = [DuckUtil.UiAssetPipeline]::CompactSearchAlnum($fName)
+                    FoldedHaystack  = $fHay
+                    CompactHaystack = [DuckUtil.UiAssetPipeline]::CompactSearchAlnum($fHay)
+                    NameWords       = [DuckUtil.UiAssetPipeline]::SplitFoldedTokens($fName)
+                }
+            } else {
+                $fLow = ([string]$appObj.Name).ToLowerInvariant()
+                $script:catalogSearchIndex[$row] = @{
+                    FoldedName      = $fLow
+                    CompactName     = ($fLow -replace '[^a-z0-9]', '')
+                    FoldedHaystack  = $haystack.ToLowerInvariant()
+                    CompactHaystack = ($haystack.ToLowerInvariant() -replace '[^a-z0-9]', '')
+                    NameWords       = @($fLow -split '\s+' | Where-Object { $_ })
+                }
+            }
+        }
+    }
+}
+
+function Apply-CatalogSearchFilter {
+    if ($script:isWindowClosing -or -not $script:cardDescriptors) { return }
+    $rawQuery = if ($txtCatalogSearch) { [string]$txtCatalogSearch.Text } else { "" }
+    $hasPipeSearch = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("ScoreSearchQuery")))
+    $foldedQ = if ($hasPipeSearch) { [DuckUtil.UiAssetPipeline]::NormalizeSearchFold($rawQuery) } else { ($rawQuery.Trim().ToLowerInvariant()) }
+
+    if ([string]::IsNullOrEmpty($foldedQ)) {
+        foreach ($cd in $script:cardDescriptors) {
+            if ($cd.Rows) {
+                foreach ($r in $cd.Rows) {
+                    if ($r.Visibility -ne [System.Windows.Visibility]::Visible) {
+                        $r.Visibility = [System.Windows.Visibility]::Visible
+                    }
+                }
+            }
+        }
+        $restoreKey = if ($script:preSearchCategoryKey) { $script:preSearchCategoryKey } else { $script:activeCatalogCategory }
+        $script:preSearchCategoryKey = ""
+        $script:activeCatalogCategory = ""
+        Set-ActiveCatalogCategory $(if ($restoreKey) { $restoreKey } else { "__ALL__" })
+        return
+    }
+
+    Ensure-CatalogSearchIndex
+    if ([string]::IsNullOrEmpty($script:preSearchCategoryKey)) {
+        $script:preSearchCategoryKey = if ($script:activeCatalogCategory) { $script:activeCatalogCategory } else { "__ALL__" }
+    }
+
+    if ($script:activeSingleCatDesc) {
+        $wasSingle = $script:activeSingleCatDesc
+        if ($singleCategoryHost) { $singleCategoryHost.Visibility = [System.Windows.Visibility]::Collapsed }
+        if ($script:uiPipeType -and $null -ne $script:uiPipeType.GetMethod("RestoreRowsFromColumns")) {
+            [DuckUtil.UiAssetPipeline]::RestoreRowsFromColumns($wasSingle.RowsStack, [System.Windows.Controls.Panel[]]$script:singleCatCols, $wasSingle.Rows)
+        } else {
+            foreach ($scCol in $script:singleCatCols) { if ($scCol) { $scCol.Children.Clear() } }
+            foreach ($r in $wasSingle.Rows) { [void]$wasSingle.RowsStack.Children.Add($r) }
+        }
+        $script:activeSingleCatDesc = $null
+    }
+
+    if (-not $script:hasMasonryPanel) {
+        if ($groupMasonrySection) { $groupMasonrySection.Visibility = [System.Windows.Visibility]::Collapsed }
+        Restore-BorrowedGroupCards
+        Ensure-AllMasonryReady
+    }
+    if ($allAndGroupHost -and $allAndGroupHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+        $allAndGroupHost.Visibility = [System.Windows.Visibility]::Visible
+    }
+    if ($cardsMasonryHost -and $cardsMasonryHost.Visibility -ne [System.Windows.Visibility]::Visible) {
+        $cardsMasonryHost.Visibility = [System.Windows.Visibility]::Visible
+    }
+
+    $compactQ = if ($hasPipeSearch) { [DuckUtil.UiAssetPipeline]::CompactSearchAlnum($foldedQ) } else { ($foldedQ -replace '[^a-z0-9]', '') }
+    $qTokens = if ($hasPipeSearch) { [DuckUtil.UiAssetPipeline]::SplitFoldedTokens($foldedQ) } else { @($foldedQ -split '\s+' | Where-Object { $_ }) }
+
+    $matchedApps = 0
+    $matchedCats = 0
+    $matchedCards = [System.Collections.Generic.List[hashtable]]::new()
+
+    foreach ($cd in $script:cardDescriptors) {
+        $cardHits = 0
+        if ($cd.Rows) {
+            foreach ($row in $cd.Rows) {
+                $idx = $null
+                [void]$script:catalogSearchIndex.TryGetValue($row, [ref]$idx)
+                $score = 0
+                if ($idx) {
+                    if ($hasPipeSearch) {
+                        $score = [DuckUtil.UiAssetPipeline]::ScoreSearchQuery(
+                            $foldedQ,
+                            $compactQ,
+                            $qTokens,
+                            $idx.FoldedName,
+                            $idx.CompactName,
+                            $idx.FoldedHaystack,
+                            $idx.CompactHaystack,
+                            $idx.NameWords
+                        )
+                    } elseif ($idx.FoldedHaystack.Contains($foldedQ)) {
+                        $score = 1
+                    }
+                }
+                if ($score -gt 0) {
+                    if ($row.Visibility -ne [System.Windows.Visibility]::Visible) { $row.Visibility = [System.Windows.Visibility]::Visible }
+                    $cardHits++
+                    $matchedApps++
+                } else {
+                    if ($row.Visibility -ne [System.Windows.Visibility]::Collapsed) { $row.Visibility = [System.Windows.Visibility]::Collapsed }
+                }
+            }
+        }
+        if ($cardHits -gt 0) {
+            $matchedCats++
+            if ($cd.Card.Visibility -ne [System.Windows.Visibility]::Visible) { $cd.Card.Visibility = [System.Windows.Visibility]::Visible }
+            [void]$matchedCards.Add($cd)
+        } else {
+            if ($cd.Card.Visibility -ne [System.Windows.Visibility]::Collapsed) { $cd.Card.Visibility = [System.Windows.Visibility]::Collapsed }
+        }
+    }
+
+    if ($script:hasMasonryPanel -and $script:masonryPanel) {
+        $script:masonryPanel.Columns = if ($matchedCats -le 1) { 1 } elseif ($matchedCats -eq 2) { 2 } else { 3 }
+        $script:activeMasonryDescriptors = $matchedCards
+    }
+    $script:activeAllowedCategories = $null
+    if ($txtGroupFilterTitle) { $txtGroupFilterTitle.Text = "Kết quả tìm kiếm: '$rawQuery'" }
+    if ($txtGroupFilterMeta) { $txtGroupFilterMeta.Text = "$matchedApps ứng dụng  $([char]0x00B7)  $matchedCats danh mục" }
+    if ($groupFilterBanner -and $groupFilterBanner.Visibility -ne [System.Windows.Visibility]::Visible) {
+        $groupFilterBanner.Visibility = [System.Windows.Visibility]::Visible
+    }
+    if ($appsScrollViewer) { $appsScrollViewer.ScrollToVerticalOffset(0) }
+    foreach ($mc in $matchedCards) { Enqueue-CardIconsNow -CardDesc $mc }
+    Schedule-DeferredIconDecode -MaxDecode 48
+}
+
+$script:catalogSearchDebounceTimer.Add_Tick({
+    $script:catalogSearchDebounceTimer.Stop()
+    if ($script:isWindowClosing) { return }
+    Apply-CatalogSearchFilter
+})
+
+if ($txtCatalogSearch) {
+    $txtCatalogSearch.Add_TextChanged({
+        if ($script:isWindowClosing -or $script:suppressCatalogSearchOnce) { return }
+        $script:catalogSearchDebounceTimer.Stop()
+        $script:catalogSearchDebounceTimer.Start()
+    })
+}
+
+if ($btnClearCatalogSearch) {
+    $btnClearCatalogSearch.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $script:catalogSearchDebounceTimer.Stop()
+        if ($txtCatalogSearch) {
+            $script:suppressCatalogSearchOnce = $true
+            try { $txtCatalogSearch.Text = "" } finally { $script:suppressCatalogSearchOnce = $false }
+        }
+        Apply-CatalogSearchFilter
+    })
+}
+
 if ($categorySidebarTop -and $categorySidebarPanel) {
     $allDesc = New-SidebarNavRow -Key "__ALL__" -Label "Tất cả" -Count $allItemBorders.Count -Role "Root"
     [void]$categorySidebarTop.Children.Add($allDesc.Border)
@@ -4650,40 +4859,54 @@ function Get-SilentInstallerArgsForFile {
         try { $fw = [DuckUtil.DeepUninstallerEngine]::DetectInstallerFramework($Path) } catch { $fw = "" }
     }
     switch ($fw) {
-        "InnoSetup" { return "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" }
-        "NSIS"      { return "/S" }
-        "WiX"       { return "/install /quiet /norestart" }
-        "BitRock"   { return "--mode unattended" }
-        "Squirrel"  { return "--silent" }
-        default     { return "--silent-install" }
+        "InnoSetup"         { return "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" }
+        "NSIS"              { return "/S" }
+        "WiX"               { return "/install /quiet /norestart" }
+        "BitRock"           { return "--mode unattended" }
+        "Squirrel"          { return "--silent" }
+        "InstallShield"     { return "/s /v`"/qn /norestart`"" }
+        "AdvancedInstaller" { return "/exenoui /qn /norestart" }
+        "QtIFW"             { return "--accept-licenses --confirm-command" }
+        "7zSFX"             { return "-y" }
+        default             { return "--silent-install" }
     }
 }
 
 function Invoke-GitHubAssetInstall {
-    param($App)
+    param(
+        $App,
+        [string]$PreDownloadedPath = ""
+    )
     $tmpDir = $null
     $prevProgPref = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
     try {
-        Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
-        $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
-        $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
-        if (-not $asset) {
-            Log-Text "   [!] Không tìm thấy bộ cài phù hợp trên GitHub Release."
-            return -1
+        $dlPath = ""
+        if (-not [string]::IsNullOrWhiteSpace($PreDownloadedPath) -and (Test-Path -LiteralPath $PreDownloadedPath)) {
+            $dlPath = $PreDownloadedPath
+            $tmpDir = Split-Path -Parent $dlPath
+            Log-Text "   [PREFETCH] Đã tải sẵn bộ cài: $([System.IO.Path]::GetFileName($dlPath))"
+        } else {
+            Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
+            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
+            $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
+            if (-not $asset) {
+                Log-Text "   [!] Không tìm thấy bộ cài phù hợp trên GitHub Release."
+                return -1
+            }
+            $safeName = [System.IO.Path]::GetFileName([string]$asset.name)
+            if ([string]::IsNullOrWhiteSpace($safeName) -or $safeName -notmatch '\.(msi|exe)$' -or [string]$asset.browser_download_url -notmatch '^https://') {
+                Log-Text "   [*] Tệp phát hành '$safeName' không phải bộ cài trực tiếp .exe/.msi."
+                return -1
+            }
+            if ($script:cancelRequested) { return -2 }
+            if ($script:isWindowClosing) { return -1 }
+            $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+            [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
+            $dlPath = Join-Path $tmpDir $safeName
+            Log-Text "   -> Đang tải $safeName..."
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
         }
-        $safeName = [System.IO.Path]::GetFileName([string]$asset.name)
-        if ([string]::IsNullOrWhiteSpace($safeName) -or $safeName -notmatch '\.(msi|exe)$' -or [string]$asset.browser_download_url -notmatch '^https://') {
-            Log-Text "   [*] Tệp phát hành '$safeName' không phải bộ cài trực tiếp .exe/.msi."
-            return -1
-        }
-        if ($script:cancelRequested) { return -2 }
-        if ($script:isWindowClosing) { return -1 }
-        $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
-        [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
-        $dlPath = Join-Path $tmpDir $safeName
-        Log-Text "   -> Đang tải $safeName..."
-        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
         if ($script:cancelRequested) { return -2 }
         if ($script:isWindowClosing) { return -1 }
         $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath
@@ -5296,6 +5519,34 @@ Register-Click "btnInstall" {
         Log-Text "[INSTALL & UPGRADE] XỬ LÝ $total ỨNG DỤNG ĐÃ ĐÁNH DẤU"
         Log-Text "=========================================================="
 
+        $prefetchCts = $null
+        $prefetchQueue = [System.Collections.Generic.Queue[object]]::new()
+        $prefetchSlots = @{}
+        $prefetchDirs = [System.Collections.Generic.List[string]]::new()
+        $hasPrefetchApi = ($null -ne ("DuckUtil.UiAssetPipeline" -as [type])) -and ($null -ne ([DuckUtil.UiAssetPipeline].GetMethod("PrefetchGitHubReleaseAssetAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+        if ($hasPrefetchApi -and $selectedTags.Count -ge 2) {
+            foreach ($pt in $selectedTags) {
+                if ($pt.Status -ne "LATEST" -and $pt.Status -ne "OUTDATED" -and $pt.App -and -not ($pt.App.BrowserDownload -eq $true) -and -not [string]::IsNullOrWhiteSpace($pt.App.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($pt.App.AssetRegex)) {
+                    $prefetchQueue.Enqueue($pt.App)
+                }
+            }
+            if ($prefetchQueue.Count -ge 2) {
+                $prefetchCts = [System.Threading.CancellationTokenSource]::new()
+                $script:activePrefetchCts = $prefetchCts
+                for ($pfInit = 0; $pfInit -lt 2 -and $prefetchQueue.Count -gt 0; $pfInit++) {
+                    $pfApp = $prefetchQueue.Dequeue()
+                    $pfDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+                    [void]$prefetchDirs.Add($pfDir)
+                    $prefetchSlots[[string]$pfApp.ID] = @{
+                        Dir  = $pfDir
+                        Task = [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$pfApp.GitHubRepo, [string]$pfApp.AssetRegex, $pfDir, $prefetchCts.Token)
+                    }
+                }
+            } else {
+                $prefetchQueue.Clear()
+            }
+        }
+
         try {
             foreach ($tag in $selectedTags) {
                 if ($script:isWindowClosing -or $script:cancelRequested) { break }
@@ -5342,7 +5593,32 @@ Register-Click "btnInstall" {
                 }
 
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
-                    $code = Invoke-GitHubAssetInstall -App $app
+                    $preDlPath = ""
+                    $pfSlot = $null
+                    if ($prefetchSlots.ContainsKey([string]$app.ID)) {
+                        $pfSlot = $prefetchSlots[[string]$app.ID]
+                        $prefetchSlots.Remove([string]$app.ID) | Out-Null
+                    }
+                    while ($prefetchCts -and $prefetchQueue.Count -gt 0 -and $prefetchSlots.Count -lt 2 -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                        $nextPfApp = $prefetchQueue.Dequeue()
+                        $nextPfDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
+                        [void]$prefetchDirs.Add($nextPfDir)
+                        $prefetchSlots[[string]$nextPfApp.ID] = @{
+                            Dir  = $nextPfDir
+                            Task = [DuckUtil.UiAssetPipeline]::PrefetchGitHubReleaseAssetAsync([string]$nextPfApp.GitHubRepo, [string]$nextPfApp.AssetRegex, $nextPfDir, $prefetchCts.Token)
+                        }
+                    }
+                    if ($pfSlot -and $pfSlot.Task) {
+                        [void](Wait-TaskNonBlocking -Task $pfSlot.Task -TimeoutSeconds 120 -CancelCheck { [bool]$script:cancelRequested })
+                        if ($pfSlot.Task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                            $preDlPath = [string]$pfSlot.Task.Result
+                        }
+                    }
+                    if ($script:cancelRequested -or $script:isWindowClosing) {
+                        $code = if ($script:cancelRequested) { -2 } else { -1 }
+                    } else {
+                        $code = Invoke-GitHubAssetInstall -App $app -PreDownloadedPath $preDlPath
+                    }
                     if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.ID)) {
                         Log-Text "   [*] Thử cài đặt dự phòng qua WinGet ($($app.ID))..."
                         $wgArgs = "install --id `"$($app.ID)`" --exact --silent --accept-package-agreements --accept-source-agreements"
@@ -5368,6 +5644,16 @@ Register-Click "btnInstall" {
                 }
             }
         } finally {
+            $script:activePrefetchCts = $null
+            if ($prefetchCts) {
+                try { $prefetchCts.Cancel() } catch {}
+                try { $prefetchCts.Dispose() } catch {}
+            }
+            foreach ($pDir in $prefetchDirs) {
+                if ($pDir -and (Test-Path -LiteralPath $pDir)) {
+                    Remove-Item -LiteralPath $pDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
             Clear-WinGetTempInstallers
         }
         if (-not $script:isWindowClosing) {
@@ -5780,6 +6066,8 @@ function Stop-AllBackgroundWork {
     try { if ($script:iconSyncTimer) { $script:iconSyncTimer.Stop() } } catch {}
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
     try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
     try { if ($script:offscreenPrewarmTimer) { $script:offscreenPrewarmTimer.Stop() } } catch {}
