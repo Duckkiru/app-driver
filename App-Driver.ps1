@@ -4676,7 +4676,12 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "Action",
     "Action": "RestorePoint",
     "NeedsExplorerRestart": false,
@@ -4693,87 +4698,387 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [],
     "Services": [
-      { "Name": "ALG", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "AppMgmt", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "AppReadiness", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "AppVClient", "ApplyStart": 4, "UndoStart": 3 },
-      { "Name": "AssignedAccessManagerSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "AxInstSV", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "BDESVC", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "CDPSvc", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "CertPropSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "COMSysApp", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "diagsvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "DialogBlockingService", "ApplyStart": 4, "UndoStart": 3 },
-      { "Name": "DisplayEnhancementService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "dmwappushservice", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "DPS", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "edgeupdate", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "edgeupdatem", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "EFS", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "Fax", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "fhsvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "FontCache", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "FrameServer", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "icssvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "InstallService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "iphlpsvc", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "IpxlatCfgSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "lfsvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "lltdsvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "lmhosts", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "MapsBroker", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "McpManagementService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "MsKeyboardFilter", "ApplyStart": 4, "UndoStart": 3 },
-      { "Name": "NaturalAuthentication", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "NcaSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "NcbService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "NetTcpPortSharing", "ApplyStart": 4, "UndoStart": 4 },
-      { "Name": "PcaSvc", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "PeerDistSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "PhoneSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "PolicyAgent", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "QWAVE", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "RetailDemo", "ApplyStart": 4, "UndoStart": 3 },
-      { "Name": "RmSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SCardSvr", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "ScDeviceEnum", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SCPolicySvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SensorDataService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SensorService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SensrSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SharedAccess", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "ShellHWDetection", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "shpamsvc", "ApplyStart": 4, "UndoStart": 4 },
-      { "Name": "SmsRouter", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SSDPSRV", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "stisvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "SysMain", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "TapiSrv", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "TrkWks", "ApplyStart": 3, "UndoStart": 2 },
-      { "Name": "tzautoupdate", "ApplyStart": 4, "UndoStart": 3 },
-      { "Name": "UevAgentService", "ApplyStart": 4, "UndoStart": 4 },
-      { "Name": "upnphost", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WalletService", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WbioSrvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "wcncsvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WdiServiceHost", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WdiSystemHost", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WebClient", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "Wecsvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WerSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "wisvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WMPNetworkSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WpcMonSvc", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WPDBusEnum", "ApplyStart": 3, "UndoStart": 3 },
-      { "Name": "WpnService", "ApplyStart": 3, "UndoStart": 2 }
+      {
+        "Name": "ALG",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "AppMgmt",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "AppReadiness",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "AppVClient",
+        "ApplyStart": 4,
+        "UndoStart": 3
+      },
+      {
+        "Name": "AssignedAccessManagerSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "AxInstSV",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "BDESVC",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "CDPSvc",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "CertPropSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "COMSysApp",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "diagsvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "DialogBlockingService",
+        "ApplyStart": 4,
+        "UndoStart": 3
+      },
+      {
+        "Name": "DisplayEnhancementService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "dmwappushservice",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "DPS",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "edgeupdate",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "edgeupdatem",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "EFS",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "Fax",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "fhsvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "FontCache",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "FrameServer",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "icssvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "InstallService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "iphlpsvc",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "IpxlatCfgSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "lfsvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "lltdsvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "lmhosts",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "MapsBroker",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "McpManagementService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "MsKeyboardFilter",
+        "ApplyStart": 4,
+        "UndoStart": 3
+      },
+      {
+        "Name": "NaturalAuthentication",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "NcaSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "NcbService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "NetTcpPortSharing",
+        "ApplyStart": 4,
+        "UndoStart": 4
+      },
+      {
+        "Name": "PcaSvc",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "PeerDistSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "PhoneSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "PolicyAgent",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "QWAVE",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "RetailDemo",
+        "ApplyStart": 4,
+        "UndoStart": 3
+      },
+      {
+        "Name": "RmSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SCardSvr",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "ScDeviceEnum",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SCPolicySvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SensorDataService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SensorService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SensrSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SharedAccess",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "ShellHWDetection",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "shpamsvc",
+        "ApplyStart": 4,
+        "UndoStart": 4
+      },
+      {
+        "Name": "SmsRouter",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SSDPSRV",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "stisvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "SysMain",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "TapiSrv",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "TrkWks",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      },
+      {
+        "Name": "tzautoupdate",
+        "ApplyStart": 4,
+        "UndoStart": 3
+      },
+      {
+        "Name": "UevAgentService",
+        "ApplyStart": 4,
+        "UndoStart": 4
+      },
+      {
+        "Name": "upnphost",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WalletService",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WbioSrvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "wcncsvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WdiServiceHost",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WdiSystemHost",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WebClient",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "Wecsvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WerSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "wisvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WMPNetworkSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WpcMonSvc",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WPDBusEnum",
+        "ApplyStart": 3,
+        "UndoStart": 3
+      },
+      {
+        "Name": "WpnService",
+        "ApplyStart": 3,
+        "UndoStart": 2
+      }
     ],
     "Tasks": []
   },
@@ -4785,21 +5090,69 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "Name": "AllowTelemetry", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection", "Name": "AllowTelemetry", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "Name": "DoNotShowFeedbackNotifications", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKCU", "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Privacy", "Name": "TailoredExperiencesWithDiagnosticDataEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "SOFTWARE\\Microsoft\\Siuf\\Rules", "Name": "NumberOfSIUFInPeriod", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+        "Name": "AllowTelemetry",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+        "Name": "AllowTelemetry",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+        "Name": "DoNotShowFeedbackNotifications",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Privacy",
+        "Name": "TailoredExperiencesWithDiagnosticDataEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "SOFTWARE\\Microsoft\\Siuf\\Rules",
+        "Name": "NumberOfSIUFInPeriod",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [
-      { "Name": "DiagTrack", "ApplyStart": 4, "UndoStart": 2 },
-      { "Name": "dmwappushservice", "ApplyStart": 4, "UndoStart": 3 }
+      {
+        "Name": "DiagTrack",
+        "ApplyStart": 4,
+        "UndoStart": 2
+      },
+      {
+        "Name": "dmwappushservice",
+        "ApplyStart": 4,
+        "UndoStart": 3
+      }
     ],
     "Tasks": [
       "\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser",
@@ -4818,15 +5171,41 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "EnableActivityFeed", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "PublishUserActivities", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "UploadUserActivities", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+        "Name": "EnableActivityFeed",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+        "Name": "PublishUserActivities",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+        "Name": "UploadUserActivities",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4839,15 +5218,40 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location", "Name": "Value", "ValueType": "String", "ApplyValue": "Deny", "UndoValue": "Allow" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Sensor\\Overrides\\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}", "Name": "SensorPermissionState", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Services\\lfsvc\\Service\\Configuration", "Name": "Status", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location",
+        "Name": "Value",
+        "ValueType": "String",
+        "ApplyValue": "Deny",
+        "UndoValue": "Allow"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Sensor\\Overrides\\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}",
+        "Name": "SensorPermissionState",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Services\\lfsvc\\Service\\Configuration",
+        "Name": "Status",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4860,17 +5264,57 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent", "Name": "DisableWindowsConsumerFeatures", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "ContentDeliveryAllowed", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SilentInstalledAppsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SubscribedContent-338389Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SubscribedContent-310093Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+        "Name": "DisableWindowsConsumerFeatures",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "ContentDeliveryAllowed",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "SilentInstalledAppsEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "SubscribedContent-338389Enabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "SubscribedContent-310093Enabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4883,13 +5327,25 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization", "Name": "DODownloadMode", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization",
+        "Name": "DODownloadMode",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4902,14 +5358,32 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings", "Name": "IsDynamicSearchBoxEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SubscribedContent-338388Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings",
+        "Name": "IsDynamicSearchBoxEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "SubscribedContent-338388Enabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4922,14 +5396,32 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "RemoveWidgets",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Dsh", "Name": "AllowNewsAndInterests", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarDa", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Dsh",
+        "Name": "AllowNewsAndInterests",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "TaskbarDa",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4942,13 +5434,25 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "Win11Only",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings", "Name": "TaskbarEndTask", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings",
+        "Name": "TaskbarEndTask",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -4961,7 +5465,10 @@ $tweaksRawJson = @'
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Gaming"
+    ],
     "ProbeKind": "Hibernation",
     "Action": "Hibernation",
     "NeedsExplorerRestart": false,
@@ -4978,7 +5485,11 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "Action",
     "Action": "DeleteTempFiles",
     "NeedsExplorerRestart": false,
@@ -5035,7 +5546,14 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\\AllFolders\\Shell", "Name": "FolderType", "ValueType": "String", "ApplyValue": "NotSpecified", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\\AllFolders\\Shell",
+        "Name": "FolderType",
+        "ValueType": "String",
+        "ApplyValue": "NotSpecified",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5048,13 +5566,24 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Device Metadata", "Name": "PreventDeviceMetadataFromNetwork", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Device Metadata",
+        "Name": "PreventDeviceMetadataFromNetwork",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5067,13 +5596,23 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop"],
+    "Presets": [
+      "Desktop",
+      "Laptop"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager", "Name": "DisableWpbtExecution", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+        "Name": "DisableWpbtExecution",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5092,12 +5631,18 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy", "Name": "01", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy",
+        "Name": "01",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
   },
-
   {
     "Id": "opt_ultimate_perf",
     "Category": "Hi\u1EC7u n\u0103ng",
@@ -5105,8 +5650,10 @@ $tweaksRawJson = @'
     "Description": "M\u1EDF kh\u00F3a v\u00E0 b\u1EADt g\u00F3i ngu\u1ED3n hi\u1EC7u n\u0103ng t\u1ED1i \u0111a cho CPU/PCIe. Khuy\u00EAn d\u00F9ng cho PC b\u00E0n (hao pin tr\u00EAn Laptop).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "UltimatePerf",
     "Action": "UltimatePerf",
     "NeedsExplorerRestart": false,
@@ -5122,15 +5669,31 @@ $tweaksRawJson = @'
     "Description": "\u01AFu ti\u00EAn t\u00E0i nguy\u00EAn CPU/GPU v\u00E0 ch\u1EB7n ti\u1EBFn tr\u00ECnh n\u1EC1n chen ngang khi \u0111ang ch\u01A1i game to\u00E0n m\u00E0n h\u00ECnh.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\GameBar", "Name": "AutoGameModeEnabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\GameBar", "Name": "AllowAutoGameMode", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\GameBar",
+        "Name": "AutoGameModeEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\GameBar",
+        "Name": "AllowAutoGameMode",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5142,16 +5705,41 @@ $tweaksRawJson = @'
     "Description": "Ng\u1EEBng quay buffer video n\u1EC1n gi\u00FAp gi\u1EA3m s\u1EE5t FPS, gi\u1EA3m gi\u1EADt khung h\u00ECnh v\u00E0 ti\u1EBFt ki\u1EC7m RAM/VRAM.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "System\\GameConfigStore", "Name": "GameDVR_Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "Name": "AppCaptureEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR", "Name": "AllowGameDVR", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKCU",
+        "Path": "System\\GameConfigStore",
+        "Name": "GameDVR_Enabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR",
+        "Name": "AppCaptureEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR",
+        "Name": "AllowGameDVR",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5163,14 +5751,23 @@ $tweaksRawJson = @'
     "Description": "Cho ph\u00E9p GPU t\u1EF1 qu\u1EA3n l\u00FD b\u1ED9 nh\u1EDB VRAM gi\u00FAp gi\u1EA3m \u0111\u1ED9 tr\u1EC5 v\u00E0 h\u1ED7 tr\u1EE3 Frame Generation (c\u1EA7n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i).",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": true,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "Name": "HwSchMode", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "1" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers",
+        "Name": "HwSchMode",
+        "ValueType": "DWord",
+        "ApplyValue": "2",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5182,14 +5779,21 @@ $tweaksRawJson = @'
     "Description": "Kh\u1EAFc ph\u1EE5c l\u1ED7i ch\u1EDBp nh\u00E1y, \u0111en m\u00E0n h\u00ECnh tr\u00ECnh duy\u1EC7t ho\u1EB7c t\u1EE5t FPS khi Alt+Tab tr\u00EAn driver NVIDIA/AMD.",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": true,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows\\Dwm", "Name": "OverlayTestMode", "ValueType": "DWord", "ApplyValue": "5", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\Dwm",
+        "Name": "OverlayTestMode",
+        "ValueType": "DWord",
+        "ApplyValue": "5",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5201,16 +5805,39 @@ $tweaksRawJson = @'
     "Description": "T\u1EAFt Enhance Pointer Precision gi\u00FAp kho\u1EA3ng c\u00E1ch di chu\u1ED9t ch\u00EDnh x\u00E1c tuy\u1EC7t \u0111\u1ED1i 1:1 khi ch\u01A1i FPS/MOBA.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Control Panel\\Mouse", "Name": "MouseSpeed", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Control Panel\\Mouse", "Name": "MouseThreshold1", "ValueType": "String", "ApplyValue": "0", "UndoValue": "6" },
-      { "Hive": "HKCU", "Path": "Control Panel\\Mouse", "Name": "MouseThreshold2", "ValueType": "String", "ApplyValue": "0", "UndoValue": "10" }
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Mouse",
+        "Name": "MouseSpeed",
+        "ValueType": "String",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Mouse",
+        "Name": "MouseThreshold1",
+        "ValueType": "String",
+        "ApplyValue": "0",
+        "UndoValue": "6"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Mouse",
+        "Name": "MouseThreshold2",
+        "ValueType": "String",
+        "ApplyValue": "0",
+        "UndoValue": "10"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5222,15 +5849,31 @@ $tweaksRawJson = @'
     "Description": "Lo\u1EA1i b\u1ECF gi\u1EDBi h\u1EA1n 10 packets/ms c\u1EE7a Windows Multimedia Class Scheduler \u0111\u1EC3 gi\u1EA3m gi\u1EADt lag m\u1EA1ng.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "Name": "NetworkThrottlingIndex", "ValueType": "DWord", "ApplyValue": "0xFFFFFFFF", "UndoValue": "10" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "Name": "SystemResponsiveness", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "20" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
+        "Name": "NetworkThrottlingIndex",
+        "ValueType": "DWord",
+        "ApplyValue": "0xFFFFFFFF",
+        "UndoValue": "10"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
+        "Name": "SystemResponsiveness",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "20"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5242,8 +5885,10 @@ $tweaksRawJson = @'
     "Description": "G\u1EEDi g\u00F3i tin TCP ngay l\u1EADp t\u1EE9c (TcpAckFrequency=1, TCPNoDelay=1) tr\u00EAn c\u00E1c card m\u1EA1ng \u0111ang k\u1EBFt n\u1ED1i.",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "NagleDisabled",
     "Action": "NagleDisable",
     "NeedsExplorerRestart": false,
@@ -5259,14 +5904,23 @@ $tweaksRawJson = @'
     "Description": "Ng\u0103n Windows b\u00F3p xung CPU c\u00E1c \u1EE9ng d\u1EE5ng ch\u1EA1y n\u1EC1n ho\u1EB7c c\u1EEDa s\u1ED5 ph\u1EE5. H\u1EE3p cho PC b\u00E0n.",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": true,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling", "Name": "PowerThrottlingOff", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling",
+        "Name": "PowerThrottlingOff",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5278,14 +5932,23 @@ $tweaksRawJson = @'
     "Description": "\u0110\u1EB7t \u01B0u ti\u00EAn l\u01B0\u1EE3ng t\u1EED ng\u1EAFn & t\u00E1ch bi\u1EC7t cho c\u1EEDa s\u1ED5 \u0111ang ho\u1EA1t \u0111\u1ED9ng (0x26) gi\u00FAp ph\u1EA3n h\u1ED3i khung h\u00ECnh m\u01B0\u1EE3t h\u01A1n.",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\PriorityControl", "Name": "Win32PrioritySeparation", "ValueType": "DWord", "ApplyValue": "38", "UndoValue": "2" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\PriorityControl",
+        "Name": "Win32PrioritySeparation",
+        "ValueType": "DWord",
+        "ApplyValue": "38",
+        "UndoValue": "2"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5297,19 +5960,63 @@ $tweaksRawJson = @'
     "Description": "T\u1EAFt hi\u1EC7u \u1EE9ng b\u00F3ng \u0111\u1ED5/ho\u1EA1t \u1EA3nh r\u01B0\u1EDDm r\u00E0 nh\u01B0ng v\u1EABn gi\u1EEF ClearType l\u00E0m m\u1ECBn font ch\u1EEF \u0111\u1EB9p nh\u01B0 g\u1ED1c.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects", "Name": "VisualFXSetting", "ValueType": "DWord", "ApplyValue": "3", "UndoValue": "0" },
-      { "Hive": "HKCU", "Path": "Control Panel\\Desktop", "Name": "FontSmoothing", "ValueType": "String", "ApplyValue": "2", "UndoValue": "2" },
-      { "Hive": "HKCU", "Path": "Control Panel\\Desktop", "Name": "FontSmoothingType", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "2" },
-      { "Hive": "HKCU", "Path": "Control Panel\\Desktop", "Name": "DragFullWindows", "ValueType": "String", "ApplyValue": "1", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Control Panel\\Desktop", "Name": "MenuShowDelay", "ValueType": "String", "ApplyValue": "50", "UndoValue": "400" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarAnimations", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects",
+        "Name": "VisualFXSetting",
+        "ValueType": "DWord",
+        "ApplyValue": "3",
+        "UndoValue": "0"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "FontSmoothing",
+        "ValueType": "String",
+        "ApplyValue": "2",
+        "UndoValue": "2"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "FontSmoothingType",
+        "ValueType": "DWord",
+        "ApplyValue": "2",
+        "UndoValue": "2"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "DragFullWindows",
+        "ValueType": "String",
+        "ApplyValue": "1",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "MenuShowDelay",
+        "ValueType": "String",
+        "ApplyValue": "50",
+        "UndoValue": "400"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "TaskbarAnimations",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5321,20 +6028,37 @@ $tweaksRawJson = @'
     "Description": "Ng\u0103n c\u00E1c \u1EE9ng d\u1EE5ng UWP/Microsoft Store t\u1EF1 \u0111\u00E1nh th\u1EE9c v\u00E0 \u0103n RAM/CPU trong n\u1EC1n.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications", "Name": "GlobalUserDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "BackgroundAppGlobalToggle", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications",
+        "Name": "GlobalUserDisabled",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+        "Name": "BackgroundAppGlobalToggle",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
   },
-
   {
     "Id": "opt_classic_context_menu",
     "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
@@ -5342,14 +6066,25 @@ $tweaksRawJson = @'
     "Description": "Hi\u1EC7n \u0111\u1EA7y \u0111\u1EE7 menu chu\u1ED9t ph\u1EA3i ngay l\u1EADp t\u1EE9c, b\u1ECF qua b\u01B0\u1EDBc b\u1EA5m 'Show more options'.",
     "Risk": "Safe",
     "HardwareHint": "Win11Only",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32", "Name": "(Default)", "ValueType": "String", "ApplyValue": "", "UndoValue": "__DELETE_KEY__" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32",
+        "Name": "(Default)",
+        "ValueType": "String",
+        "ApplyValue": "",
+        "UndoValue": "__DELETE_KEY__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5361,15 +6096,29 @@ $tweaksRawJson = @'
     "Description": "Chuy\u1EC3n c\u1EA3 Windows Shell v\u00E0 to\u00E0n b\u1ED9 \u1EE9ng d\u1EE5ng sang t\u00F4ng t\u1ED1i d\u1ECBu m\u1EAFt.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "Name": "AppsUseLightTheme", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "Name": "SystemUsesLightTheme", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        "Name": "AppsUseLightTheme",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        "Name": "SystemUsesLightTheme",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5381,14 +6130,26 @@ $tweaksRawJson = @'
     "Description": "Hi\u1EC3n th\u1ECB \u0111\u1EA7y \u0111\u1EE7 \u0111u\u00F4i file trong File Explorer \u0111\u1EC3 nh\u1EADn di\u1EC7n ch\u00EDnh x\u00E1c \u0111\u1ECBnh d\u1EA1ng & tr\u00E1nh file gi\u1EA3 m\u1EA1o.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "HideFileExt", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "HideFileExt",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5400,14 +6161,21 @@ $tweaksRawJson = @'
     "Description": "Hi\u1EC3n th\u1ECB c\u00E1c th\u01B0 m\u1EE5c \u1EA9n nh\u01B0 AppData, .git trong File Explorer.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "Hidden", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "2" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "Hidden",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "2"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5419,14 +6187,25 @@ $tweaksRawJson = @'
     "Description": "Tr\u00E1nh l\u1ED7i \u0111\u01B0\u1EDDng d\u1EABn qu\u00E1 d\u00E0i khi build code Node.js/Python/Rust ho\u1EB7c gi\u1EA3i n\u00E9n file s\u00E2u.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem", "Name": "LongPathsEnabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+        "Name": "LongPathsEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5438,15 +6217,34 @@ $tweaksRawJson = @'
     "Description": "G\u00F5 t\u00ECm \u1EE9ng d\u1EE5ng/file trong Start Menu ph\u1EA3n h\u1ED3i t\u1EE9c th\u00EC, kh\u00F4ng t\u1EA3i k\u1EBFt qu\u1EA3 web Bing.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming",
+      "Minimal"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "BingSearchEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Policies\\Microsoft\\Windows\\Explorer", "Name": "DisableSearchBoxSuggestions", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+        "Name": "BingSearchEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Policies\\Microsoft\\Windows\\Explorer",
+        "Name": "DisableSearchBoxSuggestions",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5458,15 +6256,29 @@ $tweaksRawJson = @'
     "Description": "L\u00E0m g\u1ECDn Start Menu (l\u01B0u \u00FD: t\u00F9y ch\u1ECDn n\u00E0y c\u0169ng t\u1EAFt Windows Spotlight tr\u00EAn Lock Screen).",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "HideRecommendedSection", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "Start_IrisRecommendations", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer",
+        "Name": "HideRecommendedSection",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "Start_IrisRecommendations",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5478,16 +6290,40 @@ $tweaksRawJson = @'
     "Description": "B\u1ECF qua trang Home/File g\u1EA7n \u0111\u00E2y khi m\u1EDF File Explorer \u0111\u1EC3 v\u00E0o th\u1EB3ng danh s\u00E1ch \u1ED5 \u0111\u0129a.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "LaunchTo", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "2" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", "Name": "ShowRecent", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", "Name": "ShowFrequent", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "LaunchTo",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "2"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer",
+        "Name": "ShowRecent",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer",
+        "Name": "ShowFrequent",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5499,14 +6335,21 @@ $tweaksRawJson = @'
     "Description": "V\u00E0o th\u1EB3ng m\u1EE5c System thay v\u00EC trang ch\u1EE7 qu\u1EA3ng c\u00E1o t\u00E0i kho\u1EA3n Microsoft trong Settings.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer", "Name": "SettingsPageVisibility", "ValueType": "String", "ApplyValue": "hide:home", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+        "Name": "SettingsPageVisibility",
+        "ValueType": "String",
+        "ApplyValue": "hide:home",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5518,14 +6361,21 @@ $tweaksRawJson = @'
     "Description": "\u0110\u01B0a n\u00FAt Start v\u00E0 to\u00E0n b\u1ED9 icon tr\u00EAn Taskbar v\u1EC1 g\u00F3c tr\u00E1i quen thu\u1ED9c nh\u01B0 Windows 10.",
     "Risk": "Safe",
     "HardwareHint": "Win11Only",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarAl", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "TaskbarAl",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5537,14 +6387,21 @@ $tweaksRawJson = @'
     "Description": "Gi\u1EA3i ph\u00F3ng kh\u00F4ng gian thanh Taskbar (v\u1EABn b\u1EA5m ph\u00EDm Windows \u0111\u1EC3 t\u00ECm ki\u1EBFm b\u00ECnh th\u01B0\u1EDDng).",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "SearchboxTaskbarMode", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+        "Name": "SearchboxTaskbarMode",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5556,14 +6413,21 @@ $tweaksRawJson = @'
     "Description": "\u1EA8n bi\u1EC3u t\u01B0\u1EE3ng Task View kh\u1ECFi thanh Taskbar (v\u1EABn d\u00F9ng Win+Tab \u0111\u01B0\u1EE3c).",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "ShowTaskViewButton", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "ShowTaskViewButton",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5575,14 +6439,21 @@ $tweaksRawJson = @'
     "Description": "Gi\u1EEF thanh cu\u1ED9n lu\u00F4n hi\u1EC3n th\u1ECB thay v\u00EC t\u1EF1 thu nh\u1ECF/\u1EA9n khi kh\u00F4ng di chu\u1ED9t t\u1EDBi.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Control Panel\\Accessibility", "Name": "DynamicScrollbars", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Accessibility",
+        "Name": "DynamicScrollbars",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5594,14 +6465,25 @@ $tweaksRawJson = @'
     "Description": "Tr\u00E1nh h\u1ED9p tho\u1EA1i Sticky Keys l\u00E0m gi\u00E1n \u0111o\u1EA1n ho\u1EB7c v\u0103ng c\u1EEDa s\u1ED5 khi \u0111ang ch\u01A1i game/l\u00E0m vi\u1EC7c.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Control Panel\\Accessibility\\StickyKeys", "Name": "Flags", "ValueType": "String", "ApplyValue": "506", "UndoValue": "510" }
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Accessibility\\StickyKeys",
+        "Name": "Flags",
+        "ValueType": "String",
+        "ApplyValue": "506",
+        "UndoValue": "510"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5613,15 +6495,29 @@ $tweaksRawJson = @'
     "Description": "Lu\u00F4n b\u1EADt s\u1EB5n \u0111\u00E8n Num Lock tr\u00EAn b\u00E0n ph\u00EDm s\u1ED1 ngay t\u1EA1i m\u00E0n h\u00ECnh \u0111\u0103ng nh\u1EADp.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Control Panel\\Keyboard", "Name": "InitialKeyboardIndicators", "ValueType": "String", "ApplyValue": "2147483650", "UndoValue": "2147483648" },
-      { "Hive": "HKU", "Path": ".DEFAULT\\Control Panel\\Keyboard", "Name": "InitialKeyboardIndicators", "ValueType": "String", "ApplyValue": "2147483650", "UndoValue": "2147483648" }
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Keyboard",
+        "Name": "InitialKeyboardIndicators",
+        "ValueType": "String",
+        "ApplyValue": "2147483650",
+        "UndoValue": "2147483648"
+      },
+      {
+        "Hive": "HKU",
+        "Path": ".DEFAULT\\Control Panel\\Keyboard",
+        "Name": "InitialKeyboardIndicators",
+        "ValueType": "String",
+        "ApplyValue": "2147483650",
+        "UndoValue": "2147483648"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5633,35 +6529,30 @@ $tweaksRawJson = @'
     "Description": "Hi\u1EC3n th\u1ECB d\u00F2ng tr\u1EA1ng th\u00E1i d\u1ECBch v\u1EE5 khi b\u1EADt/t\u1EAFt m\u00E1y v\u00E0 tham s\u1ED1 chi ti\u1EBFt khi g\u1EB7p m\u00E0n h\u00ECnh xanh.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", "Name": "VerboseStatus", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" },
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\CrashControl", "Name": "DisplayParameters", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System",
+        "Name": "VerboseStatus",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\CrashControl",
+        "Name": "DisplayParameters",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
-    "Services": [],
-    "Tasks": []
-  },
-
-  {
-    "Id": "opt_dns_provider",
-    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
-    "Name": "\u0110\u1ED5i DNS nhanh & Flush DNS Cache",
-    "Description": "\u0110\u1EB7t DNS t\u1ED1c \u0111\u1ED9 cao cho to\u00E0n b\u1ED9 card m\u1EA1ng \u0111ang ho\u1EA1t \u0111\u1ED9ng v\u00E0 l\u00E0m m\u1EDBi b\u1ED9 \u0111\u1EC7m DNS.",
-    "Risk": "Safe",
-    "HardwareHint": "",
-    "ControlType": "Combo",
-    "ComboOptions": ["Cloudflare (1.1.1.1)", "AdGuard Ch\u1EB7n QC (94.140.14.14)", "Google (8.8.8.8)", "Quad9 (9.9.9.9)", "M\u1EB7c \u0111\u1ECBnh (DHCP)"],
-    "Presets": [],
-    "ProbeKind": "DnsCustom",
-    "Action": "DnsApply",
-    "NeedsExplorerRestart": false,
-    "NeedsReboot": false,
-    "Registry": [],
     "Services": [],
     "Tasks": []
   },
@@ -5672,14 +6563,23 @@ $tweaksRawJson = @'
     "Description": "\u01AFu ti\u00EAn \u0111\u1ECBnh tuy\u1EBFn IPv4 tr\u00EAn m\u1EA1ng gia \u0111\u00ECnh/VN kh\u00F4ng h\u1ED7 tr\u1EE3 IPv6 chu\u1EA9n (khuy\u00EAn d\u00F9ng).",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": true,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters", "Name": "DisabledComponents", "ValueType": "DWord", "ApplyValue": "32", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters",
+        "Name": "DisabledComponents",
+        "ValueType": "DWord",
+        "ApplyValue": "32",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5691,14 +6591,21 @@ $tweaksRawJson = @'
     "Description": "V\u00F4 hi\u1EC7u h\u00F3a IPv6 tr\u00EAn t\u1EA5t c\u1EA3 giao di\u1EC7n m\u1EA1ng (c\u1EA9n th\u1EADn n\u1EBFu m\u1EA1ng c\u00F4ng ty/VPN y\u00EAu c\u1EA7u IPv6).",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": true,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters", "Name": "DisabledComponents", "ValueType": "DWord", "ApplyValue": "255", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters",
+        "Name": "DisabledComponents",
+        "ValueType": "DWord",
+        "ApplyValue": "255",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5710,14 +6617,21 @@ $tweaksRawJson = @'
     "Description": "Gi\u1EA3m overhead g\u00F3i tin m\u1EA1ng (l\u01B0u \u00FD: m\u1ED9t s\u1ED1 game Xbox/Forza c\u0169 c\u00F3 th\u1EC3 c\u1EA7n Teredo \u0111\u1EC3 ch\u01A1i online).",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters", "Name": "DisabledComponents", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters",
+        "Name": "DisabledComponents",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5729,19 +6643,65 @@ $tweaksRawJson = @'
     "Description": "\u00C1p d\u1EE5ng Group Policy ch\u00EDnh ch\u1EE7 t\u1EAFt Telemetry, n\u00FAt Copilot, thanh b\u00EAn v\u00E0 popup mua s\u1EAFm tr\u00EAn Edge.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "HubsSidebarEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "EdgeShoppingAssistantEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "StartupBoostEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "BackgroundModeEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "PersonalizationReportingEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "UserFeedbackAllowed", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "Name": "HubsSidebarEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "Name": "EdgeShoppingAssistantEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "Name": "StartupBoostEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "Name": "BackgroundModeEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "Name": "PersonalizationReportingEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Edge",
+        "Name": "UserFeedbackAllowed",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5753,18 +6713,57 @@ $tweaksRawJson = @'
     "Description": "\u00C1p d\u1EE5ng Policy ch\u00EDnh ch\u1EE7 t\u1EAFt b\u00E1o c\u00E1o d\u1EEF li\u1EC7u, Privacy Sandbox qu\u1EA3ng c\u00E1o v\u00E0 ti\u1EBFn tr\u00ECnh ch\u1EA1y ng\u1EA7m khi \u0111\u00F3ng Chrome.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ControlType": "Toggle",
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Google\\Chrome", "Name": "MetricsReportingEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Google\\Chrome", "Name": "BackgroundModeEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Google\\Chrome", "Name": "PrivacySandboxPromptEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Google\\Chrome", "Name": "PrivacySandboxAdTopicsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Google\\Chrome", "Name": "PromotionalTabsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Google\\Chrome",
+        "Name": "MetricsReportingEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Google\\Chrome",
+        "Name": "BackgroundModeEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Google\\Chrome",
+        "Name": "PrivacySandboxPromptEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Google\\Chrome",
+        "Name": "PrivacySandboxAdTopicsEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Google\\Chrome",
+        "Name": "PromotionalTabsEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5776,17 +6775,45 @@ $tweaksRawJson = @'
     "Description": "\u1EA8n v\u00E0 t\u1EAFt to\u00E0n b\u1ED9 Brave Rewards, v\u00ED Crypto, AI Leo v\u00E0 VPN t\u00EDch h\u1EE3p qua Policy ch\u00EDnh th\u1EE9c.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveRewardsDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveWalletDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveVPNDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveAIChatEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave",
+        "Name": "BraveRewardsDisabled",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave",
+        "Name": "BraveWalletDisabled",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave",
+        "Name": "BraveVPNDisabled",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\BraveSoftware\\Brave",
+        "Name": "BraveAIChatEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5798,15 +6825,29 @@ $tweaksRawJson = @'
     "Description": "Ng\u0103n Windows Update t\u1EF1 \u0111\u1ED9ng c\u00E0i c\u00F4ng c\u1EE5 qu\u1EA3ng c\u00E1o Logitech m\u1ED7i khi c\u1EAFm chu\u1ED9t/ph\u00EDm (thi\u1EBFt b\u1ECB v\u1EABn ch\u1EA1y chu\u1EA9n).",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Logitech\\LogiDownloadAssistant", "Name": "DisableAutoInstall", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", "Name": "LogiLDA", "ValueType": "DeleteValue", "ApplyValue": "__DELETE__", "UndoValue": "__SKIP__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Logitech\\LogiDownloadAssistant",
+        "Name": "DisableAutoInstall",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "Name": "LogiLDA",
+        "ValueType": "DeleteValue",
+        "ApplyValue": "__DELETE__",
+        "UndoValue": "__SKIP__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5818,15 +6859,29 @@ $tweaksRawJson = @'
     "Description": "Ng\u0103n tr\u00ECnh c\u00E0i \u0111\u1EB7t Razer Installer t\u1EF1 \u0111\u1ED9ng t\u1EA3i v\u00E0 b\u1EADt popup l\u00FAc c\u1EAFm chu\u1ED9t/ph\u00EDm Razer m\u1EDBi.",
     "Risk": "Safe",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DriverSearching", "Name": "DontPromptForWindowsUpdate", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Razer\\Synapse3", "Name": "DisableAutoInstall", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DriverSearching",
+        "Name": "DontPromptForWindowsUpdate",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Razer\\Synapse3",
+        "Name": "DisableAutoInstall",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5838,19 +6893,49 @@ $tweaksRawJson = @'
     "Description": "S\u1EEDa tri\u1EC7t \u0111\u1EC3 l\u1ED7i b\u1ECB l\u1EC7ch 7 ti\u1EBFng khi ch\u1EA1y song song Windows v\u00E0 Ubuntu/Arch/macOS.",
     "Risk": "Moderate",
     "HardwareHint": "",
-    "ControlType": "Checkbox",
+    "ControlType": "Toggle",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation", "Name": "RealTimeIsUniversal", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation",
+        "Name": "RealTimeIsUniversal",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      }
     ],
     "Services": [],
     "Tasks": []
   },
-
+  {
+    "Id": "opt_dns_provider",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "\u0110\u1ED5i DNS nhanh & Flush DNS Cache",
+    "Description": "\u0110\u1EB7t DNS t\u1ED1c \u0111\u1ED9 cao cho to\u00E0n b\u1ED9 card m\u1EA1ng \u0111ang ho\u1EA1t \u0111\u1ED9ng v\u00E0 l\u00E0m m\u1EDBi b\u1ED9 \u0111\u1EC7m DNS.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "ControlType": "Combo",
+    "ComboOptions": [
+      "Cloudflare (1.1.1.1)",
+      "AdGuard Ch\u1EB7n QC (94.140.14.14)",
+      "Google (8.8.8.8)",
+      "Quad9 (9.9.9.9)",
+      "M\u1EB7c \u0111\u1ECBnh (DHCP)"
+    ],
+    "Presets": [],
+    "ProbeKind": "DnsCustom",
+    "Action": "DnsApply",
+    "NeedsExplorerRestart": false,
+    "NeedsReboot": false,
+    "Registry": [],
+    "Services": [],
+    "Tasks": []
+  },
   {
     "Id": "opt_wu_security",
     "Category": "Windows Update",
@@ -5859,17 +6944,55 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop"],
+    "Presets": [
+      "Desktop",
+      "Laptop"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferFeatureUpdates", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferFeatureUpdatesPeriodInDays", "ValueType": "DWord", "ApplyValue": "365", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferQualityUpdates", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferQualityUpdatesPeriodInDays", "ValueType": "DWord", "ApplyValue": "4", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "BranchReadinessLevel", "ValueType": "DWord", "ApplyValue": "20", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "DeferFeatureUpdates",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "DeferFeatureUpdatesPeriodInDays",
+        "ValueType": "DWord",
+        "ApplyValue": "365",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "DeferQualityUpdates",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "DeferQualityUpdatesPeriodInDays",
+        "ValueType": "DWord",
+        "ApplyValue": "4",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "BranchReadinessLevel",
+        "ValueType": "DWord",
+        "ApplyValue": "20",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5882,13 +7005,24 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "ExcludeWUDriversInQualityUpdate", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "ExcludeWUDriversInQualityUpdate",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5901,14 +7035,32 @@ $tweaksRawJson = @'
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Presets": [
+      "Desktop",
+      "Laptop",
+      "Gaming"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "Name": "NoAutoRebootWithLoggedOnUsers", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "Name": "AUOptions", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU",
+        "Name": "NoAutoRebootWithLoggedOnUsers",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU",
+        "Name": "AUOptions",
+        "ValueType": "DWord",
+        "ApplyValue": "2",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -5961,12 +7113,18 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services", "Name": "AllowUnsignedFiles", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services",
+        "Name": "AllowUnsignedFiles",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
   },
-
   {
     "Id": "opt_disable_win_ai",
     "Category": "N\u00E2ng cao",
@@ -5981,11 +7139,46 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Policies\\Microsoft\\Windows\\WindowsCopilot", "Name": "TurnOffWindowsCopilot", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot", "Name": "TurnOffWindowsCopilot", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "Name": "DisableAIDataAnalysis", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "Name": "AllowRecallEnablement", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "ShowCopilotButton", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Policies\\Microsoft\\Windows\\WindowsCopilot",
+        "Name": "TurnOffWindowsCopilot",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot",
+        "Name": "TurnOffWindowsCopilot",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI",
+        "Name": "DisableAIDataAnalysis",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI",
+        "Name": "AllowRecallEnablement",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "ShowCopilotButton",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -6004,7 +7197,14 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\OneDrive", "Name": "DisableFileSyncNGSC", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\OneDrive",
+        "Name": "DisableFileSyncNGSC",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -6057,7 +7257,14 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": false,
     "NeedsReboot": true,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SYSTEM\\CurrentControlSet\\Control", "Name": "SvcHostSplitThresholdInKB", "ValueType": "DWord", "ApplyValue": "380000000", "UndoValue": "3670016" }
+      {
+        "Hive": "HKLM",
+        "Path": "SYSTEM\\CurrentControlSet\\Control",
+        "Name": "SvcHostSplitThresholdInKB",
+        "ValueType": "DWord",
+        "ApplyValue": "380000000",
+        "UndoValue": "3670016"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -6077,7 +7284,11 @@ $tweaksRawJson = @'
     "NeedsReboot": false,
     "Registry": [],
     "Services": [
-      { "Name": "WSearch", "ApplyStart": 4, "UndoStart": 2 }
+      {
+        "Name": "WSearch",
+        "ApplyStart": 4,
+        "UndoStart": 2
+      }
     ],
     "Tasks": []
   },
@@ -6095,8 +7306,22 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Policies\\Microsoft\\Windows\\Explorer", "Name": "DisableNotificationCenter", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications", "Name": "ToastEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Policies\\Microsoft\\Windows\\Explorer",
+        "Name": "DisableNotificationCenter",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications",
+        "Name": "ToastEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -6132,8 +7357,22 @@ $tweaksRawJson = @'
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization", "Name": "NoLockScreen", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "DisableAcrylicBackgroundOnLogon", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization",
+        "Name": "NoLockScreen",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+        "Name": "DisableAcrylicBackgroundOnLogon",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -6146,15 +7385,38 @@ $tweaksRawJson = @'
     "Risk": "Moderate",
     "HardwareHint": "LaptopOnly",
     "ControlType": "Checkbox",
-    "Presets": ["Laptop"],
+    "Presets": [
+      "Laptop"
+    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      { "Hive": "HKCU", "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "ShowBatteryPercentage", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9", "Name": "ACSettingIndex", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" },
-      { "Hive": "HKLM", "Path": "SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9", "Name": "DCSettingIndex", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "__DELETE__" }
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "ShowBatteryPercentage",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "0"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9",
+        "Name": "ACSettingIndex",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9",
+        "Name": "DCSettingIndex",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
+      }
     ],
     "Services": [],
     "Tasks": []
@@ -6217,6 +7479,48 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                             </MultiTrigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="box" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="OptToggleSwitch" TargetType="{x:Type ToggleButton}">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border x:Name="track" Width="34" Height="18" CornerRadius="9"
+                                Background="#111827" BorderBrush="#475569" BorderThickness="1">
+                            <Ellipse x:Name="knob" Width="12" Height="12" Fill="#94A3B8"
+                                     HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2.5,0,0,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="track" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="knob" Property="Fill" Value="#E2E8F0"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="track" Property="Background" Value="#0284C7"/>
+                                <Setter TargetName="track" Property="BorderBrush" Value="#38BDF8"/>
+                                <Setter TargetName="knob" Property="Fill" Value="#FFFFFF"/>
+                                <Setter TargetName="knob" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="knob" Property="Margin" Value="0,0,2.5,0"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="track" Property="Background" Value="#0EA5E9"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="track" Property="Opacity" Value="0.45"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -48354,8 +49658,11 @@ $script:optMasonryPanel     = $null
 $script:optLanesGrid        = $null
 $script:optLaneCols         = [System.Collections.Generic.List[object]]::new()
 $script:optLanePanels       = [System.Collections.Generic.List[object]]::new()
+$script:optLaneBorders      = [System.Collections.Generic.List[object]]::new()
 $script:optFallbackPanel    = $null
 $script:optStateFilter      = "All"
+$script:optSyncingVisuals   = $false
+$script:styleOptToggleSwitch = $window.FindResource("OptToggleSwitch")
 
 $script:brushOptSectionBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(15, 21, 34))
 $script:brushOptSectionBg.Freeze()
@@ -48428,11 +49735,18 @@ function Update-OptimizerSelectionCount {
         $txtSelectionCount.Text = ""
         return
     }
-    $cnt = 0
+    $cbCnt = 0
+    $tgChanged = 0
     foreach ($ent in $script:optEntries) {
-        if ($ent.CheckBox -and $ent.CheckBox.IsChecked -eq $true) { $cnt++ }
+        if (-not $ent.CheckBox) { continue }
+        $isCh = ($ent.CheckBox.IsChecked -eq $true)
+        if ($ent.IsToggle) {
+            if ($isCh -ne ([bool]$ent.InitialToggleState)) { $tgChanged++ }
+        } else {
+            if ($isCh) { $cbCnt++ }
+        }
     }
-    $txtSelectionCount.Text = "$cnt tweak $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
+    $txtSelectionCount.Text = "$($cbCnt + $tgChanged) thay $([char]0x0111)$([char]0x1ED5)i ch$([char]0x1EDD) l$([char]0x01B0)u"
 }
 
 function Set-OptimizerEntryVisualState {
@@ -48458,6 +49772,11 @@ function Set-OptimizerEntryVisualState {
             $stateDesc = "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: M$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh"
         }
     }
+    if ($Entry.IsToggle) {
+        $liveBool = ($State -eq "Applied")
+        $Entry.InitialToggleState = $liveBool
+        if ($Entry.CheckBox) { $Entry.CheckBox.IsChecked = $liveBool }
+    }
     if ($Entry.Row -and $Entry.BaseToolTip) {
         $Entry.Row.ToolTip = "$($Entry.BaseToolTip)`n$stateDesc"
     }
@@ -48468,7 +49787,8 @@ function Apply-OptimizerFilter {
     $q = if ($script:txtOptSearch) { $script:txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $appliedCount = 0
-    $laneVisible = @($false, $false, $false)
+    $laneVisible = @($false, $false)
+    $lastVisSectionByLane = @($null, $null)
 
     foreach ($card in $script:optCategoryCards) {
         $catVis = 0
@@ -48500,21 +49820,36 @@ function Apply-OptimizerFilter {
         if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
             $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+            if ($catVis -gt 0) {
+                $card.CardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 14)
+            }
         }
-        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 3) {
+        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
             $laneVisible[$card.LaneIndex] = $true
+            $lastVisSectionByLane[$card.LaneIndex] = $card.CardBorder
         }
     }
 
-    if ($script:optLaneCols.Count -eq 3 -and $script:optLanePanels.Count -eq 3) {
-        for ($li = 0; $li -lt 3; $li++) {
+    for ($li = 0; $li -lt 2; $li++) {
+        if ($lastVisSectionByLane[$li]) {
+            $lastVisSectionByLane[$li].Margin = [System.Windows.Thickness]::new(0)
+        }
+    }
+
+    if ($script:optLaneCols.Count -eq 2 -and $script:optLaneBorders.Count -eq 2) {
+        for ($li = 0; $li -lt 2; $li++) {
             if ($laneVisible[$li]) {
-                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Visible
+                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Visible
                 $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
             } else {
-                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Collapsed
+                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Collapsed
                 $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
             }
+        }
+        $script:optLaneBorders[0].Margin = if ($laneVisible[0] -and $laneVisible[1]) {
+            [System.Windows.Thickness]::new(0, 0, 10, 0)
+        } else {
+            [System.Windows.Thickness]::new(0)
         }
     }
 
@@ -48557,13 +49892,20 @@ function Refresh-OptimizerLiveState {
     $task = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($reqs)
     [void](Wait-TaskNonBlocking -Task $task -TimeoutSeconds 8 -CancelCheck { [bool]$script:isWindowClosing })
     if ($task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $task.Result) {
-        foreach ($res in $task.Result) {
-            if ($script:optEntryById.ContainsKey([string]$res.Id)) {
-                Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State)
+        $prevSync = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            foreach ($res in $task.Result) {
+                if ($script:optEntryById.ContainsKey([string]$res.Id)) {
+                    Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State)
+                }
             }
+        } finally {
+            $script:optSyncingVisuals = $prevSync
         }
     }
     Apply-OptimizerFilter
+    Update-OptimizerSelectionCount
 }
 
 function New-OptimizerTweakRowElement {
@@ -48584,21 +49926,28 @@ function New-OptimizerTweakRowElement {
     $b.ToolTip = $baseTipText
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 350)
 
+    $isToggleRow = ([string]$Tweak.ControlType -eq "Toggle" -or [string]$Tweak.ControlType -eq "Combo")
+
     $g = [System.Windows.Controls.Grid]::new()
-    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(22, [System.Windows.GridUnitType]::Pixel)
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new($(if ($isToggleRow) { 42 } else { 24 }), [System.Windows.GridUnitType]::Pixel)
     $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::Auto
     [void]$g.ColumnDefinitions.Add($c0)
     [void]$g.ColumnDefinitions.Add($c1)
     [void]$g.ColumnDefinitions.Add($c2)
 
-    $cb = [System.Windows.Controls.CheckBox]::new()
-    $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $cb.Add_Checked({ Update-OptimizerSelectionCount })
-    $cb.Add_Unchecked({ Update-OptimizerSelectionCount })
-    [System.Windows.Controls.Grid]::SetColumn($cb, 0)
-    [void]$g.Children.Add($cb)
+    if ($isToggleRow) {
+        $ctrl = [System.Windows.Controls.Primitives.ToggleButton]::new()
+        if ($script:styleOptToggleSwitch) { $ctrl.Style = $script:styleOptToggleSwitch }
+    } else {
+        $ctrl = [System.Windows.Controls.CheckBox]::new()
+    }
+    $ctrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $ctrl.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $ctrl.Add_Checked({ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } })
+    $ctrl.Add_Unchecked({ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } })
+    [System.Windows.Controls.Grid]::SetColumn($ctrl, 0)
+    [void]$g.Children.Add($ctrl)
 
     $titleTb = [System.Windows.Controls.TextBlock]::new()
     $titleTb.Text = [string]$Tweak.Name
@@ -48621,6 +49970,13 @@ function New-OptimizerTweakRowElement {
         $comboCtrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         foreach ($opt in @($Tweak.ComboOptions)) { [void]$comboCtrl.Items.Add([string]$opt) }
         if ($comboCtrl.Items.Count -gt 0) { $comboCtrl.SelectedIndex = 0 }
+        $comboCtrl.Tag = $ctrl
+        $comboCtrl.Add_SelectionChanged({
+            param($cs, $ce)
+            if (-not $script:optSyncingVisuals -and $cs.Tag) {
+                $cs.Tag.IsChecked = $true
+            }
+        })
         [System.Windows.Controls.Grid]::SetColumn($comboCtrl, 2)
         [void]$g.Children.Add($comboCtrl)
     }
@@ -48628,26 +49984,42 @@ function New-OptimizerTweakRowElement {
     $b.Child = $g
     $b.Add_MouseLeftButtonUp({
         param($s, $e)
-        if ($e.OriginalSource -is [System.Windows.Controls.ComboBox] -or $e.OriginalSource -is [System.Windows.Controls.ComboBoxItem]) { return }
-        if ($s.Tag -and $s.Tag.CheckBox -and $e.OriginalSource -ne $s.Tag.CheckBox) {
+        $cur = $e.OriginalSource -as [System.Windows.DependencyObject]
+        while ($cur -and $cur -ne $s) {
+            if ($cur -is [System.Windows.Controls.Primitives.ToggleButton] -or
+                $cur -is [System.Windows.Controls.ComboBox] -or
+                $cur -is [System.Windows.Controls.ComboBoxItem]) {
+                return
+            }
+            $cur = [System.Windows.Media.VisualTreeHelper]::GetParent($cur)
+        }
+        if ($s.Tag -and $s.Tag.CheckBox) {
             $s.Tag.CheckBox.IsChecked = -not ($s.Tag.CheckBox.IsChecked -eq $true)
         }
     })
 
     $entry = [PSCustomObject]@{
-        Tweak       = $Tweak
-        Row         = $b
-        CheckBox    = $cb
-        TitleText   = $titleTb
-        ComboBox    = $comboCtrl
-        BaseToolTip = $baseTipText
-        StateBorder = $null
-        StateText   = $null
-        State       = "Default"
-        SearchText  = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
+        Tweak              = $Tweak
+        Row                = $b
+        CheckBox           = $ctrl
+        TitleText          = $titleTb
+        ComboBox           = $comboCtrl
+        BaseToolTip        = $baseTipText
+        IsToggle           = $isToggleRow
+        InitialToggleState = $false
+        StateBorder        = $null
+        StateText          = $null
+        State              = "Default"
+        SearchText         = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
     }
     $b.Tag = $entry
-    Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action" -or $Tweak.ProbeKind -eq "DnsCustom") { "Action" } else { "Default" })
+    $prevSync = $script:optSyncingVisuals
+    $script:optSyncingVisuals = $true
+    try {
+        Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action" -or $Tweak.ProbeKind -eq "DnsCustom") { "Action" } else { "Default" })
+    } finally {
+        $script:optSyncingVisuals = $prevSync
+    }
     return $entry
 }
 
@@ -48674,21 +50046,33 @@ function Initialize-OptimizerTabIfNeeded {
     $script:optCategoryCards.Clear()
     $script:optLaneCols.Clear()
     $script:optLanePanels.Clear()
+    $script:optLaneBorders.Clear()
     $script:optMasonryPanel = $null
 
     if ($script:optTweaksHost) {
         $script:optTweaksHost.Children.Clear()
         $script:optLanesGrid = [System.Windows.Controls.Grid]::new()
-        for ($li = 0; $li -lt 3; $li++) {
+        for ($li = 0; $li -lt 2; $li++) {
             $col = [System.Windows.Controls.ColumnDefinition]::new()
             $col.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
             [void]$script:optLanesGrid.ColumnDefinitions.Add($col)
             [void]$script:optLaneCols.Add($col)
 
+            $laneBorder = [System.Windows.Controls.Border]::new()
+            $laneBorder.Background = $script:brushOptSectionBg
+            $laneBorder.BorderBrush = $script:brushOptSectionBdr
+            $laneBorder.BorderThickness = $thicknessOne
+            $laneBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
+            $laneBorder.Padding = [System.Windows.Thickness]::new(14, 10, 14, 10)
+            $laneBorder.Margin = if ($li -eq 0) { [System.Windows.Thickness]::new(0, 0, 10, 0) } else { [System.Windows.Thickness]::new(0) }
+            $laneBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+
             $lanePanel = [System.Windows.Controls.StackPanel]::new()
-            $lanePanel.Margin = if ($li -lt 2) { [System.Windows.Thickness]::new(0, 0, 10, 0) } else { [System.Windows.Thickness]::new(0) }
-            [System.Windows.Controls.Grid]::SetColumn($lanePanel, $li)
-            [void]$script:optLanesGrid.Children.Add($lanePanel)
+            $laneBorder.Child = $lanePanel
+
+            [System.Windows.Controls.Grid]::SetColumn($laneBorder, $li)
+            [void]$script:optLanesGrid.Children.Add($laneBorder)
+            [void]$script:optLaneBorders.Add($laneBorder)
             [void]$script:optLanePanels.Add($lanePanel)
         }
         [void]$script:optTweaksHost.Children.Add($script:optLanesGrid)
@@ -48706,27 +50090,29 @@ function Initialize-OptimizerTabIfNeeded {
     $laneMap = @{
         "C$([char]0x01A1) b$([char]0x1EA3)n"               = 0
         "Windows Update"       = 0
+        "N$([char]0x00E2)ng cao"             = 0
+        "Giao di$([char]0x1EC7)n & Ti$([char]0x1EC7)n $([char]0x00ED)ch" = 1
         "Hi$([char]0x1EC7)u n$([char]0x0103)ng"            = 1
         "M$([char]0x1EA1)ng & Tr$([char]0x00EC)nh duy$([char]0x1EC7)t"   = 1
-        "Giao di$([char]0x1EC7)n & Ti$([char]0x1EC7)n $([char]0x00ED)ch" = 2
-        "N$([char]0x00E2)ng cao"             = 2
+    }
+
+    $orderedCats = @("C$([char]0x01A1) b$([char]0x1EA3)n", "Windows Update", "N$([char]0x00E2)ng cao", "Giao di$([char]0x1EC7)n & Ti$([char]0x1EC7)n $([char]0x00ED)ch", "Hi$([char]0x1EC7)u n$([char]0x0103)ng", "M$([char]0x1EA1)ng & Tr$([char]0x00EC)nh duy$([char]0x1EC7)t")
+    $renderOrder = [System.Collections.Generic.List[string]]::new()
+    foreach ($oc in $orderedCats) {
+        if ($grouped.Contains($oc)) { [void]$renderOrder.Add($oc) }
+    }
+    foreach ($k in $grouped.Keys) {
+        if (-not $renderOrder.Contains($k)) { [void]$renderOrder.Add($k) }
     }
 
     $catIdx = 0
-    foreach ($catName in $grouped.Keys) {
+    foreach ($catName in $renderOrder) {
         $catTweaks = $grouped[$catName]
-        $laneIdx = if ($laneMap.ContainsKey($catName)) { [int]$laneMap[$catName] } else { $catIdx % 3 }
+        $laneIdx = if ($laneMap.ContainsKey($catName)) { [int]$laneMap[$catName] } else { $catIdx % 2 }
         $catIdx++
 
-        $cardBorder = [System.Windows.Controls.Border]::new()
-        $cardBorder.Background = $script:brushOptSectionBg
-        $cardBorder.BorderBrush = $script:brushOptSectionBdr
-        $cardBorder.BorderThickness = $thicknessOne
-        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
-        $cardBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 6)
-        $cardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 10)
-
-        $cardStack = [System.Windows.Controls.StackPanel]::new()
+        $sectionPanel = [System.Windows.Controls.StackPanel]::new()
+        $sectionPanel.Margin = [System.Windows.Thickness]::new(0, 0, 0, 14)
 
         $hdrGrid = [System.Windows.Controls.Grid]::new()
         $hc0 = [System.Windows.Controls.ColumnDefinition]::new(); $hc0.Width = $glCol2
@@ -48736,7 +50122,7 @@ function Initialize-OptimizerTabIfNeeded {
 
         $hdrTitle = [System.Windows.Controls.TextBlock]::new()
         $hdrTitle.Text = $catName
-        $hdrTitle.FontSize = 12
+        $hdrTitle.FontSize = 13
         $hdrTitle.FontWeight = [System.Windows.FontWeights]::Bold
         $hdrTitle.Foreground = if ($catName -match "N$([char]0x00E2)ng cao|C$([char]0x1EA9)n th$([char]0x1EAD)n|Caution") { $script:brushOptRiskCautFg } else { $script:brushHeaderFg }
         $hdrTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -48757,13 +50143,13 @@ function Initialize-OptimizerTabIfNeeded {
         [System.Windows.Controls.Grid]::SetColumn($cntBadge, 1)
         [void]$hdrGrid.Children.Add($cntBadge)
 
-        [void]$cardStack.Children.Add($hdrGrid)
+        [void]$sectionPanel.Children.Add($hdrGrid)
 
         $sep = [System.Windows.Controls.Border]::new()
         $sep.Height = 1
         $sep.Background = $script:brushSeparator
-        $sep.Margin = [System.Windows.Thickness]::new(0, 6, 0, 4)
-        [void]$cardStack.Children.Add($sep)
+        $sep.Margin = [System.Windows.Thickness]::new(0, 5, 0, 4)
+        [void]$sectionPanel.Children.Add($sep)
 
         $itemsPanel = [System.Windows.Controls.StackPanel]::new()
         $catEntries = [System.Collections.Generic.List[object]]::new()
@@ -48779,16 +50165,15 @@ function Initialize-OptimizerTabIfNeeded {
             $script:optEntryById[[string]$tw.Id] = $entry
             [void]$itemsPanel.Children.Add($entry.Row)
         }
-        [void]$cardStack.Children.Add($itemsPanel)
-        $cardBorder.Child = $cardStack
+        [void]$sectionPanel.Children.Add($itemsPanel)
 
         if ($script:optLanePanels.Count -gt $laneIdx) {
-            [void]$script:optLanePanels[$laneIdx].Children.Add($cardBorder)
+            [void]$script:optLanePanels[$laneIdx].Children.Add($sectionPanel)
         }
         [void]$script:optCategoryCards.Add([PSCustomObject]@{
             Category   = $catName
             LaneIndex  = $laneIdx
-            CardBorder = $cardBorder
+            CardBorder = $sectionPanel
             ItemsPanel = $itemsPanel
             CountText  = $cntTb
             Entries    = $catEntries
@@ -48823,7 +50208,7 @@ if ($script:btnClearOptSearch) {
 if ($script:btnOptSelectAll) {
     $script:btnOptSelectAll.Add_Click({
         foreach ($ent in $script:optEntries) {
-            if ($ent.Row -and $ent.Row.Visibility -eq [System.Windows.Visibility]::Visible -and $ent.CheckBox) {
+            if (-not $ent.IsToggle -and $ent.Row -and $ent.Row.Visibility -eq [System.Windows.Visibility]::Visible -and $ent.CheckBox) {
                 $ent.CheckBox.IsChecked = $true
             }
         }
@@ -48832,8 +50217,19 @@ if ($script:btnOptSelectAll) {
 }
 if ($script:btnOptDeselectAll) {
     $script:btnOptDeselectAll.Add_Click({
-        foreach ($ent in $script:optEntries) {
-            if ($ent.CheckBox) { $ent.CheckBox.IsChecked = $false }
+        $prevSync = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            foreach ($ent in $script:optEntries) {
+                if (-not $ent.CheckBox) { continue }
+                if ($ent.IsToggle) {
+                    $ent.CheckBox.IsChecked = [bool]$ent.InitialToggleState
+                } else {
+                    $ent.CheckBox.IsChecked = $false
+                }
+            }
+        } finally {
+            $script:optSyncingVisuals = $prevSync
         }
         Update-OptimizerSelectionCount
     })
@@ -48854,41 +50250,77 @@ if ($script:btnOptRefresh) {
 
 if ($script:btnOptApply) {
     $script:btnOptApply.Add_Click({
-        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true })
-        if ($selected.Count -eq 0) {
-            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a tick ch$([char]0x1ECD)n tinh ch$([char]0x1EC9)nh n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) l$([char]0x01B0)u!"
+        $toApply = @($script:optEntries | Where-Object {
+            $_.CheckBox -and (
+                (-not $_.IsToggle -and $_.CheckBox.IsChecked -eq $true) -or
+                ($_.IsToggle -and -not $_.InitialToggleState -and $_.CheckBox.IsChecked -eq $true)
+            )
+        })
+        $toUndo = @($script:optEntries | Where-Object {
+            $_.CheckBox -and $_.IsToggle -and $_.InitialToggleState -and ($_.CheckBox.IsChecked -ne $true)
+        })
+        if ($toApply.Count -eq 0 -and $toUndo.Count -eq 0) {
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n tinh ch$([char]0x1EC9)nh ho$([char]0x1EB7)c g$([char]0x1EA1)t thay $([char]0x0111)$([char]0x1ED5)i n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) l$([char]0x01B0)u!"
             return
         }
-        $cautionItems = @($selected | Where-Object { $_.Tweak.Risk -eq "Caution" })
+        $cautionItems = @($toApply | Where-Object { $_.Tweak.Risk -eq "Caution" })
         if ($cautionItems.Count -gt 0) {
             $cNames = ($cautionItems | ForEach-Object { "$([char]0x2022) $($_.Tweak.Name)" }) -join "`n"
             $ans = Show-OwnedMessageBox `
-                -Text "B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n $($cautionItems.Count) tinh ch$([char]0x1EC9)nh m$([char]0x1EE9)c C$([char]0x1EA9)n th$([char]0x1EAD)n (Caution):`n$cNames`n`nApp-Driver s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c tr$([char]0x01B0)$([char]0x1EDB)c khi l$([char]0x01B0)u. Ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
+                -Text "B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n $($cautionItems.Count) tinh ch$([char]0x1EC9)nh m$([char]0x1EE9)c N$([char]0x00E2)ng cao:`n$cNames`n`nApp-Driver s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c tr$([char]0x01B0)$([char]0x1EDB)c khi l$([char]0x01B0)u. Ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
                 -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n l$([char]0x01B0)u tinh ch$([char]0x1EC9)nh n$([char]0x00E2)ng cao" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
             if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
         }
         Invoke-GuardedAction "L$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u Windows" {
-            $combos = @{}
-            $twObjs = @()
-            foreach ($ent in $selected) {
-                $twObjs += $ent.Tweak
-                if ($ent.ComboBox -and $ent.ComboBox.SelectedItem) {
-                    $combos[[string]$ent.Tweak.Id] = [string]$ent.ComboBox.SelectedItem
+            $totalApplied = 0
+            $totalFailed = 0
+            if ($toApply.Count -gt 0) {
+                $combos = @{}
+                $twObjs = @()
+                foreach ($ent in $toApply) {
+                    $twObjs += $ent.Tweak
+                    if ($ent.ComboBox -and $ent.ComboBox.SelectedItem) {
+                        $combos[[string]$ent.Tweak.Id] = [string]$ent.ComboBox.SelectedItem
+                    }
                 }
+                Log-Text "=========================================================="
+                Log-Text "[OPTIMIZER] L$([char]0x01AF)U & B$([char]0x1EAC)T $($twObjs.Count) TINH CH$([char]0x1EC8)NH WINDOWS"
+                Log-Text "=========================================================="
+                $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Apply" -ComboSelections $combos -HardwareProfile $script:optHardwareProfile -ProgressCallback {
+                    param($cur, $tot, $nm)
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] $([char]0x0110)ang l$([char]0x01B0)u: $nm..." }
+                }
+                $totalApplied += $res.Applied
+                $totalFailed += $res.Failed
             }
-            Log-Text "=========================================================="
-            Log-Text "[OPTIMIZER] L$([char]0x01AF)U & $([char]0x00C1)P D$([char]0x1EE4)NG $($twObjs.Count) TINH CH$([char]0x1EC8)NH WINDOWS"
-            Log-Text "=========================================================="
-            $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Apply" -ComboSelections $combos -HardwareProfile $script:optHardwareProfile -ProgressCallback {
-                param($cur, $tot, $nm)
-                if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] $([char]0x0110)ang l$([char]0x01B0)u: $nm..." }
+            if ($toUndo.Count -gt 0) {
+                $undoObjs = @($toUndo | ForEach-Object { $_.Tweak })
+                Log-Text "=========================================================="
+                Log-Text "[OPTIMIZER] T$([char]0x1EAE)T $($undoObjs.Count) C$([char]0x1EA6)N G$([char]0x1EA0)T V$([char]0x1EC0) M$([char]0x1EB6)C $([char]0x0110)$([char]0x1ECA)NH"
+                Log-Text "=========================================================="
+                $resUndo = Invoke-OptimizerBatch -Tweaks $undoObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
+                    param($cur, $tot, $nm)
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] $([char]0x0110)ang t$([char]0x1EAF)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh: $nm..." }
+                }
+                $totalApplied += $resUndo.Applied
+                $totalFailed += $resUndo.Failed
+            }
+            $prevSync = $script:optSyncingVisuals
+            $script:optSyncingVisuals = $true
+            try {
+                foreach ($ent in $toApply) {
+                    if (-not $ent.IsToggle -and $ent.CheckBox) { $ent.CheckBox.IsChecked = $false }
+                }
+            } finally {
+                $script:optSyncingVisuals = $prevSync
             }
             if ($progressBar) { $progressBar.Value = 0 }
-            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) l$([char]0x01B0)u t$([char]0x1ED1)i $([char]0x01B0)u ($($res.Applied) th$([char]0x00E0)nh c$([char]0x00F4)ng, $($res.Failed) l$([char]0x1ED7)i)" }
-            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) l$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u: $($res.Applied) th$([char]0x00E0)nh c$([char]0x00F4)ng $([char]0x2022) $($res.Failed) l$([char]0x1ED7)i."
+            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) l$([char]0x01B0)u t$([char]0x1ED1)i $([char]0x01B0)u ($totalApplied th$([char]0x00E0)nh c$([char]0x00F4)ng, $totalFailed l$([char]0x1ED7)i)" }
+            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) l$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u: $totalApplied th$([char]0x00E0)nh c$([char]0x00F4)ng $([char]0x2022) $totalFailed l$([char]0x1ED7)i."
             Refresh-OptimizerLiveState
         }
     })
@@ -48896,12 +50328,17 @@ if ($script:btnOptApply) {
 
 if ($script:btnOptUndo) {
     $script:btnOptUndo.Add_Click({
-        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true })
+        $selected = @($script:optEntries | Where-Object {
+            $_.CheckBox -and (
+                (-not $_.IsToggle -and $_.CheckBox.IsChecked -eq $true) -or
+                ($_.IsToggle -and $_.InitialToggleState -and $_.CheckBox.IsChecked -ne $true)
+            )
+        })
         $targets = @()
         $promptText = ""
         if ($selected.Count -gt 0) {
             $targets = $selected
-            $promptText = "$([char]0x0110)$([char]0x1EB7)t $($targets.Count) tinh ch$([char]0x1EC9)nh $([char]0x0111)$([char]0x00E3) tick v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh c$([char]0x1EE7)a Windows?"
+            $promptText = "$([char]0x0110)$([char]0x1EB7)t $($targets.Count) tinh ch$([char]0x1EC9)nh $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh c$([char]0x1EE7)a Windows?"
         } else {
             $appliedList = @($script:optEntries | Where-Object { $_.State -eq "Applied" -or $_.State -eq "Partial" })
             if ($appliedList.Count -eq 0) {

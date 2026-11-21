@@ -8192,8 +8192,11 @@ $script:optMasonryPanel     = $null
 $script:optLanesGrid        = $null
 $script:optLaneCols         = [System.Collections.Generic.List[object]]::new()
 $script:optLanePanels       = [System.Collections.Generic.List[object]]::new()
+$script:optLaneBorders      = [System.Collections.Generic.List[object]]::new()
 $script:optFallbackPanel    = $null
 $script:optStateFilter      = "All"
+$script:optSyncingVisuals   = $false
+$script:styleOptToggleSwitch = $window.FindResource("OptToggleSwitch")
 
 $script:brushOptSectionBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(15, 21, 34))
 $script:brushOptSectionBg.Freeze()
@@ -8266,11 +8269,18 @@ function Update-OptimizerSelectionCount {
         $txtSelectionCount.Text = ""
         return
     }
-    $cnt = 0
+    $cbCnt = 0
+    $tgChanged = 0
     foreach ($ent in $script:optEntries) {
-        if ($ent.CheckBox -and $ent.CheckBox.IsChecked -eq $true) { $cnt++ }
+        if (-not $ent.CheckBox) { continue }
+        $isCh = ($ent.CheckBox.IsChecked -eq $true)
+        if ($ent.IsToggle) {
+            if ($isCh -ne ([bool]$ent.InitialToggleState)) { $tgChanged++ }
+        } else {
+            if ($isCh) { $cbCnt++ }
+        }
     }
-    $txtSelectionCount.Text = "$cnt tweak được chọn"
+    $txtSelectionCount.Text = "$($cbCnt + $tgChanged) thay đổi chờ lưu"
 }
 
 function Set-OptimizerEntryVisualState {
@@ -8296,6 +8306,11 @@ function Set-OptimizerEntryVisualState {
             $stateDesc = "Trạng thái: Mặc định"
         }
     }
+    if ($Entry.IsToggle) {
+        $liveBool = ($State -eq "Applied")
+        $Entry.InitialToggleState = $liveBool
+        if ($Entry.CheckBox) { $Entry.CheckBox.IsChecked = $liveBool }
+    }
     if ($Entry.Row -and $Entry.BaseToolTip) {
         $Entry.Row.ToolTip = "$($Entry.BaseToolTip)`n$stateDesc"
     }
@@ -8306,7 +8321,8 @@ function Apply-OptimizerFilter {
     $q = if ($script:txtOptSearch) { $script:txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $appliedCount = 0
-    $laneVisible = @($false, $false, $false)
+    $laneVisible = @($false, $false)
+    $lastVisSectionByLane = @($null, $null)
 
     foreach ($card in $script:optCategoryCards) {
         $catVis = 0
@@ -8338,21 +8354,36 @@ function Apply-OptimizerFilter {
         if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
             $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+            if ($catVis -gt 0) {
+                $card.CardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 14)
+            }
         }
-        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 3) {
+        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
             $laneVisible[$card.LaneIndex] = $true
+            $lastVisSectionByLane[$card.LaneIndex] = $card.CardBorder
         }
     }
 
-    if ($script:optLaneCols.Count -eq 3 -and $script:optLanePanels.Count -eq 3) {
-        for ($li = 0; $li -lt 3; $li++) {
+    for ($li = 0; $li -lt 2; $li++) {
+        if ($lastVisSectionByLane[$li]) {
+            $lastVisSectionByLane[$li].Margin = [System.Windows.Thickness]::new(0)
+        }
+    }
+
+    if ($script:optLaneCols.Count -eq 2 -and $script:optLaneBorders.Count -eq 2) {
+        for ($li = 0; $li -lt 2; $li++) {
             if ($laneVisible[$li]) {
-                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Visible
+                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Visible
                 $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
             } else {
-                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Collapsed
+                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Collapsed
                 $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
             }
+        }
+        $script:optLaneBorders[0].Margin = if ($laneVisible[0] -and $laneVisible[1]) {
+            [System.Windows.Thickness]::new(0, 0, 10, 0)
+        } else {
+            [System.Windows.Thickness]::new(0)
         }
     }
 
@@ -8395,13 +8426,20 @@ function Refresh-OptimizerLiveState {
     $task = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($reqs)
     [void](Wait-TaskNonBlocking -Task $task -TimeoutSeconds 8 -CancelCheck { [bool]$script:isWindowClosing })
     if ($task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $task.Result) {
-        foreach ($res in $task.Result) {
-            if ($script:optEntryById.ContainsKey([string]$res.Id)) {
-                Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State)
+        $prevSync = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            foreach ($res in $task.Result) {
+                if ($script:optEntryById.ContainsKey([string]$res.Id)) {
+                    Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State)
+                }
             }
+        } finally {
+            $script:optSyncingVisuals = $prevSync
         }
     }
     Apply-OptimizerFilter
+    Update-OptimizerSelectionCount
 }
 
 function New-OptimizerTweakRowElement {
@@ -8422,21 +8460,28 @@ function New-OptimizerTweakRowElement {
     $b.ToolTip = $baseTipText
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 350)
 
+    $isToggleRow = ([string]$Tweak.ControlType -eq "Toggle" -or [string]$Tweak.ControlType -eq "Combo")
+
     $g = [System.Windows.Controls.Grid]::new()
-    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(22, [System.Windows.GridUnitType]::Pixel)
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new($(if ($isToggleRow) { 42 } else { 24 }), [System.Windows.GridUnitType]::Pixel)
     $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::Auto
     [void]$g.ColumnDefinitions.Add($c0)
     [void]$g.ColumnDefinitions.Add($c1)
     [void]$g.ColumnDefinitions.Add($c2)
 
-    $cb = [System.Windows.Controls.CheckBox]::new()
-    $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $cb.Add_Checked({ Update-OptimizerSelectionCount })
-    $cb.Add_Unchecked({ Update-OptimizerSelectionCount })
-    [System.Windows.Controls.Grid]::SetColumn($cb, 0)
-    [void]$g.Children.Add($cb)
+    if ($isToggleRow) {
+        $ctrl = [System.Windows.Controls.Primitives.ToggleButton]::new()
+        if ($script:styleOptToggleSwitch) { $ctrl.Style = $script:styleOptToggleSwitch }
+    } else {
+        $ctrl = [System.Windows.Controls.CheckBox]::new()
+    }
+    $ctrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $ctrl.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $ctrl.Add_Checked({ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } })
+    $ctrl.Add_Unchecked({ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } })
+    [System.Windows.Controls.Grid]::SetColumn($ctrl, 0)
+    [void]$g.Children.Add($ctrl)
 
     $titleTb = [System.Windows.Controls.TextBlock]::new()
     $titleTb.Text = [string]$Tweak.Name
@@ -8459,6 +8504,13 @@ function New-OptimizerTweakRowElement {
         $comboCtrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         foreach ($opt in @($Tweak.ComboOptions)) { [void]$comboCtrl.Items.Add([string]$opt) }
         if ($comboCtrl.Items.Count -gt 0) { $comboCtrl.SelectedIndex = 0 }
+        $comboCtrl.Tag = $ctrl
+        $comboCtrl.Add_SelectionChanged({
+            param($cs, $ce)
+            if (-not $script:optSyncingVisuals -and $cs.Tag) {
+                $cs.Tag.IsChecked = $true
+            }
+        })
         [System.Windows.Controls.Grid]::SetColumn($comboCtrl, 2)
         [void]$g.Children.Add($comboCtrl)
     }
@@ -8466,26 +8518,42 @@ function New-OptimizerTweakRowElement {
     $b.Child = $g
     $b.Add_MouseLeftButtonUp({
         param($s, $e)
-        if ($e.OriginalSource -is [System.Windows.Controls.ComboBox] -or $e.OriginalSource -is [System.Windows.Controls.ComboBoxItem]) { return }
-        if ($s.Tag -and $s.Tag.CheckBox -and $e.OriginalSource -ne $s.Tag.CheckBox) {
+        $cur = $e.OriginalSource -as [System.Windows.DependencyObject]
+        while ($cur -and $cur -ne $s) {
+            if ($cur -is [System.Windows.Controls.Primitives.ToggleButton] -or
+                $cur -is [System.Windows.Controls.ComboBox] -or
+                $cur -is [System.Windows.Controls.ComboBoxItem]) {
+                return
+            }
+            $cur = [System.Windows.Media.VisualTreeHelper]::GetParent($cur)
+        }
+        if ($s.Tag -and $s.Tag.CheckBox) {
             $s.Tag.CheckBox.IsChecked = -not ($s.Tag.CheckBox.IsChecked -eq $true)
         }
     })
 
     $entry = [PSCustomObject]@{
-        Tweak       = $Tweak
-        Row         = $b
-        CheckBox    = $cb
-        TitleText   = $titleTb
-        ComboBox    = $comboCtrl
-        BaseToolTip = $baseTipText
-        StateBorder = $null
-        StateText   = $null
-        State       = "Default"
-        SearchText  = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
+        Tweak              = $Tweak
+        Row                = $b
+        CheckBox           = $ctrl
+        TitleText          = $titleTb
+        ComboBox           = $comboCtrl
+        BaseToolTip        = $baseTipText
+        IsToggle           = $isToggleRow
+        InitialToggleState = $false
+        StateBorder        = $null
+        StateText          = $null
+        State              = "Default"
+        SearchText         = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
     }
     $b.Tag = $entry
-    Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action" -or $Tweak.ProbeKind -eq "DnsCustom") { "Action" } else { "Default" })
+    $prevSync = $script:optSyncingVisuals
+    $script:optSyncingVisuals = $true
+    try {
+        Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action" -or $Tweak.ProbeKind -eq "DnsCustom") { "Action" } else { "Default" })
+    } finally {
+        $script:optSyncingVisuals = $prevSync
+    }
     return $entry
 }
 
@@ -8512,21 +8580,33 @@ function Initialize-OptimizerTabIfNeeded {
     $script:optCategoryCards.Clear()
     $script:optLaneCols.Clear()
     $script:optLanePanels.Clear()
+    $script:optLaneBorders.Clear()
     $script:optMasonryPanel = $null
 
     if ($script:optTweaksHost) {
         $script:optTweaksHost.Children.Clear()
         $script:optLanesGrid = [System.Windows.Controls.Grid]::new()
-        for ($li = 0; $li -lt 3; $li++) {
+        for ($li = 0; $li -lt 2; $li++) {
             $col = [System.Windows.Controls.ColumnDefinition]::new()
             $col.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
             [void]$script:optLanesGrid.ColumnDefinitions.Add($col)
             [void]$script:optLaneCols.Add($col)
 
+            $laneBorder = [System.Windows.Controls.Border]::new()
+            $laneBorder.Background = $script:brushOptSectionBg
+            $laneBorder.BorderBrush = $script:brushOptSectionBdr
+            $laneBorder.BorderThickness = $thicknessOne
+            $laneBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
+            $laneBorder.Padding = [System.Windows.Thickness]::new(14, 10, 14, 10)
+            $laneBorder.Margin = if ($li -eq 0) { [System.Windows.Thickness]::new(0, 0, 10, 0) } else { [System.Windows.Thickness]::new(0) }
+            $laneBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+
             $lanePanel = [System.Windows.Controls.StackPanel]::new()
-            $lanePanel.Margin = if ($li -lt 2) { [System.Windows.Thickness]::new(0, 0, 10, 0) } else { [System.Windows.Thickness]::new(0) }
-            [System.Windows.Controls.Grid]::SetColumn($lanePanel, $li)
-            [void]$script:optLanesGrid.Children.Add($lanePanel)
+            $laneBorder.Child = $lanePanel
+
+            [System.Windows.Controls.Grid]::SetColumn($laneBorder, $li)
+            [void]$script:optLanesGrid.Children.Add($laneBorder)
+            [void]$script:optLaneBorders.Add($laneBorder)
             [void]$script:optLanePanels.Add($lanePanel)
         }
         [void]$script:optTweaksHost.Children.Add($script:optLanesGrid)
@@ -8544,27 +8624,29 @@ function Initialize-OptimizerTabIfNeeded {
     $laneMap = @{
         "Cơ bản"               = 0
         "Windows Update"       = 0
+        "Nâng cao"             = 0
+        "Giao diện & Tiện ích" = 1
         "Hiệu năng"            = 1
         "Mạng & Trình duyệt"   = 1
-        "Giao diện & Tiện ích" = 2
-        "Nâng cao"             = 2
+    }
+
+    $orderedCats = @("Cơ bản", "Windows Update", "Nâng cao", "Giao diện & Tiện ích", "Hiệu năng", "Mạng & Trình duyệt")
+    $renderOrder = [System.Collections.Generic.List[string]]::new()
+    foreach ($oc in $orderedCats) {
+        if ($grouped.Contains($oc)) { [void]$renderOrder.Add($oc) }
+    }
+    foreach ($k in $grouped.Keys) {
+        if (-not $renderOrder.Contains($k)) { [void]$renderOrder.Add($k) }
     }
 
     $catIdx = 0
-    foreach ($catName in $grouped.Keys) {
+    foreach ($catName in $renderOrder) {
         $catTweaks = $grouped[$catName]
-        $laneIdx = if ($laneMap.ContainsKey($catName)) { [int]$laneMap[$catName] } else { $catIdx % 3 }
+        $laneIdx = if ($laneMap.ContainsKey($catName)) { [int]$laneMap[$catName] } else { $catIdx % 2 }
         $catIdx++
 
-        $cardBorder = [System.Windows.Controls.Border]::new()
-        $cardBorder.Background = $script:brushOptSectionBg
-        $cardBorder.BorderBrush = $script:brushOptSectionBdr
-        $cardBorder.BorderThickness = $thicknessOne
-        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
-        $cardBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 6)
-        $cardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 10)
-
-        $cardStack = [System.Windows.Controls.StackPanel]::new()
+        $sectionPanel = [System.Windows.Controls.StackPanel]::new()
+        $sectionPanel.Margin = [System.Windows.Thickness]::new(0, 0, 0, 14)
 
         $hdrGrid = [System.Windows.Controls.Grid]::new()
         $hc0 = [System.Windows.Controls.ColumnDefinition]::new(); $hc0.Width = $glCol2
@@ -8574,7 +8656,7 @@ function Initialize-OptimizerTabIfNeeded {
 
         $hdrTitle = [System.Windows.Controls.TextBlock]::new()
         $hdrTitle.Text = $catName
-        $hdrTitle.FontSize = 12
+        $hdrTitle.FontSize = 13
         $hdrTitle.FontWeight = [System.Windows.FontWeights]::Bold
         $hdrTitle.Foreground = if ($catName -match 'Nâng cao|Cẩn thận|Caution') { $script:brushOptRiskCautFg } else { $script:brushHeaderFg }
         $hdrTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
@@ -8595,13 +8677,13 @@ function Initialize-OptimizerTabIfNeeded {
         [System.Windows.Controls.Grid]::SetColumn($cntBadge, 1)
         [void]$hdrGrid.Children.Add($cntBadge)
 
-        [void]$cardStack.Children.Add($hdrGrid)
+        [void]$sectionPanel.Children.Add($hdrGrid)
 
         $sep = [System.Windows.Controls.Border]::new()
         $sep.Height = 1
         $sep.Background = $script:brushSeparator
-        $sep.Margin = [System.Windows.Thickness]::new(0, 6, 0, 4)
-        [void]$cardStack.Children.Add($sep)
+        $sep.Margin = [System.Windows.Thickness]::new(0, 5, 0, 4)
+        [void]$sectionPanel.Children.Add($sep)
 
         $itemsPanel = [System.Windows.Controls.StackPanel]::new()
         $catEntries = [System.Collections.Generic.List[object]]::new()
@@ -8617,16 +8699,15 @@ function Initialize-OptimizerTabIfNeeded {
             $script:optEntryById[[string]$tw.Id] = $entry
             [void]$itemsPanel.Children.Add($entry.Row)
         }
-        [void]$cardStack.Children.Add($itemsPanel)
-        $cardBorder.Child = $cardStack
+        [void]$sectionPanel.Children.Add($itemsPanel)
 
         if ($script:optLanePanels.Count -gt $laneIdx) {
-            [void]$script:optLanePanels[$laneIdx].Children.Add($cardBorder)
+            [void]$script:optLanePanels[$laneIdx].Children.Add($sectionPanel)
         }
         [void]$script:optCategoryCards.Add([PSCustomObject]@{
             Category   = $catName
             LaneIndex  = $laneIdx
-            CardBorder = $cardBorder
+            CardBorder = $sectionPanel
             ItemsPanel = $itemsPanel
             CountText  = $cntTb
             Entries    = $catEntries
@@ -8661,7 +8742,7 @@ if ($script:btnClearOptSearch) {
 if ($script:btnOptSelectAll) {
     $script:btnOptSelectAll.Add_Click({
         foreach ($ent in $script:optEntries) {
-            if ($ent.Row -and $ent.Row.Visibility -eq [System.Windows.Visibility]::Visible -and $ent.CheckBox) {
+            if (-not $ent.IsToggle -and $ent.Row -and $ent.Row.Visibility -eq [System.Windows.Visibility]::Visible -and $ent.CheckBox) {
                 $ent.CheckBox.IsChecked = $true
             }
         }
@@ -8670,8 +8751,19 @@ if ($script:btnOptSelectAll) {
 }
 if ($script:btnOptDeselectAll) {
     $script:btnOptDeselectAll.Add_Click({
-        foreach ($ent in $script:optEntries) {
-            if ($ent.CheckBox) { $ent.CheckBox.IsChecked = $false }
+        $prevSync = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            foreach ($ent in $script:optEntries) {
+                if (-not $ent.CheckBox) { continue }
+                if ($ent.IsToggle) {
+                    $ent.CheckBox.IsChecked = [bool]$ent.InitialToggleState
+                } else {
+                    $ent.CheckBox.IsChecked = $false
+                }
+            }
+        } finally {
+            $script:optSyncingVisuals = $prevSync
         }
         Update-OptimizerSelectionCount
     })
@@ -8692,41 +8784,77 @@ if ($script:btnOptRefresh) {
 
 if ($script:btnOptApply) {
     $script:btnOptApply.Add_Click({
-        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true })
-        if ($selected.Count -eq 0) {
-            Log-Text "[!] Bạn chưa tick chọn tinh chỉnh nào để lưu!"
+        $toApply = @($script:optEntries | Where-Object {
+            $_.CheckBox -and (
+                (-not $_.IsToggle -and $_.CheckBox.IsChecked -eq $true) -or
+                ($_.IsToggle -and -not $_.InitialToggleState -and $_.CheckBox.IsChecked -eq $true)
+            )
+        })
+        $toUndo = @($script:optEntries | Where-Object {
+            $_.CheckBox -and $_.IsToggle -and $_.InitialToggleState -and ($_.CheckBox.IsChecked -ne $true)
+        })
+        if ($toApply.Count -eq 0 -and $toUndo.Count -eq 0) {
+            Log-Text "[!] Bạn chưa chọn tinh chỉnh hoặc gạt thay đổi nào để lưu!"
             return
         }
-        $cautionItems = @($selected | Where-Object { $_.Tweak.Risk -eq "Caution" })
+        $cautionItems = @($toApply | Where-Object { $_.Tweak.Risk -eq "Caution" })
         if ($cautionItems.Count -gt 0) {
             $cNames = ($cautionItems | ForEach-Object { "• $($_.Tweak.Name)" }) -join "`n"
             $ans = Show-OwnedMessageBox `
-                -Text "Bạn đã chọn $($cautionItems.Count) tinh chỉnh mức Cẩn thận (Caution):`n$cNames`n`nApp-Driver sẽ tự động sao lưu trạng thái gốc trước khi lưu. Tiếp tục?" `
+                -Text "Bạn đã chọn $($cautionItems.Count) tinh chỉnh mức Nâng cao:`n$cNames`n`nApp-Driver sẽ tự động sao lưu trạng thái gốc trước khi lưu. Tiếp tục?" `
                 -Caption "Xác nhận lưu tinh chỉnh nâng cao" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
             if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
         }
         Invoke-GuardedAction "Lưu cấu hình tối ưu Windows" {
-            $combos = @{}
-            $twObjs = @()
-            foreach ($ent in $selected) {
-                $twObjs += $ent.Tweak
-                if ($ent.ComboBox -and $ent.ComboBox.SelectedItem) {
-                    $combos[[string]$ent.Tweak.Id] = [string]$ent.ComboBox.SelectedItem
+            $totalApplied = 0
+            $totalFailed = 0
+            if ($toApply.Count -gt 0) {
+                $combos = @{}
+                $twObjs = @()
+                foreach ($ent in $toApply) {
+                    $twObjs += $ent.Tweak
+                    if ($ent.ComboBox -and $ent.ComboBox.SelectedItem) {
+                        $combos[[string]$ent.Tweak.Id] = [string]$ent.ComboBox.SelectedItem
+                    }
                 }
+                Log-Text "=========================================================="
+                Log-Text "[OPTIMIZER] LƯU & BẬT $($twObjs.Count) TINH CHỈNH WINDOWS"
+                Log-Text "=========================================================="
+                $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Apply" -ComboSelections $combos -HardwareProfile $script:optHardwareProfile -ProgressCallback {
+                    param($cur, $tot, $nm)
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] Đang lưu: $nm..." }
+                }
+                $totalApplied += $res.Applied
+                $totalFailed += $res.Failed
             }
-            Log-Text "=========================================================="
-            Log-Text "[OPTIMIZER] LƯU & ÁP DỤNG $($twObjs.Count) TINH CHỈNH WINDOWS"
-            Log-Text "=========================================================="
-            $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Apply" -ComboSelections $combos -HardwareProfile $script:optHardwareProfile -ProgressCallback {
-                param($cur, $tot, $nm)
-                if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
-                if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] Đang lưu: $nm..." }
+            if ($toUndo.Count -gt 0) {
+                $undoObjs = @($toUndo | ForEach-Object { $_.Tweak })
+                Log-Text "=========================================================="
+                Log-Text "[OPTIMIZER] TẮT $($undoObjs.Count) CẦN GẠT VỀ MẶC ĐỊNH"
+                Log-Text "=========================================================="
+                $resUndo = Invoke-OptimizerBatch -Tweaks $undoObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
+                    param($cur, $tot, $nm)
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] Đang tắt về mặc định: $nm..." }
+                }
+                $totalApplied += $resUndo.Applied
+                $totalFailed += $resUndo.Failed
+            }
+            $prevSync = $script:optSyncingVisuals
+            $script:optSyncingVisuals = $true
+            try {
+                foreach ($ent in $toApply) {
+                    if (-not $ent.IsToggle -and $ent.CheckBox) { $ent.CheckBox.IsChecked = $false }
+                }
+            } finally {
+                $script:optSyncingVisuals = $prevSync
             }
             if ($progressBar) { $progressBar.Value = 0 }
-            if ($txtStatus) { $txtStatus.Text = "Đã lưu tối ưu ($($res.Applied) thành công, $($res.Failed) lỗi)" }
-            Log-Text "[SUCC] Đã lưu cấu hình tối ưu: $($res.Applied) thành công • $($res.Failed) lỗi."
+            if ($txtStatus) { $txtStatus.Text = "Đã lưu tối ưu ($totalApplied thành công, $totalFailed lỗi)" }
+            Log-Text "[SUCC] Đã lưu cấu hình tối ưu: $totalApplied thành công • $totalFailed lỗi."
             Refresh-OptimizerLiveState
         }
     })
@@ -8734,12 +8862,17 @@ if ($script:btnOptApply) {
 
 if ($script:btnOptUndo) {
     $script:btnOptUndo.Add_Click({
-        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true })
+        $selected = @($script:optEntries | Where-Object {
+            $_.CheckBox -and (
+                (-not $_.IsToggle -and $_.CheckBox.IsChecked -eq $true) -or
+                ($_.IsToggle -and $_.InitialToggleState -and $_.CheckBox.IsChecked -ne $true)
+            )
+        })
         $targets = @()
         $promptText = ""
         if ($selected.Count -gt 0) {
             $targets = $selected
-            $promptText = "Đặt $($targets.Count) tinh chỉnh đã tick về mặc định của Windows?"
+            $promptText = "Đặt $($targets.Count) tinh chỉnh đã chọn về mặc định của Windows?"
         } else {
             $appliedList = @($script:optEntries | Where-Object { $_.State -eq "Applied" -or $_.State -eq "Partial" })
             if ($appliedList.Count -eq 0) {
