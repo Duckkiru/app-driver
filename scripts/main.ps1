@@ -8189,8 +8189,32 @@ $script:optEntries          = [System.Collections.Generic.List[object]]::new()
 $script:optEntryById        = @{}
 $script:optCategoryCards    = [System.Collections.Generic.List[object]]::new()
 $script:optMasonryPanel     = $null
+$script:optLanesGrid        = $null
+$script:optLaneCols         = [System.Collections.Generic.List[object]]::new()
+$script:optLanePanels       = [System.Collections.Generic.List[object]]::new()
 $script:optFallbackPanel    = $null
 $script:optStateFilter      = "All"
+
+$script:brushOptSectionBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(15, 21, 34))
+$script:brushOptSectionBg.Freeze()
+$script:brushOptSectionBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(36, 49, 71))
+$script:brushOptSectionBdr.Freeze()
+$script:brushOptRowLine     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(20, 255, 255, 255))
+$script:brushOptRowLine.Freeze()
+$script:brushOptRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(22, 33, 51))
+$script:brushOptRowHover.Freeze()
+
+$script:styleOptListRow = [System.Windows.Style]::new([System.Windows.Controls.Border])
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, [System.Windows.Media.Brushes]::Transparent))
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushOptRowLine))
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderThicknessProperty, [System.Windows.Thickness]::new(0, 0, 0, 1)))
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::SnapsToDevicePixelsProperty, $true))
+$optRowHoverTrig = [System.Windows.Trigger]::new()
+$optRowHoverTrig.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$optRowHoverTrig.Value = $true
+[void]$optRowHoverTrig.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, $script:brushOptRowHover))
+[void]$script:styleOptListRow.Triggers.Add($optRowHoverTrig)
+$script:styleOptListRow.Seal()
 
 $script:brushOptRiskSafeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x25, 0x18)); $script:brushOptRiskSafeBg.Freeze()
 $script:brushOptRiskSafeBdr     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushOptRiskSafeBdr.Freeze()
@@ -8324,10 +8348,11 @@ function Apply-OptimizerFilter {
     $q = if ($script:txtOptSearch) { $script:txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $appliedCount = 0
-    $visibleCats = 0
+    $laneVisible = @($false, $false, $false)
 
     foreach ($card in $script:optCategoryCards) {
         $catVis = 0
+        $lastVisRow = $null
         foreach ($ent in $card.Entries) {
             if ($ent.State -eq "Applied") { $appliedCount++ }
             $matchState = switch ($script:optStateFilter) {
@@ -8339,21 +8364,38 @@ function Apply-OptimizerFilter {
             $show = ($matchState -and $matchSearch)
             if ($ent.Row) {
                 $ent.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+                if ($show) {
+                    $ent.Row.BorderThickness = [System.Windows.Thickness]::new(0, 0, 0, 1)
+                    $lastVisRow = $ent.Row
+                }
             }
             if ($show) {
                 $catVis++
                 $visibleCount++
             }
         }
+        if ($lastVisRow) {
+            $lastVisRow.BorderThickness = [System.Windows.Thickness]::new(0)
+        }
         if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
             $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         }
-        if ($catVis -gt 0) { $visibleCats++ }
+        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 3) {
+            $laneVisible[$card.LaneIndex] = $true
+        }
     }
 
-    if ($script:optMasonryPanel) {
-        $script:optMasonryPanel.Columns = if ($visibleCats -le 1) { 1 } elseif ($visibleCats -eq 2) { 2 } else { 3 }
+    if ($script:optLaneCols.Count -eq 3 -and $script:optLanePanels.Count -eq 3) {
+        for ($li = 0; $li -lt 3; $li++) {
+            if ($laneVisible[$li]) {
+                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Visible
+                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+            } else {
+                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Collapsed
+                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
+            }
+        }
     }
 
     if ($script:txtOptSummary) {
@@ -8407,16 +8449,15 @@ function Refresh-OptimizerLiveState {
 function New-OptimizerTweakRowElement {
     param($Tweak, $Hw)
     $b = [System.Windows.Controls.Border]::new()
-    $b.Style = $script:styleAppRow
-    $b.CornerRadius = [System.Windows.CornerRadius]::new(2)
-    $b.Padding = [System.Windows.Thickness]::new(6, 4, 6, 4)
-    $b.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
-    $b.MinHeight = 27
+    $b.Style = $script:styleOptListRow
+    $b.Padding = [System.Windows.Thickness]::new(5, 4, 5, 4)
+    $b.Margin = [System.Windows.Thickness]::new(0)
+    $b.MinHeight = 26
     $b.Cursor = [System.Windows.Input.Cursors]::Hand
 
     $hwWarn = Get-OptimizerHardwareWarningText -Tweak $Tweak -Hw $Hw
     $riskLabel = switch ([string]$Tweak.Risk) {
-        "Caution"  { "Cẩn thận" }
+        "Caution"  { "Nâng cao" }
         "Moderate" { "Trung bình" }
         default    { "An toàn" }
     }
@@ -8565,18 +8606,26 @@ function Initialize-OptimizerTabIfNeeded {
     $script:optEntries.Clear()
     $script:optEntryById.Clear()
     $script:optCategoryCards.Clear()
+    $script:optLaneCols.Clear()
+    $script:optLanePanels.Clear()
+    $script:optMasonryPanel = $null
 
     if ($script:optTweaksHost) {
         $script:optTweaksHost.Children.Clear()
-        if ("DuckUtil.MasonryPanel" -as [type]) {
-            $script:optMasonryPanel = [DuckUtil.MasonryPanel]::new()
-            $script:optMasonryPanel.Columns = 3
-            $script:optMasonryPanel.ColumnSpacing = 10.0
-            [void]$script:optTweaksHost.Children.Add($script:optMasonryPanel)
-        } else {
-            $script:optFallbackPanel = [System.Windows.Controls.StackPanel]::new()
-            [void]$script:optTweaksHost.Children.Add($script:optFallbackPanel)
+        $script:optLanesGrid = [System.Windows.Controls.Grid]::new()
+        for ($li = 0; $li -lt 3; $li++) {
+            $col = [System.Windows.Controls.ColumnDefinition]::new()
+            $col.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+            [void]$script:optLanesGrid.ColumnDefinitions.Add($col)
+            [void]$script:optLaneCols.Add($col)
+
+            $lanePanel = [System.Windows.Controls.StackPanel]::new()
+            $lanePanel.Margin = if ($li -lt 2) { [System.Windows.Thickness]::new(0, 0, 10, 0) } else { [System.Windows.Thickness]::new(0) }
+            [System.Windows.Controls.Grid]::SetColumn($lanePanel, $li)
+            [void]$script:optLanesGrid.Children.Add($lanePanel)
+            [void]$script:optLanePanels.Add($lanePanel)
         }
+        [void]$script:optTweaksHost.Children.Add($script:optLanesGrid)
     }
 
     $grouped = [ordered]@{}
@@ -8588,16 +8637,27 @@ function Initialize-OptimizerTabIfNeeded {
         [void]$grouped[$cat].Add($tw)
     }
 
-    $targetContainer = if ($script:optMasonryPanel) { $script:optMasonryPanel } else { $script:optFallbackPanel }
+    $laneMap = @{
+        "Cơ bản"               = 0
+        "Windows Update"       = 0
+        "Hiệu năng"            = 1
+        "Mạng & Trình duyệt"   = 1
+        "Giao diện & Tiện ích" = 2
+        "Nâng cao"             = 2
+    }
+
+    $catIdx = 0
     foreach ($catName in $grouped.Keys) {
         $catTweaks = $grouped[$catName]
+        $laneIdx = if ($laneMap.ContainsKey($catName)) { [int]$laneMap[$catName] } else { $catIdx % 3 }
+        $catIdx++
 
         $cardBorder = [System.Windows.Controls.Border]::new()
-        $cardBorder.Style = $script:styleCategoryCard
-        $cardBorder.Background = $script:brushCardBg
+        $cardBorder.Background = $script:brushOptSectionBg
+        $cardBorder.BorderBrush = $script:brushOptSectionBdr
         $cardBorder.BorderThickness = $thicknessOne
-        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(3)
-        $cardBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 8)
+        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
+        $cardBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 6)
         $cardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 10)
 
         $cardStack = [System.Windows.Controls.StackPanel]::new()
@@ -8612,7 +8672,7 @@ function Initialize-OptimizerTabIfNeeded {
         $hdrTitle.Text = $catName
         $hdrTitle.FontSize = 12
         $hdrTitle.FontWeight = [System.Windows.FontWeights]::Bold
-        $hdrTitle.Foreground = if ($catName -match 'Cẩn thận|Caution') { $script:brushOptRiskCautFg } else { $script:brushHeaderFg }
+        $hdrTitle.Foreground = if ($catName -match 'Nâng cao|Cẩn thận|Caution') { $script:brushOptRiskCautFg } else { $script:brushHeaderFg }
         $hdrTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         [System.Windows.Controls.Grid]::SetColumn($hdrTitle, 0)
         [void]$hdrGrid.Children.Add($hdrTitle)
@@ -8636,13 +8696,18 @@ function Initialize-OptimizerTabIfNeeded {
         $sep = [System.Windows.Controls.Border]::new()
         $sep.Height = 1
         $sep.Background = $script:brushSeparator
-        $sep.Margin = [System.Windows.Thickness]::new(0, 6, 0, 6)
+        $sep.Margin = [System.Windows.Thickness]::new(0, 6, 0, 4)
         [void]$cardStack.Children.Add($sep)
 
         $itemsPanel = [System.Windows.Controls.StackPanel]::new()
         $catEntries = [System.Collections.Generic.List[object]]::new()
-        foreach ($tw in $catTweaks) {
+        $rowCount = $catTweaks.Count
+        for ($ri = 0; $ri -lt $rowCount; $ri++) {
+            $tw = $catTweaks[$ri]
             $entry = New-OptimizerTweakRowElement -Tweak $tw -Hw $script:optHardwareProfile
+            if ($ri -eq ($rowCount - 1) -and $entry.Row) {
+                $entry.Row.BorderThickness = [System.Windows.Thickness]::new(0)
+            }
             [void]$script:optEntries.Add($entry)
             [void]$catEntries.Add($entry)
             $script:optEntryById[[string]$tw.Id] = $entry
@@ -8651,9 +8716,12 @@ function Initialize-OptimizerTabIfNeeded {
         [void]$cardStack.Children.Add($itemsPanel)
         $cardBorder.Child = $cardStack
 
-        if ($targetContainer) { [void]$targetContainer.Children.Add($cardBorder) }
+        if ($script:optLanePanels.Count -gt $laneIdx) {
+            [void]$script:optLanePanels[$laneIdx].Children.Add($cardBorder)
+        }
         [void]$script:optCategoryCards.Add([PSCustomObject]@{
             Category   = $catName
+            LaneIndex  = $laneIdx
             CardBorder = $cardBorder
             ItemsPanel = $itemsPanel
             CountText  = $cntTb

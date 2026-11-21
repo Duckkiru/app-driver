@@ -4670,7 +4670,7 @@ $tweaksRawJson = @'
 [
   {
     "Id": "opt_restore_point",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EA1o \u0111i\u1EC3m kh\u00F4i ph\u1EE5c h\u1EC7 th\u1ED1ng (Restore Point)",
     "Description": "T\u1EA1o \u0111i\u1EC3m kh\u00F4i ph\u1EE5c Windows ngay tr\u01B0\u1EDBc khi \u00E1p d\u1EE5ng t\u1ED1i \u01B0u (t\u1EF1 b\u1ECF qua gi\u1EDBi h\u1EA1n 24 gi\u1EDD).",
     "Risk": "Safe",
@@ -4687,7 +4687,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_services_manual",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "Chuy\u1EC3n d\u1ECBch v\u1EE5 n\u1EC1n kh\u00F4ng c\u1EA7n thi\u1EBFt sang Manual",
     "Description": "Chuy\u1EC3n ~60 d\u1ECBch v\u1EE5 Windows \u00EDt d\u00F9ng sang kh\u1EDFi \u0111\u1ED9ng theo y\u00EAu c\u1EA7u; gi\u1EEF nguy\u00EAn Audio, Wi-Fi, Bluetooth, Print & Xbox Auth.",
     "Risk": "Safe",
@@ -4779,7 +4779,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_telemetry",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt Telemetry & Ch\u1EA9n \u0111o\u00E1n Microsoft",
     "Description": "Ng\u1EEBng thu th\u1EADp d\u1EEF li\u1EC7u s\u1EED d\u1EE5ng (DiagTrack) v\u00E0 t\u1EAFt c\u00E1c t\u00E1c v\u1EE5 ch\u1EA9n \u0111o\u00E1n n\u1EC1n CEIP.",
     "Risk": "Safe",
@@ -4812,7 +4812,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_activity_history",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt Activity History (L\u1ECBch s\u1EED ho\u1EA1t \u0111\u1ED9ng)",
     "Description": "Ng\u1EEBng l\u01B0u v\u00E0 t\u1EA3i l\u1ECBch s\u1EED ho\u1EA1t \u0111\u1ED9ng l\u00EAn \u0111\u00E1m m\u00E2y Microsoft (v\u1EABn gi\u1EEF nguy\u00EAn Clipboard History).",
     "Risk": "Safe",
@@ -4833,7 +4833,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_location",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt theo d\u00F5i v\u1ECB tr\u00ED (Location Tracking)",
     "Description": "Ng\u1EEBng d\u1ECBch v\u1EE5 \u0111\u1ECBnh v\u1ECB h\u1EC7 th\u1ED1ng v\u00E0 quy\u1EC1n truy c\u1EADp v\u1ECB tr\u00ED n\u1EC1n c\u1EE7a Windows.",
     "Risk": "Safe",
@@ -4854,7 +4854,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_consumer_features",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "Ch\u1EB7n t\u1EF1 c\u00E0i App qu\u1EA3ng c\u00E1o (ConsumerFeatures)",
     "Description": "Ch\u1EB7n Windows t\u1EF1 \u0111\u1ED9ng t\u1EA3i c\u00E1c \u1EE9ng d\u1EE5ng g\u1EE3i \u00FD/qu\u1EA3ng c\u00E1o t\u1EEB Microsoft Store (TikTok, Candy Crush...).",
     "Risk": "Safe",
@@ -4877,7 +4877,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_delivery_opt",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt chia s\u1EBB b\u0103ng th\u00F4ng Update P2P (Delivery Optimization)",
     "Description": "Ng\u0103n Windows d\u00F9ng \u0111\u01B0\u1EDDng truy\u1EC1n m\u1EA1ng c\u1EE7a b\u1EA1n \u0111\u1EC3 upload b\u1EA3n c\u1EADp nh\u1EADt cho m\u00E1y kh\u00E1c.",
     "Risk": "Safe",
@@ -4896,7 +4896,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_store_search",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt g\u1EE3i \u00FD Microsoft Store khi t\u00ECm ki\u1EBFm",
     "Description": "\u1EA8n k\u1EBFt qu\u1EA3 qu\u1EA3ng c\u00E1o \u1EE9ng d\u1EE5ng Microsoft Store trong khung t\u00ECm ki\u1EBFm Start Menu.",
     "Risk": "Safe",
@@ -4916,7 +4916,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_widgets",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt & G\u1EE1 b\u1EA3ng Widgets Taskbar",
     "Description": "\u1EA8n n\u00FAt Widgets tin t\u1EE9c tr\u00EAn Taskbar v\u00E0 t\u1EAFt ti\u1EBFn tr\u00ECnh WebExperience ch\u1EA1y ng\u1EA7m.",
     "Risk": "Safe",
@@ -4936,7 +4936,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_end_task",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "B\u1EADt n\u00FAt End Task khi chu\u1ED9t ph\u1EA3i Taskbar (Win 11)",
     "Description": "Cho ph\u00E9p \u0111\u00F3ng n\u00F3ng \u1EE9ng d\u1EE5ng b\u1ECB \u0111\u01A1 ngay t\u1EEB menu chu\u1ED9t ph\u1EA3i d\u01B0\u1EDBi thanh Taskbar.",
     "Risk": "Safe",
@@ -4955,7 +4955,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_hibernation",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt ch\u1EBF \u0111\u1ED9 ng\u1EE7 \u0111\u00F4ng (Hibernation)",
     "Description": "X\u00F3a t\u1EC7p hiberfil.sys \u0111\u1EC3 gi\u1EA3i ph\u00F3ng 6-16 GB \u1ED5 C. Khuy\u00EAn d\u00F9ng cho PC b\u00E0n (Laptop n\u00EAn gi\u1EEF).",
     "Risk": "Moderate",
@@ -4972,7 +4972,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_delete_temp",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "D\u1ECDn s\u1EA1ch t\u1EC7p r\u00E1c t\u1EA1m (%TEMP% & Windows\\Temp)",
     "Description": "X\u00F3a to\u00E0n b\u1ED9 t\u1EC7p t\u1EA1m kh\u00F4ng c\u00F2n s\u1EED d\u1EE5ng trong th\u01B0 m\u1EE5c Temp c\u1EE7a ng\u01B0\u1EDDi d\u00F9ng v\u00E0 Windows.",
     "Risk": "Safe",
@@ -4989,7 +4989,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_disk_cleanup",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "Ch\u1EA1y Disk Cleanup d\u1ECDn \u1ED5 C",
     "Description": "Kh\u1EDFi ch\u1EA1y cleanmgr t\u1EF1 \u0111\u1ED9ng d\u1ECDn cache h\u1EC7 th\u1ED1ng v\u00E0 g\u00F3i Windows Update c\u0169.",
     "Risk": "Safe",
@@ -5006,7 +5006,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_bitlocker",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt m\u00E3 h\u00F3a \u1ED5 \u0111\u0129a BitLocker (gi\u1EA3i m\u00E3 \u1ED5 C)",
     "Description": "Gi\u1EA3i m\u00E3 BitLocker n\u1EBFu m\u00E1y b\u1ECB b\u1EADt m\u1EB7c \u0111\u1ECBnh gi\u00FAp gi\u1EA3m t\u1EA3i I/O \u1ED5 c\u1EE9ng (qu\u00E1 tr\u00ECnh ch\u1EA1y n\u1EC1n).",
     "Risk": "Moderate",
@@ -5023,7 +5023,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_explorer_autodiscovery",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt Explorer t\u1EF1 \u0111o\u00E1n lo\u1EA1i th\u01B0 m\u1EE5c",
     "Description": "M\u1EDF th\u01B0 m\u1EE5c ch\u1EE9a nhi\u1EC1u \u1EA3nh/video nhanh h\u01A1n h\u1EB3n v\u00EC Explorer kh\u00F4ng qu\u00E9t \u0111o\u00E1n \u0111\u1ECBnh d\u1EA1ng (t\u1EAFt gom nh\u00F3m).",
     "Risk": "Moderate",
@@ -5042,7 +5042,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_device_companion",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "Ch\u1EB7n t\u1EF1 t\u1EA3i App \u0111i k\u00E8m thi\u1EBFt b\u1ECB",
     "Description": "Ng\u0103n Windows t\u1EF1 t\u1EA3i ph\u1EA7n m\u1EC1m qu\u1EA3ng c\u00E1o/h\u00E3ng khi c\u1EAFm m\u00E0n h\u00ECnh ho\u1EB7c thi\u1EBFt b\u1ECB ngo\u1EA1i vi m\u1EDBi.",
     "Risk": "Safe",
@@ -5061,7 +5061,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_wpbt",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt Windows Platform Binary Table (WPBT)",
     "Description": "Ch\u1EB7n h\u00E3ng s\u1EA3n xu\u1EA5t m\u00E1y t\u00EDnh t\u1EF1 nh\u00FAng v\u00E0 ch\u1EA1y ph\u1EA7n m\u1EC1m ng\u1EA7m t\u1EEB BIOS l\u00FAc kh\u1EDFi \u0111\u1ED9ng Windows.",
     "Risk": "Safe",
@@ -5080,7 +5080,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_storage_sense",
-    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt t\u1EF1 \u0111\u1ED9ng d\u1ECDn r\u00E1c Storage Sense",
     "Description": "Ng\u0103n Windows t\u1EF1 \u0111\u1ED9ng x\u00F3a file trong Recycle Bin ho\u1EB7c th\u01B0 m\u1EE5c Downloads theo l\u1ECBch.",
     "Risk": "Moderate",
@@ -5100,7 +5100,7 @@ $tweaksRawJson = @'
 
   {
     "Id": "opt_ultimate_perf",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "K\u00EDch ho\u1EA1t g\u00F3i ngu\u1ED3n Ultimate Performance",
     "Description": "M\u1EDF kh\u00F3a v\u00E0 b\u1EADt g\u00F3i ngu\u1ED3n hi\u1EC7u n\u0103ng t\u1ED1i \u0111a cho CPU/PCIe. Khuy\u00EAn d\u00F9ng cho PC b\u00E0n (hao pin tr\u00EAn Laptop).",
     "Risk": "Moderate",
@@ -5117,7 +5117,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_game_mode",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "B\u1EADt Windows Game Mode",
     "Description": "\u01AFu ti\u00EAn t\u00E0i nguy\u00EAn CPU/GPU v\u00E0 ch\u1EB7n ti\u1EBFn tr\u00ECnh n\u1EC1n chen ngang khi \u0111ang ch\u01A1i game to\u00E0n m\u00E0n h\u00ECnh.",
     "Risk": "Safe",
@@ -5137,7 +5137,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_disable_gamedvr",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt GameDVR & Quay m\u00E0n h\u00ECnh n\u1EC1n Xbox",
     "Description": "Ng\u1EEBng quay buffer video n\u1EC1n gi\u00FAp gi\u1EA3m s\u1EE5t FPS, gi\u1EA3m gi\u1EADt khung h\u00ECnh v\u00E0 ti\u1EBFt ki\u1EC7m RAM/VRAM.",
     "Risk": "Safe",
@@ -5158,7 +5158,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_hags",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "B\u1EADt HAGS (Hardware-Accelerated GPU Scheduling)",
     "Description": "Cho ph\u00E9p GPU t\u1EF1 qu\u1EA3n l\u00FD b\u1ED9 nh\u1EDB VRAM gi\u00FAp gi\u1EA3m \u0111\u1ED9 tr\u1EC5 v\u00E0 h\u1ED7 tr\u1EE3 Frame Generation (c\u1EA7n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i).",
     "Risk": "Moderate",
@@ -5177,7 +5177,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_mpo_disable",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt Multiplane Overlay (MPO)",
     "Description": "Kh\u1EAFc ph\u1EE5c l\u1ED7i ch\u1EDBp nh\u00E1y, \u0111en m\u00E0n h\u00ECnh tr\u00ECnh duy\u1EC7t ho\u1EB7c t\u1EE5t FPS khi Alt+Tab tr\u00EAn driver NVIDIA/AMD.",
     "Risk": "Moderate",
@@ -5196,7 +5196,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_mouse_accel",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt gia t\u1ED1c chu\u1ED9t (Raw 1:1 Aim)",
     "Description": "T\u1EAFt Enhance Pointer Precision gi\u00FAp kho\u1EA3ng c\u00E1ch di chu\u1ED9t ch\u00EDnh x\u00E1c tuy\u1EC7t \u0111\u1ED1i 1:1 khi ch\u01A1i FPS/MOBA.",
     "Risk": "Safe",
@@ -5217,7 +5217,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_net_throttling",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt Network Throttling Index (B\u1ECF gi\u1EDBi h\u1EA1n g\u00F3i m\u1EA1ng)",
     "Description": "Lo\u1EA1i b\u1ECF gi\u1EDBi h\u1EA1n 10 packets/ms c\u1EE7a Windows Multimedia Class Scheduler \u0111\u1EC3 gi\u1EA3m gi\u1EADt lag m\u1EA1ng.",
     "Risk": "Safe",
@@ -5237,7 +5237,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_nagle_disable",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt Nagle's Algorithm (Gi\u1EA3m \u0111\u1ED9 tr\u1EC5 TCP Ping)",
     "Description": "G\u1EEDi g\u00F3i tin TCP ngay l\u1EADp t\u1EE9c (TcpAckFrequency=1, TCPNoDelay=1) tr\u00EAn c\u00E1c card m\u1EA1ng \u0111ang k\u1EBFt n\u1ED1i.",
     "Risk": "Moderate",
@@ -5254,7 +5254,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_power_throttling",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt CPU Power Throttling (Gi\u1EEF xung t\u1ED1i \u0111a)",
     "Description": "Ng\u0103n Windows b\u00F3p xung CPU c\u00E1c \u1EE9ng d\u1EE5ng ch\u1EA1y n\u1EC1n ho\u1EB7c c\u1EEDa s\u1ED5 ph\u1EE5. H\u1EE3p cho PC b\u00E0n.",
     "Risk": "Moderate",
@@ -5273,7 +5273,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_win32_priority",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1ED1i \u01B0u Win32PrioritySeparation cho Gaming",
     "Description": "\u0110\u1EB7t \u01B0u ti\u00EAn l\u01B0\u1EE3ng t\u1EED ng\u1EAFn & t\u00E1ch bi\u1EC7t cho c\u1EEDa s\u1ED5 \u0111ang ho\u1EA1t \u0111\u1ED9ng (0x26) gi\u00FAp ph\u1EA3n h\u1ED3i khung h\u00ECnh m\u01B0\u1EE3t h\u01A1n.",
     "Risk": "Moderate",
@@ -5292,7 +5292,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_visual_perf",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "Hi\u1EC7u \u1EE9ng giao di\u1EC7n Hi\u1EC7u n\u0103ng cao (Gi\u1EEF ClearType m\u01B0\u1EE3t ch\u1EEF)",
     "Description": "T\u1EAFt hi\u1EC7u \u1EE9ng b\u00F3ng \u0111\u1ED5/ho\u1EA1t \u1EA3nh r\u01B0\u1EDDm r\u00E0 nh\u01B0ng v\u1EABn gi\u1EEF ClearType l\u00E0m m\u1ECBn font ch\u1EEF \u0111\u1EB9p nh\u01B0 g\u1ED1c.",
     "Risk": "Safe",
@@ -5316,7 +5316,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_disable_bg_apps",
-    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt to\u00E0n b\u1ED9 App Store ch\u1EA1y ng\u1EA7m (Background Apps)",
     "Description": "Ng\u0103n c\u00E1c \u1EE9ng d\u1EE5ng UWP/Microsoft Store t\u1EF1 \u0111\u00E1nh th\u1EE9c v\u00E0 \u0103n RAM/CPU trong n\u1EC1n.",
     "Risk": "Safe",
@@ -5969,7 +5969,7 @@ $tweaksRawJson = @'
 
   {
     "Id": "opt_disable_win_ai",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "T\u1EAFt ho\u00E0n to\u00E0n Windows AI (Copilot, Recall, Click to Do)",
     "Description": "V\u00F4 hi\u1EC7u h\u00F3a Windows Copilot, AI Recall ch\u1EE5p m\u00E0n h\u00ECnh n\u1EC1n v\u00E0 ph\u00E2n t\u00EDch d\u1EEF li\u1EC7u AI h\u1EC7 th\u1ED1ng.",
     "Risk": "Caution",
@@ -5992,7 +5992,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_remove_onedrive",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "G\u1EE1 Microsoft OneDrive (Gi\u1EEF nguy\u00EAn t\u1EC7p ng\u01B0\u1EDDi d\u00F9ng)",
     "Description": "G\u1EE1 b\u1ECF OneDrive Setup v\u00E0 kh\u00F3a t\u1EF1 ch\u1EA1y l\u1EA1i m\u00E0 v\u1EABn b\u1EA3o to\u00E0n d\u1EEF li\u1EC7u th\u01B0 m\u1EE5c c\u00E1 nh\u00E2n.",
     "Risk": "Caution",
@@ -6011,7 +6011,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_remove_edge",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "G\u1EE1 Microsoft Edge (Gi\u1EEF l\u1EA1i WebView2 Runtime)",
     "Description": "G\u1EE1 b\u1ECF tr\u00ECnh duy\u1EC7t Edge b\u1EB1ng b\u1ED9 g\u1EE1 ch\u00EDnh th\u1EE9c (gi\u1EEF nguy\u00EAn WebView2 \u0111\u1EC3 c\u00E1c app kh\u00E1c kh\u00F4ng l\u1ED7i).",
     "Risk": "Caution",
@@ -6028,7 +6028,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_reserved_storage",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "T\u1EAFt Reserved Storage (Gi\u1EA3i ph\u00F3ng 7-10 GB \u1ED5 C)",
     "Description": "T\u1EAFt v\u00F9ng dung l\u01B0\u1EE3ng d\u1EF1 tr\u1EEF c\u1EE7a Windows Update (ch\u1EC9 n\u00EAn d\u00F9ng n\u1EBFu \u1ED5 C r\u1EA5t nh\u1ECF; n\u00EAn b\u1EADt l\u1EA1i tr\u01B0\u1EDBc khi l\u00EAn b\u1EA3n Win l\u1EDBn).",
     "Risk": "Caution",
@@ -6045,7 +6045,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_svchost_split",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "T\u1EAFt t\u00E1ch ti\u1EBFn tr\u00ECnh svchost.exe (M\u00E1y <= 12 GB RAM)",
     "Description": "G\u1ED9p c\u00E1c ti\u1EBFn tr\u00ECnh svchost \u0111\u1EC3 ti\u1EBFt ki\u1EC7m v\u00E0i tr\u0103m MB RAM tr\u00EAn m\u00E1y y\u1EBFu (c\u00F3 th\u1EC3 \u1EA3nh h\u01B0\u1EDFng Xbox Services).",
     "Risk": "Caution",
@@ -6064,7 +6064,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_search_indexing",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "T\u1EAFt Windows Search Indexing (WSearch - H\u1EE3p \u1ED5 HDD)",
     "Description": "D\u1EEBng d\u1ECBch v\u1EE5 l\u1EADp ch\u1EC9 m\u1EE5c \u1ED5 \u0111\u0129a WSearch \u0111\u1EC3 gi\u1EA3m 100% Disk tr\u00EAn HDD (SSD kh\u00F4ng c\u1EA7n t\u1EAFt v\u00EC l\u00E0m t\u00ECm file ch\u1EADm \u0111i).",
     "Risk": "Caution",
@@ -6083,7 +6083,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_disable_notifications",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "T\u1EAFt to\u00E0n b\u1ED9 Th\u00F4ng b\u00E1o & L\u1ECBch khay h\u1EC7 th\u1ED1ng",
     "Description": "\u1EA8n ho\u00E0n to\u00E0n Action Center, th\u00F4ng b\u00E1o Toast v\u00E0 c\u1EA3 khung L\u1ECBch khi b\u1EA5m v\u00E0o \u0111\u1ED3ng h\u1ED3 Taskbar.",
     "Risk": "Caution",
@@ -6103,7 +6103,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_block_adobe_net",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "Ch\u1EB7n m\u00E1y ch\u1EE7 Telemetry Adobe (hosts)",
     "Description": "Th\u00EAm c\u00E1c t\u00EAn mi\u1EC1n telemetry/ki\u1EC3m tra b\u1EA3n quy\u1EC1n Adobe v\u00E0o file hosts h\u1EC7 th\u1ED1ng (c\u00F3 th\u1EC3 ho\u00E0n t\u00E1c s\u1EA1ch s\u1EBD).",
     "Risk": "Caution",
@@ -6120,7 +6120,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_disable_lockscreen",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "B\u1ECF qua Lock Screen & T\u1EAFt m\u1EDD Acrylic m\u00E0n h\u00ECnh \u0111\u0103ng nh\u1EADp",
     "Description": "V\u00E0o th\u1EB3ng \u00F4 nh\u1EADp m\u1EADt kh\u1EA9u khi b\u1EADt/m\u1EDF kh\u00F3a m\u00E1y v\u00E0 b\u1ECF hi\u1EC7u \u1EE9ng l\u00E0m m\u1EDD n\u1EC1n \u0111\u0103ng nh\u1EADp.",
     "Risk": "Moderate",
@@ -6140,7 +6140,7 @@ $tweaksRawJson = @'
   },
   {
     "Id": "opt_battery_and_s0",
-    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Category": "N\u00E2ng cao",
     "Name": "Hi\u1EC7n % Pin Taskbar & T\u1EAFt gi\u1EEF m\u1EA1ng khi ng\u1EE7 S0 (Laptop)",
     "Description": "Hi\u1EC3n th\u1ECB s\u1ED1 % pin c\u1EA1nh icon v\u00E0 t\u1EAFt k\u1EBFt n\u1ED1i m\u1EA1ng ng\u1EA7m l\u00FAc Modern Standby S0 \u0111\u1EC3 kh\u00F4ng t\u1EE5t pin qua \u0111\u00EAm.",
     "Risk": "Moderate",
@@ -7102,7 +7102,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                             <Ellipse Width="7" Height="7" Fill="#FBBF24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                             <TextBlock Text="C&#x1EA3;nh b&#x00E1;o ph&#x1EA7;n c&#x1EE9;ng" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
                                             <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="C&#x1EA9;n th&#x1EAD;n" FontSize="11" Foreground="#FCA5A5"/>
+                                            <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5"/>
                                         </StackPanel>
                                     </StackPanel>
 
@@ -48351,8 +48351,32 @@ $script:optEntries          = [System.Collections.Generic.List[object]]::new()
 $script:optEntryById        = @{}
 $script:optCategoryCards    = [System.Collections.Generic.List[object]]::new()
 $script:optMasonryPanel     = $null
+$script:optLanesGrid        = $null
+$script:optLaneCols         = [System.Collections.Generic.List[object]]::new()
+$script:optLanePanels       = [System.Collections.Generic.List[object]]::new()
 $script:optFallbackPanel    = $null
 $script:optStateFilter      = "All"
+
+$script:brushOptSectionBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(15, 21, 34))
+$script:brushOptSectionBg.Freeze()
+$script:brushOptSectionBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(36, 49, 71))
+$script:brushOptSectionBdr.Freeze()
+$script:brushOptRowLine     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(20, 255, 255, 255))
+$script:brushOptRowLine.Freeze()
+$script:brushOptRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(22, 33, 51))
+$script:brushOptRowHover.Freeze()
+
+$script:styleOptListRow = [System.Windows.Style]::new([System.Windows.Controls.Border])
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, [System.Windows.Media.Brushes]::Transparent))
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushOptRowLine))
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderThicknessProperty, [System.Windows.Thickness]::new(0, 0, 0, 1)))
+[void]$script:styleOptListRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::SnapsToDevicePixelsProperty, $true))
+$optRowHoverTrig = [System.Windows.Trigger]::new()
+$optRowHoverTrig.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$optRowHoverTrig.Value = $true
+[void]$optRowHoverTrig.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, $script:brushOptRowHover))
+[void]$script:styleOptListRow.Triggers.Add($optRowHoverTrig)
+$script:styleOptListRow.Seal()
 
 $script:brushOptRiskSafeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x25, 0x18)); $script:brushOptRiskSafeBg.Freeze()
 $script:brushOptRiskSafeBdr     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushOptRiskSafeBdr.Freeze()
@@ -48486,10 +48510,11 @@ function Apply-OptimizerFilter {
     $q = if ($script:txtOptSearch) { $script:txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
     $visibleCount = 0
     $appliedCount = 0
-    $visibleCats = 0
+    $laneVisible = @($false, $false, $false)
 
     foreach ($card in $script:optCategoryCards) {
         $catVis = 0
+        $lastVisRow = $null
         foreach ($ent in $card.Entries) {
             if ($ent.State -eq "Applied") { $appliedCount++ }
             $matchState = switch ($script:optStateFilter) {
@@ -48501,21 +48526,38 @@ function Apply-OptimizerFilter {
             $show = ($matchState -and $matchSearch)
             if ($ent.Row) {
                 $ent.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+                if ($show) {
+                    $ent.Row.BorderThickness = [System.Windows.Thickness]::new(0, 0, 0, 1)
+                    $lastVisRow = $ent.Row
+                }
             }
             if ($show) {
                 $catVis++
                 $visibleCount++
             }
         }
+        if ($lastVisRow) {
+            $lastVisRow.BorderThickness = [System.Windows.Thickness]::new(0)
+        }
         if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
             $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         }
-        if ($catVis -gt 0) { $visibleCats++ }
+        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 3) {
+            $laneVisible[$card.LaneIndex] = $true
+        }
     }
 
-    if ($script:optMasonryPanel) {
-        $script:optMasonryPanel.Columns = if ($visibleCats -le 1) { 1 } elseif ($visibleCats -eq 2) { 2 } else { 3 }
+    if ($script:optLaneCols.Count -eq 3 -and $script:optLanePanels.Count -eq 3) {
+        for ($li = 0; $li -lt 3; $li++) {
+            if ($laneVisible[$li]) {
+                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Visible
+                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+            } else {
+                $script:optLanePanels[$li].Visibility = [System.Windows.Visibility]::Collapsed
+                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
+            }
+        }
     }
 
     if ($script:txtOptSummary) {
@@ -48569,16 +48611,15 @@ function Refresh-OptimizerLiveState {
 function New-OptimizerTweakRowElement {
     param($Tweak, $Hw)
     $b = [System.Windows.Controls.Border]::new()
-    $b.Style = $script:styleAppRow
-    $b.CornerRadius = [System.Windows.CornerRadius]::new(2)
-    $b.Padding = [System.Windows.Thickness]::new(6, 4, 6, 4)
-    $b.Margin = [System.Windows.Thickness]::new(0, 1, 0, 1)
-    $b.MinHeight = 27
+    $b.Style = $script:styleOptListRow
+    $b.Padding = [System.Windows.Thickness]::new(5, 4, 5, 4)
+    $b.Margin = [System.Windows.Thickness]::new(0)
+    $b.MinHeight = 26
     $b.Cursor = [System.Windows.Input.Cursors]::Hand
 
     $hwWarn = Get-OptimizerHardwareWarningText -Tweak $Tweak -Hw $Hw
     $riskLabel = switch ([string]$Tweak.Risk) {
-        "Caution"  { "C$([char]0x1EA9)n th$([char]0x1EAD)n" }
+        "Caution"  { "N$([char]0x00E2)ng cao" }
         "Moderate" { "Trung b$([char]0x00EC)nh" }
         default    { "An to$([char]0x00E0)n" }
     }
@@ -48727,18 +48768,26 @@ function Initialize-OptimizerTabIfNeeded {
     $script:optEntries.Clear()
     $script:optEntryById.Clear()
     $script:optCategoryCards.Clear()
+    $script:optLaneCols.Clear()
+    $script:optLanePanels.Clear()
+    $script:optMasonryPanel = $null
 
     if ($script:optTweaksHost) {
         $script:optTweaksHost.Children.Clear()
-        if ("DuckUtil.MasonryPanel" -as [type]) {
-            $script:optMasonryPanel = [DuckUtil.MasonryPanel]::new()
-            $script:optMasonryPanel.Columns = 3
-            $script:optMasonryPanel.ColumnSpacing = 10.0
-            [void]$script:optTweaksHost.Children.Add($script:optMasonryPanel)
-        } else {
-            $script:optFallbackPanel = [System.Windows.Controls.StackPanel]::new()
-            [void]$script:optTweaksHost.Children.Add($script:optFallbackPanel)
+        $script:optLanesGrid = [System.Windows.Controls.Grid]::new()
+        for ($li = 0; $li -lt 3; $li++) {
+            $col = [System.Windows.Controls.ColumnDefinition]::new()
+            $col.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+            [void]$script:optLanesGrid.ColumnDefinitions.Add($col)
+            [void]$script:optLaneCols.Add($col)
+
+            $lanePanel = [System.Windows.Controls.StackPanel]::new()
+            $lanePanel.Margin = if ($li -lt 2) { [System.Windows.Thickness]::new(0, 0, 10, 0) } else { [System.Windows.Thickness]::new(0) }
+            [System.Windows.Controls.Grid]::SetColumn($lanePanel, $li)
+            [void]$script:optLanesGrid.Children.Add($lanePanel)
+            [void]$script:optLanePanels.Add($lanePanel)
         }
+        [void]$script:optTweaksHost.Children.Add($script:optLanesGrid)
     }
 
     $grouped = [ordered]@{}
@@ -48750,16 +48799,27 @@ function Initialize-OptimizerTabIfNeeded {
         [void]$grouped[$cat].Add($tw)
     }
 
-    $targetContainer = if ($script:optMasonryPanel) { $script:optMasonryPanel } else { $script:optFallbackPanel }
+    $laneMap = @{
+        "C$([char]0x01A1) b$([char]0x1EA3)n"               = 0
+        "Windows Update"       = 0
+        "Hi$([char]0x1EC7)u n$([char]0x0103)ng"            = 1
+        "M$([char]0x1EA1)ng & Tr$([char]0x00EC)nh duy$([char]0x1EC7)t"   = 1
+        "Giao di$([char]0x1EC7)n & Ti$([char]0x1EC7)n $([char]0x00ED)ch" = 2
+        "N$([char]0x00E2)ng cao"             = 2
+    }
+
+    $catIdx = 0
     foreach ($catName in $grouped.Keys) {
         $catTweaks = $grouped[$catName]
+        $laneIdx = if ($laneMap.ContainsKey($catName)) { [int]$laneMap[$catName] } else { $catIdx % 3 }
+        $catIdx++
 
         $cardBorder = [System.Windows.Controls.Border]::new()
-        $cardBorder.Style = $script:styleCategoryCard
-        $cardBorder.Background = $script:brushCardBg
+        $cardBorder.Background = $script:brushOptSectionBg
+        $cardBorder.BorderBrush = $script:brushOptSectionBdr
         $cardBorder.BorderThickness = $thicknessOne
-        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(3)
-        $cardBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 8)
+        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
+        $cardBorder.Padding = [System.Windows.Thickness]::new(10, 8, 10, 6)
         $cardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 10)
 
         $cardStack = [System.Windows.Controls.StackPanel]::new()
@@ -48774,7 +48834,7 @@ function Initialize-OptimizerTabIfNeeded {
         $hdrTitle.Text = $catName
         $hdrTitle.FontSize = 12
         $hdrTitle.FontWeight = [System.Windows.FontWeights]::Bold
-        $hdrTitle.Foreground = if ($catName -match "C$([char]0x1EA9)n th$([char]0x1EAD)n|Caution") { $script:brushOptRiskCautFg } else { $script:brushHeaderFg }
+        $hdrTitle.Foreground = if ($catName -match "N$([char]0x00E2)ng cao|C$([char]0x1EA9)n th$([char]0x1EAD)n|Caution") { $script:brushOptRiskCautFg } else { $script:brushHeaderFg }
         $hdrTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         [System.Windows.Controls.Grid]::SetColumn($hdrTitle, 0)
         [void]$hdrGrid.Children.Add($hdrTitle)
@@ -48798,13 +48858,18 @@ function Initialize-OptimizerTabIfNeeded {
         $sep = [System.Windows.Controls.Border]::new()
         $sep.Height = 1
         $sep.Background = $script:brushSeparator
-        $sep.Margin = [System.Windows.Thickness]::new(0, 6, 0, 6)
+        $sep.Margin = [System.Windows.Thickness]::new(0, 6, 0, 4)
         [void]$cardStack.Children.Add($sep)
 
         $itemsPanel = [System.Windows.Controls.StackPanel]::new()
         $catEntries = [System.Collections.Generic.List[object]]::new()
-        foreach ($tw in $catTweaks) {
+        $rowCount = $catTweaks.Count
+        for ($ri = 0; $ri -lt $rowCount; $ri++) {
+            $tw = $catTweaks[$ri]
             $entry = New-OptimizerTweakRowElement -Tweak $tw -Hw $script:optHardwareProfile
+            if ($ri -eq ($rowCount - 1) -and $entry.Row) {
+                $entry.Row.BorderThickness = [System.Windows.Thickness]::new(0)
+            }
             [void]$script:optEntries.Add($entry)
             [void]$catEntries.Add($entry)
             $script:optEntryById[[string]$tw.Id] = $entry
@@ -48813,9 +48878,12 @@ function Initialize-OptimizerTabIfNeeded {
         [void]$cardStack.Children.Add($itemsPanel)
         $cardBorder.Child = $cardStack
 
-        if ($targetContainer) { [void]$targetContainer.Children.Add($cardBorder) }
+        if ($script:optLanePanels.Count -gt $laneIdx) {
+            [void]$script:optLanePanels[$laneIdx].Children.Add($cardBorder)
+        }
         [void]$script:optCategoryCards.Add([PSCustomObject]@{
             Category   = $catName
+            LaneIndex  = $laneIdx
             CardBorder = $cardBorder
             ItemsPanel = $itemsPanel
             CountText  = $cntTb

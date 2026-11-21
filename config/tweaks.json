@@ -1,7 +1,7 @@
 [
   {
     "Id": "opt_restore_point",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tạo điểm khôi phục hệ thống (Restore Point)",
     "Description": "Tạo điểm khôi phục Windows ngay trước khi áp dụng tối ưu (tự bỏ qua giới hạn 24 giờ).",
     "Risk": "Safe",
@@ -18,7 +18,7 @@
   },
   {
     "Id": "opt_services_manual",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Chuyển dịch vụ nền không cần thiết sang Manual",
     "Description": "Chuyển ~60 dịch vụ Windows ít dùng sang khởi động theo yêu cầu; giữ nguyên Audio, Wi-Fi, Bluetooth, Print & Xbox Auth.",
     "Risk": "Safe",
@@ -110,7 +110,7 @@
   },
   {
     "Id": "opt_telemetry",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt Telemetry & Chẩn đoán Microsoft",
     "Description": "Ngừng thu thập dữ liệu sử dụng (DiagTrack) và tắt các tác vụ chẩn đoán nền CEIP.",
     "Risk": "Safe",
@@ -143,7 +143,7 @@
   },
   {
     "Id": "opt_activity_history",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt Activity History (Lịch sử hoạt động)",
     "Description": "Ngừng lưu và tải lịch sử hoạt động lên đám mây Microsoft (vẫn giữ nguyên Clipboard History).",
     "Risk": "Safe",
@@ -164,7 +164,7 @@
   },
   {
     "Id": "opt_location",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt theo dõi vị trí (Location Tracking)",
     "Description": "Ngừng dịch vụ định vị hệ thống và quyền truy cập vị trí nền của Windows.",
     "Risk": "Safe",
@@ -185,7 +185,7 @@
   },
   {
     "Id": "opt_consumer_features",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Chặn tự cài App quảng cáo (ConsumerFeatures)",
     "Description": "Chặn Windows tự động tải các ứng dụng gợi ý/quảng cáo từ Microsoft Store (TikTok, Candy Crush...).",
     "Risk": "Safe",
@@ -208,7 +208,7 @@
   },
   {
     "Id": "opt_delivery_opt",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt chia sẻ băng thông Update P2P (Delivery Optimization)",
     "Description": "Ngăn Windows dùng đường truyền mạng của bạn để upload bản cập nhật cho máy khác.",
     "Risk": "Safe",
@@ -227,7 +227,7 @@
   },
   {
     "Id": "opt_store_search",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt gợi ý Microsoft Store khi tìm kiếm",
     "Description": "Ẩn kết quả quảng cáo ứng dụng Microsoft Store trong khung tìm kiếm Start Menu.",
     "Risk": "Safe",
@@ -247,7 +247,7 @@
   },
   {
     "Id": "opt_widgets",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt & Gỡ bảng Widgets Taskbar",
     "Description": "Ẩn nút Widgets tin tức trên Taskbar và tắt tiến trình WebExperience chạy ngầm.",
     "Risk": "Safe",
@@ -267,7 +267,7 @@
   },
   {
     "Id": "opt_end_task",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Bật nút End Task khi chuột phải Taskbar (Win 11)",
     "Description": "Cho phép đóng nóng ứng dụng bị đơ ngay từ menu chuột phải dưới thanh Taskbar.",
     "Risk": "Safe",
@@ -286,7 +286,7 @@
   },
   {
     "Id": "opt_hibernation",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt chế độ ngủ đông (Hibernation)",
     "Description": "Xóa tệp hiberfil.sys để giải phóng 6-16 GB ổ C. Khuyên dùng cho PC bàn (Laptop nên giữ).",
     "Risk": "Moderate",
@@ -303,7 +303,7 @@
   },
   {
     "Id": "opt_delete_temp",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Dọn sạch tệp rác tạm (%TEMP% & Windows\\Temp)",
     "Description": "Xóa toàn bộ tệp tạm không còn sử dụng trong thư mục Temp của người dùng và Windows.",
     "Risk": "Safe",
@@ -320,7 +320,7 @@
   },
   {
     "Id": "opt_disk_cleanup",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Chạy Disk Cleanup dọn ổ C",
     "Description": "Khởi chạy cleanmgr tự động dọn cache hệ thống và gói Windows Update cũ.",
     "Risk": "Safe",
@@ -337,7 +337,7 @@
   },
   {
     "Id": "opt_bitlocker",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt mã hóa ổ đĩa BitLocker (giải mã ổ C)",
     "Description": "Giải mã BitLocker nếu máy bị bật mặc định giúp giảm tải I/O ổ cứng (quá trình chạy nền).",
     "Risk": "Moderate",
@@ -354,7 +354,7 @@
   },
   {
     "Id": "opt_explorer_autodiscovery",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt Explorer tự đoán loại thư mục",
     "Description": "Mở thư mục chứa nhiều ảnh/video nhanh hơn hẳn vì Explorer không quét đoán định dạng (tắt gom nhóm).",
     "Risk": "Moderate",
@@ -373,7 +373,7 @@
   },
   {
     "Id": "opt_device_companion",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Chặn tự tải App đi kèm thiết bị",
     "Description": "Ngăn Windows tự tải phần mềm quảng cáo/hãng khi cắm màn hình hoặc thiết bị ngoại vi mới.",
     "Risk": "Safe",
@@ -392,7 +392,7 @@
   },
   {
     "Id": "opt_wpbt",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt Windows Platform Binary Table (WPBT)",
     "Description": "Chặn hãng sản xuất máy tính tự nhúng và chạy phần mềm ngầm từ BIOS lúc khởi động Windows.",
     "Risk": "Safe",
@@ -411,7 +411,7 @@
   },
   {
     "Id": "opt_storage_sense",
-    "Category": "Cơ bản & An toàn",
+    "Category": "Cơ bản",
     "Name": "Tắt tự động dọn rác Storage Sense",
     "Description": "Ngăn Windows tự động xóa file trong Recycle Bin hoặc thư mục Downloads theo lịch.",
     "Risk": "Moderate",
@@ -431,7 +431,7 @@
 
   {
     "Id": "opt_ultimate_perf",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Kích hoạt gói nguồn Ultimate Performance",
     "Description": "Mở khóa và bật gói nguồn hiệu năng tối đa cho CPU/PCIe. Khuyên dùng cho PC bàn (hao pin trên Laptop).",
     "Risk": "Moderate",
@@ -448,7 +448,7 @@
   },
   {
     "Id": "opt_game_mode",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Bật Windows Game Mode",
     "Description": "Ưu tiên tài nguyên CPU/GPU và chặn tiến trình nền chen ngang khi đang chơi game toàn màn hình.",
     "Risk": "Safe",
@@ -468,7 +468,7 @@
   },
   {
     "Id": "opt_disable_gamedvr",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt GameDVR & Quay màn hình nền Xbox",
     "Description": "Ngừng quay buffer video nền giúp giảm sụt FPS, giảm giật khung hình và tiết kiệm RAM/VRAM.",
     "Risk": "Safe",
@@ -489,7 +489,7 @@
   },
   {
     "Id": "opt_hags",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Bật HAGS (Hardware-Accelerated GPU Scheduling)",
     "Description": "Cho phép GPU tự quản lý bộ nhớ VRAM giúp giảm độ trễ và hỗ trợ Frame Generation (cần khởi động lại).",
     "Risk": "Moderate",
@@ -508,7 +508,7 @@
   },
   {
     "Id": "opt_mpo_disable",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt Multiplane Overlay (MPO)",
     "Description": "Khắc phục lỗi chớp nháy, đen màn hình trình duyệt hoặc tụt FPS khi Alt+Tab trên driver NVIDIA/AMD.",
     "Risk": "Moderate",
@@ -527,7 +527,7 @@
   },
   {
     "Id": "opt_mouse_accel",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt gia tốc chuột (Raw 1:1 Aim)",
     "Description": "Tắt Enhance Pointer Precision giúp khoảng cách di chuột chính xác tuyệt đối 1:1 khi chơi FPS/MOBA.",
     "Risk": "Safe",
@@ -548,7 +548,7 @@
   },
   {
     "Id": "opt_net_throttling",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt Network Throttling Index (Bỏ giới hạn gói mạng)",
     "Description": "Loại bỏ giới hạn 10 packets/ms của Windows Multimedia Class Scheduler để giảm giật lag mạng.",
     "Risk": "Safe",
@@ -568,7 +568,7 @@
   },
   {
     "Id": "opt_nagle_disable",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt Nagle's Algorithm (Giảm độ trễ TCP Ping)",
     "Description": "Gửi gói tin TCP ngay lập tức (TcpAckFrequency=1, TCPNoDelay=1) trên các card mạng đang kết nối.",
     "Risk": "Moderate",
@@ -585,7 +585,7 @@
   },
   {
     "Id": "opt_power_throttling",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt CPU Power Throttling (Giữ xung tối đa)",
     "Description": "Ngăn Windows bóp xung CPU các ứng dụng chạy nền hoặc cửa sổ phụ. Hợp cho PC bàn.",
     "Risk": "Moderate",
@@ -604,7 +604,7 @@
   },
   {
     "Id": "opt_win32_priority",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tối ưu Win32PrioritySeparation cho Gaming",
     "Description": "Đặt ưu tiên lượng tử ngắn & tách biệt cho cửa sổ đang hoạt động (0x26) giúp phản hồi khung hình mượt hơn.",
     "Risk": "Moderate",
@@ -623,7 +623,7 @@
   },
   {
     "Id": "opt_visual_perf",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Hiệu ứng giao diện Hiệu năng cao (Giữ ClearType mượt chữ)",
     "Description": "Tắt hiệu ứng bóng đổ/hoạt ảnh rườm rà nhưng vẫn giữ ClearType làm mịn font chữ đẹp như gốc.",
     "Risk": "Safe",
@@ -647,7 +647,7 @@
   },
   {
     "Id": "opt_disable_bg_apps",
-    "Category": "Hiệu năng & Gaming",
+    "Category": "Hiệu năng",
     "Name": "Tắt toàn bộ App Store chạy ngầm (Background Apps)",
     "Description": "Ngăn các ứng dụng UWP/Microsoft Store tự đánh thức và ăn RAM/CPU trong nền.",
     "Risk": "Safe",
@@ -1300,7 +1300,7 @@
 
   {
     "Id": "opt_disable_win_ai",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Tắt hoàn toàn Windows AI (Copilot, Recall, Click to Do)",
     "Description": "Vô hiệu hóa Windows Copilot, AI Recall chụp màn hình nền và phân tích dữ liệu AI hệ thống.",
     "Risk": "Caution",
@@ -1323,7 +1323,7 @@
   },
   {
     "Id": "opt_remove_onedrive",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Gỡ Microsoft OneDrive (Giữ nguyên tệp người dùng)",
     "Description": "Gỡ bỏ OneDrive Setup và khóa tự chạy lại mà vẫn bảo toàn dữ liệu thư mục cá nhân.",
     "Risk": "Caution",
@@ -1342,7 +1342,7 @@
   },
   {
     "Id": "opt_remove_edge",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Gỡ Microsoft Edge (Giữ lại WebView2 Runtime)",
     "Description": "Gỡ bỏ trình duyệt Edge bằng bộ gỡ chính thức (giữ nguyên WebView2 để các app khác không lỗi).",
     "Risk": "Caution",
@@ -1359,7 +1359,7 @@
   },
   {
     "Id": "opt_reserved_storage",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Tắt Reserved Storage (Giải phóng 7-10 GB ổ C)",
     "Description": "Tắt vùng dung lượng dự trữ của Windows Update (chỉ nên dùng nếu ổ C rất nhỏ; nên bật lại trước khi lên bản Win lớn).",
     "Risk": "Caution",
@@ -1376,7 +1376,7 @@
   },
   {
     "Id": "opt_svchost_split",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Tắt tách tiến trình svchost.exe (Máy <= 12 GB RAM)",
     "Description": "Gộp các tiến trình svchost để tiết kiệm vài trăm MB RAM trên máy yếu (có thể ảnh hưởng Xbox Services).",
     "Risk": "Caution",
@@ -1395,7 +1395,7 @@
   },
   {
     "Id": "opt_search_indexing",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Tắt Windows Search Indexing (WSearch - Hợp ổ HDD)",
     "Description": "Dừng dịch vụ lập chỉ mục ổ đĩa WSearch để giảm 100% Disk trên HDD (SSD không cần tắt vì làm tìm file chậm đi).",
     "Risk": "Caution",
@@ -1414,7 +1414,7 @@
   },
   {
     "Id": "opt_disable_notifications",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Tắt toàn bộ Thông báo & Lịch khay hệ thống",
     "Description": "Ẩn hoàn toàn Action Center, thông báo Toast và cả khung Lịch khi bấm vào đồng hồ Taskbar.",
     "Risk": "Caution",
@@ -1434,7 +1434,7 @@
   },
   {
     "Id": "opt_block_adobe_net",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Chặn máy chủ Telemetry Adobe (hosts)",
     "Description": "Thêm các tên miền telemetry/kiểm tra bản quyền Adobe vào file hosts hệ thống (có thể hoàn tác sạch sẽ).",
     "Risk": "Caution",
@@ -1451,7 +1451,7 @@
   },
   {
     "Id": "opt_disable_lockscreen",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Bỏ qua Lock Screen & Tắt mờ Acrylic màn hình đăng nhập",
     "Description": "Vào thẳng ô nhập mật khẩu khi bật/mở khóa máy và bỏ hiệu ứng làm mờ nền đăng nhập.",
     "Risk": "Moderate",
@@ -1471,7 +1471,7 @@
   },
   {
     "Id": "opt_battery_and_s0",
-    "Category": "Nâng cao (Cẩn thận)",
+    "Category": "Nâng cao",
     "Name": "Hiện % Pin Taskbar & Tắt giữ mạng khi ngủ S0 (Laptop)",
     "Description": "Hiển thị số % pin cạnh icon và tắt kết nối mạng ngầm lúc Modern Standby S0 để không tụt pin qua đêm.",
     "Risk": "Moderate",
