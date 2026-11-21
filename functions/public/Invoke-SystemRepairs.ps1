@@ -71,7 +71,7 @@
 
     if ($script:isWindowClosing) { return }
     if ($sdRenamed -and $crRenamed) {
-        Log-Text "[SUC] Đã khởi tạo lại dịch vụ Windows Update và xóa sạch cache thành công!"
+        Log-Text "[SUCC] Đã khởi tạo lại dịch vụ Windows Update và xóa sạch cache thành công!"
     } else {
         Log-Text "[*] Đã đặt lại dịch vụ Windows Update (một số thư mục cache đang được hệ thống bảo vệ)."
     }
@@ -82,7 +82,7 @@ function Invoke-WindowsUpdateScan {
     try {
         $au = New-Object -ComObject Microsoft.Update.AutoUpdate
         $au.DetectNow()
-        Log-Text "[SUC] Đã kích hoạt Microsoft.Update.AutoUpdate.DetectNow() thành công."
+        Log-Text "[SUCC] Đã kích hoạt Microsoft.Update.AutoUpdate.DetectNow() thành công."
     } catch {
         Log-Text "[*] COM AutoUpdate không phản hồi, mở trang cập nhật hệ thống..."
     }
@@ -96,7 +96,7 @@ function Invoke-SystemFileCheck {
     Log-Text "[*] Đang khởi chạy System File Checker (sfc /scannow)..."
     $code = Run-CliStream "sfc.exe" "/scannow"
     if ($code -eq 0) {
-        Log-Text "[SUC] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
+        Log-Text "[SUCC] SFC Scan hoàn tất: Toàn vẹn tệp hệ thống đạt chuẩn (ExitCode: 0)."
     } else {
         Log-Text "[!] SFC Scan phát hiện lỗi hoặc không thể sửa chữa toàn bộ tệp hệ thống (ExitCode: $code)."
     }
@@ -107,7 +107,7 @@ function Invoke-DismRestoreHealth {
     Log-Text "[*] Đang khởi chạy DISM RestoreHealth khôi phục kho linh kiện hệ thống..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
     if ($code -eq 0) {
-        Log-Text "[SUC] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[SUCC] DISM RestoreHealth hoàn tất thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] DISM RestoreHealth thất bại hoặc gặp sự cố (ExitCode: $code). Hãy kiểm tra kết nối mạng hoặc nguồn tệp hệ thống."
     }
@@ -117,7 +117,7 @@ function Invoke-DismRestoreHealth {
 function Clear-DnsResolverCache {
     $code = Run-CliStream "ipconfig.exe" "/flushdns"
     if ($code -eq 0) {
-        Log-Text "[SUC] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
+        Log-Text "[SUCC] Làm mới bộ nhớ đệm DNS thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Làm mới bộ nhớ đệm DNS thất bại (ExitCode: $code)."
     }
@@ -128,7 +128,7 @@ function Reset-NetworkInterfaceStack {
     $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
     $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
     if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
-        Log-Text "[SUC] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
+        Log-Text "[SUCC] Đặt lại Winsock Catalog và TCP/IP Stack thành công (ExitCode: 0). Khuyên bạn nên khởi động lại máy."
     } else {
         Log-Text "[!] Đặt lại mạng gặp lỗi (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
     }
@@ -156,7 +156,7 @@ function Clear-SystemTempFiles {
             }
         }
     }
-    Log-Text "[SUC] Đã dọn $removedCount mục tệp tạm hệ thống ($skippedCount mục đang sử dụng/bỏ qua)."
+    Log-Text "[SUCC] Đã dọn $removedCount mục tệp tạm hệ thống ($skippedCount mục đang sử dụng/bỏ qua)."
 }
 
 function Clear-SystemEventLogs {
@@ -166,5 +166,5 @@ function Clear-SystemEventLogs {
             [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName)
         } catch {}
     }
-    Log-Text "[SUC] Toàn bộ Windows Event Logs đã được làm sạch."
+    Log-Text "[SUCC] Toàn bộ Windows Event Logs đã được làm sạch."
 }

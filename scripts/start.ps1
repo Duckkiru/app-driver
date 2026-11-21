@@ -220,11 +220,11 @@ if (-not $isCompanion -or -not $isAdmin) {
                         Write-Host "[*] App-Driver c$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) th$([char]0x1EF1)c hi$([char]0x1EC7)n s$([char]0x1EED)a l$([char]0x1ED7)i h$([char]0x1EC7) th$([char]0x1ED1)ng v$([char]0x00E0) qu$([char]0x1EA3)n l$([char]0x00FD) Driver.`n" -ForegroundColor DarkGray
                         return
                     }
-                    Write-Host "`n[ER] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                    Write-Host "`n[ERR] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
                     return
                 }
             } else {
-                Write-Host "`n[ER] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "`n[ERR] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
                 return
             }
         }

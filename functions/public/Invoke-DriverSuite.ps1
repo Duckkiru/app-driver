@@ -12,7 +12,7 @@
 function Invoke-PnpDeviceRescan {
     $code = Run-CliStream "pnputil.exe" "/scan-devices"
     if ($code -eq 0) {
-        Log-Text "[SUC] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
+        Log-Text "[SUCC] Quét lại thiết bị phần cứng PnP thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Quét thiết bị phần cứng PnP thất bại hoặc gặp lỗi (ExitCode: $code)."
     }
@@ -44,7 +44,7 @@ function Invoke-PnpDriverStoreCleanup {
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {
-            Log-Text "[SUC] Không tìm thấy gói driver OEM nào trong DriverStore."
+            Log-Text "[SUCC] Không tìm thấy gói driver OEM nào trong DriverStore."
             return
         }
 
@@ -100,7 +100,7 @@ function Invoke-PnpDriverStoreCleanup {
 
                 if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
                     $deletedCount++
-                    Log-Text "   [SUC - Đã dọn] $inf"
+                    Log-Text "   [SUCC - Đã dọn] $inf"
                 } elseif ($combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối') {
                     $inUseCount++
                 } else {
@@ -121,9 +121,9 @@ function Invoke-PnpDriverStoreCleanup {
         if ($userAborted) {
             Log-Text "[!] Đã dừng dọn dẹp DriverStore theo yêu cầu (đã xóa: $deletedCount, bỏ qua: $inUseCount, lỗi: $errorCount)."
         } elseif ($deletedCount -gt 0) {
-            Log-Text "[SUC] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
+            Log-Text "[SUCC] Hoàn tất! Đã giải phóng $deletedCount gói driver OEM cũ không còn sử dụng ($inUseCount gói đang được phần cứng sử dụng an toàn)."
         } elseif ($errorCount -eq 0) {
-            Log-Text "[SUC] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
+            Log-Text "[SUCC] Toàn bộ $($oemList.Count) gói driver OEM đều đang được các thiết bị phần cứng sử dụng an toàn."
         }
         if ($errorCount -gt 0 -and -not $userAborted) {
             Log-Text "[!] Có $errorCount gói driver gặp lỗi trong quá trình xử lý."
@@ -141,7 +141,7 @@ function Invoke-DismComponentCleanup {
     Log-Text "[*] Đang tiến hành dọn dẹp và nén kho linh kiện WinSxS qua DISM..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
     if ($code -eq 0) {
-        Log-Text "[SUC] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
+        Log-Text "[SUCC] Dọn dẹp kho linh kiện WinSxS hoàn tất thành công (ExitCode: 0)."
     } else {
         Log-Text "[!] Dọn dẹp kho linh kiện WinSxS thất bại hoặc bị gián đoạn (ExitCode: $code)."
     }
@@ -162,13 +162,13 @@ function Export-SystemDriversBackup {
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
-        Log-Text "[SUC] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
+        Log-Text "[SUCC] Sao lưu toàn bộ driver thành công qua Export-WindowsDriver."
         return $true
     } catch {
         Log-Text "[*] Export-WindowsDriver không khả dụng hoặc bị từ chối, chuyển sang pnputil.exe..."
         $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
         if ($exitCode -eq 0) {
-            Log-Text "[SUC] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
+            Log-Text "[SUCC] Sao lưu toàn bộ driver thành công qua pnputil.exe (ExitCode: 0)."
             return $true
         } else {
             Log-Text "[!] Sao lưu driver qua pnputil.exe thất bại (ExitCode: $exitCode)."
