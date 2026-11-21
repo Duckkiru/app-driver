@@ -241,7 +241,7 @@
 
         <Style x:Key="NavTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="18,10"/>
@@ -261,12 +261,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#E2E8F0"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
                                 <Setter TargetName="navBorder" Property="Background" Value="#121825"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.48"/>
-                                <Setter Property="Foreground" Value="#64748B"/>
+                                <Setter Property="Opacity" Value="0.58"/>
+                                <Setter Property="Foreground" Value="#94A3B8"/>
                                 <Setter Property="Cursor" Value="No"/>
                                 <Setter TargetName="navBorder" Property="Background" Value="Transparent"/>
                             </Trigger>
@@ -324,6 +324,7 @@
                     <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                     <Button Name="navBtnUninstaller" Content="Gỡ cài đặt" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnOptimize" Content="Tối ưu" Style="{StaticResource NavTabButton}"/>
                     <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
                             IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
                     <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
@@ -814,6 +815,8 @@
                         </UniformGrid>
                     </ScrollViewer>
             </DockPanel>
+
+            <Grid Name="TabPage4" Visibility="Collapsed" IsHitTestVisible="False"/>
         </Grid>
 
         <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#27344A" BorderThickness="0,1,0,0">

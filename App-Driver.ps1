@@ -4910,7 +4910,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
         <Style x:Key="NavTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="18,10"/>
@@ -4930,12 +4930,12 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#E2E8F0"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
                                 <Setter TargetName="navBorder" Property="Background" Value="#121825"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.48"/>
-                                <Setter Property="Foreground" Value="#64748B"/>
+                                <Setter Property="Opacity" Value="0.58"/>
+                                <Setter Property="Foreground" Value="#94A3B8"/>
                                 <Setter Property="Cursor" Value="No"/>
                                 <Setter TargetName="navBorder" Property="Background" Value="Transparent"/>
                             </Trigger>
@@ -4993,6 +4993,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     <Button Name="navBtnApps" Content="&#x1EE8;ng d&#x1EE5;ng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                     <Button Name="navBtnUninstaller" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t" Style="{StaticResource NavTabButton}"/>
+                    <Button Name="navBtnOptimize" Content="T&#x1ED1;i &#x01B0;u" Style="{StaticResource NavTabButton}"/>
                     <Button Name="navBtnRepair" Content="&#x1F512; G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng (&#x0110;ang kh&#x00F3;a)" Style="{StaticResource NavTabButton}"
                             IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
                     <Button Name="navBtnDrivers" Content="&#x1F512; Qu&#x1EA3;n l&#x00FD; Driver (&#x0110;ang kh&#x00F3;a)" Style="{StaticResource NavTabButton}"
@@ -5483,6 +5484,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                         </UniformGrid>
                     </ScrollViewer>
             </DockPanel>
+
+            <Grid Name="TabPage4" Visibility="Collapsed" IsHitTestVisible="False"/>
         </Grid>
 
         <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#27344A" BorderThickness="0,1,0,0">
@@ -36250,7 +36253,7 @@ $txtSelectionCount     = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
-$script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushNavInactive.Freeze()
+$script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xCB, 0xD5, 0xE1)); $script:brushNavInactive.Freeze()
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
 $script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x17, 0x22)); $script:brushCardBg.Freeze()
@@ -37593,6 +37596,7 @@ function Register-Click {
 
 $navBtnApps        = $window.FindName("navBtnApps")
 $navBtnUninstaller = $window.FindName("navBtnUninstaller")
+$navBtnOptimize    = $window.FindName("navBtnOptimize")
 $navBtnRepair      = $window.FindName("navBtnRepair")
 $navBtnDrivers     = $window.FindName("navBtnDrivers")
 
@@ -37600,7 +37604,8 @@ $script:tabPages = @(
     $window.FindName("TabPage0"),
     $window.FindName("TabPage1"),
     $window.FindName("TabPage2"),
-    $window.FindName("TabPage3")
+    $window.FindName("TabPage3"),
+    $window.FindName("TabPage4")
 )
 
 $script:uninstallerLoadedOnce = $false
@@ -37626,7 +37631,7 @@ function Set-ActiveTab {
         }
     }
 
-    $buttons = @($navBtnApps, $navBtnUninstaller, $navBtnRepair, $navBtnDrivers)
+    $buttons = @($navBtnApps, $navBtnUninstaller, $navBtnOptimize, $navBtnRepair, $navBtnDrivers)
     foreach ($btn in $buttons) {
         if ($btn) {
             $btn.Foreground  = $script:brushNavInactive
@@ -37684,6 +37689,8 @@ function Set-ActiveTab {
         if (Get-Command "Update-UninstallerSelectionCount" -ErrorAction SilentlyContinue) {
             Update-UninstallerSelectionCount
         }
+    } elseif ($index -eq 4) {
+        if ($txtSelectionCount) { $txtSelectionCount.Text = "" }
     }
     if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "tab"
@@ -37692,6 +37699,7 @@ function Set-ActiveTab {
 
 Register-Click "navBtnApps"        { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnUninstaller" { Set-ActiveTab 1 $navBtnUninstaller }
+Register-Click "navBtnOptimize"    { Set-ActiveTab 4 $navBtnOptimize }
 Register-Click "navBtnRepair"      -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$([char]0x1EC7) th$([char]0x1ED1)ng" { Set-ActiveTab 2 $navBtnRepair }
 Register-Click "navBtnDrivers"     -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Driver"    { Set-ActiveTab 3 $navBtnDrivers }
 

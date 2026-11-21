@@ -30,7 +30,7 @@ $txtSelectionCount     = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
-$script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushNavInactive.Freeze()
+$script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xCB, 0xD5, 0xE1)); $script:brushNavInactive.Freeze()
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
 $script:brushCardBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x11, 0x17, 0x22)); $script:brushCardBg.Freeze()
@@ -1373,6 +1373,7 @@ function Register-Click {
 
 $navBtnApps        = $window.FindName("navBtnApps")
 $navBtnUninstaller = $window.FindName("navBtnUninstaller")
+$navBtnOptimize    = $window.FindName("navBtnOptimize")
 $navBtnRepair      = $window.FindName("navBtnRepair")
 $navBtnDrivers     = $window.FindName("navBtnDrivers")
 
@@ -1380,7 +1381,8 @@ $script:tabPages = @(
     $window.FindName("TabPage0"),
     $window.FindName("TabPage1"),
     $window.FindName("TabPage2"),
-    $window.FindName("TabPage3")
+    $window.FindName("TabPage3"),
+    $window.FindName("TabPage4")
 )
 
 $script:uninstallerLoadedOnce = $false
@@ -1406,7 +1408,7 @@ function Set-ActiveTab {
         }
     }
 
-    $buttons = @($navBtnApps, $navBtnUninstaller, $navBtnRepair, $navBtnDrivers)
+    $buttons = @($navBtnApps, $navBtnUninstaller, $navBtnOptimize, $navBtnRepair, $navBtnDrivers)
     foreach ($btn in $buttons) {
         if ($btn) {
             $btn.Foreground  = $script:brushNavInactive
@@ -1464,6 +1466,8 @@ function Set-ActiveTab {
         if (Get-Command "Update-UninstallerSelectionCount" -ErrorAction SilentlyContinue) {
             Update-UninstallerSelectionCount
         }
+    } elseif ($index -eq 4) {
+        if ($txtSelectionCount) { $txtSelectionCount.Text = "" }
     }
     if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "tab"
@@ -1472,6 +1476,7 @@ function Set-ActiveTab {
 
 Register-Click "navBtnApps"        { Set-ActiveTab 0 $navBtnApps }
 Register-Click "navBtnUninstaller" { Set-ActiveTab 1 $navBtnUninstaller }
+Register-Click "navBtnOptimize"    { Set-ActiveTab 4 $navBtnOptimize }
 Register-Click "navBtnRepair"      -LockGroup "Gỡ lỗi & Hệ thống" { Set-ActiveTab 2 $navBtnRepair }
 Register-Click "navBtnDrivers"     -LockGroup "Quản lý Driver"    { Set-ActiveTab 3 $navBtnDrivers }
 
