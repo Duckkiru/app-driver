@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -1749,6 +1750,230 @@ namespace DuckUtil {
                 return res.Substring(3);
             }
             return "";
+        }
+
+        private static bool IsValidSha256Hex(string hex) {
+            if (string.IsNullOrEmpty(hex) || hex.Length != 64) return false;
+            for (int i = 0; i < 64; i++) {
+                char c = hex[i];
+                bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+                if (!ok) return false;
+            }
+            return true;
+        }
+
+        private static string BytesToLowerHex(byte[] bytes) {
+            if (bytes == null || bytes.Length == 0) return "";
+            var sb = new StringBuilder(bytes.Length * 2);
+            for (int i = 0; i < bytes.Length; i++) {
+                sb.Append(bytes[i].ToString("x2", CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+        private static bool HasValidInstallerMagic(byte[] head, int count) {
+            if (head == null || count < 2) return false;
+            // PE executable (.exe): "MZ"
+            if (head[0] == 0x4D && head[1] == 0x5A) return true;
+            // OLE Compound File (.msi): D0 CF 11 E0
+            if (count >= 4 && head[0] == 0xD0 && head[1] == 0xCF && head[2] == 0x11 && head[3] == 0xE0) return true;
+            return false;
+        }
+
+        private static string SanitizeFileNameStrict(string rawName, string fallbackName) {
+            string cand = rawName ?? "";
+            cand = cand.Trim().Trim('"').Trim('\'');
+            try { cand = Path.GetFileName(cand); } catch { cand = ""; }
+            if (!string.IsNullOrEmpty(cand)) {
+                char[] inv = Path.GetInvalidFileNameChars();
+                var sb = new StringBuilder(cand.Length);
+                for (int i = 0; i < cand.Length; i++) {
+                    char ch = cand[i];
+                    bool bad = false;
+                    for (int j = 0; j < inv.Length; j++) {
+                        if (ch == inv[j]) { bad = true; break; }
+                    }
+                    if (!bad) sb.Append(ch);
+                }
+                cand = sb.ToString().Trim();
+            }
+            if (string.IsNullOrWhiteSpace(cand)) cand = fallbackName ?? "installer.exe";
+            if (!cand.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                !cand.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) {
+                string fbExt = (fallbackName != null && fallbackName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) ? ".msi" : ".exe";
+                cand = cand + fbExt;
+            }
+            return cand;
+        }
+
+        public static async Task<string> DownloadFileWithSha256Async(string url, string destFile, string expectedSha256, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            string cleanSha = (expectedSha256 ?? "").Trim();
+            if (!IsValidSha256Hex(cleanSha)) {
+                return "ERR|invalid-sha256";
+            }
+            if (string.IsNullOrWhiteSpace(destFile)) {
+                return "ERR|invalid-dest";
+            }
+
+            const long MaxInstallerBytes = 2147483648L;
+            try {
+                ct.ThrowIfCancellationRequested();
+                string dir = Path.GetDirectoryName(destFile);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+                string actualHex = "";
+                long totalBytes = 0L;
+                byte[] magicBuf = new byte[4];
+                int magicLen = 0;
+
+                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                        return "ERR|insecure-redirect";
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            return "ERR|html-response";
+                        }
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
+                        resp.Content.Headers.ContentLength.Value > MaxInstallerBytes) {
+                        return "ERR|file-too-large";
+                    }
+
+                    using (SHA256 sha = SHA256.Create())
+                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            totalBytes += r;
+                            if (totalBytes > MaxInstallerBytes) {
+                                try { dst.Close(); } catch {}
+                                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                                return "ERR|file-too-large";
+                            }
+                            if (magicLen < 4) {
+                                int copy = Math.Min(4 - magicLen, r);
+                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                                magicLen += copy;
+                            }
+                            sha.TransformBlock(buf, 0, r, null, 0);
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                        sha.TransformFinalBlock(new byte[0], 0, 0);
+                        actualHex = BytesToLowerHex(sha.Hash);
+                    }
+                }
+
+                if (totalBytes <= 0L) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                if (!HasValidInstallerMagic(magicBuf, magicLen)) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|invalid-binary-header";
+                }
+                if (!string.Equals(actualHex, cleanSha, StringComparison.OrdinalIgnoreCase)) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|sha256-mismatch:" + actualHex;
+                }
+                return "OK|" + destFile;
+            } catch (OperationCanceledException) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            }
+        }
+
+        public static async Task<string> DownloadHttpsInstallerWithHeaderNameAsync(string url, string destDir, string fallbackFileName, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            if (string.IsNullOrWhiteSpace(destDir)) {
+                return "ERR|invalid-dest";
+            }
+
+            const long MaxInstallerBytes = 2147483648L;
+            string outFile = "";
+            try {
+                ct.ThrowIfCancellationRequested();
+                Directory.CreateDirectory(destDir);
+                long totalBytes = 0L;
+                byte[] magicBuf = new byte[4];
+                int magicLen = 0;
+
+                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                        return "ERR|insecure-redirect";
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            return "ERR|html-response";
+                        }
+                    }
+
+                    string headerName = "";
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentDisposition != null) {
+                        headerName = resp.Content.Headers.ContentDisposition.FileNameStar ?? resp.Content.Headers.ContentDisposition.FileName ?? "";
+                    }
+                    if (string.IsNullOrWhiteSpace(headerName) && resp.RequestMessage != null && resp.RequestMessage.RequestUri != null) {
+                        try { headerName = Path.GetFileName(Uri.UnescapeDataString(resp.RequestMessage.RequestUri.AbsolutePath)); } catch {}
+                    }
+                    string safeName = SanitizeFileNameStrict(headerName, fallbackFileName);
+                    outFile = Path.Combine(destDir, safeName);
+
+                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            totalBytes += r;
+                            if (totalBytes > MaxInstallerBytes) {
+                                try { dst.Close(); } catch {}
+                                try { if (File.Exists(outFile)) File.Delete(outFile); } catch {}
+                                return "ERR|file-too-large";
+                            }
+                            if (magicLen < 4) {
+                                int copy = Math.Min(4 - magicLen, r);
+                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                                magicLen += copy;
+                            }
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                if (totalBytes <= 0L) {
+                    try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                if (!HasValidInstallerMagic(magicBuf, magicLen)) {
+                    try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return "ERR|invalid-binary-header";
+                }
+                return "OK|" + outFile;
+            } catch (OperationCanceledException) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            }
         }
     }
 

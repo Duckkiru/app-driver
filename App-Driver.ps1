@@ -974,6 +974,8 @@ $appsRawJson = @'
             "Notepad++.Notepad++"
           ],
     "Category":  "Development",
+    "GitHubRepo":  "notepad-plus-plus/notepad-plus-plus",
+    "AssetRegex":  "\\.Installer\\.x64\\.exe$",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/selfhst/icons/png/notepad-plus-plus.png",
     "IDn":  54
   },
@@ -2045,6 +2047,8 @@ $appsRawJson = @'
             "7zip.7zip"
           ],
     "Category":  "System Utilities",
+    "GitHubRepo":  "ip7z/7zip",
+    "AssetRegex":  "-x64\\.msi$",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/7zip.png",
     "IDn":  132
   },
@@ -2144,6 +2148,7 @@ $appsRawJson = @'
           ],
     "Category":  "System Utilities",
     "Url":  "https://www.unikey.org/",
+    "FallbackUrl":  "https://www.unikey.org/en/download.html",
     "IconUrl":  "https://img.icons8.com/fluency/96/keyboard.png",
     "IDn":  140
   },
@@ -3156,6 +3161,8 @@ $appsRawJson = @'
             "OBSProject.OBSStudio"
           ],
     "Category":  "Audio \u0026 Video",
+    "GitHubRepo":  "obsproject/obs-studio",
+    "AssetRegex":  "Windows-x64-Installer\\.exe$",
     "IconUrl":  "https://img.icons8.com/fluency/96/obs-studio.png",
     "IDn":  215
   },
@@ -3398,6 +3405,8 @@ $appsRawJson = @'
             "ShareX.ShareX"
           ],
     "Category":  "Graphics \u0026 Design",
+    "GitHubRepo":  "ShareX/ShareX",
+    "AssetRegex":  "setup-x64\\.exe$",
     "IconUrl":  "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png",
     "IDn":  233
   },
@@ -3472,6 +3481,8 @@ $appsRawJson = @'
             "JannisX11.Blockbench"
           ],
     "Category":  "Graphics \u0026 Design",
+    "GitHubRepo":  "JannisX11/blockbench",
+    "AssetRegex":  "^Blockbench_[0-9.]+\\.exe$",
     "Url":  "https://www.blockbench.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=blockbench.net\u0026sz=128",
     "IDn":  239
@@ -4368,6 +4379,288 @@ $appsRawJson = @'
     "Url":  "https://github.com/canton7/SyncTrayzor",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/syncthing.png",
     "IDn":  304
+  },
+  {
+    "ID":  "ApacheFriends.Xampp.8.2",
+    "Name":  "XAMPP 8.2",
+    "Domain":  "apachefriends.org",
+    "Aliases":  [
+            "XAMPP",
+            "XAMPP 8.2",
+            "ApacheFriends.Xampp.8.2",
+            "ApacheFriends.Xampp"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://www.apachefriends.org/download.html",
+    "FallbackUrl":  "https://www.apachefriends.org/download.html",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=apachefriends.org\u0026sz=128",
+    "IDn":  305
+  },
+  {
+    "ID":  "LeNgocKhoa.Laragon",
+    "Name":  "Laragon",
+    "Domain":  "laragon.org",
+    "Aliases":  [
+            "Laragon",
+            "LeNgocKhoa.Laragon"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "GitHubRepo":  "leokhoa/laragon",
+    "AssetRegex":  "^laragon-wamp\\.exe$",
+    "Url":  "https://laragon.org/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=laragon.org\u0026sz=128",
+    "IDn":  306
+  },
+  {
+    "ID":  "Flywheel.Local",
+    "Name":  "LocalWP (WordPress)",
+    "Domain":  "localwp.com",
+    "Aliases":  [
+            "LocalWP",
+            "Local by Flywheel",
+            "Flywheel.Local"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://localwp.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=localwp.com\u0026sz=128",
+    "IDn":  307
+  },
+  {
+    "ID":  "nginxinc.nginx",
+    "Name":  "Nginx",
+    "Domain":  "nginx.org",
+    "Aliases":  [
+            "nginx",
+            "nginxinc.nginx"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://nginx.org/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nginx.png",
+    "IDn":  308
+  },
+  {
+    "ID":  "PHP.PHP.8.4",
+    "Name":  "PHP 8.4",
+    "Domain":  "php.net",
+    "Aliases":  [
+            "PHP 8.4",
+            "PHP.PHP.8.4"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://www.php.net/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=php.net\u0026sz=128",
+    "IDn":  309
+  },
+  {
+    "ID":  "DenoLand.Deno",
+    "Name":  "Deno",
+    "Domain":  "deno.com",
+    "Aliases":  [
+            "Deno",
+            "DenoLand.Deno"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://deno.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=deno.com\u0026sz=128",
+    "IDn":  310
+  },
+  {
+    "ID":  "FiloSottile.mkcert",
+    "Name":  "mkcert (Local SSL)",
+    "Domain":  "github.com/FiloSottile/mkcert",
+    "Aliases":  [
+            "mkcert",
+            "FiloSottile.mkcert"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://github.com/FiloSottile/mkcert",
+    "IconUrl":  "https://img.icons8.com/fluency/96/ssl-certificate.png",
+    "IDn":  311
+  },
+  {
+    "ID":  "Cloudflare.cloudflared",
+    "Name":  "Cloudflared (Tunnel)",
+    "Domain":  "cloudflare.com",
+    "Aliases":  [
+            "cloudflared",
+            "Cloudflare.cloudflared"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "GitHubRepo":  "cloudflare/cloudflared",
+    "AssetRegex":  "^cloudflared-windows-amd64\\.msi$",
+    "Url":  "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cloudflare.png",
+    "IDn":  312
+  },
+  {
+    "ID":  "Ngrok.Ngrok",
+    "Name":  "ngrok (Tunnel)",
+    "Domain":  "ngrok.com",
+    "Aliases":  [
+            "Ngrok",
+            "ngrok",
+            "Ngrok.Ngrok"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://ngrok.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=ngrok.com\u0026sz=128",
+    "IDn":  313
+  },
+  {
+    "ID":  "Insomnia.Insomnia",
+    "Name":  "Insomnia (API Client)",
+    "Domain":  "insomnia.rest",
+    "Aliases":  [
+            "Insomnia",
+            "Insomnia.Insomnia"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "GitHubRepo":  "Kong/insomnia",
+    "AssetRegex":  "^Insomnia\\.Core-[0-9.]+\\.exe$",
+    "Url":  "https://insomnia.rest/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=insomnia.rest\u0026sz=128",
+    "IDn":  314
+  },
+  {
+    "ID":  "hoppscotch.Hoppscotch",
+    "Name":  "Hoppscotch",
+    "Domain":  "hoppscotch.io",
+    "Aliases":  [
+            "Hoppscotch",
+            "hoppscotch.Hoppscotch"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "GitHubRepo":  "hoppscotch/releases",
+    "AssetRegex":  "^Hoppscotch_win_x64\\.msi$",
+    "Url":  "https://hoppscotch.io/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=hoppscotch.io\u0026sz=128",
+    "IDn":  315
+  },
+  {
+    "ID":  "TablePlus.TablePlus",
+    "Name":  "TablePlus",
+    "Domain":  "tableplus.com",
+    "Aliases":  [
+            "TablePlus",
+            "TablePlus.TablePlus"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://tableplus.com/windows",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=tableplus.com\u0026sz=128",
+    "IDn":  316
+  },
+  {
+    "ID":  "DBBrowserForSQLite.DBBrowserForSQLite",
+    "Name":  "DB Browser for SQLite",
+    "Domain":  "sqlitebrowser.org",
+    "Aliases":  [
+            "DB Browser for SQLite",
+            "DBBrowserForSQLite.DBBrowserForSQLite"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "GitHubRepo":  "sqlitebrowser/sqlitebrowser",
+    "AssetRegex":  "-win64\\.msi$",
+    "Url":  "https://sqlitebrowser.org/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=sqlitebrowser.org\u0026sz=128",
+    "IDn":  317
+  },
+  {
+    "ID":  "Oracle.MySQLWorkbench",
+    "Name":  "MySQL Workbench 8.0 CE",
+    "Domain":  "dev.mysql.com",
+    "Aliases":  [
+            "MySQL Workbench",
+            "MySQL Workbench 8.0 CE",
+            "Oracle.MySQLWorkbench"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://dev.mysql.com/downloads/workbench/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=mysql.com\u0026sz=128",
+    "IDn":  318
+  },
+  {
+    "ID":  "PostgreSQL.PostgreSQL.17",
+    "Name":  "PostgreSQL 17",
+    "Domain":  "postgresql.org",
+    "Aliases":  [
+            "PostgreSQL 17",
+            "PostgreSQL.PostgreSQL.17"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://www.postgresql.org/download/windows/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/postgres.png",
+    "IDn":  319
+  },
+  {
+    "ID":  "MariaDB.Server",
+    "Name":  "MariaDB Server",
+    "Domain":  "mariadb.org",
+    "Aliases":  [
+            "MariaDB",
+            "MariaDB Server",
+            "MariaDB.Server"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://mariadb.org/download/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/mariadb.png",
+    "IDn":  320
+  },
+  {
+    "ID":  "CoreyButler.NVMforWindows",
+    "Name":  "NVM for Windows",
+    "Domain":  "github.com/coreybutler/nvm-windows",
+    "Aliases":  [
+            "NVM for Windows",
+            "nvm-windows",
+            "CoreyButler.NVMforWindows"
+          ],
+    "Category":  "Development",
+    "GitHubRepo":  "coreybutler/nvm-windows",
+    "AssetRegex":  "^nvm-setup\\.exe$",
+    "Url":  "https://github.com/coreybutler/nvm-windows",
+    "IconUrl":  "https://img.icons8.com/fluency/96/nodejs.png",
+    "IDn":  321
+  },
+  {
+    "ID":  "Volta.Volta",
+    "Name":  "Volta",
+    "Domain":  "volta.sh",
+    "Aliases":  [
+            "Volta",
+            "Volta.Volta"
+          ],
+    "Category":  "Development",
+    "GitHubRepo":  "volta-cli/volta",
+    "AssetRegex":  "windows-x86_64\\.msi$",
+    "Url":  "https://volta.sh/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=volta.sh\u0026sz=128",
+    "IDn":  322
+  },
+  {
+    "ID":  "Fork.Fork",
+    "Name":  "Fork (Git Client)",
+    "Domain":  "fork.dev",
+    "Aliases":  [
+            "Fork",
+            "Fork.Fork"
+          ],
+    "Category":  "Development",
+    "Url":  "https://fork.dev/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=fork.dev\u0026sz=128",
+    "IDn":  323
+  },
+  {
+    "ID":  "Axosoft.GitKraken",
+    "Name":  "GitKraken",
+    "Domain":  "gitkraken.com",
+    "Aliases":  [
+            "GitKraken",
+            "Axosoft.GitKraken"
+          ],
+    "Category":  "Development",
+    "Url":  "https://www.gitkraken.com/git-client",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=gitkraken.com\u0026sz=128",
+    "IDn":  324
   }
 ]
 '@
@@ -5297,6 +5590,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Text;
@@ -7040,6 +7334,230 @@ namespace DuckUtil {
                 return res.Substring(3);
             }
             return "";
+        }
+
+        private static bool IsValidSha256Hex(string hex) {
+            if (string.IsNullOrEmpty(hex) || hex.Length != 64) return false;
+            for (int i = 0; i < 64; i++) {
+                char c = hex[i];
+                bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+                if (!ok) return false;
+            }
+            return true;
+        }
+
+        private static string BytesToLowerHex(byte[] bytes) {
+            if (bytes == null || bytes.Length == 0) return "";
+            var sb = new StringBuilder(bytes.Length * 2);
+            for (int i = 0; i < bytes.Length; i++) {
+                sb.Append(bytes[i].ToString("x2", CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+        private static bool HasValidInstallerMagic(byte[] head, int count) {
+            if (head == null || count < 2) return false;
+            // PE executable (.exe): "MZ"
+            if (head[0] == 0x4D && head[1] == 0x5A) return true;
+            // OLE Compound File (.msi): D0 CF 11 E0
+            if (count >= 4 && head[0] == 0xD0 && head[1] == 0xCF && head[2] == 0x11 && head[3] == 0xE0) return true;
+            return false;
+        }
+
+        private static string SanitizeFileNameStrict(string rawName, string fallbackName) {
+            string cand = rawName ?? "";
+            cand = cand.Trim().Trim('"').Trim('\'');
+            try { cand = Path.GetFileName(cand); } catch { cand = ""; }
+            if (!string.IsNullOrEmpty(cand)) {
+                char[] inv = Path.GetInvalidFileNameChars();
+                var sb = new StringBuilder(cand.Length);
+                for (int i = 0; i < cand.Length; i++) {
+                    char ch = cand[i];
+                    bool bad = false;
+                    for (int j = 0; j < inv.Length; j++) {
+                        if (ch == inv[j]) { bad = true; break; }
+                    }
+                    if (!bad) sb.Append(ch);
+                }
+                cand = sb.ToString().Trim();
+            }
+            if (string.IsNullOrWhiteSpace(cand)) cand = fallbackName ?? "installer.exe";
+            if (!cand.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                !cand.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) {
+                string fbExt = (fallbackName != null && fallbackName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) ? ".msi" : ".exe";
+                cand = cand + fbExt;
+            }
+            return cand;
+        }
+
+        public static async Task<string> DownloadFileWithSha256Async(string url, string destFile, string expectedSha256, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            string cleanSha = (expectedSha256 ?? "").Trim();
+            if (!IsValidSha256Hex(cleanSha)) {
+                return "ERR|invalid-sha256";
+            }
+            if (string.IsNullOrWhiteSpace(destFile)) {
+                return "ERR|invalid-dest";
+            }
+
+            const long MaxInstallerBytes = 2147483648L;
+            try {
+                ct.ThrowIfCancellationRequested();
+                string dir = Path.GetDirectoryName(destFile);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+                string actualHex = "";
+                long totalBytes = 0L;
+                byte[] magicBuf = new byte[4];
+                int magicLen = 0;
+
+                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                        return "ERR|insecure-redirect";
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            return "ERR|html-response";
+                        }
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
+                        resp.Content.Headers.ContentLength.Value > MaxInstallerBytes) {
+                        return "ERR|file-too-large";
+                    }
+
+                    using (SHA256 sha = SHA256.Create())
+                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            totalBytes += r;
+                            if (totalBytes > MaxInstallerBytes) {
+                                try { dst.Close(); } catch {}
+                                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                                return "ERR|file-too-large";
+                            }
+                            if (magicLen < 4) {
+                                int copy = Math.Min(4 - magicLen, r);
+                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                                magicLen += copy;
+                            }
+                            sha.TransformBlock(buf, 0, r, null, 0);
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                        sha.TransformFinalBlock(new byte[0], 0, 0);
+                        actualHex = BytesToLowerHex(sha.Hash);
+                    }
+                }
+
+                if (totalBytes <= 0L) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                if (!HasValidInstallerMagic(magicBuf, magicLen)) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|invalid-binary-header";
+                }
+                if (!string.Equals(actualHex, cleanSha, StringComparison.OrdinalIgnoreCase)) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|sha256-mismatch:" + actualHex;
+                }
+                return "OK|" + destFile;
+            } catch (OperationCanceledException) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            }
+        }
+
+        public static async Task<string> DownloadHttpsInstallerWithHeaderNameAsync(string url, string destDir, string fallbackFileName, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            if (string.IsNullOrWhiteSpace(destDir)) {
+                return "ERR|invalid-dest";
+            }
+
+            const long MaxInstallerBytes = 2147483648L;
+            string outFile = "";
+            try {
+                ct.ThrowIfCancellationRequested();
+                Directory.CreateDirectory(destDir);
+                long totalBytes = 0L;
+                byte[] magicBuf = new byte[4];
+                int magicLen = 0;
+
+                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                        return "ERR|insecure-redirect";
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            return "ERR|html-response";
+                        }
+                    }
+
+                    string headerName = "";
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentDisposition != null) {
+                        headerName = resp.Content.Headers.ContentDisposition.FileNameStar ?? resp.Content.Headers.ContentDisposition.FileName ?? "";
+                    }
+                    if (string.IsNullOrWhiteSpace(headerName) && resp.RequestMessage != null && resp.RequestMessage.RequestUri != null) {
+                        try { headerName = Path.GetFileName(Uri.UnescapeDataString(resp.RequestMessage.RequestUri.AbsolutePath)); } catch {}
+                    }
+                    string safeName = SanitizeFileNameStrict(headerName, fallbackFileName);
+                    outFile = Path.Combine(destDir, safeName);
+
+                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            totalBytes += r;
+                            if (totalBytes > MaxInstallerBytes) {
+                                try { dst.Close(); } catch {}
+                                try { if (File.Exists(outFile)) File.Delete(outFile); } catch {}
+                                return "ERR|file-too-large";
+                            }
+                            if (magicLen < 4) {
+                                int copy = Math.Min(4 - magicLen, r);
+                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                                magicLen += copy;
+                            }
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                if (totalBytes <= 0L) {
+                    try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                if (!HasValidInstallerMagic(magicBuf, magicLen)) {
+                    try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return "ERR|invalid-binary-header";
+                }
+                return "OK|" + outFile;
+            } catch (OperationCanceledException) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            }
         }
     }
 
@@ -17496,6 +18014,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -19237,6 +19756,230 @@ namespace DuckUtil {
                 return res.Substring(3);
             }
             return "";
+        }
+
+        private static bool IsValidSha256Hex(string hex) {
+            if (string.IsNullOrEmpty(hex) || hex.Length != 64) return false;
+            for (int i = 0; i < 64; i++) {
+                char c = hex[i];
+                bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+                if (!ok) return false;
+            }
+            return true;
+        }
+
+        private static string BytesToLowerHex(byte[] bytes) {
+            if (bytes == null || bytes.Length == 0) return "";
+            var sb = new StringBuilder(bytes.Length * 2);
+            for (int i = 0; i < bytes.Length; i++) {
+                sb.Append(bytes[i].ToString("x2", CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+        private static bool HasValidInstallerMagic(byte[] head, int count) {
+            if (head == null || count < 2) return false;
+            // PE executable (.exe): "MZ"
+            if (head[0] == 0x4D && head[1] == 0x5A) return true;
+            // OLE Compound File (.msi): D0 CF 11 E0
+            if (count >= 4 && head[0] == 0xD0 && head[1] == 0xCF && head[2] == 0x11 && head[3] == 0xE0) return true;
+            return false;
+        }
+
+        private static string SanitizeFileNameStrict(string rawName, string fallbackName) {
+            string cand = rawName ?? "";
+            cand = cand.Trim().Trim('"').Trim('\'');
+            try { cand = Path.GetFileName(cand); } catch { cand = ""; }
+            if (!string.IsNullOrEmpty(cand)) {
+                char[] inv = Path.GetInvalidFileNameChars();
+                var sb = new StringBuilder(cand.Length);
+                for (int i = 0; i < cand.Length; i++) {
+                    char ch = cand[i];
+                    bool bad = false;
+                    for (int j = 0; j < inv.Length; j++) {
+                        if (ch == inv[j]) { bad = true; break; }
+                    }
+                    if (!bad) sb.Append(ch);
+                }
+                cand = sb.ToString().Trim();
+            }
+            if (string.IsNullOrWhiteSpace(cand)) cand = fallbackName ?? "installer.exe";
+            if (!cand.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                !cand.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) {
+                string fbExt = (fallbackName != null && fallbackName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) ? ".msi" : ".exe";
+                cand = cand + fbExt;
+            }
+            return cand;
+        }
+
+        public static async Task<string> DownloadFileWithSha256Async(string url, string destFile, string expectedSha256, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            string cleanSha = (expectedSha256 ?? "").Trim();
+            if (!IsValidSha256Hex(cleanSha)) {
+                return "ERR|invalid-sha256";
+            }
+            if (string.IsNullOrWhiteSpace(destFile)) {
+                return "ERR|invalid-dest";
+            }
+
+            const long MaxInstallerBytes = 2147483648L;
+            try {
+                ct.ThrowIfCancellationRequested();
+                string dir = Path.GetDirectoryName(destFile);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+                string actualHex = "";
+                long totalBytes = 0L;
+                byte[] magicBuf = new byte[4];
+                int magicLen = 0;
+
+                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                        return "ERR|insecure-redirect";
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            return "ERR|html-response";
+                        }
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
+                        resp.Content.Headers.ContentLength.Value > MaxInstallerBytes) {
+                        return "ERR|file-too-large";
+                    }
+
+                    using (SHA256 sha = SHA256.Create())
+                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            totalBytes += r;
+                            if (totalBytes > MaxInstallerBytes) {
+                                try { dst.Close(); } catch {}
+                                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                                return "ERR|file-too-large";
+                            }
+                            if (magicLen < 4) {
+                                int copy = Math.Min(4 - magicLen, r);
+                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                                magicLen += copy;
+                            }
+                            sha.TransformBlock(buf, 0, r, null, 0);
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                        sha.TransformFinalBlock(new byte[0], 0, 0);
+                        actualHex = BytesToLowerHex(sha.Hash);
+                    }
+                }
+
+                if (totalBytes <= 0L) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                if (!HasValidInstallerMagic(magicBuf, magicLen)) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|invalid-binary-header";
+                }
+                if (!string.Equals(actualHex, cleanSha, StringComparison.OrdinalIgnoreCase)) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|sha256-mismatch:" + actualHex;
+                }
+                return "OK|" + destFile;
+            } catch (OperationCanceledException) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            }
+        }
+
+        public static async Task<string> DownloadHttpsInstallerWithHeaderNameAsync(string url, string destDir, string fallbackFileName, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            if (string.IsNullOrWhiteSpace(destDir)) {
+                return "ERR|invalid-dest";
+            }
+
+            const long MaxInstallerBytes = 2147483648L;
+            string outFile = "";
+            try {
+                ct.ThrowIfCancellationRequested();
+                Directory.CreateDirectory(destDir);
+                long totalBytes = 0L;
+                byte[] magicBuf = new byte[4];
+                int magicLen = 0;
+
+                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                    }
+                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                        return "ERR|insecure-redirect";
+                    }
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            return "ERR|html-response";
+                        }
+                    }
+
+                    string headerName = "";
+                    if (resp.Content.Headers != null && resp.Content.Headers.ContentDisposition != null) {
+                        headerName = resp.Content.Headers.ContentDisposition.FileNameStar ?? resp.Content.Headers.ContentDisposition.FileName ?? "";
+                    }
+                    if (string.IsNullOrWhiteSpace(headerName) && resp.RequestMessage != null && resp.RequestMessage.RequestUri != null) {
+                        try { headerName = Path.GetFileName(Uri.UnescapeDataString(resp.RequestMessage.RequestUri.AbsolutePath)); } catch {}
+                    }
+                    string safeName = SanitizeFileNameStrict(headerName, fallbackFileName);
+                    outFile = Path.Combine(destDir, safeName);
+
+                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                        byte[] buf = new byte[81920];
+                        int r;
+                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                            totalBytes += r;
+                            if (totalBytes > MaxInstallerBytes) {
+                                try { dst.Close(); } catch {}
+                                try { if (File.Exists(outFile)) File.Delete(outFile); } catch {}
+                                return "ERR|file-too-large";
+                            }
+                            if (magicLen < 4) {
+                                int copy = Math.Min(4 - magicLen, r);
+                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                                magicLen += copy;
+                            }
+                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                if (totalBytes <= 0L) {
+                    try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                if (!HasValidInstallerMagic(magicBuf, magicLen)) {
+                    try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return "ERR|invalid-binary-header";
+                }
+                return "OK|" + outFile;
+            } catch (OperationCanceledException) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                return "ERR|canceled";
+            } catch (Exception ex) {
+                try { if (!string.IsNullOrEmpty(outFile) && File.Exists(outFile)) File.Delete(outFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            }
         }
     }
 
@@ -38385,6 +39128,7 @@ if ($btnCancelAction) {
         if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5) theo y$([char]0x00EA)u c$([char]0x1EA7)u..." }
         Log-Text "[STOP] $([char]0x0110)$([char]0x00E3) nh$([char]0x1EAD)n y$([char]0x00EA)u c$([char]0x1EA7)u d$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5) & x$([char]0x00F3)a h$([char]0x00E0)ng $([char]0x0111)$([char]0x1EE3)i!"
         try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
+        try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
         try { Stop-ActiveChildProcess } catch {}
         try { Stop-ActiveWaitFrames } catch {}
     })
@@ -38803,6 +39547,7 @@ function Get-AppFallbackGlyph {
     if ($Category -match 'Database|DevOps') { return [char]::ConvertFromUtf32(0x1F5C4) }
     if ($Category -match 'Minecraft|Modding') { return [char]::ConvertFromUtf32(0x26CF) }
     if ($Category -match 'Download') { return [char]::ConvertFromUtf32(0x2B07) }
+    if ($Category -match 'Local Server|Web & Local') { return [char]::ConvertFromUtf32(0x1F5A5) }
     if ($Category -match 'Web|Browser') { return [char]::ConvertFromUtf32(0x1F310) }
     if ($Category -match "Chat|Li$([char]0x00EA)n|Communication") { return [char]::ConvertFromUtf32(0x1F4AC) }
     if ($Category -match 'Remote') { return [char]::ConvertFromUtf32(0x1F5A5) }
@@ -39517,7 +40262,7 @@ $script:styleSidebarCatBtn.Seal()
 
 $script:catalogGroupDefs = @(
     @{ Key = "__GROUP__:Internet"; Title = "Internet & K$([char]0x1EBF)t n$([char]0x1ED1)i";  Categories = @("Web Browsers", "Communication", "Remote Desktop", "Download Managers", "File Transfer & Cloud") },
-    @{ Key = "__GROUP__:DevAI";    Title = "AI & L$([char]0x1EAD)p tr$([char]0x00EC)nh";      Categories = @("Antigravity", "AI & Assistants", "JetBrains", "Development", "Database & DevOps") },
+    @{ Key = "__GROUP__:DevAI";    Title = "AI & L$([char]0x1EAD)p tr$([char]0x00EC)nh";      Categories = @("Antigravity", "AI & Assistants", "JetBrains", "Development", "Web & Local Servers", "Database & DevOps") },
     @{ Key = "__GROUP__:Runtimes"; Title = "Th$([char]0x01B0) vi$([char]0x1EC7)n & Runtimes"; Categories = @(".NET Runtimes", "Java Runtimes", "C++ & System Runtimes") },
     @{ Key = "__GROUP__:System";   Title = "H$([char]0x1EC7) th$([char]0x1ED1)ng & B$([char]0x1EA3)o m$([char]0x1EAD)t";  Categories = @("System Utilities", "Optimization & Tuning", "Hardware & Monitoring", "Benchmark & Stress Test", "Security & Network") },
     @{ Key = "__GROUP__:Media";    Title = "Media & V$([char]0x0103)n ph$([char]0x00F2)ng";   Categories = @("Audio & Video", "Graphics & Design", "Documents & Office") },
@@ -40466,22 +41211,67 @@ function Test-7zSfxHasRunner {
 function Get-SilentInstallerArgsForFile {
     param(
         [string]$Path,
-        [string]$FrameworkOverride = ""
+        [string]$FrameworkOverride = "",
+        [string]$InstallerTypeHint = "",
+        [string]$Scope = "",
+        [string]$InstallLocation = ""
     )
     if ([string]::IsNullOrWhiteSpace($Path)) { return "--silent-install" }
-    if ($Path -match '\.msi$') {
-        return "/i `"$Path`" /qn /norestart"
+    $cleanScope = if ($Scope) { $Scope.Trim().ToLowerInvariant() } else { "" }
+    $cleanLoc = if ($InstallLocation) { $InstallLocation.Trim().Trim('"').TrimEnd('\') } else { "" }
+    $typeHint = if ($InstallerTypeHint) { $InstallerTypeHint.Trim().ToLowerInvariant() } else { "" }
+
+    if ($Path -match '\.msi$' -or $typeHint -eq 'msi') {
+        $msiArgs = "/i `"$Path`" /qn /norestart"
+        if ($cleanScope -eq "machine") {
+            $msiArgs += " ALLUSERS=1"
+        } elseif ($cleanScope -eq "user") {
+            $msiArgs += ' ALLUSERS="" MSIINSTALLPERUSER=1'
+        }
+        return $msiArgs
     }
+
     $fw = $FrameworkOverride
+    if ([string]::IsNullOrWhiteSpace($fw) -and -not [string]::IsNullOrWhiteSpace($typeHint)) {
+        switch -Regex ($typeHint) {
+            'nullsoft|nsis' { $fw = "NSIS" }
+            'inno'          { $fw = "InnoSetup" }
+            'wix|burn'      { $fw = "WiX" }
+        }
+    }
     if ([string]::IsNullOrWhiteSpace($fw) -and ("DuckUtil.DeepUninstallerEngine" -as [type])) {
         try { $fw = [DuckUtil.DeepUninstallerEngine]::DetectInstallerFramework($Path) } catch { $fw = "" }
     }
     switch ($fw) {
-        "InnoSetup"         { return "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" }
-        "NSIS"              { return "/S" }
-        "WiX"               { return "/install /quiet /norestart" }
-        "BitRock"           { return "--mode unattended" }
-        "Squirrel"          { return "--silent" }
+        "InnoSetup" {
+            $a = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-"
+            if ($cleanScope -eq "machine") { $a += " /ALLUSERS" }
+            elseif ($cleanScope -eq "user") { $a += " /CURRENTUSER" }
+            if (-not [string]::IsNullOrWhiteSpace($cleanLoc)) {
+                $a += " /DIR=`"$cleanLoc`""
+            }
+            return $a
+        }
+        "NSIS" {
+            $parts = [System.Collections.Generic.List[string]]::new()
+            if ($cleanScope -eq "machine") { [void]$parts.Add("/allusers") }
+            elseif ($cleanScope -eq "user") { [void]$parts.Add("/currentuser") }
+            [void]$parts.Add("/S")
+            if (-not [string]::IsNullOrWhiteSpace($cleanLoc)) {
+                [void]$parts.Add("/D=$cleanLoc")
+            }
+            return ($parts -join " ")
+        }
+        "WiX" { return "/install /quiet /norestart" }
+        "BitRock" {
+            $a = "--mode unattended"
+            if (-not [string]::IsNullOrWhiteSpace($cleanLoc)) { $a += " --prefix `"$cleanLoc`"" }
+            return $a
+        }
+        "Squirrel" {
+            if ($cleanScope -eq "machine") { return $null }
+            return "--silent"
+        }
         "InstallShield"     { return "/s /v`"/qn /norestart`"" }
         "AdvancedInstaller" { return "/exenoui /qn /norestart" }
         "QtIFW"             { return "--accept-licenses --confirm-command" }
@@ -40552,7 +41342,11 @@ function Invoke-GitHubAssetInstall {
     param(
         $App,
         [string]$PreDownloadedPath = "",
-        [string]$PrefetchStatus = ""
+        [string]$PrefetchStatus = "",
+        [string]$Scope = "",
+        [string]$InstallLocation = "",
+        [string]$PreVersion = "",
+        [switch]$RequireUpgrade
     )
     if ($PrefetchStatus -like "SKIP|*") {
         Log-Text "   [*] B$([char]0x1ECF) qua t$([char]0x1EA3)i GitHub ($PrefetchStatus), chuy$([char]0x1EC3)n sang ngu$([char]0x1ED3)n d$([char]0x1EF1) ph$([char]0x00F2)ng..."
@@ -40574,6 +41368,14 @@ function Invoke-GitHubAssetInstall {
             }
             Log-Text "   -> $([char]0x0110)ang t$([char]0x00EC)m b$([char]0x1EA3)n ph$([char]0x00E1)t h$([char]0x00E0)nh m$([char]0x1EDB)i nh$([char]0x1EA5)t t$([char]0x1EEB) GitHub ($($App.GitHubRepo))..."
             $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
+            if ($RequireUpgrade -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and $rel -and -not [string]::IsNullOrWhiteSpace([string]$rel.tag_name)) {
+                $ghTagVer = ""
+                if ([string]$rel.tag_name -match '(\d+(?:\.\d+)+)') { $ghTagVer = $Matches[1] }
+                if (-not [string]::IsNullOrWhiteSpace($ghTagVer) -and (Compare-CatalogVersionsSafe $ghTagVer $PreVersion) -le 0) {
+                    Log-Text "   [*] GitHub Release ($ghTagVer) kh$([char]0x00F4)ng m$([char]0x1EDB)i h$([char]0x01A1)n b$([char]0x1EA3)n $([char]0x0111)ang c$([char]0x00E0)i ($PreVersion); b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ch$([char]0x1ED1)ng h$([char]0x1EA1) c$([char]0x1EA5)p."
+                    return -1
+                }
+            }
             $asset = $rel.assets | Where-Object { $_.name -match $App.AssetRegex } | Select-Object -First 1
             if (-not $asset) {
                 Log-Text "   [!] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1ED9) c$([char]0x00E0)i ph$([char]0x00F9) h$([char]0x1EE3)p tr$([char]0x00EA)n GitHub Release."
@@ -40599,7 +41401,10 @@ function Invoke-GitHubAssetInstall {
             return -1
         }
         if ($dlPath -match '\.msi$') {
-            $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath
+            [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
+            if ($script:cancelRequested) { return -2 }
+            if ($script:isWindowClosing) { return -1 }
+            $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath -InstallerTypeHint "msi" -Scope $Scope -InstallLocation $InstallLocation
             return (Run-CliStream "msiexec.exe" $silentArgs -IsolateStdin -AllowCancel)
         }
 
@@ -40619,7 +41424,11 @@ function Invoke-GitHubAssetInstall {
             }
         }
 
-        $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath -FrameworkOverride $fw
+        $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath -FrameworkOverride $fw -Scope $Scope -InstallLocation $InstallLocation
+        if ($null -eq $silentArgs) {
+            Log-Text "   [!] B$([char]0x1ED9) c$([char]0x00E0)i '$fw' kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) c$([char]0x00E0)i v$([char]0x00E0)o scope '$Scope'; b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh tr$([char]0x00F9)ng b$([char]0x1EA3)n."
+            return -1
+        }
         $execCode = Run-CliStream $dlPath $silentArgs -IsolateStdin -AllowCancel
         if ($execCode -in @(0, 3010, 1641) -and ([string]::IsNullOrWhiteSpace($fw) -or $fw -eq "7zSFX" -or $fw -eq "QtIFW")) {
             Wait-SquirrelUpdatersSettle
@@ -41064,19 +41873,13 @@ function Get-WinGetRunOutcomeFromOutput {
     return "Unknown"
 }
 
-function Invoke-SmartAppUpgrade {
-    <#
-    .SYNOPSIS
-        Upgrade a catalog row via WinGet while preserving scope/location and verifying actual upgrade outcome.
-        Returns: 0=upgraded, 2=crack-skipped, 3=already-latest, 4=unverified-no-change, other=error/cancel.
-    #>
+function Resolve-AppUpgradeContext {
     param($Tag, [switch]$IsBulkUpgrade)
-    if (-not $Tag) { return 1 }
+    if (-not $Tag -or -not $Tag.App) { return $null }
     $app = $Tag.App
-    if (-not $app) { return 1 }
-
     $upgradeId = Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)
     $preVersion = [string]$Tag.InstalledVersion
+    $targetAvail = if ($Tag.PSObject.Properties['AvailableVersion']) { [string]$Tag.AvailableVersion } else { "" }
 
     $instApps = if ($script:cachedUninstallerApps -and $script:cachedUninstallerApps.Count -gt 0) {
         $script:cachedUninstallerApps
@@ -41089,21 +41892,25 @@ function Invoke-SmartAppUpgrade {
     $regMatch = Find-RegistryMatchForCatalogApp -App $app -InstalledList $instApps -DetectedId ([string]$Tag.DetectedId) -InstalledVersion $preVersion
     $existingLoc = Resolve-AppInstallLocation -App $app -RegMatch $regMatch
 
+    $isCrackBlocked = $false
     if ($existingLoc -and ("DuckUtil.AppCatalogEngine" -as [type])) {
         if ([DuckUtil.AppCatalogEngine]::HasCrackOrPatchIndicators($existingLoc)) {
             if ($IsBulkUpgrade) {
                 Log-Text "[!] Ph$([char]0x00E1)t hi$([char]0x1EC7)n d$([char]0x1EA5)u hi$([char]0x1EC7)u file Crack/Patch t$([char]0x1EA1)i '$existingLoc' - T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng b$([char]0x1ECF) qua $($app.Name) $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA3)o v$([char]0x1EC7) b$([char]0x1EA3)n patch."
-                return 2
+                $isCrackBlocked = $true
             } else {
-                if ($script:isWindowClosing) { return 2 }
-                $ansCrack = Show-OwnedMessageBox `
-                    -Text "Ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p nghi ng$([char]0x1EDD) l$([char]0x00E0) Crack/Patch ho$([char]0x1EB7)c loader kh$([char]0x00F4)ng ch$([char]0x00ED)nh th$([char]0x1EE9)c trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t c$([char]0x1EE7)a $($app.Name):`n$existingLoc`n`nN$([char]0x00E2)ng c$([char]0x1EA5)p qua WinGet c$([char]0x00F3) th$([char]0x1EC3) ghi $([char]0x0111)$([char]0x00E8) file patch ho$([char]0x1EB7)c l$([char]0x00E0)m h$([char]0x1ECF)ng crack.`nB$([char]0x1EA1)n v$([char]0x1EAB)n mu$([char]0x1ED1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c n$([char]0x00E2)ng c$([char]0x1EA5)p?" `
-                    -Caption "C$([char]0x1EA3)nh b$([char]0x00E1)o b$([char]0x1EA3)o v$([char]0x1EC7) Crack / Patch" `
-                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
-                if ($ansCrack -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
-                    Log-Text "[!] Ng$([char]0x01B0)$([char]0x1EDD)i d$([char]0x00F9)ng $([char]0x0111)$([char]0x00E3) h$([char]0x1EE7)y n$([char]0x00E2)ng c$([char]0x1EA5)p $($app.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file Crack/Patch."
-                    return 2
+                if ($script:isWindowClosing) {
+                    $isCrackBlocked = $true
+                } else {
+                    $ansCrack = Show-OwnedMessageBox `
+                        -Text "Ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p nghi ng$([char]0x1EDD) l$([char]0x00E0) Crack/Patch ho$([char]0x1EB7)c loader kh$([char]0x00F4)ng ch$([char]0x00ED)nh th$([char]0x1EE9)c trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t c$([char]0x1EE7)a $($app.Name):`n$existingLoc`n`nN$([char]0x00E2)ng c$([char]0x1EA5)p c$([char]0x00F3) th$([char]0x1EC3) ghi $([char]0x0111)$([char]0x00E8) file patch ho$([char]0x1EB7)c l$([char]0x00E0)m h$([char]0x1ECF)ng crack.`nB$([char]0x1EA1)n v$([char]0x1EAB)n mu$([char]0x1ED1)n ti$([char]0x1EBF)p t$([char]0x1EE5)c n$([char]0x00E2)ng c$([char]0x1EA5)p?" `
+                        -Caption "C$([char]0x1EA3)nh b$([char]0x00E1)o b$([char]0x1EA3)o v$([char]0x1EC7) Crack / Patch" `
+                        -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                        -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+                    if ($ansCrack -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
+                        Log-Text "[!] Ng$([char]0x01B0)$([char]0x1EDD)i d$([char]0x00F9)ng $([char]0x0111)$([char]0x00E3) h$([char]0x1EE7)y n$([char]0x00E2)ng c$([char]0x1EA5)p $($app.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file Crack/Patch."
+                        $isCrackBlocked = $true
+                    }
                 }
             }
         }
@@ -41136,6 +41943,47 @@ function Invoke-SmartAppUpgrade {
     $normalizedExistingLoc = if ($existingLoc) {
         try { [System.IO.Path]::GetFullPath($existingLoc).TrimEnd('\') } catch { $existingLoc.TrimEnd('\') }
     } else { "" }
+
+    $directLoc = ""
+    if ($normalizedExistingLoc -and $normalizedExistingLoc -notmatch '(?i)\\WindowsApps(\\|$)' -and $normalizedExistingLoc -notmatch '(?i)\\Package Cache(\\|$)') {
+        $directLoc = $normalizedExistingLoc
+    }
+
+    return [PSCustomObject]@{
+        App                   = $app
+        UpgradeId             = $upgradeId
+        PreVersion            = $preVersion
+        TargetAvailable       = $targetAvail
+        RegMatch              = $regMatch
+        ExistingLoc           = $existingLoc
+        NormalizedExistingLoc = $normalizedExistingLoc
+        DirectInstallLocation = $directLoc
+        Scope                 = $scope
+        NeedCustomLocArg      = $needCustomLocArg
+        IsCrackBlocked        = $isCrackBlocked
+    }
+}
+
+function Start-UpgradeDataGuardSession {
+    param($Context, [switch]$IsBulkUpgrade)
+    $session = [PSCustomObject]@{
+        HasSnapshots   = $false
+        BackupRoot     = ""
+        ExistingLoc    = ""
+        LocBkp         = ""
+        CanSnapshotLoc = $false
+        AppDataBkps    = [System.Collections.Generic.List[object]]::new()
+        RegFiles       = [System.Collections.Generic.List[object]]::new()
+        SnapshotType   = $null
+        InstallerRan   = $false
+    }
+    if (-not $Context -or -not $Context.App) { return $session }
+
+    $app = $Context.App
+    $regMatch = $Context.RegMatch
+    $existingLoc = [string]$Context.ExistingLoc
+    $normalizedExistingLoc = [string]$Context.NormalizedExistingLoc
+    $session.ExistingLoc = $existingLoc
 
     $targetAppDataDirs = [System.Collections.Generic.List[string]]::new()
     if (-not $IsBulkUpgrade) {
@@ -41197,114 +42045,954 @@ function Invoke-SmartAppUpgrade {
         [DuckUtil.DeepUninstallerEngine]
     } else { $null }
 
-    $hasSnapshots = $false
     $locBkp = Join-Path $backupRoot "InstallLocation"
-    $appDataBkps = [System.Collections.Generic.List[object]]::new()
-    $regFiles = [System.Collections.Generic.List[object]]::new()
-
     $canSnapshotLoc = ($existingLoc -and $existingLoc -notmatch '(?i)\\WindowsApps(\\|$)' -and $existingLoc -notmatch '(?i)\\Package Cache(\\|$)' -and (Test-Path -LiteralPath $existingLoc))
     $shouldSnapshot = ($null -ne $snapshotType) -and ($canSnapshotLoc -or $targetAppDataDirs.Count -gt 0 -or $hkcuKeys.Count -gt 0)
+
+    $session.BackupRoot = $backupRoot
+    $session.LocBkp = $locBkp
+    $session.CanSnapshotLoc = [bool]$canSnapshotLoc
+    $session.SnapshotType = $snapshotType
+
+    if (-not $shouldSnapshot) { return $session }
+
+    $adBkpList = [System.Collections.Generic.List[string]]::new()
     $snapRawHkcuArr = [System.Collections.Generic.List[string]]::new()
     $snapRegFileArr = [System.Collections.Generic.List[string]]::new()
     $snapRegMeta    = [System.Collections.Generic.List[object]]::new()
 
-    if ($shouldSnapshot) {
-        $adBkpList = [System.Collections.Generic.List[string]]::new()
+    if (-not $IsBulkUpgrade) {
         $adIdx = 0
-        if (-not $IsBulkUpgrade) {
-            foreach ($adDir in $targetAppDataDirs) {
-                $adIdx++
-                [void]$adBkpList.Add((Join-Path $backupRoot "AppData_$adIdx"))
+        foreach ($adDir in $targetAppDataDirs) {
+            $adIdx++
+            [void]$adBkpList.Add((Join-Path $backupRoot "AppData_$adIdx"))
+        }
+        $rkIdx = 0
+        foreach ($rkEntry in $hkcuKeys) {
+            $rkIdx++
+            $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
+            $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
+            [void]$snapRawHkcuArr.Add($rawHkcu)
+            [void]$snapRegFileArr.Add($rf)
+            [void]$snapRegMeta.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
+        }
+    }
+
+    $hasAsyncGuard = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardSnapshotAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+    if ($hasAsyncGuard) {
+        $snapTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardSnapshotAsync(
+            $backupRoot,
+            [string]$existingLoc,
+            $locBkp,
+            [bool]$canSnapshotLoc,
+            [string[]]$targetAppDataDirs.ToArray(),
+            [string[]]$adBkpList.ToArray(),
+            [string[]]$snapRawHkcuArr.ToArray(),
+            [string[]]$snapRegFileArr.ToArray(),
+            26214400L
+        )
+        [void](Wait-TaskNonBlocking -Task $snapTask -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
+        if ($snapTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $snapTask.Result) {
+            $sRes = $snapTask.Result
+            $session.HasSnapshots = [bool]$sRes.HasSnapshots
+            if ($sRes.CopiedAppDataDirs -and $sRes.CopiedAppDataBackups) {
+                $cLen = [Math]::Min($sRes.CopiedAppDataDirs.Length, $sRes.CopiedAppDataBackups.Length)
+                for ($ci = 0; $ci -lt $cLen; $ci++) {
+                    $session.AppDataBkps.Add([PSCustomObject]@{ Source = $sRes.CopiedAppDataDirs[$ci]; Backup = $sRes.CopiedAppDataBackups[$ci] })
+                }
             }
-            $rkIdx = 0
-            foreach ($rkEntry in $hkcuKeys) {
-                $rkIdx++
-                $rf = Join-Path $backupRoot "hkcu_reg_$rkIdx.reg"
-                $rawHkcu = $rkEntry.PSPath -replace '^HKCU:\\', 'HKEY_CURRENT_USER\'
-                [void]$snapRawHkcuArr.Add($rawHkcu)
-                [void]$snapRegFileArr.Add($rf)
-                [void]$snapRegMeta.Add([PSCustomObject]@{ PSPath = $rkEntry.PSPath; Key = $rawHkcu; File = $rf; HadData = $rkEntry.HadData })
+            if ($sRes.ExportedRegIndices) {
+                foreach ($riIdx in $sRes.ExportedRegIndices) {
+                    if ($riIdx -ge 0 -and $riIdx -lt $snapRegMeta.Count) {
+                        $session.RegFiles.Add($snapRegMeta[$riIdx])
+                    }
+                }
             }
         }
+    } else {
+        if (Test-Path -LiteralPath $backupRoot) {
+            Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 
-        $hasAsyncGuard = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardSnapshotAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
-        if ($hasAsyncGuard) {
-            $snapTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardSnapshotAsync(
-                $backupRoot,
-                [string]$existingLoc,
-                $locBkp,
-                [bool]$canSnapshotLoc,
-                [string[]]$targetAppDataDirs.ToArray(),
-                [string[]]$adBkpList.ToArray(),
-                [string[]]$snapRawHkcuArr.ToArray(),
-                [string[]]$snapRegFileArr.ToArray(),
-                26214400L
-            )
-            [void](Wait-TaskNonBlocking -Task $snapTask -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
-            if ($snapTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $snapTask.Result) {
-                $sRes = $snapTask.Result
-                $hasSnapshots = [bool]$sRes.HasSnapshots
-                if ($sRes.CopiedAppDataDirs -and $sRes.CopiedAppDataBackups) {
-                    $cLen = [Math]::Min($sRes.CopiedAppDataDirs.Length, $sRes.CopiedAppDataBackups.Length)
-                    for ($ci = 0; $ci -lt $cLen; $ci++) {
-                        $appDataBkps.Add([PSCustomObject]@{ Source = $sRes.CopiedAppDataDirs[$ci]; Backup = $sRes.CopiedAppDataBackups[$ci] })
-                    }
-                }
-                if ($sRes.ExportedRegIndices) {
-                    foreach ($riIdx in $sRes.ExportedRegIndices) {
-                        if ($riIdx -ge 0 -and $riIdx -lt $snapRegMeta.Count) {
-                            $regFiles.Add($snapRegMeta[$riIdx])
-                        }
-                    }
+        if ($canSnapshotLoc) {
+            $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
+            if ($bytes -gt 0) { $session.HasSnapshots = $true }
+        }
+
+        if (-not $IsBulkUpgrade) {
+            for ($ai = 0; $ai -lt $targetAppDataDirs.Count; $ai++) {
+                $adDir = $targetAppDataDirs[$ai]
+                $adBkpDir = $adBkpList[$ai]
+                $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
+                if ($b -gt 0) {
+                    $session.HasSnapshots = $true
+                    $session.AppDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
                 }
             }
-        } else {
-            if (Test-Path -LiteralPath $backupRoot) {
-                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 
-            if ($canSnapshotLoc) {
-                $bytes = $snapshotType::BackupDirectorySnapshot($existingLoc, $locBkp, 26214400L, $true)
-                if ($bytes -gt 0) { $hasSnapshots = $true }
-            }
-
-            if (-not $IsBulkUpgrade) {
-                for ($ai = 0; $ai -lt $targetAppDataDirs.Count; $ai++) {
-                    $adDir = $targetAppDataDirs[$ai]
-                    $adBkpDir = $adBkpList[$ai]
-                    $b = $snapshotType::BackupDirectorySnapshot($adDir, $adBkpDir, 26214400L, $false)
-                    if ($b -gt 0) {
-                        $hasSnapshots = $true
-                        $appDataBkps.Add([PSCustomObject]@{ Source = $adDir; Backup = $adBkpDir })
-                    }
-                }
-
-                for ($riIdx = 0; $riIdx -lt $snapRegMeta.Count; $riIdx++) {
-                    $metaR = $snapRegMeta[$riIdx]
+            for ($riIdx = 0; $riIdx -lt $snapRegMeta.Count; $riIdx++) {
+                $metaR = $snapRegMeta[$riIdx]
+                try {
+                    $regPsi = New-Object System.Diagnostics.ProcessStartInfo
+                    $regPsi.FileName = "reg.exe"
+                    $regPsi.Arguments = "export `"$($metaR.Key)`" `"$($metaR.File)`" /y"
+                    $regPsi.CreateNoWindow = $true
+                    $regPsi.UseShellExecute = $false
+                    $pReg = [System.Diagnostics.Process]::Start($regPsi)
                     try {
-                        $regPsi = New-Object System.Diagnostics.ProcessStartInfo
-                        $regPsi.FileName = "reg.exe"
-                        $regPsi.Arguments = "export `"$($metaR.Key)`" `"$($metaR.File)`" /y"
-                        $regPsi.CreateNoWindow = $true
-                        $regPsi.UseShellExecute = $false
-                        $pReg = [System.Diagnostics.Process]::Start($regPsi)
-                        try {
-                            if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $metaR.File)) {
-                                $hasSnapshots = $true
-                                $regFiles.Add($metaR)
-                            }
-                        } finally {
-                            if ($pReg) { try { $pReg.Dispose() } catch {} }
+                        if ($pReg -and $pReg.WaitForExit(10000) -and $pReg.ExitCode -eq 0 -and (Test-Path -LiteralPath $metaR.File)) {
+                            $session.HasSnapshots = $true
+                            $session.RegFiles.Add($metaR)
                         }
+                    } finally {
+                        if ($pReg) { try { $pReg.Dispose() } catch {} }
+                    }
+                } catch {}
+            }
+        }
+    }
+
+    if ($session.HasSnapshots) {
+        Log-Text "[*] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t UpgradeDataGuard: Ch$([char]0x1EE5)p snapshot c$([char]0x1EA5)u h$([char]0x00EC)nh tr$([char]0x01B0)$([char]0x1EDB)c khi n$([char]0x00E2)ng c$([char]0x1EA5)p."
+    }
+    return $session
+}
+
+function Complete-UpgradeDataGuardSession {
+    param(
+        $Session,
+        [bool]$PreInstallerAborted = $false
+    )
+    if (-not $Session -or -not $Session.HasSnapshots) { return }
+    $backupRoot = [string]$Session.BackupRoot
+    $existingLoc = [string]$Session.ExistingLoc
+    $locBkp = [string]$Session.LocBkp
+    $canSnapshotLoc = [bool]$Session.CanSnapshotLoc
+    $appDataBkps = $Session.AppDataBkps
+    $regFiles = $Session.RegFiles
+    $snapshotType = $Session.SnapshotType
+
+    $regImportTargets = [System.Collections.Generic.List[object]]::new()
+    $regImportFiles   = [System.Collections.Generic.List[string]]::new()
+    $regImportIndices = [System.Collections.Generic.List[int]]::new()
+    if (-not $PreInstallerAborted) {
+        for ($ri = 0; $ri -lt $regFiles.Count; $ri++) {
+            $rfItem = $regFiles[$ri]
+            if (Test-Path -LiteralPath $rfItem.File) {
+                $needRegRestore = $false
+                if (-not (Test-Path -LiteralPath $rfItem.PSPath)) {
+                    $needRegRestore = $true
+                } elseif ($rfItem.HadData) {
+                    try {
+                        $curKey = Get-Item -LiteralPath $rfItem.PSPath -ErrorAction SilentlyContinue
+                        if ($curKey -and $curKey.ValueCount -eq 0 -and $curKey.SubKeyCount -eq 0) { $needRegRestore = $true }
                     } catch {}
+                }
+                if ($needRegRestore) {
+                    [void]$regImportTargets.Add($rfItem)
+                    [void]$regImportFiles.Add($rfItem.File)
+                    [void]$regImportIndices.Add($ri)
                 }
             }
         }
     }
 
-    if ($hasSnapshots) {
-        Log-Text "[*] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t UpgradeDataGuard: Ch$([char]0x1EE5)p snapshot c$([char]0x1EA5)u h$([char]0x00EC)nh tr$([char]0x01B0)$([char]0x1EDB)c khi n$([char]0x00E2)ng c$([char]0x1EA5)p."
+    $adSrcArr = [System.Collections.Generic.List[string]]::new()
+    $adBkpArr = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in $appDataBkps) {
+        [void]$adSrcArr.Add($item.Source)
+        [void]$adBkpArr.Add($item.Backup)
+    }
+
+    $hasAsyncRestore = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardRestoreAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+    if ($hasAsyncRestore) {
+        $restTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardRestoreAsync(
+            $backupRoot,
+            (-not $PreInstallerAborted),
+            [string]$existingLoc,
+            $locBkp,
+            [bool]$canSnapshotLoc,
+            [string[]]$adSrcArr.ToArray(),
+            [string[]]$adBkpArr.ToArray(),
+            [string[]]$regImportFiles.ToArray(),
+            [int[]]$regImportIndices.ToArray()
+        )
+        [void](Wait-TaskNonBlocking -Task $restTask -TimeoutSeconds 25)
+        if ($restTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $restTask.Result) {
+            $rRes = $restTask.Result
+            if ($rRes.RestoredLocFiles -gt 0) {
+                Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredLocFiles) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+            }
+            if ($rRes.RestoredAppDataCounts) {
+                for ($ai = 0; $ai -lt $rRes.RestoredAppDataCounts.Length; $ai++) {
+                    if ($rRes.RestoredAppDataCounts[$ai] -gt 0 -and $ai -lt $adSrcArr.Count) {
+                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredAppDataCounts[$ai]) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($adSrcArr[$ai])"
+                    }
+                }
+            }
+            if ($rRes.RestoredRegIndices) {
+                foreach ($impIdx in $rRes.RestoredRegIndices) {
+                    if ($impIdx -ge 0 -and $impIdx -lt $regFiles.Count) {
+                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($regFiles[$impIdx].Key)"
+                    }
+                }
+            }
+        }
+    } else {
+        if (-not $PreInstallerAborted) {
+            if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
+                $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
+                if ($restoredLoc -gt 0) {
+                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                }
+            }
+
+            if ($snapshotType) {
+                foreach ($item in $appDataBkps) {
+                    if (Test-Path -LiteralPath $item.Backup) {
+                        $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
+                        if ($resAd -gt 0) {
+                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
+                        }
+                    }
+                }
+            }
+
+            foreach ($rfItem in $regImportTargets) {
+                try {
+                    $impPsi = New-Object System.Diagnostics.ProcessStartInfo
+                    $impPsi.FileName = "reg.exe"
+                    $impPsi.Arguments = "import `"$($rfItem.File)`""
+                    $impPsi.CreateNoWindow = $true
+                    $impPsi.UseShellExecute = $false
+                    $pImp = [System.Diagnostics.Process]::Start($impPsi)
+                    try {
+                        if ($pImp) { [void]$pImp.WaitForExit(10000) }
+                    } finally {
+                        if ($pImp) { try { $pImp.Dispose() } catch {} }
+                    }
+                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
+                } catch {}
+            }
+        }
+
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($backupRoot) -and (Test-Path -LiteralPath $backupRoot)) {
+                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        } catch {}
+    }
+}
+
+function Parse-WinGetShowManifestText {
+    param(
+        [string]$RawText,
+        [string]$Id = ""
+    )
+    if ([string]::IsNullOrWhiteSpace($RawText)) { return $null }
+    $lines = $RawText -split "\r?\n"
+    $ver = ""
+    $instType = ""
+    $url = ""
+    $sha = ""
+
+    # Layer 1: English & Vietnamese labeled fields
+    foreach ($ln in $lines) {
+        if ([string]::IsNullOrWhiteSpace($ver) -and $ln -match "(?i)^\s*(?:Version|Phi[e$([char]0x00EA)]n\s+b[a$([char]0x1EA3)]n)\s*:\s*(.+?)\s*`$") {
+            $ver = $Matches[1].Trim()
+            continue
+        }
+        if ([string]::IsNullOrWhiteSpace($instType) -and $ln -match "(?i)^\s*(?:Installer\s+Type|Lo[a$([char]0x1EA1)]i\s+Tr[i$([char]0x00EC)]nh\s+c[a$([char]0x00E0)]i\s+[$([char]0x0111)d][a$([char]0x1EB7)]t)\s*:\s*(.+?)\s*`$") {
+            $instType = $Matches[1].Trim().ToLowerInvariant()
+            continue
+        }
+        if ([string]::IsNullOrWhiteSpace($url) -and $ln -match "(?i)^\s*(?:Installer\s+Url|Url\s+Tr[i$([char]0x00EC)]nh\s+c[a$([char]0x00E0)]i\s+[$([char]0x0111)d][a$([char]0x1EB7)]t)\s*:\s*(https://\S+)\s*`$") {
+            $url = $Matches[1].Trim()
+            continue
+        }
+        if ([string]::IsNullOrWhiteSpace($sha) -and $ln -match "(?i)^\s*(?:Installer\s+SHA256|SHA256\s+Tr[i$([char]0x00EC)]nh\s+c[a$([char]0x00E0)]i\s+[$([char]0x0111)d][a$([char]0x1EB7)]t)\s*:\s*([0-9a-fA-F]{64})\s*`$") {
+            $sha = $Matches[1].Trim().ToLowerInvariant()
+            continue
+        }
+    }
+
+    # Layer 2: Locale-agnostic structural fallback anchored on the 64-hex SHA256 line
+    $shaIdx = -1
+    if ([string]::IsNullOrWhiteSpace($sha)) {
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^\s*[^:]+:\s*([0-9a-fA-F]{64})\s*$') {
+                $sha = $Matches[1].Trim().ToLowerInvariant()
+                $shaIdx = $i
+                break
+            }
+        }
+    } else {
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match [regex]::Escape($sha)) { $shaIdx = $i; break }
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($url) -and $shaIdx -ge 0) {
+        $startIdx = [Math]::Max(0, $shaIdx - 6)
+        $endIdx = [Math]::Min($lines.Count - 1, $shaIdx + 2)
+        for ($j = $shaIdx - 1; $j -ge $startIdx; $j--) {
+            if ($lines[$j] -match '^\s*([^:]+):\s*(https://\S+)\s*$') {
+                $lbl = $Matches[1]
+                $candUrl = $Matches[2].Trim()
+                if ($lbl -notmatch "(?i)Homepage|Publisher|License|Privacy|Support|Release\s*Notes|Manifest|Purchase|Copyright|Trang\s*ch[u$([char]0x1EE7)]|Gi[a$([char]0x1EA5)]y\s*ph[e$([char]0x00E9)]p|Quy[e$([char]0x1EC1)]n\s*ri[e$([char]0x00EA)]ng") {
+                    $url = $candUrl
+                    break
+                }
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($url)) {
+            for ($j = $shaIdx + 1; $j -le $endIdx; $j++) {
+                if ($lines[$j] -match '^\s*([^:]+):\s*(https://\S+)\s*$') {
+                    $lbl = $Matches[1]
+                    if ($lbl -notmatch '(?i)Homepage|Publisher|License|Privacy|Support|Release\s*Notes|Manifest|Purchase|Copyright') {
+                        $url = $Matches[2].Trim()
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($instType) -and $shaIdx -ge 0) {
+        $startIdx = [Math]::Max(0, $shaIdx - 8)
+        $endIdx = [Math]::Min($lines.Count - 1, $shaIdx + 2)
+        for ($j = $startIdx; $j -le $endIdx; $j++) {
+            if ($lines[$j] -match '(?i)^\s*[^:]+:\s*(nullsoft|inno|wix|burn|msi|exe|zip|portable|msix|appx|msstore|font)\s*$') {
+                $instType = $Matches[1].Trim().ToLowerInvariant()
+                break
+            }
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($url) -or [string]::IsNullOrWhiteSpace($sha)) { return $null }
+    if ($url -notmatch '^https://' -or $sha -notmatch '^[0-9a-fA-F]{64}$') { return $null }
+    if ($instType -match '(?i)^(zip|portable|msix|appx|msstore|font)$') { return $null }
+
+    $pathOnly = $url -replace '\?.*$', ''
+    if ($pathOnly -match '(?i)\.(zip|7z|rar|tar|gz|xz|msix|appx|msixbundle|appxbundle)$') { return $null }
+    if ([string]::IsNullOrWhiteSpace($instType)) {
+        $instType = if ($pathOnly -match '(?i)\.msi$') { "msi" } else { "exe" }
+    }
+
+    $leaf = ""
+    try {
+        $uriObj = [System.Uri]$url
+        $leaf = [System.IO.Path]::GetFileName([System.Uri]::UnescapeDataString($uriObj.AbsolutePath))
+    } catch {}
+    if ([string]::IsNullOrWhiteSpace($leaf) -or $leaf -notmatch '\.(exe|msi)$') {
+        $safeId = if ([string]::IsNullOrWhiteSpace($Id)) { "package" } else { ($Id -replace '[^a-zA-Z0-9._-]', '_') }
+        $ext = if ($instType -eq "msi") { ".msi" } else { ".exe" }
+        $leaf = "$safeId-installer$ext"
+    }
+
+    return [PSCustomObject]@{
+        Source        = "WinGetManifest"
+        Url           = $url
+        Sha256        = $sha
+        Version       = $ver
+        InstallerType = $instType
+        FileName      = $leaf
+    }
+}
+
+function Get-WinGetInstallerManifestInfo {
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        $App = $null
+    )
+    if ([string]::IsNullOrWhiteSpace($Id)) { return $null }
+    if ($Id -match '^(ARP|MSIX|LOCAL)\\') { return $null }
+    if (($App -and $App.Source -eq "msstore") -or $Id -match '^9[A-Z0-9]{11}$') { return $null }
+
+    $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
+    $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --disable-interactivity --accept-source-agreements") -TimeoutSeconds 15
+    if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled -or $cap.ExitCode -ne 0) {
+        return $null
+    }
+    return (Parse-WinGetShowManifestText -RawText ([string]$cap.StdOut) -Id $Id)
+}
+
+function Resolve-VendorDirectInstallerInfo {
+    param(
+        $App,
+        [string]$UpgradeId = "",
+        [string]$Scope = ""
+    )
+    $id = if (-not [string]::IsNullOrWhiteSpace($UpgradeId)) { $UpgradeId } elseif ($App) { [string]$App.ID } else { "" }
+    if ([string]::IsNullOrWhiteSpace($id)) { return $null }
+
+    $prevProgPref = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        # 1. JetBrains official Releases JSON API (12 products)
+        $jbMap = @{
+            "JetBrains.Toolbox"                = "TBA"
+            "JetBrains.IntelliJIDEA.Community" = "IIC"
+            "JetBrains.IntelliJIDEA.Ultimate"  = "IIU"
+            "JetBrains.PyCharm.Community"      = "PCC"
+            "JetBrains.PyCharm.Professional"   = "PCP"
+            "JetBrains.WebStorm"               = "WS"
+            "JetBrains.PhpStorm"               = "PS"
+            "JetBrains.GoLand"                 = "GO"
+            "JetBrains.Rider"                  = "RD"
+            "JetBrains.CLion"                  = "CL"
+            "JetBrains.DataGrip"               = "DG"
+            "JetBrains.RustRover"              = "RR"
+        }
+        if ($jbMap.ContainsKey($id)) {
+            $jbCode = $jbMap[$id]
+            $resp = Invoke-RestMethod -Uri "https://data.services.jetbrains.com/products/releases?code=$jbCode&latest=true&type=release" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            $rel = $resp.$jbCode | Select-Object -First 1
+            if ($rel -and $rel.downloads -and $rel.downloads.windows -and $rel.downloads.windows.link -and $rel.downloads.windows.checksumLink) {
+                $dlUrl = [string]$rel.downloads.windows.link
+                $shaUrl = [string]$rel.downloads.windows.checksumLink
+                if ($dlUrl -match '^https://' -and $shaUrl -match '^https://') {
+                    $shaRaw = [string](Invoke-RestMethod -Uri $shaUrl -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 10)
+                    if ($shaRaw -match '(?i)\b([0-9a-f]{64})\b') {
+                        $shaHex = $Matches[1].ToLowerInvariant()
+                        $leaf = [System.IO.Path]::GetFileName(($dlUrl -replace '\?.*$', ''))
+                        return [PSCustomObject]@{
+                            Source        = "VendorAPI(JetBrains)"
+                            Url           = $dlUrl
+                            Sha256        = $shaHex
+                            Version       = [string]$rel.version
+                            InstallerType = "nullsoft"
+                            FileName      = if ($leaf -match '\.(exe|msi)$') { $leaf } else { "$jbCode-installer.exe" }
+                        }
+                    }
+                }
+            }
+            return $null
+        }
+
+        # 2. Eclipse Adoptium Temurin official API (16 JDK/JRE packages)
+        if ($id -match '^EclipseAdoptium\.Temurin\.(\d+)\.(JDK|JRE)$') {
+            $major = $Matches[1]
+            $imgType = $Matches[2].ToLowerInvariant()
+            $adUrl = "https://api.adoptium.net/v3/assets/latest/$major/hotspot?architecture=x64&os=windows&image_type=$imgType"
+            $assets = Invoke-RestMethod -Uri $adUrl -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            foreach ($a in @($assets)) {
+                if ($a -and $a.binary -and $a.binary.installer -and $a.binary.installer.link -and $a.binary.installer.checksum) {
+                    $dlUrl = [string]$a.binary.installer.link
+                    $shaHex = ([string]$a.binary.installer.checksum).Trim().ToLowerInvariant()
+                    if ($dlUrl -match '^https://.*\.msi(\?.*)?$' -and $shaHex -match '^[0-9a-f]{64}$') {
+                        $verStr = ""
+                        if ($a.version) {
+                            $vMaj = $a.version.major
+                            $vMin = if ($null -ne $a.version.minor) { $a.version.minor } else { 0 }
+                            $vSec = if ($null -ne $a.version.security) { $a.version.security } else { 0 }
+                            $vBld = if ($null -ne $a.version.build) { $a.version.build } else { 0 }
+                            if ($null -ne $a.version.patch -and [int]$a.version.patch -gt 0) {
+                                $verStr = "$vMaj.$vMin.$vSec.$($a.version.patch).$vBld"
+                            } else {
+                                $verStr = "$vMaj.$vMin.$vSec.$vBld"
+                            }
+                        }
+                        $leaf = [System.IO.Path]::GetFileName(($dlUrl -replace '\?.*$', ''))
+                        return [PSCustomObject]@{
+                            Source        = "VendorAPI(Adoptium)"
+                            Url           = $dlUrl
+                            Sha256        = $shaHex
+                            Version       = $verStr
+                            InstallerType = "msi"
+                            FileName      = if ($leaf -match '\.msi$') { $leaf } else { "Temurin-$major-$imgType.msi" }
+                        }
+                    }
+                }
+            }
+            return $null
+        }
+
+        # 3. Microsoft Visual Studio Code official Update API
+        if ($id -eq "Microsoft.VisualStudioCode") {
+            $channel = if ($Scope -eq "machine") { "win32-x64" } else { "win32-x64-user" }
+            $vsc = Invoke-RestMethod -Uri "https://update.code.visualstudio.com/api/update/$channel/stable/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            if ($vsc -and $vsc.url -and $vsc.sha256hash) {
+                $dlUrl = [string]$vsc.url
+                $shaHex = ([string]$vsc.sha256hash).Trim().ToLowerInvariant()
+                if ($dlUrl -match '^https://' -and $shaHex -match '^[0-9a-f]{64}$') {
+                    $leaf = [System.IO.Path]::GetFileName(($dlUrl -replace '\?.*$', ''))
+                    return [PSCustomObject]@{
+                        Source        = "VendorAPI(VSCode)"
+                        Url           = $dlUrl
+                        Sha256        = $shaHex
+                        Version       = [string]$vsc.productVersion
+                        InstallerType = "inno"
+                        FileName      = if ($leaf -match '\.exe$') { $leaf } else { "VSCodeSetup-x64.exe" }
+                    }
+                }
+            }
+            return $null
+        }
+
+        # 4. Node.js official LTS JSON + SHASUMS256.txt
+        if ($id -eq "OpenJS.NodeJS.LTS") {
+            $idxList = Invoke-RestMethod -Uri "https://nodejs.org/dist/index.json" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            $ltsItem = @($idxList) | Where-Object { $_.lts -and $_.lts -ne $false } | Select-Object -First 1
+            if ($ltsItem -and $ltsItem.version) {
+                $verTag = [string]$ltsItem.version
+                $msiName = "node-$verTag-x64.msi"
+                $sumsTxt = [string](Invoke-RestMethod -Uri "https://nodejs.org/dist/$verTag/SHASUMS256.txt" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12)
+                if ($sumsTxt -match ("(?im)^([0-9a-f]{64})\s+" + [regex]::Escape($msiName) + "\s*$")) {
+                    $shaHex = $Matches[1].ToLowerInvariant()
+                    return [PSCustomObject]@{
+                        Source        = "VendorAPI(NodeJS)"
+                        Url           = "https://nodejs.org/dist/$verTag/$msiName"
+                        Sha256        = $shaHex
+                        Version       = ($verTag -replace '^v', '')
+                        InstallerType = "msi"
+                        FileName      = $msiName
+                    }
+                }
+            }
+            return $null
+        }
+    } catch {
+        return $null
+    } finally {
+        $ProgressPreference = $prevProgPref
+    }
+    return $null
+}
+
+function ConvertFrom-ScoopManifestToCandidate {
+    param(
+        $Manifest,
+        [string]$Bucket = "Main",
+        [string]$Slug = ""
+    )
+    if (-not $Manifest) { return $null }
+    $rawUrls = $null
+    $rawHashes = $null
+
+    if ($Manifest.PSObject.Properties['architecture'] -and $Manifest.architecture) {
+        if ($Manifest.architecture.PSObject.Properties['64bit'] -and $Manifest.architecture.'64bit') {
+            $a64 = $Manifest.architecture.'64bit'
+            if ($a64.PSObject.Properties['url']) { $rawUrls = $a64.url }
+            if ($a64.PSObject.Properties['hash']) { $rawHashes = $a64.hash }
+        }
+    }
+    if ($null -eq $rawUrls -and $Manifest.PSObject.Properties['url']) { $rawUrls = $Manifest.url }
+    if ($null -eq $rawHashes -and $Manifest.PSObject.Properties['hash']) { $rawHashes = $Manifest.hash }
+
+    if ($null -eq $rawUrls -or $null -eq $rawHashes) { return $null }
+
+    $urlArr = @($rawUrls)
+    $hashArr = @($rawHashes)
+    $pairCount = [Math]::Min($urlArr.Count, $hashArr.Count)
+
+    for ($i = 0; $i -lt $pairCount; $i++) {
+        $u = ([string]$urlArr[$i]).Trim()
+        # Strip Scoop rename/extract fragments (e.g. #/dl.7z or #/setup.exe)
+        $u = $u -replace '#.*$', ''
+        if ($u -notmatch '^https://') { continue }
+
+        $h = ([string]$hashArr[$i]).Trim()
+        if ($h -match '(?i)^sha256:([0-9a-f]{64})$') {
+            $h = $Matches[1].ToLowerInvariant()
+        } elseif ($h -match '^[a-z0-9]+:') {
+            continue
+        } elseif ($h -match '(?i)^([0-9a-f]{64})$') {
+            $h = $Matches[1].ToLowerInvariant()
+        } else {
+            continue
+        }
+
+        $pathOnly = $u -replace '\?.*$', ''
+        if ($pathOnly -notmatch '(?i)\.(exe|msi)$') { continue }
+
+        $instType = if ($pathOnly -match '(?i)\.msi$') { "msi" } else { "exe" }
+        $leaf = [System.IO.Path]::GetFileName($pathOnly)
+        if ([string]::IsNullOrWhiteSpace($leaf)) { $leaf = "$Slug-installer.$instType" }
+
+        return [PSCustomObject]@{
+            Source        = "Scoop($Bucket/$Slug)"
+            Url           = $u
+            Sha256        = $h
+            Version       = if ($Manifest.PSObject.Properties['version']) { [string]$Manifest.version } else { "" }
+            InstallerType = $instType
+            FileName      = $leaf
+        }
+    }
+    return $null
+}
+
+function Resolve-ScoopBucketInstallerInfo {
+    param(
+        $App,
+        [string]$UpgradeId = ""
+    )
+    $id = if (-not [string]::IsNullOrWhiteSpace($UpgradeId)) { $UpgradeId } elseif ($App) { [string]$App.ID } else { "" }
+    if ([string]::IsNullOrWhiteSpace($id)) { return $null }
+    if (($App -and $App.Source -eq "msstore") -or $id -match '^9[A-Z0-9]{11}$' -or $id -match '^(ARP|MSIX|LOCAL)\\') { return $null }
+
+    $knownSlugs = @{
+        "7zip.7zip"                               = "7zip"
+        "Notepad++.Notepad++"                     = "notepadplusplus"
+        "VideoLAN.VLC"                            = "vlc"
+        "OBSProject.OBSStudio"                    = "obs-studio"
+        "ShareX.ShareX"                           = "sharex"
+        "JannisX11.Blockbench"                    = "blockbench"
+        "Git.Git"                                 = "git"
+        "CPUID.CPU-Z"                             = "cpu-z"
+        "DBBrowserForSQLite.DBBrowserForSQLite"   = "sqlitebrowser"
+        "Insomnia.Insomnia"                       = "insomnia"
+        "TablePlus.TablePlus"                     = "tableplus"
+        "LeNgocKhoa.Laragon"                      = "laragon"
+        "CoreyButler.NVMforWindows"               = "nvm"
+        "Volta.Volta"                             = "volta"
+        "Cloudflare.cloudflared"                  = "cloudflared"
+        "Fork.Fork"                               = "fork"
+        "Axosoft.GitKraken"                       = "gitkraken"
+        "Oracle.MySQLWorkbench"                   = "mysql-workbench"
+        "MariaDB.Server"                          = "mariadb"
+        "PostgreSQL.PostgreSQL.17"                = "postgresql"
+        "qBittorrent.qBittorrent"                 = "qbittorrent"
+        "GIMP.GIMP.3"                             = "gimp"
+        "Inkscape.Inkscape"                       = "inkscape"
+        "BlenderFoundation.Blender"               = "blender"
+        "Postman.Postman"                         = "postman"
+        "Mozilla.Firefox"                         = "firefox"
+        "Brave.Brave"                             = "brave"
+        "Google.Chrome"                           = "googlechrome"
+    }
+
+    $slugs = [System.Collections.Generic.List[string]]::new()
+    if ($knownSlugs.ContainsKey($id)) {
+        [void]$slugs.Add($knownSlugs[$id])
+    } else {
+        $segs = @($id -split '\.' | Where-Object { $_ -and $_ -notmatch '^\d+$' })
+        if ($segs.Count -gt 0) {
+            $leafSlug = ($segs[$segs.Count - 1].ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
+            if ($leafSlug.Length -ge 2 -and -not $slugs.Contains($leafSlug)) { [void]$slugs.Add($leafSlug) }
+        }
+        if ($App -and -not [string]::IsNullOrWhiteSpace($App.Name)) {
+            $nameSlug = ($App.Name.ToLowerInvariant() -replace '\(.*?\)', '' -replace '[^a-z0-9]+', '-').Trim('-')
+            if ($nameSlug.Length -ge 2 -and -not $slugs.Contains($nameSlug) -and $slugs.Count -lt 2) { [void]$slugs.Add($nameSlug) }
+        }
+    }
+
+    $prevProgPref = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        foreach ($slug in $slugs) {
+            if ($script:cancelRequested -or $script:isWindowClosing) { return $null }
+            foreach ($bucket in @("Main", "Extras")) {
+                $manifestUrl = "https://raw.githubusercontent.com/ScoopInstaller/$bucket/master/bucket/$slug.json"
+                try {
+                    $jsonObj = Invoke-RestMethod -Uri $manifestUrl -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 8
+                    $cand = ConvertFrom-ScoopManifestToCandidate -Manifest $jsonObj -Bucket $bucket -Slug $slug
+                    if ($null -ne $cand) { return $cand }
+                } catch {}
+            }
+        }
+    } finally {
+        $ProgressPreference = $prevProgPref
+    }
+    return $null
+}
+
+function Test-PostUpgradeVerified {
+    param(
+        $App,
+        [string]$UpgradeId,
+        [string]$PreVersion,
+        [string]$TargetAvailable = "",
+        [int]$ExecCode = 0,
+        [string]$SourceLabel = "WinGet"
+    )
+    Wait-SquirrelUpdatersSettle
+    try {
+        $postState = Get-WinGetExactPackageState -Id $UpgradeId -App $App
+        if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
+            if ([string]::IsNullOrWhiteSpace($PreVersion) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $PreVersion) -le 0) {
+                Log-Text "   [WARN] $($App.Name): [$SourceLabel] tho$([char]0x00E1)t m$([char]0x00E3) $ExecCode nh$([char]0x01B0)ng WinGet v$([char]0x1EAB)n ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))."
+                return 4
+            }
+        }
+        $postLocal = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $UpgradeId
+        if ($postLocal -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $PreVersion) -le 0) {
+            $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($TargetAvailable) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $TargetAvailable) -lt 0)
+            if ($stillBehindTarget) {
+                Log-Text "   [WARN] $($App.Name): [$SourceLabel] tho$([char]0x00E1)t m$([char]0x00E3) $ExecCode nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n tr$([char]0x00EA)n m$([char]0x00E1)y v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)' (ch$([char]0x01B0)a $([char]0x0111)$([char]0x1EA1)t '$TargetAvailable')."
+                return 4
+            }
+        }
+    } catch {}
+    return 0
+}
+
+function Invoke-VerifiedDirectPackageInstall {
+    param(
+        $App,
+        $Candidate,
+        [string]$UpgradeId = "",
+        [string]$Scope = "",
+        [string]$InstallLocation = "",
+        [string]$PreVersion = "",
+        [string]$TargetAvailable = "",
+        [switch]$RequireUpgrade,
+        $GuardSession = $null
+    )
+    if (-not $App -or -not $Candidate) { return -1 }
+    $url = [string]$Candidate.Url
+    $sha = [string]$Candidate.Sha256
+    $srcLabel = if ($Candidate.Source) { [string]$Candidate.Source } else { "DirectOfficial" }
+
+    if ($url -notmatch '^https://' -or $sha -notmatch '^[0-9a-fA-F]{64}$') { return -1 }
+
+    if ($RequireUpgrade -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and -not [string]::IsNullOrWhiteSpace([string]$Candidate.Version)) {
+        if ((Compare-CatalogVersionsSafe ([string]$Candidate.Version) $PreVersion) -le 0) {
+            Log-Text "   [*] [$srcLabel] Phi$([char]0x00EA)n b$([char]0x1EA3)n $($Candidate.Version) kh$([char]0x00F4)ng m$([char]0x1EDB)i h$([char]0x01A1)n b$([char]0x1EA3)n $([char]0x0111)ang c$([char]0x00E0)i ($PreVersion); b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ch$([char]0x1ED1)ng h$([char]0x1EA1) c$([char]0x1EA5)p."
+            return -1
+        }
+    }
+
+    if ($script:cancelRequested) { return -2 }
+    if ($script:isWindowClosing) { return -1 }
+
+    $tmpDir = Join-Path $env:TEMP ("DuckUtil_Direct_" + [Guid]::NewGuid().ToString("N"))
+    $dlCts = $null
+    try {
+        [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
+        $leaf = [System.IO.Path]::GetFileName([string]$Candidate.FileName)
+        if ([string]::IsNullOrWhiteSpace($leaf) -or $leaf -notmatch '\.(exe|msi)$') {
+            $ext = if ([string]$Candidate.InstallerType -eq "msi") { ".msi" } else { ".exe" }
+            $leaf = "installer$ext"
+        }
+        $destFile = Join-Path $tmpDir $leaf
+
+        Log-Text "   -> [$srcLabel] $([char]0x0110)ang t$([char]0x1EA3)i & x$([char]0x00E1)c th$([char]0x1EF1)c SHA-256: $leaf..."
+        $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+        if ($null -eq $pipeType -or $null -eq $pipeType.GetMethod("DownloadFileWithSha256Async")) {
+            Log-Text "   [!] Thi$([char]0x1EBF)u b$([char]0x1ED9) t$([char]0x1EA3)i x$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 trong UiAssetPipeline."
+            return -1
+        }
+
+        $dlCts = [System.Threading.CancellationTokenSource]::new()
+        $script:activeDirectDlCts = $dlCts
+        $dlTask = [DuckUtil.UiAssetPipeline]::DownloadFileWithSha256Async($url, $destFile, $sha, $dlCts.Token)
+        [void](Wait-TaskNonBlocking -Task $dlTask -TimeoutSeconds 300 -CancelCheck { [bool]$script:cancelRequested })
+
+        if ($script:cancelRequested) {
+            try { $dlCts.Cancel() } catch {}
+            return -2
+        }
+        if ($script:isWindowClosing) {
+            try { $dlCts.Cancel() } catch {}
+            return -1
+        }
+        if ($dlTask.Status -ne [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            try { $dlCts.Cancel() } catch {}
+            Log-Text "   [!] [$srcLabel] T$([char]0x1EA3)i t$([char]0x1EC7)p h$([char]0x1EBF)t th$([char]0x1EDD)i gian ch$([char]0x1EDD) ho$([char]0x1EB7)c b$([char]0x1ECB) gi$([char]0x00E1)n $([char]0x0111)o$([char]0x1EA1)n."
+            return -1
+        }
+        $dlRes = [string]$dlTask.Result
+        if (-not $dlRes.StartsWith("OK|")) {
+            Log-Text "   [!] [$srcLabel] T$([char]0x1EA3)i/x$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 th$([char]0x1EA5)t b$([char]0x1EA1)i ($dlRes)."
+            return -1
+        }
+        $dlPath = $dlRes.Substring(3)
+        Log-Text "   [OK] [$srcLabel] X$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 h$([char]0x1EE3)p l$([char]0x1EC7)."
+
+        $typeHint = [string]$Candidate.InstallerType
+        if ($dlPath -match '\.msi$' -or $typeHint -eq 'msi') {
+            [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
+            if ($script:cancelRequested) { return -2 }
+            if ($script:isWindowClosing) { return -1 }
+            $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath -InstallerTypeHint "msi" -Scope $Scope -InstallLocation $InstallLocation
+            if ($GuardSession) { $GuardSession.InstallerRan = $true }
+            $execCode = Run-CliStream "msiexec.exe" $silentArgs -IsolateStdin -AllowCancel
+        } else {
+            $fw = ""
+            if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+                try { $fw = [DuckUtil.DeepUninstallerEngine]::DetectInstallerFramework($dlPath) } catch { $fw = "" }
+            }
+            if ($fw -eq "7zSFX" -and -not (Test-7zSfxHasRunner -Path $dlPath)) {
+                Log-Text "   [*] [$srcLabel] T$([char]0x1EC7)p 7zSFX kh$([char]0x00F4)ng c$([char]0x00F3) tr$([char]0x00EC)nh ch$([char]0x1EA1)y t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng; b$([char]0x1ECF) qua."
+                return -1
+            }
+            if ([string]::IsNullOrWhiteSpace($fw) -and $typeHint -notmatch '^(nullsoft|inno|wix|burn|nsis)$') {
+                $exeLeaf = [System.IO.Path]::GetFileName($dlPath)
+                if ($exeLeaf -notmatch '(?i)(setup|install|update|bootstrap)') {
+                    Log-Text "   [*] [$srcLabel] Kh$([char]0x00F4)ng x$([char]0x00E1)c $([char]0x0111)$([char]0x1ECB)nh $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c framework b$([char]0x1ED9) c$([char]0x00E0)i cho '$exeLeaf'; b$([char]0x1ECF) qua."
+                    return -1
+                }
+            }
+            $silentArgs = Get-SilentInstallerArgsForFile -Path $dlPath -FrameworkOverride $fw -InstallerTypeHint $typeHint -Scope $Scope -InstallLocation $InstallLocation
+            if ($null -eq $silentArgs) {
+                Log-Text "   [!] [$srcLabel] B$([char]0x1ED9) c$([char]0x00E0)i kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) c$([char]0x00E0)i v$([char]0x00E0)o scope '$Scope'; b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh tr$([char]0x00F9)ng b$([char]0x1EA3)n."
+                return -1
+            }
+            if ($GuardSession) { $GuardSession.InstallerRan = $true }
+            $execCode = Run-CliStream $dlPath $silentArgs -IsolateStdin -AllowCancel
+        }
+
+        if ($execCode -eq -2 -or $execCode -eq 1602 -or $script:cancelRequested) { return -2 }
+        if ($execCode -notin @(0, 3010, 1641)) {
+            Log-Text "   [!] [$srcLabel] Ti$([char]0x1EBF)n tr$([char]0x00EC)nh b$([char]0x1ED9) c$([char]0x00E0)i tho$([char]0x00E1)t m$([char]0x00E3) l$([char]0x1ED7)i $execCode."
+            return -1
+        }
+
+        if ($RequireUpgrade) {
+            return (Test-PostUpgradeVerified -App $App -UpgradeId $UpgradeId -PreVersion $PreVersion -TargetAvailable $TargetAvailable -ExecCode $execCode -SourceLabel $srcLabel)
+        }
+
+        Wait-SquirrelUpdatersSettle
+        $probeVer = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $UpgradeId
+        if ($null -eq $probeVer -and $typeHint -notmatch '^(msi|nullsoft|inno|wix|burn)$') {
+            Log-Text "   [!] [$srcLabel] B$([char]0x1ED9) c$([char]0x00E0)i tho$([char]0x00E1)t m$([char]0x00E3) $execCode nh$([char]0x01B0)ng ch$([char]0x01B0)a ph$([char]0x00E1)t hi$([char]0x1EC7)n $($App.Name) tr$([char]0x00EA)n m$([char]0x00E1)y."
+            return -1
+        }
+        return $execCode
+    } catch {
+        Log-Text "   [!] [$srcLabel] L$([char]0x1ED7)i th$([char]0x1EF1)c thi ngu$([char]0x1ED3)n ph$([char]0x1EE5): $($_.Exception.Message)"
+        return -1
+    } finally {
+        $script:activeDirectDlCts = $null
+        if ($dlCts) { try { $dlCts.Dispose() } catch {} }
+        if ($tmpDir -and (Test-Path -LiteralPath $tmpDir)) {
+            Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Invoke-MsStoreWebInstallerFallback {
+    param(
+        $App,
+        [Parameter(Mandatory = $true)][string]$StoreId,
+        [switch]$RequireUpgrade,
+        [string]$PreVersion = "",
+        $GuardSession = $null
+    )
+    if (-not $App -or $StoreId -notmatch '^9[A-Z0-9]{11}$') { return -1 }
+    if ($script:cancelRequested) { return -2 }
+    if ($script:isWindowClosing) { return -1 }
+
+    $tmpDir = Join-Path $env:TEMP ("DuckUtil_MSStore_" + [Guid]::NewGuid().ToString("N"))
+    $dlCts = $null
+    try {
+        [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
+        $url = "https://get.microsoft.com/installer/download/$StoreId"
+        Log-Text "   -> [MSStoreWeb] $([char]0x0110)ang t$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i ch$([char]0x00ED)nh ch$([char]0x1EE7) t$([char]0x1EEB) Microsoft CDN ($StoreId)..."
+
+        $pipeType = "DuckUtil.UiAssetPipeline" -as [type]
+        if ($null -eq $pipeType -or $null -eq $pipeType.GetMethod("DownloadHttpsInstallerWithHeaderNameAsync")) {
+            return -1
+        }
+        $dlCts = [System.Threading.CancellationTokenSource]::new()
+        $script:activeDirectDlCts = $dlCts
+        $dlTask = [DuckUtil.UiAssetPipeline]::DownloadHttpsInstallerWithHeaderNameAsync($url, $tmpDir, "$StoreId-Installer.exe", $dlCts.Token)
+        [void](Wait-TaskNonBlocking -Task $dlTask -TimeoutSeconds 180 -CancelCheck { [bool]$script:cancelRequested })
+
+        if ($script:cancelRequested) {
+            try { $dlCts.Cancel() } catch {}
+            return -2
+        }
+        if ($script:isWindowClosing -or $dlTask.Status -ne [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+            try { $dlCts.Cancel() } catch {}
+            return -1
+        }
+        $dlRes = [string]$dlTask.Result
+        if (-not $dlRes.StartsWith("OK|")) {
+            Log-Text "   [!] [MSStoreWeb] T$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i ch$([char]0x00ED)nh ch$([char]0x1EE7) th$([char]0x1EA5)t b$([char]0x1EA1)i ($dlRes)."
+            return -1
+        }
+        $dlPath = $dlRes.Substring(3)
+        Log-Text "   -> [MSStoreWeb] $([char]0x0110)ang ch$([char]0x1EA1)y $([System.IO.Path]::GetFileName($dlPath))..."
+        if ($GuardSession) { $GuardSession.InstallerRan = $true }
+        $execCode = Run-CliStream $dlPath "" -IsolateStdin -AllowCancel
+        if ($execCode -eq -2 -or $execCode -eq 1602 -or $script:cancelRequested) { return -2 }
+        if ($execCode -notin @(0, 3010, 1641)) {
+            Log-Text "   [!] [MSStoreWeb] B$([char]0x1ED9) c$([char]0x00E0)i tho$([char]0x00E1)t m$([char]0x00E3) $execCode."
+            return -1
+        }
+
+        Wait-SquirrelUpdatersSettle
+        $detected = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $StoreId
+        $appxMatch = $null
+        try {
+            $nameTokens = @($App.Name) + $(if ($App.Aliases) { @($App.Aliases) } else { @() })
+            $normTokens = @($nameTokens | ForEach-Object { ([string]$_ -replace '[^a-zA-Z0-9]', '').ToLowerInvariant() } | Where-Object { $_.Length -ge 4 } | Select-Object -Unique)
+            if ($normTokens.Count -gt 0) {
+                $appxList = @(Get-AppxPackage -ErrorAction SilentlyContinue)
+                foreach ($pkg in $appxList) {
+                    $pNorm = ([string]$pkg.Name -replace '[^a-zA-Z0-9]', '').ToLowerInvariant()
+                    foreach ($nt in $normTokens) {
+                        if ($pNorm.Contains($nt)) { $appxMatch = $pkg; break }
+                    }
+                    if ($appxMatch) { break }
+                }
+            }
+        } catch {}
+
+        if ($RequireUpgrade) {
+            $newVer = ""
+            if ($detected -and -not [string]::IsNullOrWhiteSpace([string]$detected.Version)) { $newVer = [string]$detected.Version }
+            elseif ($appxMatch -and $appxMatch.Version) { $newVer = [string]$appxMatch.Version }
+            if (-not [string]::IsNullOrWhiteSpace($PreVersion) -and -not [string]::IsNullOrWhiteSpace($newVer)) {
+                if ((Compare-CatalogVersionsSafe $newVer $PreVersion) -le 0) {
+                    Log-Text "   [WARN] $($App.Name): [MSStoreWeb] ho$([char]0x00E0)n t$([char]0x1EA5)t nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n v$([char]0x1EAB)n l$([char]0x00E0) '$newVer'."
+                    return 4
+                }
+            } elseif ($null -eq $detected -and $null -eq $appxMatch) {
+                return 4
+            }
+            return 0
+        }
+
+        if ($null -ne $detected -or $null -ne $appxMatch) {
+            return 0
+        }
+        Log-Text "   [!] [MSStoreWeb] B$([char]0x1ED9) c$([char]0x00E0)i $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x00F3)ng nh$([char]0x01B0)ng ch$([char]0x01B0)a ph$([char]0x00E1)t hi$([char]0x1EC7)n $($App.Name) trong h$([char]0x1EC7) th$([char]0x1ED1)ng."
+        return -1
+    } catch {
+        Log-Text "   [!] [MSStoreWeb] L$([char]0x1ED7)i t$([char]0x1EA3)i/ch$([char]0x1EA1)y b$([char]0x1ED9) c$([char]0x00E0)i: $($_.Exception.Message)"
+        return -1
+    } finally {
+        $script:activeDirectDlCts = $null
+        if ($dlCts) { try { $dlCts.Dispose() } catch {} }
+        if ($tmpDir -and (Test-Path -LiteralPath $tmpDir)) {
+            Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Invoke-SmartAppUpgrade {
+    <#
+    .SYNOPSIS
+        Upgrade a catalog row via WinGet while preserving scope/location and verifying actual upgrade outcome.
+        Returns: 0=upgraded, 2=crack-skipped, 3=already-latest, 4=unverified-no-change, other=error/cancel.
+    #>
+    param(
+        $Tag,
+        [switch]$IsBulkUpgrade,
+        $Context = $null,
+        [switch]$SkipGuard
+    )
+    if (-not $Tag) { return 1 }
+    $app = $Tag.App
+    if (-not $app) { return 1 }
+
+    $ctx = if ($null -ne $Context) { $Context } else { Resolve-AppUpgradeContext -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade }
+    if (-not $ctx) { return 1 }
+    if ($ctx.IsCrackBlocked) { return 2 }
+
+    $upgradeId = [string]$ctx.UpgradeId
+    $preVersion = [string]$ctx.PreVersion
+    $existingLoc = [string]$ctx.ExistingLoc
+    $scope = [string]$ctx.Scope
+    $needCustomLocArg = [bool]$ctx.NeedCustomLocArg
+
+    $guardSession = $null
+    if (-not $SkipGuard) {
+        $guardSession = Start-UpgradeDataGuardSession -Context $ctx -IsBulkUpgrade:$IsBulkUpgrade
     }
 
     $baseUpArgs = "upgrade --id `"$upgradeId`" --exact --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
@@ -41376,135 +43064,12 @@ function Invoke-SmartAppUpgrade {
     }
 
     $preInstallerAborted = $alreadyLatest -or ($code -in @(3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
-    if ($hasSnapshots) {
-        $regImportTargets = [System.Collections.Generic.List[object]]::new()
-        $regImportFiles   = [System.Collections.Generic.List[string]]::new()
-        $regImportIndices = [System.Collections.Generic.List[int]]::new()
-        if (-not $preInstallerAborted) {
-            for ($ri = 0; $ri -lt $regFiles.Count; $ri++) {
-                $rfItem = $regFiles[$ri]
-                if (Test-Path -LiteralPath $rfItem.File) {
-                    $needRegRestore = $false
-                    if (-not (Test-Path -LiteralPath $rfItem.PSPath)) {
-                        $needRegRestore = $true
-                    } elseif ($rfItem.HadData) {
-                        try {
-                            $curKey = Get-Item -LiteralPath $rfItem.PSPath -ErrorAction SilentlyContinue
-                            if ($curKey -and $curKey.ValueCount -eq 0 -and $curKey.SubKeyCount -eq 0) { $needRegRestore = $true }
-                        } catch {}
-                    }
-                    if ($needRegRestore) {
-                        [void]$regImportTargets.Add($rfItem)
-                        [void]$regImportFiles.Add($rfItem.File)
-                        [void]$regImportIndices.Add($ri)
-                    }
-                }
-            }
-        }
-
-        $adSrcArr = [System.Collections.Generic.List[string]]::new()
-        $adBkpArr = [System.Collections.Generic.List[string]]::new()
-        foreach ($item in $appDataBkps) {
-            [void]$adSrcArr.Add($item.Source)
-            [void]$adBkpArr.Add($item.Backup)
-        }
-
-        $hasAsyncRestore = ("DuckUtil.AppCatalogEngine" -as [type]) -and ($null -ne ([DuckUtil.AppCatalogEngine].GetMethod("UpgradeGuardRestoreAsync"))) -and ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
-        if ($hasAsyncRestore) {
-            $restTask = [DuckUtil.AppCatalogEngine]::UpgradeGuardRestoreAsync(
-                $backupRoot,
-                (-not $preInstallerAborted),
-                [string]$existingLoc,
-                $locBkp,
-                [bool]$canSnapshotLoc,
-                [string[]]$adSrcArr.ToArray(),
-                [string[]]$adBkpArr.ToArray(),
-                [string[]]$regImportFiles.ToArray(),
-                [int[]]$regImportIndices.ToArray()
-            )
-            [void](Wait-TaskNonBlocking -Task $restTask -TimeoutSeconds 25)
-            if ($restTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $restTask.Result) {
-                $rRes = $restTask.Result
-                if ($rRes.RestoredLocFiles -gt 0) {
-                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredLocFiles) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
-                }
-                if ($rRes.RestoredAppDataCounts) {
-                    for ($ai = 0; $ai -lt $rRes.RestoredAppDataCounts.Length; $ai++) {
-                        if ($rRes.RestoredAppDataCounts[$ai] -gt 0 -and $ai -lt $adSrcArr.Count) {
-                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredAppDataCounts[$ai]) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($adSrcArr[$ai])"
-                        }
-                    }
-                }
-                if ($rRes.RestoredRegIndices) {
-                    foreach ($impIdx in $rRes.RestoredRegIndices) {
-                        if ($impIdx -ge 0 -and $impIdx -lt $regFiles.Count) {
-                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($regFiles[$impIdx].Key)"
-                        }
-                    }
-                }
-            }
-        } else {
-            if (-not $preInstallerAborted) {
-                if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
-                    $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
-                    if ($restoredLoc -gt 0) {
-                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
-                    }
-                }
-
-                if ($snapshotType) {
-                    foreach ($item in $appDataBkps) {
-                        if (Test-Path -LiteralPath $item.Backup) {
-                            $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
-                            if ($resAd -gt 0) {
-                                Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
-                            }
-                        }
-                    }
-                }
-
-                foreach ($rfItem in $regImportTargets) {
-                    try {
-                        $impPsi = New-Object System.Diagnostics.ProcessStartInfo
-                        $impPsi.FileName = "reg.exe"
-                        $impPsi.Arguments = "import `"$($rfItem.File)`""
-                        $impPsi.CreateNoWindow = $true
-                        $impPsi.UseShellExecute = $false
-                        $pImp = [System.Diagnostics.Process]::Start($impPsi)
-                        try {
-                            if ($pImp) { [void]$pImp.WaitForExit(10000) }
-                        } finally {
-                            if ($pImp) { try { $pImp.Dispose() } catch {} }
-                        }
-                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
-                    } catch {}
-                }
-            }
-
-            try {
-                Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
-            } catch {}
-        }
+    if ($guardSession) {
+        Complete-UpgradeDataGuardSession -Session $guardSession -PreInstallerAborted:$preInstallerAborted
     }
 
     if ($code -in @(0, 3010, 1641)) {
-        Wait-SquirrelUpdatersSettle
-        try {
-            $postState = Get-WinGetExactPackageState -Id $upgradeId -App $app
-            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
-                if ([string]::IsNullOrWhiteSpace($preVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $preVersion) -le 0) {
-                    Log-Text "   [WARN] $($app.Name): Ti$([char]0x1EBF)n tr$([char]0x00EC)nh tho$([char]0x00E1)t v$([char]0x1EDB)i m$([char]0x00E3) $code nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n v$([char]0x1EAB)n l$([char]0x00E0) '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))."
-                    return 4
-                }
-            } elseif (-not $postState.AnyFound -or $postState.TimedOut) {
-                $postLocal = Test-CatalogAppInstalledNow -App $app -ProbeWingetId $upgradeId
-                if ($postLocal -and -not [string]::IsNullOrWhiteSpace($preVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $preVersion) -le 0 -and $postLocal.HasUpdate) {
-                    Log-Text "   [WARN] $($app.Name): Ch$([char]0x01B0)a ghi nh$([char]0x1EAD)n thay $([char]0x0111)$([char]0x1ED5)i phi$([char]0x00EA)n b$([char]0x1EA3)n sau n$([char]0x00E2)ng c$([char]0x1EA5)p (v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)')."
-                    return 4
-                }
-            }
-        } catch {}
-        return 0
+        return (Test-PostUpgradeVerified -App $app -UpgradeId $upgradeId -PreVersion $preVersion -TargetAvailable $ctx.TargetAvailable -ExecCode $code -SourceLabel "WinGet")
     }
 
     return $code
@@ -41513,7 +43078,10 @@ function Invoke-SmartAppUpgrade {
 function Invoke-CatalogUpgradeWithFallback {
     <#
     .SYNOPSIS
-        Upgrade an OUTDATED catalog row via WinGet, falling back to GitHub release installer if WinGet fails.
+        Upgrade an OUTDATED catalog row via 5-tier fallback:
+        Tier 1: WinGet CLI -> Tier 2A (MSStore Web CDN) / Tier 2B (WinGet Manifest + SHA256) ->
+        Tier 2C (Vendor JSON API + SHA256) -> Tier 3 (GitHub Releases) ->
+        Tier 4 (Scoop JSON .exe/.msi + SHA256) -> Tier 5 (Browser FallbackUrl).
     #>
     param(
         $Tag,
@@ -41526,34 +43094,163 @@ function Invoke-CatalogUpgradeWithFallback {
         try { Start-Process $app.FallbackUrl } catch { return 1 }
         return 5
     }
-    $preVer = [string]$Tag.InstalledVersion
-    $targetAvail = if ($Tag.PSObject.Properties['AvailableVersion']) { [string]$Tag.AvailableVersion } else { "" }
-    $probeId = Resolve-ValidatedUpgradeId -App $app -DetectedId ([string]$Tag.DetectedId)
-    $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade
-    if ($upCode -notin @(0, 2, 3, -2, -1978335216) -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
-        Log-Text "   [*] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x1EAD)p nh$([char]0x1EAD)t d$([char]0x1EF1) ph$([char]0x00F2)ng qua GitHub Release ($($app.GitHubRepo))..."
-        $ghCode = Invoke-GitHubAssetInstall -App $app
-        if ($ghCode -in @(0, 3010, 1641)) {
-            $postState = Get-WinGetExactPackageState -Id $probeId -App $app
-            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
-                if ([string]::IsNullOrWhiteSpace($preVer) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $preVer) -le 0) {
-                    Log-Text "   [WARN] $($app.Name): B$([char]0x1ED9) c$([char]0x00E0)i GitHub Release tho$([char]0x00E1)t m$([char]0x00E3) $ghCode nh$([char]0x01B0)ng WinGet v$([char]0x1EAB)n ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))."
-                    return 4
-                }
-            }
-            $postLocal = Test-CatalogAppInstalledNow -App $app -ProbeWingetId $probeId
-            if ($postLocal -and -not [string]::IsNullOrWhiteSpace($preVer) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $preVer) -le 0) {
-                $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($targetAvail) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $targetAvail) -lt 0)
-                if ($stillBehindTarget) {
-                    Log-Text "   [WARN] $($app.Name): B$([char]0x1ED9) c$([char]0x00E0)i GitHub Release tho$([char]0x00E1)t m$([char]0x00E3) $ghCode nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n tr$([char]0x00EA)n m$([char]0x00E1)y v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)' (ch$([char]0x01B0)a $([char]0x0111)$([char]0x1EA1)t '$targetAvail')."
-                    return 4
-                }
-            }
-            return 0
+
+    $ctx = Resolve-AppUpgradeContext -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade
+    if (-not $ctx) { return 1 }
+    if ($ctx.IsCrackBlocked) { return 2 }
+
+    $guardSession = Start-UpgradeDataGuardSession -Context $ctx -IsBulkUpgrade:$IsBulkUpgrade
+    $tier1RanInstaller = $false
+    $finalCode = 1
+
+    try {
+        # Tier 1: WinGet CLI (strict scope & location)
+        $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade -Context $ctx -SkipGuard
+        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
+        if ($upCode -in @(0, 2, 3, -2) -or $script:cancelRequested -or $script:isWindowClosing) {
+            $finalCode = $upCode
+            return $finalCode
         }
-        if ($ghCode -eq -2) { return -2 }
+
+        $probeId = [string]$ctx.UpgradeId
+        $preVer = [string]$ctx.PreVersion
+        $targetAvail = [string]$ctx.TargetAvailable
+        $scope = [string]$ctx.Scope
+        $directLoc = [string]$ctx.DirectInstallLocation
+        $isMsStore = ($app.Source -eq "msstore") -or ($probeId -match '^9[A-Z0-9]{11}$')
+        $lastVerifyWarn = $null
+
+        # Tier 2A: Official Microsoft Store Web Installer CDN (for msstore apps)
+        if ($isMsStore -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+            Log-Text "   [*] [T$([char]0x1EA7)ng 2A] Chuy$([char]0x1EC3)n sang b$([char]0x1ED9) c$([char]0x00E0)i ch$([char]0x00ED)nh ch$([char]0x1EE7) Microsoft Web Installer ($probeId)..."
+            $msCode = Invoke-MsStoreWebInstallerFallback -App $app -StoreId $probeId -RequireUpgrade -PreVersion $preVer -GuardSession $guardSession
+            if ($msCode -eq 0 -or $msCode -eq -2) { $finalCode = $msCode; return $finalCode }
+            if ($msCode -eq 4) { $lastVerifyWarn = 4 }
+        }
+
+        # Tier 2B: Direct WinGet Manifest URL + SHA-256 verification (with scope-aware flags)
+        if (-not $isMsStore -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+            $wgCand = Get-WinGetInstallerManifestInfo -Id $probeId -App $app
+            if ($null -ne $wgCand) {
+                Log-Text "   [*] [T$([char]0x1EA7)ng 2B] T$([char]0x1EA3)i b$([char]0x1ED9) c$([char]0x00E0)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p t$([char]0x1EEB) Manifest ch$([char]0x00ED)nh ch$([char]0x1EE7) k$([char]0x00E8)m SHA-256 ($($wgCand.InstallerType))..."
+                $t2bCode = Invoke-VerifiedDirectPackageInstall -App $app -Candidate $wgCand -UpgradeId $probeId -Scope $scope -InstallLocation $directLoc -PreVersion $preVer -TargetAvailable $targetAvail -RequireUpgrade -GuardSession $guardSession
+                if ($t2bCode -eq 0 -or $t2bCode -eq -2) { $finalCode = $t2bCode; return $finalCode }
+                if ($t2bCode -eq 4) { $lastVerifyWarn = 4 }
+            }
+        }
+
+        # Tier 2C: Official Vendor JSON APIs (JetBrains, Adoptium, VS Code, Node.js LTS)
+        if (-not $script:cancelRequested -and -not $script:isWindowClosing) {
+            $vendorCand = Resolve-VendorDirectInstallerInfo -App $app -UpgradeId $probeId -Scope $scope
+            if ($null -ne $vendorCand) {
+                Log-Text "   [*] [T$([char]0x1EA7)ng 2C] $([char]0x0110)ang th$([char]0x1EED) ngu$([char]0x1ED3)n ch$([char]0x00ED)nh h$([char]0x00E3)ng $($vendorCand.Source) k$([char]0x00E8)m SHA-256..."
+                $t2cCode = Invoke-VerifiedDirectPackageInstall -App $app -Candidate $vendorCand -UpgradeId $probeId -Scope $scope -InstallLocation $directLoc -PreVersion $preVer -TargetAvailable $targetAvail -RequireUpgrade -GuardSession $guardSession
+                if ($t2cCode -eq 0 -or $t2cCode -eq -2) { $finalCode = $t2cCode; return $finalCode }
+                if ($t2cCode -eq 4) { $lastVerifyWarn = 4 }
+            }
+        }
+
+        # Tier 3: Official GitHub Releases (with Scope & InstallLocation)
+        if (-not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+            Log-Text "   [*] [T$([char]0x1EA7)ng 3] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x1EAD)p nh$([char]0x1EAD)t d$([char]0x1EF1) ph$([char]0x00F2)ng qua GitHub Release ($($app.GitHubRepo))..."
+            $guardSession.InstallerRan = $true
+            $ghCode = Invoke-GitHubAssetInstall -App $app -Scope $scope -InstallLocation $directLoc -PreVersion $preVer -RequireUpgrade
+            if ($ghCode -in @(0, 3010, 1641)) {
+                $ghVerCode = Test-PostUpgradeVerified -App $app -UpgradeId $probeId -PreVersion $preVer -TargetAvailable $targetAvail -ExecCode $ghCode -SourceLabel "GitHub"
+                if ($ghVerCode -eq 0) { $finalCode = 0; return $finalCode }
+                if ($ghVerCode -eq 4) { $lastVerifyWarn = 4 }
+            } elseif ($ghCode -eq -2) {
+                $finalCode = -2
+                return $finalCode
+            }
+        }
+
+        # Tier 4: Scoop Public Buckets JSON (Main / Extras, .exe/.msi + SHA-256 only)
+        if (-not $isMsStore -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+            $scoopCand = Resolve-ScoopBucketInstallerInfo -App $app -UpgradeId $probeId
+            if ($null -ne $scoopCand) {
+                Log-Text "   [*] [T$([char]0x1EA7)ng 4] $([char]0x0110)ang th$([char]0x1EED) ngu$([char]0x1ED3)n $($scoopCand.Source) k$([char]0x00E8)m x$([char]0x00E1)c th$([char]0x1EF1)c SHA-256..."
+                $t4Code = Invoke-VerifiedDirectPackageInstall -App $app -Candidate $scoopCand -UpgradeId $probeId -Scope $scope -InstallLocation $directLoc -PreVersion $preVer -TargetAvailable $targetAvail -RequireUpgrade -GuardSession $guardSession
+                if ($t4Code -eq 0 -or $t4Code -eq -2) { $finalCode = $t4Code; return $finalCode }
+                if ($t4Code -eq 4) { $lastVerifyWarn = 4 }
+            }
+        }
+
+        # Tier 5: Official Browser Download FallbackUrl (single-app upgrade only)
+        if (-not $IsBulkUpgrade -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+            Log-Text "   [WEB] [T$([char]0x1EA7)ng 5] C$([char]0x00E1)c ngu$([char]0x1ED3)n t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng. $([char]0x0110)ang m$([char]0x1EDF) trang t$([char]0x1EA3)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
+            try {
+                Start-Process $app.FallbackUrl
+                $finalCode = 5
+                return $finalCode
+            } catch {}
+        }
+
+        $finalCode = if ($null -ne $lastVerifyWarn) { $lastVerifyWarn } else { $upCode }
+        return $finalCode
+    } finally {
+        $preAbortedAll = (-not $tier1RanInstaller) -and (-not $guardSession.InstallerRan)
+        Complete-UpgradeDataGuardSession -Session $guardSession -PreInstallerAborted:$preAbortedAll
     }
-    return $upCode
+}
+
+function Invoke-CatalogFreshInstallFallback {
+    param(
+        $App,
+        [switch]$SkipGitHub
+    )
+    if (-not $App) { return -1 }
+    if ($script:cancelRequested) { return -2 }
+    if ($script:isWindowClosing) { return -1 }
+
+    $appId = [string]$App.ID
+    $isMsStore = ($App.Source -eq "msstore") -or ($appId -match '^9[A-Z0-9]{11}$')
+
+    # Tier 2A: MSStore Web Installer CDN
+    if ($isMsStore -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+        Log-Text "   [*] [T$([char]0x1EA7)ng 2A] Chuy$([char]0x1EC3)n sang b$([char]0x1ED9) c$([char]0x00E0)i ch$([char]0x00ED)nh ch$([char]0x1EE7) Microsoft Web Installer ($appId)..."
+        $msCode = Invoke-MsStoreWebInstallerFallback -App $App -StoreId $appId
+        if ($msCode -in @(0, 3010, 1641, -2)) { return $msCode }
+    }
+
+    # Tier 2B: Direct WinGet Manifest + SHA-256
+    if (-not $isMsStore -and -not [string]::IsNullOrWhiteSpace($appId) -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+        $wgCand = Get-WinGetInstallerManifestInfo -Id $appId -App $App
+        if ($null -ne $wgCand) {
+            Log-Text "   [*] [T$([char]0x1EA7)ng 2B] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x00E0)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p t$([char]0x1EEB) Manifest ch$([char]0x00ED)nh ch$([char]0x1EE7) k$([char]0x00E8)m SHA-256..."
+            $t2bCode = Invoke-VerifiedDirectPackageInstall -App $App -Candidate $wgCand -UpgradeId $appId
+            if ($t2bCode -in @(0, 3010, 1641, -2)) { return $t2bCode }
+        }
+    }
+
+    # Tier 2C: Official Vendor JSON API + SHA-256
+    if (-not $script:cancelRequested -and -not $script:isWindowClosing) {
+        $vendorCand = Resolve-VendorDirectInstallerInfo -App $App -UpgradeId $appId
+        if ($null -ne $vendorCand) {
+            Log-Text "   [*] [T$([char]0x1EA7)ng 2C] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x00E0)i t$([char]0x1EEB) ngu$([char]0x1ED3)n ch$([char]0x00ED)nh h$([char]0x00E3)ng $($vendorCand.Source) k$([char]0x00E8)m SHA-256..."
+            $t2cCode = Invoke-VerifiedDirectPackageInstall -App $App -Candidate $vendorCand -UpgradeId $appId
+            if ($t2cCode -in @(0, 3010, 1641, -2)) { return $t2cCode }
+        }
+    }
+
+    # Tier 3: GitHub Releases (if not already tried)
+    if (-not $SkipGitHub -and -not $script:cancelRequested -and -not $script:isWindowClosing -and -not [string]::IsNullOrWhiteSpace($App.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($App.AssetRegex)) {
+        Log-Text "   [*] [T$([char]0x1EA7)ng 3] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x00E0)i d$([char]0x1EF1) ph$([char]0x00F2)ng qua GitHub Release ($($App.GitHubRepo))..."
+        $ghCode = Invoke-GitHubAssetInstall -App $App
+        if ($ghCode -in @(0, 3010, 1641, -2)) { return $ghCode }
+    }
+
+    # Tier 4: Scoop Public Buckets JSON (.exe/.msi + SHA-256)
+    if (-not $isMsStore -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+        $scoopCand = Resolve-ScoopBucketInstallerInfo -App $App -UpgradeId $appId
+        if ($null -ne $scoopCand) {
+            Log-Text "   [*] [T$([char]0x1EA7)ng 4] $([char]0x0110)ang th$([char]0x1EED) c$([char]0x00E0)i t$([char]0x1EEB) ngu$([char]0x1ED3)n $($scoopCand.Source) k$([char]0x00E8)m SHA-256..."
+            $t4Code = Invoke-VerifiedDirectPackageInstall -App $App -Candidate $scoopCand -UpgradeId $appId
+            if ($t4Code -in @(0, 3010, 1641, -2)) { return $t4Code }
+        }
+    }
+
+    return -1
 }
 
 Register-Click "btnInstall" {
@@ -41692,7 +43389,9 @@ Register-Click "btnInstall" {
                 }
 
                 $usedWingetInstall = $false
+                $triedGitHub = $false
                 if (-not [string]::IsNullOrWhiteSpace($app.GitHubRepo) -and -not [string]::IsNullOrWhiteSpace($app.AssetRegex)) {
+                    $triedGitHub = $true
                     $preDlPath = ""
                     $pfStatus = ""
                     $pfSlot = $null
@@ -41741,8 +43440,21 @@ Register-Click "btnInstall" {
                     $usedWingetInstall = $true
                 }
 
+                $wgOutcome = if ($usedWingetInstall -and $code -in @(0, 3010, 1641)) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
+                if ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled") {
+                    $code = 1
+                }
+
+                if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                    $fbCode = Invoke-CatalogFreshInstallFallback -App $app -SkipGitHub:$triedGitHub
+                    if ($fbCode -in @(0, 3010, 1641, -2)) {
+                        $code = $fbCode
+                        $usedWingetInstall = $false
+                        $wgOutcome = "Unknown"
+                    }
+                }
+
                 if ($code -eq 0 -or $code -eq 3010 -or $code -eq 1641) {
-                    $wgOutcome = if ($usedWingetInstall) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
                     if ($wgOutcome -eq "NoUpgradeAvailable") {
                         Log-Text "   [INFO] $($app.Name) $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c c$([char]0x00E0)i s$([char]0x1EB5)n phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t tr$([char]0x00EA)n m$([char]0x00E1)y."
                         $alreadyCount++
@@ -41762,7 +43474,7 @@ Register-Click "btnInstall" {
                     Log-Text "   [ERR - L$([char]0x1ED6)I] $($app.Name) (Exit Code: $code)"
                     $failCount++
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
-                        Log-Text "   [WEB] G$([char]0x00F3)i n$([char]0x00E0)y hi$([char]0x1EC7)n kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng qua WinGet. $([char]0x0110)ang m$([char]0x1EDF) trang t$([char]0x1EA3)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
+                        Log-Text "   [WEB] [T$([char]0x1EA7)ng 5] C$([char]0x00E1)c ngu$([char]0x1ED3)n t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng. $([char]0x0110)ang m$([char]0x1EDF) trang t$([char]0x1EA3)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
                     }
                 }
@@ -42304,6 +44016,7 @@ function Stop-AllBackgroundWork {
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
+    try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
     try { if ($script:deferredCardTimer) { $script:deferredCardTimer.Stop() } } catch {}
     try { if ($script:offscreenPrewarmTimer) { $script:offscreenPrewarmTimer.Stop() } } catch {}

@@ -702,6 +702,8 @@
             "Notepad++.Notepad++"
           ],
     "Category":  "Development",
+    "GitHubRepo":  "notepad-plus-plus/notepad-plus-plus",
+    "AssetRegex":  "\\.Installer\\.x64\\.exe$",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/selfhst/icons/png/notepad-plus-plus.png",
     "IDn":  54
   },
@@ -1773,6 +1775,8 @@
             "7zip.7zip"
           ],
     "Category":  "System Utilities",
+    "GitHubRepo":  "ip7z/7zip",
+    "AssetRegex":  "-x64\\.msi$",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/7zip.png",
     "IDn":  132
   },
@@ -1872,6 +1876,7 @@
           ],
     "Category":  "System Utilities",
     "Url":  "https://www.unikey.org/",
+    "FallbackUrl":  "https://www.unikey.org/en/download.html",
     "IconUrl":  "https://img.icons8.com/fluency/96/keyboard.png",
     "IDn":  140
   },
@@ -2884,6 +2889,8 @@
             "OBSProject.OBSStudio"
           ],
     "Category":  "Audio \u0026 Video",
+    "GitHubRepo":  "obsproject/obs-studio",
+    "AssetRegex":  "Windows-x64-Installer\\.exe$",
     "IconUrl":  "https://img.icons8.com/fluency/96/obs-studio.png",
     "IDn":  215
   },
@@ -3126,6 +3133,8 @@
             "ShareX.ShareX"
           ],
     "Category":  "Graphics \u0026 Design",
+    "GitHubRepo":  "ShareX/ShareX",
+    "AssetRegex":  "setup-x64\\.exe$",
     "IconUrl":  "https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/ShareX_Logo.png",
     "IDn":  233
   },
@@ -3200,6 +3209,8 @@
             "JannisX11.Blockbench"
           ],
     "Category":  "Graphics \u0026 Design",
+    "GitHubRepo":  "JannisX11/blockbench",
+    "AssetRegex":  "^Blockbench_[0-9.]+\\.exe$",
     "Url":  "https://www.blockbench.net/",
     "IconUrl":  "https://www.google.com/s2/favicons?domain=blockbench.net\u0026sz=128",
     "IDn":  239
@@ -4096,5 +4107,287 @@
     "Url":  "https://github.com/canton7/SyncTrayzor",
     "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/syncthing.png",
     "IDn":  304
+  },
+  {
+    "ID":  "ApacheFriends.Xampp.8.2",
+    "Name":  "XAMPP 8.2",
+    "Domain":  "apachefriends.org",
+    "Aliases":  [
+            "XAMPP",
+            "XAMPP 8.2",
+            "ApacheFriends.Xampp.8.2",
+            "ApacheFriends.Xampp"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://www.apachefriends.org/download.html",
+    "FallbackUrl":  "https://www.apachefriends.org/download.html",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=apachefriends.org\u0026sz=128",
+    "IDn":  305
+  },
+  {
+    "ID":  "LeNgocKhoa.Laragon",
+    "Name":  "Laragon",
+    "Domain":  "laragon.org",
+    "Aliases":  [
+            "Laragon",
+            "LeNgocKhoa.Laragon"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "GitHubRepo":  "leokhoa/laragon",
+    "AssetRegex":  "^laragon-wamp\\.exe$",
+    "Url":  "https://laragon.org/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=laragon.org\u0026sz=128",
+    "IDn":  306
+  },
+  {
+    "ID":  "Flywheel.Local",
+    "Name":  "LocalWP (WordPress)",
+    "Domain":  "localwp.com",
+    "Aliases":  [
+            "LocalWP",
+            "Local by Flywheel",
+            "Flywheel.Local"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://localwp.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=localwp.com\u0026sz=128",
+    "IDn":  307
+  },
+  {
+    "ID":  "nginxinc.nginx",
+    "Name":  "Nginx",
+    "Domain":  "nginx.org",
+    "Aliases":  [
+            "nginx",
+            "nginxinc.nginx"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://nginx.org/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/nginx.png",
+    "IDn":  308
+  },
+  {
+    "ID":  "PHP.PHP.8.4",
+    "Name":  "PHP 8.4",
+    "Domain":  "php.net",
+    "Aliases":  [
+            "PHP 8.4",
+            "PHP.PHP.8.4"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://www.php.net/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=php.net\u0026sz=128",
+    "IDn":  309
+  },
+  {
+    "ID":  "DenoLand.Deno",
+    "Name":  "Deno",
+    "Domain":  "deno.com",
+    "Aliases":  [
+            "Deno",
+            "DenoLand.Deno"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://deno.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=deno.com\u0026sz=128",
+    "IDn":  310
+  },
+  {
+    "ID":  "FiloSottile.mkcert",
+    "Name":  "mkcert (Local SSL)",
+    "Domain":  "github.com/FiloSottile/mkcert",
+    "Aliases":  [
+            "mkcert",
+            "FiloSottile.mkcert"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://github.com/FiloSottile/mkcert",
+    "IconUrl":  "https://img.icons8.com/fluency/96/ssl-certificate.png",
+    "IDn":  311
+  },
+  {
+    "ID":  "Cloudflare.cloudflared",
+    "Name":  "Cloudflared (Tunnel)",
+    "Domain":  "cloudflare.com",
+    "Aliases":  [
+            "cloudflared",
+            "Cloudflare.cloudflared"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "GitHubRepo":  "cloudflare/cloudflared",
+    "AssetRegex":  "^cloudflared-windows-amd64\\.msi$",
+    "Url":  "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/cloudflare.png",
+    "IDn":  312
+  },
+  {
+    "ID":  "Ngrok.Ngrok",
+    "Name":  "ngrok (Tunnel)",
+    "Domain":  "ngrok.com",
+    "Aliases":  [
+            "Ngrok",
+            "ngrok",
+            "Ngrok.Ngrok"
+          ],
+    "Category":  "Web \u0026 Local Servers",
+    "Url":  "https://ngrok.com/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=ngrok.com\u0026sz=128",
+    "IDn":  313
+  },
+  {
+    "ID":  "Insomnia.Insomnia",
+    "Name":  "Insomnia (API Client)",
+    "Domain":  "insomnia.rest",
+    "Aliases":  [
+            "Insomnia",
+            "Insomnia.Insomnia"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "GitHubRepo":  "Kong/insomnia",
+    "AssetRegex":  "^Insomnia\\.Core-[0-9.]+\\.exe$",
+    "Url":  "https://insomnia.rest/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=insomnia.rest\u0026sz=128",
+    "IDn":  314
+  },
+  {
+    "ID":  "hoppscotch.Hoppscotch",
+    "Name":  "Hoppscotch",
+    "Domain":  "hoppscotch.io",
+    "Aliases":  [
+            "Hoppscotch",
+            "hoppscotch.Hoppscotch"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "GitHubRepo":  "hoppscotch/releases",
+    "AssetRegex":  "^Hoppscotch_win_x64\\.msi$",
+    "Url":  "https://hoppscotch.io/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=hoppscotch.io\u0026sz=128",
+    "IDn":  315
+  },
+  {
+    "ID":  "TablePlus.TablePlus",
+    "Name":  "TablePlus",
+    "Domain":  "tableplus.com",
+    "Aliases":  [
+            "TablePlus",
+            "TablePlus.TablePlus"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://tableplus.com/windows",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=tableplus.com\u0026sz=128",
+    "IDn":  316
+  },
+  {
+    "ID":  "DBBrowserForSQLite.DBBrowserForSQLite",
+    "Name":  "DB Browser for SQLite",
+    "Domain":  "sqlitebrowser.org",
+    "Aliases":  [
+            "DB Browser for SQLite",
+            "DBBrowserForSQLite.DBBrowserForSQLite"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "GitHubRepo":  "sqlitebrowser/sqlitebrowser",
+    "AssetRegex":  "-win64\\.msi$",
+    "Url":  "https://sqlitebrowser.org/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=sqlitebrowser.org\u0026sz=128",
+    "IDn":  317
+  },
+  {
+    "ID":  "Oracle.MySQLWorkbench",
+    "Name":  "MySQL Workbench 8.0 CE",
+    "Domain":  "dev.mysql.com",
+    "Aliases":  [
+            "MySQL Workbench",
+            "MySQL Workbench 8.0 CE",
+            "Oracle.MySQLWorkbench"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://dev.mysql.com/downloads/workbench/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=mysql.com\u0026sz=128",
+    "IDn":  318
+  },
+  {
+    "ID":  "PostgreSQL.PostgreSQL.17",
+    "Name":  "PostgreSQL 17",
+    "Domain":  "postgresql.org",
+    "Aliases":  [
+            "PostgreSQL 17",
+            "PostgreSQL.PostgreSQL.17"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://www.postgresql.org/download/windows/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/postgres.png",
+    "IDn":  319
+  },
+  {
+    "ID":  "MariaDB.Server",
+    "Name":  "MariaDB Server",
+    "Domain":  "mariadb.org",
+    "Aliases":  [
+            "MariaDB",
+            "MariaDB Server",
+            "MariaDB.Server"
+          ],
+    "Category":  "Database \u0026 DevOps",
+    "Url":  "https://mariadb.org/download/",
+    "IconUrl":  "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/mariadb.png",
+    "IDn":  320
+  },
+  {
+    "ID":  "CoreyButler.NVMforWindows",
+    "Name":  "NVM for Windows",
+    "Domain":  "github.com/coreybutler/nvm-windows",
+    "Aliases":  [
+            "NVM for Windows",
+            "nvm-windows",
+            "CoreyButler.NVMforWindows"
+          ],
+    "Category":  "Development",
+    "GitHubRepo":  "coreybutler/nvm-windows",
+    "AssetRegex":  "^nvm-setup\\.exe$",
+    "Url":  "https://github.com/coreybutler/nvm-windows",
+    "IconUrl":  "https://img.icons8.com/fluency/96/nodejs.png",
+    "IDn":  321
+  },
+  {
+    "ID":  "Volta.Volta",
+    "Name":  "Volta",
+    "Domain":  "volta.sh",
+    "Aliases":  [
+            "Volta",
+            "Volta.Volta"
+          ],
+    "Category":  "Development",
+    "GitHubRepo":  "volta-cli/volta",
+    "AssetRegex":  "windows-x86_64\\.msi$",
+    "Url":  "https://volta.sh/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=volta.sh\u0026sz=128",
+    "IDn":  322
+  },
+  {
+    "ID":  "Fork.Fork",
+    "Name":  "Fork (Git Client)",
+    "Domain":  "fork.dev",
+    "Aliases":  [
+            "Fork",
+            "Fork.Fork"
+          ],
+    "Category":  "Development",
+    "Url":  "https://fork.dev/",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=fork.dev\u0026sz=128",
+    "IDn":  323
+  },
+  {
+    "ID":  "Axosoft.GitKraken",
+    "Name":  "GitKraken",
+    "Domain":  "gitkraken.com",
+    "Aliases":  [
+            "GitKraken",
+            "Axosoft.GitKraken"
+          ],
+    "Category":  "Development",
+    "Url":  "https://www.gitkraken.com/git-client",
+    "IconUrl":  "https://www.google.com/s2/favicons?domain=gitkraken.com\u0026sz=128",
+    "IDn":  324
   }
 ]
