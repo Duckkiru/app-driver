@@ -62,8 +62,10 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-    $trimmed = $trimmed.Replace("[✓]", "[OK]").Replace("[✓ ", "[OK - ").Replace("✓", "OK")
-    $trimmed = $trimmed.Replace("[❌]", "[ERR]").Replace("[❌ ", "[ERR - ").Replace("❌", "ERR")
+    $trimmed = $trimmed.Replace("[✓]", "[SUC]").Replace("[✓ ", "[SUC - ").Replace("✓", "SUC")
+    $trimmed = $trimmed.Replace("[OK]", "[SUC]").Replace("[OK - ", "[SUC - ")
+    $trimmed = $trimmed.Replace("[❌]", "[ER]").Replace("[❌ ", "[ER - ").Replace("❌", "ER")
+    $trimmed = $trimmed.Replace("[ERR - LỖI]", "[ER]").Replace("[ERR - LỖI ", "[ER - ").Replace("[ERR]", "[ER]").Replace("[ERR - ", "[ER - ")
     $trimmed = $trimmed.Replace("[⚠️]", "[WARN]").Replace("[⚠️ ", "[WARN - ").Replace("⚠️", "WARN")
     $trimmed = $trimmed.Replace("[🔍]", "[SCAN]").Replace("🔍 ", "").Replace("🔍", "")
     $trimmed = $trimmed.Replace("[↗]", "[WEB]").Replace("↗", "->")
@@ -75,9 +77,9 @@ function Log-Text {
 
     if ($trimmed -match '^={4,}|^-{4,}|^\s*-{4,}') {
         $color = [System.ConsoleColor]::DarkCyan
-    } elseif ($trimmed -match '\[OK|HOÀN THÀNH|THÀNH CÔNG') {
+    } elseif ($trimmed -match '\[SUC|\[OK|HOÀN THÀNH|THÀNH CÔNG') {
         $color = [System.ConsoleColor]::Green
-    } elseif ($trimmed -match '\[ERR|\[x\]|LỖI') {
+    } elseif ($trimmed -match '\[ER[\]\s-]|\[ERR|\[x\]|LỖI') {
         $color = [System.ConsoleColor]::Red
     } elseif ($trimmed -match '\[!\]|\[WARN|\[LOCK\]') {
         $color = [System.ConsoleColor]::Yellow

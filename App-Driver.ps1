@@ -220,11 +220,11 @@ if (-not $isCompanion -or -not $isAdmin) {
                         Write-Host "[*] App-Driver c$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) th$([char]0x1EF1)c hi$([char]0x1EC7)n s$([char]0x1EED)a l$([char]0x1ED7)i h$([char]0x1EC7) th$([char]0x1ED1)ng v$([char]0x00E0) qu$([char]0x1EA3)n l$([char]0x00FD) Driver.`n" -ForegroundColor DarkGray
                         return
                     }
-                    Write-Host "`n[x] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                    Write-Host "`n[ER] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
                     return
                 }
             } else {
-                Write-Host "`n[x] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "`n[ER] L$([char]0x1ED7)i kh$([char]0x1EDF)i ch$([char]0x1EA1)y quy$([char]0x1EC1)n Administrator: $($_.Exception.Message)" -ForegroundColor Red
                 return
             }
         }
@@ -5096,7 +5096,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                                 <Grid Grid.Row="0" Margin="12,10,12,6">
                                     <TextBlock Text="DANH M&#x1EE4;C" FontSize="10" FontWeight="Bold" Foreground="#64748B" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtCategorySidebarMeta" Text="6 nh&#x00F3;m &#x00B7; 23 m&#x1EE5;c" FontSize="10" FontWeight="SemiBold" Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    <TextBlock Name="txtCategorySidebarMeta" Text="6 nh&#x00F3;m &#x00B7; 24 m&#x1EE5;c" FontSize="10" FontWeight="SemiBold" Foreground="#475569" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
 
                                 <StackPanel Grid.Row="1" Name="CategorySidebarTop" Margin="8,0,8,4"/>
@@ -5304,15 +5304,15 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                             <TextBlock Grid.Column="1" Name="hdrUninstName" Text="T&#x00CA;N &#x1EE8;NG D&#x1EE4;NG" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nh&#x1EA5;n &#x0111;&#x1EC3; s&#x1EAF;p x&#x1EBF;p theo t&#x00EA;n (A-Z)" ToolTipService.InitialShowDelay="5000"/>
                             <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="2" Text="PHI&#x00CA;N B&#x1EA2;N" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="PHI&#x00CA;N B&#x1EA2;N" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                             <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="3" Text="NH&#x00C0; PH&#x00C1;T H&#x00C0;NH" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="NH&#x00C0; PH&#x00C1;T H&#x00C0;NH" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                             <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG L&#x01AF;&#x1EE2;NG" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nh&#x1EA5;n &#x0111;&#x1EC3; s&#x1EAF;p x&#x1EBF;p theo dung l&#x01B0;&#x1EE3;ng (L&#x1EDB;n &#x2192; Nh&#x1ECF;)" ToolTipService.InitialShowDelay="5000"/>
+                            <TextBlock Grid.Column="4" Name="hdrUninstSize" Text="DUNG L&#x01AF;&#x1EE2;NG" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" TextAlignment="Right" Margin="8,0,12,0" VerticalAlignment="Center" Cursor="Hand" ToolTip="Nh&#x1EA5;n &#x0111;&#x1EC3; s&#x1EAF;p x&#x1EBF;p theo dung l&#x01B0;&#x1EE3;ng (L&#x1EDB;n &#x2192; Nh&#x1ECF;)" ToolTipService.InitialShowDelay="5000"/>
                             <Border Grid.Column="4" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="5" Text="TR&#x1EA0;NG TH&#x00C1;I" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="TR&#x1EA0;NG TH&#x00C1;I" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <Border Grid.Column="5" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                            <TextBlock Grid.Column="6" Text="V&#x1ECA; TR&#x00CD;" Foreground="#7C8DA4" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="V&#x1ECA; TR&#x00CD;" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
@@ -30528,8 +30528,10 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-    $trimmed = $trimmed.Replace("[$([char]0x2713)]", "[OK]").Replace("[$([char]0x2713) ", "[OK - ").Replace("$([char]0x2713)", "OK")
-    $trimmed = $trimmed.Replace("[$([char]0x274C)]", "[ERR]").Replace("[$([char]0x274C) ", "[ERR - ").Replace("$([char]0x274C)", "ERR")
+    $trimmed = $trimmed.Replace("[$([char]0x2713)]", "[SUC]").Replace("[$([char]0x2713) ", "[SUC - ").Replace("$([char]0x2713)", "SUC")
+    $trimmed = $trimmed.Replace("[OK]", "[SUC]").Replace("[OK - ", "[SUC - ")
+    $trimmed = $trimmed.Replace("[$([char]0x274C)]", "[ER]").Replace("[$([char]0x274C) ", "[ER - ").Replace("$([char]0x274C)", "ER")
+    $trimmed = $trimmed.Replace("[ERR - L$([char]0x1ED6)I]", "[ER]").Replace("[ERR - L$([char]0x1ED6)I ", "[ER - ").Replace("[ERR]", "[ER]").Replace("[ERR - ", "[ER - ")
     $trimmed = $trimmed.Replace("[$([char]0x26A0)$([char]0xFE0F)]", "[WARN]").Replace("[$([char]0x26A0)$([char]0xFE0F) ", "[WARN - ").Replace("$([char]0x26A0)$([char]0xFE0F)", "WARN")
     $trimmed = $trimmed.Replace("[$([char]0xD83D)$([char]0xDD0D)]", "[SCAN]").Replace("$([char]0xD83D)$([char]0xDD0D) ", "").Replace("$([char]0xD83D)$([char]0xDD0D)", "")
     $trimmed = $trimmed.Replace("[$([char]0x2197)]", "[WEB]").Replace("$([char]0x2197)", "->")
@@ -30541,9 +30543,9 @@ function Log-Text {
 
     if ($trimmed -match '^={4,}|^-{4,}|^\s*-{4,}') {
         $color = [System.ConsoleColor]::DarkCyan
-    } elseif ($trimmed -match "\[OK|HO$([char]0x00C0)N TH$([char]0x00C0)NH|TH$([char]0x00C0)NH C$([char]0x00D4)NG") {
+    } elseif ($trimmed -match "\[SUC|\[OK|HO$([char]0x00C0)N TH$([char]0x00C0)NH|TH$([char]0x00C0)NH C$([char]0x00D4)NG") {
         $color = [System.ConsoleColor]::Green
-    } elseif ($trimmed -match "\[ERR|\[x\]|L$([char]0x1ED6)I") {
+    } elseif ($trimmed -match "\[ER[\]\s-]|\[ERR|\[x\]|L$([char]0x1ED6)I") {
         $color = [System.ConsoleColor]::Red
     } elseif ($trimmed -match '\[!\]|\[WARN|\[LOCK\]') {
         $color = [System.ConsoleColor]::Yellow
@@ -32934,7 +32936,7 @@ function Scan-And-ColorizeApps {
             if (-not $wingetOk -and -not $wingetMissing) {
                 Log-Text "[WARN] $summary"
             } else {
-                Log-Text "[OK] $summary"
+                Log-Text "[SUC] $summary"
             }
         } elseif ($sigChanged) {
             Log-Text "[AUTO] L$([char]0x00E0)m m$([char]0x1EDB)i: $($finalStats.Installed) $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i ($($finalStats.Latest) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $($finalStats.Outdated) c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t)$modeTag"
@@ -34530,7 +34532,7 @@ function Restart-WindowsExplorerForUnlock {
         }
     }
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-        Log-Text "[OK] Windows Explorer $([char]0x0111)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i; ti$([char]0x1EBF)p t$([char]0x1EE5)c x$([char]0x00F3)a m$([char]0x1EE5)c $([char]0x0111)ang gi$([char]0x1EEF) kh$([char]0x00F3)a..."
+        Log-Text "[SUC] Windows Explorer $([char]0x0111)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i; ti$([char]0x1EBF)p t$([char]0x1EE5)c x$([char]0x00F3)a m$([char]0x1EE5)c $([char]0x0111)ang gi$([char]0x1EEF) kh$([char]0x00F3)a..."
     }
 }
 
@@ -35814,7 +35816,7 @@ function Invoke-DeepAppUninstall {
             }
         } else {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                Log-Text "[OK] '$($AppEntry.DisplayName)' $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
+                Log-Text "[SUC] '$($AppEntry.DisplayName)' $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
             }
         }
         return
@@ -35829,12 +35831,12 @@ function Invoke-DeepAppUninstall {
         if ($res.Confirmed) {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                 $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
-                Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
+                Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
             }
         }
     } else {
         if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-            Log-Text "[OK] Tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) $([char]0x0111)$([char]0x00E3) d$([char]0x1ECD)n d$([char]0x1EB9)p s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
+            Log-Text "[SUC] Tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) $([char]0x0111)$([char]0x00E3) d$([char]0x1ECD)n d$([char]0x1EB9)p s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
         }
     }
 }
@@ -35853,7 +35855,7 @@ function Find-FaultyPnpDevices {
 function Invoke-PnpDeviceRescan {
     $code = Run-CliStream "pnputil.exe" "/scan-devices"
     if ($code -eq 0) {
-        Log-Text "[OK] Qu$([char]0x00E9)t l$([char]0x1EA1)i thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng PnP th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
+        Log-Text "[SUC] Qu$([char]0x00E9)t l$([char]0x1EA1)i thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng PnP th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
         Log-Text "[!] Qu$([char]0x00E9)t thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng PnP th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c g$([char]0x1EB7)p l$([char]0x1ED7)i (ExitCode: $code)."
     }
@@ -35885,7 +35887,7 @@ function Invoke-PnpDriverStoreCleanup {
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {
-            Log-Text "[OK] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y g$([char]0x00F3)i driver OEM n$([char]0x00E0)o trong DriverStore."
+            Log-Text "[SUC] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y g$([char]0x00F3)i driver OEM n$([char]0x00E0)o trong DriverStore."
             return
         }
 
@@ -35941,7 +35943,7 @@ function Invoke-PnpDriverStoreCleanup {
 
                 if ($delP.ExitCode -eq 0 -or $combined -match "deleted successfully|$([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a th$([char]0x00E0)nh c$([char]0x00F4)ng") {
                     $deletedCount++
-                    Log-Text "   [OK - $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n] $inf"
+                    Log-Text "   [SUC - $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n] $inf"
                 } elseif ($combined -match "installed using the specified INF|$([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c s$([char]0x1EED) d$([char]0x1EE5)ng|in use|b$([char]0x1ECB) t$([char]0x1EEB) ch$([char]0x1ED1)i") {
                     $inUseCount++
                 } else {
@@ -35962,9 +35964,9 @@ function Invoke-PnpDriverStoreCleanup {
         if ($userAborted) {
             Log-Text "[!] $([char]0x0110)$([char]0x00E3) d$([char]0x1EEB)ng d$([char]0x1ECD)n d$([char]0x1EB9)p DriverStore theo y$([char]0x00EA)u c$([char]0x1EA7)u ($([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a: $deletedCount, b$([char]0x1ECF) qua: $inUseCount, l$([char]0x1ED7)i: $errorCount)."
         } elseif ($deletedCount -gt 0) {
-            Log-Text "[OK] Ho$([char]0x00E0)n t$([char]0x1EA5)t! $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $deletedCount g$([char]0x00F3)i driver OEM c$([char]0x0169) kh$([char]0x00F4)ng c$([char]0x00F2)n s$([char]0x1EED) d$([char]0x1EE5)ng ($inUseCount g$([char]0x00F3)i $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n)."
+            Log-Text "[SUC] Ho$([char]0x00E0)n t$([char]0x1EA5)t! $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $deletedCount g$([char]0x00F3)i driver OEM c$([char]0x0169) kh$([char]0x00F4)ng c$([char]0x00F2)n s$([char]0x1EED) d$([char]0x1EE5)ng ($inUseCount g$([char]0x00F3)i $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n)."
         } elseif ($errorCount -eq 0) {
-            Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) $($oemList.Count) g$([char]0x00F3)i driver OEM $([char]0x0111)$([char]0x1EC1)u $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n."
+            Log-Text "[SUC] To$([char]0x00E0)n b$([char]0x1ED9) $($oemList.Count) g$([char]0x00F3)i driver OEM $([char]0x0111)$([char]0x1EC1)u $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng s$([char]0x1EED) d$([char]0x1EE5)ng an to$([char]0x00E0)n."
         }
         if ($errorCount -gt 0 -and -not $userAborted) {
             Log-Text "[!] C$([char]0x00F3) $errorCount g$([char]0x00F3)i driver g$([char]0x1EB7)p l$([char]0x1ED7)i trong qu$([char]0x00E1) tr$([char]0x00EC)nh x$([char]0x1EED) l$([char]0x00FD)."
@@ -35982,7 +35984,7 @@ function Invoke-DismComponentCleanup {
     Log-Text "[*] $([char]0x0110)ang ti$([char]0x1EBF)n h$([char]0x00E0)nh d$([char]0x1ECD)n d$([char]0x1EB9)p v$([char]0x00E0) n$([char]0x00E9)n kho linh ki$([char]0x1EC7)n WinSxS qua DISM..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /StartComponentCleanup /ResetBase"
     if ($code -eq 0) {
-        Log-Text "[OK] D$([char]0x1ECD)n d$([char]0x1EB9)p kho linh ki$([char]0x1EC7)n WinSxS ho$([char]0x00E0)n t$([char]0x1EA5)t th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
+        Log-Text "[SUC] D$([char]0x1ECD)n d$([char]0x1EB9)p kho linh ki$([char]0x1EC7)n WinSxS ho$([char]0x00E0)n t$([char]0x1EA5)t th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
         Log-Text "[!] D$([char]0x1ECD)n d$([char]0x1EB9)p kho linh ki$([char]0x1EC7)n WinSxS th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c b$([char]0x1ECB) gi$([char]0x00E1)n $([char]0x0111)o$([char]0x1EA1)n (ExitCode: $code)."
     }
@@ -36003,13 +36005,13 @@ function Export-SystemDriversBackup {
 
     try {
         Export-WindowsDriver -Online -Destination $Destination -ErrorAction Stop | Out-Null
-        Log-Text "[OK] Sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver th$([char]0x00E0)nh c$([char]0x00F4)ng qua Export-WindowsDriver."
+        Log-Text "[SUC] Sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver th$([char]0x00E0)nh c$([char]0x00F4)ng qua Export-WindowsDriver."
         return $true
     } catch {
         Log-Text "[*] Export-WindowsDriver kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng ho$([char]0x1EB7)c b$([char]0x1ECB) t$([char]0x1EEB) ch$([char]0x1ED1)i, chuy$([char]0x1EC3)n sang pnputil.exe..."
         $exitCode = Run-CliStream "pnputil.exe" "/export-driver * `"$Destination`""
         if ($exitCode -eq 0) {
-            Log-Text "[OK] Sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver th$([char]0x00E0)nh c$([char]0x00F4)ng qua pnputil.exe (ExitCode: 0)."
+            Log-Text "[SUC] Sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver th$([char]0x00E0)nh c$([char]0x00F4)ng qua pnputil.exe (ExitCode: 0)."
             return $true
         } else {
             Log-Text "[!] Sao l$([char]0x01B0)u driver qua pnputil.exe th$([char]0x1EA5)t b$([char]0x1EA1)i (ExitCode: $exitCode)."
@@ -36091,7 +36093,7 @@ function Reset-WindowsUpdateEngine {
 
     if ($script:isWindowClosing) { return }
     if ($sdRenamed -and $crRenamed) {
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i t$([char]0x1EA1)o l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update v$([char]0x00E0) x$([char]0x00F3)a s$([char]0x1EA1)ch cache th$([char]0x00E0)nh c$([char]0x00F4)ng!"
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i t$([char]0x1EA1)o l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update v$([char]0x00E0) x$([char]0x00F3)a s$([char]0x1EA1)ch cache th$([char]0x00E0)nh c$([char]0x00F4)ng!"
     } else {
         Log-Text "[*] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update (m$([char]0x1ED9)t s$([char]0x1ED1) th$([char]0x01B0) m$([char]0x1EE5)c cache $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c h$([char]0x1EC7) th$([char]0x1ED1)ng b$([char]0x1EA3)o v$([char]0x1EC7))."
     }
@@ -36102,7 +36104,7 @@ function Invoke-WindowsUpdateScan {
     try {
         $au = New-Object -ComObject Microsoft.Update.AutoUpdate
         $au.DetectNow()
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t Microsoft.Update.AutoUpdate.DetectNow() th$([char]0x00E0)nh c$([char]0x00F4)ng."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) k$([char]0x00ED)ch ho$([char]0x1EA1)t Microsoft.Update.AutoUpdate.DetectNow() th$([char]0x00E0)nh c$([char]0x00F4)ng."
     } catch {
         Log-Text "[*] COM AutoUpdate kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i, m$([char]0x1EDF) trang c$([char]0x1EAD)p nh$([char]0x1EAD)t h$([char]0x1EC7) th$([char]0x1ED1)ng..."
     }
@@ -36116,7 +36118,7 @@ function Invoke-SystemFileCheck {
     Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i ch$([char]0x1EA1)y System File Checker (sfc /scannow)..."
     $code = Run-CliStream "sfc.exe" "/scannow"
     if ($code -eq 0) {
-        Log-Text "[OK] SFC Scan ho$([char]0x00E0)n t$([char]0x1EA5)t: To$([char]0x00E0)n v$([char]0x1EB9)n t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)$([char]0x1EA1)t chu$([char]0x1EA9)n (ExitCode: 0)."
+        Log-Text "[SUC] SFC Scan ho$([char]0x00E0)n t$([char]0x1EA5)t: To$([char]0x00E0)n v$([char]0x1EB9)n t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)$([char]0x1EA1)t chu$([char]0x1EA9)n (ExitCode: 0)."
     } else {
         Log-Text "[!] SFC Scan ph$([char]0x00E1)t hi$([char]0x1EC7)n l$([char]0x1ED7)i ho$([char]0x1EB7)c kh$([char]0x00F4)ng th$([char]0x1EC3) s$([char]0x1EED)a ch$([char]0x1EEF)a to$([char]0x00E0)n b$([char]0x1ED9) t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng (ExitCode: $code)."
     }
@@ -36127,7 +36129,7 @@ function Invoke-DismRestoreHealth {
     Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i ch$([char]0x1EA1)y DISM RestoreHealth kh$([char]0x00F4)i ph$([char]0x1EE5)c kho linh ki$([char]0x1EC7)n h$([char]0x1EC7) th$([char]0x1ED1)ng..."
     $code = Run-CliStream "dism.exe" "/Online /Cleanup-Image /RestoreHealth"
     if ($code -eq 0) {
-        Log-Text "[OK] DISM RestoreHealth ho$([char]0x00E0)n t$([char]0x1EA5)t th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
+        Log-Text "[SUC] DISM RestoreHealth ho$([char]0x00E0)n t$([char]0x1EA5)t th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
         Log-Text "[!] DISM RestoreHealth th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c g$([char]0x1EB7)p s$([char]0x1EF1) c$([char]0x1ED1) (ExitCode: $code). H$([char]0x00E3)y ki$([char]0x1EC3)m tra k$([char]0x1EBF)t n$([char]0x1ED1)i m$([char]0x1EA1)ng ho$([char]0x1EB7)c ngu$([char]0x1ED3)n t$([char]0x1EC7)p h$([char]0x1EC7) th$([char]0x1ED1)ng."
     }
@@ -36137,7 +36139,7 @@ function Invoke-DismRestoreHealth {
 function Clear-DnsResolverCache {
     $code = Run-CliStream "ipconfig.exe" "/flushdns"
     if ($code -eq 0) {
-        Log-Text "[OK] L$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m DNS th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
+        Log-Text "[SUC] L$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m DNS th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0)."
     } else {
         Log-Text "[!] L$([char]0x00E0)m m$([char]0x1EDB)i b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m DNS th$([char]0x1EA5)t b$([char]0x1EA1)i (ExitCode: $code)."
     }
@@ -36148,7 +36150,7 @@ function Reset-NetworkInterfaceStack {
     $codeWinsock = Run-CliStream "netsh.exe" "winsock reset"
     $codeTcpIp = Run-CliStream "netsh.exe" "int ip reset"
     if ($codeWinsock -eq 0 -and $codeTcpIp -eq 0) {
-        Log-Text "[OK] $([char]0x0110)$([char]0x1EB7)t l$([char]0x1EA1)i Winsock Catalog v$([char]0x00E0) TCP/IP Stack th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0). Khuy$([char]0x00EA)n b$([char]0x1EA1)n n$([char]0x00EA)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x1EB7)t l$([char]0x1EA1)i Winsock Catalog v$([char]0x00E0) TCP/IP Stack th$([char]0x00E0)nh c$([char]0x00F4)ng (ExitCode: 0). Khuy$([char]0x00EA)n b$([char]0x1EA1)n n$([char]0x00EA)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y."
     } else {
         Log-Text "[!] $([char]0x0110)$([char]0x1EB7)t l$([char]0x1EA1)i m$([char]0x1EA1)ng g$([char]0x1EB7)p l$([char]0x1ED7)i (Winsock ExitCode: $codeWinsock, TCP/IP ExitCode: $codeTcpIp)."
     }
@@ -36176,7 +36178,7 @@ function Clear-SystemTempFiles {
             }
         }
     }
-    Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n $removedCount m$([char]0x1EE5)c t$([char]0x1EC7)p t$([char]0x1EA1)m h$([char]0x1EC7) th$([char]0x1ED1)ng ($skippedCount m$([char]0x1EE5)c $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng/b$([char]0x1ECF) qua)."
+    Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n $removedCount m$([char]0x1EE5)c t$([char]0x1EC7)p t$([char]0x1EA1)m h$([char]0x1EC7) th$([char]0x1ED1)ng ($skippedCount m$([char]0x1EE5)c $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng/b$([char]0x1ECF) qua)."
 }
 
 function Clear-SystemEventLogs {
@@ -36186,7 +36188,7 @@ function Clear-SystemEventLogs {
             [System.Diagnostics.Eventing.Reader.EventLogSession]::GlobalSession.ClearLog($_.LogName)
         } catch {}
     }
-    Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) Windows Event Logs $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c l$([char]0x00E0)m s$([char]0x1EA1)ch."
+    Log-Text "[SUC] To$([char]0x00E0)n b$([char]0x1ED9) Windows Event Logs $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c l$([char]0x00E0)m s$([char]0x1EA1)ch."
 }
 
 Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
@@ -37718,7 +37720,7 @@ $script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
 $script:brushUninstFilterBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushUninstFilterBrokenBg.Freeze()
 $script:brushUninstFilterBrokenFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71)); $script:brushUninstFilterBrokenFg.Freeze()
-$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7C, 0x8D, 0xA4)); $script:brushUninstHeaderInactiveFg.Freeze()
+$script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:styleUninstRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
 $script:styleUninstRow.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::BackgroundProperty, $script:brushUninstRowBg)))
@@ -39254,7 +39256,7 @@ function Start-UninstallQueueExecution {
                 $res = Show-LeftoverReviewDialog -OwnerWindow $window -Items @($dedupLeftovers) -Title $dialogTitle -ForceStopByDefault:$true
                 if ($res.Confirmed) {
                     $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
-                    Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
+                    Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
                 }
             }
         }
@@ -42222,19 +42224,19 @@ function Complete-UpgradeDataGuardSession {
         if ($restTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $restTask.Result) {
             $rRes = $restTask.Result
             if ($rRes.RestoredLocFiles -gt 0) {
-                Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredLocFiles) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                Log-Text "[SUC] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredLocFiles) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
             }
             if ($rRes.RestoredAppDataCounts) {
                 for ($ai = 0; $ai -lt $rRes.RestoredAppDataCounts.Length; $ai++) {
                     if ($rRes.RestoredAppDataCounts[$ai] -gt 0 -and $ai -lt $adSrcArr.Count) {
-                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredAppDataCounts[$ai]) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($adSrcArr[$ai])"
+                        Log-Text "[SUC] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $($rRes.RestoredAppDataCounts[$ai]) t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($adSrcArr[$ai])"
                     }
                 }
             }
             if ($rRes.RestoredRegIndices) {
                 foreach ($impIdx in $rRes.RestoredRegIndices) {
                     if ($impIdx -ge 0 -and $impIdx -lt $regFiles.Count) {
-                        Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($regFiles[$impIdx].Key)"
+                        Log-Text "[SUC] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($regFiles[$impIdx].Key)"
                     }
                 }
             }
@@ -42244,7 +42246,7 @@ function Complete-UpgradeDataGuardSession {
             if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
                 $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
                 if ($restoredLoc -gt 0) {
-                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
+                    Log-Text "[SUC] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restoredLoc t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u b$([char]0x1ECB) x$([char]0x00F3)a trong th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t."
                 }
             }
 
@@ -42253,7 +42255,7 @@ function Complete-UpgradeDataGuardSession {
                     if (Test-Path -LiteralPath $item.Backup) {
                         $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
                         if ($resAd -gt 0) {
-                            Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
+                            Log-Text "[SUC] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $resAd t$([char]0x1EC7)p d$([char]0x1EEF) li$([char]0x1EC7)u/profile trong: $($item.Source)"
                         }
                     }
                 }
@@ -42272,7 +42274,7 @@ function Complete-UpgradeDataGuardSession {
                     } finally {
                         if ($pImp) { try { $pImp.Dispose() } catch {} }
                     }
-                    Log-Text "[OK] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
+                    Log-Text "[SUC] UpgradeDataGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c Registry c$([char]0x1EA5)u h$([char]0x00EC)nh: $($rfItem.Key)"
                 } catch {}
             }
         }
@@ -42799,7 +42801,7 @@ function Invoke-VerifiedDirectPackageInstall {
             return -1
         }
         $dlPath = $dlRes.Substring(3)
-        Log-Text "   [OK] [$srcLabel] X$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 h$([char]0x1EE3)p l$([char]0x1EC7)."
+        Log-Text "   [SUC] [$srcLabel] X$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 h$([char]0x1EE3)p l$([char]0x1EC7)."
 
         $typeHint = [string]$Candidate.InstallerType
         if ($dlPath -match '\.msi$' -or $typeHint -eq 'msi') {
@@ -43336,7 +43338,7 @@ Register-Click "btnInstall" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
 
                 if ($tag.Status -eq "LATEST") {
-                    Log-Text "[OK] $($app.Name) $([char]0x0111)$([char]0x00E3) l$([char]0x00E0) b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t, b$([char]0x1ECF) qua."
+                    Log-Text "[SUC] $($app.Name) $([char]0x0111)$([char]0x00E3) l$([char]0x00E0) b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t, b$([char]0x1ECF) qua."
                     $alreadyCount++
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
@@ -43348,7 +43350,7 @@ Register-Click "btnInstall" {
                     Log-Text "[$idx/$total] $([char]0x0110)ang c$([char]0x1EAD)p nh$([char]0x1EAD)t: $($app.Name) (ID: $($app.ID))..."
                     $upCode = Invoke-CatalogUpgradeWithFallback -Tag $tag
                     if ($upCode -eq 0) {
-                        Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) C$([char]0x1EAC)P NH$([char]0x1EAC)T TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($app.Name)"
+                        Log-Text "   [SUC - $([char]0x0110)$([char]0x00C3) C$([char]0x1EAC)P NH$([char]0x1EAC)T] $($app.Name)"
                         $okCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     } elseif ($upCode -eq 2) {
@@ -43366,7 +43368,7 @@ Register-Click "btnInstall" {
                     } elseif ($upCode -eq -2 -or $script:cancelRequested) {
                         Log-Text "   [!] $([char]0x0110)$([char]0x00E3) h$([char]0x1EE7)y c$([char]0x1EAD)p nh$([char]0x1EAD)t $($app.Name)."
                     } else {
-                        Log-Text "   [ERR - L$([char]0x1ED6)I C$([char]0x1EAC)P NH$([char]0x1EAC)T] $($app.Name) (Exit Code: $upCode)"
+                        Log-Text "   [ER - C$([char]0x1EAC)P NH$([char]0x1EAC)T] $($app.Name) (Exit Code: $upCode)"
                         $failCount++
                     }
                     continue
@@ -43382,7 +43384,7 @@ Register-Click "btnInstall" {
                         Start-Process $app.FallbackUrl
                         $webCount++
                     } catch {
-                        Log-Text "   [ERR - L$([char]0x1ED6)I] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) tr$([char]0x00EC)nh duy$([char]0x1EC7)t cho $($app.Name)"
+                        Log-Text "   [ER] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) tr$([char]0x00EC)nh duy$([char]0x1EC7)t cho $($app.Name)"
                         $failCount++
                     }
                     continue
@@ -43460,18 +43462,18 @@ Register-Click "btnInstall" {
                         $alreadyCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     } elseif ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled") {
-                        Log-Text "   [ERR - L$([char]0x1ED6)I] $($app.Name) kh$([char]0x00F4)ng c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c theo ph$([char]0x1EA3)n h$([char]0x1ED3)i t$([char]0x1EEB) WinGet."
+                        Log-Text "   [ER] $($app.Name) kh$([char]0x00F4)ng c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c theo ph$([char]0x1EA3)n h$([char]0x1ED3)i t$([char]0x1EEB) WinGet."
                         $failCount++
                     } else {
                         $okNote = if ($code -eq 3010 -or $code -eq 1641) { " (C$([char]0x1EA7)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i)" } else { "" }
-                        Log-Text "   [OK - HO$([char]0x00C0)N TH$([char]0x00C0)NH] $($app.Name)$okNote"
+                        Log-Text "   [SUC - HO$([char]0x00C0)N TH$([char]0x00C0)NH] $($app.Name)$okNote"
                         $okCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     }
                 } elseif ($code -eq -2 -or $code -eq 1602 -or $script:cancelRequested) {
                     Log-Text "   [!] $([char]0x0110)$([char]0x00E3) h$([char]0x1EE7)y c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($app.Name)."
                 } else {
-                    Log-Text "   [ERR - L$([char]0x1ED6)I] $($app.Name) (Exit Code: $code)"
+                    Log-Text "   [ER] $($app.Name) (Exit Code: $code)"
                     $failCount++
                     if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
                         Log-Text "   [WEB] [T$([char]0x1EA7)ng 5] C$([char]0x00E1)c ngu$([char]0x1ED3)n t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng. $([char]0x0110)ang m$([char]0x1EDF) trang t$([char]0x1EA3)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
@@ -43634,7 +43636,7 @@ Register-Click "btnUpgradeAll" {
                         if ($script:isWindowClosing -or $script:cancelRequested) { break }
                         $stCode = Invoke-CatalogUpgradeWithFallback -Tag $stRow.Tag -IsBulkUpgrade
                         if ($stCode -eq 0) {
-                            Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($stRow.Tag.App.Name)"
+                            Log-Text "   [SUC - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P] $($stRow.Tag.App.Name)"
                             $bulkOk++
                             if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
                         } elseif ($stCode -eq 2) {
@@ -43650,7 +43652,7 @@ Register-Click "btnUpgradeAll" {
                         } elseif ($stCode -eq 5) {
                             $bulkSkip++
                         } elseif ($stCode -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P] $($stRow.Tag.App.Name) (Exit Code: $stCode)"
+                            Log-Text "   [ER - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($stRow.Tag.App.Name) (Exit Code: $stCode)"
                             $bulkFail++
                         }
                     }
@@ -43674,7 +43676,7 @@ Register-Click "btnUpgradeAll" {
                         Log-Text "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..."
                         $codeOut = Invoke-CatalogUpgradeWithFallback -Tag $tagOut -IsBulkUpgrade
                         if ($codeOut -eq 0) {
-                            Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P TH$([char]0x00C0)NH C$([char]0x00D4)NG] $($tagOut.App.Name)"
+                            Log-Text "   [SUC - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P] $($tagOut.App.Name)"
                             $bulkOk++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 2) {
@@ -43690,7 +43692,7 @@ Register-Click "btnUpgradeAll" {
                         } elseif ($codeOut -eq 5) {
                             $bulkSkip++
                         } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - L$([char]0x1ED6)I N$([char]0x00C2)NG C$([char]0x1EA4)P] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                            Log-Text "   [ER - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($tagOut.App.Name) (Exit Code: $codeOut)"
                             $bulkFail++
                         }
                     }
@@ -43713,7 +43715,7 @@ Register-Click "btnUpgradeAll" {
                 Log-Text "[WARN] N$([char]0x00E2)ng c$([char]0x1EA5)p k$([char]0x1EBF)t th$([char]0x00FA)c v$([char]0x1EDB)i $bulkFail l$([char]0x1ED7)i ($bulkOk th$([char]0x00E0)nh c$([char]0x00F4)ng, $bulkAlready $([char]0x0111)$([char]0x00E3) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $bulkSkip b$([char]0x1ECF) qua)."
             } else {
                 if ($txtStatus) { $txtStatus.Text = "N$([char]0x00E2)ng c$([char]0x1EA5)p ho$([char]0x00E0)n t$([char]0x1EA5)t!" }
-                Log-Text "[OK] Ho$([char]0x00E0)n t$([char]0x1EA5)t ti$([char]0x1EBF)n tr$([char]0x00EC)nh n$([char]0x00E2)ng c$([char]0x1EA5)p ph$([char]0x1EA7)n m$([char]0x1EC1)m ($bulkOk th$([char]0x00E0)nh c$([char]0x00F4)ng, $bulkAlready $([char]0x0111)$([char]0x00E3) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $bulkSkip b$([char]0x1ECF) qua)."
+                Log-Text "[SUC] Ho$([char]0x00E0)n t$([char]0x1EA5)t ti$([char]0x1EBF)n tr$([char]0x00EC)nh n$([char]0x00E2)ng c$([char]0x1EA5)p ph$([char]0x1EA7)n m$([char]0x1EC1)m ($bulkOk th$([char]0x00E0)nh c$([char]0x00F4)ng, $bulkAlready $([char]0x0111)$([char]0x00E3) m$([char]0x1EDB)i nh$([char]0x1EA5)t, $bulkSkip b$([char]0x1ECF) qua)."
             }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
@@ -43768,7 +43770,7 @@ Register-Click "btnSfcScan" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H$(
         Invoke-SystemFileCheck
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Qu$([char]0x00E9)t SFC ho$([char]0x00E0)n t$([char]0x1EA5)t" }
-        Log-Text "[OK] Qu$([char]0x00E1) tr$([char]0x00EC)nh SFC $([char]0x0111)$([char]0x00E3) k$([char]0x1EBF)t th$([char]0x00FA)c."
+        Log-Text "[SUC] Qu$([char]0x00E1) tr$([char]0x00EC)nh SFC $([char]0x0111)$([char]0x00E3) k$([char]0x1EBF)t th$([char]0x00FA)c."
     }
 }
 
@@ -43780,7 +43782,7 @@ Register-Click "btnDismRestore" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i &
         Invoke-DismRestoreHealth
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "DISM ho$([char]0x00E0)n t$([char]0x1EA5)t" }
-        Log-Text "[OK] DISM RestoreHealth ho$([char]0x00E0)n th$([char]0x00E0)nh xu$([char]0x1EA5)t s$([char]0x1EAF)c."
+        Log-Text "[SUC] DISM RestoreHealth ho$([char]0x00E0)n th$([char]0x00E0)nh xu$([char]0x1EA5)t s$([char]0x1EAF)c."
     }
 }
 
@@ -43800,7 +43802,7 @@ Register-Click "btnDismCleanup" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i &
         Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "D$([char]0x1ECD)n kho linh ki$([char]0x1EC7)n ho$([char]0x00E0)n t$([char]0x1EA5)t" }
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng dung l$([char]0x01B0)$([char]0x1EE3)ng kho linh ki$([char]0x1EC7)n."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng dung l$([char]0x01B0)$([char]0x1EE3)ng kho linh ki$([char]0x1EC7)n."
     }
 }
 
@@ -43820,7 +43822,7 @@ Register-Click "btnRestartUpdateServices" -LockGroup "G$([char]0x1EE1) l$([char]
         Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
         Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) c$([char]0x1EAD)p nh$([char]0x1EAD)t."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) c$([char]0x1EAD)p nh$([char]0x1EAD)t."
     }
 }
 
@@ -43835,7 +43837,7 @@ Register-Click "btnFlushDnsWinsock" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7
         Log-Text "[*] $([char]0x0110)ang x$([char]0x00F3)a s$([char]0x1EA1)ch cache DNS v$([char]0x00E0) reset Winsock Catalog..."
         Clear-DnsResolverCache
         Run-CliStream "netsh.exe" "winsock reset"
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) l$([char]0x00E0)m m$([char]0x1EDB)i m$([char]0x1EA1)ng v$([char]0x00E0) DNS cache."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) l$([char]0x00E0)m m$([char]0x1EDB)i m$([char]0x1EA1)ng v$([char]0x00E0) DNS cache."
     }
 }
 
@@ -43843,7 +43845,7 @@ Register-Click "btnResetTcpIp" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & 
     Invoke-GuardedAction "Reset TCP/IP Stack" {
         Log-Text "[*] $([char]0x0110)ang $([char]0x0111)$([char]0x1EB7)t l$([char]0x1EA1)i to$([char]0x00E0)n b$([char]0x1ED9) ng$([char]0x0103)n x$([char]0x1EBF)p giao th$([char]0x1EE9)c m$([char]0x1EA1)ng TCP/IP..."
         Reset-NetworkInterfaceStack
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) reset TCP/IP Stack. Khuy$([char]0x00EA)n b$([char]0x1EA1)n n$([char]0x00EA)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) reset TCP/IP Stack. Khuy$([char]0x00EA)n b$([char]0x1EA1)n n$([char]0x00EA)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i m$([char]0x00E1)y."
     }
 }
 
@@ -43855,7 +43857,7 @@ Register-Click "btnClearTemp" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7)i & H
         Clear-SystemTempFiles
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "D$([char]0x1ECD)n t$([char]0x1EC7)p t$([char]0x1EA1)m ho$([char]0x00E0)n t$([char]0x1EA5)t" }
-        Log-Text "[OK] D$([char]0x1ECD)n d$([char]0x1EB9)p b$([char]0x1ED9) nh$([char]0x1EDB) t$([char]0x1EA1)m th$([char]0x00E0)nh c$([char]0x00F4)ng!"
+        Log-Text "[SUC] D$([char]0x1ECD)n d$([char]0x1EB9)p b$([char]0x1ED9) nh$([char]0x1EDB) t$([char]0x1EA1)m th$([char]0x00E0)nh c$([char]0x00F4)ng!"
     }
 }
 
@@ -43885,7 +43887,7 @@ Register-Click "btnRestartExplorer" -LockGroup "G$([char]0x1EE1) l$([char]0x1ED7
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) n$([char]0x1EA1)p l$([char]0x1EA1)i Windows Explorer th$([char]0x00E0)nh c$([char]0x00F4)ng."
+        Log-Text "[SUC] $([char]0x0110)$([char]0x00E3) n$([char]0x1EA1)p l$([char]0x1EA1)i Windows Explorer th$([char]0x00E0)nh c$([char]0x00F4)ng."
     }
 }
 
@@ -43899,7 +43901,7 @@ Register-Click "btnScanFaultyDrivers" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x
         $faulty = Find-FaultyPnpDevices
 
         if ($faulty.Count -eq 0) {
-            Log-Text "[OK] Tuy$([char]0x1EC7)t v$([char]0x1EDD)i! Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n thi$([char]0x1EBF)t b$([char]0x1ECB) n$([char]0x00E0)o b$([char]0x1ECB) l$([char]0x1ED7)i ho$([char]0x1EB7)c thi$([char]0x1EBF)u driver tr$([char]0x00EA)n m$([char]0x00E1)y b$([char]0x1EA1)n."
+            Log-Text "[SUC] Tuy$([char]0x1EC7)t v$([char]0x1EDD)i! Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n thi$([char]0x1EBF)t b$([char]0x1ECB) n$([char]0x00E0)o b$([char]0x1ECB) l$([char]0x1ED7)i ho$([char]0x1EB7)c thi$([char]0x1EBF)u driver tr$([char]0x00EA)n m$([char]0x00E1)y b$([char]0x1EA1)n."
             if ($txtStatus) { $txtStatus.Text = "T$([char]0x1EA5)t c$([char]0x1EA3) Driver $([char]0x0111)$([char]0x1EC1)u ho$([char]0x1EA1)t $([char]0x0111)$([char]0x1ED9)ng t$([char]0x1ED1)t" }
         } else {
             Log-Text "[WARN] PH$([char]0x00C1)T HI$([char]0x1EC6)N $($faulty.Count) THI$([char]0x1EBE)T B$([char]0x1ECA) $([char]0x0110)ANG B$([char]0x1ECA) L$([char]0x1ED6)I / THI$([char]0x1EBE)U DRIVER:"
@@ -43918,7 +43920,7 @@ Register-Click "btnPnpRescan" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD) Dr
     Invoke-GuardedAction "Qu$([char]0x00E9)t l$([char]0x1EA1)i thi$([char]0x1EBF)t b$([char]0x1ECB) PnP" {
         Log-Text "[*] $([char]0x0110)ang g$([char]0x1EED)i l$([char]0x1EC7)nh qu$([char]0x00E9)t ph$([char]0x1EA7)n c$([char]0x1EE9)ng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
-        Log-Text "[OK] Windows $([char]0x0111)$([char]0x00E3) ho$([char]0x00E0)n t$([char]0x1EA5)t qu$([char]0x00E9)t v$([char]0x00E0) ph$([char]0x00E1)t hi$([char]0x1EC7)n l$([char]0x1EA1)i c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng."
+        Log-Text "[SUC] Windows $([char]0x0111)$([char]0x00E3) ho$([char]0x00E0)n t$([char]0x1EA5)t qu$([char]0x00E9)t v$([char]0x00E0) ph$([char]0x00E1)t hi$([char]0x1EC7)n l$([char]0x1EA1)i c$([char]0x00E1)c thi$([char]0x1EBF)t b$([char]0x1ECB) ph$([char]0x1EA7)n c$([char]0x1EE9)ng."
     }
 }
 
@@ -43943,7 +43945,7 @@ Register-Click "btnFixDriverUpdate" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) g$([char]0x1EE1) l$([char]0x1ED7)i k$([char]0x1EB9)t driver update" }
-        Log-Text "[OK] Ho$([char]0x00E0)n th$([char]0x00E0)nh! L$([char]0x1ED7)i k$([char]0x1EB9)t t$([char]0x1EA3)i driver $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c d$([char]0x1ECD)n s$([char]0x1EA1)ch."
+        Log-Text "[SUC] Ho$([char]0x00E0)n th$([char]0x00E0)nh! L$([char]0x1ED7)i k$([char]0x1EB9)t t$([char]0x1EA3)i driver $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c d$([char]0x1ECD)n s$([char]0x1EA1)ch."
     }
 }
 
@@ -43983,10 +43985,10 @@ Register-Click "btnBackupDrivers" -LockGroup "Qu$([char]0x1EA3)n l$([char]0x00FD
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($res) {
             if ($txtStatus) { $txtStatus.Text = "Sao l$([char]0x01B0)u driver ho$([char]0x00E0)n t$([char]0x1EA5)t" }
-            Log-Text "[OK] TH$([char]0x00C0)NH C$([char]0x00D4)NG! $([char]0x0110)$([char]0x00E3) sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver v$([char]0x00E0)o: $dest"
+            Log-Text "[SUC] TH$([char]0x00C0)NH C$([char]0x00D4)NG! $([char]0x0110)$([char]0x00E3) sao l$([char]0x01B0)u to$([char]0x00E0)n b$([char]0x1ED9) driver v$([char]0x00E0)o: $dest"
         } else {
             if ($txtStatus) { $txtStatus.Text = "Sao l$([char]0x01B0)u driver th$([char]0x1EA5)t b$([char]0x1EA1)i" }
-            Log-Text "[ERR] L$([char]0x1ED7)i trong qu$([char]0x00E1) tr$([char]0x00EC)nh sao l$([char]0x01B0)u driver."
+            Log-Text "[ER] L$([char]0x1ED7)i trong qu$([char]0x00E1) tr$([char]0x00EC)nh sao l$([char]0x01B0)u driver."
         }
     }
 }
@@ -44278,7 +44280,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
-        Log-Text "[OK] S$([char]0x1EB5)n s$([char]0x00E0)ng ($($allItemBorders.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng / $($categories.Count) danh m$([char]0x1EE5)c)."
+        Log-Text "[SUC] S$([char]0x1EB5)n s$([char]0x00E0)ng ($($allItemBorders.Count) $([char]0x1EE9)ng d$([char]0x1EE5)ng / $($categories.Count) danh m$([char]0x1EE5)c)."
         if ($script:hasFastCatalogRowBuilder) {
             Sync-Tab0ViewportAssets
             if ($script:hasMasonryPanel) {
