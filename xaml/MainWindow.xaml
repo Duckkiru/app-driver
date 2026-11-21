@@ -277,22 +277,32 @@
         </Style>
         <Style x:Key="FilterTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="11.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="filterBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="1" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="Background" Value="Transparent"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="filterBorder" Property="Background" Value="#162235"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="filterBorder" Property="Opacity" Value="0.85"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -395,7 +405,7 @@
                             </Grid>
 
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
+                                <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
                                     <Ellipse Width="7" Height="7" Fill="#F1F5F9" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Chưa cài đặt" FontSize="11" Foreground="#CBD5E1"/>
@@ -556,13 +566,13 @@
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnDeepUninstall" Content="Gỡ cài đặt" Style="{StaticResource ActionButton}"
-                                            Background="#7F1D1D" Foreground="#FEE2E2" Padding="14,7"
+                                            Background="#B91C1C" Foreground="#FFFFFF" Padding="14,7"
                                             ToolTip="Gỡ ứng dụng đã chọn: hỗ trợ gỡ chuẩn theo hãng (tự gắn cờ im lặng) hoặc bật Buộc dừng &amp; Xóa trực tiếp (tắt tiến trình/service/task/handle, bỏ qua trình gỡ hãng) ngay trong hộp thoại xác nhận."
                                             ToolTipService.InitialShowDelay="500"/>
                                     <Button Name="btnScanOrphans" Content="Quét Rác &amp; App Lỗi" Style="{StaticResource ActionButton}"
-                                            Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
+                                            Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"/>
                                     <Button Name="btnRefreshUninstaller" Content="Làm mới" Style="{StaticResource SecondaryButton}"
-                                            Background="#1E293B" Foreground="#93C5FD" Padding="14,7"/>
+                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
                                 </StackPanel>
 
                                 <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
@@ -612,25 +622,25 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnFilterUninstAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
-                                                    Background="#1E293B" Foreground="#38BDF8"/>
+                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
                                             <Button Name="btnFilterUninstBroken" Content="Bị lỗi / Còn sót" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
-                                    <TextBlock Text="Sắp xếp:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
-                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <TextBlock Text="Sắp xếp:" Foreground="#FFFFFF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnSortUninstName" Content="Theo tên (A-Z)" Style="{StaticResource FilterTabButton}"
-                                                    Background="#1E293B" Foreground="#38BDF8"/>
+                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
                                             <Button Name="btnSortUninstSize" Content="Theo dung lượng" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
 
                                 <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Chưa tải danh sách"
-                                           Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                           Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </Grid>
                         </Grid>
                     </Border>

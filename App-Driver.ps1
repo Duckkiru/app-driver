@@ -4946,22 +4946,32 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
         </Style>
         <Style x:Key="FilterTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="FontSize" Value="11.5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Padding" Value="12,4"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Name="filterBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="1" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="Background" Value="Transparent"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="filterBorder" Property="Background" Value="#162235"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="filterBorder" Property="Opacity" Value="0.85"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -5064,7 +5074,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                             </Grid>
 
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#64748B" Margin="0,0,12,0" FontWeight="SemiBold"/>
+                                <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,14,0" VerticalAlignment="Center">
                                     <Ellipse Width="7" Height="7" Fill="#F1F5F9" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Ch&#x01B0;a c&#x00E0;i &#x0111;&#x1EB7;t" FontSize="11" Foreground="#CBD5E1"/>
@@ -5225,13 +5235,13 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnDeepUninstall" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t" Style="{StaticResource ActionButton}"
-                                            Background="#7F1D1D" Foreground="#FEE2E2" Padding="14,7"
+                                            Background="#B91C1C" Foreground="#FFFFFF" Padding="14,7"
                                             ToolTip="G&#x1EE1; &#x1EE9;ng d&#x1EE5;ng &#x0111;&#x00E3; ch&#x1ECD;n: h&#x1ED7; tr&#x1EE3; g&#x1EE1; chu&#x1EA9;n theo h&#x00E3;ng (t&#x1EF1; g&#x1EAF;n c&#x1EDD; im l&#x1EB7;ng) ho&#x1EB7;c b&#x1EAD;t Bu&#x1ED9;c d&#x1EEB;ng &amp; X&#x00F3;a tr&#x1EF1;c ti&#x1EBF;p (t&#x1EAF;t ti&#x1EBF;n tr&#x00EC;nh/service/task/handle, b&#x1ECF; qua tr&#x00EC;nh g&#x1EE1; h&#x00E3;ng) ngay trong h&#x1ED9;p tho&#x1EA1;i x&#x00E1;c nh&#x1EAD;n."
                                             ToolTipService.InitialShowDelay="500"/>
                                     <Button Name="btnScanOrphans" Content="Qu&#x00E9;t R&#x00E1;c &amp; App L&#x1ED7;i" Style="{StaticResource ActionButton}"
-                                            Background="#0284C7" Foreground="#E0F2FE" Padding="14,7"/>
+                                            Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"/>
                                     <Button Name="btnRefreshUninstaller" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
-                                            Background="#1E293B" Foreground="#93C5FD" Padding="14,7"/>
+                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
                                 </StackPanel>
 
                                 <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
@@ -5281,25 +5291,25 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnFilterUninstAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
-                                                    Background="#1E293B" Foreground="#38BDF8"/>
+                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
                                             <Button Name="btnFilterUninstBroken" Content="B&#x1ECB; l&#x1ED7;i / C&#x00F2;n s&#x00F3;t" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
-                                    <TextBlock Text="S&#x1EAF;p x&#x1EBF;p:" Foreground="#64748B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
-                                    <Border Background="#101623" BorderBrush="#2B3950" BorderThickness="1" CornerRadius="2" Padding="2" VerticalAlignment="Center">
+                                    <TextBlock Text="S&#x1EAF;p x&#x1EBF;p:" Foreground="#FFFFFF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnSortUninstName" Content="Theo t&#x00EA;n (A-Z)" Style="{StaticResource FilterTabButton}"
-                                                    Background="#1E293B" Foreground="#38BDF8"/>
+                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
                                             <Button Name="btnSortUninstSize" Content="Theo dung l&#x01B0;&#x1EE3;ng" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>
 
                                 <TextBlock Grid.Column="2" Name="txtUninstallerSummary" Text="Ch&#x01B0;a t&#x1EA3;i danh s&#x00E1;ch"
-                                           Foreground="#64748B" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                           Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </Grid>
                         </Grid>
                     </Border>
@@ -37733,10 +37743,13 @@ $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
 $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFolderBg.Freeze()
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x42, 0x54, 0x6E)); $script:brushUninstFolderBorder.Freeze()
-$script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
+$script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x2A, 0x40)); $script:brushUninstFilterActiveBg.Freeze()
+$script:brushUninstFilterActiveBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x99, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveBorder.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
-$script:brushUninstFilterBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushUninstFilterBrokenBg.Freeze()
-$script:brushUninstFilterBrokenFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71)); $script:brushUninstFilterBrokenFg.Freeze()
+$script:brushUninstFilterBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterBrokenBg.Freeze()
+$script:brushUninstFilterBrokenBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x99, 0xF8, 0x71, 0x71)); $script:brushUninstFilterBrokenBorder.Freeze()
+$script:brushUninstFilterBrokenFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUninstFilterBrokenFg.Freeze()
+$script:brushUninstFilterInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushUninstFilterInactiveFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:styleUninstRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
@@ -38356,11 +38369,13 @@ function Set-UninstallerSortMode {
         if ($Mode -eq "Size") {
             if ($btnSortUninstSize) {
                 $btnSortUninstSize.Background = $script:brushUninstFilterActiveBg
+                $btnSortUninstSize.BorderBrush = $script:brushUninstFilterActiveBorder
                 $btnSortUninstSize.Foreground = $script:brushUninstFilterActiveFg
             }
             if ($btnSortUninstName) {
                 $btnSortUninstName.Background = $script:brushTransparent
-                $btnSortUninstName.Foreground = $script:brushUninstDark
+                $btnSortUninstName.BorderBrush = $script:brushTransparent
+                $btnSortUninstName.Foreground = $script:brushUninstFilterInactiveFg
             }
             if ($hdrUninstName) {
                 $hdrUninstName.Text = "T$([char]0x00CA)N $([char]0x1EE8)NG D$([char]0x1EE4)NG"
@@ -38373,11 +38388,13 @@ function Set-UninstallerSortMode {
         } else {
             if ($btnSortUninstName) {
                 $btnSortUninstName.Background = $script:brushUninstFilterActiveBg
+                $btnSortUninstName.BorderBrush = $script:brushUninstFilterActiveBorder
                 $btnSortUninstName.Foreground = $script:brushUninstFilterActiveFg
             }
             if ($btnSortUninstSize) {
                 $btnSortUninstSize.Background = $script:brushTransparent
-                $btnSortUninstSize.Foreground = $script:brushUninstDark
+                $btnSortUninstSize.BorderBrush = $script:brushTransparent
+                $btnSortUninstSize.Foreground = $script:brushUninstFilterInactiveFg
             }
             if ($hdrUninstName) {
                 $hdrUninstName.Text = "T$([char]0x00CA)N $([char]0x1EE8)NG D$([char]0x1EE4)NG"
@@ -38988,9 +39005,11 @@ if ($btnFilterUninstAll) {
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
         $script:uninstallerFilterMode = "All"
         $btnFilterUninstAll.Background = $script:brushUninstFilterActiveBg
+        $btnFilterUninstAll.BorderBrush = $script:brushUninstFilterActiveBorder
         $btnFilterUninstAll.Foreground = $script:brushUninstFilterActiveFg
         $btnFilterUninstBroken.Background = $script:brushTransparent
-        $btnFilterUninstBroken.Foreground = $script:brushUninstDark
+        $btnFilterUninstBroken.BorderBrush = $script:brushTransparent
+        $btnFilterUninstBroken.Foreground = $script:brushUninstFilterInactiveFg
         Apply-UninstallerFilter
     })
 }
@@ -39000,9 +39019,11 @@ if ($btnFilterUninstBroken) {
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
         $script:uninstallerFilterMode = "Broken"
         $btnFilterUninstBroken.Background = $script:brushUninstFilterBrokenBg
+        $btnFilterUninstBroken.BorderBrush = $script:brushUninstFilterBrokenBorder
         $btnFilterUninstBroken.Foreground = $script:brushUninstFilterBrokenFg
         $btnFilterUninstAll.Background = $script:brushTransparent
-        $btnFilterUninstAll.Foreground = $script:brushUninstDark
+        $btnFilterUninstAll.BorderBrush = $script:brushTransparent
+        $btnFilterUninstAll.Foreground = $script:brushUninstFilterInactiveFg
         Apply-UninstallerFilter
     })
 }

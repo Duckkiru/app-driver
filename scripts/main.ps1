@@ -1523,10 +1523,13 @@ $script:brushUninstStatusOkBorder     = [System.Windows.Media.SolidColorBrush]::
 $script:brushUninstStatusOkFg         = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushUninstStatusOkFg.Freeze()
 $script:brushUninstFolderBg           = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFolderBg.Freeze()
 $script:brushUninstFolderBorder       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x42, 0x54, 0x6E)); $script:brushUninstFolderBorder.Freeze()
-$script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterActiveBg.Freeze()
+$script:brushUninstFilterActiveBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x2A, 0x40)); $script:brushUninstFilterActiveBg.Freeze()
+$script:brushUninstFilterActiveBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x99, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveBorder.Freeze()
 $script:brushUninstFilterActiveFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushUninstFilterActiveFg.Freeze()
-$script:brushUninstFilterBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushUninstFilterBrokenBg.Freeze()
-$script:brushUninstFilterBrokenFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF8, 0x71, 0x71)); $script:brushUninstFilterBrokenFg.Freeze()
+$script:brushUninstFilterBrokenBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3B)); $script:brushUninstFilterBrokenBg.Freeze()
+$script:brushUninstFilterBrokenBorder = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x99, 0xF8, 0x71, 0x71)); $script:brushUninstFilterBrokenBorder.Freeze()
+$script:brushUninstFilterBrokenFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushUninstFilterBrokenFg.Freeze()
+$script:brushUninstFilterInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushUninstFilterInactiveFg.Freeze()
 $script:brushUninstHeaderInactiveFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFF, 0xFF, 0xFF)); $script:brushUninstHeaderInactiveFg.Freeze()
 
 $script:styleUninstRow = New-Object System.Windows.Style([System.Windows.Controls.Border])
@@ -2146,11 +2149,13 @@ function Set-UninstallerSortMode {
         if ($Mode -eq "Size") {
             if ($btnSortUninstSize) {
                 $btnSortUninstSize.Background = $script:brushUninstFilterActiveBg
+                $btnSortUninstSize.BorderBrush = $script:brushUninstFilterActiveBorder
                 $btnSortUninstSize.Foreground = $script:brushUninstFilterActiveFg
             }
             if ($btnSortUninstName) {
                 $btnSortUninstName.Background = $script:brushTransparent
-                $btnSortUninstName.Foreground = $script:brushUninstDark
+                $btnSortUninstName.BorderBrush = $script:brushTransparent
+                $btnSortUninstName.Foreground = $script:brushUninstFilterInactiveFg
             }
             if ($hdrUninstName) {
                 $hdrUninstName.Text = "TÊN ỨNG DỤNG"
@@ -2163,11 +2168,13 @@ function Set-UninstallerSortMode {
         } else {
             if ($btnSortUninstName) {
                 $btnSortUninstName.Background = $script:brushUninstFilterActiveBg
+                $btnSortUninstName.BorderBrush = $script:brushUninstFilterActiveBorder
                 $btnSortUninstName.Foreground = $script:brushUninstFilterActiveFg
             }
             if ($btnSortUninstSize) {
                 $btnSortUninstSize.Background = $script:brushTransparent
-                $btnSortUninstSize.Foreground = $script:brushUninstDark
+                $btnSortUninstSize.BorderBrush = $script:brushTransparent
+                $btnSortUninstSize.Foreground = $script:brushUninstFilterInactiveFg
             }
             if ($hdrUninstName) {
                 $hdrUninstName.Text = "TÊN ỨNG DỤNG"
@@ -2778,9 +2785,11 @@ if ($btnFilterUninstAll) {
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
         $script:uninstallerFilterMode = "All"
         $btnFilterUninstAll.Background = $script:brushUninstFilterActiveBg
+        $btnFilterUninstAll.BorderBrush = $script:brushUninstFilterActiveBorder
         $btnFilterUninstAll.Foreground = $script:brushUninstFilterActiveFg
         $btnFilterUninstBroken.Background = $script:brushTransparent
-        $btnFilterUninstBroken.Foreground = $script:brushUninstDark
+        $btnFilterUninstBroken.BorderBrush = $script:brushTransparent
+        $btnFilterUninstBroken.Foreground = $script:brushUninstFilterInactiveFg
         Apply-UninstallerFilter
     })
 }
@@ -2790,9 +2799,11 @@ if ($btnFilterUninstBroken) {
         if ($script:isWindowClosing -or $script:isUpdatingUninstaller) { return }
         $script:uninstallerFilterMode = "Broken"
         $btnFilterUninstBroken.Background = $script:brushUninstFilterBrokenBg
+        $btnFilterUninstBroken.BorderBrush = $script:brushUninstFilterBrokenBorder
         $btnFilterUninstBroken.Foreground = $script:brushUninstFilterBrokenFg
         $btnFilterUninstAll.Background = $script:brushTransparent
-        $btnFilterUninstAll.Foreground = $script:brushUninstDark
+        $btnFilterUninstAll.BorderBrush = $script:brushTransparent
+        $btnFilterUninstAll.Foreground = $script:brushUninstFilterInactiveFg
         Apply-UninstallerFilter
     })
 }
