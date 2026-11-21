@@ -113,6 +113,7 @@ function ConvertTo-AsciiPowerShellCode {
 
 $startCode = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1"))
 $appsJson  = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json"))
+$tweaksJson = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\tweaks.json"))
 $xamlCode  = ConvertTo-AsciiXml (Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml"))
 $mainCode  = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1"))
 function Merge-CSharpCoreSources {
@@ -143,7 +144,8 @@ function Merge-CSharpCoreSources {
 $smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothScrollController.cs")
 $appCatalogCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\AppCatalogEngine.cs")
 $deepCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\DeepUninstallerEngine.cs")
-$combinedCoreCsCode = Merge-CSharpCoreSources -Sources @($smoothCsCode, $appCatalogCsCode, $deepCsCode)
+$optCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\WindowsOptimizerEngine.cs")
+$combinedCoreCsCode = Merge-CSharpCoreSources -Sources @($smoothCsCode, $appCatalogCsCode, $deepCsCode, $optCsCode)
 
 $sb = [System.Text.StringBuilder]::new()
 
@@ -155,6 +157,12 @@ $sb.AppendLine(('$appsRawJson = @' + $q)) | Out-Null
 $sb.AppendLine($appsJson.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
 $sb.AppendLine('$AppCatalog = ConvertFrom-Json $appsRawJson') | Out-Null
+$sb.AppendLine() | Out-Null
+
+$sb.AppendLine(('$tweaksRawJson = @' + $q)) | Out-Null
+$sb.AppendLine($tweaksJson.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('$TweaksCatalog = ConvertFrom-Json $tweaksRawJson') | Out-Null
 $sb.AppendLine() | Out-Null
 
 $dq = [char]34
@@ -269,6 +277,15 @@ $sb.AppendLine(('        $deepUninstCs = @' + $q)) | Out-Null
 $sb.AppendLine($deepCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
 $sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "ForceStopBatchDirectoriesAsync"') | Out-Null
+$sb.AppendLine('    } catch {}') | Out-Null
+$sb.AppendLine('}') | Out-Null
+$sb.AppendLine() | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine(('        $winOptCs = @' + $q)) | Out-Null
+$sb.AppendLine($optCsCode.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.WindowsOptimizerEngine" -SourceCode $winOptCs -Prefix "DuckOpt" -RequiredMethod "ProbeTweaksStateAsync"') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null

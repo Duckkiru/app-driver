@@ -4666,6 +4666,1074 @@ $appsRawJson = @'
 '@
 $AppCatalog = ConvertFrom-Json $appsRawJson
 
+$tweaksRawJson = @'
+[
+  {
+    "Id": "opt_restore_point",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EA1o \u0111i\u1EC3m kh\u00F4i ph\u1EE5c h\u1EC7 th\u1ED1ng (Restore Point)",
+    "Description": "T\u1EF1 \u0111\u1ED9ng t\u1EA1o System Restore Point tr\u01B0\u1EDBc khi \u00E1p d\u1EE5ng t\u1ED1i \u01B0u (b\u1ECF qua gi\u1EDBi h\u1EA1n 24h c\u1EE7a Windows).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "ActionKind": "restore_point",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_services_manual",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "Chuy\u1EC3n Services n\u1EC1n kh\u00F4ng c\u1EA7n thi\u1EBFt v\u1EC1 Manual",
+    "Description": "\u0110\u01B0a ~40 d\u1ECBch v\u1EE5 ph\u1EE5 sang Manual (khi c\u1EA7n Windows v\u1EABn t\u1EF1 b\u1EADt; gi\u1EEF nguy\u00EAn Wi-Fi, Bluetooth, \u00C2m thanh, M\u00E1y in, Xbox).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Services": [
+      "AJRouter", "ALG", "AppMgmt", "AssignedAccessManagerSvc", "AxInstSV",
+      "BDESVC", "Browser", "CertPropSvc", "ClipSVC", "COMSysApp",
+      "DiagTrack", "dmwappushservice", "DoSvc", "DPS", "Eaphost",
+      "Fax", "fhsvc", "FrameServer", "hidserv", "icssvc",
+      "lfsvc", "lltdsvc", "MapsBroker", "NetTcpPortSharing", "PcaSvc",
+      "PhoneSvc", "QWAVE", "RemoteAccess", "RemoteRegistry", "RetailDemo",
+      "SCardSvr", "ScDeviceEnum", "SCPolicySvc", "SEMgrSvc", "SensorDataService",
+      "SensorService", "SensrSvc", "SharedAccess", "SysMain", "TapiSrv",
+      "TrkWks", "WbioSrvc", "Wecsvc", "WerSvc", "wisvc", "WMPNetworkSvc", "WpcMonSvc"
+    ]
+  },
+  {
+    "Id": "opt_telemetry_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Telemetry & Thu th\u1EADp d\u1EEF li\u1EC7u Microsoft",
+    "Description": "T\u1EAFt AllowTelemetry, CEIP, d\u1ECBch v\u1EE5 DiagTrack v\u00E0 c\u00E1c t\u00E1c v\u1EE5 g\u1EEDi d\u1EEF li\u1EC7u ch\u1EA9n \u0111o\u00E1n n\u1EC1n.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "Name": "AllowTelemetry", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection", "Name": "AllowTelemetry", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Privacy", "Name": "TailoredExperiencesWithDiagnosticDataEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo", "Name": "Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ],
+    "Services": ["DiagTrack", "dmwappushservice"],
+    "Tasks": [
+      "\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser",
+      "\\Microsoft\\Windows\\Application Experience\\ProgramDataUpdater",
+      "\\Microsoft\\Windows\\Autochk\\Proxy",
+      "\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator",
+      "\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip",
+      "\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector"
+    ]
+  },
+  {
+    "Id": "opt_activity_history_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Activity History (Gi\u1EEF Clipboard History)",
+    "Description": "Ng\u1EEBng ghi v\u00E0 \u0111\u1ED3ng b\u1ED9 l\u1ECBch s\u1EED ho\u1EA1t \u0111\u1ED9ng ng\u01B0\u1EDDi d\u00F9ng l\u00EAn Microsoft nh\u01B0ng v\u1EABn gi\u1EEF l\u1ECBch s\u1EED sao ch\u00E9p Win+V.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "EnableActivityFeed", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "PublishUserActivities", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "UploadUserActivities", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_location_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Location Tracking (\u0110\u1ECBnh v\u1ECB)",
+    "Description": "T\u1EAFt quy\u1EC1n truy c\u1EADp v\u1ECB tr\u00ED n\u1EC1n c\u1EE7a Windows v\u00E0 d\u1ECBch v\u1EE5 c\u1EA3m bi\u1EBFn v\u1ECB tr\u00ED.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location", "Name": "Value", "ValueType": "String", "ApplyValue": "Deny", "UndoValue": "Allow", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Sensor\\Overrides\\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}", "Name": "SensorPermissionState", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_consumer_features_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "Ch\u1EB7n t\u1EF1 c\u00E0i App qu\u1EA3ng c\u00E1o (Consumer Features)",
+    "Description": "Ng\u0103n Windows t\u1EF1 t\u1EA3i app/game qu\u1EA3ng c\u00E1o t\u1EEB Store (TikTok, Candy Crush, g\u1EE3i \u00FD ContentDeliveryManager).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent", "Name": "DisableWindowsConsumerFeatures", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SilentInstalledAppsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SystemPaneSuggestionsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SubscribedContent-338388Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_delivery_opt_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Delivery Optimization (Upload P2P)",
+    "Description": "Ng\u0103n Windows d\u00F9ng b\u0103ng th\u00F4ng m\u1EA1ng c\u1EE7a b\u1EA1n \u0111\u1EC3 upload b\u1EA3n c\u1EADp nh\u1EADt cho m\u00E1y kh\u00E1c.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization", "Name": "DODownloadMode", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_store_search_ads_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "\u1EA8n g\u1EE3i \u00FD Microsoft Store trong Start Search",
+    "Description": "Kh\u00F4ng hi\u1EC3n th\u1ECB qu\u1EA3ng c\u00E1o app Store khi g\u00F5 t\u00ECm ki\u1EBFm trong Start Menu.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\SearchSettings", "Name": "IsDynamicSearchBoxEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_widgets_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt & \u1EA8n Widgets tr\u00EAn Taskbar",
+    "Description": "T\u1EAFt b\u1EA3ng tin t\u1EE9c/Widgets ch\u1EA1y ng\u1EA7m WebView2 \u1EDF g\u00F3c tr\u00E1i Taskbar Windows 11.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Dsh", "Name": "AllowNewsAndInterests", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarDa", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_end_task_taskbar",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "B\u1EADt n\u00FAt End Task chu\u1ED9t ph\u1EA3i tr\u00EAn Taskbar",
+    "Description": "Cho ph\u00E9p \u0111\u00F3ng c\u01B0\u1EE1ng b\u1EE9c \u1EE9ng d\u1EE5ng b\u1ECB treo ngay khi chu\u1ED9t ph\u1EA3i v\u00E0o bi\u1EC3u t\u01B0\u1EE3ng tr\u00EAn Taskbar (Win 11).",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22621,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings", "Name": "TaskbarEndTask", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_hibernation_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Hibernation (X\u00F3a hiberfil.sys)",
+    "Description": "Gi\u1EA3i ph\u00F3ng ngay 6-16 GB \u1ED5 C b\u1EB1ng c\u00E1ch t\u1EAFt ng\u1EE7 \u0111\u00F4ng. Khuy\u00EAn d\u00F9ng cho PC b\u00E0n (Laptop n\u00EAn gi\u1EEF).",
+    "Risk": "Moderate",
+    "HardwareHint": "DesktopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Gaming"],
+    "ActionKind": "hibernation_off",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_clean_temp",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "D\u1ECDn s\u1EA1ch t\u1EC7p t\u1EA1m (User Temp & Windows Temp)",
+    "Description": "X\u00F3a to\u00E0n b\u1ED9 t\u1EC7p r\u00E1c t\u1EA1m th\u1EDDi trong %TEMP% v\u00E0 C:\\Windows\\Temp \u0111\u1EC3 gi\u1EA3i ph\u00F3ng dung l\u01B0\u1EE3ng.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ActionKind": "clean_temp",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_disk_cleanup",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "Ch\u1EA1y Disk Cleanup \u1ED5 C (D\u1ECDn b\u1EA3n Update c\u0169)",
+    "Description": "K\u00EDch ho\u1EA1t c\u00F4ng c\u1EE5 d\u1ECDn \u0111\u0129a cleanmgr.exe chu\u1EA9n c\u1EE7a Windows cho \u1ED5 C:.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "disk_cleanup",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_wpbt_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt WPBT (Ch\u1EB7n BIOS t\u1EF1 ch\u1EA1y app h\u00E3ng)",
+    "Description": "Ch\u1EB7n b\u1EA3ng Windows Platform Binary Table ng\u0103n h\u00E3ng s\u1EA3n xu\u1EA5t t\u1EF1 c\u00E0i ph\u1EA7n m\u1EC1m ng\u1EA7m l\u00FAc kh\u1EDFi \u0111\u1ED9ng.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager", "Name": "DisableWpbtExecution", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_device_companion_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "Ch\u1EB7n t\u1EF1 c\u00E0i ph\u1EA7n m\u1EC1m \u0111i k\u00E8m thi\u1EBFt b\u1ECB",
+    "Description": "Ng\u0103n Windows t\u1EF1 t\u1EA3i ph\u1EA7n m\u1EC1m qu\u1EA3ng c\u00E1o \u0111i k\u00E8m khi c\u1EAFm m\u00E0n h\u00ECnh/ph\u1EE5 ki\u1EC7n m\u1EDBi.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Device Metadata", "Name": "PreventDeviceMetadataFromNetwork", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_explorer_autodiscovery_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Explorer t\u1EF1 \u0111o\u00E1n lo\u1EA1i th\u01B0 m\u1EE5c",
+    "Description": "M\u1EDF th\u01B0 m\u1EE5c ch\u1EE9a nhi\u1EC1u \u1EA3nh/nh\u1EA1c/file l\u1EDBn nhanh h\u01A1n h\u1EB3n (l\u01B0u \u00FD: s\u1EBD \u0111\u1EB7t t\u1EA5t c\u1EA3 th\u01B0 m\u1EE5c v\u1EC1 d\u1EA1ng General).",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\\AllFolders\\Shell", "Name": "FolderType", "ValueType": "String", "ApplyValue": "NotSpecified", "UndoValue": "", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_storage_sense_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Storage Sense ch\u1EA1y n\u1EC1n",
+    "Description": "T\u1EAFt t\u00EDnh n\u0103ng t\u1EF1 \u0111\u1ED9ng qu\u00E9t v\u00E0 x\u00F3a t\u1EC7p trong th\u00F9ng r\u00E1c/Downloads c\u1EE7a Windows.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy", "Name": "01", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_fast_startup_off",
+    "Category": "C\u01A1 b\u1EA3n & An to\u00E0n",
+    "Name": "T\u1EAFt Fast Startup (T\u1EAFt m\u00E1y ho\u00E0n to\u00E0n s\u1EA1ch)",
+    "Description": "Gi\u00FAp m\u00E1y t\u1EAFt ngu\u1ED3n s\u1EA1ch s\u1EBD th\u1EADt s\u1EF1 (tr\u00E1nh l\u1ED7i k\u1EB9t driver, k\u1EB9t dual-boot v\u00E0 l\u1ED7i m\u1EA1ng sau khi m\u1EDF m\u00E1y).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power", "Name": "HiberbootEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+
+  {
+    "Id": "perf_ultimate_plan",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "B\u1EADt g\u00F3i ngu\u1ED3n Ultimate Performance",
+    "Description": "M\u1EDF kh\u00F3a v\u00E0 k\u00EDch ho\u1EA1t g\u00F3i ngu\u1ED3n Workstation hi\u1EC7u n\u0103ng t\u1ED1i \u0111a (kh\u00F4ng khuy\u00EAn d\u00F9ng cho Laptop ch\u1EA1y pin).",
+    "Risk": "Moderate",
+    "HardwareHint": "DesktopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "ActionKind": "ultimate_perf",
+    "ActionParam": ""
+  },
+  {
+    "Id": "perf_game_mode_on",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "B\u1EADt Windows Game Mode",
+    "Description": "\u01AFu ti\u00EAn t\u00E0i nguy\u00EAn CPU/GPU cho game \u0111ang ch\u1EA1y v\u00E0 t\u1EA1m d\u1EEBng t\u00E1c v\u1EE5 n\u1EC1n Windows Update.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\GameBar", "Name": "AutoGameModeEnabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\GameBar", "Name": "AllowAutoGameMode", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_gamedvr_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt GameDVR & Quay m\u00E0n h\u00ECnh n\u1EC1n Xbox",
+    "Description": "T\u1EAFt ghi h\u00ECnh n\u1EC1n GameDVR gi\u00FAp \u1ED5n \u0111\u1ECBnh 1% Low FPS v\u00E0 gi\u1EA3m \u0111\u1ED9 tr\u1EC5 khung h\u00ECnh khi ch\u01A1i game.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\System\\GameConfigStore", "Name": "GameDVR_Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR", "Name": "AllowGameDVR", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "Name": "AppCaptureEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_hags_on",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "B\u1EADt HAGS (Hardware-Accelerated GPU Scheduling)",
+    "Description": "Cho ph\u00E9p GPU t\u1EF1 l\u1EADp l\u1ECBch b\u1ED9 nh\u1EDB tr\u1EF1c ti\u1EBFp (c\u1EA7n b\u1EADt \u0111\u1EC3 d\u00F9ng DLSS 3 Frame Generation; c\u1EA7n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 19041,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "Name": "HwSchMode", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_mpo_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt MPO (Multiplane Overlay \u2014 Fix gi\u1EADt/\u0111en m\u00E0n h\u00ECnh)",
+    "Description": "Kh\u1EAFc ph\u1EE5c l\u1ED7i nh\u00E1y \u0111en m\u00E0n h\u00ECnh, t\u1EE5t FPS khi Alt-Tab ho\u1EB7c xem video tr\u00EAn driver NVIDIA/AMD.",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Dwm", "Name": "OverlayTestMode", "ValueType": "DWord", "ApplyValue": "5", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "perf_mouse_accel_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt gia t\u1ED1c chu\u1ED9t (Raw 1:1 Pointer)",
+    "Description": "T\u1EAFt Enhance Pointer Precision gi\u00FAp di chu\u1ED9t ch\u00EDnh x\u00E1c 1:1 cho game FPS v\u00E0 l\u00E0m \u0111\u1ED3 h\u1ECDa.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Mouse", "Name": "MouseSpeed", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Mouse", "Name": "MouseThreshold1", "ValueType": "String", "ApplyValue": "0", "UndoValue": "6", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Mouse", "Name": "MouseThreshold2", "ValueType": "String", "ApplyValue": "0", "UndoValue": "10", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_network_throttling_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt Network Throttling Index (Gi\u1EA3m gi\u1EADt Ping)",
+    "Description": "G\u1EE1 gi\u1EDBi h\u1EA1n g\u00F3i tin m\u1EA1ng \u0111a ph\u01B0\u01A1ng ti\u1EC7n c\u1EE7a Windows gi\u00FAp gi\u1EA3m ping spike khi ch\u01A1i game online.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "Name": "NetworkThrottlingIndex", "ValueType": "DWord", "ApplyValue": "-1", "UndoValue": "10", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "Name": "SystemResponsiveness", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "20", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_power_throttling_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt Power Throttling (Ch\u1ED1ng b\u00F3p xung CPU)",
+    "Description": "Ng\u0103n Windows t\u1EF1 h\u1EA1 xung ti\u1EBFn tr\u00ECnh n\u1EC1n/game tr\u00EAn PC \u0111\u1EC3 b\u00E0n (kh\u00F4ng khuy\u00EAn d\u00F9ng cho Laptop d\u00F9ng pin).",
+    "Risk": "Moderate",
+    "HardwareHint": "DesktopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling", "Name": "PowerThrottlingOff", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "perf_win32_priority_gaming",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1ED1i \u01B0u Win32PrioritySeparation cho Gaming",
+    "Description": "\u01AFu ti\u00EAn c\u1EEDa s\u1ED5 \u0111ang m\u1EDF (foreground) nh\u1EADn l\u00E1t c\u1EAFt CPU ng\u1EAFn v\u00E0 \u1ED5n \u0111\u1ECBnh h\u01A1n (0x26 = 38).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl", "Name": "Win32PrioritySeparation", "ValueType": "DWord", "ApplyValue": "38", "UndoValue": "2", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_visual_effects_smooth_font",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "Hi\u1EC7u \u1EE9ng giao di\u1EC7n: Hi\u1EC7u n\u0103ng cao (Gi\u1EEF m\u01B0\u1EE3t ch\u1EEF)",
+    "Description": "T\u1EAFt hi\u1EC7u \u1EE9ng ho\u1EA1t \u1EA3nh th\u1EEBa \u0111\u1EC3 m\u1EDF c\u1EEDa s\u1ED5 t\u1EE9c th\u00EC nh\u01B0ng v\u1EABn gi\u1EEF l\u00E0m m\u01B0\u1EE3t font ClearType v\u00E0 \u1EA3nh thu nh\u1ECF.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects", "Name": "VisualFXSetting", "ValueType": "DWord", "ApplyValue": "3", "UndoValue": "0", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Desktop", "Name": "FontSmoothing", "ValueType": "String", "ApplyValue": "2", "UndoValue": "2", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Desktop\\WindowMetrics", "Name": "MinAnimate", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarAnimations", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_bg_apps_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt to\u00E0n b\u1ED9 App Store ch\u1EA1y ng\u1EA7m",
+    "Description": "Ng\u0103n c\u00E1c \u1EE9ng d\u1EE5ng UWP/Microsoft Store t\u1EF1 ch\u1EA1y \u1EA9n ti\u00EAu t\u1ED1n RAM v\u00E0 CPU.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications", "Name": "GlobalUserDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\AppPrivacy", "Name": "LetAppsRunInBackground", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "perf_fso_off",
+    "Category": "Hi\u1EC7u n\u0103ng & Gaming",
+    "Name": "T\u1EAFt Fullscreen Optimizations to\u00E0n c\u1EE5c",
+    "Description": "B\u1ECF l\u1EDBp t\u1ED1i \u01B0u to\u00E0n m\u00E0n h\u00ECnh c\u1EE7a Windows \u0111\u1EC3 game ch\u1EA1y ch\u1EBF \u0111\u1ED9 Exclusive Fullscreen thu\u1EA7n.",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\System\\GameConfigStore", "Name": "GameDVR_FSEBehaviorMode", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\System\\GameConfigStore", "Name": "GameDVR_DXGIHonorFSEWindowsCompatible", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+
+  {
+    "Id": "ui_classic_context_menu",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "B\u1EADt Menu chu\u1ED9t ph\u1EA3i ki\u1EC3u Windows 10 (Win 11)",
+    "Description": "Hi\u1EC3n th\u1ECB ngay \u0111\u1EA7y \u0111\u1EE7 menu chu\u1ED9t ph\u1EA3i c\u1ED5 \u0111i\u1EC3n, b\u1ECF b\u01B0\u1EDBc b\u1EA5m 'Show more options'.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "ActionKind": "classic_context_menu",
+    "ActionParam": ""
+  },
+  {
+    "Id": "ui_dark_mode",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "B\u1EADt Dark Mode (H\u1EC7 th\u1ED1ng & \u1EE8ng d\u1EE5ng)",
+    "Description": "Chuy\u1EC3n to\u00E0n b\u1ED9 giao di\u1EC7n Windows v\u00E0 \u1EE9ng d\u1EE5ng sang ch\u1EBF \u0111\u1ED9 t\u1ED1i d\u1EC5 ch\u1ECBu cho m\u1EAFt.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "Name": "AppsUseLightTheme", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "Name": "SystemUsesLightTheme", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_show_extensions",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "Hi\u1EC7n \u0111u\u00F4i t\u1EC7p trong Explorer (.exe, .png...)",
+    "Description": "Hi\u1EC3n th\u1ECB ph\u1EA7n m\u1EDF r\u1ED9ng c\u1EE7a m\u1ECDi t\u1EC7p gi\u00FAp thao t\u00E1c l\u1EADp tr\u00ECnh v\u00E0 nh\u1EADn di\u1EC7n file gi\u1EA3 m\u1EA1o an to\u00E0n h\u01A1n.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "HideFileExt", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_show_hidden_files",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "Hi\u1EC7n t\u1EC7p & th\u01B0 m\u1EE5c \u1EA9n trong Explorer",
+    "Description": "Hi\u1EC3n th\u1ECB c\u00E1c th\u01B0 m\u1EE5c \u1EA9n nh\u01B0 AppData, .git, .env trong File Explorer.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "Hidden", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "2", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_long_paths",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "B\u1EADt h\u1ED7 tr\u1EE3 \u0111\u01B0\u1EDDng d\u1EABn d\u00E0i (> 260 k\u00FD t\u1EF1)",
+    "Description": "Lo\u1EA1i b\u1ECF gi\u1EDBi h\u1EA1n 260 k\u00FD t\u1EF1 c\u1EE7a Windows \u2014 c\u1EF1c k\u1EF3 h\u1EEFu \u00EDch cho d\u1EF1 \u00E1n Node.js, Git, Python.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem", "Name": "LongPathsEnabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_bing_search_off",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "T\u1EAFt t\u00ECm ki\u1EBFm web Bing trong Start Menu",
+    "Description": "Ch\u1EC9 t\u00ECm \u1EE9ng d\u1EE5ng/t\u1EC7p tr\u00EAn m\u00E1y khi b\u1EA5m ph\u00EDm Windows, t\u1ED1c \u0111\u1ED9 ph\u1EA3n h\u1ED3i nhanh h\u01A1n r\u00F5 r\u1EC7t.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "DisableSearchBoxSuggestions", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "BingSearchEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_start_recs_off",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "\u1EA8n m\u1EE5c \u0110\u1EC1 xu\u1EA5t (Recommendations) trong Start",
+    "Description": "D\u1ECDn g\u1ECDn ph\u1EA7n g\u1EE3i \u00FD t\u1EC7p/app trong Start Menu (l\u01B0u \u00FD: c\u00F3 th\u1EC3 t\u1EAFt Windows Spotlight m\u00E0n h\u00ECnh kh\u00F3a).",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "HideRecommendedSection", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "ui_explorer_this_pc",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "M\u1EDF Explorer th\u1EB3ng v\u00E0o This PC & \u1EA8n Gallery",
+    "Description": "\u0110\u1EB7t trang m\u1EB7c \u0111\u1ECBnh File Explorer l\u00E0 This PC v\u00E0 \u1EA9n m\u1EE5c Home/Gallery th\u1EEBa \u1EDF c\u1ED9t tr\u00E1i.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "LaunchTo", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "2", "DeleteOnUndo": false }
+    ],
+    "ActionKind": "remove_home_gallery",
+    "ActionParam": ""
+  },
+  {
+    "Id": "ui_settings_home_hide",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "\u1EA8n trang Home trong Windows Settings",
+    "Description": "M\u1EDF Settings v\u00E0o th\u1EB3ng m\u1EE5c System thay v\u00EC trang Home ch\u1EE9a qu\u1EA3ng c\u00E1o OneDrive/Xbox.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22621,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer", "Name": "SettingsPageVisibility", "ValueType": "String", "ApplyValue": "hide:home", "UndoValue": "", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "ui_taskbar_left",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "C\u0103n tr\u00E1i bi\u1EC3u t\u01B0\u1EE3ng Taskbar (Win 11)",
+    "Description": "\u0110\u01B0a n\u00FAt Start v\u00E0 bi\u1EC3u t\u01B0\u1EE3ng Taskbar v\u1EC1 g\u00F3c tr\u00E1i quen thu\u1ED9c nh\u01B0 Windows 10.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarAl", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_taskbar_search_hide",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "\u1EA8n \u00F4 T\u00ECm ki\u1EBFm tr\u00EAn Taskbar",
+    "Description": "Gi\u1EA3i ph\u00F3ng kho\u1EA3ng tr\u1ED1ng tr\u00EAn Taskbar (v\u1EABn t\u00ECm b\u00ECnh th\u01B0\u1EDDng b\u1EB1ng c\u00E1ch b\u1EA5m ph\u00EDm Windows r\u1ED3i g\u00F5).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "SearchboxTaskbarMode", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_taskbar_taskview_hide",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "\u1EA8n n\u00FAt Task View tr\u00EAn Taskbar",
+    "Description": "\u1EA8n bi\u1EC3u t\u01B0\u1EE3ng chuy\u1EC3n desktop \u1EA3o (v\u1EABn m\u1EDF nhanh b\u1EB1ng ph\u00EDm t\u1EAFt Win + Tab).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "ShowTaskViewButton", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_sticky_keys_off",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "T\u1EAFt c\u1EA3nh b\u00E1o Sticky Keys (B\u1EA5m Shift 5 l\u1EA7n)",
+    "Description": "Ch\u1EB7n c\u1EEDa s\u1ED5 Sticky Keys b\u1EADt l\u00EAn l\u00E0m v\u0103ng game khi b\u1EA5m ph\u00EDm Shift li\u00EAn t\u1EE5c.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Accessibility\\StickyKeys", "Name": "Flags", "ValueType": "String", "ApplyValue": "506", "UndoValue": "510", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_numlock_startup",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "T\u1EF1 \u0111\u1ED9ng b\u1EADt Num Lock khi kh\u1EDFi \u0111\u1ED9ng",
+    "Description": "Gi\u1EEF ph\u00EDm Num Lock lu\u00F4n b\u1EADt s\u1EB5n ngay t\u1EEB m\u00E0n h\u00ECnh \u0111\u0103ng nh\u1EADp Windows.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop"],
+    "Registry": [
+      { "Path": "HKU:\\.DEFAULT\\Control Panel\\Keyboard", "Name": "InitialKeyboardIndicators", "ValueType": "String", "ApplyValue": "2147483650", "UndoValue": "2147483648", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_lockscreen_off",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "B\u1ECF qua m\u00E0n h\u00ECnh kh\u00F3a (V\u00E0o th\u1EB3ng \u0111\u0103ng nh\u1EADp)",
+    "Description": "B\u1ECF b\u01B0\u1EDBc vu\u1ED1t/b\u1EA5m ph\u00EDm qua Lock Screen, v\u00E0o th\u1EB3ng \u00F4 nh\u1EADp m\u1EADt kh\u1EA9u/PIN.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization", "Name": "NoLockScreen", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "ui_verbose_logon_bsod",
+    "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
+    "Name": "B\u1EADt Verbose Logon & BSoD chi ti\u1EBFt",
+    "Description": "Hi\u1EC7n th\u00F4ng b\u00E1o chi ti\u1EBFt l\u00FAc kh\u1EDFi \u0111\u1ED9ng/t\u1EAFt m\u00E1y v\u00E0 m\u00E3 l\u1ED7i \u0111\u1EA7y \u0111\u1EE7 khi g\u1EB7p m\u00E0n h\u00ECnh xanh.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", "Name": "VerboseStatus", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\CrashControl", "Name": "DisplayParameters", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+
+  {
+    "Id": "net_dns_cloudflare",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "\u0110\u1ED5i DNS sang Cloudflare (1.1.1.1 / 1.0.0.1)",
+    "Description": "T\u0103ng t\u1ED1c \u0111\u1ED9 ph\u00E2n gi\u1EA3i t\u00EAn mi\u1EC1n v\u00E0 b\u1EA3o m\u1EADt truy c\u1EADp, t\u1EF1 \u0111\u1ED9ng Flush DNS ngay l\u1EADp t\u1EE9c (Ho\u00E0n t\u00E1c v\u1EC1 DHCP).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "dns_switch",
+    "ActionParam": "Cloudflare"
+  },
+  {
+    "Id": "net_dns_google",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "\u0110\u1ED5i DNS sang Google (8.8.8.8 / 8.8.4.4)",
+    "Description": "\u0110\u1EB7t DNS Google \u1ED5n \u0111\u1ECBnh cho card m\u1EA1ng \u0111ang k\u1EBFt n\u1ED1i, t\u1EF1 \u0111\u1ED9ng Flush DNS (Ho\u00E0n t\u00E1c v\u1EC1 DHCP).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "dns_switch",
+    "ActionParam": "Google"
+  },
+  {
+    "Id": "net_dns_adguard",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "\u0110\u1ED5i DNS sang AdGuard (Ch\u1EB7n qu\u1EA3ng c\u00E1o to\u00E0n m\u00E1y)",
+    "Description": "\u0110\u1EB7t DNS AdGuard (94.140.14.14 / 94.140.15.15) ch\u1EB7n qu\u1EA3ng c\u00E1o & tracker \u1EDF c\u1EA5p m\u1EA1ng (Ho\u00E0n t\u00E1c v\u1EC1 DHCP).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "dns_switch",
+    "ActionParam": "AdGuard"
+  },
+  {
+    "Id": "net_ipv4_prefer",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "\u01AFu ti\u00EAn IPv4 h\u01A1n IPv6 (Gi\u1EA3m \u0111\u1ED9 tr\u1EC5)",
+    "Description": "Gi\u1EEF IPv6 ho\u1EA1t \u0111\u1ED9ng nh\u01B0ng \u01B0u ti\u00EAn \u0111\u1ECBnh tuy\u1EBFn IPv4 tr\u01B0\u1EDBc \u2014 an to\u00E0n h\u01A1n t\u1EAFt h\u1EB3n IPv6.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "ActionKind": "ipv4_prefer",
+    "ActionParam": ""
+  },
+  {
+    "Id": "net_ipv6_disable",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "T\u1EAFt ho\u00E0n to\u00E0n IPv6 (DisabledComponents=0xFF)",
+    "Description": "Ch\u1EC9 d\u00F9ng khi m\u1EA1ng ISP g\u1EB7p l\u1ED7i \u0111\u1ECBnh tuy\u1EBFn IPv6 (c\u1EA7n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i m\u00E1y).",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "ipv6_disable",
+    "ActionParam": ""
+  },
+  {
+    "Id": "net_teredo_off",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "T\u1EAFt \u0111\u01B0\u1EDDng h\u1EA7m IPv6 Teredo",
+    "Description": "Gi\u1EA3m overhead m\u1EA1ng (l\u01B0u \u00FD: m\u1ED9t s\u1ED1 game Xbox/Forza P2P c\u1EA7n Teredo \u0111\u1EC3 ch\u01A1i online).",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters", "Name": "DisabledComponents", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_edge_debloat",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "Debloat Microsoft Edge (T\u1EAFt Copilot/Sidebar/Ads)",
+    "Description": "T\u1EAFt Sidebar, Copilot, Shopping Assistant, Startup Boost v\u00E0 Telemetry c\u1EE7a Edge qua Group Policy ch\u00EDnh ch\u1EE7.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "HubsSidebarEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "EdgeShoppingAssistantEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "StartupBoostEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "BackgroundModeEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "ShowRecommendationsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "SpotlightExperiencesAndRecommendationsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_chrome_debloat",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "Debloat Google Chrome (T\u1EAFt Telemetry/N\u1EC1n/Ads)",
+    "Description": "T\u1EAFt ch\u1EA1y n\u1EC1n Chrome, Privacy Sandbox Ads, b\u00E1o c\u00E1o telemetry v\u00E0 g\u1EE3i \u00FD qu\u1EA3ng c\u00E1o qua Policy ch\u00EDnh ch\u1EE7.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "BackgroundModeEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "MetricsReportingEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "PrivacySandboxPromptEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "PrivacySandboxSiteEnabledAdsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "PromotionsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_brave_debloat",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "Debloat Brave Browser (T\u1EAFt Rewards/Leo AI/Crypto)",
+    "Description": "T\u1EAFt Brave Rewards, v\u00ED Crypto, Brave VPN v\u00E0 Leo AI cho giao di\u1EC7n tr\u00ECnh duy\u1EC7t si\u00EAu g\u1ECDn.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveRewardsDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveWalletDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveVPNDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveAIChatEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_utc_time",
+    "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
+    "Name": "\u0110\u1EB7t \u0111\u1ED3ng h\u1ED3 BIOS v\u1EC1 UTC (Dual-Boot Linux)",
+    "Description": "Kh\u1EAFc ph\u1EE5c tri\u1EC7t \u0111\u1EC3 l\u1ED7i l\u1EC7ch 7 ti\u1EBFng \u0111\u1ED3ng h\u1ED3 khi c\u00E0i song song Windows v\u00E0 Linux.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation", "Name": "RealTimeIsUniversal", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+
+  {
+    "Id": "wu_security_only",
+    "Category": "Windows Update",
+    "Name": "Windows Update: Ch\u1EC9 b\u1EA3o m\u1EADt (Khuy\u00EAn d\u00F9ng)",
+    "Description": "Ho\u00E3n b\u1EA3n c\u1EADp nh\u1EADt t\u00EDnh n\u0103ng l\u1EDBn 365 ng\u00E0y & b\u1EA3n v\u00E1 th\u01B0\u1EDDng 4 ng\u00E0y (tr\u00E1nh l\u00E0m chu\u1ED9t b\u1EA1ch b\u1EA3n update l\u1ED7i).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferFeatureUpdates", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferFeatureUpdatesPeriodInDays", "ValueType": "DWord", "ApplyValue": "365", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferQualityUpdates", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferQualityUpdatesPeriodInDays", "ValueType": "DWord", "ApplyValue": "4", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_exclude_drivers",
+    "Category": "Windows Update",
+    "Name": "Ch\u1EB7n Windows Update t\u1EF1 c\u00E0i \u0111\u00E8 Driver GPU",
+    "Description": "Ng\u0103n Windows Update t\u1EF1 t\u1EA3i driver c\u0169 c\u00E0i \u0111\u00E8 l\u00EAn driver NVIDIA/AMD/Intel b\u1EA1n \u0111\u00E3 c\u00E0i th\u1EE7 c\u00F4ng.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "ExcludeWUDriversInQualityUpdate", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_no_auto_reboot",
+    "Category": "Windows Update",
+    "Name": "Ch\u1EB7n t\u1EF1 kh\u1EDFi \u0111\u1ED9ng l\u1EA1i khi \u0111ang d\u00F9ng m\u00E1y",
+    "Description": "Ng\u0103n Windows Update t\u1EF1 reboot m\u00E1y gi\u1EEFa ch\u1EEBng khi ng\u01B0\u1EDDi d\u00F9ng \u0111ang \u0111\u0103ng nh\u1EADp l\u00E0m vi\u1EC7c.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "Name": "NoAutoRebootWithLoggedOnUsers", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_rdp_unsigned_off",
+    "Category": "Windows Update",
+    "Name": "T\u1EAFt c\u1EA3nh b\u00E1o t\u1EC7p .rdp ch\u01B0a k\u00FD s\u1ED1",
+    "Description": "T\u1EAFt h\u1ED9p tho\u1EA1i c\u1EA3nh b\u00E1o phi\u1EC1n to\u00E1i khi m\u1EDF k\u1EBFt n\u1ED1i Remote Desktop (.rdp) n\u1ED9i b\u1ED9.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services", "Name": "AllowUnsignedFiles", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_block_logitech_razer",
+    "Category": "Windows Update",
+    "Name": "Ch\u1EB7n t\u1EF1 b\u1EADt c\u00E0i Logitech / Razer Bloatware",
+    "Description": "Ng\u0103n Windows t\u1EF1 c\u00E0i Logitech Download Assistant khi c\u1EAFm chu\u1ED9t/ph\u00EDm (ph\u1EA7n c\u1EE9ng v\u1EABn ch\u1EA1y chu\u1EA9n).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", "Name": "Logitech Download Assistant", "ValueType": "String", "ApplyValue": "", "UndoValue": "", "DeleteOnApply": true, "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_battery_pct_tray",
+    "Category": "Windows Update",
+    "Name": "Hi\u1EC7n ph\u1EA7n tr\u0103m (%) pin tr\u00EAn khay h\u1EC7 th\u1ED1ng",
+    "Description": "Hi\u1EC3n th\u1ECB s\u1ED1 % pin ngay c\u1EA1nh bi\u1EC3u t\u01B0\u1EE3ng pin tr\u00EAn Taskbar Windows 11 (d\u00E0nh cho Laptop).",
+    "Risk": "Safe",
+    "HardwareHint": "LaptopOnly",
+    "MinBuild": 22621,
+    "RestartExplorer": false,
+    "Presets": ["Laptop"],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\PowerCfg", "Name": "ShowBatteryPercentage", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+
+  {
+    "Id": "adv_windows_ai_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "T\u1EAFt & G\u1EE1 Windows AI (Copilot & Recall)",
+    "Description": "T\u1EAFt ho\u00E0n to\u00E0n Windows Copilot v\u00E0 Windows Recall (ch\u1EE5p m\u00E0n h\u00ECnh AI) qua Policy & g\u1EE1 g\u00F3i Appx Copilot.",
+    "Risk": "Caution",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot", "Name": "TurnOffWindowsCopilot", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot", "Name": "TurnOffWindowsCopilot", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "Name": "DisableAIDataAnalysis", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "Name": "DisableAIDataAnalysis", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ],
+    "ActionKind": "remove_windows_ai",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_remove_onedrive",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "G\u1EE1 Microsoft OneDrive an to\u00E0n",
+    "Description": "D\u1EEBng v\u00E0 ch\u1EA1y tr\u00ECnh g\u1EE1 ch\u00EDnh ch\u1EE7 OneDrive, gi\u1EEF nguy\u00EAn t\u1EC7p t\u00E0i li\u1EC7u c\u1EE5c b\u1ED9 c\u1EE7a b\u1EA1n.",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "ActionKind": "remove_onedrive",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_reserved_storage_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "T\u1EAFt Reserved Storage (Gi\u1EA3i ph\u00F3ng 7-10 GB)",
+    "Description": "T\u1EAFt v\u00F9ng nh\u1EDB d\u1EF1 ph\u00F2ng cho Windows Update (ch\u1EC9 n\u00EAn b\u1EADt tr\u00EAn \u1ED5 nh\u1ECF; n\u00EAn b\u1EADt l\u1EA1i tr\u01B0\u1EDBc khi l\u00EAn b\u1EA3n Win l\u1EDBn).",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 18362,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "reserved_storage_off",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_svchost_split_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "G\u1ED9p ti\u1EBFn tr\u00ECnh svchost.exe (M\u00E1y <= 12 GB RAM)",
+    "Description": "Gi\u1EA3m s\u1ED1 ti\u1EBFn tr\u00ECnh svchost.exe \u0111\u1EC3 ti\u1EBFt ki\u1EC7m RAM tr\u00EAn m\u00E1y RAM th\u1EA5p (c\u1EA7n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i; kh\u00F4ng c\u1EA7n tr\u00EAn m\u00E1y >= 16 GB).",
+    "Risk": "Caution",
+    "HardwareHint": "LowRamOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "svchost_split_off",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_search_index_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "T\u1EAFt Windows Search Indexing (WSearch)",
+    "Description": "Gi\u1EA3m \u0111\u1ECDc/ghi \u1ED5 \u0111\u0129a n\u1EC1n cho \u1ED5 c\u01A1 HDD (c\u1EA3nh b\u00E1o: t\u00ECm ki\u1EBFm file trong Explorer s\u1EBD ch\u1EADm h\u01A1n; SSD kh\u00F4ng c\u1EA7n t\u1EAFt).",
+    "Risk": "Caution",
+    "HardwareHint": "HddOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Services": ["WSearch"]
+  },
+  {
+    "Id": "adv_notifications_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "T\u1EAFt to\u00E0n b\u1ED9 Th\u00F4ng b\u00E1o & L\u1ECBch khay h\u1EC7 th\u1ED1ng",
+    "Description": "T\u1EAFt Notification Center v\u00E0 to\u00E0n b\u1ED9 th\u00F4ng b\u00E1o Toast (l\u01B0u \u00FD: s\u1EBD \u1EA9n lu\u00F4n b\u1EA3ng L\u1ECBch khi b\u1EA5m \u0111\u1ED3ng h\u1ED3).",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "DisableNotificationCenter", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PushNotifications", "Name": "ToastEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "adv_block_adobe_net",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "Ch\u1EB7n m\u00E1y ch\u1EE7 Telemetry Adobe (hosts)",
+    "Description": "Th\u00EAm c\u00E1c t\u00EAn mi\u1EC1n telemetry/ki\u1EC3m tra k\u1EBFt n\u1ED1i Adobe v\u00E0o t\u1EC7p hosts (c\u00F3 th\u1EBB ri\u00EAng \u0111\u1EC3 Ho\u00E0n t\u00E1c s\u1EA1ch s\u1EBD).",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "block_adobe_net",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_s0_network_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "T\u1EAFt m\u1EA1ng khi Laptop \u1EDF Modern Standby (S0)",
+    "Description": "Ng\u0103n Laptop b\u1ECB n\u00F3ng m\u00E1y v\u00E0 t\u1EE5t pin khi g\u1EADp m\u00E0n h\u00ECnh do k\u1EBFt n\u1ED1i m\u1EA1ng ch\u1EA1y ng\u1EA7m l\u00FAc ng\u1EE7.",
+    "Risk": "Moderate",
+    "HardwareHint": "LaptopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Laptop"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9", "Name": "DCSettingIndex", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9", "Name": "ACSettingIndex", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "adv_window_snap_off",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "T\u1EAFt t\u1EF1 \u0111\u1ED9ng chia c\u1EEDa s\u1ED5 (Window Snapping)",
+    "Description": "T\u1EAFt thanh Snap Layout t\u1EF1 bung ra khi k\u00E9o c\u1EEDa s\u1ED5 l\u00EAn c\u1EA1nh tr\u00EAn m\u00E0n h\u00ECnh.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Desktop", "Name": "WindowArrangementActive", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "EnableSnapBar", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "adv_scrollbars_always",
+    "Category": "N\u00E2ng cao (C\u1EA9n th\u1EADn)",
+    "Name": "Lu\u00F4n hi\u1EC7n thanh cu\u1ED9n trong \u1EE9ng d\u1EE5ng Windows",
+    "Description": "Ng\u0103n Windows t\u1EF1 \u0111\u1ED9ng thu nh\u1ECF/\u1EA9n thanh cu\u1ED9n trong Settings v\u00E0 \u1EE9ng d\u1EE5ng UWP.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Accessibility", "Name": "DynamicScrollbars", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  }
+]
+'@
+$TweaksCatalog = ConvertFrom-Json $tweaksRawJson
+
 [xml]$XAML = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -5485,7 +6553,171 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                     </ScrollViewer>
             </DockPanel>
 
-            <Grid Name="TabPage4" Visibility="Collapsed" IsHitTestVisible="False"/>
+            <Grid Name="TabPage4" Visibility="Collapsed" IsHitTestVisible="False">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Background="#0C111B" Padding="14,0" BorderBrush="#27344A" BorderThickness="0,0,0,1">
+                    <Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Name="subNavOptCustomize" Content="T&#x00F9;y ch&#x1EC9;nh" Style="{StaticResource NavTabButton}"
+                                    Padding="14,7" FontSize="12" BorderBrush="#38BDF8" Foreground="#38BDF8"/>
+                            <Button Name="subNavOptResources" Content="T&#x00E0;i nguy&#x00EA;n" Style="{StaticResource NavTabButton}"
+                                    Padding="14,7" FontSize="12"/>
+                        </StackPanel>
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Center" Background="#121A28" BorderBrush="#263348"
+                                BorderThickness="1" CornerRadius="3" Padding="9,3" Margin="0,0,2,0">
+                            <TextBlock Name="txtOptHardwareProfile" Text="&#x0110;ang nh&#x1EAD;n di&#x1EC7;n ph&#x1EA7;n c&#x1EE9;ng..." Foreground="#E2E8F0"
+                                       FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="1">
+                    <Grid Name="OptSubPageCustomize" Visibility="Visible">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="btnOptApply" Content="&#x00C1;p d&#x1EE5;ng &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
+                                                Background="#059669" Padding="14,7"
+                                                ToolTip="T&#x1EF1; ch&#x1EE5;p b&#x1EA3;n sao l&#x01B0;u OptimizerGuard r&#x1ED3;i &#x00E1;p d&#x1EE5;ng to&#x00E0;n b&#x1ED9; m&#x1EE5;c t&#x1ED1;i &#x01B0;u &#x0111;&#x00E3; ch&#x1ECD;n." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnOptUndo" Content="Ho&#x00E0;n t&#x00E1;c" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#FBBF24" BorderBrush="#614F27"
+                                                ToolTip="&#x0110;&#x01B0;a c&#x00E1;c m&#x1EE5;c t&#x1ED1;i &#x01B0;u &#x0111;&#x00E3; ch&#x1ECD;n v&#x1EC1; tr&#x1EA1;ng th&#x00E1;i m&#x1EB7;c &#x0111;&#x1ECB;nh c&#x1EE7;a Windows." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnOptRestoreSnapshot" Content="Kh&#x00F4;i ph&#x1EE5;c sao l&#x01B0;u" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D"
+                                                ToolTip="Kh&#x00F4;i ph&#x1EE5;c nguy&#x00EA;n b&#x1EA3;n Registry, Services v&#x00E0; Power Plan t&#x1EEB; b&#x1EA3;n ch&#x1EE5;p OptimizerGuard g&#x1EA7;n nh&#x1EA5;t." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnOptRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#CBD5E1" BorderBrush="#2F3E57" Margin="0"/>
+                                    </StackPanel>
+
+                                    <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
+                                            Padding="8,0" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                                        <Grid Width="220">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
+                                            <TextBlock Grid.Column="1" Text="T&#x00EC;m t&#x1ED1;i &#x01B0;u..." Foreground="#475569" FontSize="11.5"
+                                                       VerticalAlignment="Center" IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Text, ElementName=txtOptSearch}" Value="">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBox Grid.Column="1" Name="txtOptSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                     BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
+                                                     ToolTip="T&#x00EC;m theo t&#x00EA;n ho&#x1EB7;c m&#x00F4; t&#x1EA3; t&#x1ED1;i &#x01B0;u..." ToolTipService.InitialShowDelay="3000"/>
+                                            <Button Grid.Column="2" Name="btnClearOptSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
+                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
+                                                    ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="3000"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <Button Name="btnOptSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                                        <Button Name="btnOptDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Margin="0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Row="1" Margin="1,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Preset:" Foreground="#FFFFFF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Name="btnOptPresetDesktop" Content="PC B&#x00E0;n" Style="{StaticResource FilterTabButton}"/>
+                                                <Button Name="btnOptPresetLaptop" Content="Laptop" Style="{StaticResource FilterTabButton}"/>
+                                                <Button Name="btnOptPresetGaming" Content="Gaming" Style="{StaticResource FilterTabButton}"/>
+                                                <Button Name="btnOptPresetMinimal" Content="T&#x1ED1;i gi&#x1EA3;n" Style="{StaticResource FilterTabButton}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <TextBlock Text="Hi&#x1EC3;n th&#x1ECB;:" Foreground="#FFFFFF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                        <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Name="btnOptFilterAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
+                                                        Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
+                                                <Button Name="btnOptFilterApplied" Content="&#x0110;ang b&#x1EAD;t" Style="{StaticResource FilterTabButton}"/>
+                                                <Button Name="btnOptFilterDefault" Content="M&#x1EB7;c &#x0111;&#x1ECB;nh" Style="{StaticResource FilterTabButton}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2" Name="txtOptSummary" Text="72 t&#x1ED1;i &#x01B0;u"
+                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="222"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Background="#0A0F18" BorderBrush="#27344A" BorderThickness="0,0,1,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0" Margin="12,10,12,6">
+                                        <TextBlock Text="NH&#x00D3;M T&#x1ED0;I &#x01AF;U" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                        <TextBlock Name="txtOptSidebarMeta" Text="6 nh&#x00F3;m" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                                  CanContentScroll="False" PanningMode="VerticalOnly" Padding="8,0,8,10">
+                                        <StackPanel Name="OptSidebarPanel"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+
+                            <ScrollViewer Grid.Column="1" Name="OptScrollViewer" VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly"
+                                          Padding="14,10">
+                                <StackPanel Name="OptListPanel"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Name="OptSubPageResources" Visibility="Collapsed" IsHitTestVisible="False"/>
+                </Grid>
+            </Grid>
         </Grid>
 
         <Border Grid.Row="2" Background="#0A0E15" Padding="16,6" BorderBrush="#27344A" BorderThickness="0,1,0,0">
@@ -18026,6 +19258,576 @@ namespace DuckUtil
         }
     }
 }
+
+
+namespace DuckUtil {
+
+    public sealed class HardwareProfile {
+        public bool IsLaptop { get; set; }
+        public bool HasBattery { get; set; }
+        public int TotalRamGb { get; set; }
+        public int OsBuild { get; set; }
+        public bool IsWin11 { get; set; }
+        public string OsDisplayVersion { get; set; }
+        public bool IsSystemDriveSsd { get; set; }
+        public bool DiskTypeKnown { get; set; }
+        public string SummaryText { get; set; }
+    }
+
+    public sealed class TweakRegRule {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public string ValueType { get; set; }
+        public string ApplyValue { get; set; }
+        public string UndoValue { get; set; }
+        public bool DeleteOnUndo { get; set; }
+        public bool DeleteOnApply { get; set; }
+    }
+
+    public sealed class TweakProbeSpec {
+        public string Id { get; set; }
+        public int MinBuild { get; set; }
+        public string ActionKind { get; set; }
+        public string ActionParam { get; set; }
+        public TweakRegRule[] RegRules { get; set; }
+        public string[] Services { get; set; }
+    }
+
+    public sealed class TweakProbeResult {
+        public string Id { get; set; }
+        public bool IsApplied { get; set; }
+        public bool Supported { get; set; }
+        public string Detail { get; set; }
+    }
+
+    public sealed class RegSnapshotRecord {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public bool Existed { get; set; }
+        public string ValueType { get; set; }
+        public string ValueData { get; set; }
+    }
+
+    public static class WindowsOptimizerEngine {
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SYSTEM_POWER_STATUS {
+            public byte ACLineStatus;
+            public byte BatteryFlag;
+            public byte BatteryLifePercent;
+            public byte SystemStatusFlag;
+            public int BatteryLifeTime;
+            public int BatteryFullLifeTime;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private class MEMORYSTATUSEX {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+            public MEMORYSTATUSEX() {
+                dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct STORAGE_PROPERTY_QUERY {
+            public uint PropertyId;
+            public uint QueryType;
+            public byte AdditionalParameters;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DEVICE_SEEK_PENALTY_DESCRIPTOR {
+            public uint Version;
+            public uint Size;
+            [MarshalAs(UnmanagedType.U1)]
+            public bool IncursSeekPenalty;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS sps);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateFileW(
+            string lpFileName,
+            uint dwDesiredAccess,
+            uint dwShareMode,
+            IntPtr lpSecurityAttributes,
+            uint dwCreationDisposition,
+            uint dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool DeviceIoControl(
+            IntPtr hDevice,
+            uint dwIoControlCode,
+            ref STORAGE_PROPERTY_QUERY lpInBuffer,
+            uint nInBufferSize,
+            out DEVICE_SEEK_PENALTY_DESCRIPTOR lpOutBuffer,
+            uint nOutBufferSize,
+            out uint lpBytesReturned,
+            IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        private const uint FILE_SHARE_READ = 0x00000001;
+        private const uint FILE_SHARE_WRITE = 0x00000002;
+        private const uint OPEN_EXISTING = 3;
+        private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+
+        public static HardwareProfile DetectHardwareProfile() {
+            var prof = new HardwareProfile();
+            try {
+                SYSTEM_POWER_STATUS sps;
+                if (GetSystemPowerStatus(out sps)) {
+                    // BatteryFlag 128 = No system battery, 255 = Unknown
+                    bool hasBat = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
+                    prof.HasBattery = hasBat;
+                    prof.IsLaptop = hasBat;
+                }
+            } catch {}
+
+            try {
+                var ms = new MEMORYSTATUSEX();
+                if (GlobalMemoryStatusEx(ms)) {
+                    double gb = (double)ms.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
+                    prof.TotalRamGb = (int)Math.Round(gb);
+                }
+            } catch {}
+
+            try {
+                using (RegistryKey cv = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", false)) {
+                    if (cv != null) {
+                        object bObj = cv.GetValue("CurrentBuildNumber");
+                        int bNum = 0;
+                        if (bObj != null && int.TryParse(bObj.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out bNum)) {
+                            prof.OsBuild = bNum;
+                        }
+                        object dvObj = cv.GetValue("DisplayVersion");
+                        if (dvObj == null) dvObj = cv.GetValue("ReleaseId");
+                        prof.OsDisplayVersion = dvObj != null ? dvObj.ToString() : "";
+                    }
+                }
+            } catch {}
+
+            prof.IsWin11 = (prof.OsBuild >= 22000);
+
+            try {
+                string sysRoot = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string driveLetter = (!string.IsNullOrEmpty(sysRoot) && sysRoot.Length >= 2) ? sysRoot.Substring(0, 2) : "C:";
+                IntPtr hVol = CreateFileW(@"\\.\" + driveLetter, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
+                if (hVol != INVALID_HANDLE_VALUE && hVol != IntPtr.Zero) {
+                    try {
+                        var query = new STORAGE_PROPERTY_QUERY();
+                        query.PropertyId = 7; // StorageDeviceSeekPenaltyProperty
+                        query.QueryType = 0;  // PropertyStandardQuery
+                        DEVICE_SEEK_PENALTY_DESCRIPTOR desc;
+                        uint bytesRet = 0;
+                        if (DeviceIoControl(hVol, IOCTL_STORAGE_QUERY_PROPERTY, ref query, (uint)Marshal.SizeOf(typeof(STORAGE_PROPERTY_QUERY)),
+                            out desc, (uint)Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR)), out bytesRet, IntPtr.Zero)) {
+                            prof.IsSystemDriveSsd = !desc.IncursSeekPenalty;
+                            prof.DiskTypeKnown = true;
+                        }
+                    } finally {
+                        CloseHandle(hVol);
+                    }
+                }
+            } catch {}
+
+            string devType = prof.IsLaptop ? "Laptop" : "PC B\u00E0n";
+            string ramPart = prof.TotalRamGb > 0 ? (prof.TotalRamGb.ToString(CultureInfo.InvariantCulture) + " GB RAM") : "";
+            string diskPart = prof.DiskTypeKnown ? (prof.IsSystemDriveSsd ? "SSD" : "HDD") : "";
+            string osPart = (prof.IsWin11 ? "Win 11" : "Win 10") +
+                            (!string.IsNullOrEmpty(prof.OsDisplayVersion) ? (" " + prof.OsDisplayVersion) : "") +
+                            (prof.OsBuild > 0 ? (" (" + prof.OsBuild.ToString(CultureInfo.InvariantCulture) + ")") : "");
+
+            var parts = new List<string>();
+            parts.Add(devType);
+            if (!string.IsNullOrEmpty(ramPart)) parts.Add(ramPart);
+            if (!string.IsNullOrEmpty(diskPart)) parts.Add(diskPart);
+            if (!string.IsNullOrEmpty(osPart)) parts.Add(osPart);
+            prof.SummaryText = string.Join(" \u2022 ", parts.ToArray());
+            return prof;
+        }
+
+        private static bool TryParseRegistryPath(string fullPath, out RegistryKey rootKey, out string subPath) {
+            rootKey = null;
+            subPath = "";
+            if (string.IsNullOrWhiteSpace(fullPath)) return false;
+            string p = fullPath.Trim();
+            if (p.StartsWith("HKLM:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.LocalMachine;
+                subPath = p.Substring(6);
+                return true;
+            }
+            if (p.StartsWith("HKEY_LOCAL_MACHINE\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.LocalMachine;
+                subPath = p.Substring(19);
+                return true;
+            }
+            if (p.StartsWith("HKCU:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.CurrentUser;
+                subPath = p.Substring(6);
+                return true;
+            }
+            if (p.StartsWith("HKEY_CURRENT_USER\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.CurrentUser;
+                subPath = p.Substring(18);
+                return true;
+            }
+            if (p.StartsWith("HKCR:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.ClassesRoot;
+                subPath = p.Substring(6);
+                return true;
+            }
+            if (p.StartsWith("HKU:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.Users;
+                subPath = p.Substring(5);
+                return true;
+            }
+            return false;
+        }
+
+        private static RegistryValueKind ParseValueKind(string typeName) {
+            string t = (typeName ?? "DWord").Trim().ToLowerInvariant();
+            switch (t) {
+                case "dword": return RegistryValueKind.DWord;
+                case "qword": return RegistryValueKind.QWord;
+                case "string": return RegistryValueKind.String;
+                case "expandstring": return RegistryValueKind.ExpandString;
+                case "binary": return RegistryValueKind.Binary;
+                case "multistring": return RegistryValueKind.MultiString;
+                default: return RegistryValueKind.DWord;
+            }
+        }
+
+        private static string SerializeRegistryValue(object val, RegistryValueKind kind) {
+            if (val == null) return "";
+            if (kind == RegistryValueKind.Binary) {
+                byte[] bytes = val as byte[];
+                if (bytes == null) return "";
+                return BitConverter.ToString(bytes).Replace("-", "");
+            }
+            if (kind == RegistryValueKind.MultiString) {
+                string[] arr = val as string[];
+                if (arr == null) return "";
+                return string.Join("|", arr);
+            }
+            return Convert.ToString(val, CultureInfo.InvariantCulture) ?? "";
+        }
+
+        private static object DeserializeRegistryValue(string data, RegistryValueKind kind) {
+            string s = data ?? "";
+            switch (kind) {
+                case RegistryValueKind.DWord: {
+                    int iv;
+                    if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out iv)) return iv;
+                    uint uv;
+                    if (uint.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out uv)) return unchecked((int)uv);
+                    return 0;
+                }
+                case RegistryValueKind.QWord: {
+                    long lv;
+                    if (long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out lv)) return lv;
+                    return 0L;
+                }
+                case RegistryValueKind.Binary: {
+                    string hex = s.Replace("-", "").Replace(" ", "").Trim();
+                    if (hex.Length == 0 || (hex.Length % 2) != 0) return new byte[0];
+                    byte[] outB = new byte[hex.Length / 2];
+                    for (int i = 0; i < outB.Length; i++) {
+                        outB[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                    }
+                    return outB;
+                }
+                case RegistryValueKind.MultiString:
+                    return string.IsNullOrEmpty(s) ? new string[0] : s.Split('|');
+                default:
+                    return s;
+            }
+        }
+
+        public static RegSnapshotRecord CaptureRegistryValue(string path, string name) {
+            var rec = new RegSnapshotRecord { Path = path, Name = name, Existed = false, ValueType = "", ValueData = "" };
+            RegistryKey root;
+            string sub;
+            if (!TryParseRegistryPath(path, out root, out sub)) return rec;
+            try {
+                using (RegistryKey rk = root.OpenSubKey(sub, false)) {
+                    if (rk == null) return rec;
+                    string valName = name ?? "";
+                    object val = rk.GetValue(valName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (val == null) return rec;
+                    RegistryValueKind kind = rk.GetValueKind(valName);
+                    rec.Existed = true;
+                    rec.ValueType = kind.ToString();
+                    rec.ValueData = SerializeRegistryValue(val, kind);
+                }
+            } catch {}
+            return rec;
+        }
+
+        public static bool SetRegistryValue(string path, string name, string valueType, string valueData, bool deleteValue) {
+            RegistryKey root;
+            string sub;
+            if (!TryParseRegistryPath(path, out root, out sub)) return false;
+            try {
+                if (deleteValue) {
+                    using (RegistryKey rk = root.OpenSubKey(sub, true)) {
+                        if (rk == null) return true;
+                        try { rk.DeleteValue(name ?? "", false); } catch {}
+                    }
+                    return true;
+                }
+                using (RegistryKey rk = root.CreateSubKey(sub)) {
+                    if (rk == null) return false;
+                    RegistryValueKind kind = ParseValueKind(valueType);
+                    object typedVal = DeserializeRegistryValue(valueData, kind);
+                    rk.SetValue(name ?? "", typedVal, kind);
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static bool RestoreRegistrySnapshot(RegSnapshotRecord rec) {
+            if (rec == null) return false;
+            if (!rec.Existed) {
+                return SetRegistryValue(rec.Path, rec.Name, "DWord", "", true);
+            }
+            return SetRegistryValue(rec.Path, rec.Name, rec.ValueType, rec.ValueData, false);
+        }
+
+        public static int GetServiceStartType(string serviceName) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return -1;
+            try {
+                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName.Trim(), false)) {
+                    if (rk == null) return -1;
+                    object v = rk.GetValue("Start");
+                    if (v == null) return -1;
+                    return Convert.ToInt32(v, CultureInfo.InvariantCulture);
+                }
+            } catch {
+                return -1;
+            }
+        }
+
+        public static bool SetServiceStartType(string serviceName, int startType) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return false;
+            if (startType < 0 || startType > 4) return false;
+            try {
+                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName.Trim(), true)) {
+                    if (rk == null) return false;
+                    rk.SetValue("Start", startType, RegistryValueKind.DWord);
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static bool CheckRegistryRuleApplied(TweakRegRule r) {
+            if (r == null || string.IsNullOrWhiteSpace(r.Path)) return false;
+            RegistryKey root;
+            string sub;
+            if (!TryParseRegistryPath(r.Path, out root, out sub)) return false;
+            try {
+                using (RegistryKey rk = root.OpenSubKey(sub, false)) {
+                    if (r.DeleteOnApply) {
+                        if (rk == null) return true;
+                        return rk.GetValue(r.Name ?? "", null, RegistryValueOptions.DoNotExpandEnvironmentNames) == null;
+                    }
+                    if (rk == null) return false;
+                    object cur = rk.GetValue(r.Name ?? "", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (cur == null) return false;
+                    RegistryValueKind kind = rk.GetValueKind(r.Name ?? "");
+                    string curStr = SerializeRegistryValue(cur, kind);
+                    return string.Equals(curStr.Trim(), (r.ApplyValue ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static bool CheckActionState(string actionKind, string actionParam) {
+            string kind = (actionKind ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(kind)) return false;
+            try {
+                switch (kind) {
+                    case "hibernation_off": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("HibernateEnabled");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "ultimate_perf": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", false)) {
+                            if (rk != null) {
+                                string active = Convert.ToString(rk.GetValue("ActivePowerScheme"), CultureInfo.InvariantCulture) ?? "";
+                                if (string.Equals(active, "e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase)) return true;
+                                if (!string.IsNullOrEmpty(active)) {
+                                    using (RegistryKey sk = rk.OpenSubKey(active, false)) {
+                                        if (sk != null) {
+                                            string fn = Convert.ToString(sk.GetValue("FriendlyName"), CultureInfo.InvariantCulture) ?? "";
+                                            if (fn.IndexOf("Ultimate", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return false;
+                    }
+                    case "classic_context_menu": {
+                        using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("");
+                                return v != null && string.Equals(v.ToString(), "", StringComparison.Ordinal);
+                            }
+                        }
+                        return false;
+                    }
+                    case "remove_home_gallery": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}", false)) {
+                            return rk == null;
+                        }
+                    }
+                    case "remove_onedrive": {
+                        string od1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\OneDrive\OneDrive.exe");
+                        string od2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft OneDrive\OneDrive.exe");
+                        return !File.Exists(od1) && !File.Exists(od2);
+                    }
+                    case "block_adobe_net": {
+                        string hosts = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"drivers\etc\hosts");
+                        if (File.Exists(hosts)) {
+                            string txt = File.ReadAllText(hosts);
+                            return txt.IndexOf("# AppDriver-AdobeBlock", StringComparison.OrdinalIgnoreCase) >= 0;
+                        }
+                        return false;
+                    }
+                    case "ipv6_disable": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("DisabledComponents");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 255) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "ipv4_prefer": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("DisabledComponents");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 32) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "svchost_split_off": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("SvcHostSplitThresholdInKB");
+                                if (v != null && Convert.ToInt64(v, CultureInfo.InvariantCulture) >= 16777216L) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "reserved_storage_off": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("ShippedWithReserves");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static TweakProbeResult[] ProbeTweaksState(TweakProbeSpec[] specs, int currentOsBuild) {
+            if (specs == null) return new TweakProbeResult[0];
+            var results = new TweakProbeResult[specs.Length];
+            for (int i = 0; i < specs.Length; i++) {
+                TweakProbeSpec sp = specs[i];
+                var r = new TweakProbeResult { Id = sp != null ? sp.Id : "", IsApplied = false, Supported = true, Detail = "" };
+                if (sp == null) { results[i] = r; continue; }
+
+                if (sp.MinBuild > 0 && currentOsBuild > 0 && currentOsBuild < sp.MinBuild) {
+                    r.Supported = false;
+                    r.Detail = "Y\u00EAu c\u1EA7u Windows build " + sp.MinBuild.ToString(CultureInfo.InvariantCulture) + "+";
+                    results[i] = r;
+                    continue;
+                }
+
+                bool hasCheck = false;
+                bool allOk = true;
+
+                if (!string.IsNullOrEmpty(sp.ActionKind)) {
+                    string ak = sp.ActionKind.Trim().ToLowerInvariant();
+                    if (ak != "restore_point" && ak != "clean_temp" && ak != "disk_cleanup" && ak != "dns_switch" && ak != "remove_edge" && ak != "remove_windows_ai") {
+                        hasCheck = true;
+                        allOk = CheckActionState(sp.ActionKind, sp.ActionParam);
+                    }
+                }
+
+                if (!hasCheck && sp.RegRules != null && sp.RegRules.Length > 0) {
+                    hasCheck = true;
+                    for (int j = 0; j < sp.RegRules.Length; j++) {
+                        if (!CheckRegistryRuleApplied(sp.RegRules[j])) {
+                            allOk = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasCheck && sp.Services != null && sp.Services.Length > 0) {
+                    int foundSvc = 0;
+                    int manualOrDisabled = 0;
+                    for (int s = 0; s < sp.Services.Length; s++) {
+                        int st = GetServiceStartType(sp.Services[s]);
+                        if (st >= 0) {
+                            foundSvc++;
+                            if (st == 3 || st == 4) manualOrDisabled++;
+                        }
+                    }
+                    if (foundSvc > 0) {
+                        hasCheck = true;
+                        allOk = (manualOrDisabled >= (int)Math.Ceiling(foundSvc * 0.85));
+                    }
+                }
+
+                r.IsApplied = hasCheck && allOk;
+                results[i] = r;
+            }
+            return results;
+        }
+
+        public static Task<TweakProbeResult[]> ProbeTweaksStateAsync(TweakProbeSpec[] specs, int currentOsBuild) {
+            return Task.Run(() => ProbeTweaksState(specs, currentOsBuild));
+        }
+    }
+}
 '@
         Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -RequiredMethod "RestoreRowsFromColumns" -RefsResolver $resolveCoreRefs
     } catch {}
@@ -30494,6 +32296,591 @@ namespace DuckUtil
     } catch {}
 }
 
+if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+    try {
+        $winOptCs = @'
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Win32;
+
+namespace DuckUtil {
+
+    public sealed class HardwareProfile {
+        public bool IsLaptop { get; set; }
+        public bool HasBattery { get; set; }
+        public int TotalRamGb { get; set; }
+        public int OsBuild { get; set; }
+        public bool IsWin11 { get; set; }
+        public string OsDisplayVersion { get; set; }
+        public bool IsSystemDriveSsd { get; set; }
+        public bool DiskTypeKnown { get; set; }
+        public string SummaryText { get; set; }
+    }
+
+    public sealed class TweakRegRule {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public string ValueType { get; set; }
+        public string ApplyValue { get; set; }
+        public string UndoValue { get; set; }
+        public bool DeleteOnUndo { get; set; }
+        public bool DeleteOnApply { get; set; }
+    }
+
+    public sealed class TweakProbeSpec {
+        public string Id { get; set; }
+        public int MinBuild { get; set; }
+        public string ActionKind { get; set; }
+        public string ActionParam { get; set; }
+        public TweakRegRule[] RegRules { get; set; }
+        public string[] Services { get; set; }
+    }
+
+    public sealed class TweakProbeResult {
+        public string Id { get; set; }
+        public bool IsApplied { get; set; }
+        public bool Supported { get; set; }
+        public string Detail { get; set; }
+    }
+
+    public sealed class RegSnapshotRecord {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public bool Existed { get; set; }
+        public string ValueType { get; set; }
+        public string ValueData { get; set; }
+    }
+
+    public static class WindowsOptimizerEngine {
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SYSTEM_POWER_STATUS {
+            public byte ACLineStatus;
+            public byte BatteryFlag;
+            public byte BatteryLifePercent;
+            public byte SystemStatusFlag;
+            public int BatteryLifeTime;
+            public int BatteryFullLifeTime;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private class MEMORYSTATUSEX {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+            public MEMORYSTATUSEX() {
+                dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct STORAGE_PROPERTY_QUERY {
+            public uint PropertyId;
+            public uint QueryType;
+            public byte AdditionalParameters;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DEVICE_SEEK_PENALTY_DESCRIPTOR {
+            public uint Version;
+            public uint Size;
+            [MarshalAs(UnmanagedType.U1)]
+            public bool IncursSeekPenalty;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS sps);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateFileW(
+            string lpFileName,
+            uint dwDesiredAccess,
+            uint dwShareMode,
+            IntPtr lpSecurityAttributes,
+            uint dwCreationDisposition,
+            uint dwFlagsAndAttributes,
+            IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool DeviceIoControl(
+            IntPtr hDevice,
+            uint dwIoControlCode,
+            ref STORAGE_PROPERTY_QUERY lpInBuffer,
+            uint nInBufferSize,
+            out DEVICE_SEEK_PENALTY_DESCRIPTOR lpOutBuffer,
+            uint nOutBufferSize,
+            out uint lpBytesReturned,
+            IntPtr lpOverlapped);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        private const uint FILE_SHARE_READ = 0x00000001;
+        private const uint FILE_SHARE_WRITE = 0x00000002;
+        private const uint OPEN_EXISTING = 3;
+        private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+
+        public static HardwareProfile DetectHardwareProfile() {
+            var prof = new HardwareProfile();
+            try {
+                SYSTEM_POWER_STATUS sps;
+                if (GetSystemPowerStatus(out sps)) {
+                    // BatteryFlag 128 = No system battery, 255 = Unknown
+                    bool hasBat = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
+                    prof.HasBattery = hasBat;
+                    prof.IsLaptop = hasBat;
+                }
+            } catch {}
+
+            try {
+                var ms = new MEMORYSTATUSEX();
+                if (GlobalMemoryStatusEx(ms)) {
+                    double gb = (double)ms.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
+                    prof.TotalRamGb = (int)Math.Round(gb);
+                }
+            } catch {}
+
+            try {
+                using (RegistryKey cv = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", false)) {
+                    if (cv != null) {
+                        object bObj = cv.GetValue("CurrentBuildNumber");
+                        int bNum = 0;
+                        if (bObj != null && int.TryParse(bObj.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out bNum)) {
+                            prof.OsBuild = bNum;
+                        }
+                        object dvObj = cv.GetValue("DisplayVersion");
+                        if (dvObj == null) dvObj = cv.GetValue("ReleaseId");
+                        prof.OsDisplayVersion = dvObj != null ? dvObj.ToString() : "";
+                    }
+                }
+            } catch {}
+
+            prof.IsWin11 = (prof.OsBuild >= 22000);
+
+            try {
+                string sysRoot = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                string driveLetter = (!string.IsNullOrEmpty(sysRoot) && sysRoot.Length >= 2) ? sysRoot.Substring(0, 2) : "C:";
+                IntPtr hVol = CreateFileW(@"\\.\" + driveLetter, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
+                if (hVol != INVALID_HANDLE_VALUE && hVol != IntPtr.Zero) {
+                    try {
+                        var query = new STORAGE_PROPERTY_QUERY();
+                        query.PropertyId = 7; // StorageDeviceSeekPenaltyProperty
+                        query.QueryType = 0;  // PropertyStandardQuery
+                        DEVICE_SEEK_PENALTY_DESCRIPTOR desc;
+                        uint bytesRet = 0;
+                        if (DeviceIoControl(hVol, IOCTL_STORAGE_QUERY_PROPERTY, ref query, (uint)Marshal.SizeOf(typeof(STORAGE_PROPERTY_QUERY)),
+                            out desc, (uint)Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR)), out bytesRet, IntPtr.Zero)) {
+                            prof.IsSystemDriveSsd = !desc.IncursSeekPenalty;
+                            prof.DiskTypeKnown = true;
+                        }
+                    } finally {
+                        CloseHandle(hVol);
+                    }
+                }
+            } catch {}
+
+            string devType = prof.IsLaptop ? "Laptop" : "PC B\u00E0n";
+            string ramPart = prof.TotalRamGb > 0 ? (prof.TotalRamGb.ToString(CultureInfo.InvariantCulture) + " GB RAM") : "";
+            string diskPart = prof.DiskTypeKnown ? (prof.IsSystemDriveSsd ? "SSD" : "HDD") : "";
+            string osPart = (prof.IsWin11 ? "Win 11" : "Win 10") +
+                            (!string.IsNullOrEmpty(prof.OsDisplayVersion) ? (" " + prof.OsDisplayVersion) : "") +
+                            (prof.OsBuild > 0 ? (" (" + prof.OsBuild.ToString(CultureInfo.InvariantCulture) + ")") : "");
+
+            var parts = new List<string>();
+            parts.Add(devType);
+            if (!string.IsNullOrEmpty(ramPart)) parts.Add(ramPart);
+            if (!string.IsNullOrEmpty(diskPart)) parts.Add(diskPart);
+            if (!string.IsNullOrEmpty(osPart)) parts.Add(osPart);
+            prof.SummaryText = string.Join(" \u2022 ", parts.ToArray());
+            return prof;
+        }
+
+        private static bool TryParseRegistryPath(string fullPath, out RegistryKey rootKey, out string subPath) {
+            rootKey = null;
+            subPath = "";
+            if (string.IsNullOrWhiteSpace(fullPath)) return false;
+            string p = fullPath.Trim();
+            if (p.StartsWith("HKLM:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.LocalMachine;
+                subPath = p.Substring(6);
+                return true;
+            }
+            if (p.StartsWith("HKEY_LOCAL_MACHINE\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.LocalMachine;
+                subPath = p.Substring(19);
+                return true;
+            }
+            if (p.StartsWith("HKCU:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.CurrentUser;
+                subPath = p.Substring(6);
+                return true;
+            }
+            if (p.StartsWith("HKEY_CURRENT_USER\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.CurrentUser;
+                subPath = p.Substring(18);
+                return true;
+            }
+            if (p.StartsWith("HKCR:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.ClassesRoot;
+                subPath = p.Substring(6);
+                return true;
+            }
+            if (p.StartsWith("HKU:\\", StringComparison.OrdinalIgnoreCase)) {
+                rootKey = Registry.Users;
+                subPath = p.Substring(5);
+                return true;
+            }
+            return false;
+        }
+
+        private static RegistryValueKind ParseValueKind(string typeName) {
+            string t = (typeName ?? "DWord").Trim().ToLowerInvariant();
+            switch (t) {
+                case "dword": return RegistryValueKind.DWord;
+                case "qword": return RegistryValueKind.QWord;
+                case "string": return RegistryValueKind.String;
+                case "expandstring": return RegistryValueKind.ExpandString;
+                case "binary": return RegistryValueKind.Binary;
+                case "multistring": return RegistryValueKind.MultiString;
+                default: return RegistryValueKind.DWord;
+            }
+        }
+
+        private static string SerializeRegistryValue(object val, RegistryValueKind kind) {
+            if (val == null) return "";
+            if (kind == RegistryValueKind.Binary) {
+                byte[] bytes = val as byte[];
+                if (bytes == null) return "";
+                return BitConverter.ToString(bytes).Replace("-", "");
+            }
+            if (kind == RegistryValueKind.MultiString) {
+                string[] arr = val as string[];
+                if (arr == null) return "";
+                return string.Join("|", arr);
+            }
+            return Convert.ToString(val, CultureInfo.InvariantCulture) ?? "";
+        }
+
+        private static object DeserializeRegistryValue(string data, RegistryValueKind kind) {
+            string s = data ?? "";
+            switch (kind) {
+                case RegistryValueKind.DWord: {
+                    int iv;
+                    if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out iv)) return iv;
+                    uint uv;
+                    if (uint.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out uv)) return unchecked((int)uv);
+                    return 0;
+                }
+                case RegistryValueKind.QWord: {
+                    long lv;
+                    if (long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out lv)) return lv;
+                    return 0L;
+                }
+                case RegistryValueKind.Binary: {
+                    string hex = s.Replace("-", "").Replace(" ", "").Trim();
+                    if (hex.Length == 0 || (hex.Length % 2) != 0) return new byte[0];
+                    byte[] outB = new byte[hex.Length / 2];
+                    for (int i = 0; i < outB.Length; i++) {
+                        outB[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                    }
+                    return outB;
+                }
+                case RegistryValueKind.MultiString:
+                    return string.IsNullOrEmpty(s) ? new string[0] : s.Split('|');
+                default:
+                    return s;
+            }
+        }
+
+        public static RegSnapshotRecord CaptureRegistryValue(string path, string name) {
+            var rec = new RegSnapshotRecord { Path = path, Name = name, Existed = false, ValueType = "", ValueData = "" };
+            RegistryKey root;
+            string sub;
+            if (!TryParseRegistryPath(path, out root, out sub)) return rec;
+            try {
+                using (RegistryKey rk = root.OpenSubKey(sub, false)) {
+                    if (rk == null) return rec;
+                    string valName = name ?? "";
+                    object val = rk.GetValue(valName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (val == null) return rec;
+                    RegistryValueKind kind = rk.GetValueKind(valName);
+                    rec.Existed = true;
+                    rec.ValueType = kind.ToString();
+                    rec.ValueData = SerializeRegistryValue(val, kind);
+                }
+            } catch {}
+            return rec;
+        }
+
+        public static bool SetRegistryValue(string path, string name, string valueType, string valueData, bool deleteValue) {
+            RegistryKey root;
+            string sub;
+            if (!TryParseRegistryPath(path, out root, out sub)) return false;
+            try {
+                if (deleteValue) {
+                    using (RegistryKey rk = root.OpenSubKey(sub, true)) {
+                        if (rk == null) return true;
+                        try { rk.DeleteValue(name ?? "", false); } catch {}
+                    }
+                    return true;
+                }
+                using (RegistryKey rk = root.CreateSubKey(sub)) {
+                    if (rk == null) return false;
+                    RegistryValueKind kind = ParseValueKind(valueType);
+                    object typedVal = DeserializeRegistryValue(valueData, kind);
+                    rk.SetValue(name ?? "", typedVal, kind);
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static bool RestoreRegistrySnapshot(RegSnapshotRecord rec) {
+            if (rec == null) return false;
+            if (!rec.Existed) {
+                return SetRegistryValue(rec.Path, rec.Name, "DWord", "", true);
+            }
+            return SetRegistryValue(rec.Path, rec.Name, rec.ValueType, rec.ValueData, false);
+        }
+
+        public static int GetServiceStartType(string serviceName) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return -1;
+            try {
+                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName.Trim(), false)) {
+                    if (rk == null) return -1;
+                    object v = rk.GetValue("Start");
+                    if (v == null) return -1;
+                    return Convert.ToInt32(v, CultureInfo.InvariantCulture);
+                }
+            } catch {
+                return -1;
+            }
+        }
+
+        public static bool SetServiceStartType(string serviceName, int startType) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return false;
+            if (startType < 0 || startType > 4) return false;
+            try {
+                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName.Trim(), true)) {
+                    if (rk == null) return false;
+                    rk.SetValue("Start", startType, RegistryValueKind.DWord);
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static bool CheckRegistryRuleApplied(TweakRegRule r) {
+            if (r == null || string.IsNullOrWhiteSpace(r.Path)) return false;
+            RegistryKey root;
+            string sub;
+            if (!TryParseRegistryPath(r.Path, out root, out sub)) return false;
+            try {
+                using (RegistryKey rk = root.OpenSubKey(sub, false)) {
+                    if (r.DeleteOnApply) {
+                        if (rk == null) return true;
+                        return rk.GetValue(r.Name ?? "", null, RegistryValueOptions.DoNotExpandEnvironmentNames) == null;
+                    }
+                    if (rk == null) return false;
+                    object cur = rk.GetValue(r.Name ?? "", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (cur == null) return false;
+                    RegistryValueKind kind = rk.GetValueKind(r.Name ?? "");
+                    string curStr = SerializeRegistryValue(cur, kind);
+                    return string.Equals(curStr.Trim(), (r.ApplyValue ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static bool CheckActionState(string actionKind, string actionParam) {
+            string kind = (actionKind ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(kind)) return false;
+            try {
+                switch (kind) {
+                    case "hibernation_off": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("HibernateEnabled");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "ultimate_perf": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", false)) {
+                            if (rk != null) {
+                                string active = Convert.ToString(rk.GetValue("ActivePowerScheme"), CultureInfo.InvariantCulture) ?? "";
+                                if (string.Equals(active, "e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase)) return true;
+                                if (!string.IsNullOrEmpty(active)) {
+                                    using (RegistryKey sk = rk.OpenSubKey(active, false)) {
+                                        if (sk != null) {
+                                            string fn = Convert.ToString(sk.GetValue("FriendlyName"), CultureInfo.InvariantCulture) ?? "";
+                                            if (fn.IndexOf("Ultimate", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return false;
+                    }
+                    case "classic_context_menu": {
+                        using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("");
+                                return v != null && string.Equals(v.ToString(), "", StringComparison.Ordinal);
+                            }
+                        }
+                        return false;
+                    }
+                    case "remove_home_gallery": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}", false)) {
+                            return rk == null;
+                        }
+                    }
+                    case "remove_onedrive": {
+                        string od1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\OneDrive\OneDrive.exe");
+                        string od2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft OneDrive\OneDrive.exe");
+                        return !File.Exists(od1) && !File.Exists(od2);
+                    }
+                    case "block_adobe_net": {
+                        string hosts = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"drivers\etc\hosts");
+                        if (File.Exists(hosts)) {
+                            string txt = File.ReadAllText(hosts);
+                            return txt.IndexOf("# AppDriver-AdobeBlock", StringComparison.OrdinalIgnoreCase) >= 0;
+                        }
+                        return false;
+                    }
+                    case "ipv6_disable": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("DisabledComponents");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 255) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "ipv4_prefer": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("DisabledComponents");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 32) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "svchost_split_off": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("SvcHostSplitThresholdInKB");
+                                if (v != null && Convert.ToInt64(v, CultureInfo.InvariantCulture) >= 16777216L) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    case "reserved_storage_off": {
+                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager", false)) {
+                            if (rk != null) {
+                                object v = rk.GetValue("ShippedWithReserves");
+                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    default:
+                        return false;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static TweakProbeResult[] ProbeTweaksState(TweakProbeSpec[] specs, int currentOsBuild) {
+            if (specs == null) return new TweakProbeResult[0];
+            var results = new TweakProbeResult[specs.Length];
+            for (int i = 0; i < specs.Length; i++) {
+                TweakProbeSpec sp = specs[i];
+                var r = new TweakProbeResult { Id = sp != null ? sp.Id : "", IsApplied = false, Supported = true, Detail = "" };
+                if (sp == null) { results[i] = r; continue; }
+
+                if (sp.MinBuild > 0 && currentOsBuild > 0 && currentOsBuild < sp.MinBuild) {
+                    r.Supported = false;
+                    r.Detail = "Y\u00EAu c\u1EA7u Windows build " + sp.MinBuild.ToString(CultureInfo.InvariantCulture) + "+";
+                    results[i] = r;
+                    continue;
+                }
+
+                bool hasCheck = false;
+                bool allOk = true;
+
+                if (!string.IsNullOrEmpty(sp.ActionKind)) {
+                    string ak = sp.ActionKind.Trim().ToLowerInvariant();
+                    if (ak != "restore_point" && ak != "clean_temp" && ak != "disk_cleanup" && ak != "dns_switch" && ak != "remove_edge" && ak != "remove_windows_ai") {
+                        hasCheck = true;
+                        allOk = CheckActionState(sp.ActionKind, sp.ActionParam);
+                    }
+                }
+
+                if (!hasCheck && sp.RegRules != null && sp.RegRules.Length > 0) {
+                    hasCheck = true;
+                    for (int j = 0; j < sp.RegRules.Length; j++) {
+                        if (!CheckRegistryRuleApplied(sp.RegRules[j])) {
+                            allOk = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasCheck && sp.Services != null && sp.Services.Length > 0) {
+                    int foundSvc = 0;
+                    int manualOrDisabled = 0;
+                    for (int s = 0; s < sp.Services.Length; s++) {
+                        int st = GetServiceStartType(sp.Services[s]);
+                        if (st >= 0) {
+                            foundSvc++;
+                            if (st == 3 || st == 4) manualOrDisabled++;
+                        }
+                    }
+                    if (foundSvc > 0) {
+                        hasCheck = true;
+                        allOk = (manualOrDisabled >= (int)Math.Ceiling(foundSvc * 0.85));
+                    }
+                }
+
+                r.IsApplied = hasCheck && allOk;
+                results[i] = r;
+            }
+            return results;
+        }
+
+        public static Task<TweakProbeResult[]> ProbeTweaksStateAsync(TweakProbeSpec[] specs, int currentOsBuild) {
+            return Task.Run(() => ProbeTweaksState(specs, currentOsBuild));
+        }
+    }
+}
+'@
+        Import-CachedCSharpType -TypeName "DuckUtil.WindowsOptimizerEngine" -SourceCode $winOptCs -Prefix "DuckOpt" -RequiredMethod "ProbeTweaksStateAsync"
+    } catch {}
+}
+
 $script:activeChildProcess   = $null
 $script:activeChildProcesses = [System.Collections.Generic.List[object]]::new()
 $script:isWindowClosing      = $false
@@ -36221,6 +38608,514 @@ function Clear-SystemEventLogs {
     Log-Text "[SUCC] To$([char]0x00E0)n b$([char]0x1ED9) Windows Event Logs $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c l$([char]0x00E0)m s$([char]0x1EA1)ch."
 }
 
+function Get-OptimizerBackupDirectory {
+    $dir = Join-Path $env:LOCALAPPDATA "AppDriver\OptimizerBackups"
+    if (-not [System.IO.Directory]::Exists($dir)) {
+        [System.IO.Directory]::CreateDirectory($dir) | Out-Null
+    }
+    return $dir
+}
+
+function Get-OptimizerHardwareProfile {
+    if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+        try { return [DuckUtil.WindowsOptimizerEngine]::DetectHardwareProfile() } catch {}
+    }
+    return [PSCustomObject]@{
+        IsLaptop         = $false
+        HasBattery       = $false
+        TotalRamGb       = 0
+        OsBuild          = 0
+        IsWin11          = $true
+        OsDisplayVersion = ""
+        IsSystemDriveSsd = $true
+        DiskTypeKnown    = $false
+        SummaryText      = "Windows PC"
+    }
+}
+
+function Get-OptimizerTweaksProbeSpecs {
+    param($Catalog)
+    if (-not $Catalog -or -not ("DuckUtil.TweakProbeSpec" -as [type])) { return @() }
+    $list = [System.Collections.Generic.List[DuckUtil.TweakProbeSpec]]::new()
+    foreach ($tw in $Catalog) {
+        $sp = [DuckUtil.TweakProbeSpec]::new()
+        $sp.Id = [string]$tw.Id
+        $sp.MinBuild = if ($tw.PSObject.Properties['MinBuild'] -and $null -ne $tw.MinBuild) { [int]$tw.MinBuild } else { 0 }
+        $sp.ActionKind = if ($tw.PSObject.Properties['ActionKind']) { [string]$tw.ActionKind } else { "" }
+        $sp.ActionParam = if ($tw.PSObject.Properties['ActionParam']) { [string]$tw.ActionParam } else { "" }
+
+        if ($tw.PSObject.Properties['Registry'] -and $tw.Registry) {
+            $rList = [System.Collections.Generic.List[DuckUtil.TweakRegRule]]::new()
+            foreach ($r in $tw.Registry) {
+                $rr = [DuckUtil.TweakRegRule]::new()
+                $rr.Path = [string]$r.Path
+                $rr.Name = [string]$r.Name
+                $rr.ValueType = if ($r.PSObject.Properties['ValueType']) { [string]$r.ValueType } else { "DWord" }
+                $rr.ApplyValue = if ($r.PSObject.Properties['ApplyValue']) { [string]$r.ApplyValue } else { "" }
+                $rr.UndoValue = if ($r.PSObject.Properties['UndoValue']) { [string]$r.UndoValue } else { "" }
+                $rr.DeleteOnUndo = if ($r.PSObject.Properties['DeleteOnUndo']) { [bool]$r.DeleteOnUndo } else { $false }
+                $rr.DeleteOnApply = if ($r.PSObject.Properties['DeleteOnApply']) { [bool]$r.DeleteOnApply } else { $false }
+                [void]$rList.Add($rr)
+            }
+            $sp.RegRules = $rList.ToArray()
+        }
+        if ($tw.PSObject.Properties['Services'] -and $tw.Services) {
+            $sp.Services = [string[]]@($tw.Services)
+        }
+        [void]$list.Add($sp)
+    }
+    return $list.ToArray()
+}
+
+function New-OptimizerRestorePoint {
+    try {
+        $srPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore"
+        $prevFreq = [DuckUtil.WindowsOptimizerEngine]::CaptureRegistryValue($srPath, "SystemRestorePointCreationFrequency")
+        [void][DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($srPath, "SystemRestorePointCreationFrequency", "DWord", "0", $false)
+        try {
+            Enable-ComputerRestore -Drive "$($env:SystemDrive)\" -ErrorAction SilentlyContinue
+            Checkpoint-Computer -Description "AppDriver Optimizer Snapshot" -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
+            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) t$([char]0x1EA1)o System Restore Point (AppDriver Optimizer Snapshot)."
+            return $true
+        } finally {
+            [void][DuckUtil.WindowsOptimizerEngine]::RestoreRegistrySnapshot($prevFreq)
+        }
+    } catch {
+        Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) t$([char]0x1EA1)o System Restore Point (c$([char]0x00F3) th$([char]0x1EC3) Volume Shadow Copy $([char]0x0111)ang t$([char]0x1EAF)t): $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Save-OptimizerPreChangeSnapshot {
+    param([object[]]$Tweaks)
+    if (-not $Tweaks -or $Tweaks.Count -eq 0) { return "" }
+    if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return "" }
+
+    $bkpDir = Get-OptimizerBackupDirectory
+    $regRecords = [System.Collections.Generic.List[object]]::new()
+    $svcRecords = [System.Collections.Generic.List[object]]::new()
+    $seenReg = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $seenSvc = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($tw in $Tweaks) {
+        if ($tw.PSObject.Properties['Registry'] -and $tw.Registry) {
+            foreach ($r in $tw.Registry) {
+                $rk = "$($r.Path)|$($r.Name)"
+                if ($seenReg.Add($rk)) {
+                    $rec = [DuckUtil.WindowsOptimizerEngine]::CaptureRegistryValue([string]$r.Path, [string]$r.Name)
+                    [void]$regRecords.Add([PSCustomObject]@{
+                        Path      = $rec.Path
+                        Name      = $rec.Name
+                        Existed   = $rec.Existed
+                        ValueType = $rec.ValueType
+                        ValueData = $rec.ValueData
+                    })
+                }
+            }
+        }
+        if ($tw.PSObject.Properties['Services'] -and $tw.Services) {
+            foreach ($s in $tw.Services) {
+                if ($seenSvc.Add([string]$s)) {
+                    $st = [DuckUtil.WindowsOptimizerEngine]::GetServiceStartType([string]$s)
+                    if ($st -ge 0) {
+                        [void]$svcRecords.Add([PSCustomObject]@{ Name = [string]$s; Start = $st })
+                    }
+                }
+            }
+        }
+    }
+
+    $activeScheme = ""
+    try {
+        $pOut = & powercfg.exe /getactivescheme 2>$null
+        if ($pOut -and ($pOut -join " ") -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
+            $activeScheme = $Matches[1]
+        }
+    } catch {}
+
+    $snapObj = [PSCustomObject]@{
+        CreatedAtUtc      = [DateTime]::UtcNow.ToString("o")
+        TweakIds          = @($Tweaks | ForEach-Object { [string]$_.Id })
+        ActivePowerScheme = $activeScheme
+        Registry          = $regRecords.ToArray()
+        Services          = $svcRecords.ToArray()
+    }
+
+    $fileName = "snapshot_" + (Get-Date).ToString("yyyyMMdd_HHmmss") + ".json"
+    $fullPath = Join-Path $bkpDir $fileName
+    try {
+        $json = $snapObj | ConvertTo-Json -Depth 6
+        [System.IO.File]::WriteAllText($fullPath, $json, [System.Text.UTF8Encoding]::new($false))
+        # Prune older snapshots (keep latest 15)
+        $allFiles = @(Get-ChildItem -Path $bkpDir -Filter "snapshot_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending)
+        if ($allFiles.Count -gt 15) {
+            foreach ($old in ($allFiles | Select-Object -Skip 15)) {
+                Remove-Item -LiteralPath $old.FullName -Force -ErrorAction SilentlyContinue
+            }
+        }
+        return $fullPath
+    } catch {
+        return ""
+    }
+}
+
+function Restore-OptimizerSnapshot {
+    param([Parameter(Mandatory = $true)][string]$SnapshotPath)
+    if (-not (Test-Path -LiteralPath $SnapshotPath)) {
+        Log-Text "[ERR] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y t$([char]0x1EC7)p sao l$([char]0x01B0)u OptimizerGuard: $SnapshotPath"
+        return $false
+    }
+    try {
+        $snap = Get-Content -Raw -Encoding UTF8 -LiteralPath $SnapshotPath | ConvertFrom-Json
+        $regOk = 0; $svcOk = 0
+        if ($snap.Registry) {
+            foreach ($r in $snap.Registry) {
+                $rec = [DuckUtil.RegSnapshotRecord]::new()
+                $rec.Path = [string]$r.Path
+                $rec.Name = [string]$r.Name
+                $rec.Existed = [bool]$r.Existed
+                $rec.ValueType = [string]$r.ValueType
+                $rec.ValueData = [string]$r.ValueData
+                if ([DuckUtil.WindowsOptimizerEngine]::RestoreRegistrySnapshot($rec)) { $regOk++ }
+            }
+        }
+        if ($snap.Services) {
+            foreach ($s in $snap.Services) {
+                if ([DuckUtil.WindowsOptimizerEngine]::SetServiceStartType([string]$s.Name, [int]$s.Start)) { $svcOk++ }
+            }
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$snap.ActivePowerScheme)) {
+            try { & powercfg.exe /setactive $snap.ActivePowerScheme 2>$null | Out-Null } catch {}
+        }
+        Log-Text "[SUCC] OptimizerGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c nguy$([char]0x00EA)n b$([char]0x1EA3)n $regOk kh$([char]0x00F3)a Registry v$([char]0x00E0) $svcOk d$([char]0x1ECB)ch v$([char]0x1EE5) t$([char]0x1EEB) $([System.IO.Path]::GetFileName($SnapshotPath))."
+        return $true
+    } catch {
+        Log-Text "[ERR] L$([char]0x1ED7)i kh$([char]0x00F4)i ph$([char]0x1EE5)c b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Invoke-OptimizerAction {
+    param(
+        [string]$ActionKind,
+        [string]$ActionParam,
+        [ValidateSet("Apply", "Undo")]
+        [string]$Mode = "Apply"
+    )
+    $kind = if ($ActionKind) { $ActionKind.Trim().ToLowerInvariant() } else { "" }
+    switch ($kind) {
+        "restore_point" {
+            if ($Mode -eq "Undo") { return $true }
+            return (New-OptimizerRestorePoint)
+        }
+        "hibernation_off" {
+            $arg = if ($Mode -eq "Apply") { "/hibernate off" } else { "/hibernate on" }
+            $p = Start-Process -FilePath "powercfg.exe" -ArgumentList $arg -WindowStyle Hidden -Wait -PassThru
+            return ($p.ExitCode -eq 0)
+        }
+        "clean_temp" {
+            if ($Mode -eq "Undo") { return $true }
+            $removed = 0
+            foreach ($tDir in @($env:TEMP, (Join-Path $env:SystemRoot "Temp"))) {
+                if (-not [string]::IsNullOrWhiteSpace($tDir) -and (Test-Path -LiteralPath $tDir)) {
+                    foreach ($it in @(Get-ChildItem -LiteralPath $tDir -Force -ErrorAction SilentlyContinue)) {
+                        try {
+                            Remove-Item -LiteralPath $it.FullName -Recurse -Force -ErrorAction Stop
+                            $removed++
+                        } catch {}
+                    }
+                }
+            }
+            Log-Text "   [SUCC] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n $removed m$([char]0x1EE5)c t$([char]0x1EC7)p t$([char]0x1EA1)m."
+            return $true
+        }
+        "disk_cleanup" {
+            if ($Mode -eq "Undo") { return $true }
+            Start-Process -FilePath "cleanmgr.exe" -ArgumentList "/d C:" -ErrorAction SilentlyContinue
+            return $true
+        }
+        "ultimate_perf" {
+            if ($Mode -eq "Apply") {
+                $dupOut = (& powercfg.exe -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null) -join " "
+                $targetGuid = ""
+                if ($dupOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
+                    $targetGuid = $Matches[1]
+                } else {
+                    $listOut = (& powercfg.exe /list 2>$null)
+                    foreach ($ln in $listOut) {
+                        if ($ln -match 'Ultimate' -and $ln -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
+                            $targetGuid = $Matches[1]; break
+                        }
+                    }
+                }
+                if (-not [string]::IsNullOrWhiteSpace($targetGuid)) {
+                    & powercfg.exe /setactive $targetGuid 2>$null | Out-Null
+                    return ($LASTEXITCODE -eq 0)
+                }
+                return $false
+            } else {
+                & powercfg.exe /setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>$null | Out-Null
+                return ($LASTEXITCODE -eq 0)
+            }
+        }
+        "classic_context_menu" {
+            $clsidPath = "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}"
+            if ($Mode -eq "Apply") {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue("$clsidPath\InprocServer32", "", "String", "", $false)
+            } else {
+                if (Test-Path -LiteralPath $clsidPath) {
+                    Remove-Item -LiteralPath $clsidPath -Recurse -Force -ErrorAction SilentlyContinue
+                }
+                return $true
+            }
+        }
+        "remove_home_gallery" {
+            $galleryKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}"
+            $homeKey    = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}"
+            if ($Mode -eq "Apply") {
+                foreach ($k in @($galleryKey, $homeKey)) {
+                    if (Test-Path -LiteralPath $k) { Remove-Item -LiteralPath $k -Recurse -Force -ErrorAction SilentlyContinue }
+                }
+                return $true
+            } else {
+                [void][DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($galleryKey, "", "String", "Gallery", $false)
+                [void][DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($homeKey, "", "String", "CLSID_MSGraphHomeFolder", $false)
+                return $true
+            }
+        }
+        "dns_switch" {
+            $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' -and $_.HardwareInterface -eq $true })
+            if ($adapters.Count -eq 0) {
+                $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' })
+            }
+            if ($adapters.Count -eq 0) { return $false }
+            if ($Mode -eq "Undo") {
+                foreach ($ad in $adapters) {
+                    Set-DnsClientServerAddress -InterfaceIndex $ad.ifIndex -ResetServerAddresses -ErrorAction SilentlyContinue
+                }
+                Clear-DnsClientCache -ErrorAction SilentlyContinue
+                return $true
+            }
+            $dnsPair = switch ($ActionParam) {
+                "Cloudflare" { @("1.1.1.1", "1.0.0.1") }
+                "Google"     { @("8.8.8.8", "8.8.4.4") }
+                "AdGuard"    { @("94.140.14.14", "94.140.15.15") }
+                "Quad9"      { @("9.9.9.9", "149.112.112.112") }
+                default      { @("1.1.1.1", "1.0.0.1") }
+            }
+            foreach ($ad in $adapters) {
+                Set-DnsClientServerAddress -InterfaceIndex $ad.ifIndex -ServerAddresses $dnsPair -ErrorAction SilentlyContinue
+            }
+            Clear-DnsClientCache -ErrorAction SilentlyContinue
+            return $true
+        }
+        "ipv4_prefer" {
+            $p = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+            if ($Mode -eq "Apply") {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($p, "DisabledComponents", "DWord", "32", $false)
+            } else {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($p, "DisabledComponents", "DWord", "0", $true)
+            }
+        }
+        "ipv6_disable" {
+            $p = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+            if ($Mode -eq "Apply") {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($p, "DisabledComponents", "DWord", "255", $false)
+            } else {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($p, "DisabledComponents", "DWord", "0", $true)
+            }
+        }
+        "svchost_split_off" {
+            $p = "HKLM:\SYSTEM\CurrentControlSet\Control"
+            if ($Mode -eq "Apply") {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($p, "SvcHostSplitThresholdInKB", "DWord", "33554432", $false)
+            } else {
+                return [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue($p, "SvcHostSplitThresholdInKB", "DWord", "380000", $false)
+            }
+        }
+        "reserved_storage_off" {
+            $state = if ($Mode -eq "Apply") { "Disabled" } else { "Enabled" }
+            $p = Start-Process -FilePath "dism.exe" -ArgumentList "/Online /Set-ReservedStorageState /State:$state" -WindowStyle Hidden -Wait -PassThru
+            return ($p.ExitCode -eq 0)
+        }
+        "remove_windows_ai" {
+            if ($Mode -eq "Apply") {
+                Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'Microsoft\.Copilot|Microsoft\.Windows\.Ai\.Copilot' } | ForEach-Object {
+                    try { Remove-AppxPackage -Package $_.PackageFullName -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+            return $true
+        }
+        "remove_onedrive" {
+            if ($Mode -eq "Undo") {
+                Log-Text "   [INFO] $([char]0x0110)$([char]0x1EC3) c$([char]0x00E0)i l$([char]0x1EA1)i OneDrive, h$([char]0x00E3)y c$([char]0x00E0)i qua tab $([char]0x1EE8)ng d$([char]0x1EE5)ng ho$([char]0x1EB7)c Microsoft Store."
+                return $true
+            }
+            Stop-Process -Name "OneDrive" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 400
+            $odSetup = Join-Path $env:SystemRoot "SysWOW64\OneDriveSetup.exe"
+            if (-not (Test-Path -LiteralPath $odSetup)) { $odSetup = Join-Path $env:SystemRoot "System32\OneDriveSetup.exe" }
+            if (Test-Path -LiteralPath $odSetup) {
+                $p = Start-Process -FilePath $odSetup -ArgumentList "/uninstall" -WindowStyle Hidden -Wait -PassThru
+                return ($p.ExitCode -eq 0)
+            }
+            return $true
+        }
+        "block_adobe_net" {
+            $hostsPath = Join-Path $env:SystemRoot "System32\drivers\etc\hosts"
+            $markerStart = "# AppDriver-AdobeBlock START"
+            $markerEnd   = "# AppDriver-AdobeBlock END"
+            $raw = if (Test-Path -LiteralPath $hostsPath) { [System.IO.File]::ReadAllText($hostsPath) } else { "" }
+            $cleaned = [regex]::Replace($raw, "(?s)\r?\n?$([regex]::Escape($markerStart)).*?$([regex]::Escape($markerEnd))\r?\n?", "`r`n").TrimEnd()
+            if ($Mode -eq "Undo") {
+                [System.IO.File]::WriteAllText($hostsPath, ($cleaned + "`r`n"), [System.Text.UTF8Encoding]::new($false))
+                Clear-DnsClientCache -ErrorAction SilentlyContinue
+                return $true
+            }
+            $domains = @(
+                "0.0.0.0 ic.adobe.io",
+                "0.0.0.0 cc-api-data.adobe.io",
+                "0.0.0.0 prod.adobegenuine.com",
+                "0.0.0.0 genuine.adobe.com",
+                "0.0.0.0 lcs-cops.adobe.io",
+                "0.0.0.0 p13n.adobe.io"
+            )
+            $block = "`r`n$markerStart`r`n" + ($domains -join "`r`n") + "`r`n$markerEnd`r`n"
+            [System.IO.File]::WriteAllText($hostsPath, ($cleaned + $block), [System.Text.UTF8Encoding]::new($false))
+            Clear-DnsClientCache -ErrorAction SilentlyContinue
+            return $true
+        }
+        default { return $true }
+    }
+}
+
+function Invoke-OptimizerSingleTweak {
+    param(
+        [Parameter(Mandatory = $true)]$Tweak,
+        [ValidateSet("Apply", "Undo")]
+        [string]$Mode = "Apply"
+    )
+    $allOk = $true
+
+    if ($Tweak.PSObject.Properties['Registry'] -and $Tweak.Registry) {
+        foreach ($r in $Tweak.Registry) {
+            if ($Mode -eq "Apply") {
+                $delA = ($r.PSObject.Properties['DeleteOnApply'] -and [bool]$r.DeleteOnApply)
+                $ok = [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue([string]$r.Path, [string]$r.Name, [string]$r.ValueType, [string]$r.ApplyValue, $delA)
+                if (-not $ok) { $allOk = $false }
+            } else {
+                $delU = ($r.PSObject.Properties['DeleteOnUndo'] -and [bool]$r.DeleteOnUndo)
+                $ok = [DuckUtil.WindowsOptimizerEngine]::SetRegistryValue([string]$r.Path, [string]$r.Name, [string]$r.ValueType, [string]$r.UndoValue, $delU)
+                if (-not $ok) { $allOk = $false }
+            }
+        }
+    }
+
+    if ($Tweak.PSObject.Properties['Services'] -and $Tweak.Services) {
+        $isDisableSvc = ([string]$Tweak.Id -in @("opt_telemetry_off", "adv_search_index_off"))
+        foreach ($svc in $Tweak.Services) {
+            $curSt = [DuckUtil.WindowsOptimizerEngine]::GetServiceStartType([string]$svc)
+            if ($curSt -lt 0) { continue }
+            if ($Mode -eq "Apply") {
+                $targetSt = if ($isDisableSvc) { 4 } else { 3 }
+                [void][DuckUtil.WindowsOptimizerEngine]::SetServiceStartType([string]$svc, $targetSt)
+                if ($isDisableSvc) {
+                    try { Stop-Service -Name ([string]$svc) -Force -ErrorAction SilentlyContinue } catch {}
+                }
+            } else {
+                $undoSt = if ($isDisableSvc) { 2 } else { 3 }
+                [void][DuckUtil.WindowsOptimizerEngine]::SetServiceStartType([string]$svc, $undoSt)
+                if ($isDisableSvc) {
+                    try { Start-Service -Name ([string]$svc) -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+        }
+    }
+
+    if ($Tweak.PSObject.Properties['Tasks'] -and $Tweak.Tasks) {
+        $flag = if ($Mode -eq "Apply") { "/DISABLE" } else { "/ENABLE" }
+        foreach ($tk in $Tweak.Tasks) {
+            try {
+                Start-Process -FilePath "schtasks.exe" -ArgumentList "/Change /TN `"$tk`" $flag" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
+            } catch {}
+        }
+    }
+
+    if ($Tweak.PSObject.Properties['ActionKind'] -and -not [string]::IsNullOrWhiteSpace([string]$Tweak.ActionKind)) {
+        $aParam = if ($Tweak.PSObject.Properties['ActionParam']) { [string]$Tweak.ActionParam } else { "" }
+        $actOk = Invoke-OptimizerAction -ActionKind ([string]$Tweak.ActionKind) -ActionParam $aParam -Mode $Mode
+        if (-not $actOk) { $allOk = $false }
+    }
+
+    return $allOk
+}
+
+function Invoke-OptimizerBatch {
+    param(
+        [Parameter(Mandatory = $true)][object[]]$Tweaks,
+        [ValidateSet("Apply", "Undo")]
+        [string]$Mode = "Apply",
+        [switch]$CreateSnapshot
+    )
+    $okCnt = 0
+    $failCnt = 0
+    $snapPath = ""
+    $needExplorer = $false
+
+    if ($Mode -eq "Apply" -and $CreateSnapshot) {
+        $snapPath = Save-OptimizerPreChangeSnapshot -Tweaks $Tweaks
+        if (-not [string]::IsNullOrWhiteSpace($snapPath)) {
+            Log-Text "[SUCC] OptimizerGuard: $([char]0x0110)$([char]0x00E3) sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c -> $([System.IO.Path]::GetFileName($snapPath))"
+        }
+    }
+
+    $total = $Tweaks.Count
+    $idx = 0
+    foreach ($tw in $Tweaks) {
+        if ($script:cancelRequested -or $script:isWindowClosing) { break }
+        $idx++
+        $verb = if ($Mode -eq "Apply") { "$([char]0x00C1)p d$([char]0x1EE5)ng" } else { "Ho$([char]0x00E0)n t$([char]0x00E1)c" }
+        Log-Text "[$idx/$total] ${verb}: $($tw.Name)..."
+        try {
+            $res = Invoke-OptimizerSingleTweak -Tweak $tw -Mode $Mode
+            if ($res) {
+                $okCnt++
+                Log-Text "   [SUCC] $($tw.Name)"
+                if ($tw.PSObject.Properties['RestartExplorer'] -and [bool]$tw.RestartExplorer) {
+                    $needExplorer = $true
+                }
+            } else {
+                $failCnt++
+                Log-Text "   [ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) th$([char]0x1EF1)c thi tr$([char]0x1ECD)n v$([char]0x1EB9)n: $($tw.Name)"
+            }
+        } catch {
+            $failCnt++
+            Log-Text "   [ERR] L$([char]0x1ED7)i '$($tw.Name)': $($_.Exception.Message)"
+        }
+    }
+
+    $restartedExp = $false
+    if ($needExplorer -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+        try {
+            Log-Text "[*] $([char]0x0110)ang n$([char]0x1EA1)p l$([char]0x1EA1)i Windows Explorer $([char]0x0111)$([char]0x1EC3) $([char]0x00E1)p d$([char]0x1EE5)ng thay $([char]0x0111)$([char]0x1ED5)i giao di$([char]0x1EC7)n..."
+            Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 600
+            if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
+                Start-Process "explorer.exe"
+            }
+            $restartedExp = $true
+            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) n$([char]0x1EA1)p l$([char]0x1EA1)i Windows Explorer."
+        } catch {}
+    }
+
+    return [PSCustomObject]@{
+        OkCount           = $okCnt
+        FailCount         = $failCnt
+        SnapshotPath      = $snapPath
+        RestartedExplorer = $restartedExp
+    }
+}
+
 Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
 if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
     Start-WingetBackgroundPreScan
@@ -37690,7 +40585,14 @@ function Set-ActiveTab {
             Update-UninstallerSelectionCount
         }
     } elseif ($index -eq 4) {
-        if ($txtSelectionCount) { $txtSelectionCount.Text = "" }
+        if (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue) {
+            Initialize-OptimizerTabIfNeeded
+        }
+        if (Get-Command "Update-OptimizerSelectionCount" -ErrorAction SilentlyContinue) {
+            Update-OptimizerSelectionCount
+        } elseif ($txtSelectionCount) {
+            $txtSelectionCount.Text = ""
+        }
     }
     if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "tab"
@@ -44063,6 +46965,7 @@ function Stop-AllBackgroundWork {
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:optSearchTimer) { $script:optSearchTimer.Stop() } } catch {}
     try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
@@ -44320,6 +47223,549 @@ if ($window) {
             }
         }
     })
+}
+
+# ==============================================================================
+# TAB 4: WINDOWS OPTIMIZER (Optimize -> Sub-tabs Customize & Resources)
+# ==============================================================================
+$subNavOptCustomize    = $window.FindName("subNavOptCustomize")
+$subNavOptResources    = $window.FindName("subNavOptResources")
+$optSubPageCustomize   = $window.FindName("OptSubPageCustomize")
+$optSubPageResources   = $window.FindName("OptSubPageResources")
+$txtOptHardwareProfile = $window.FindName("txtOptHardwareProfile")
+$btnOptApply           = $window.FindName("btnOptApply")
+$btnOptUndo            = $window.FindName("btnOptUndo")
+$btnOptRestoreSnapshot = $window.FindName("btnOptRestoreSnapshot")
+$btnOptRefresh         = $window.FindName("btnOptRefresh")
+$txtOptSearch          = $window.FindName("txtOptSearch")
+$btnClearOptSearch     = $window.FindName("btnClearOptSearch")
+$btnOptSelectAll       = $window.FindName("btnOptSelectAll")
+$btnOptDeselectAll     = $window.FindName("btnOptDeselectAll")
+$btnOptPresetDesktop   = $window.FindName("btnOptPresetDesktop")
+$btnOptPresetLaptop    = $window.FindName("btnOptPresetLaptop")
+$btnOptPresetGaming    = $window.FindName("btnOptPresetGaming")
+$btnOptPresetMinimal   = $window.FindName("btnOptPresetMinimal")
+$btnOptFilterAll       = $window.FindName("btnOptFilterAll")
+$btnOptFilterApplied   = $window.FindName("btnOptFilterApplied")
+$btnOptFilterDefault   = $window.FindName("btnOptFilterDefault")
+$txtOptSummary         = $window.FindName("txtOptSummary")
+$optSidebarPanel       = $window.FindName("OptSidebarPanel")
+$optScrollViewer       = $window.FindName("OptScrollViewer")
+$optListPanel          = $window.FindName("OptListPanel")
+
+$script:optInitialized      = $false
+$script:optSubTab           = "Customize"
+$script:optHardwareProfile  = $null
+$script:optEntries          = [System.Collections.Generic.List[object]]::new()
+$script:optSidebarButtons   = @{}
+$script:optSelectedCategory = "__ALL__"
+$script:optStatusFilter     = "All"
+$script:optActivePreset     = ""
+
+$script:brushOptRiskSafeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x25, 0x18)); $script:brushOptRiskSafeBg.Freeze()
+$script:brushOptRiskSafeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushOptRiskSafeBorder.Freeze()
+$script:brushOptRiskSafeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushOptRiskSafeFg.Freeze()
+$script:brushOptRiskModBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x29, 0x20, 0x0C)); $script:brushOptRiskModBg.Freeze()
+$script:brushOptRiskModBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xD9, 0x77, 0x06)); $script:brushOptRiskModBorder.Freeze()
+$script:brushOptRiskModFg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFB, 0xBF, 0x24)); $script:brushOptRiskModFg.Freeze()
+$script:brushOptRiskCautBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushOptRiskCautBg.Freeze()
+$script:brushOptRiskCautBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xDC, 0x26, 0x26)); $script:brushOptRiskCautBorder.Freeze()
+$script:brushOptRiskCautFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushOptRiskCautFg.Freeze()
+$script:brushOptDefaultBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x1E, 0x2E)); $script:brushOptDefaultBg.Freeze()
+$script:brushOptDefaultBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushOptDefaultBorder.Freeze()
+$script:brushOptDefaultFg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xCB, 0xD5, 0xE1)); $script:brushOptDefaultFg.Freeze()
+
+function Set-OptimizeSubTab {
+    param([ValidateSet("Customize", "Resources")][string]$SubTab)
+    $script:optSubTab = $SubTab
+    $isCust = ($SubTab -eq "Customize")
+    if ($optSubPageCustomize) {
+        $optSubPageCustomize.Visibility = if ($isCust) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $optSubPageCustomize.IsHitTestVisible = $isCust
+    }
+    if ($optSubPageResources) {
+        $optSubPageResources.Visibility = if ($isCust) { [System.Windows.Visibility]::Collapsed } else { [System.Windows.Visibility]::Visible }
+        $optSubPageResources.IsHitTestVisible = (-not $isCust)
+    }
+    if ($subNavOptCustomize) {
+        $subNavOptCustomize.Foreground  = if ($isCust) { $script:brushNavActive } else { $script:brushNavInactive }
+        $subNavOptCustomize.BorderBrush = if ($isCust) { $script:brushNavActive } else { $script:brushTransparent }
+    }
+    if ($subNavOptResources) {
+        $subNavOptResources.Foreground  = if ($isCust) { $script:brushNavInactive } else { $script:brushNavActive }
+        $subNavOptResources.BorderBrush = if ($isCust) { $script:brushTransparent } else { $script:brushNavActive }
+    }
+    Update-OptimizerSelectionCount
+}
+
+if ($subNavOptCustomize) { $subNavOptCustomize.Add_Click({ Set-OptimizeSubTab "Customize" }) }
+if ($subNavOptResources) { $subNavOptResources.Add_Click({ Set-OptimizeSubTab "Resources" }) }
+
+function Get-TweakHardwareWarning {
+    param($Tweak, $Hw)
+    if (-not $Tweak -or -not $Hw) { return "" }
+    $hint = if ($Tweak.PSObject.Properties['HardwareHint']) { [string]$Tweak.HardwareHint } else { "" }
+    switch ($hint) {
+        "DesktopOnly" { if ($Hw.IsLaptop) { return "Khuy$([char]0x00EA)n cho PC B$([char]0x00E0)n" } }
+        "LaptopOnly"  { if (-not $Hw.IsLaptop) { return "Ch$([char]0x1EC9) cho Laptop" } }
+        "LowRamOnly"  { if ($Hw.TotalRamGb -gt 12) { return "Ch$([char]0x1EC9) c$([char]0x1EA7)n m$([char]0x00E1)y <= 12GB RAM" } }
+        "HddOnly"     { if ($Hw.DiskTypeKnown -and $Hw.IsSystemDriveSsd) { return "Ch$([char]0x1EC9) c$([char]0x1EA7)n cho $([char]0x1ED5) HDD" } }
+        "Win11Only"   { if (-not $Hw.IsWin11) { return "Ch$([char]0x1EC9) Windows 11" } }
+    }
+    return ""
+}
+
+function Update-OptimizerSelectionCount {
+    if (-not $txtSelectionCount) { return }
+    $isTab4 = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
+    if (-not $isTab4) { return }
+    if ($script:optSubTab -ne "Customize") {
+        $txtSelectionCount.Text = ""
+        return
+    }
+    $cnt = 0
+    foreach ($e in $script:optEntries) {
+        if ($e.CheckBox -and $e.CheckBox.IsChecked -eq $true) { $cnt++ }
+    }
+    $txtSelectionCount.Text = "$cnt m$([char]0x1EE5)c t$([char]0x1ED1)i $([char]0x01B0)u $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
+}
+
+function Apply-OptimizerFilter {
+    $q = if ($txtOptSearch) { $txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $visCount = 0
+    $appliedCount = 0
+    foreach ($e in $script:optEntries) {
+        if ($e.IsApplied) { $appliedCount++ }
+        $catOk = ($script:optSelectedCategory -eq "__ALL__") -or ($e.Tweak.Category -eq $script:optSelectedCategory)
+        $stOk = switch ($script:optStatusFilter) {
+            "Applied" { [bool]$e.IsApplied }
+            "Default" { -not [bool]$e.IsApplied }
+            default   { $true }
+        }
+        $qOk = [string]::IsNullOrEmpty($q) -or $e.SearchText.Contains($q)
+        if ($catOk -and $stOk -and $qOk) {
+            $e.RowBorder.Visibility = [System.Windows.Visibility]::Visible
+            $visCount++
+        } else {
+            $e.RowBorder.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+    if ($txtOptSummary) {
+        $txtOptSummary.Text = "$([char]0x0110)ang hi$([char]0x1EC3)n th$([char]0x1ECB) $visCount / $($script:optEntries.Count) t$([char]0x1ED1)i $([char]0x01B0)u ($appliedCount $([char]0x0111)ang b$([char]0x1EAD)t)"
+    }
+}
+
+function Set-OptimizerSidebarCategory {
+    param([string]$CatKey)
+    $script:optSelectedCategory = $CatKey
+    foreach ($kv in $script:optSidebarButtons.GetEnumerator()) {
+        $b = $kv.Value
+        $isAct = ($kv.Key -eq $CatKey)
+        $b.Background  = if ($isAct) { $script:brushUninstFilterActiveBg } else { $script:brushTransparent }
+        $b.BorderBrush = if ($isAct) { $script:brushUninstFilterActiveBorder } else { $script:brushTransparent }
+        if ($b.Tag -and $b.Tag.TitleTb) {
+            $b.Tag.TitleTb.Foreground = if ($isAct) { $script:brushNavActive } else { $script:brushTextWhite }
+        }
+    }
+    Apply-OptimizerFilter
+}
+
+function Set-OptimizerStatusFilterUi {
+    param([string]$Mode)
+    $script:optStatusFilter = $Mode
+    $map = @{
+        "All"     = $btnOptFilterAll
+        "Applied" = $btnOptFilterApplied
+        "Default" = $btnOptFilterDefault
+    }
+    foreach ($kv in $map.GetEnumerator()) {
+        $btn = $kv.Value
+        if (-not $btn) { continue }
+        if ($kv.Key -eq $Mode) {
+            $btn.Background  = $script:brushUninstFilterActiveBg
+            $btn.BorderBrush = $script:brushUninstFilterActiveBorder
+            $btn.Foreground  = $script:brushUninstFilterActiveFg
+        } else {
+            $btn.Background  = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground  = $script:brushUninstFilterInactiveFg
+        }
+    }
+    Apply-OptimizerFilter
+}
+
+function Select-OptimizerPreset {
+    param([string]$PresetName)
+    $script:optActivePreset = $PresetName
+    $pMap = @{
+        "Desktop" = $btnOptPresetDesktop
+        "Laptop"  = $btnOptPresetLaptop
+        "Gaming"  = $btnOptPresetGaming
+        "Minimal" = $btnOptPresetMinimal
+    }
+    foreach ($kv in $pMap.GetEnumerator()) {
+        $btn = $kv.Value
+        if (-not $btn) { continue }
+        if ($kv.Key -eq $PresetName) {
+            $btn.Background  = $script:brushUninstFilterActiveBg
+            $btn.BorderBrush = $script:brushUninstFilterActiveBorder
+            $btn.Foreground  = $script:brushUninstFilterActiveFg
+        } else {
+            $btn.Background  = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground  = $script:brushUninstFilterInactiveFg
+        }
+    }
+
+    $isLap = ($null -ne $script:optHardwareProfile) -and [bool]$script:optHardwareProfile.IsLaptop
+    foreach ($e in $script:optEntries) {
+        if (-not $e.CheckBox) { continue }
+        $inPreset = $e.Supported -and ($e.Tweak.Presets -contains $PresetName)
+        if ($inPreset -and $isLap -and $e.Tweak.HardwareHint -eq "DesktopOnly") {
+            $inPreset = $false
+        }
+        $e.CheckBox.IsChecked = [bool]$inPreset
+    }
+    Update-OptimizerSelectionCount
+}
+
+function Refresh-OptimizerStatesAsync {
+    if (-not $script:optInitialized -or $script:isWindowClosing) { return }
+    if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return }
+    $specs = Get-OptimizerTweaksProbeSpecs -Catalog $TweaksCatalog
+    if (-not $specs -or $specs.Count -eq 0) { return }
+    $osBld = if ($script:optHardwareProfile) { [int]$script:optHardwareProfile.OsBuild } else { 0 }
+
+    $probeTask = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($specs, $osBld)
+    [void](Wait-TaskNonBlocking -Task $probeTask -TimeoutSeconds 15 -CancelCheck { [bool]$script:isWindowClosing })
+    if ($script:isWindowClosing -or $probeTask.Status -ne [System.Threading.Tasks.TaskStatus]::RanToCompletion) { return }
+
+    $byId = @{}
+    foreach ($pr in $probeTask.Result) {
+        if ($pr -and $pr.Id) { $byId[$pr.Id] = $pr }
+    }
+    foreach ($e in $script:optEntries) {
+        $pr = $byId[[string]$e.Tweak.Id]
+        if (-not $pr) { continue }
+        $e.IsApplied = [bool]$pr.IsApplied
+        $e.Supported = [bool]$pr.Supported
+        if (-not $pr.Supported) {
+            $e.StatusBorder.Background  = $script:brushOptDefaultBg
+            $e.StatusBorder.BorderBrush = $script:brushOptDefaultBorder
+            $e.StatusTb.Text            = "Kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3)"
+            $e.StatusTb.Foreground      = $script:brushUninstMuted
+            if ($e.CheckBox) { $e.CheckBox.IsEnabled = $false; $e.CheckBox.IsChecked = $false }
+        } elseif ($pr.IsApplied) {
+            $e.StatusBorder.Background  = $script:brushOptRiskSafeBg
+            $e.StatusBorder.BorderBrush = $script:brushOptRiskSafeBorder
+            $e.StatusTb.Text            = "$([char]0x0110)ang b$([char]0x1EAD)t"
+            $e.StatusTb.Foreground      = $script:brushOptRiskSafeFg
+        } else {
+            $e.StatusBorder.Background  = $script:brushOptDefaultBg
+            $e.StatusBorder.BorderBrush = $script:brushOptDefaultBorder
+            $e.StatusTb.Text            = "M$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh"
+            $e.StatusTb.Foreground      = $script:brushOptDefaultFg
+        }
+    }
+    Apply-OptimizerFilter
+}
+
+function Initialize-OptimizerTabIfNeeded {
+    if ($script:optInitialized -or -not $TweaksCatalog -or -not $optListPanel -or -not $optSidebarPanel) { return }
+    $script:optInitialized = $true
+
+    $script:optHardwareProfile = Get-OptimizerHardwareProfile
+    if ($txtOptHardwareProfile -and $script:optHardwareProfile) {
+        $txtOptHardwareProfile.Text = [string]$script:optHardwareProfile.SummaryText
+    }
+
+    if ($optScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+        try { [DuckUtil.SmoothScrollController]::Attach($optScrollViewer, 0.24, 1.0) } catch {}
+    }
+
+    # Build Sidebar
+    $optSidebarPanel.Children.Clear()
+    $script:optSidebarButtons = @{}
+    $catCounts = [ordered]@{}
+    $catCounts["__ALL__"] = $TweaksCatalog.Count
+    foreach ($tw in $TweaksCatalog) {
+        $c = [string]$tw.Category
+        if (-not $catCounts.Contains($c)) { $catCounts[$c] = 0 }
+        $catCounts[$c]++
+    }
+    foreach ($ck in $catCounts.Keys) {
+        $label = if ($ck -eq "__ALL__") { "T$([char]0x1EA5)t c$([char]0x1EA3)" } else { $ck }
+        $cnt   = $catCounts[$ck]
+        $sbBdr = [System.Windows.Controls.Border]::new()
+        $sbBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $sbBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+        $sbBdr.Padding = [System.Windows.Thickness]::new(9, 6, 9, 6)
+        $sbBdr.Margin = [System.Windows.Thickness]::new(0, 1, 0, 2)
+        $sbBdr.Cursor = [System.Windows.Input.Cursors]::Hand
+        $g = [System.Windows.Controls.Grid]::new()
+        $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::Auto
+        [void]$g.ColumnDefinitions.Add($c0); [void]$g.ColumnDefinitions.Add($c1)
+        $tTb = [System.Windows.Controls.TextBlock]::new()
+        $tTb.Text = $label; $tTb.FontSize = 11.5; $tTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $tTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $tTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        [System.Windows.Controls.Grid]::SetColumn($tTb, 0); [void]$g.Children.Add($tTb)
+        $cTb = [System.Windows.Controls.TextBlock]::new()
+        $cTb.Text = [string]$cnt; $cTb.FontSize = 10.5; $cTb.Foreground = $script:brushUninstMuted
+        $cTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center; $cTb.Margin = [System.Windows.Thickness]::new(6, 0, 0, 0)
+        [System.Windows.Controls.Grid]::SetColumn($cTb, 1); [void]$g.Children.Add($cTb)
+        $sbBdr.Child = $g
+        $sbBdr.Tag = [PSCustomObject]@{ Key = $ck; TitleTb = $tTb }
+        $sbBdr.Add_MouseLeftButtonUp({
+            param($s, $e)
+            if ($s -and $s.Tag) { Set-OptimizerSidebarCategory $s.Tag.Key }
+        })
+        [void]$optSidebarPanel.Children.Add($sbBdr)
+        $script:optSidebarButtons[$ck] = $sbBdr
+    }
+
+    # Build Tweak Rows
+    $optListPanel.Children.Clear()
+    $script:optEntries.Clear()
+    foreach ($tw in $TweaksCatalog) {
+        $rowBdr = [System.Windows.Controls.Border]::new()
+        $rowBdr.Style = $script:styleAppRow
+        $rowBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $rowBdr.Padding = [System.Windows.Thickness]::new(10, 7, 10, 7)
+        $rowBdr.Margin = [System.Windows.Thickness]::new(0, 0, 0, 4)
+
+        $rg = [System.Windows.Controls.Grid]::new()
+        $rc0 = [System.Windows.Controls.ColumnDefinition]::new(); $rc0.Width = [System.Windows.GridLength]::new(26)
+        $rc1 = [System.Windows.Controls.ColumnDefinition]::new(); $rc1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        $rc2 = [System.Windows.Controls.ColumnDefinition]::new(); $rc2.Width = [System.Windows.GridLength]::Auto
+        [void]$rg.ColumnDefinitions.Add($rc0); [void]$rg.ColumnDefinitions.Add($rc1); [void]$rg.ColumnDefinitions.Add($rc2)
+
+        $cb = [System.Windows.Controls.CheckBox]::new()
+        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $cb.Add_Checked({ Update-OptimizerSelectionCount })
+        $cb.Add_Unchecked({ Update-OptimizerSelectionCount })
+        [System.Windows.Controls.Grid]::SetColumn($cb, 0); [void]$rg.Children.Add($cb)
+
+        $txtSp = [System.Windows.Controls.StackPanel]::new()
+        $txtSp.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $txtSp.Margin = [System.Windows.Thickness]::new(2, 0, 10, 0)
+        $nameTb = [System.Windows.Controls.TextBlock]::new()
+        $nameTb.Text = [string]$tw.Name; $nameTb.FontSize = 12; $nameTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $nameTb.Foreground = $script:brushTextWhite; $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $descTb = [System.Windows.Controls.TextBlock]::new()
+        $descTb.Text = [string]$tw.Description; $descTb.FontSize = 11; $descTb.Foreground = $script:brushUninstMuted
+        $descTb.TextWrapping = [System.Windows.TextWrapping]::Wrap; $descTb.Margin = [System.Windows.Thickness]::new(0, 1, 0, 0)
+        [void]$txtSp.Children.Add($nameTb); [void]$txtSp.Children.Add($descTb)
+        [System.Windows.Controls.Grid]::SetColumn($txtSp, 1); [void]$rg.Children.Add($txtSp)
+
+        $badgeSp = [System.Windows.Controls.StackPanel]::new()
+        $badgeSp.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $badgeSp.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $hwWarn = Get-TweakHardwareWarning -Tweak $tw -Hw $script:optHardwareProfile
+        if (-not [string]::IsNullOrWhiteSpace($hwWarn)) {
+            $hwBdr = [System.Windows.Controls.Border]::new()
+            $hwBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+            $hwBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+            $hwBdr.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+            $hwBdr.Margin = [System.Windows.Thickness]::new(0, 0, 6, 0)
+            $hwBdr.Background = $script:brushOptRiskModBg
+            $hwBdr.BorderBrush = $script:brushOptRiskModBorder
+            $hwTb = [System.Windows.Controls.TextBlock]::new()
+            $hwTb.Text = $hwWarn; $hwTb.FontSize = 10; $hwTb.FontWeight = [System.Windows.FontWeights]::SemiBold; $hwTb.Foreground = $script:brushOptRiskModFg
+            $hwBdr.Child = $hwTb
+            [void]$badgeSp.Children.Add($hwBdr)
+        }
+
+        $riskBdr = [System.Windows.Controls.Border]::new()
+        $riskBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $riskBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+        $riskBdr.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+        $riskBdr.Margin = [System.Windows.Thickness]::new(0, 0, 6, 0)
+        $riskTb = [System.Windows.Controls.TextBlock]::new()
+        $riskTb.FontSize = 10; $riskTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        switch ([string]$tw.Risk) {
+            "Caution"  { $riskBdr.Background = $script:brushOptRiskCautBg; $riskBdr.BorderBrush = $script:brushOptRiskCautBorder; $riskTb.Foreground = $script:brushOptRiskCautFg; $riskTb.Text = "C$([char]0x1EA9)n th$([char]0x1EAD)n" }
+            "Moderate" { $riskBdr.Background = $script:brushOptRiskModBg;  $riskBdr.BorderBrush = $script:brushOptRiskModBorder;  $riskTb.Foreground = $script:brushOptRiskModFg;  $riskTb.Text = "L$([char]0x01B0)u $([char]0x00FD)" }
+            default    { $riskBdr.Background = $script:brushOptRiskSafeBg; $riskBdr.BorderBrush = $script:brushOptRiskSafeBorder; $riskTb.Foreground = $script:brushOptRiskSafeFg; $riskTb.Text = "An to$([char]0x00E0)n" }
+        }
+        $riskBdr.Child = $riskTb
+        [void]$badgeSp.Children.Add($riskBdr)
+
+        $stBdr = [System.Windows.Controls.Border]::new()
+        $stBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $stBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+        $stBdr.Padding = [System.Windows.Thickness]::new(8, 2, 8, 2)
+        $stBdr.MinWidth = 68
+        $stBdr.Background = $script:brushOptDefaultBg
+        $stBdr.BorderBrush = $script:brushOptDefaultBorder
+        $stTb = [System.Windows.Controls.TextBlock]::new()
+        $stTb.Text = "$([char]0x0110)ang qu$([char]0x00E9)t..."; $stTb.FontSize = 10; $stTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $stTb.Foreground = $script:brushOptDefaultFg; $stTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $stBdr.Child = $stTb
+        [void]$badgeSp.Children.Add($stBdr)
+
+        [System.Windows.Controls.Grid]::SetColumn($badgeSp, 2); [void]$rg.Children.Add($badgeSp)
+        $rowBdr.Child = $rg
+        $rowBdr.Tag = $cb
+        $rowBdr.Add_MouseLeftButtonUp({
+            param($s, $ev)
+            if ($ev.OriginalSource -is [System.Windows.Controls.Primitives.ToggleButton]) { return }
+            if ($s -and $s.Tag -and $s.Tag.IsEnabled) { $s.Tag.IsChecked = -not ($s.Tag.IsChecked -eq $true) }
+        })
+        [void]$optListPanel.Children.Add($rowBdr)
+
+        [void]$script:optEntries.Add([PSCustomObject]@{
+            Tweak           = $tw
+            RowBorder       = $rowBdr
+            CheckBox        = $cb
+            StatusBorder    = $stBdr
+            StatusTb        = $stTb
+            HardwareWarning = $hwWarn
+            IsApplied       = $false
+            Supported       = $true
+            SearchText      = ("$($tw.Name) $($tw.Description) $($tw.Category) $($tw.Id)").ToLowerInvariant()
+        })
+    }
+
+    Set-OptimizerSidebarCategory "__ALL__"
+    Refresh-OptimizerStatesAsync
+}
+
+$script:optSearchTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:optSearchTimer.Interval = [TimeSpan]::FromMilliseconds(55)
+$script:optSearchTimer.Add_Tick({
+    $script:optSearchTimer.Stop()
+    if (-not $script:isWindowClosing) { Apply-OptimizerFilter }
+})
+if ($txtOptSearch) {
+    $txtOptSearch.Add_TextChanged({
+        $script:optSearchTimer.Stop()
+        $script:optSearchTimer.Start()
+    })
+}
+if ($btnClearOptSearch) {
+    $btnClearOptSearch.Add_Click({
+        if ($txtOptSearch) { $txtOptSearch.Text = "" }
+        Apply-OptimizerFilter
+    })
+}
+if ($btnOptPresetDesktop) { $btnOptPresetDesktop.Add_Click({ Select-OptimizerPreset "Desktop" }) }
+if ($btnOptPresetLaptop)  { $btnOptPresetLaptop.Add_Click({ Select-OptimizerPreset "Laptop" }) }
+if ($btnOptPresetGaming)  { $btnOptPresetGaming.Add_Click({ Select-OptimizerPreset "Gaming" }) }
+if ($btnOptPresetMinimal) { $btnOptPresetMinimal.Add_Click({ Select-OptimizerPreset "Minimal" }) }
+if ($btnOptFilterAll)     { $btnOptFilterAll.Add_Click({ Set-OptimizerStatusFilterUi "All" }) }
+if ($btnOptFilterApplied) { $btnOptFilterApplied.Add_Click({ Set-OptimizerStatusFilterUi "Applied" }) }
+if ($btnOptFilterDefault) { $btnOptFilterDefault.Add_Click({ Set-OptimizerStatusFilterUi "Default" }) }
+if ($btnOptRefresh)       { $btnOptRefresh.Add_Click({ Refresh-OptimizerStatesAsync }) }
+
+if ($btnOptSelectAll) {
+    $btnOptSelectAll.Add_Click({
+        foreach ($e in $script:optEntries) {
+            if ($e.RowBorder.Visibility -eq [System.Windows.Visibility]::Visible -and $e.Supported -and $e.CheckBox) {
+                $e.CheckBox.IsChecked = $true
+            }
+        }
+        Update-OptimizerSelectionCount
+    })
+}
+if ($btnOptDeselectAll) {
+    $btnOptDeselectAll.Add_Click({
+        $script:optActivePreset = ""
+        foreach ($btn in @($btnOptPresetDesktop, $btnOptPresetLaptop, $btnOptPresetGaming, $btnOptPresetMinimal)) {
+            if ($btn) {
+                $btn.Background  = $script:brushTransparent
+                $btn.BorderBrush = $script:brushTransparent
+                $btn.Foreground  = $script:brushUninstFilterInactiveFg
+            }
+        }
+        foreach ($e in $script:optEntries) {
+            if ($e.CheckBox) { $e.CheckBox.IsChecked = $false }
+        }
+        Update-OptimizerSelectionCount
+    })
+}
+
+Register-Click "btnOptApply" {
+    Invoke-GuardedAction "$([char]0x00C1)p d$([char]0x1EE5)ng T$([char]0x1ED1)i $([char]0x01B0)u Windows" {
+        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true -and $_.Supported })
+        if ($selected.Count -eq 0) {
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c t$([char]0x1ED1)i $([char]0x01B0)u n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) $([char]0x00E1)p d$([char]0x1EE5)ng."
+            return
+        }
+        $warnings = @($selected | Where-Object { $_.Tweak.Risk -eq "Caution" -or -not [string]::IsNullOrWhiteSpace($_.HardwareWarning) })
+        if ($warnings.Count -gt 0) {
+            $warnList = ($warnings | ForEach-Object { "$([char]0x2022) $($_.Tweak.Name)" + $(if ($_.HardwareWarning) { " ($($_.HardwareWarning))" } else { " (C$([char]0x1EA9)n th$([char]0x1EAD)n)" }) }) -join "`n"
+            $ans = Show-OwnedMessageBox `
+                -Text "C$([char]0x00F3) $($warnings.Count) m$([char]0x1EE5)c c$([char]0x1EA7)n l$([char]0x01B0)u $([char]0x00FD) ho$([char]0x1EB7)c kh$([char]0x00E1)c c$([char]0x1EA5)u h$([char]0x00EC)nh ph$([char]0x1EA7)n c$([char]0x1EE9)ng hi$([char]0x1EC7)n t$([char]0x1EA1)i:`n`n$warnList`n`nApp-Driver s$([char]0x1EBD) t$([char]0x1EF1) t$([char]0x1EA1)o b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard tr$([char]0x01B0)$([char]0x1EDB)c khi ch$([char]0x1EC9)nh.`nB$([char]0x1EA1)n v$([char]0x1EAB)n mu$([char]0x1ED1)n $([char]0x00E1)p d$([char]0x1EE5)ng?" `
+                -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n $([char]0x00E1)p d$([char]0x1EE5)ng T$([char]0x1ED1)i $([char]0x01B0)u Windows" `
+                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+            if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+        }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang $([char]0x00E1)p d$([char]0x1EE5)ng $($selected.Count) m$([char]0x1EE5)c t$([char]0x1ED1)i $([char]0x01B0)u..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            $tweaksArr = @($selected | ForEach-Object { $_.Tweak })
+            $res = Invoke-OptimizerBatch -Tweaks $tweaksArr -Mode "Apply" -CreateSnapshot
+            foreach ($e in $selected) { if ($e.CheckBox) { $e.CheckBox.IsChecked = $false } }
+            Log-Text "[SUCC] Ho$([char]0x00E0)n t$([char]0x1EA5)t t$([char]0x1ED1)i $([char]0x01B0)u: $($res.OkCount) th$([char]0x00E0)nh c$([char]0x00F4)ng, $($res.FailCount) l$([char]0x1ED7)i."
+            if ($txtStatus) { $txtStatus.Text = "T$([char]0x1ED1)i $([char]0x01B0)u xong: $($res.OkCount) th$([char]0x00E0)nh c$([char]0x00F4)ng $([char]0x2022) $($res.FailCount) l$([char]0x1ED7)i" }
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            Refresh-OptimizerStatesAsync
+            Update-OptimizerSelectionCount
+        }
+    }
+}
+
+Register-Click "btnOptUndo" {
+    Invoke-GuardedAction "Ho$([char]0x00E0)n t$([char]0x00E1)c T$([char]0x1ED1)i $([char]0x01B0)u Windows" {
+        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true -and $_.Supported })
+        if ($selected.Count -eq 0) {
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n m$([char]0x1EE5)c t$([char]0x1ED1)i $([char]0x01B0)u n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) ho$([char]0x00E0)n t$([char]0x00E1)c."
+            return
+        }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ho$([char]0x00E0)n t$([char]0x00E1)c $($selected.Count) m$([char]0x1EE5)c t$([char]0x1ED1)i $([char]0x01B0)u..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            $tweaksArr = @($selected | ForEach-Object { $_.Tweak })
+            $res = Invoke-OptimizerBatch -Tweaks $tweaksArr -Mode "Undo"
+            foreach ($e in $selected) { if ($e.CheckBox) { $e.CheckBox.IsChecked = $false } }
+            Log-Text "[SUCC] Ho$([char]0x00E0)n t$([char]0x00E1)c xong: $($res.OkCount) th$([char]0x00E0)nh c$([char]0x00F4)ng, $($res.FailCount) l$([char]0x1ED7)i."
+            if ($txtStatus) { $txtStatus.Text = "Ho$([char]0x00E0)n t$([char]0x00E1)c xong: $($res.OkCount) th$([char]0x00E0)nh c$([char]0x00F4)ng $([char]0x2022) $($res.FailCount) l$([char]0x1ED7)i" }
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            Refresh-OptimizerStatesAsync
+            Update-OptimizerSelectionCount
+        }
+    }
+}
+
+Register-Click "btnOptRestoreSnapshot" {
+    Invoke-GuardedAction "Kh$([char]0x00F4)i ph$([char]0x1EE5)c b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" {
+        $bkpDir = Get-OptimizerBackupDirectory
+        $latest = Get-ChildItem -Path $bkpDir -Filter "snapshot_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+        if (-not $latest) {
+            Show-OwnedMessageBox -Text "Ch$([char]0x01B0)a c$([char]0x00F3) b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard n$([char]0x00E0)o tr$([char]0x00EA)n m$([char]0x00E1)y.`n(B$([char]0x1EA3)n sao l$([char]0x01B0)u $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c t$([char]0x1EF1) t$([char]0x1EA1)o m$([char]0x1ED7)i khi b$([char]0x1EA1)n b$([char]0x1EA5)m '$([char]0x00C1)p d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n'.)" -Caption "OptimizerGuard" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+            return
+        }
+        $ans = Show-OwnedMessageBox `
+            -Text "Kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) Registry, Services v$([char]0x00E0) Power Plan v$([char]0x1EC1) nguy$([char]0x00EA)n b$([char]0x1EA3)n t$([char]0x1EEB) b$([char]0x1EA3)n sao l$([char]0x01B0)u g$([char]0x1EA7)n nh$([char]0x1EA5)t?`n`nT$([char]0x1EC7)p: $($latest.Name)`nTh$([char]0x1EDD)i $([char]0x0111)i$([char]0x1EC3)m: $($latest.LastWriteTime.ToString('dd/MM/yyyy HH:mm:ss'))" `
+            -Caption "Kh$([char]0x00F4)i ph$([char]0x1EE5)c OptimizerGuard" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            [void](Restore-OptimizerSnapshot -SnapshotPath $latest.FullName)
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            Refresh-OptimizerStatesAsync
+        }
+    }
 }
 
 $script:autoScannedOnStartup = $false

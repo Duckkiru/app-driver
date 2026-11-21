@@ -1,0 +1,1064 @@
+[
+  {
+    "Id": "opt_restore_point",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tạo điểm khôi phục hệ thống (Restore Point)",
+    "Description": "Tự động tạo System Restore Point trước khi áp dụng tối ưu (bỏ qua giới hạn 24h của Windows).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "ActionKind": "restore_point",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_services_manual",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Chuyển Services nền không cần thiết về Manual",
+    "Description": "Đưa ~40 dịch vụ phụ sang Manual (khi cần Windows vẫn tự bật; giữ nguyên Wi-Fi, Bluetooth, Âm thanh, Máy in, Xbox).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Services": [
+      "AJRouter", "ALG", "AppMgmt", "AssignedAccessManagerSvc", "AxInstSV",
+      "BDESVC", "Browser", "CertPropSvc", "ClipSVC", "COMSysApp",
+      "DiagTrack", "dmwappushservice", "DoSvc", "DPS", "Eaphost",
+      "Fax", "fhsvc", "FrameServer", "hidserv", "icssvc",
+      "lfsvc", "lltdsvc", "MapsBroker", "NetTcpPortSharing", "PcaSvc",
+      "PhoneSvc", "QWAVE", "RemoteAccess", "RemoteRegistry", "RetailDemo",
+      "SCardSvr", "ScDeviceEnum", "SCPolicySvc", "SEMgrSvc", "SensorDataService",
+      "SensorService", "SensrSvc", "SharedAccess", "SysMain", "TapiSrv",
+      "TrkWks", "WbioSrvc", "Wecsvc", "WerSvc", "wisvc", "WMPNetworkSvc", "WpcMonSvc"
+    ]
+  },
+  {
+    "Id": "opt_telemetry_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Telemetry & Thu thập dữ liệu Microsoft",
+    "Description": "Tắt AllowTelemetry, CEIP, dịch vụ DiagTrack và các tác vụ gửi dữ liệu chẩn đoán nền.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "Name": "AllowTelemetry", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection", "Name": "AllowTelemetry", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Privacy", "Name": "TailoredExperiencesWithDiagnosticDataEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo", "Name": "Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ],
+    "Services": ["DiagTrack", "dmwappushservice"],
+    "Tasks": [
+      "\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser",
+      "\\Microsoft\\Windows\\Application Experience\\ProgramDataUpdater",
+      "\\Microsoft\\Windows\\Autochk\\Proxy",
+      "\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator",
+      "\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip",
+      "\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector"
+    ]
+  },
+  {
+    "Id": "opt_activity_history_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Activity History (Giữ Clipboard History)",
+    "Description": "Ngừng ghi và đồng bộ lịch sử hoạt động người dùng lên Microsoft nhưng vẫn giữ lịch sử sao chép Win+V.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "EnableActivityFeed", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "PublishUserActivities", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System", "Name": "UploadUserActivities", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_location_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Location Tracking (Định vị)",
+    "Description": "Tắt quyền truy cập vị trí nền của Windows và dịch vụ cảm biến vị trí.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\location", "Name": "Value", "ValueType": "String", "ApplyValue": "Deny", "UndoValue": "Allow", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Sensor\\Overrides\\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}", "Name": "SensorPermissionState", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_consumer_features_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Chặn tự cài App quảng cáo (Consumer Features)",
+    "Description": "Ngăn Windows tự tải app/game quảng cáo từ Store (TikTok, Candy Crush, gợi ý ContentDeliveryManager).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent", "Name": "DisableWindowsConsumerFeatures", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SilentInstalledAppsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SystemPaneSuggestionsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "Name": "SubscribedContent-338388Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_delivery_opt_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Delivery Optimization (Upload P2P)",
+    "Description": "Ngăn Windows dùng băng thông mạng của bạn để upload bản cập nhật cho máy khác.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization", "Name": "DODownloadMode", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_store_search_ads_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Ẩn gợi ý Microsoft Store trong Start Search",
+    "Description": "Không hiển thị quảng cáo app Store khi gõ tìm kiếm trong Start Menu.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\SearchSettings", "Name": "IsDynamicSearchBoxEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_widgets_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt & Ẩn Widgets trên Taskbar",
+    "Description": "Tắt bảng tin tức/Widgets chạy ngầm WebView2 ở góc trái Taskbar Windows 11.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Dsh", "Name": "AllowNewsAndInterests", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarDa", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_end_task_taskbar",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Bật nút End Task chuột phải trên Taskbar",
+    "Description": "Cho phép đóng cưỡng bức ứng dụng bị treo ngay khi chuột phải vào biểu tượng trên Taskbar (Win 11).",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22621,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\TaskbarDeveloperSettings", "Name": "TaskbarEndTask", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_hibernation_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Hibernation (Xóa hiberfil.sys)",
+    "Description": "Giải phóng ngay 6-16 GB ổ C bằng cách tắt ngủ đông. Khuyên dùng cho PC bàn (Laptop nên giữ).",
+    "Risk": "Moderate",
+    "HardwareHint": "DesktopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Gaming"],
+    "ActionKind": "hibernation_off",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_clean_temp",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Dọn sạch tệp tạm (User Temp & Windows Temp)",
+    "Description": "Xóa toàn bộ tệp rác tạm thời trong %TEMP% và C:\\Windows\\Temp để giải phóng dung lượng.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "ActionKind": "clean_temp",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_disk_cleanup",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Chạy Disk Cleanup ổ C (Dọn bản Update cũ)",
+    "Description": "Kích hoạt công cụ dọn đĩa cleanmgr.exe chuẩn của Windows cho ổ C:.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "disk_cleanup",
+    "ActionParam": ""
+  },
+  {
+    "Id": "opt_wpbt_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt WPBT (Chặn BIOS tự chạy app hãng)",
+    "Description": "Chặn bảng Windows Platform Binary Table ngăn hãng sản xuất tự cài phần mềm ngầm lúc khởi động.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager", "Name": "DisableWpbtExecution", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_device_companion_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Chặn tự cài phần mềm đi kèm thiết bị",
+    "Description": "Ngăn Windows tự tải phần mềm quảng cáo đi kèm khi cắm màn hình/phụ kiện mới.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Device Metadata", "Name": "PreventDeviceMetadataFromNetwork", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_explorer_autodiscovery_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Explorer tự đoán loại thư mục",
+    "Description": "Mở thư mục chứa nhiều ảnh/nhạc/file lớn nhanh hơn hẳn (lưu ý: sẽ đặt tất cả thư mục về dạng General).",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\Bags\\AllFolders\\Shell", "Name": "FolderType", "ValueType": "String", "ApplyValue": "NotSpecified", "UndoValue": "", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "opt_storage_sense_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Storage Sense chạy nền",
+    "Description": "Tắt tính năng tự động quét và xóa tệp trong thùng rác/Downloads của Windows.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy", "Name": "01", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "opt_fast_startup_off",
+    "Category": "Cơ bản & An toàn",
+    "Name": "Tắt Fast Startup (Tắt máy hoàn toàn sạch)",
+    "Description": "Giúp máy tắt nguồn sạch sẽ thật sự (tránh lỗi kẹt driver, kẹt dual-boot và lỗi mạng sau khi mở máy).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power", "Name": "HiberbootEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+
+  {
+    "Id": "perf_ultimate_plan",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Bật gói nguồn Ultimate Performance",
+    "Description": "Mở khóa và kích hoạt gói nguồn Workstation hiệu năng tối đa (không khuyên dùng cho Laptop chạy pin).",
+    "Risk": "Moderate",
+    "HardwareHint": "DesktopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "ActionKind": "ultimate_perf",
+    "ActionParam": ""
+  },
+  {
+    "Id": "perf_game_mode_on",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Bật Windows Game Mode",
+    "Description": "Ưu tiên tài nguyên CPU/GPU cho game đang chạy và tạm dừng tác vụ nền Windows Update.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\GameBar", "Name": "AutoGameModeEnabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\GameBar", "Name": "AllowAutoGameMode", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_gamedvr_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt GameDVR & Quay màn hình nền Xbox",
+    "Description": "Tắt ghi hình nền GameDVR giúp ổn định 1% Low FPS và giảm độ trễ khung hình khi chơi game.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\System\\GameConfigStore", "Name": "GameDVR_Enabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR", "Name": "AllowGameDVR", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "Name": "AppCaptureEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_hags_on",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Bật HAGS (Hardware-Accelerated GPU Scheduling)",
+    "Description": "Cho phép GPU tự lập lịch bộ nhớ trực tiếp (cần bật để dùng DLSS 3 Frame Generation; cần khởi động lại).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 19041,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "Name": "HwSchMode", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_mpo_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt MPO (Multiplane Overlay — Fix giật/đen màn hình)",
+    "Description": "Khắc phục lỗi nháy đen màn hình, tụt FPS khi Alt-Tab hoặc xem video trên driver NVIDIA/AMD.",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Dwm", "Name": "OverlayTestMode", "ValueType": "DWord", "ApplyValue": "5", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "perf_mouse_accel_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt gia tốc chuột (Raw 1:1 Pointer)",
+    "Description": "Tắt Enhance Pointer Precision giúp di chuột chính xác 1:1 cho game FPS và làm đồ họa.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Mouse", "Name": "MouseSpeed", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Mouse", "Name": "MouseThreshold1", "ValueType": "String", "ApplyValue": "0", "UndoValue": "6", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Mouse", "Name": "MouseThreshold2", "ValueType": "String", "ApplyValue": "0", "UndoValue": "10", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_network_throttling_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt Network Throttling Index (Giảm giật Ping)",
+    "Description": "Gỡ giới hạn gói tin mạng đa phương tiện của Windows giúp giảm ping spike khi chơi game online.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "Name": "NetworkThrottlingIndex", "ValueType": "DWord", "ApplyValue": "-1", "UndoValue": "10", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "Name": "SystemResponsiveness", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "20", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_power_throttling_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt Power Throttling (Chống bóp xung CPU)",
+    "Description": "Ngăn Windows tự hạ xung tiến trình nền/game trên PC để bàn (không khuyên dùng cho Laptop dùng pin).",
+    "Risk": "Moderate",
+    "HardwareHint": "DesktopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling", "Name": "PowerThrottlingOff", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "perf_win32_priority_gaming",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tối ưu Win32PrioritySeparation cho Gaming",
+    "Description": "Ưu tiên cửa sổ đang mở (foreground) nhận lát cắt CPU ngắn và ổn định hơn (0x26 = 38).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl", "Name": "Win32PrioritySeparation", "ValueType": "DWord", "ApplyValue": "38", "UndoValue": "2", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_visual_effects_smooth_font",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Hiệu ứng giao diện: Hiệu năng cao (Giữ mượt chữ)",
+    "Description": "Tắt hiệu ứng hoạt ảnh thừa để mở cửa sổ tức thì nhưng vẫn giữ làm mượt font ClearType và ảnh thu nhỏ.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects", "Name": "VisualFXSetting", "ValueType": "DWord", "ApplyValue": "3", "UndoValue": "0", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Desktop", "Name": "FontSmoothing", "ValueType": "String", "ApplyValue": "2", "UndoValue": "2", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\Control Panel\\Desktop\\WindowMetrics", "Name": "MinAnimate", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarAnimations", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "perf_bg_apps_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt toàn bộ App Store chạy ngầm",
+    "Description": "Ngăn các ứng dụng UWP/Microsoft Store tự chạy ẩn tiêu tốn RAM và CPU.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications", "Name": "GlobalUserDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\AppPrivacy", "Name": "LetAppsRunInBackground", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "perf_fso_off",
+    "Category": "Hiệu năng & Gaming",
+    "Name": "Tắt Fullscreen Optimizations toàn cục",
+    "Description": "Bỏ lớp tối ưu toàn màn hình của Windows để game chạy chế độ Exclusive Fullscreen thuần.",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\System\\GameConfigStore", "Name": "GameDVR_FSEBehaviorMode", "ValueType": "DWord", "ApplyValue": "2", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\System\\GameConfigStore", "Name": "GameDVR_DXGIHonorFSEWindowsCompatible", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+
+  {
+    "Id": "ui_classic_context_menu",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Bật Menu chuột phải kiểu Windows 10 (Win 11)",
+    "Description": "Hiển thị ngay đầy đủ menu chuột phải cổ điển, bỏ bước bấm 'Show more options'.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "ActionKind": "classic_context_menu",
+    "ActionParam": ""
+  },
+  {
+    "Id": "ui_dark_mode",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Bật Dark Mode (Hệ thống & Ứng dụng)",
+    "Description": "Chuyển toàn bộ giao diện Windows và ứng dụng sang chế độ tối dễ chịu cho mắt.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "Name": "AppsUseLightTheme", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "Name": "SystemUsesLightTheme", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_show_extensions",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Hiện đuôi tệp trong Explorer (.exe, .png...)",
+    "Description": "Hiển thị phần mở rộng của mọi tệp giúp thao tác lập trình và nhận diện file giả mạo an toàn hơn.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "HideFileExt", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_show_hidden_files",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Hiện tệp & thư mục ẩn trong Explorer",
+    "Description": "Hiển thị các thư mục ẩn như AppData, .git, .env trong File Explorer.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "Hidden", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "2", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_long_paths",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Bật hỗ trợ đường dẫn dài (> 260 ký tự)",
+    "Description": "Loại bỏ giới hạn 260 ký tự của Windows — cực kỳ hữu ích cho dự án Node.js, Git, Python.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem", "Name": "LongPathsEnabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_bing_search_off",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Tắt tìm kiếm web Bing trong Start Menu",
+    "Description": "Chỉ tìm ứng dụng/tệp trên máy khi bấm phím Windows, tốc độ phản hồi nhanh hơn rõ rệt.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "DisableSearchBoxSuggestions", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "BingSearchEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_start_recs_off",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Ẩn mục Đề xuất (Recommendations) trong Start",
+    "Description": "Dọn gọn phần gợi ý tệp/app trong Start Menu (lưu ý: có thể tắt Windows Spotlight màn hình khóa).",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "HideRecommendedSection", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "ui_explorer_this_pc",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Mở Explorer thẳng vào This PC & Ẩn Gallery",
+    "Description": "Đặt trang mặc định File Explorer là This PC và ẩn mục Home/Gallery thừa ở cột trái.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": ["Desktop", "Laptop"],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "LaunchTo", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "2", "DeleteOnUndo": false }
+    ],
+    "ActionKind": "remove_home_gallery",
+    "ActionParam": ""
+  },
+  {
+    "Id": "ui_settings_home_hide",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Ẩn trang Home trong Windows Settings",
+    "Description": "Mở Settings vào thẳng mục System thay vì trang Home chứa quảng cáo OneDrive/Xbox.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22621,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer", "Name": "SettingsPageVisibility", "ValueType": "String", "ApplyValue": "hide:home", "UndoValue": "", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "ui_taskbar_left",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Căn trái biểu tượng Taskbar (Win 11)",
+    "Description": "Đưa nút Start và biểu tượng Taskbar về góc trái quen thuộc như Windows 10.",
+    "Risk": "Safe",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "TaskbarAl", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_taskbar_search_hide",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Ẩn ô Tìm kiếm trên Taskbar",
+    "Description": "Giải phóng khoảng trống trên Taskbar (vẫn tìm bình thường bằng cách bấm phím Windows rồi gõ).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Search", "Name": "SearchboxTaskbarMode", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_taskbar_taskview_hide",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Ẩn nút Task View trên Taskbar",
+    "Description": "Ẩn biểu tượng chuyển desktop ảo (vẫn mở nhanh bằng phím tắt Win + Tab).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "ShowTaskViewButton", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_sticky_keys_off",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Tắt cảnh báo Sticky Keys (Bấm Shift 5 lần)",
+    "Description": "Chặn cửa sổ Sticky Keys bật lên làm văng game khi bấm phím Shift liên tục.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Accessibility\\StickyKeys", "Name": "Flags", "ValueType": "String", "ApplyValue": "506", "UndoValue": "510", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_numlock_startup",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Tự động bật Num Lock khi khởi động",
+    "Description": "Giữ phím Num Lock luôn bật sẵn ngay từ màn hình đăng nhập Windows.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop"],
+    "Registry": [
+      { "Path": "HKU:\\.DEFAULT\\Control Panel\\Keyboard", "Name": "InitialKeyboardIndicators", "ValueType": "String", "ApplyValue": "2147483650", "UndoValue": "2147483648", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "ui_lockscreen_off",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Bỏ qua màn hình khóa (Vào thẳng đăng nhập)",
+    "Description": "Bỏ bước vuốt/bấm phím qua Lock Screen, vào thẳng ô nhập mật khẩu/PIN.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Personalization", "Name": "NoLockScreen", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "ui_verbose_logon_bsod",
+    "Category": "Giao diện & Tiện ích",
+    "Name": "Bật Verbose Logon & BSoD chi tiết",
+    "Description": "Hiện thông báo chi tiết lúc khởi động/tắt máy và mã lỗi đầy đủ khi gặp màn hình xanh.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", "Name": "VerboseStatus", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\CrashControl", "Name": "DisplayParameters", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+
+  {
+    "Id": "net_dns_cloudflare",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Đổi DNS sang Cloudflare (1.1.1.1 / 1.0.0.1)",
+    "Description": "Tăng tốc độ phân giải tên miền và bảo mật truy cập, tự động Flush DNS ngay lập tức (Hoàn tác về DHCP).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "dns_switch",
+    "ActionParam": "Cloudflare"
+  },
+  {
+    "Id": "net_dns_google",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Đổi DNS sang Google (8.8.8.8 / 8.8.4.4)",
+    "Description": "Đặt DNS Google ổn định cho card mạng đang kết nối, tự động Flush DNS (Hoàn tác về DHCP).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "dns_switch",
+    "ActionParam": "Google"
+  },
+  {
+    "Id": "net_dns_adguard",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Đổi DNS sang AdGuard (Chặn quảng cáo toàn máy)",
+    "Description": "Đặt DNS AdGuard (94.140.14.14 / 94.140.15.15) chặn quảng cáo & tracker ở cấp mạng (Hoàn tác về DHCP).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "dns_switch",
+    "ActionParam": "AdGuard"
+  },
+  {
+    "Id": "net_ipv4_prefer",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Ưu tiên IPv4 hơn IPv6 (Giảm độ trễ)",
+    "Description": "Giữ IPv6 hoạt động nhưng ưu tiên định tuyến IPv4 trước — an toàn hơn tắt hẳn IPv6.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Gaming"],
+    "ActionKind": "ipv4_prefer",
+    "ActionParam": ""
+  },
+  {
+    "Id": "net_ipv6_disable",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Tắt hoàn toàn IPv6 (DisabledComponents=0xFF)",
+    "Description": "Chỉ dùng khi mạng ISP gặp lỗi định tuyến IPv6 (cần khởi động lại máy).",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "ipv6_disable",
+    "ActionParam": ""
+  },
+  {
+    "Id": "net_teredo_off",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Tắt đường hầm IPv6 Teredo",
+    "Description": "Giảm overhead mạng (lưu ý: một số game Xbox/Forza P2P cần Teredo để chơi online).",
+    "Risk": "Moderate",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters", "Name": "DisabledComponents", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_edge_debloat",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Debloat Microsoft Edge (Tắt Copilot/Sidebar/Ads)",
+    "Description": "Tắt Sidebar, Copilot, Shopping Assistant, Startup Boost và Telemetry của Edge qua Group Policy chính chủ.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "HubsSidebarEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "EdgeShoppingAssistantEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "StartupBoostEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "BackgroundModeEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "ShowRecommendationsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge", "Name": "SpotlightExperiencesAndRecommendationsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_chrome_debloat",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Debloat Google Chrome (Tắt Telemetry/Nền/Ads)",
+    "Description": "Tắt chạy nền Chrome, Privacy Sandbox Ads, báo cáo telemetry và gợi ý quảng cáo qua Policy chính chủ.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "BackgroundModeEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "MetricsReportingEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "PrivacySandboxPromptEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "PrivacySandboxSiteEnabledAdsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Google\\Chrome", "Name": "PromotionsEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_brave_debloat",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Debloat Brave Browser (Tắt Rewards/Leo AI/Crypto)",
+    "Description": "Tắt Brave Rewards, ví Crypto, Brave VPN và Leo AI cho giao diện trình duyệt siêu gọn.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveRewardsDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveWalletDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveVPNDisabled", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\BraveSoftware\\Brave", "Name": "BraveAIChatEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "net_utc_time",
+    "Category": "Mạng & Trình duyệt",
+    "Name": "Đặt đồng hồ BIOS về UTC (Dual-Boot Linux)",
+    "Description": "Khắc phục triệt để lỗi lệch 7 tiếng đồng hồ khi cài song song Windows và Linux.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation", "Name": "RealTimeIsUniversal", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+
+  {
+    "Id": "wu_security_only",
+    "Category": "Windows Update",
+    "Name": "Windows Update: Chỉ bảo mật (Khuyên dùng)",
+    "Description": "Hoãn bản cập nhật tính năng lớn 365 ngày & bản vá thường 4 ngày (tránh làm chuột bạch bản update lỗi).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferFeatureUpdates", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferFeatureUpdatesPeriodInDays", "ValueType": "DWord", "ApplyValue": "365", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferQualityUpdates", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "DeferQualityUpdatesPeriodInDays", "ValueType": "DWord", "ApplyValue": "4", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_exclude_drivers",
+    "Category": "Windows Update",
+    "Name": "Chặn Windows Update tự cài đè Driver GPU",
+    "Description": "Ngăn Windows Update tự tải driver cũ cài đè lên driver NVIDIA/AMD/Intel bạn đã cài thủ công.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate", "Name": "ExcludeWUDriversInQualityUpdate", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_no_auto_reboot",
+    "Category": "Windows Update",
+    "Name": "Chặn tự khởi động lại khi đang dùng máy",
+    "Description": "Ngăn Windows Update tự reboot máy giữa chừng khi người dùng đang đăng nhập làm việc.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Desktop", "Laptop", "Gaming", "Minimal"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU", "Name": "NoAutoRebootWithLoggedOnUsers", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_rdp_unsigned_off",
+    "Category": "Windows Update",
+    "Name": "Tắt cảnh báo tệp .rdp chưa ký số",
+    "Description": "Tắt hộp thoại cảnh báo phiền toái khi mở kết nối Remote Desktop (.rdp) nội bộ.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services", "Name": "AllowUnsignedFiles", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_block_logitech_razer",
+    "Category": "Windows Update",
+    "Name": "Chặn tự bật cài Logitech / Razer Bloatware",
+    "Description": "Ngăn Windows tự cài Logitech Download Assistant khi cắm chuột/phím (phần cứng vẫn chạy chuẩn).",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", "Name": "Logitech Download Assistant", "ValueType": "String", "ApplyValue": "", "UndoValue": "", "DeleteOnApply": true, "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "wu_battery_pct_tray",
+    "Category": "Windows Update",
+    "Name": "Hiện phần trăm (%) pin trên khay hệ thống",
+    "Description": "Hiển thị số % pin ngay cạnh biểu tượng pin trên Taskbar Windows 11 (dành cho Laptop).",
+    "Risk": "Safe",
+    "HardwareHint": "LaptopOnly",
+    "MinBuild": 22621,
+    "RestartExplorer": false,
+    "Presets": ["Laptop"],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\PowerCfg", "Name": "ShowBatteryPercentage", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": false }
+    ]
+  },
+
+  {
+    "Id": "adv_windows_ai_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Tắt & Gỡ Windows AI (Copilot & Recall)",
+    "Description": "Tắt hoàn toàn Windows Copilot và Windows Recall (chụp màn hình AI) qua Policy & gỡ gói Appx Copilot.",
+    "Risk": "Caution",
+    "HardwareHint": "Win11Only",
+    "MinBuild": 22000,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot", "Name": "TurnOffWindowsCopilot", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsCopilot", "Name": "TurnOffWindowsCopilot", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "Name": "DisableAIDataAnalysis", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI", "Name": "DisableAIDataAnalysis", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true }
+    ],
+    "ActionKind": "remove_windows_ai",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_remove_onedrive",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Gỡ Microsoft OneDrive an toàn",
+    "Description": "Dừng và chạy trình gỡ chính chủ OneDrive, giữ nguyên tệp tài liệu cục bộ của bạn.",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "ActionKind": "remove_onedrive",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_reserved_storage_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Tắt Reserved Storage (Giải phóng 7-10 GB)",
+    "Description": "Tắt vùng nhớ dự phòng cho Windows Update (chỉ nên bật trên ổ nhỏ; nên bật lại trước khi lên bản Win lớn).",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 18362,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "reserved_storage_off",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_svchost_split_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Gộp tiến trình svchost.exe (Máy <= 12 GB RAM)",
+    "Description": "Giảm số tiến trình svchost.exe để tiết kiệm RAM trên máy RAM thấp (cần khởi động lại; không cần trên máy >= 16 GB).",
+    "Risk": "Caution",
+    "HardwareHint": "LowRamOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "svchost_split_off",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_search_index_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Tắt Windows Search Indexing (WSearch)",
+    "Description": "Giảm đọc/ghi ổ đĩa nền cho ổ cơ HDD (cảnh báo: tìm kiếm file trong Explorer sẽ chậm hơn; SSD không cần tắt).",
+    "Risk": "Caution",
+    "HardwareHint": "HddOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Services": ["WSearch"]
+  },
+  {
+    "Id": "adv_notifications_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Tắt toàn bộ Thông báo & Lịch khay hệ thống",
+    "Description": "Tắt Notification Center và toàn bộ thông báo Toast (lưu ý: sẽ ẩn luôn bảng Lịch khi bấm đồng hồ).",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": true,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer", "Name": "DisableNotificationCenter", "ValueType": "DWord", "ApplyValue": "1", "UndoValue": "0", "DeleteOnUndo": true },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\PushNotifications", "Name": "ToastEnabled", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "adv_block_adobe_net",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Chặn máy chủ Telemetry Adobe (hosts)",
+    "Description": "Thêm các tên miền telemetry/kiểm tra kết nối Adobe vào tệp hosts (có thẻ riêng để Hoàn tác sạch sẽ).",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "ActionKind": "block_adobe_net",
+    "ActionParam": ""
+  },
+  {
+    "Id": "adv_s0_network_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Tắt mạng khi Laptop ở Modern Standby (S0)",
+    "Description": "Ngăn Laptop bị nóng máy và tụt pin khi gập màn hình do kết nối mạng chạy ngầm lúc ngủ.",
+    "Risk": "Moderate",
+    "HardwareHint": "LaptopOnly",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": ["Laptop"],
+    "Registry": [
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9", "Name": "DCSettingIndex", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true },
+      { "Path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Power\\PowerSettings\\f15576e8-98b7-4186-b944-eafa664402d9", "Name": "ACSettingIndex", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": true }
+    ]
+  },
+  {
+    "Id": "adv_window_snap_off",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Tắt tự động chia cửa sổ (Window Snapping)",
+    "Description": "Tắt thanh Snap Layout tự bung ra khi kéo cửa sổ lên cạnh trên màn hình.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Desktop", "Name": "WindowArrangementActive", "ValueType": "String", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false },
+      { "Path": "HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", "Name": "EnableSnapBar", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  },
+  {
+    "Id": "adv_scrollbars_always",
+    "Category": "Nâng cao (Cẩn thận)",
+    "Name": "Luôn hiện thanh cuộn trong ứng dụng Windows",
+    "Description": "Ngăn Windows tự động thu nhỏ/ẩn thanh cuộn trong Settings và ứng dụng UWP.",
+    "Risk": "Safe",
+    "HardwareHint": "",
+    "MinBuild": 0,
+    "RestartExplorer": false,
+    "Presets": [],
+    "Registry": [
+      { "Path": "HKCU:\\Control Panel\\Accessibility", "Name": "DynamicScrollbars", "ValueType": "DWord", "ApplyValue": "0", "UndoValue": "1", "DeleteOnUndo": false }
+    ]
+  }
+]

@@ -1467,7 +1467,14 @@ function Set-ActiveTab {
             Update-UninstallerSelectionCount
         }
     } elseif ($index -eq 4) {
-        if ($txtSelectionCount) { $txtSelectionCount.Text = "" }
+        if (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue) {
+            Initialize-OptimizerTabIfNeeded
+        }
+        if (Get-Command "Update-OptimizerSelectionCount" -ErrorAction SilentlyContinue) {
+            Update-OptimizerSelectionCount
+        } elseif ($txtSelectionCount) {
+            $txtSelectionCount.Text = ""
+        }
     }
     if ($script:hasCompletedAppScan -and ($index -eq 0 -or $index -eq 1) -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "tab"
@@ -7840,6 +7847,7 @@ function Stop-AllBackgroundWork {
     try { if ($script:uninstIconTimer) { $script:uninstIconTimer.Stop() } } catch {}
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:optSearchTimer) { $script:optSearchTimer.Stop() } } catch {}
     try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
@@ -8097,6 +8105,549 @@ if ($window) {
             }
         }
     })
+}
+
+# ==============================================================================
+# TAB 4: WINDOWS OPTIMIZER (Optimize -> Sub-tabs Customize & Resources)
+# ==============================================================================
+$subNavOptCustomize    = $window.FindName("subNavOptCustomize")
+$subNavOptResources    = $window.FindName("subNavOptResources")
+$optSubPageCustomize   = $window.FindName("OptSubPageCustomize")
+$optSubPageResources   = $window.FindName("OptSubPageResources")
+$txtOptHardwareProfile = $window.FindName("txtOptHardwareProfile")
+$btnOptApply           = $window.FindName("btnOptApply")
+$btnOptUndo            = $window.FindName("btnOptUndo")
+$btnOptRestoreSnapshot = $window.FindName("btnOptRestoreSnapshot")
+$btnOptRefresh         = $window.FindName("btnOptRefresh")
+$txtOptSearch          = $window.FindName("txtOptSearch")
+$btnClearOptSearch     = $window.FindName("btnClearOptSearch")
+$btnOptSelectAll       = $window.FindName("btnOptSelectAll")
+$btnOptDeselectAll     = $window.FindName("btnOptDeselectAll")
+$btnOptPresetDesktop   = $window.FindName("btnOptPresetDesktop")
+$btnOptPresetLaptop    = $window.FindName("btnOptPresetLaptop")
+$btnOptPresetGaming    = $window.FindName("btnOptPresetGaming")
+$btnOptPresetMinimal   = $window.FindName("btnOptPresetMinimal")
+$btnOptFilterAll       = $window.FindName("btnOptFilterAll")
+$btnOptFilterApplied   = $window.FindName("btnOptFilterApplied")
+$btnOptFilterDefault   = $window.FindName("btnOptFilterDefault")
+$txtOptSummary         = $window.FindName("txtOptSummary")
+$optSidebarPanel       = $window.FindName("OptSidebarPanel")
+$optScrollViewer       = $window.FindName("OptScrollViewer")
+$optListPanel          = $window.FindName("OptListPanel")
+
+$script:optInitialized      = $false
+$script:optSubTab           = "Customize"
+$script:optHardwareProfile  = $null
+$script:optEntries          = [System.Collections.Generic.List[object]]::new()
+$script:optSidebarButtons   = @{}
+$script:optSelectedCategory = "__ALL__"
+$script:optStatusFilter     = "All"
+$script:optActivePreset     = ""
+
+$script:brushOptRiskSafeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x25, 0x18)); $script:brushOptRiskSafeBg.Freeze()
+$script:brushOptRiskSafeBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushOptRiskSafeBorder.Freeze()
+$script:brushOptRiskSafeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushOptRiskSafeFg.Freeze()
+$script:brushOptRiskModBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x29, 0x20, 0x0C)); $script:brushOptRiskModBg.Freeze()
+$script:brushOptRiskModBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xD9, 0x77, 0x06)); $script:brushOptRiskModBorder.Freeze()
+$script:brushOptRiskModFg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFB, 0xBF, 0x24)); $script:brushOptRiskModFg.Freeze()
+$script:brushOptRiskCautBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushOptRiskCautBg.Freeze()
+$script:brushOptRiskCautBorder  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xDC, 0x26, 0x26)); $script:brushOptRiskCautBorder.Freeze()
+$script:brushOptRiskCautFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushOptRiskCautFg.Freeze()
+$script:brushOptDefaultBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x1E, 0x2E)); $script:brushOptDefaultBg.Freeze()
+$script:brushOptDefaultBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x41, 0x55)); $script:brushOptDefaultBorder.Freeze()
+$script:brushOptDefaultFg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xCB, 0xD5, 0xE1)); $script:brushOptDefaultFg.Freeze()
+
+function Set-OptimizeSubTab {
+    param([ValidateSet("Customize", "Resources")][string]$SubTab)
+    $script:optSubTab = $SubTab
+    $isCust = ($SubTab -eq "Customize")
+    if ($optSubPageCustomize) {
+        $optSubPageCustomize.Visibility = if ($isCust) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $optSubPageCustomize.IsHitTestVisible = $isCust
+    }
+    if ($optSubPageResources) {
+        $optSubPageResources.Visibility = if ($isCust) { [System.Windows.Visibility]::Collapsed } else { [System.Windows.Visibility]::Visible }
+        $optSubPageResources.IsHitTestVisible = (-not $isCust)
+    }
+    if ($subNavOptCustomize) {
+        $subNavOptCustomize.Foreground  = if ($isCust) { $script:brushNavActive } else { $script:brushNavInactive }
+        $subNavOptCustomize.BorderBrush = if ($isCust) { $script:brushNavActive } else { $script:brushTransparent }
+    }
+    if ($subNavOptResources) {
+        $subNavOptResources.Foreground  = if ($isCust) { $script:brushNavInactive } else { $script:brushNavActive }
+        $subNavOptResources.BorderBrush = if ($isCust) { $script:brushTransparent } else { $script:brushNavActive }
+    }
+    Update-OptimizerSelectionCount
+}
+
+if ($subNavOptCustomize) { $subNavOptCustomize.Add_Click({ Set-OptimizeSubTab "Customize" }) }
+if ($subNavOptResources) { $subNavOptResources.Add_Click({ Set-OptimizeSubTab "Resources" }) }
+
+function Get-TweakHardwareWarning {
+    param($Tweak, $Hw)
+    if (-not $Tweak -or -not $Hw) { return "" }
+    $hint = if ($Tweak.PSObject.Properties['HardwareHint']) { [string]$Tweak.HardwareHint } else { "" }
+    switch ($hint) {
+        "DesktopOnly" { if ($Hw.IsLaptop) { return "Khuyên cho PC Bàn" } }
+        "LaptopOnly"  { if (-not $Hw.IsLaptop) { return "Chỉ cho Laptop" } }
+        "LowRamOnly"  { if ($Hw.TotalRamGb -gt 12) { return "Chỉ cần máy <= 12GB RAM" } }
+        "HddOnly"     { if ($Hw.DiskTypeKnown -and $Hw.IsSystemDriveSsd) { return "Chỉ cần cho ổ HDD" } }
+        "Win11Only"   { if (-not $Hw.IsWin11) { return "Chỉ Windows 11" } }
+    }
+    return ""
+}
+
+function Update-OptimizerSelectionCount {
+    if (-not $txtSelectionCount) { return }
+    $isTab4 = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
+    if (-not $isTab4) { return }
+    if ($script:optSubTab -ne "Customize") {
+        $txtSelectionCount.Text = ""
+        return
+    }
+    $cnt = 0
+    foreach ($e in $script:optEntries) {
+        if ($e.CheckBox -and $e.CheckBox.IsChecked -eq $true) { $cnt++ }
+    }
+    $txtSelectionCount.Text = "$cnt mục tối ưu được chọn"
+}
+
+function Apply-OptimizerFilter {
+    $q = if ($txtOptSearch) { $txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $visCount = 0
+    $appliedCount = 0
+    foreach ($e in $script:optEntries) {
+        if ($e.IsApplied) { $appliedCount++ }
+        $catOk = ($script:optSelectedCategory -eq "__ALL__") -or ($e.Tweak.Category -eq $script:optSelectedCategory)
+        $stOk = switch ($script:optStatusFilter) {
+            "Applied" { [bool]$e.IsApplied }
+            "Default" { -not [bool]$e.IsApplied }
+            default   { $true }
+        }
+        $qOk = [string]::IsNullOrEmpty($q) -or $e.SearchText.Contains($q)
+        if ($catOk -and $stOk -and $qOk) {
+            $e.RowBorder.Visibility = [System.Windows.Visibility]::Visible
+            $visCount++
+        } else {
+            $e.RowBorder.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+    if ($txtOptSummary) {
+        $txtOptSummary.Text = "Đang hiển thị $visCount / $($script:optEntries.Count) tối ưu ($appliedCount đang bật)"
+    }
+}
+
+function Set-OptimizerSidebarCategory {
+    param([string]$CatKey)
+    $script:optSelectedCategory = $CatKey
+    foreach ($kv in $script:optSidebarButtons.GetEnumerator()) {
+        $b = $kv.Value
+        $isAct = ($kv.Key -eq $CatKey)
+        $b.Background  = if ($isAct) { $script:brushUninstFilterActiveBg } else { $script:brushTransparent }
+        $b.BorderBrush = if ($isAct) { $script:brushUninstFilterActiveBorder } else { $script:brushTransparent }
+        if ($b.Tag -and $b.Tag.TitleTb) {
+            $b.Tag.TitleTb.Foreground = if ($isAct) { $script:brushNavActive } else { $script:brushTextWhite }
+        }
+    }
+    Apply-OptimizerFilter
+}
+
+function Set-OptimizerStatusFilterUi {
+    param([string]$Mode)
+    $script:optStatusFilter = $Mode
+    $map = @{
+        "All"     = $btnOptFilterAll
+        "Applied" = $btnOptFilterApplied
+        "Default" = $btnOptFilterDefault
+    }
+    foreach ($kv in $map.GetEnumerator()) {
+        $btn = $kv.Value
+        if (-not $btn) { continue }
+        if ($kv.Key -eq $Mode) {
+            $btn.Background  = $script:brushUninstFilterActiveBg
+            $btn.BorderBrush = $script:brushUninstFilterActiveBorder
+            $btn.Foreground  = $script:brushUninstFilterActiveFg
+        } else {
+            $btn.Background  = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground  = $script:brushUninstFilterInactiveFg
+        }
+    }
+    Apply-OptimizerFilter
+}
+
+function Select-OptimizerPreset {
+    param([string]$PresetName)
+    $script:optActivePreset = $PresetName
+    $pMap = @{
+        "Desktop" = $btnOptPresetDesktop
+        "Laptop"  = $btnOptPresetLaptop
+        "Gaming"  = $btnOptPresetGaming
+        "Minimal" = $btnOptPresetMinimal
+    }
+    foreach ($kv in $pMap.GetEnumerator()) {
+        $btn = $kv.Value
+        if (-not $btn) { continue }
+        if ($kv.Key -eq $PresetName) {
+            $btn.Background  = $script:brushUninstFilterActiveBg
+            $btn.BorderBrush = $script:brushUninstFilterActiveBorder
+            $btn.Foreground  = $script:brushUninstFilterActiveFg
+        } else {
+            $btn.Background  = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground  = $script:brushUninstFilterInactiveFg
+        }
+    }
+
+    $isLap = ($null -ne $script:optHardwareProfile) -and [bool]$script:optHardwareProfile.IsLaptop
+    foreach ($e in $script:optEntries) {
+        if (-not $e.CheckBox) { continue }
+        $inPreset = $e.Supported -and ($e.Tweak.Presets -contains $PresetName)
+        if ($inPreset -and $isLap -and $e.Tweak.HardwareHint -eq "DesktopOnly") {
+            $inPreset = $false
+        }
+        $e.CheckBox.IsChecked = [bool]$inPreset
+    }
+    Update-OptimizerSelectionCount
+}
+
+function Refresh-OptimizerStatesAsync {
+    if (-not $script:optInitialized -or $script:isWindowClosing) { return }
+    if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return }
+    $specs = Get-OptimizerTweaksProbeSpecs -Catalog $TweaksCatalog
+    if (-not $specs -or $specs.Count -eq 0) { return }
+    $osBld = if ($script:optHardwareProfile) { [int]$script:optHardwareProfile.OsBuild } else { 0 }
+
+    $probeTask = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($specs, $osBld)
+    [void](Wait-TaskNonBlocking -Task $probeTask -TimeoutSeconds 15 -CancelCheck { [bool]$script:isWindowClosing })
+    if ($script:isWindowClosing -or $probeTask.Status -ne [System.Threading.Tasks.TaskStatus]::RanToCompletion) { return }
+
+    $byId = @{}
+    foreach ($pr in $probeTask.Result) {
+        if ($pr -and $pr.Id) { $byId[$pr.Id] = $pr }
+    }
+    foreach ($e in $script:optEntries) {
+        $pr = $byId[[string]$e.Tweak.Id]
+        if (-not $pr) { continue }
+        $e.IsApplied = [bool]$pr.IsApplied
+        $e.Supported = [bool]$pr.Supported
+        if (-not $pr.Supported) {
+            $e.StatusBorder.Background  = $script:brushOptDefaultBg
+            $e.StatusBorder.BorderBrush = $script:brushOptDefaultBorder
+            $e.StatusTb.Text            = "Không hỗ trợ"
+            $e.StatusTb.Foreground      = $script:brushUninstMuted
+            if ($e.CheckBox) { $e.CheckBox.IsEnabled = $false; $e.CheckBox.IsChecked = $false }
+        } elseif ($pr.IsApplied) {
+            $e.StatusBorder.Background  = $script:brushOptRiskSafeBg
+            $e.StatusBorder.BorderBrush = $script:brushOptRiskSafeBorder
+            $e.StatusTb.Text            = "Đang bật"
+            $e.StatusTb.Foreground      = $script:brushOptRiskSafeFg
+        } else {
+            $e.StatusBorder.Background  = $script:brushOptDefaultBg
+            $e.StatusBorder.BorderBrush = $script:brushOptDefaultBorder
+            $e.StatusTb.Text            = "Mặc định"
+            $e.StatusTb.Foreground      = $script:brushOptDefaultFg
+        }
+    }
+    Apply-OptimizerFilter
+}
+
+function Initialize-OptimizerTabIfNeeded {
+    if ($script:optInitialized -or -not $TweaksCatalog -or -not $optListPanel -or -not $optSidebarPanel) { return }
+    $script:optInitialized = $true
+
+    $script:optHardwareProfile = Get-OptimizerHardwareProfile
+    if ($txtOptHardwareProfile -and $script:optHardwareProfile) {
+        $txtOptHardwareProfile.Text = [string]$script:optHardwareProfile.SummaryText
+    }
+
+    if ($optScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+        try { [DuckUtil.SmoothScrollController]::Attach($optScrollViewer, 0.24, 1.0) } catch {}
+    }
+
+    # Build Sidebar
+    $optSidebarPanel.Children.Clear()
+    $script:optSidebarButtons = @{}
+    $catCounts = [ordered]@{}
+    $catCounts["__ALL__"] = $TweaksCatalog.Count
+    foreach ($tw in $TweaksCatalog) {
+        $c = [string]$tw.Category
+        if (-not $catCounts.Contains($c)) { $catCounts[$c] = 0 }
+        $catCounts[$c]++
+    }
+    foreach ($ck in $catCounts.Keys) {
+        $label = if ($ck -eq "__ALL__") { "Tất cả" } else { $ck }
+        $cnt   = $catCounts[$ck]
+        $sbBdr = [System.Windows.Controls.Border]::new()
+        $sbBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $sbBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+        $sbBdr.Padding = [System.Windows.Thickness]::new(9, 6, 9, 6)
+        $sbBdr.Margin = [System.Windows.Thickness]::new(0, 1, 0, 2)
+        $sbBdr.Cursor = [System.Windows.Input.Cursors]::Hand
+        $g = [System.Windows.Controls.Grid]::new()
+        $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::Auto
+        [void]$g.ColumnDefinitions.Add($c0); [void]$g.ColumnDefinitions.Add($c1)
+        $tTb = [System.Windows.Controls.TextBlock]::new()
+        $tTb.Text = $label; $tTb.FontSize = 11.5; $tTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $tTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $tTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        [System.Windows.Controls.Grid]::SetColumn($tTb, 0); [void]$g.Children.Add($tTb)
+        $cTb = [System.Windows.Controls.TextBlock]::new()
+        $cTb.Text = [string]$cnt; $cTb.FontSize = 10.5; $cTb.Foreground = $script:brushUninstMuted
+        $cTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center; $cTb.Margin = [System.Windows.Thickness]::new(6, 0, 0, 0)
+        [System.Windows.Controls.Grid]::SetColumn($cTb, 1); [void]$g.Children.Add($cTb)
+        $sbBdr.Child = $g
+        $sbBdr.Tag = [PSCustomObject]@{ Key = $ck; TitleTb = $tTb }
+        $sbBdr.Add_MouseLeftButtonUp({
+            param($s, $e)
+            if ($s -and $s.Tag) { Set-OptimizerSidebarCategory $s.Tag.Key }
+        })
+        [void]$optSidebarPanel.Children.Add($sbBdr)
+        $script:optSidebarButtons[$ck] = $sbBdr
+    }
+
+    # Build Tweak Rows
+    $optListPanel.Children.Clear()
+    $script:optEntries.Clear()
+    foreach ($tw in $TweaksCatalog) {
+        $rowBdr = [System.Windows.Controls.Border]::new()
+        $rowBdr.Style = $script:styleAppRow
+        $rowBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $rowBdr.Padding = [System.Windows.Thickness]::new(10, 7, 10, 7)
+        $rowBdr.Margin = [System.Windows.Thickness]::new(0, 0, 0, 4)
+
+        $rg = [System.Windows.Controls.Grid]::new()
+        $rc0 = [System.Windows.Controls.ColumnDefinition]::new(); $rc0.Width = [System.Windows.GridLength]::new(26)
+        $rc1 = [System.Windows.Controls.ColumnDefinition]::new(); $rc1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+        $rc2 = [System.Windows.Controls.ColumnDefinition]::new(); $rc2.Width = [System.Windows.GridLength]::Auto
+        [void]$rg.ColumnDefinitions.Add($rc0); [void]$rg.ColumnDefinitions.Add($rc1); [void]$rg.ColumnDefinitions.Add($rc2)
+
+        $cb = [System.Windows.Controls.CheckBox]::new()
+        $cb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+        $cb.Add_Checked({ Update-OptimizerSelectionCount })
+        $cb.Add_Unchecked({ Update-OptimizerSelectionCount })
+        [System.Windows.Controls.Grid]::SetColumn($cb, 0); [void]$rg.Children.Add($cb)
+
+        $txtSp = [System.Windows.Controls.StackPanel]::new()
+        $txtSp.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $txtSp.Margin = [System.Windows.Thickness]::new(2, 0, 10, 0)
+        $nameTb = [System.Windows.Controls.TextBlock]::new()
+        $nameTb.Text = [string]$tw.Name; $nameTb.FontSize = 12; $nameTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $nameTb.Foreground = $script:brushTextWhite; $nameTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+        $descTb = [System.Windows.Controls.TextBlock]::new()
+        $descTb.Text = [string]$tw.Description; $descTb.FontSize = 11; $descTb.Foreground = $script:brushUninstMuted
+        $descTb.TextWrapping = [System.Windows.TextWrapping]::Wrap; $descTb.Margin = [System.Windows.Thickness]::new(0, 1, 0, 0)
+        [void]$txtSp.Children.Add($nameTb); [void]$txtSp.Children.Add($descTb)
+        [System.Windows.Controls.Grid]::SetColumn($txtSp, 1); [void]$rg.Children.Add($txtSp)
+
+        $badgeSp = [System.Windows.Controls.StackPanel]::new()
+        $badgeSp.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $badgeSp.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        $hwWarn = Get-TweakHardwareWarning -Tweak $tw -Hw $script:optHardwareProfile
+        if (-not [string]::IsNullOrWhiteSpace($hwWarn)) {
+            $hwBdr = [System.Windows.Controls.Border]::new()
+            $hwBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+            $hwBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+            $hwBdr.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+            $hwBdr.Margin = [System.Windows.Thickness]::new(0, 0, 6, 0)
+            $hwBdr.Background = $script:brushOptRiskModBg
+            $hwBdr.BorderBrush = $script:brushOptRiskModBorder
+            $hwTb = [System.Windows.Controls.TextBlock]::new()
+            $hwTb.Text = $hwWarn; $hwTb.FontSize = 10; $hwTb.FontWeight = [System.Windows.FontWeights]::SemiBold; $hwTb.Foreground = $script:brushOptRiskModFg
+            $hwBdr.Child = $hwTb
+            [void]$badgeSp.Children.Add($hwBdr)
+        }
+
+        $riskBdr = [System.Windows.Controls.Border]::new()
+        $riskBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $riskBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+        $riskBdr.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+        $riskBdr.Margin = [System.Windows.Thickness]::new(0, 0, 6, 0)
+        $riskTb = [System.Windows.Controls.TextBlock]::new()
+        $riskTb.FontSize = 10; $riskTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        switch ([string]$tw.Risk) {
+            "Caution"  { $riskBdr.Background = $script:brushOptRiskCautBg; $riskBdr.BorderBrush = $script:brushOptRiskCautBorder; $riskTb.Foreground = $script:brushOptRiskCautFg; $riskTb.Text = "Cẩn thận" }
+            "Moderate" { $riskBdr.Background = $script:brushOptRiskModBg;  $riskBdr.BorderBrush = $script:brushOptRiskModBorder;  $riskTb.Foreground = $script:brushOptRiskModFg;  $riskTb.Text = "Lưu ý" }
+            default    { $riskBdr.Background = $script:brushOptRiskSafeBg; $riskBdr.BorderBrush = $script:brushOptRiskSafeBorder; $riskTb.Foreground = $script:brushOptRiskSafeFg; $riskTb.Text = "An toàn" }
+        }
+        $riskBdr.Child = $riskTb
+        [void]$badgeSp.Children.Add($riskBdr)
+
+        $stBdr = [System.Windows.Controls.Border]::new()
+        $stBdr.CornerRadius = [System.Windows.CornerRadius]::new(3)
+        $stBdr.BorderThickness = [System.Windows.Thickness]::new(1)
+        $stBdr.Padding = [System.Windows.Thickness]::new(8, 2, 8, 2)
+        $stBdr.MinWidth = 68
+        $stBdr.Background = $script:brushOptDefaultBg
+        $stBdr.BorderBrush = $script:brushOptDefaultBorder
+        $stTb = [System.Windows.Controls.TextBlock]::new()
+        $stTb.Text = "Đang quét..."; $stTb.FontSize = 10; $stTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $stTb.Foreground = $script:brushOptDefaultFg; $stTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $stBdr.Child = $stTb
+        [void]$badgeSp.Children.Add($stBdr)
+
+        [System.Windows.Controls.Grid]::SetColumn($badgeSp, 2); [void]$rg.Children.Add($badgeSp)
+        $rowBdr.Child = $rg
+        $rowBdr.Tag = $cb
+        $rowBdr.Add_MouseLeftButtonUp({
+            param($s, $ev)
+            if ($ev.OriginalSource -is [System.Windows.Controls.Primitives.ToggleButton]) { return }
+            if ($s -and $s.Tag -and $s.Tag.IsEnabled) { $s.Tag.IsChecked = -not ($s.Tag.IsChecked -eq $true) }
+        })
+        [void]$optListPanel.Children.Add($rowBdr)
+
+        [void]$script:optEntries.Add([PSCustomObject]@{
+            Tweak           = $tw
+            RowBorder       = $rowBdr
+            CheckBox        = $cb
+            StatusBorder    = $stBdr
+            StatusTb        = $stTb
+            HardwareWarning = $hwWarn
+            IsApplied       = $false
+            Supported       = $true
+            SearchText      = ("$($tw.Name) $($tw.Description) $($tw.Category) $($tw.Id)").ToLowerInvariant()
+        })
+    }
+
+    Set-OptimizerSidebarCategory "__ALL__"
+    Refresh-OptimizerStatesAsync
+}
+
+$script:optSearchTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
+$script:optSearchTimer.Interval = [TimeSpan]::FromMilliseconds(55)
+$script:optSearchTimer.Add_Tick({
+    $script:optSearchTimer.Stop()
+    if (-not $script:isWindowClosing) { Apply-OptimizerFilter }
+})
+if ($txtOptSearch) {
+    $txtOptSearch.Add_TextChanged({
+        $script:optSearchTimer.Stop()
+        $script:optSearchTimer.Start()
+    })
+}
+if ($btnClearOptSearch) {
+    $btnClearOptSearch.Add_Click({
+        if ($txtOptSearch) { $txtOptSearch.Text = "" }
+        Apply-OptimizerFilter
+    })
+}
+if ($btnOptPresetDesktop) { $btnOptPresetDesktop.Add_Click({ Select-OptimizerPreset "Desktop" }) }
+if ($btnOptPresetLaptop)  { $btnOptPresetLaptop.Add_Click({ Select-OptimizerPreset "Laptop" }) }
+if ($btnOptPresetGaming)  { $btnOptPresetGaming.Add_Click({ Select-OptimizerPreset "Gaming" }) }
+if ($btnOptPresetMinimal) { $btnOptPresetMinimal.Add_Click({ Select-OptimizerPreset "Minimal" }) }
+if ($btnOptFilterAll)     { $btnOptFilterAll.Add_Click({ Set-OptimizerStatusFilterUi "All" }) }
+if ($btnOptFilterApplied) { $btnOptFilterApplied.Add_Click({ Set-OptimizerStatusFilterUi "Applied" }) }
+if ($btnOptFilterDefault) { $btnOptFilterDefault.Add_Click({ Set-OptimizerStatusFilterUi "Default" }) }
+if ($btnOptRefresh)       { $btnOptRefresh.Add_Click({ Refresh-OptimizerStatesAsync }) }
+
+if ($btnOptSelectAll) {
+    $btnOptSelectAll.Add_Click({
+        foreach ($e in $script:optEntries) {
+            if ($e.RowBorder.Visibility -eq [System.Windows.Visibility]::Visible -and $e.Supported -and $e.CheckBox) {
+                $e.CheckBox.IsChecked = $true
+            }
+        }
+        Update-OptimizerSelectionCount
+    })
+}
+if ($btnOptDeselectAll) {
+    $btnOptDeselectAll.Add_Click({
+        $script:optActivePreset = ""
+        foreach ($btn in @($btnOptPresetDesktop, $btnOptPresetLaptop, $btnOptPresetGaming, $btnOptPresetMinimal)) {
+            if ($btn) {
+                $btn.Background  = $script:brushTransparent
+                $btn.BorderBrush = $script:brushTransparent
+                $btn.Foreground  = $script:brushUninstFilterInactiveFg
+            }
+        }
+        foreach ($e in $script:optEntries) {
+            if ($e.CheckBox) { $e.CheckBox.IsChecked = $false }
+        }
+        Update-OptimizerSelectionCount
+    })
+}
+
+Register-Click "btnOptApply" {
+    Invoke-GuardedAction "Áp dụng Tối ưu Windows" {
+        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true -and $_.Supported })
+        if ($selected.Count -eq 0) {
+            Log-Text "[!] Bạn chưa chọn mục tối ưu nào để áp dụng."
+            return
+        }
+        $warnings = @($selected | Where-Object { $_.Tweak.Risk -eq "Caution" -or -not [string]::IsNullOrWhiteSpace($_.HardwareWarning) })
+        if ($warnings.Count -gt 0) {
+            $warnList = ($warnings | ForEach-Object { "• $($_.Tweak.Name)" + $(if ($_.HardwareWarning) { " ($($_.HardwareWarning))" } else { " (Cẩn thận)" }) }) -join "`n"
+            $ans = Show-OwnedMessageBox `
+                -Text "Có $($warnings.Count) mục cần lưu ý hoặc khác cấu hình phần cứng hiện tại:`n`n$warnList`n`nApp-Driver sẽ tự tạo bản sao lưu OptimizerGuard trước khi chỉnh.`nBạn vẫn muốn áp dụng?" `
+                -Caption "Xác nhận áp dụng Tối ưu Windows" `
+                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+            if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+        }
+        if ($txtStatus) { $txtStatus.Text = "Đang áp dụng $($selected.Count) mục tối ưu..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            $tweaksArr = @($selected | ForEach-Object { $_.Tweak })
+            $res = Invoke-OptimizerBatch -Tweaks $tweaksArr -Mode "Apply" -CreateSnapshot
+            foreach ($e in $selected) { if ($e.CheckBox) { $e.CheckBox.IsChecked = $false } }
+            Log-Text "[SUCC] Hoàn tất tối ưu: $($res.OkCount) thành công, $($res.FailCount) lỗi."
+            if ($txtStatus) { $txtStatus.Text = "Tối ưu xong: $($res.OkCount) thành công • $($res.FailCount) lỗi" }
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            Refresh-OptimizerStatesAsync
+            Update-OptimizerSelectionCount
+        }
+    }
+}
+
+Register-Click "btnOptUndo" {
+    Invoke-GuardedAction "Hoàn tác Tối ưu Windows" {
+        $selected = @($script:optEntries | Where-Object { $_.CheckBox -and $_.CheckBox.IsChecked -eq $true -and $_.Supported })
+        if ($selected.Count -eq 0) {
+            Log-Text "[!] Bạn chưa chọn mục tối ưu nào để hoàn tác."
+            return
+        }
+        if ($txtStatus) { $txtStatus.Text = "Đang hoàn tác $($selected.Count) mục tối ưu..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            $tweaksArr = @($selected | ForEach-Object { $_.Tweak })
+            $res = Invoke-OptimizerBatch -Tweaks $tweaksArr -Mode "Undo"
+            foreach ($e in $selected) { if ($e.CheckBox) { $e.CheckBox.IsChecked = $false } }
+            Log-Text "[SUCC] Hoàn tác xong: $($res.OkCount) thành công, $($res.FailCount) lỗi."
+            if ($txtStatus) { $txtStatus.Text = "Hoàn tác xong: $($res.OkCount) thành công • $($res.FailCount) lỗi" }
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            Refresh-OptimizerStatesAsync
+            Update-OptimizerSelectionCount
+        }
+    }
+}
+
+Register-Click "btnOptRestoreSnapshot" {
+    Invoke-GuardedAction "Khôi phục bản sao lưu OptimizerGuard" {
+        $bkpDir = Get-OptimizerBackupDirectory
+        $latest = Get-ChildItem -Path $bkpDir -Filter "snapshot_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+        if (-not $latest) {
+            Show-OwnedMessageBox -Text "Chưa có bản sao lưu OptimizerGuard nào trên máy.`n(Bản sao lưu được tự tạo mỗi khi bạn bấm 'Áp dụng đã chọn'.)" -Caption "OptimizerGuard" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+            return
+        }
+        $ans = Show-OwnedMessageBox `
+            -Text "Khôi phục toàn bộ Registry, Services và Power Plan về nguyên bản từ bản sao lưu gần nhất?`n`nTệp: $($latest.Name)`nThời điểm: $($latest.LastWriteTime.ToString('dd/MM/yyyy HH:mm:ss'))" `
+            -Caption "Khôi phục OptimizerGuard" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            [void](Restore-OptimizerSnapshot -SnapshotPath $latest.FullName)
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            Refresh-OptimizerStatesAsync
+        }
+    }
 }
 
 $script:autoScannedOnStartup = $false
