@@ -8142,6 +8142,9 @@ $window.Add_ContentRendered({
                 $window.Dispatcher.BeginInvoke(
                     [System.Windows.Threading.DispatcherPriority]::Background,
                     [Action]{
+                        if (-not $script:isWindowClosing -and (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue)) {
+                            try { Initialize-OptimizerTabIfNeeded } catch {}
+                        }
                         if (-not $script:isWindowClosing -and (-not $script:uninstallerLoadedOnce -or $script:deferredUninstallerLoad -or $script:uninstallerStale)) {
                             $forceLoadUninst = [bool]$script:uninstallerStale
                             $script:deferredUninstallerLoad = $false
@@ -8175,16 +8178,15 @@ $script:txtOptSearch        = $window.FindName("txtOptSearch")
 $script:btnClearOptSearch   = $window.FindName("btnClearOptSearch")
 $script:btnOptSelectAll     = $window.FindName("btnOptSelectAll")
 $script:btnOptDeselectAll   = $window.FindName("btnOptDeselectAll")
-$script:btnOptFilterAll     = $window.FindName("btnOptFilterAll")
-$script:btnOptFilterApplied = $window.FindName("btnOptFilterApplied")
-$script:btnOptFilterDefault = $window.FindName("btnOptFilterDefault")
 $script:txtOptSummary       = $window.FindName("txtOptSummary")
 $script:optScrollViewer     = $window.FindName("OptScrollViewer")
 $script:optTweaksHost       = $window.FindName("OptTweaksHost")
 
 $script:optInitialized      = $false
+$script:optHostHandlersAttached = $false
 $script:optSubTabIndex      = 0
 $script:optHardwareProfile  = $null
+$script:optCachedProbeRequests = $null
 $script:optEntries          = [System.Collections.Generic.List[object]]::new()
 $script:optEntryById        = @{}
 $script:optCategoryCards    = [System.Collections.Generic.List[object]]::new()
@@ -8194,9 +8196,14 @@ $script:optLaneCols         = [System.Collections.Generic.List[object]]::new()
 $script:optLanePanels       = [System.Collections.Generic.List[object]]::new()
 $script:optLaneBorders      = [System.Collections.Generic.List[object]]::new()
 $script:optFallbackPanel    = $null
-$script:optStateFilter      = "All"
 $script:optSyncingVisuals   = $false
 $script:styleOptToggleSwitch = $window.FindResource("OptToggleSwitch")
+$script:optColWidthToggle   = [System.Windows.GridLength]::new(42, [System.Windows.GridUnitType]::Pixel)
+$script:optColWidthCheck    = [System.Windows.GridLength]::new(24, [System.Windows.GridUnitType]::Pixel)
+$script:optRowPadding       = [System.Windows.Thickness]::new(5, 4, 5, 4)
+$script:optTitleMargin      = [System.Windows.Thickness]::new(3, 0, 2, 0)
+$script:optRowBorderLine    = [System.Windows.Thickness]::new(0, 0, 0, 1)
+$script:optSectionMargin    = [System.Windows.Thickness]::new(0, 0, 0, 14)
 
 $script:brushOptSectionBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(15, 21, 34))
 $script:brushOptSectionBg.Freeze()
@@ -8329,17 +8336,11 @@ function Apply-OptimizerFilter {
         $lastVisRow = $null
         foreach ($ent in $card.Entries) {
             if ($ent.State -eq "Applied") { $appliedCount++ }
-            $matchState = switch ($script:optStateFilter) {
-                "Applied" { $ent.State -eq "Applied" -or $ent.State -eq "Partial" }
-                "Default" { $ent.State -eq "Default" }
-                default   { $true }
-            }
-            $matchSearch = [string]::IsNullOrEmpty($q) -or $ent.SearchText.Contains($q)
-            $show = ($matchState -and $matchSearch)
+            $show = [string]::IsNullOrEmpty($q) -or $ent.SearchText.Contains($q)
             if ($ent.Row) {
                 $ent.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
                 if ($show) {
-                    $ent.Row.BorderThickness = [System.Windows.Thickness]::new(0, 0, 0, 1)
+                    $ent.Row.BorderThickness = $script:optRowBorderLine
                     $lastVisRow = $ent.Row
                 }
             }
@@ -8349,13 +8350,13 @@ function Apply-OptimizerFilter {
             }
         }
         if ($lastVisRow) {
-            $lastVisRow.BorderThickness = [System.Windows.Thickness]::new(0)
+            $lastVisRow.BorderThickness = $thicknessZero
         }
         if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
             $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
             if ($catVis -gt 0) {
-                $card.CardBorder.Margin = [System.Windows.Thickness]::new(0, 0, 0, 14)
+                $card.CardBorder.Margin = $script:optSectionMargin
             }
         }
         if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
@@ -8366,7 +8367,7 @@ function Apply-OptimizerFilter {
 
     for ($li = 0; $li -lt 2; $li++) {
         if ($lastVisSectionByLane[$li]) {
-            $lastVisSectionByLane[$li].Margin = [System.Windows.Thickness]::new(0)
+            $lastVisSectionByLane[$li].Margin = $thicknessZero
         }
     }
 
@@ -8374,7 +8375,7 @@ function Apply-OptimizerFilter {
         for ($li = 0; $li -lt 2; $li++) {
             if ($laneVisible[$li]) {
                 $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Visible
-                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+                $script:optLaneCols[$li].Width = $glCol2
             } else {
                 $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Collapsed
                 $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
@@ -8383,7 +8384,7 @@ function Apply-OptimizerFilter {
         $script:optLaneBorders[0].Margin = if ($laneVisible[0] -and $laneVisible[1]) {
             [System.Windows.Thickness]::new(0, 0, 10, 0)
         } else {
-            [System.Windows.Thickness]::new(0)
+            $thicknessZero
         }
     }
 
@@ -8393,36 +8394,15 @@ function Apply-OptimizerFilter {
     }
 }
 
-function Set-OptimizerFilterButtonStyle {
-    param([string]$FilterMode)
-    $script:optStateFilter = $FilterMode
-    $map = @{
-        "All"     = $script:btnOptFilterAll
-        "Applied" = $script:btnOptFilterApplied
-        "Default" = $script:btnOptFilterDefault
-    }
-    foreach ($k in $map.Keys) {
-        $btn = $map[$k]
-        if (-not $btn) { continue }
-        if ($k -eq $FilterMode) {
-            $btn.Background = $script:brushUninstFilterActiveBg
-            $btn.BorderBrush = $script:brushUninstFilterActiveBorder
-            $btn.Foreground = $script:brushUninstFilterActiveFg
-        } else {
-            $btn.Background = $script:brushTransparent
-            $btn.BorderBrush = $script:brushTransparent
-            $btn.Foreground = $script:brushUninstFilterInactiveFg
-        }
-    }
-    Apply-OptimizerFilter
-}
-
 function Refresh-OptimizerLiveState {
     if (-not $script:optInitialized -or $script:isWindowClosing) { return }
     if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return }
-    $items = @($script:optEntries | ForEach-Object { $_.Tweak })
-    $reqs = Build-TweakProbeRequests $items
-    if ($reqs.Length -eq 0) { return }
+    if (-not $script:optCachedProbeRequests -or $script:optCachedProbeRequests.Length -eq 0) {
+        $items = @($script:optEntries | ForEach-Object { $_.Tweak })
+        $script:optCachedProbeRequests = Build-TweakProbeRequests $items
+    }
+    $reqs = $script:optCachedProbeRequests
+    if (-not $reqs -or $reqs.Length -eq 0) { return }
     $task = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($reqs)
     [void](Wait-TaskNonBlocking -Task $task -TimeoutSeconds 8 -CancelCheck { [bool]$script:isWindowClosing })
     if ($task.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $task.Result) {
@@ -8446,8 +8426,8 @@ function New-OptimizerTweakRowElement {
     param($Tweak)
     $b = [System.Windows.Controls.Border]::new()
     $b.Style = $script:styleOptListRow
-    $b.Padding = [System.Windows.Thickness]::new(5, 4, 5, 4)
-    $b.Margin = [System.Windows.Thickness]::new(0)
+    $b.Padding = $script:optRowPadding
+    $b.Margin = $thicknessZero
     $b.MinHeight = 26
     $b.Cursor = [System.Windows.Input.Cursors]::Hand
 
@@ -8458,14 +8438,14 @@ function New-OptimizerTweakRowElement {
     }
     $baseTipText = "$($Tweak.Name)`n$($Tweak.Description)`nMức độ: $riskLabel"
     $b.ToolTip = $baseTipText
-    [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 350)
+    [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 5000)
 
     $isToggleRow = ([string]$Tweak.ControlType -eq "Toggle" -or [string]$Tweak.ControlType -eq "Combo")
 
     $g = [System.Windows.Controls.Grid]::new()
-    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new($(if ($isToggleRow) { 42 } else { 24 }), [System.Windows.GridUnitType]::Pixel)
-    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::Auto
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = if ($isToggleRow) { $script:optColWidthToggle } else { $script:optColWidthCheck }
+    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = $glCol2
+    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = $glAuto
     [void]$g.ColumnDefinitions.Add($c0)
     [void]$g.ColumnDefinitions.Add($c1)
     [void]$g.ColumnDefinitions.Add($c2)
@@ -8478,8 +8458,6 @@ function New-OptimizerTweakRowElement {
     }
     $ctrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $ctrl.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-    $ctrl.Add_Checked({ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } })
-    $ctrl.Add_Unchecked({ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } })
     [System.Windows.Controls.Grid]::SetColumn($ctrl, 0)
     [void]$g.Children.Add($ctrl)
 
@@ -8490,7 +8468,7 @@ function New-OptimizerTweakRowElement {
     $titleTb.Foreground = $script:brushTextWhite
     $titleTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $titleTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-    $titleTb.Margin = [System.Windows.Thickness]::new(3, 0, 2, 0)
+    $titleTb.Margin = $script:optTitleMargin
     [System.Windows.Controls.Grid]::SetColumn($titleTb, 1)
     [void]$g.Children.Add($titleTb)
 
@@ -8516,21 +8494,6 @@ function New-OptimizerTweakRowElement {
     }
 
     $b.Child = $g
-    $b.Add_MouseLeftButtonUp({
-        param($s, $e)
-        $cur = $e.OriginalSource -as [System.Windows.DependencyObject]
-        while ($cur -and $cur -ne $s) {
-            if ($cur -is [System.Windows.Controls.Primitives.ToggleButton] -or
-                $cur -is [System.Windows.Controls.ComboBox] -or
-                $cur -is [System.Windows.Controls.ComboBoxItem]) {
-                return
-            }
-            $cur = [System.Windows.Media.VisualTreeHelper]::GetParent($cur)
-        }
-        if ($s.Tag -and $s.Tag.CheckBox) {
-            $s.Tag.CheckBox.IsChecked = -not ($s.Tag.CheckBox.IsChecked -eq $true)
-        }
-    })
 
     $entry = [PSCustomObject]@{
         Tweak              = $Tweak
@@ -8584,6 +8547,41 @@ function Initialize-OptimizerTabIfNeeded {
     $script:optMasonryPanel = $null
 
     if ($script:optTweaksHost) {
+        if (-not $script:optHostHandlersAttached) {
+            $script:optHostHandlersAttached = $true
+            $script:optTweaksHost.AddHandler(
+                [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
+                [System.Windows.RoutedEventHandler]{ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } }
+            )
+            $script:optTweaksHost.AddHandler(
+                [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
+                [System.Windows.RoutedEventHandler]{ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } }
+            )
+            $script:optTweaksHost.AddHandler(
+                [System.Windows.UIElement]::MouseLeftButtonUpEvent,
+                [System.Windows.Input.MouseButtonEventHandler]{
+                    param($sender, $e)
+                    if ($e.Handled -or $script:isActionRunning -or $script:isWindowClosing) { return }
+                    $cur = $e.OriginalSource -as [System.Windows.DependencyObject]
+                    while ($cur -and $cur -ne $sender) {
+                        if ($cur -is [System.Windows.Controls.Primitives.ToggleButton] -or
+                            $cur -is [System.Windows.Controls.ComboBox] -or
+                            $cur -is [System.Windows.Controls.ComboBoxItem]) {
+                            return
+                        }
+                        if ($cur -is [System.Windows.Controls.Border] -and $cur.Tag -and $cur.Tag.CheckBox) {
+                            $cur.Tag.CheckBox.IsChecked = -not ($cur.Tag.CheckBox.IsChecked -eq $true)
+                            return
+                        }
+                        if ($cur -is [System.Windows.Media.Visual]) {
+                            $cur = [System.Windows.Media.VisualTreeHelper]::GetParent($cur)
+                        } else {
+                            break
+                        }
+                    }
+                }
+            )
+        }
         $script:optTweaksHost.Children.Clear()
         $script:optLanesGrid = [System.Windows.Controls.Grid]::new()
         for ($li = 0; $li -lt 2; $li++) {
@@ -8716,6 +8714,11 @@ function Initialize-OptimizerTabIfNeeded {
 
     Refresh-OptimizerLiveState
     Update-OptimizerSelectionCount
+    if ($script:optLanesGrid) {
+        try {
+            $script:optLanesGrid.Measure([System.Windows.Size]::new(1220, 700))
+        } catch {}
+    }
 }
 
 $script:optSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
@@ -8768,10 +8771,6 @@ if ($script:btnOptDeselectAll) {
         Update-OptimizerSelectionCount
     })
 }
-
-if ($script:btnOptFilterAll)     { $script:btnOptFilterAll.Add_Click({ Set-OptimizerFilterButtonStyle "All" }) }
-if ($script:btnOptFilterApplied) { $script:btnOptFilterApplied.Add_Click({ Set-OptimizerFilterButtonStyle "Applied" }) }
-if ($script:btnOptFilterDefault) { $script:btnOptFilterDefault.Add_Click({ Set-OptimizerFilterButtonStyle "Default" }) }
 
 if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({

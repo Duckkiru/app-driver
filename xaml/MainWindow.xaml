@@ -904,10 +904,10 @@
                                     <StackPanel Grid.Column="0" Orientation="Horizontal">
                                         <Button Name="btnOptApply" Content="Lưu" Style="{StaticResource ActionButton}"
                                                 Background="#059669" Padding="16,7"
-                                                ToolTip="Áp dụng và lưu các tinh chỉnh đã tick (tự chụp sao lưu OptimizerGuard trước khi thay đổi)." ToolTipService.InitialShowDelay="600"/>
+                                                ToolTip="Áp dụng và lưu các tinh chỉnh đã tick (tự chụp sao lưu OptimizerGuard trước khi thay đổi)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnOptUndo" Content="Đặt về mặc định" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#FBBF24" BorderBrush="#614F27"
-                                                ToolTip="Đặt các tinh chỉnh đã tick về mặc định Windows (nếu chưa tick mục nào sẽ hỏi đặt toàn bộ mục đang bật về mặc định)." ToolTipService.InitialShowDelay="600"/>
+                                                ToolTip="Đặt các tinh chỉnh đã tick về mặc định Windows (nếu chưa tick mục nào sẽ hỏi đặt toàn bộ mục đang bật về mặc định)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnOptRestoreBackup" Content="Khôi phục sao lưu" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#38BDF8" BorderBrush="#29527D"/>
                                         <Button Name="btnOptRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
@@ -940,10 +940,10 @@
                                             </TextBlock>
                                             <TextBox Grid.Column="1" Name="txtOptSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="Tìm nhanh tweak theo tên hoặc mô tả..." ToolTipService.InitialShowDelay="3000"/>
+                                                     ToolTip="Tìm nhanh tweak theo tên hoặc mô tả..." ToolTipService.InitialShowDelay="5000"/>
                                             <Button Grid.Column="2" Name="btnClearOptSearch" Content="✕" Background="Transparent" Foreground="#64748B"
                                                     BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                    ToolTip="Xóa tìm kiếm" ToolTipService.InitialShowDelay="3000"/>
+                                                    ToolTip="Xóa tìm kiếm" ToolTipService.InitialShowDelay="5000"/>
                                         </Grid>
                                     </Border>
 
@@ -953,7 +953,7 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <Grid Grid.Row="1" Margin="1,8,0,0">
+                                <Grid Grid.Row="1" Margin="1,7,0,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -961,25 +961,15 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Lọc:" Foreground="#FFFFFF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Name="btnOptFilterAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
-                                                        Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
-                                                <Button Name="btnOptFilterApplied" Content="Đang bật" Style="{StaticResource FilterTabButton}"/>
-                                                <Button Name="btnOptFilterDefault" Content="Mặc định" Style="{StaticResource FilterTabButton}"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <StackPanel Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
-                                            <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Mặc định" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0"/>
-                                            <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Đang bật" FontSize="11" Foreground="#34D399" Margin="0,0,12,0"/>
-                                            <Ellipse Width="7" Height="7" Fill="#FBBF24" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Bật 1 phần" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
-                                            <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Nâng cao" FontSize="11" Foreground="#FCA5A5"/>
-                                        </StackPanel>
+                                        <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Mặc định" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0"/>
+                                        <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Đang bật" FontSize="11" Foreground="#34D399" Margin="0,0,12,0"/>
+                                        <Ellipse Width="7" Height="7" Fill="#FBBF24" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Bật 1 phần" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
+                                        <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Nâng cao" FontSize="11" Foreground="#FCA5A5"/>
                                     </StackPanel>
 
                                     <TextBlock Grid.Column="2" Name="txtOptSummary" Text="72 tinh chỉnh sẵn sàng"
