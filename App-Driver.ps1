@@ -48435,19 +48435,6 @@ function Update-OptimizerSelectionCount {
     $txtSelectionCount.Text = "$cnt tweak $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c ch$([char]0x1ECD)n"
 }
 
-function Get-OptimizerHardwareWarningText {
-    param($Tweak, $Hw)
-    if (-not $Tweak -or -not $Hw) { return "" }
-    switch ([string]$Tweak.HardwareHint) {
-        "DesktopOnly" { if ($Hw.IsLaptop) { return "Khuy$([char]0x00EA)n cho PC b$([char]0x00E0)n (Laptop hao pin/m$([char]0x1EA5)t ng$([char]0x1EE7) $([char]0x0111)$([char]0x00F4)ng)" } }
-        "LaptopOnly"  { if (-not $Hw.IsLaptop) { return "Ch$([char]0x1EC9) d$([char]0x00E0)nh cho Laptop d$([char]0x00F9)ng pin" } }
-        "LowRamOnly"  { if ($Hw.TotalRamGb -gt 12) { return "M$([char]0x00E1)y c$([char]0x00F3) $($Hw.TotalRamGb) GB RAM (kh$([char]0x00F4)ng c$([char]0x1EA7)n thi$([char]0x1EBF)t)" } }
-        "HddOnly"     { if ($Hw.IsSystemDriveSsd) { return "$([char]0x1ED4) C l$([char]0x00E0) SSD (kh$([char]0x00F4)ng c$([char]0x1EA7)n t$([char]0x1EAF)t l$([char]0x1EAD)p ch$([char]0x1EC9) m$([char]0x1EE5)c)" } }
-        "Win11Only"   { if (-not $Hw.IsWindows11) { return "Ch$([char]0x1EC9) $([char]0x00E1)p d$([char]0x1EE5)ng cho Windows 11" } }
-    }
-    return ""
-}
-
 function Set-OptimizerEntryVisualState {
     param($Entry, [string]$State)
     if (-not $Entry) { return }
@@ -48580,7 +48567,7 @@ function Refresh-OptimizerLiveState {
 }
 
 function New-OptimizerTweakRowElement {
-    param($Tweak, $Hw)
+    param($Tweak)
     $b = [System.Windows.Controls.Border]::new()
     $b.Style = $script:styleOptListRow
     $b.Padding = [System.Windows.Thickness]::new(5, 4, 5, 4)
@@ -48588,14 +48575,12 @@ function New-OptimizerTweakRowElement {
     $b.MinHeight = 26
     $b.Cursor = [System.Windows.Input.Cursors]::Hand
 
-    $hwWarn = Get-OptimizerHardwareWarningText -Tweak $Tweak -Hw $Hw
     $riskLabel = switch ([string]$Tweak.Risk) {
         "Caution"  { "N$([char]0x00E2)ng cao" }
         "Moderate" { "Trung b$([char]0x00EC)nh" }
         default    { "An to$([char]0x00E0)n" }
     }
     $baseTipText = "$($Tweak.Name)`n$($Tweak.Description)`nM$([char]0x1EE9)c $([char]0x0111)$([char]0x1ED9): $riskLabel"
-    if (-not [string]::IsNullOrWhiteSpace($hwWarn)) { $baseTipText += "`nC$([char]0x1EA3)nh b$([char]0x00E1)o ph$([char]0x1EA7)n c$([char]0x1EE9)ng: $hwWarn" }
     $b.ToolTip = $baseTipText
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 350)
 
@@ -48785,7 +48770,7 @@ function Initialize-OptimizerTabIfNeeded {
         $rowCount = $catTweaks.Count
         for ($ri = 0; $ri -lt $rowCount; $ri++) {
             $tw = $catTweaks[$ri]
-            $entry = New-OptimizerTweakRowElement -Tweak $tw -Hw $script:optHardwareProfile
+            $entry = New-OptimizerTweakRowElement -Tweak $tw
             if ($ri -eq ($rowCount - 1) -and $entry.Row) {
                 $entry.Row.BorderThickness = [System.Windows.Thickness]::new(0)
             }

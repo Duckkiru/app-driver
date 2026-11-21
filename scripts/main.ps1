@@ -8273,19 +8273,6 @@ function Update-OptimizerSelectionCount {
     $txtSelectionCount.Text = "$cnt tweak được chọn"
 }
 
-function Get-OptimizerHardwareWarningText {
-    param($Tweak, $Hw)
-    if (-not $Tweak -or -not $Hw) { return "" }
-    switch ([string]$Tweak.HardwareHint) {
-        "DesktopOnly" { if ($Hw.IsLaptop) { return "Khuyên cho PC bàn (Laptop hao pin/mất ngủ đông)" } }
-        "LaptopOnly"  { if (-not $Hw.IsLaptop) { return "Chỉ dành cho Laptop dùng pin" } }
-        "LowRamOnly"  { if ($Hw.TotalRamGb -gt 12) { return "Máy có $($Hw.TotalRamGb) GB RAM (không cần thiết)" } }
-        "HddOnly"     { if ($Hw.IsSystemDriveSsd) { return "Ổ C là SSD (không cần tắt lập chỉ mục)" } }
-        "Win11Only"   { if (-not $Hw.IsWindows11) { return "Chỉ áp dụng cho Windows 11" } }
-    }
-    return ""
-}
-
 function Set-OptimizerEntryVisualState {
     param($Entry, [string]$State)
     if (-not $Entry) { return }
@@ -8418,7 +8405,7 @@ function Refresh-OptimizerLiveState {
 }
 
 function New-OptimizerTweakRowElement {
-    param($Tweak, $Hw)
+    param($Tweak)
     $b = [System.Windows.Controls.Border]::new()
     $b.Style = $script:styleOptListRow
     $b.Padding = [System.Windows.Thickness]::new(5, 4, 5, 4)
@@ -8426,14 +8413,12 @@ function New-OptimizerTweakRowElement {
     $b.MinHeight = 26
     $b.Cursor = [System.Windows.Input.Cursors]::Hand
 
-    $hwWarn = Get-OptimizerHardwareWarningText -Tweak $Tweak -Hw $Hw
     $riskLabel = switch ([string]$Tweak.Risk) {
         "Caution"  { "Nâng cao" }
         "Moderate" { "Trung bình" }
         default    { "An toàn" }
     }
     $baseTipText = "$($Tweak.Name)`n$($Tweak.Description)`nMức độ: $riskLabel"
-    if (-not [string]::IsNullOrWhiteSpace($hwWarn)) { $baseTipText += "`nCảnh báo phần cứng: $hwWarn" }
     $b.ToolTip = $baseTipText
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 350)
 
@@ -8623,7 +8608,7 @@ function Initialize-OptimizerTabIfNeeded {
         $rowCount = $catTweaks.Count
         for ($ri = 0; $ri -lt $rowCount; $ri++) {
             $tw = $catTweaks[$ri]
-            $entry = New-OptimizerTweakRowElement -Tweak $tw -Hw $script:optHardwareProfile
+            $entry = New-OptimizerTweakRowElement -Tweak $tw
             if ($ri -eq ($rowCount - 1) -and $entry.Row) {
                 $entry.Row.BorderThickness = [System.Windows.Thickness]::new(0)
             }
