@@ -7100,7 +7100,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                             <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                             <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0"/>
                                             <Ellipse Width="7" Height="7" Fill="#FBBF24" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="C&#x1EA3;nh b&#x00E1;o ph&#x1EA7;n c&#x1EE9;ng" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
+                                            <TextBlock Text="B&#x1EAD;t 1 ph&#x1EA7;n" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
                                             <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                             <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5"/>
                                         </StackPanel>
@@ -48378,21 +48378,9 @@ $optRowHoverTrig.Value = $true
 [void]$script:styleOptListRow.Triggers.Add($optRowHoverTrig)
 $script:styleOptListRow.Seal()
 
-$script:brushOptRiskSafeBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0C, 0x25, 0x18)); $script:brushOptRiskSafeBg.Freeze()
-$script:brushOptRiskSafeBdr     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushOptRiskSafeBdr.Freeze()
 $script:brushOptRiskSafeFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushOptRiskSafeFg.Freeze()
-$script:brushOptRiskModBg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x26, 0x1D, 0x0B)); $script:brushOptRiskModBg.Freeze()
-$script:brushOptRiskModBdr      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xD9, 0x77, 0x06)); $script:brushOptRiskModBdr.Freeze()
 $script:brushOptRiskModFg       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFB, 0xBF, 0x24)); $script:brushOptRiskModFg.Freeze()
-$script:brushOptRiskCautBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2D, 0x12, 0x15)); $script:brushOptRiskCautBg.Freeze()
-$script:brushOptRiskCautBdr     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x99, 0x1B, 0x1B)); $script:brushOptRiskCautBdr.Freeze()
 $script:brushOptRiskCautFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xA5, 0xA5)); $script:brushOptRiskCautFg.Freeze()
-$script:brushOptStateAppliedBg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0D, 0x2B, 0x1F)); $script:brushOptStateAppliedBg.Freeze()
-$script:brushOptStateAppliedBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0xB9, 0x81)); $script:brushOptStateAppliedBdr.Freeze()
-$script:brushOptStateAppliedFg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x6E, 0xE7, 0xB7)); $script:brushOptStateAppliedFg.Freeze()
-$script:brushOptStateActionBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x10, 0x24, 0x3A)); $script:brushOptStateActionBg.Freeze()
-$script:brushOptStateActionBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x02, 0x84, 0xC7)); $script:brushOptStateActionBdr.Freeze()
-$script:brushOptStateActionFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7D, 0xD3, 0xFC)); $script:brushOptStateActionFg.Freeze()
 
 function Get-OptimizerCatalogItems {
     if ($TweakCatalog -and $TweakCatalog.Count -gt 0) {
@@ -48464,44 +48452,27 @@ function Set-OptimizerEntryVisualState {
     param($Entry, [string]$State)
     if (-not $Entry) { return }
     $Entry.State = $State
-    $bdr = $Entry.StateBorder
-    $tb = $Entry.StateText
     $titleTb = $Entry.TitleText
     switch ($State) {
         "Applied" {
             if ($titleTb) { $titleTb.Foreground = $script:brushOptRiskSafeFg }
-            if ($bdr -and $tb) {
-                $bdr.Background = $script:brushOptStateAppliedBg
-                $bdr.BorderBrush = $script:brushOptStateAppliedBdr
-                $tb.Foreground = $script:brushOptStateAppliedFg
-                $tb.Text = "B$([char]0x1EAD)t"
-                $bdr.Visibility = [System.Windows.Visibility]::Visible
-            }
+            $stateDesc = "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: $([char]0x0110)ang b$([char]0x1EAD)t"
         }
         "Partial" {
             if ($titleTb) { $titleTb.Foreground = $script:brushOptRiskModFg }
-            if ($bdr -and $tb) {
-                $bdr.Background = $script:brushOptRiskModBg
-                $bdr.BorderBrush = $script:brushOptRiskModBdr
-                $tb.Foreground = $script:brushOptRiskModFg
-                $tb.Text = "1 ph$([char]0x1EA7)n"
-                $bdr.Visibility = [System.Windows.Visibility]::Visible
-            }
+            $stateDesc = "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: B$([char]0x1EAD)t 1 ph$([char]0x1EA7)n (m$([char]0x1ED9)t s$([char]0x1ED1) kh$([char]0x00F3)a $([char]0x0111)$([char]0x00E3) kh$([char]0x1EDB)p s$([char]0x1EB5)n)"
         }
         "Action" {
             if ($titleTb) { $titleTb.Foreground = $script:brushTextWhite }
-            if ($bdr -and $tb) {
-                $bdr.Background = $script:brushOptStateActionBg
-                $bdr.BorderBrush = $script:brushOptStateActionBdr
-                $tb.Foreground = $script:brushOptStateActionFg
-                $tb.Text = "T$([char]0x00E1)c v$([char]0x1EE5)"
-                $bdr.Visibility = [System.Windows.Visibility]::Visible
-            }
+            $stateDesc = "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: T$([char]0x00E1)c v$([char]0x1EE5) ch$([char]0x1EA1)y 1 l$([char]0x1EA7)n"
         }
         default {
             if ($titleTb) { $titleTb.Foreground = $script:brushTextWhite }
-            if ($bdr) { $bdr.Visibility = [System.Windows.Visibility]::Collapsed }
+            $stateDesc = "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: M$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh"
         }
+    }
+    if ($Entry.Row -and $Entry.BaseToolTip) {
+        $Entry.Row.ToolTip = "$($Entry.BaseToolTip)`n$stateDesc"
     }
 }
 
@@ -48623,9 +48594,9 @@ function New-OptimizerTweakRowElement {
         "Moderate" { "Trung b$([char]0x00EC)nh" }
         default    { "An to$([char]0x00E0)n" }
     }
-    $tipText = "$($Tweak.Name)`n$($Tweak.Description)`nM$([char]0x1EE9)c $([char]0x0111)$([char]0x1ED9): $riskLabel"
-    if (-not [string]::IsNullOrWhiteSpace($hwWarn)) { $tipText += "`nC$([char]0x1EA3)nh b$([char]0x00E1)o ph$([char]0x1EA7)n c$([char]0x1EE9)ng: $hwWarn" }
-    $b.ToolTip = $tipText
+    $baseTipText = "$($Tweak.Name)`n$($Tweak.Description)`nM$([char]0x1EE9)c $([char]0x0111)$([char]0x1ED9): $riskLabel"
+    if (-not [string]::IsNullOrWhiteSpace($hwWarn)) { $baseTipText += "`nC$([char]0x1EA3)nh b$([char]0x00E1)o ph$([char]0x1EA7)n c$([char]0x1EE9)ng: $hwWarn" }
+    $b.ToolTip = $baseTipText
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($b, 350)
 
     $g = [System.Windows.Controls.Grid]::new()
@@ -48651,13 +48622,9 @@ function New-OptimizerTweakRowElement {
     $titleTb.Foreground = $script:brushTextWhite
     $titleTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $titleTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-    $titleTb.Margin = [System.Windows.Thickness]::new(3, 0, 6, 0)
+    $titleTb.Margin = [System.Windows.Thickness]::new(3, 0, 2, 0)
     [System.Windows.Controls.Grid]::SetColumn($titleTb, 1)
     [void]$g.Children.Add($titleTb)
-
-    $rightStack = [System.Windows.Controls.StackPanel]::new()
-    $rightStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    $rightStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $comboCtrl = $null
     if ($Tweak.ControlType -eq "Combo" -and $Tweak.ComboOptions) {
@@ -48665,62 +48632,13 @@ function New-OptimizerTweakRowElement {
         $comboCtrl.Width = 140
         $comboCtrl.Height = 21
         $comboCtrl.FontSize = 10.5
-        $comboCtrl.Margin = [System.Windows.Thickness]::new(2, 0, 4, 0)
+        $comboCtrl.Margin = [System.Windows.Thickness]::new(4, 0, 0, 0)
         $comboCtrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         foreach ($opt in @($Tweak.ComboOptions)) { [void]$comboCtrl.Items.Add([string]$opt) }
         if ($comboCtrl.Items.Count -gt 0) { $comboCtrl.SelectedIndex = 0 }
-        [void]$rightStack.Children.Add($comboCtrl)
+        [System.Windows.Controls.Grid]::SetColumn($comboCtrl, 2)
+        [void]$g.Children.Add($comboCtrl)
     }
-
-    if (-not [string]::IsNullOrWhiteSpace($hwWarn)) {
-        $hwPill = [System.Windows.Controls.Border]::new()
-        $hwPill.Background = $script:brushOptRiskModBg
-        $hwPill.BorderBrush = $script:brushOptRiskModBdr
-        $hwPill.BorderThickness = $thicknessOne
-        $hwPill.CornerRadius = [System.Windows.CornerRadius]::new(2)
-        $hwPill.Width = 16
-        $hwPill.Height = 16
-        $hwPill.Margin = [System.Windows.Thickness]::new(0, 0, 4, 0)
-        $hwPill.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $hwPill.ToolTip = $hwWarn
-        $hwTb = [System.Windows.Controls.TextBlock]::new()
-        $hwTb.Text = "!"
-        $hwTb.FontSize = 10
-        $hwTb.FontWeight = [System.Windows.FontWeights]::Bold
-        $hwTb.Foreground = $script:brushOptRiskModFg
-        $hwTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $hwTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $hwPill.Child = $hwTb
-        [void]$rightStack.Children.Add($hwPill)
-    }
-
-    if ([string]$Tweak.Risk -eq "Caution") {
-        $cautDot = [System.Windows.Shapes.Ellipse]::new()
-        $cautDot.Width = 6
-        $cautDot.Height = 6
-        $cautDot.Fill = $script:brushOptRiskCautFg
-        $cautDot.Margin = [System.Windows.Thickness]::new(0, 0, 4, 0)
-        $cautDot.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-        $cautDot.ToolTip = "C$([char]0x1EA9)n th$([char]0x1EAD)n: Tinh ch$([char]0x1EC9)nh h$([char]0x1EC7) th$([char]0x1ED1)ng n$([char]0x00E2)ng cao"
-        [void]$rightStack.Children.Add($cautDot)
-    }
-
-    $statePill = [System.Windows.Controls.Border]::new()
-    $statePill.CornerRadius = [System.Windows.CornerRadius]::new(3)
-    $statePill.BorderThickness = $thicknessOne
-    $statePill.Height = 18
-    $statePill.Padding = [System.Windows.Thickness]::new(5, 0, 5, 1)
-    $statePill.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $stateTb = [System.Windows.Controls.TextBlock]::new()
-    $stateTb.FontSize = 9.5
-    $stateTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $stateTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $stateTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $statePill.Child = $stateTb
-    [void]$rightStack.Children.Add($statePill)
-
-    [System.Windows.Controls.Grid]::SetColumn($rightStack, 2)
-    [void]$g.Children.Add($rightStack)
 
     $b.Child = $g
     $b.Add_MouseLeftButtonUp({
@@ -48737,8 +48655,9 @@ function New-OptimizerTweakRowElement {
         CheckBox    = $cb
         TitleText   = $titleTb
         ComboBox    = $comboCtrl
-        StateBorder = $statePill
-        StateText   = $stateTb
+        BaseToolTip = $baseTipText
+        StateBorder = $null
+        StateText   = $null
         State       = "Default"
         SearchText  = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
     }
