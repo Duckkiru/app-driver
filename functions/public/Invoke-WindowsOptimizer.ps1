@@ -536,10 +536,7 @@ function Invoke-OptimizerBatch {
         return [PSCustomObject]@{ Applied = 0; Failed = 0; NeedsExplorerRestart = $false; NeedsReboot = $false; SnapshotPath = "" }
     }
 
-    $snapPath = ""
-    if ($Mode -eq "Apply") {
-        $snapPath = Save-OptimizerGuardSnapshot -Tweaks $tweakList -HardwareProfile $HardwareProfile
-    }
+    $snapPath = Save-OptimizerGuardSnapshot -Tweaks $tweakList -HardwareProfile $HardwareProfile
 
     $applied = 0
     $failed = 0
@@ -561,7 +558,7 @@ function Invoke-OptimizerBatch {
         $regSpecs = ConvertTo-RegTweakSpecs @($tw)
         if ($regSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
             $regDone = [DuckUtil.WindowsOptimizerEngine]::ApplyRegistrySpecs($regSpecs, $isUndo)
-            if ($regDone -eq 0) { $ok = $false }
+            if ($regDone -lt $regSpecs.Length) { $ok = $false }
         }
 
         $svcSpecs = ConvertTo-ServiceTweakSpecs @($tw)

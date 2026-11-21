@@ -339,8 +339,22 @@ namespace DuckUtil {
                     return true;
                 } catch { return false; }
             }
-            string actStr = actual.ToString();
-            return string.Equals(actStr, expectedStr ?? "", StringComparison.OrdinalIgnoreCase);
+            string actStr = (actual.ToString() ?? "").Trim();
+            string expStr = (expectedStr ?? "").Trim();
+            if (string.Equals(actStr, expStr, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(expStr, "506", StringComparison.OrdinalIgnoreCase)) {
+                long fVal;
+                if (TryParseInt64Flexible(actStr, out fVal) && fVal > 0 && (fVal & 4L) == 0L) return true;
+            }
+            if (string.Equals(expStr, "2", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(expStr, "2147483650", StringComparison.OrdinalIgnoreCase)) {
+                long nVal;
+                if (TryParseInt64Flexible(actStr, out nVal) && (nVal & 2L) == 2L) return true;
+            }
+            if (string.Equals(expStr, "hide:home", StringComparison.OrdinalIgnoreCase)) {
+                if (actStr.IndexOf("hide:home", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
         }
 
         private static bool TryParseInt64Flexible(string raw, out long val) {
@@ -384,6 +398,10 @@ namespace DuckUtil {
                         string.Equals(spec.ApplyValue, "__DELETE__", StringComparison.OrdinalIgnoreCase)) {
                         return (val == null);
                     }
+                    if (valName.Length == 0 && string.IsNullOrEmpty(spec.ApplyValue) &&
+                        string.Equals(spec.UndoValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
+                        return (val == null || val.ToString().Length == 0);
+                    }
                     if (val == null) return false;
                     RegistryValueKind kind = k.GetValueKind(valName);
                     return ValuesMatch(val, kind, vt, spec.ApplyValue);
@@ -402,7 +420,6 @@ namespace DuckUtil {
                 if (stObj == null) return false;
                 try {
                     int st = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
-                    if (spec.ApplyStart == 3) return (st == 3 || st == 4);
                     return (st == spec.ApplyStart);
                 } catch { return false; }
             }
@@ -518,8 +535,39 @@ namespace DuckUtil {
                         }
                     }
                 } catch {}
-                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : (matchedIf > 0 ? "Partial" : "Default");
+                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : "Default";
                 return new TweakProbeResult { Id = req.Id, State = st, Detail = "" };
+            }
+            if (string.Equals(kind, "WuPaused", StringComparison.OrdinalIgnoreCase)) {
+                bool paused = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", false)) {
+                        if (k != null) {
+                            string p1 = (k.GetValue("PauseUpdatesExpiryTime") ?? "").ToString().Trim();
+                            string p2 = (k.GetValue("PauseFeatureUpdatesEndTime") ?? "").ToString().Trim();
+                            paused = (!string.IsNullOrEmpty(p1) || !string.IsNullOrEmpty(p2));
+                        }
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = paused ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "ReservedStorageDisabled", StringComparison.OrdinalIgnoreCase)) {
+                bool disabled = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager", false)) {
+                        if (k != null) {
+                            object pp = k.GetValue("PassedPolicy");
+                            object bh = k.GetValue("BaseHardReserveSize");
+                            if ((pp != null && Convert.ToInt64(pp, CultureInfo.InvariantCulture) == 0L) ||
+                                (bh != null && Convert.ToInt64(bh, CultureInfo.InvariantCulture) == 0L)) {
+                                disabled = true;
+                            }
+                        }
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = disabled ? "Applied" : "Default", Detail = "" };
             }
             return null;
         }
@@ -554,17 +602,25 @@ namespace DuckUtil {
                 int matched = 0;
                 if (req.Registry != null) {
                     for (int r = 0; r < req.Registry.Length; r++) {
+                        RegTweakSpec rs = req.Registry[r];
+                        if (rs == null) continue;
+                        if (string.Equals(rs.ApplyValue ?? "", rs.UndoValue ?? "", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(rs.UndoValue ?? "", "__SKIP__", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
                         total++;
                         try {
-                            if (ProbeSingleRegSpec(req.Registry[r])) matched++;
+                            if (ProbeSingleRegSpec(rs)) matched++;
                         } catch {}
                     }
                 }
                 if (req.Services != null) {
                     for (int s = 0; s < req.Services.Length; s++) {
+                        ServiceTweakSpec ss = req.Services[s];
+                        if (ss == null || ss.ApplyStart == ss.UndoStart) continue;
                         bool exists;
                         bool ok = false;
-                        try { ok = ProbeSingleServiceSpec(req.Services[s], out exists); } catch { exists = false; }
+                        try { ok = ProbeSingleServiceSpec(ss, out exists); } catch { exists = false; }
                         if (exists) {
                             total++;
                             if (ok) matched++;
@@ -577,10 +633,6 @@ namespace DuckUtil {
                     state = "Action";
                 } else if (matched == total) {
                     state = "Applied";
-                } else if (matched > 0 && req.Services != null && req.Services.Length >= 10 && matched >= (int)(total * 0.85)) {
-                    state = "Applied";
-                } else if (matched > 0) {
-                    state = "Partial";
                 } else {
                     state = "Default";
                 }
@@ -685,7 +737,11 @@ namespace DuckUtil {
             if (string.Equals(vt, "DeleteKey", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(rawValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
                 try {
-                    baseKey.DeleteSubKeyTree(path, false);
+                    string delPath = path;
+                    if (delPath.EndsWith(@"\InprocServer32", StringComparison.OrdinalIgnoreCase)) {
+                        delPath = delPath.Substring(0, delPath.Length - @"\InprocServer32".Length);
+                    }
+                    baseKey.DeleteSubKeyTree(delPath, false);
                     return true;
                 } catch { return false; }
             }

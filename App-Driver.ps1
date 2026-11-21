@@ -4710,38 +4710,8 @@ $tweaksRawJson = @'
     "Registry": [],
     "Services": [
       {
-        "Name": "ALG",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "AppMgmt",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "AppReadiness",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
         "Name": "AppVClient",
         "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "AssignedAccessManagerSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "AxInstSV",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "BDESVC",
-        "ApplyStart": 3,
         "UndoStart": 3
       },
       {
@@ -4750,33 +4720,8 @@ $tweaksRawJson = @'
         "UndoStart": 2
       },
       {
-        "Name": "CertPropSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "COMSysApp",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "diagsvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
         "Name": "DialogBlockingService",
         "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "DisplayEnhancementService",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "dmwappushservice",
-        "ApplyStart": 3,
         "UndoStart": 3
       },
       {
@@ -4790,44 +4735,9 @@ $tweaksRawJson = @'
         "UndoStart": 2
       },
       {
-        "Name": "edgeupdatem",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "EFS",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "Fax",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "fhsvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
         "Name": "FontCache",
         "ApplyStart": 3,
         "UndoStart": 2
-      },
-      {
-        "Name": "FrameServer",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "icssvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "InstallService",
-        "ApplyStart": 3,
-        "UndoStart": 3
       },
       {
         "Name": "iphlpsvc",
@@ -4835,34 +4745,9 @@ $tweaksRawJson = @'
         "UndoStart": 2
       },
       {
-        "Name": "IpxlatCfgSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "lfsvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "lltdsvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "lmhosts",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
         "Name": "MapsBroker",
         "ApplyStart": 3,
         "UndoStart": 2
-      },
-      {
-        "Name": "McpManagementService",
-        "ApplyStart": 3,
-        "UndoStart": 3
       },
       {
         "Name": "MsKeyboardFilter",
@@ -4870,93 +4755,13 @@ $tweaksRawJson = @'
         "UndoStart": 3
       },
       {
-        "Name": "NaturalAuthentication",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "NcaSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "NcbService",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "NetTcpPortSharing",
-        "ApplyStart": 4,
-        "UndoStart": 4
-      },
-      {
         "Name": "PcaSvc",
         "ApplyStart": 3,
         "UndoStart": 2
       },
       {
-        "Name": "PeerDistSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "PhoneSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "PolicyAgent",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "QWAVE",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
         "Name": "RetailDemo",
         "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "RmSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SCardSvr",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "ScDeviceEnum",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SCPolicySvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SensorDataService",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SensorService",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SensrSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SharedAccess",
-        "ApplyStart": 3,
         "UndoStart": 3
       },
       {
@@ -4965,34 +4770,9 @@ $tweaksRawJson = @'
         "UndoStart": 2
       },
       {
-        "Name": "shpamsvc",
-        "ApplyStart": 4,
-        "UndoStart": 4
-      },
-      {
-        "Name": "SmsRouter",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "SSDPSRV",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "stisvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
         "Name": "SysMain",
         "ApplyStart": 3,
         "UndoStart": 2
-      },
-      {
-        "Name": "TapiSrv",
-        "ApplyStart": 3,
-        "UndoStart": 3
       },
       {
         "Name": "TrkWks",
@@ -5002,76 +4782,6 @@ $tweaksRawJson = @'
       {
         "Name": "tzautoupdate",
         "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "UevAgentService",
-        "ApplyStart": 4,
-        "UndoStart": 4
-      },
-      {
-        "Name": "upnphost",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WalletService",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WbioSrvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "wcncsvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WdiServiceHost",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WdiSystemHost",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WebClient",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "Wecsvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WerSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "wisvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WMPNetworkSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WpcMonSvc",
-        "ApplyStart": 3,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WPDBusEnum",
-        "ApplyStart": 3,
         "UndoStart": 3
       },
       {
@@ -5246,11 +4956,11 @@ $tweaksRawJson = @'
       },
       {
         "Hive": "HKLM",
-        "Path": "SYSTEM\\CurrentControlSet\\Services\\lfsvc\\Service\\Configuration",
-        "Name": "Status",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\LocationAndSensors",
+        "Name": "DisableLocation",
         "ValueType": "DWord",
-        "ApplyValue": "0",
-        "UndoValue": "1"
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -5413,14 +5123,6 @@ $tweaksRawJson = @'
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "__DELETE__"
-      },
-      {
-        "Hive": "HKCU",
-        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
-        "Name": "TaskbarDa",
-        "ValueType": "DWord",
-        "ApplyValue": "0",
-        "UndoValue": "1"
       }
     ],
     "Services": [],
@@ -6048,12 +5750,12 @@ $tweaksRawJson = @'
         "UndoValue": "0"
       },
       {
-        "Hive": "HKCU",
-        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Search",
-        "Name": "BackgroundAppGlobalToggle",
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\AppPrivacy",
+        "Name": "LetAppsRunInBackground",
         "ValueType": "DWord",
-        "ApplyValue": "0",
-        "UndoValue": "1"
+        "ApplyValue": "2",
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -6507,16 +6209,8 @@ $tweaksRawJson = @'
         "Path": "Control Panel\\Keyboard",
         "Name": "InitialKeyboardIndicators",
         "ValueType": "String",
-        "ApplyValue": "2147483650",
-        "UndoValue": "2147483648"
-      },
-      {
-        "Hive": "HKU",
-        "Path": ".DEFAULT\\Control Panel\\Keyboard",
-        "Name": "InitialKeyboardIndicators",
-        "ValueType": "String",
-        "ApplyValue": "2147483650",
-        "UndoValue": "2147483648"
+        "ApplyValue": "2",
+        "UndoValue": "0"
       }
     ],
     "Services": [],
@@ -6626,11 +6320,11 @@ $tweaksRawJson = @'
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SYSTEM\\CurrentControlSet\\Services\\Tcpip6\\Parameters",
-        "Name": "DisabledComponents",
-        "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "0"
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\TCPIP\\v6Transition",
+        "Name": "Teredo_State",
+        "ValueType": "String",
+        "ApplyValue": "Disabled",
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -7074,7 +6768,7 @@ $tweaksRawJson = @'
     "HardwareHint": "",
     "ControlType": "Checkbox",
     "Presets": [],
-    "ProbeKind": "",
+    "ProbeKind": "WuPaused",
     "Action": "PauseWindowsUpdate35d",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
@@ -7235,7 +6929,7 @@ $tweaksRawJson = @'
     "HardwareHint": "",
     "ControlType": "Checkbox",
     "Presets": [],
-    "ProbeKind": "Action",
+    "ProbeKind": "ReservedStorageDisabled",
     "Action": "ReservedStorage",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
@@ -8317,92 +8011,36 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
 
                         <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                             <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <Grid Grid.Row="0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Name="btnOptApply" Content="L&#x01B0;u" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Padding="16,7"
+                                            ToolTip="&#x00C1;p d&#x1EE5;ng v&#x00E0; l&#x01B0;u c&#x00E1;c tinh ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n ho&#x1EB7;c c&#x1EA7;n g&#x1EA1;t thay &#x0111;&#x1ED5;i (t&#x1EF1; ch&#x1EE5;p sao l&#x01B0;u OptimizerGuard tr&#x01B0;&#x1EDB;c khi thay &#x0111;&#x1ED5;i)." ToolTipService.InitialShowDelay="5000"/>
+                                    <Button Name="btnOptUndo" Content="&#x0110;&#x1EB7;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#FBBF24" BorderBrush="#614F27"
+                                            ToolTip="&#x0110;&#x1EB7;t c&#x00E1;c tinh ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh Windows (n&#x1EBF;u ch&#x01B0;a ch&#x1ECD;n m&#x1EE5;c n&#x00E0;o s&#x1EBD; h&#x1ECF;i &#x0111;&#x1EB7;t to&#x00E0;n b&#x1ED9; m&#x1EE5;c &#x0111;ang b&#x1EAD;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh)." ToolTipService.InitialShowDelay="5000"/>
+                                    <Button Name="btnOptRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c sao l&#x01B0;u" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
+                                    <Button Name="btnOptRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"/>
+                                </StackPanel>
 
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                        <Button Name="btnOptApply" Content="L&#x01B0;u" Style="{StaticResource ActionButton}"
-                                                Background="#059669" Padding="16,7"
-                                                ToolTip="&#x00C1;p d&#x1EE5;ng v&#x00E0; l&#x01B0;u c&#x00E1;c tinh ch&#x1EC9;nh &#x0111;&#x00E3; tick (t&#x1EF1; ch&#x1EE5;p sao l&#x01B0;u OptimizerGuard tr&#x01B0;&#x1EDB;c khi thay &#x0111;&#x1ED5;i)." ToolTipService.InitialShowDelay="5000"/>
-                                        <Button Name="btnOptUndo" Content="&#x0110;&#x1EB7;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#FBBF24" BorderBrush="#614F27"
-                                                ToolTip="&#x0110;&#x1EB7;t c&#x00E1;c tinh ch&#x1EC9;nh &#x0111;&#x00E3; tick v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh Windows (n&#x1EBF;u ch&#x01B0;a tick m&#x1EE5;c n&#x00E0;o s&#x1EBD; h&#x1ECF;i &#x0111;&#x1EB7;t to&#x00E0;n b&#x1ED9; m&#x1EE5;c &#x0111;ang b&#x1EAD;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh)." ToolTipService.InitialShowDelay="5000"/>
-                                        <Button Name="btnOptRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c sao l&#x01B0;u" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#38BDF8" BorderBrush="#29527D"/>
-                                        <Button Name="btnOptRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#38BDF8" BorderBrush="#29527D"/>
-                                    </StackPanel>
-
-                                    <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
-                                            Padding="8,0" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Stretch">
-                                        <Grid Width="220">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
-                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
-                                            <TextBlock Grid.Column="1" Text="T&#x00EC;m tweak..." Foreground="#475569" FontSize="11.5"
-                                                       VerticalAlignment="Center" IsHitTestVisible="False">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Text, ElementName=txtOptSearch}" Value="">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <TextBox Grid.Column="1" Name="txtOptSearch" Background="Transparent" Foreground="#F8FAFC"
-                                                     BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="T&#x00EC;m nhanh tweak theo t&#x00EA;n ho&#x1EB7;c m&#x00F4; t&#x1EA3;..." ToolTipService.InitialShowDelay="5000"/>
-                                            <Button Grid.Column="2" Name="btnClearOptSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                    ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="5000"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                        <Button Name="btnOptSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
-                                        <Button Name="btnOptDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Margin="0"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <Grid Grid.Row="1" Margin="1,7,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="M&#x1EB7;c &#x0111;&#x1ECB;nh" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0"/>
-                                        <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0"/>
-                                        <Ellipse Width="7" Height="7" Fill="#FBBF24" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="B&#x1EAD;t 1 ph&#x1EA7;n" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
-                                        <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5"/>
-                                    </StackPanel>
-
-                                    <TextBlock Grid.Column="2" Name="txtOptSummary" Text="72 tinh ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,10,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="M&#x1EB7;c &#x0111;&#x1ECB;nh" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                                    <TextBlock Name="txtOptSummary" Text="72 tinh ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                </Grid>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -21288,8 +20926,22 @@ namespace DuckUtil {
                     return true;
                 } catch { return false; }
             }
-            string actStr = actual.ToString();
-            return string.Equals(actStr, expectedStr ?? "", StringComparison.OrdinalIgnoreCase);
+            string actStr = (actual.ToString() ?? "").Trim();
+            string expStr = (expectedStr ?? "").Trim();
+            if (string.Equals(actStr, expStr, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(expStr, "506", StringComparison.OrdinalIgnoreCase)) {
+                long fVal;
+                if (TryParseInt64Flexible(actStr, out fVal) && fVal > 0 && (fVal & 4L) == 0L) return true;
+            }
+            if (string.Equals(expStr, "2", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(expStr, "2147483650", StringComparison.OrdinalIgnoreCase)) {
+                long nVal;
+                if (TryParseInt64Flexible(actStr, out nVal) && (nVal & 2L) == 2L) return true;
+            }
+            if (string.Equals(expStr, "hide:home", StringComparison.OrdinalIgnoreCase)) {
+                if (actStr.IndexOf("hide:home", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
         }
 
         private static bool TryParseInt64Flexible(string raw, out long val) {
@@ -21333,6 +20985,10 @@ namespace DuckUtil {
                         string.Equals(spec.ApplyValue, "__DELETE__", StringComparison.OrdinalIgnoreCase)) {
                         return (val == null);
                     }
+                    if (valName.Length == 0 && string.IsNullOrEmpty(spec.ApplyValue) &&
+                        string.Equals(spec.UndoValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
+                        return (val == null || val.ToString().Length == 0);
+                    }
                     if (val == null) return false;
                     RegistryValueKind kind = k.GetValueKind(valName);
                     return ValuesMatch(val, kind, vt, spec.ApplyValue);
@@ -21351,7 +21007,6 @@ namespace DuckUtil {
                 if (stObj == null) return false;
                 try {
                     int st = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
-                    if (spec.ApplyStart == 3) return (st == 3 || st == 4);
                     return (st == spec.ApplyStart);
                 } catch { return false; }
             }
@@ -21467,8 +21122,39 @@ namespace DuckUtil {
                         }
                     }
                 } catch {}
-                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : (matchedIf > 0 ? "Partial" : "Default");
+                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : "Default";
                 return new TweakProbeResult { Id = req.Id, State = st, Detail = "" };
+            }
+            if (string.Equals(kind, "WuPaused", StringComparison.OrdinalIgnoreCase)) {
+                bool paused = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", false)) {
+                        if (k != null) {
+                            string p1 = (k.GetValue("PauseUpdatesExpiryTime") ?? "").ToString().Trim();
+                            string p2 = (k.GetValue("PauseFeatureUpdatesEndTime") ?? "").ToString().Trim();
+                            paused = (!string.IsNullOrEmpty(p1) || !string.IsNullOrEmpty(p2));
+                        }
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = paused ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "ReservedStorageDisabled", StringComparison.OrdinalIgnoreCase)) {
+                bool disabled = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager", false)) {
+                        if (k != null) {
+                            object pp = k.GetValue("PassedPolicy");
+                            object bh = k.GetValue("BaseHardReserveSize");
+                            if ((pp != null && Convert.ToInt64(pp, CultureInfo.InvariantCulture) == 0L) ||
+                                (bh != null && Convert.ToInt64(bh, CultureInfo.InvariantCulture) == 0L)) {
+                                disabled = true;
+                            }
+                        }
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = disabled ? "Applied" : "Default", Detail = "" };
             }
             return null;
         }
@@ -21503,17 +21189,25 @@ namespace DuckUtil {
                 int matched = 0;
                 if (req.Registry != null) {
                     for (int r = 0; r < req.Registry.Length; r++) {
+                        RegTweakSpec rs = req.Registry[r];
+                        if (rs == null) continue;
+                        if (string.Equals(rs.ApplyValue ?? "", rs.UndoValue ?? "", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(rs.UndoValue ?? "", "__SKIP__", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
                         total++;
                         try {
-                            if (ProbeSingleRegSpec(req.Registry[r])) matched++;
+                            if (ProbeSingleRegSpec(rs)) matched++;
                         } catch {}
                     }
                 }
                 if (req.Services != null) {
                     for (int s = 0; s < req.Services.Length; s++) {
+                        ServiceTweakSpec ss = req.Services[s];
+                        if (ss == null || ss.ApplyStart == ss.UndoStart) continue;
                         bool exists;
                         bool ok = false;
-                        try { ok = ProbeSingleServiceSpec(req.Services[s], out exists); } catch { exists = false; }
+                        try { ok = ProbeSingleServiceSpec(ss, out exists); } catch { exists = false; }
                         if (exists) {
                             total++;
                             if (ok) matched++;
@@ -21526,10 +21220,6 @@ namespace DuckUtil {
                     state = "Action";
                 } else if (matched == total) {
                     state = "Applied";
-                } else if (matched > 0 && req.Services != null && req.Services.Length >= 10 && matched >= (int)(total * 0.85)) {
-                    state = "Applied";
-                } else if (matched > 0) {
-                    state = "Partial";
                 } else {
                     state = "Default";
                 }
@@ -21634,7 +21324,11 @@ namespace DuckUtil {
             if (string.Equals(vt, "DeleteKey", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(rawValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
                 try {
-                    baseKey.DeleteSubKeyTree(path, false);
+                    string delPath = path;
+                    if (delPath.EndsWith(@"\InprocServer32", StringComparison.OrdinalIgnoreCase)) {
+                        delPath = delPath.Substring(0, delPath.Length - @"\InprocServer32".Length);
+                    }
+                    baseKey.DeleteSubKeyTree(delPath, false);
                     return true;
                 } catch { return false; }
             }
@@ -34603,8 +34297,22 @@ namespace DuckUtil {
                     return true;
                 } catch { return false; }
             }
-            string actStr = actual.ToString();
-            return string.Equals(actStr, expectedStr ?? "", StringComparison.OrdinalIgnoreCase);
+            string actStr = (actual.ToString() ?? "").Trim();
+            string expStr = (expectedStr ?? "").Trim();
+            if (string.Equals(actStr, expStr, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(expStr, "506", StringComparison.OrdinalIgnoreCase)) {
+                long fVal;
+                if (TryParseInt64Flexible(actStr, out fVal) && fVal > 0 && (fVal & 4L) == 0L) return true;
+            }
+            if (string.Equals(expStr, "2", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(expStr, "2147483650", StringComparison.OrdinalIgnoreCase)) {
+                long nVal;
+                if (TryParseInt64Flexible(actStr, out nVal) && (nVal & 2L) == 2L) return true;
+            }
+            if (string.Equals(expStr, "hide:home", StringComparison.OrdinalIgnoreCase)) {
+                if (actStr.IndexOf("hide:home", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
         }
 
         private static bool TryParseInt64Flexible(string raw, out long val) {
@@ -34648,6 +34356,10 @@ namespace DuckUtil {
                         string.Equals(spec.ApplyValue, "__DELETE__", StringComparison.OrdinalIgnoreCase)) {
                         return (val == null);
                     }
+                    if (valName.Length == 0 && string.IsNullOrEmpty(spec.ApplyValue) &&
+                        string.Equals(spec.UndoValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
+                        return (val == null || val.ToString().Length == 0);
+                    }
                     if (val == null) return false;
                     RegistryValueKind kind = k.GetValueKind(valName);
                     return ValuesMatch(val, kind, vt, spec.ApplyValue);
@@ -34666,7 +34378,6 @@ namespace DuckUtil {
                 if (stObj == null) return false;
                 try {
                     int st = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
-                    if (spec.ApplyStart == 3) return (st == 3 || st == 4);
                     return (st == spec.ApplyStart);
                 } catch { return false; }
             }
@@ -34782,8 +34493,39 @@ namespace DuckUtil {
                         }
                     }
                 } catch {}
-                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : (matchedIf > 0 ? "Partial" : "Default");
+                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : "Default";
                 return new TweakProbeResult { Id = req.Id, State = st, Detail = "" };
+            }
+            if (string.Equals(kind, "WuPaused", StringComparison.OrdinalIgnoreCase)) {
+                bool paused = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", false)) {
+                        if (k != null) {
+                            string p1 = (k.GetValue("PauseUpdatesExpiryTime") ?? "").ToString().Trim();
+                            string p2 = (k.GetValue("PauseFeatureUpdatesEndTime") ?? "").ToString().Trim();
+                            paused = (!string.IsNullOrEmpty(p1) || !string.IsNullOrEmpty(p2));
+                        }
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = paused ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "ReservedStorageDisabled", StringComparison.OrdinalIgnoreCase)) {
+                bool disabled = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager", false)) {
+                        if (k != null) {
+                            object pp = k.GetValue("PassedPolicy");
+                            object bh = k.GetValue("BaseHardReserveSize");
+                            if ((pp != null && Convert.ToInt64(pp, CultureInfo.InvariantCulture) == 0L) ||
+                                (bh != null && Convert.ToInt64(bh, CultureInfo.InvariantCulture) == 0L)) {
+                                disabled = true;
+                            }
+                        }
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = disabled ? "Applied" : "Default", Detail = "" };
             }
             return null;
         }
@@ -34818,17 +34560,25 @@ namespace DuckUtil {
                 int matched = 0;
                 if (req.Registry != null) {
                     for (int r = 0; r < req.Registry.Length; r++) {
+                        RegTweakSpec rs = req.Registry[r];
+                        if (rs == null) continue;
+                        if (string.Equals(rs.ApplyValue ?? "", rs.UndoValue ?? "", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(rs.UndoValue ?? "", "__SKIP__", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
                         total++;
                         try {
-                            if (ProbeSingleRegSpec(req.Registry[r])) matched++;
+                            if (ProbeSingleRegSpec(rs)) matched++;
                         } catch {}
                     }
                 }
                 if (req.Services != null) {
                     for (int s = 0; s < req.Services.Length; s++) {
+                        ServiceTweakSpec ss = req.Services[s];
+                        if (ss == null || ss.ApplyStart == ss.UndoStart) continue;
                         bool exists;
                         bool ok = false;
-                        try { ok = ProbeSingleServiceSpec(req.Services[s], out exists); } catch { exists = false; }
+                        try { ok = ProbeSingleServiceSpec(ss, out exists); } catch { exists = false; }
                         if (exists) {
                             total++;
                             if (ok) matched++;
@@ -34841,10 +34591,6 @@ namespace DuckUtil {
                     state = "Action";
                 } else if (matched == total) {
                     state = "Applied";
-                } else if (matched > 0 && req.Services != null && req.Services.Length >= 10 && matched >= (int)(total * 0.85)) {
-                    state = "Applied";
-                } else if (matched > 0) {
-                    state = "Partial";
                 } else {
                     state = "Default";
                 }
@@ -34949,7 +34695,11 @@ namespace DuckUtil {
             if (string.Equals(vt, "DeleteKey", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(rawValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
                 try {
-                    baseKey.DeleteSubKeyTree(path, false);
+                    string delPath = path;
+                    if (delPath.EndsWith(@"\InprocServer32", StringComparison.OrdinalIgnoreCase)) {
+                        delPath = delPath.Substring(0, delPath.Length - @"\InprocServer32".Length);
+                    }
+                    baseKey.DeleteSubKeyTree(delPath, false);
                     return true;
                 } catch { return false; }
             }
@@ -41376,10 +41126,7 @@ function Invoke-OptimizerBatch {
         return [PSCustomObject]@{ Applied = 0; Failed = 0; NeedsExplorerRestart = $false; NeedsReboot = $false; SnapshotPath = "" }
     }
 
-    $snapPath = ""
-    if ($Mode -eq "Apply") {
-        $snapPath = Save-OptimizerGuardSnapshot -Tweaks $tweakList -HardwareProfile $HardwareProfile
-    }
+    $snapPath = Save-OptimizerGuardSnapshot -Tweaks $tweakList -HardwareProfile $HardwareProfile
 
     $applied = 0
     $failed = 0
@@ -41401,7 +41148,7 @@ function Invoke-OptimizerBatch {
         $regSpecs = ConvertTo-RegTweakSpecs @($tw)
         if ($regSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
             $regDone = [DuckUtil.WindowsOptimizerEngine]::ApplyRegistrySpecs($regSpecs, $isUndo)
-            if ($regDone -eq 0) { $ok = $false }
+            if ($regDone -lt $regSpecs.Length) { $ok = $false }
         }
 
         $svcSpecs = ConvertTo-ServiceTweakSpecs @($tw)
@@ -49630,10 +49377,6 @@ $script:btnOptApply         = $window.FindName("btnOptApply")
 $script:btnOptUndo          = $window.FindName("btnOptUndo")
 $script:btnOptRestoreBackup = $window.FindName("btnOptRestoreBackup")
 $script:btnOptRefresh       = $window.FindName("btnOptRefresh")
-$script:txtOptSearch        = $window.FindName("txtOptSearch")
-$script:btnClearOptSearch   = $window.FindName("btnClearOptSearch")
-$script:btnOptSelectAll     = $window.FindName("btnOptSelectAll")
-$script:btnOptDeselectAll   = $window.FindName("btnOptDeselectAll")
 $script:txtOptSummary       = $window.FindName("txtOptSummary")
 $script:optScrollViewer     = $window.FindName("OptScrollViewer")
 $script:optTweaksHost       = $window.FindName("OptTweaksHost")
@@ -49781,42 +49524,17 @@ function Set-OptimizerEntryVisualState {
 
 function Apply-OptimizerFilter {
     if (-not $script:optInitialized -or $script:isWindowClosing) { return }
-    $q = if ($script:txtOptSearch) { $script:txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
-    $visibleCount = 0
     $appliedCount = 0
-    $laneVisible = @($false, $false)
     $lastVisSectionByLane = @($null, $null)
 
     foreach ($card in $script:optCategoryCards) {
-        $catVis = 0
-        $lastVisRow = $null
         foreach ($ent in $card.Entries) {
             if ($ent.State -eq "Applied") { $appliedCount++ }
-            $show = [string]::IsNullOrEmpty($q) -or $ent.SearchText.Contains($q)
-            if ($ent.Row) {
-                $ent.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-                if ($show) {
-                    $ent.Row.BorderThickness = $script:optRowBorderLine
-                    $lastVisRow = $ent.Row
-                }
-            }
-            if ($show) {
-                $catVis++
-                $visibleCount++
-            }
         }
-        if ($lastVisRow) {
-            $lastVisRow.BorderThickness = $thicknessZero
-        }
-        if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
-            $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-            if ($catVis -gt 0) {
-                $card.CardBorder.Margin = $script:optSectionMargin
-            }
+            $card.CardBorder.Margin = $script:optSectionMargin
         }
-        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
-            $laneVisible[$card.LaneIndex] = $true
+        if ($null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
             $lastVisSectionByLane[$card.LaneIndex] = $card.CardBorder
         }
     }
@@ -49827,26 +49545,9 @@ function Apply-OptimizerFilter {
         }
     }
 
-    if ($script:optLaneCols.Count -eq 2 -and $script:optLaneBorders.Count -eq 2) {
-        for ($li = 0; $li -lt 2; $li++) {
-            if ($laneVisible[$li]) {
-                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Visible
-                $script:optLaneCols[$li].Width = $glCol2
-            } else {
-                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Collapsed
-                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
-            }
-        }
-        $script:optLaneBorders[0].Margin = if ($laneVisible[0] -and $laneVisible[1]) {
-            [System.Windows.Thickness]::new(0, 0, 10, 0)
-        } else {
-            $thicknessZero
-        }
-    }
-
     if ($script:txtOptSummary) {
         $total = $script:optEntries.Count
-        $script:txtOptSummary.Text = "Hi$([char]0x1EC3)n th$([char]0x1ECB) $visibleCount / $total tinh ch$([char]0x1EC9)nh ($appliedCount $([char]0x0111)ang b$([char]0x1EAD)t)"
+        $script:txtOptSummary.Text = "T$([char]0x1ED5)ng $total tinh ch$([char]0x1EC9)nh ($appliedCount $([char]0x0111)ang b$([char]0x1EAD)t)"
     }
 }
 
@@ -50007,7 +49708,25 @@ function Initialize-OptimizerTabIfNeeded {
             $script:optHostHandlersAttached = $true
             $script:optTweaksHost.AddHandler(
                 [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
-                [System.Windows.RoutedEventHandler]{ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } }
+                [System.Windows.RoutedEventHandler]{
+                    param($sender, $e)
+                    if ($script:optSyncingVisuals) { return }
+                    $srcTb = $e.OriginalSource -as [System.Windows.Controls.Primitives.ToggleButton]
+                    if ($srcTb) {
+                        $pRow = [System.Windows.Media.VisualTreeHelper]::GetParent([System.Windows.Media.VisualTreeHelper]::GetParent($srcTb))
+                        if ($pRow -and $pRow.Tag -and $pRow.Tag.Tweak) {
+                            $tid = [string]$pRow.Tag.Tweak.Id
+                            if ($tid -eq "opt_prefer_ipv4" -and $script:optEntryById.ContainsKey("opt_disable_ipv6")) {
+                                $other = $script:optEntryById["opt_disable_ipv6"]
+                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
+                            } elseif ($tid -eq "opt_disable_ipv6" -and $script:optEntryById.ContainsKey("opt_prefer_ipv4")) {
+                                $other = $script:optEntryById["opt_prefer_ipv4"]
+                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
+                            }
+                        }
+                    }
+                    Update-OptimizerSelectionCount
+                }
             )
             $script:optTweaksHost.AddHandler(
                 [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
@@ -50177,56 +49896,8 @@ function Initialize-OptimizerTabIfNeeded {
     }
 }
 
-$script:optSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
-$script:optSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(60)
-$script:optSearchDebounceTimer.Add_Tick({
-    $script:optSearchDebounceTimer.Stop()
-    if (-not $script:isWindowClosing) { Apply-OptimizerFilter }
-})
-
 if ($script:optSubBtnCustomize) { $script:optSubBtnCustomize.Add_Click({ Set-OptimizerSubTab 0 }) }
 if ($script:optSubBtnResources) { $script:optSubBtnResources.Add_Click({ Set-OptimizerSubTab 1 }) }
-
-if ($script:txtOptSearch) {
-    $script:txtOptSearch.Add_TextChanged({
-        $script:optSearchDebounceTimer.Stop()
-        $script:optSearchDebounceTimer.Start()
-    })
-}
-if ($script:btnClearOptSearch) {
-    $script:btnClearOptSearch.Add_Click({
-        if ($script:txtOptSearch) { $script:txtOptSearch.Text = "" }
-    })
-}
-if ($script:btnOptSelectAll) {
-    $script:btnOptSelectAll.Add_Click({
-        foreach ($ent in $script:optEntries) {
-            if (-not $ent.IsToggle -and $ent.Row -and $ent.Row.Visibility -eq [System.Windows.Visibility]::Visible -and $ent.CheckBox) {
-                $ent.CheckBox.IsChecked = $true
-            }
-        }
-        Update-OptimizerSelectionCount
-    })
-}
-if ($script:btnOptDeselectAll) {
-    $script:btnOptDeselectAll.Add_Click({
-        $prevSync = $script:optSyncingVisuals
-        $script:optSyncingVisuals = $true
-        try {
-            foreach ($ent in $script:optEntries) {
-                if (-not $ent.CheckBox) { continue }
-                if ($ent.IsToggle) {
-                    $ent.CheckBox.IsChecked = [bool]$ent.InitialToggleState
-                } else {
-                    $ent.CheckBox.IsChecked = $false
-                }
-            }
-        } finally {
-            $script:optSyncingVisuals = $prevSync
-        }
-        Update-OptimizerSelectionCount
-    })
-}
 
 if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({
@@ -50265,6 +49936,19 @@ if ($script:btnOptApply) {
         Invoke-GuardedAction "L$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u Windows" {
             $totalApplied = 0
             $totalFailed = 0
+            if ($toUndo.Count -gt 0) {
+                $undoObjs = @($toUndo | ForEach-Object { $_.Tweak })
+                Log-Text "=========================================================="
+                Log-Text "[OPTIMIZER] T$([char]0x1EAE)T $($undoObjs.Count) C$([char]0x1EA6)N G$([char]0x1EA0)T V$([char]0x1EC0) M$([char]0x1EB6)C $([char]0x0110)$([char]0x1ECA)NH"
+                Log-Text "=========================================================="
+                $resUndo = Invoke-OptimizerBatch -Tweaks $undoObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
+                    param($cur, $tot, $nm)
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] $([char]0x0110)ang t$([char]0x1EAF)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh: $nm..." }
+                }
+                $totalApplied += $resUndo.Applied
+                $totalFailed += $resUndo.Failed
+            }
             if ($toApply.Count -gt 0) {
                 $combos = @{}
                 $twObjs = @()
@@ -50285,19 +49969,6 @@ if ($script:btnOptApply) {
                 $totalApplied += $res.Applied
                 $totalFailed += $res.Failed
             }
-            if ($toUndo.Count -gt 0) {
-                $undoObjs = @($toUndo | ForEach-Object { $_.Tweak })
-                Log-Text "=========================================================="
-                Log-Text "[OPTIMIZER] T$([char]0x1EAE)T $($undoObjs.Count) C$([char]0x1EA6)N G$([char]0x1EA0)T V$([char]0x1EC0) M$([char]0x1EB6)C $([char]0x0110)$([char]0x1ECA)NH"
-                Log-Text "=========================================================="
-                $resUndo = Invoke-OptimizerBatch -Tweaks $undoObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
-                    param($cur, $tot, $nm)
-                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
-                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] $([char]0x0110)ang t$([char]0x1EAF)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh: $nm..." }
-                }
-                $totalApplied += $resUndo.Applied
-                $totalFailed += $resUndo.Failed
-            }
             $prevSync = $script:optSyncingVisuals
             $script:optSyncingVisuals = $true
             try {
@@ -50310,6 +49981,12 @@ if ($script:btnOptApply) {
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) l$([char]0x01B0)u t$([char]0x1ED1)i $([char]0x01B0)u ($totalApplied th$([char]0x00E0)nh c$([char]0x00F4)ng, $totalFailed l$([char]0x1ED7)i)" }
             Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) l$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u: $totalApplied th$([char]0x00E0)nh c$([char]0x00F4)ng $([char]0x2022) $totalFailed l$([char]0x1ED7)i."
+            if ($totalFailed -gt 0) {
+                $isAdminNow = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+                if (-not $isAdminNow) {
+                    Log-Text "[WARN] M$([char]0x1ED9)t s$([char]0x1ED1) tinh ch$([char]0x1EC9)nh h$([char]0x1EC7) th$([char]0x1ED1)ng (HKLM/Service) y$([char]0x00EA)u c$([char]0x1EA7)u m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator."
+                }
+            }
             Refresh-OptimizerLiveState
         }
     })

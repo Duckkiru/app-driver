@@ -8174,10 +8174,6 @@ $script:btnOptApply         = $window.FindName("btnOptApply")
 $script:btnOptUndo          = $window.FindName("btnOptUndo")
 $script:btnOptRestoreBackup = $window.FindName("btnOptRestoreBackup")
 $script:btnOptRefresh       = $window.FindName("btnOptRefresh")
-$script:txtOptSearch        = $window.FindName("txtOptSearch")
-$script:btnClearOptSearch   = $window.FindName("btnClearOptSearch")
-$script:btnOptSelectAll     = $window.FindName("btnOptSelectAll")
-$script:btnOptDeselectAll   = $window.FindName("btnOptDeselectAll")
 $script:txtOptSummary       = $window.FindName("txtOptSummary")
 $script:optScrollViewer     = $window.FindName("OptScrollViewer")
 $script:optTweaksHost       = $window.FindName("OptTweaksHost")
@@ -8325,42 +8321,17 @@ function Set-OptimizerEntryVisualState {
 
 function Apply-OptimizerFilter {
     if (-not $script:optInitialized -or $script:isWindowClosing) { return }
-    $q = if ($script:txtOptSearch) { $script:txtOptSearch.Text.Trim().ToLowerInvariant() } else { "" }
-    $visibleCount = 0
     $appliedCount = 0
-    $laneVisible = @($false, $false)
     $lastVisSectionByLane = @($null, $null)
 
     foreach ($card in $script:optCategoryCards) {
-        $catVis = 0
-        $lastVisRow = $null
         foreach ($ent in $card.Entries) {
             if ($ent.State -eq "Applied") { $appliedCount++ }
-            $show = [string]::IsNullOrEmpty($q) -or $ent.SearchText.Contains($q)
-            if ($ent.Row) {
-                $ent.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-                if ($show) {
-                    $ent.Row.BorderThickness = $script:optRowBorderLine
-                    $lastVisRow = $ent.Row
-                }
-            }
-            if ($show) {
-                $catVis++
-                $visibleCount++
-            }
         }
-        if ($lastVisRow) {
-            $lastVisRow.BorderThickness = $thicknessZero
-        }
-        if ($card.CountText) { $card.CountText.Text = [string]$catVis }
         if ($card.CardBorder) {
-            $card.CardBorder.Visibility = if ($catVis -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
-            if ($catVis -gt 0) {
-                $card.CardBorder.Margin = $script:optSectionMargin
-            }
+            $card.CardBorder.Margin = $script:optSectionMargin
         }
-        if ($catVis -gt 0 -and $null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
-            $laneVisible[$card.LaneIndex] = $true
+        if ($null -ne $card.LaneIndex -and $card.LaneIndex -ge 0 -and $card.LaneIndex -lt 2) {
             $lastVisSectionByLane[$card.LaneIndex] = $card.CardBorder
         }
     }
@@ -8371,26 +8342,9 @@ function Apply-OptimizerFilter {
         }
     }
 
-    if ($script:optLaneCols.Count -eq 2 -and $script:optLaneBorders.Count -eq 2) {
-        for ($li = 0; $li -lt 2; $li++) {
-            if ($laneVisible[$li]) {
-                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Visible
-                $script:optLaneCols[$li].Width = $glCol2
-            } else {
-                $script:optLaneBorders[$li].Visibility = [System.Windows.Visibility]::Collapsed
-                $script:optLaneCols[$li].Width = [System.Windows.GridLength]::new(0)
-            }
-        }
-        $script:optLaneBorders[0].Margin = if ($laneVisible[0] -and $laneVisible[1]) {
-            [System.Windows.Thickness]::new(0, 0, 10, 0)
-        } else {
-            $thicknessZero
-        }
-    }
-
     if ($script:txtOptSummary) {
         $total = $script:optEntries.Count
-        $script:txtOptSummary.Text = "Hiển thị $visibleCount / $total tinh chỉnh ($appliedCount đang bật)"
+        $script:txtOptSummary.Text = "Tổng $total tinh chỉnh ($appliedCount đang bật)"
     }
 }
 
@@ -8551,7 +8505,25 @@ function Initialize-OptimizerTabIfNeeded {
             $script:optHostHandlersAttached = $true
             $script:optTweaksHost.AddHandler(
                 [System.Windows.Controls.Primitives.ToggleButton]::CheckedEvent,
-                [System.Windows.RoutedEventHandler]{ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } }
+                [System.Windows.RoutedEventHandler]{
+                    param($sender, $e)
+                    if ($script:optSyncingVisuals) { return }
+                    $srcTb = $e.OriginalSource -as [System.Windows.Controls.Primitives.ToggleButton]
+                    if ($srcTb) {
+                        $pRow = [System.Windows.Media.VisualTreeHelper]::GetParent([System.Windows.Media.VisualTreeHelper]::GetParent($srcTb))
+                        if ($pRow -and $pRow.Tag -and $pRow.Tag.Tweak) {
+                            $tid = [string]$pRow.Tag.Tweak.Id
+                            if ($tid -eq "opt_prefer_ipv4" -and $script:optEntryById.ContainsKey("opt_disable_ipv6")) {
+                                $other = $script:optEntryById["opt_disable_ipv6"]
+                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
+                            } elseif ($tid -eq "opt_disable_ipv6" -and $script:optEntryById.ContainsKey("opt_prefer_ipv4")) {
+                                $other = $script:optEntryById["opt_prefer_ipv4"]
+                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
+                            }
+                        }
+                    }
+                    Update-OptimizerSelectionCount
+                }
             )
             $script:optTweaksHost.AddHandler(
                 [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
@@ -8721,56 +8693,8 @@ function Initialize-OptimizerTabIfNeeded {
     }
 }
 
-$script:optSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
-$script:optSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(60)
-$script:optSearchDebounceTimer.Add_Tick({
-    $script:optSearchDebounceTimer.Stop()
-    if (-not $script:isWindowClosing) { Apply-OptimizerFilter }
-})
-
 if ($script:optSubBtnCustomize) { $script:optSubBtnCustomize.Add_Click({ Set-OptimizerSubTab 0 }) }
 if ($script:optSubBtnResources) { $script:optSubBtnResources.Add_Click({ Set-OptimizerSubTab 1 }) }
-
-if ($script:txtOptSearch) {
-    $script:txtOptSearch.Add_TextChanged({
-        $script:optSearchDebounceTimer.Stop()
-        $script:optSearchDebounceTimer.Start()
-    })
-}
-if ($script:btnClearOptSearch) {
-    $script:btnClearOptSearch.Add_Click({
-        if ($script:txtOptSearch) { $script:txtOptSearch.Text = "" }
-    })
-}
-if ($script:btnOptSelectAll) {
-    $script:btnOptSelectAll.Add_Click({
-        foreach ($ent in $script:optEntries) {
-            if (-not $ent.IsToggle -and $ent.Row -and $ent.Row.Visibility -eq [System.Windows.Visibility]::Visible -and $ent.CheckBox) {
-                $ent.CheckBox.IsChecked = $true
-            }
-        }
-        Update-OptimizerSelectionCount
-    })
-}
-if ($script:btnOptDeselectAll) {
-    $script:btnOptDeselectAll.Add_Click({
-        $prevSync = $script:optSyncingVisuals
-        $script:optSyncingVisuals = $true
-        try {
-            foreach ($ent in $script:optEntries) {
-                if (-not $ent.CheckBox) { continue }
-                if ($ent.IsToggle) {
-                    $ent.CheckBox.IsChecked = [bool]$ent.InitialToggleState
-                } else {
-                    $ent.CheckBox.IsChecked = $false
-                }
-            }
-        } finally {
-            $script:optSyncingVisuals = $prevSync
-        }
-        Update-OptimizerSelectionCount
-    })
-}
 
 if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({
@@ -8809,6 +8733,19 @@ if ($script:btnOptApply) {
         Invoke-GuardedAction "Lưu cấu hình tối ưu Windows" {
             $totalApplied = 0
             $totalFailed = 0
+            if ($toUndo.Count -gt 0) {
+                $undoObjs = @($toUndo | ForEach-Object { $_.Tweak })
+                Log-Text "=========================================================="
+                Log-Text "[OPTIMIZER] TẮT $($undoObjs.Count) CẦN GẠT VỀ MẶC ĐỊNH"
+                Log-Text "=========================================================="
+                $resUndo = Invoke-OptimizerBatch -Tweaks $undoObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
+                    param($cur, $tot, $nm)
+                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
+                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] Đang tắt về mặc định: $nm..." }
+                }
+                $totalApplied += $resUndo.Applied
+                $totalFailed += $resUndo.Failed
+            }
             if ($toApply.Count -gt 0) {
                 $combos = @{}
                 $twObjs = @()
@@ -8829,19 +8766,6 @@ if ($script:btnOptApply) {
                 $totalApplied += $res.Applied
                 $totalFailed += $res.Failed
             }
-            if ($toUndo.Count -gt 0) {
-                $undoObjs = @($toUndo | ForEach-Object { $_.Tweak })
-                Log-Text "=========================================================="
-                Log-Text "[OPTIMIZER] TẮT $($undoObjs.Count) CẦN GẠT VỀ MẶC ĐỊNH"
-                Log-Text "=========================================================="
-                $resUndo = Invoke-OptimizerBatch -Tweaks $undoObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
-                    param($cur, $tot, $nm)
-                    if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
-                    if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] Đang tắt về mặc định: $nm..." }
-                }
-                $totalApplied += $resUndo.Applied
-                $totalFailed += $resUndo.Failed
-            }
             $prevSync = $script:optSyncingVisuals
             $script:optSyncingVisuals = $true
             try {
@@ -8854,6 +8778,12 @@ if ($script:btnOptApply) {
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "Đã lưu tối ưu ($totalApplied thành công, $totalFailed lỗi)" }
             Log-Text "[SUCC] Đã lưu cấu hình tối ưu: $totalApplied thành công • $totalFailed lỗi."
+            if ($totalFailed -gt 0) {
+                $isAdminNow = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+                if (-not $isAdminNow) {
+                    Log-Text "[WARN] Một số tinh chỉnh hệ thống (HKLM/Service) yêu cầu mở App-Driver bằng quyền Administrator."
+                }
+            }
             Refresh-OptimizerLiveState
         }
     })

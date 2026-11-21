@@ -889,92 +889,36 @@
 
                         <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                             <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <Grid Grid.Row="0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Name="btnOptApply" Content="Lưu" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Padding="16,7"
+                                            ToolTip="Áp dụng và lưu các tinh chỉnh đã chọn hoặc cần gạt thay đổi (tự chụp sao lưu OptimizerGuard trước khi thay đổi)." ToolTipService.InitialShowDelay="5000"/>
+                                    <Button Name="btnOptUndo" Content="Đặt về mặc định" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#FBBF24" BorderBrush="#614F27"
+                                            ToolTip="Đặt các tinh chỉnh đã chọn về mặc định Windows (nếu chưa chọn mục nào sẽ hỏi đặt toàn bộ mục đang bật về mặc định)." ToolTipService.InitialShowDelay="5000"/>
+                                    <Button Name="btnOptRestoreBackup" Content="Khôi phục sao lưu" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
+                                    <Button Name="btnOptRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"/>
+                                </StackPanel>
 
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                        <Button Name="btnOptApply" Content="Lưu" Style="{StaticResource ActionButton}"
-                                                Background="#059669" Padding="16,7"
-                                                ToolTip="Áp dụng và lưu các tinh chỉnh đã tick (tự chụp sao lưu OptimizerGuard trước khi thay đổi)." ToolTipService.InitialShowDelay="5000"/>
-                                        <Button Name="btnOptUndo" Content="Đặt về mặc định" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#FBBF24" BorderBrush="#614F27"
-                                                ToolTip="Đặt các tinh chỉnh đã tick về mặc định Windows (nếu chưa tick mục nào sẽ hỏi đặt toàn bộ mục đang bật về mặc định)." ToolTipService.InitialShowDelay="5000"/>
-                                        <Button Name="btnOptRestoreBackup" Content="Khôi phục sao lưu" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#38BDF8" BorderBrush="#29527D"/>
-                                        <Button Name="btnOptRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#38BDF8" BorderBrush="#29527D"/>
-                                    </StackPanel>
-
-                                    <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
-                                            Padding="8,0" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Stretch">
-                                        <Grid Width="220">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
-                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
-                                            <TextBlock Grid.Column="1" Text="Tìm tweak..." Foreground="#475569" FontSize="11.5"
-                                                       VerticalAlignment="Center" IsHitTestVisible="False">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Text, ElementName=txtOptSearch}" Value="">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <TextBox Grid.Column="1" Name="txtOptSearch" Background="Transparent" Foreground="#F8FAFC"
-                                                     BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="Tìm nhanh tweak theo tên hoặc mô tả..." ToolTipService.InitialShowDelay="5000"/>
-                                            <Button Grid.Column="2" Name="btnClearOptSearch" Content="✕" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                    ToolTip="Xóa tìm kiếm" ToolTipService.InitialShowDelay="5000"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                        <Button Name="btnOptSelectAll" Content="Chọn tất cả" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
-                                        <Button Name="btnOptDeselectAll" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}" Margin="0"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <Grid Grid.Row="1" Margin="1,7,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Mặc định" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0"/>
-                                        <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Đang bật" FontSize="11" Foreground="#34D399" Margin="0,0,12,0"/>
-                                        <Ellipse Width="7" Height="7" Fill="#FBBF24" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Bật 1 phần" FontSize="11" Foreground="#FBBF24" Margin="0,0,12,0"/>
-                                        <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Nâng cao" FontSize="11" Foreground="#FCA5A5"/>
-                                    </StackPanel>
-
-                                    <TextBlock Grid.Column="2" Name="txtOptSummary" Text="72 tinh chỉnh sẵn sàng"
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,10,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Mặc định" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đang bật" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Nâng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                                    <TextBlock Name="txtOptSummary" Text="72 tinh chỉnh sẵn sàng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                </Grid>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
