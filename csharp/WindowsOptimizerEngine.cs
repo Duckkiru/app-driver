@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -8,55 +9,62 @@ using System.Threading.Tasks;
 using Microsoft.Win32;
 
 namespace DuckUtil {
-
     public sealed class HardwareProfile {
         public bool IsLaptop { get; set; }
-        public bool HasBattery { get; set; }
         public int TotalRamGb { get; set; }
         public int OsBuild { get; set; }
-        public bool IsWin11 { get; set; }
-        public string OsDisplayVersion { get; set; }
+        public int OsUbr { get; set; }
+        public string DisplayVersion { get; set; }
+        public bool IsWindows11 { get; set; }
         public bool IsSystemDriveSsd { get; set; }
-        public bool DiskTypeKnown { get; set; }
         public string SummaryText { get; set; }
     }
 
-    public sealed class TweakRegRule {
+    public sealed class RegTweakSpec {
+        public string Hive { get; set; }
         public string Path { get; set; }
         public string Name { get; set; }
         public string ValueType { get; set; }
         public string ApplyValue { get; set; }
         public string UndoValue { get; set; }
-        public bool DeleteOnUndo { get; set; }
-        public bool DeleteOnApply { get; set; }
     }
 
-    public sealed class TweakProbeSpec {
+    public sealed class ServiceTweakSpec {
+        public string Name { get; set; }
+        public int ApplyStart { get; set; }
+        public int UndoStart { get; set; }
+    }
+
+    public sealed class TweakProbeRequest {
         public string Id { get; set; }
-        public int MinBuild { get; set; }
-        public string ActionKind { get; set; }
-        public string ActionParam { get; set; }
-        public TweakRegRule[] RegRules { get; set; }
-        public string[] Services { get; set; }
+        public RegTweakSpec[] Registry { get; set; }
+        public ServiceTweakSpec[] Services { get; set; }
+        public string ProbeKind { get; set; }
     }
 
     public sealed class TweakProbeResult {
         public string Id { get; set; }
-        public bool IsApplied { get; set; }
-        public bool Supported { get; set; }
+        public string State { get; set; }
         public string Detail { get; set; }
     }
 
-    public sealed class RegSnapshotRecord {
+    public sealed class RegistrySnapshotEntry {
+        public string Hive { get; set; }
         public string Path { get; set; }
         public string Name { get; set; }
         public bool Existed { get; set; }
-        public string ValueType { get; set; }
+        public bool KeyExisted { get; set; }
+        public string Kind { get; set; }
         public string ValueData { get; set; }
     }
 
-    public static class WindowsOptimizerEngine {
+    public sealed class ServiceSnapshotEntry {
+        public string Name { get; set; }
+        public bool Existed { get; set; }
+        public int OriginalStart { get; set; }
+    }
 
+    public static class WindowsOptimizerEngine {
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_POWER_STATUS {
             public byte ACLineStatus;
@@ -68,7 +76,7 @@ namespace DuckUtil {
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        private class MEMORYSTATUSEX {
+        private struct MEMORYSTATUSEX {
             public uint dwLength;
             public uint dwMemoryLoad;
             public ulong ullTotalPhys;
@@ -78,9 +86,6 @@ namespace DuckUtil {
             public ulong ullTotalVirtual;
             public ulong ullAvailVirtual;
             public ulong ullAvailExtendedVirtual;
-            public MEMORYSTATUSEX() {
-                dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -98,12 +103,28 @@ namespace DuckUtil {
             public bool IncursSeekPenalty;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct VOLUME_DISK_EXTENTS {
+            public uint NumberOfDiskExtents;
+            public uint DiskNumber;
+            public long StartingOffset;
+            public long ExtentLength;
+        }
+
+        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+        private const uint FILE_SHARE_READ = 0x00000001;
+        private const uint FILE_SHARE_WRITE = 0x00000002;
+        private const uint OPEN_EXISTING = 3;
+        private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+        private const uint IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x00560000;
+        private const uint StorageDeviceSeekPenaltyProperty = 7;
+        private const uint PropertyStandardQuery = 0;
+
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS sps);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+        private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr CreateFileW(
@@ -119,9 +140,9 @@ namespace DuckUtil {
         private static extern bool DeviceIoControl(
             IntPtr hDevice,
             uint dwIoControlCode,
-            ref STORAGE_PROPERTY_QUERY lpInBuffer,
+            IntPtr lpInBuffer,
             uint nInBufferSize,
-            out DEVICE_SEEK_PENALTY_DESCRIPTOR lpOutBuffer,
+            IntPtr lpOutBuffer,
             uint nOutBufferSize,
             out uint lpBytesReturned,
             IntPtr lpOverlapped);
@@ -129,449 +150,695 @@ namespace DuckUtil {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
-        private const uint FILE_SHARE_READ = 0x00000001;
-        private const uint FILE_SHARE_WRITE = 0x00000002;
-        private const uint OPEN_EXISTING = 3;
-        private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
-        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+        private static bool DetectSystemDriveIsSsd() {
+            IntPtr hVol = INVALID_HANDLE_VALUE;
+            IntPtr hDisk = INVALID_HANDLE_VALUE;
+            try {
+                string sysDrive = Environment.GetEnvironmentVariable("SystemDrive");
+                if (string.IsNullOrEmpty(sysDrive)) sysDrive = "C:";
+                string volPath = "\\\\.\\" + sysDrive.TrimEnd('\\');
+                int diskNum = 0;
+
+                hVol = CreateFileW(volPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
+                if (hVol != INVALID_HANDLE_VALUE) {
+                    int extSize = Marshal.SizeOf(typeof(VOLUME_DISK_EXTENTS));
+                    IntPtr extBuf = Marshal.AllocHGlobal(extSize);
+                    try {
+                        uint retBytes;
+                        if (DeviceIoControl(hVol, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, IntPtr.Zero, 0, extBuf, (uint)extSize, out retBytes, IntPtr.Zero)) {
+                            VOLUME_DISK_EXTENTS ext = (VOLUME_DISK_EXTENTS)Marshal.PtrToStructure(extBuf, typeof(VOLUME_DISK_EXTENTS));
+                            if (ext.NumberOfDiskExtents > 0) diskNum = (int)ext.DiskNumber;
+                        }
+                    } finally {
+                        Marshal.FreeHGlobal(extBuf);
+                    }
+                }
+
+                string diskPath = "\\\\.\\PhysicalDrive" + diskNum.ToString(CultureInfo.InvariantCulture);
+                hDisk = CreateFileW(diskPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
+                if (hDisk == INVALID_HANDLE_VALUE) return true;
+
+                STORAGE_PROPERTY_QUERY q = new STORAGE_PROPERTY_QUERY();
+                q.PropertyId = StorageDeviceSeekPenaltyProperty;
+                q.QueryType = PropertyStandardQuery;
+
+                int qSize = Marshal.SizeOf(typeof(STORAGE_PROPERTY_QUERY));
+                int dSize = Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
+                IntPtr qBuf = Marshal.AllocHGlobal(qSize);
+                IntPtr dBuf = Marshal.AllocHGlobal(dSize);
+                try {
+                    Marshal.StructureToPtr(q, qBuf, false);
+                    uint retBytes;
+                    if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, dBuf, (uint)dSize, out retBytes, IntPtr.Zero)) {
+                        DEVICE_SEEK_PENALTY_DESCRIPTOR desc = (DEVICE_SEEK_PENALTY_DESCRIPTOR)Marshal.PtrToStructure(dBuf, typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
+                        return !desc.IncursSeekPenalty;
+                    }
+                } finally {
+                    Marshal.FreeHGlobal(qBuf);
+                    Marshal.FreeHGlobal(dBuf);
+                }
+            } catch {
+            } finally {
+                if (hDisk != INVALID_HANDLE_VALUE) { try { CloseHandle(hDisk); } catch {} }
+                if (hVol != INVALID_HANDLE_VALUE) { try { CloseHandle(hVol); } catch {} }
+            }
+            return true;
+        }
 
         public static HardwareProfile DetectHardwareProfile() {
-            var prof = new HardwareProfile();
+            var hp = new HardwareProfile();
+            hp.IsLaptop = false;
+            hp.TotalRamGb = 16;
+            hp.OsBuild = 0;
+            hp.OsUbr = 0;
+            hp.DisplayVersion = "";
+            hp.IsWindows11 = false;
+            hp.IsSystemDriveSsd = true;
+
             try {
                 SYSTEM_POWER_STATUS sps;
                 if (GetSystemPowerStatus(out sps)) {
-                    // BatteryFlag 128 = No system battery, 255 = Unknown
-                    bool hasBat = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
-                    prof.HasBattery = hasBat;
-                    prof.IsLaptop = hasBat;
+                    hp.IsLaptop = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
                 }
             } catch {}
 
             try {
-                var ms = new MEMORYSTATUSEX();
-                if (GlobalMemoryStatusEx(ms)) {
-                    double gb = (double)ms.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
-                    prof.TotalRamGb = (int)Math.Round(gb);
+                MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                    double gb = (double)mem.ullTotalPhys / 1073741824.0;
+                    hp.TotalRamGb = Math.Max(1, (int)Math.Round(gb));
                 }
             } catch {}
 
             try {
-                using (RegistryKey cv = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", false)) {
+                using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (RegistryKey cv = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", false)) {
                     if (cv != null) {
                         object bObj = cv.GetValue("CurrentBuildNumber");
-                        int bNum = 0;
-                        if (bObj != null && int.TryParse(bObj.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out bNum)) {
-                            prof.OsBuild = bNum;
+                        if (bObj != null) {
+                            int bNum;
+                            if (int.TryParse(bObj.ToString(), out bNum)) hp.OsBuild = bNum;
+                        }
+                        object uObj = cv.GetValue("UBR");
+                        if (uObj != null) {
+                            int uNum;
+                            if (int.TryParse(uObj.ToString(), out uNum)) hp.OsUbr = uNum;
                         }
                         object dvObj = cv.GetValue("DisplayVersion");
-                        if (dvObj == null) dvObj = cv.GetValue("ReleaseId");
-                        prof.OsDisplayVersion = dvObj != null ? dvObj.ToString() : "";
-                    }
-                }
-            } catch {}
-
-            prof.IsWin11 = (prof.OsBuild >= 22000);
-
-            try {
-                string sysRoot = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-                string driveLetter = (!string.IsNullOrEmpty(sysRoot) && sysRoot.Length >= 2) ? sysRoot.Substring(0, 2) : "C:";
-                IntPtr hVol = CreateFileW(@"\\.\" + driveLetter, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-                if (hVol != INVALID_HANDLE_VALUE && hVol != IntPtr.Zero) {
-                    try {
-                        var query = new STORAGE_PROPERTY_QUERY();
-                        query.PropertyId = 7; // StorageDeviceSeekPenaltyProperty
-                        query.QueryType = 0;  // PropertyStandardQuery
-                        DEVICE_SEEK_PENALTY_DESCRIPTOR desc;
-                        uint bytesRet = 0;
-                        if (DeviceIoControl(hVol, IOCTL_STORAGE_QUERY_PROPERTY, ref query, (uint)Marshal.SizeOf(typeof(STORAGE_PROPERTY_QUERY)),
-                            out desc, (uint)Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR)), out bytesRet, IntPtr.Zero)) {
-                            prof.IsSystemDriveSsd = !desc.IncursSeekPenalty;
-                            prof.DiskTypeKnown = true;
+                        if (dvObj != null) hp.DisplayVersion = dvObj.ToString().Trim();
+                        if (string.IsNullOrEmpty(hp.DisplayVersion)) {
+                            object ridObj = cv.GetValue("ReleaseId");
+                            if (ridObj != null) hp.DisplayVersion = ridObj.ToString().Trim();
                         }
-                    } finally {
-                        CloseHandle(hVol);
                     }
                 }
             } catch {}
 
-            string devType = prof.IsLaptop ? "Laptop" : "PC B\u00E0n";
-            string ramPart = prof.TotalRamGb > 0 ? (prof.TotalRamGb.ToString(CultureInfo.InvariantCulture) + " GB RAM") : "";
-            string diskPart = prof.DiskTypeKnown ? (prof.IsSystemDriveSsd ? "SSD" : "HDD") : "";
-            string osPart = (prof.IsWin11 ? "Win 11" : "Win 10") +
-                            (!string.IsNullOrEmpty(prof.OsDisplayVersion) ? (" " + prof.OsDisplayVersion) : "") +
-                            (prof.OsBuild > 0 ? (" (" + prof.OsBuild.ToString(CultureInfo.InvariantCulture) + ")") : "");
+            hp.IsWindows11 = (hp.OsBuild >= 22000);
+            hp.IsSystemDriveSsd = DetectSystemDriveIsSsd();
 
-            var parts = new List<string>();
-            parts.Add(devType);
-            if (!string.IsNullOrEmpty(ramPart)) parts.Add(ramPart);
-            if (!string.IsNullOrEmpty(diskPart)) parts.Add(diskPart);
-            if (!string.IsNullOrEmpty(osPart)) parts.Add(osPart);
-            prof.SummaryText = string.Join(" \u2022 ", parts.ToArray());
-            return prof;
+            string devType = hp.IsLaptop ? "Laptop" : "PC";
+            string driveType = hp.IsSystemDriveSsd ? "SSD" : "HDD";
+            string osTag = (hp.IsWindows11 ? "Win 11" : "Win 10") + (string.IsNullOrEmpty(hp.DisplayVersion) ? "" : (" " + hp.DisplayVersion));
+            hp.SummaryText = devType + " | " + hp.TotalRamGb.ToString(CultureInfo.InvariantCulture) + " GB RAM | " + driveType + " | " + osTag;
+            return hp;
         }
 
-        private static bool TryParseRegistryPath(string fullPath, out RegistryKey rootKey, out string subPath) {
-            rootKey = null;
-            subPath = "";
-            if (string.IsNullOrWhiteSpace(fullPath)) return false;
-            string p = fullPath.Trim();
-            if (p.StartsWith("HKLM:\\", StringComparison.OrdinalIgnoreCase)) {
-                rootKey = Registry.LocalMachine;
-                subPath = p.Substring(6);
-                return true;
+        private static RegistryKey OpenHiveBase(string hive) {
+            if (string.Equals(hive, "HKCU", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(hive, "HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase)) {
+                return RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
             }
-            if (p.StartsWith("HKEY_LOCAL_MACHINE\\", StringComparison.OrdinalIgnoreCase)) {
-                rootKey = Registry.LocalMachine;
-                subPath = p.Substring(19);
-                return true;
+            if (string.Equals(hive, "HKU", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(hive, "HKEY_USERS", StringComparison.OrdinalIgnoreCase)) {
+                return RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64);
             }
-            if (p.StartsWith("HKCU:\\", StringComparison.OrdinalIgnoreCase)) {
-                rootKey = Registry.CurrentUser;
-                subPath = p.Substring(6);
-                return true;
+            if (string.Equals(hive, "HKCR", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(hive, "HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase)) {
+                return RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64);
             }
-            if (p.StartsWith("HKEY_CURRENT_USER\\", StringComparison.OrdinalIgnoreCase)) {
-                rootKey = Registry.CurrentUser;
-                subPath = p.Substring(18);
-                return true;
+            return RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+        }
+
+        private static string NormalizeValueName(string name) {
+            if (string.IsNullOrEmpty(name) || string.Equals(name, "(Default)", StringComparison.OrdinalIgnoreCase)) {
+                return "";
             }
-            if (p.StartsWith("HKCR:\\", StringComparison.OrdinalIgnoreCase)) {
-                rootKey = Registry.ClassesRoot;
-                subPath = p.Substring(6);
-                return true;
+            return name;
+        }
+
+        private static byte[] ParseHexBytes(string hexCsv) {
+            if (string.IsNullOrWhiteSpace(hexCsv)) return new byte[0];
+            string[] parts = hexCsv.Split(new char[] { ',', ' ', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            byte[] res = new byte[parts.Length];
+            for (int i = 0; i < parts.Length; i++) {
+                res[i] = byte.Parse(parts[i].Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
             }
-            if (p.StartsWith("HKU:\\", StringComparison.OrdinalIgnoreCase)) {
-                rootKey = Registry.Users;
-                subPath = p.Substring(5);
+            return res;
+        }
+
+        private static string FormatHexBytes(byte[] data) {
+            if (data == null || data.Length == 0) return "";
+            var sb = new StringBuilder(data.Length * 3);
+            for (int i = 0; i < data.Length; i++) {
+                if (i > 0) sb.Append(',');
+                sb.Append(data[i].ToString("X2", CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+        private static bool ValuesMatch(object actual, RegistryValueKind actualKind, string expectedType, string expectedStr) {
+            if (actual == null) return false;
+            string t = (expectedType ?? "DWord").Trim();
+            if (string.Equals(t, "DWord", StringComparison.OrdinalIgnoreCase)) {
+                long expVal;
+                if (!TryParseInt64Flexible(expectedStr, out expVal)) return false;
+                try {
+                    long actVal = Convert.ToInt64(actual, CultureInfo.InvariantCulture);
+                    return unchecked((uint)actVal) == unchecked((uint)expVal);
+                } catch { return false; }
+            }
+            if (string.Equals(t, "QWord", StringComparison.OrdinalIgnoreCase)) {
+                long expVal;
+                if (!TryParseInt64Flexible(expectedStr, out expVal)) return false;
+                try {
+                    long actVal = Convert.ToInt64(actual, CultureInfo.InvariantCulture);
+                    return actVal == expVal;
+                } catch { return false; }
+            }
+            if (string.Equals(t, "Binary", StringComparison.OrdinalIgnoreCase)) {
+                byte[] actBytes = actual as byte[];
+                if (actBytes == null) return false;
+                try {
+                    byte[] expBytes = ParseHexBytes(expectedStr);
+                    if (actBytes.Length != expBytes.Length) return false;
+                    for (int i = 0; i < actBytes.Length; i++) {
+                        if (actBytes[i] != expBytes[i]) return false;
+                    }
+                    return true;
+                } catch { return false; }
+            }
+            string actStr = actual.ToString();
+            return string.Equals(actStr, expectedStr ?? "", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryParseInt64Flexible(string raw, out long val) {
+            val = 0;
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            string s = raw.Trim();
+            if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) {
+                ulong u;
+                if (ulong.TryParse(s.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out u)) {
+                    val = unchecked((long)u);
+                    return true;
+                }
+                return false;
+            }
+            if (long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out val)) return true;
+            ulong u2;
+            if (ulong.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out u2)) {
+                val = unchecked((long)u2);
                 return true;
             }
             return false;
         }
 
-        private static RegistryValueKind ParseValueKind(string typeName) {
-            string t = (typeName ?? "DWord").Trim().ToLowerInvariant();
-            switch (t) {
-                case "dword": return RegistryValueKind.DWord;
-                case "qword": return RegistryValueKind.QWord;
-                case "string": return RegistryValueKind.String;
-                case "expandstring": return RegistryValueKind.ExpandString;
-                case "binary": return RegistryValueKind.Binary;
-                case "multistring": return RegistryValueKind.MultiString;
-                default: return RegistryValueKind.DWord;
-            }
-        }
-
-        private static string SerializeRegistryValue(object val, RegistryValueKind kind) {
-            if (val == null) return "";
-            if (kind == RegistryValueKind.Binary) {
-                byte[] bytes = val as byte[];
-                if (bytes == null) return "";
-                return BitConverter.ToString(bytes).Replace("-", "");
-            }
-            if (kind == RegistryValueKind.MultiString) {
-                string[] arr = val as string[];
-                if (arr == null) return "";
-                return string.Join("|", arr);
-            }
-            return Convert.ToString(val, CultureInfo.InvariantCulture) ?? "";
-        }
-
-        private static object DeserializeRegistryValue(string data, RegistryValueKind kind) {
-            string s = data ?? "";
-            switch (kind) {
-                case RegistryValueKind.DWord: {
-                    int iv;
-                    if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out iv)) return iv;
-                    uint uv;
-                    if (uint.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out uv)) return unchecked((int)uv);
-                    return 0;
-                }
-                case RegistryValueKind.QWord: {
-                    long lv;
-                    if (long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out lv)) return lv;
-                    return 0L;
-                }
-                case RegistryValueKind.Binary: {
-                    string hex = s.Replace("-", "").Replace(" ", "").Trim();
-                    if (hex.Length == 0 || (hex.Length % 2) != 0) return new byte[0];
-                    byte[] outB = new byte[hex.Length / 2];
-                    for (int i = 0; i < outB.Length; i++) {
-                        outB[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        private static bool ProbeSingleRegSpec(RegTweakSpec spec) {
+            if (spec == null || string.IsNullOrWhiteSpace(spec.Path)) return false;
+            string vt = (spec.ValueType ?? "DWord").Trim();
+            using (RegistryKey baseKey = OpenHiveBase(spec.Hive)) {
+                if (string.Equals(vt, "DeleteKey", StringComparison.OrdinalIgnoreCase)) {
+                    using (RegistryKey k = baseKey.OpenSubKey(spec.Path, false)) {
+                        return (k == null);
                     }
-                    return outB;
                 }
-                case RegistryValueKind.MultiString:
-                    return string.IsNullOrEmpty(s) ? new string[0] : s.Split('|');
-                default:
-                    return s;
-            }
-        }
-
-        public static RegSnapshotRecord CaptureRegistryValue(string path, string name) {
-            var rec = new RegSnapshotRecord { Path = path, Name = name, Existed = false, ValueType = "", ValueData = "" };
-            RegistryKey root;
-            string sub;
-            if (!TryParseRegistryPath(path, out root, out sub)) return rec;
-            try {
-                using (RegistryKey rk = root.OpenSubKey(sub, false)) {
-                    if (rk == null) return rec;
-                    string valName = name ?? "";
-                    object val = rk.GetValue(valName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                    if (val == null) return rec;
-                    RegistryValueKind kind = rk.GetValueKind(valName);
-                    rec.Existed = true;
-                    rec.ValueType = kind.ToString();
-                    rec.ValueData = SerializeRegistryValue(val, kind);
-                }
-            } catch {}
-            return rec;
-        }
-
-        public static bool SetRegistryValue(string path, string name, string valueType, string valueData, bool deleteValue) {
-            RegistryKey root;
-            string sub;
-            if (!TryParseRegistryPath(path, out root, out sub)) return false;
-            try {
-                if (deleteValue) {
-                    using (RegistryKey rk = root.OpenSubKey(sub, true)) {
-                        if (rk == null) return true;
-                        try { rk.DeleteValue(name ?? "", false); } catch {}
+                using (RegistryKey k = baseKey.OpenSubKey(spec.Path, false)) {
+                    if (k == null) {
+                        return string.Equals(vt, "DeleteValue", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(spec.ApplyValue, "__DELETE__", StringComparison.OrdinalIgnoreCase);
                     }
-                    return true;
-                }
-                using (RegistryKey rk = root.CreateSubKey(sub)) {
-                    if (rk == null) return false;
-                    RegistryValueKind kind = ParseValueKind(valueType);
-                    object typedVal = DeserializeRegistryValue(valueData, kind);
-                    rk.SetValue(name ?? "", typedVal, kind);
-                    return true;
-                }
-            } catch {
-                return false;
-            }
-        }
-
-        public static bool RestoreRegistrySnapshot(RegSnapshotRecord rec) {
-            if (rec == null) return false;
-            if (!rec.Existed) {
-                return SetRegistryValue(rec.Path, rec.Name, "DWord", "", true);
-            }
-            return SetRegistryValue(rec.Path, rec.Name, rec.ValueType, rec.ValueData, false);
-        }
-
-        public static int GetServiceStartType(string serviceName) {
-            if (string.IsNullOrWhiteSpace(serviceName)) return -1;
-            try {
-                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName.Trim(), false)) {
-                    if (rk == null) return -1;
-                    object v = rk.GetValue("Start");
-                    if (v == null) return -1;
-                    return Convert.ToInt32(v, CultureInfo.InvariantCulture);
-                }
-            } catch {
-                return -1;
-            }
-        }
-
-        public static bool SetServiceStartType(string serviceName, int startType) {
-            if (string.IsNullOrWhiteSpace(serviceName)) return false;
-            if (startType < 0 || startType > 4) return false;
-            try {
-                using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + serviceName.Trim(), true)) {
-                    if (rk == null) return false;
-                    rk.SetValue("Start", startType, RegistryValueKind.DWord);
-                    return true;
-                }
-            } catch {
-                return false;
-            }
-        }
-
-        private static bool CheckRegistryRuleApplied(TweakRegRule r) {
-            if (r == null || string.IsNullOrWhiteSpace(r.Path)) return false;
-            RegistryKey root;
-            string sub;
-            if (!TryParseRegistryPath(r.Path, out root, out sub)) return false;
-            try {
-                using (RegistryKey rk = root.OpenSubKey(sub, false)) {
-                    if (r.DeleteOnApply) {
-                        if (rk == null) return true;
-                        return rk.GetValue(r.Name ?? "", null, RegistryValueOptions.DoNotExpandEnvironmentNames) == null;
+                    string valName = NormalizeValueName(spec.Name);
+                    object val = k.GetValue(valName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    if (string.Equals(vt, "DeleteValue", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(spec.ApplyValue, "__DELETE__", StringComparison.OrdinalIgnoreCase)) {
+                        return (val == null);
                     }
-                    if (rk == null) return false;
-                    object cur = rk.GetValue(r.Name ?? "", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                    if (cur == null) return false;
-                    RegistryValueKind kind = rk.GetValueKind(r.Name ?? "");
-                    string curStr = SerializeRegistryValue(cur, kind);
-                    return string.Equals(curStr.Trim(), (r.ApplyValue ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
+                    if (val == null) return false;
+                    RegistryValueKind kind = k.GetValueKind(valName);
+                    return ValuesMatch(val, kind, vt, spec.ApplyValue);
                 }
-            } catch {
-                return false;
             }
         }
 
-        private static bool CheckActionState(string actionKind, string actionParam) {
-            string kind = (actionKind ?? "").Trim().ToLowerInvariant();
-            if (string.IsNullOrEmpty(kind)) return false;
+        private static bool ProbeSingleServiceSpec(ServiceTweakSpec spec, out bool exists) {
+            exists = false;
+            if (spec == null || string.IsNullOrWhiteSpace(spec.Name)) return false;
+            using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+            using (RegistryKey k = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + spec.Name, false)) {
+                if (k == null) return false;
+                exists = true;
+                object stObj = k.GetValue("Start");
+                if (stObj == null) return false;
+                try {
+                    int st = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
+                    if (spec.ApplyStart == 3) return (st == 3 || st == 4);
+                    return (st == spec.ApplyStart);
+                } catch { return false; }
+            }
+        }
+
+        private static string RunQuickCmdOut(string exe, string args, int timeoutMs) {
             try {
-                switch (kind) {
-                    case "hibernation_off": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power", false)) {
-                            if (rk != null) {
-                                object v = rk.GetValue("HibernateEnabled");
-                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) return true;
-                            }
+                var psi = new ProcessStartInfo();
+                psi.FileName = exe;
+                psi.Arguments = args;
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (Process p = Process.Start(psi)) {
+                    if (p == null) return "";
+                    string txt = p.StandardOutput.ReadToEnd();
+                    p.WaitForExit(timeoutMs);
+                    return txt ?? "";
+                }
+            } catch {
+                return "";
+            }
+        }
+
+        private static TweakProbeResult ProbeSpecialKind(TweakProbeRequest req, string activePowerScheme) {
+            string kind = req.ProbeKind ?? "";
+            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+                return new TweakProbeResult { Id = req.Id, State = "Action", Detail = "" };
+            }
+            if (string.Equals(kind, "Hibernation", StringComparison.OrdinalIgnoreCase)) {
+                bool hiberOff = false;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey k = b.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power", false)) {
+                        if (k != null) {
+                            object v = k.GetValue("HibernateEnabled");
+                            if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) hiberOff = true;
                         }
-                        return false;
                     }
-                    case "ultimate_perf": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", false)) {
-                            if (rk != null) {
-                                string active = Convert.ToString(rk.GetValue("ActivePowerScheme"), CultureInfo.InvariantCulture) ?? "";
-                                if (string.Equals(active, "e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase)) return true;
-                                if (!string.IsNullOrEmpty(active)) {
-                                    using (RegistryKey sk = rk.OpenSubKey(active, false)) {
-                                        if (sk != null) {
-                                            string fn = Convert.ToString(sk.GetValue("FriendlyName"), CultureInfo.InvariantCulture) ?? "";
-                                            if (fn.IndexOf("Ultimate", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-                                        }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = hiberOff ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "UltimatePerf", StringComparison.OrdinalIgnoreCase)) {
+                bool isUlt = !string.IsNullOrEmpty(activePowerScheme) &&
+                             (activePowerScheme.IndexOf("Ultimate Performance", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase) >= 0);
+                return new TweakProbeResult { Id = req.Id, State = isUlt ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "AdobeBlocked", StringComparison.OrdinalIgnoreCase)) {
+                bool blocked = false;
+                try {
+                    string hosts = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"drivers\etc\hosts");
+                    if (File.Exists(hosts)) {
+                        string content = File.ReadAllText(hosts);
+                        blocked = content.IndexOf("# AppDriver-AdobeBlock-Start", StringComparison.OrdinalIgnoreCase) >= 0;
+                    }
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = blocked ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "OneDriveRemoved", StringComparison.OrdinalIgnoreCase)) {
+                bool removed = true;
+                try {
+                    string p1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\OneDrive\OneDrive.exe");
+                    string p2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft OneDrive\OneDrive.exe");
+                    string p3 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft OneDrive\OneDrive.exe");
+                    if (File.Exists(p1) || File.Exists(p2) || File.Exists(p3)) removed = false;
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = removed ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "EdgeRemoved", StringComparison.OrdinalIgnoreCase)) {
+                bool removed = true;
+                try {
+                    string p1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe");
+                    string p2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft\Edge\Application\msedge.exe");
+                    if (File.Exists(p1) || File.Exists(p2)) removed = false;
+                } catch {}
+                return new TweakProbeResult { Id = req.Id, State = removed ? "Applied" : "Default", Detail = "" };
+            }
+            if (string.Equals(kind, "NagleDisabled", StringComparison.OrdinalIgnoreCase)) {
+                int checkedIf = 0;
+                int matchedIf = 0;
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey root = b.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces", false)) {
+                        if (root != null) {
+                            foreach (string sub in root.GetSubKeyNames()) {
+                                using (RegistryKey sk = root.OpenSubKey(sub, false)) {
+                                    if (sk == null) continue;
+                                    string dhIp = (sk.GetValue("DhcpIPAddress") ?? "").ToString();
+                                    string stIp = "";
+                                    object ipObj = sk.GetValue("IPAddress");
+                                    if (ipObj is string[]) {
+                                        string[] arr = (string[])ipObj;
+                                        if (arr.Length > 0) stIp = arr[0] ?? "";
+                                    } else if (ipObj != null) {
+                                        stIp = ipObj.ToString();
+                                    }
+                                    bool hasIp = (!string.IsNullOrWhiteSpace(dhIp) && dhIp != "0.0.0.0") ||
+                                                 (!string.IsNullOrWhiteSpace(stIp) && stIp != "0.0.0.0");
+                                    if (!hasIp) continue;
+                                    checkedIf++;
+                                    object a1 = sk.GetValue("TcpAckFrequency");
+                                    object a2 = sk.GetValue("TCPNoDelay");
+                                    if (a1 != null && a2 != null &&
+                                        Convert.ToInt32(a1, CultureInfo.InvariantCulture) == 1 &&
+                                        Convert.ToInt32(a2, CultureInfo.InvariantCulture) == 1) {
+                                        matchedIf++;
                                     }
                                 }
                             }
                         }
-                        return false;
                     }
-                    case "classic_context_menu": {
-                        using (RegistryKey rk = Registry.CurrentUser.OpenSubKey(@"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32", false)) {
-                            if (rk != null) {
-                                object v = rk.GetValue("");
-                                return v != null && string.Equals(v.ToString(), "", StringComparison.Ordinal);
+                } catch {}
+                string st = (checkedIf > 0 && matchedIf == checkedIf) ? "Applied" : (matchedIf > 0 ? "Partial" : "Default");
+                return new TweakProbeResult { Id = req.Id, State = st, Detail = "" };
+            }
+            return null;
+        }
+
+        public static TweakProbeResult[] ProbeTweaksState(TweakProbeRequest[] requests) {
+            if (requests == null || requests.Length == 0) return new TweakProbeResult[0];
+            bool needPowerScheme = false;
+            for (int i = 0; i < requests.Length; i++) {
+                if (requests[i] != null && string.Equals(requests[i].ProbeKind, "UltimatePerf", StringComparison.OrdinalIgnoreCase)) {
+                    needPowerScheme = true;
+                    break;
+                }
+            }
+            string activeScheme = needPowerScheme ? RunQuickCmdOut("powercfg.exe", "/getactivescheme", 2500) : "";
+
+            var results = new TweakProbeResult[requests.Length];
+            for (int i = 0; i < requests.Length; i++) {
+                TweakProbeRequest req = requests[i];
+                if (req == null) {
+                    results[i] = new TweakProbeResult { Id = "", State = "Default", Detail = "" };
+                    continue;
+                }
+                if (!string.IsNullOrEmpty(req.ProbeKind)) {
+                    TweakProbeResult sp = ProbeSpecialKind(req, activeScheme);
+                    if (sp != null) {
+                        results[i] = sp;
+                        continue;
+                    }
+                }
+
+                int total = 0;
+                int matched = 0;
+                if (req.Registry != null) {
+                    for (int r = 0; r < req.Registry.Length; r++) {
+                        total++;
+                        try {
+                            if (ProbeSingleRegSpec(req.Registry[r])) matched++;
+                        } catch {}
+                    }
+                }
+                if (req.Services != null) {
+                    for (int s = 0; s < req.Services.Length; s++) {
+                        bool exists;
+                        bool ok = false;
+                        try { ok = ProbeSingleServiceSpec(req.Services[s], out exists); } catch { exists = false; }
+                        if (exists) {
+                            total++;
+                            if (ok) matched++;
+                        }
+                    }
+                }
+
+                string state;
+                if (total == 0) {
+                    state = "Action";
+                } else if (matched == total) {
+                    state = "Applied";
+                } else if (matched > 0 && req.Services != null && req.Services.Length >= 10 && matched >= (int)(total * 0.85)) {
+                    state = "Applied";
+                } else if (matched > 0) {
+                    state = "Partial";
+                } else {
+                    state = "Default";
+                }
+                results[i] = new TweakProbeResult {
+                    Id = req.Id,
+                    State = state,
+                    Detail = total > 0 ? (matched.ToString(CultureInfo.InvariantCulture) + "/" + total.ToString(CultureInfo.InvariantCulture)) : ""
+                };
+            }
+            return results;
+        }
+
+        public static Task<TweakProbeResult[]> ProbeTweaksStateAsync(TweakProbeRequest[] requests) {
+            return Task.Run(new Func<TweakProbeResult[]>(() => ProbeTweaksState(requests)));
+        }
+
+        public static RegistrySnapshotEntry[] CaptureRegistrySnapshots(RegTweakSpec[] specs) {
+            var list = new List<RegistrySnapshotEntry>();
+            if (specs == null || specs.Length == 0) return list.ToArray();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < specs.Length; i++) {
+                RegTweakSpec s = specs[i];
+                if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
+                string normName = NormalizeValueName(s.Name);
+                string dedupKey = (s.Hive ?? "HKLM") + "|" + s.Path + "|" + normName;
+                if (!seen.Add(dedupKey)) continue;
+
+                var entry = new RegistrySnapshotEntry();
+                entry.Hive = string.IsNullOrWhiteSpace(s.Hive) ? "HKLM" : s.Hive;
+                entry.Path = s.Path;
+                entry.Name = normName;
+                entry.Existed = false;
+                entry.KeyExisted = false;
+                entry.Kind = "String";
+                entry.ValueData = "";
+
+                try {
+                    using (RegistryKey baseKey = OpenHiveBase(entry.Hive))
+                    using (RegistryKey k = baseKey.OpenSubKey(entry.Path, false)) {
+                        if (k != null) {
+                            entry.KeyExisted = true;
+                            if (!string.Equals(s.ValueType, "DeleteKey", StringComparison.OrdinalIgnoreCase)) {
+                                object val = k.GetValue(normName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                                if (val != null) {
+                                    entry.Existed = true;
+                                    RegistryValueKind kind = k.GetValueKind(normName);
+                                    entry.Kind = kind.ToString();
+                                    if (kind == RegistryValueKind.Binary && val is byte[]) {
+                                        entry.ValueData = FormatHexBytes((byte[])val);
+                                    } else if (kind == RegistryValueKind.MultiString && val is string[]) {
+                                        entry.ValueData = string.Join("\n", (string[])val);
+                                    } else {
+                                        entry.ValueData = Convert.ToString(val, CultureInfo.InvariantCulture) ?? "";
+                                    }
+                                }
                             }
                         }
-                        return false;
                     }
-                    case "remove_home_gallery": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}", false)) {
-                            return rk == null;
-                        }
-                    }
-                    case "remove_onedrive": {
-                        string od1 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\OneDrive\OneDrive.exe");
-                        string od2 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft OneDrive\OneDrive.exe");
-                        return !File.Exists(od1) && !File.Exists(od2);
-                    }
-                    case "block_adobe_net": {
-                        string hosts = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"drivers\etc\hosts");
-                        if (File.Exists(hosts)) {
-                            string txt = File.ReadAllText(hosts);
-                            return txt.IndexOf("# AppDriver-AdobeBlock", StringComparison.OrdinalIgnoreCase) >= 0;
-                        }
-                        return false;
-                    }
-                    case "ipv6_disable": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters", false)) {
-                            if (rk != null) {
-                                object v = rk.GetValue("DisabledComponents");
-                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 255) return true;
+                } catch {}
+                list.Add(entry);
+            }
+            return list.ToArray();
+        }
+
+        public static ServiceSnapshotEntry[] CaptureServiceSnapshots(ServiceTweakSpec[] specs) {
+            var list = new List<ServiceSnapshotEntry>();
+            if (specs == null || specs.Length == 0) return list.ToArray();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)) {
+                for (int i = 0; i < specs.Length; i++) {
+                    ServiceTweakSpec s = specs[i];
+                    if (s == null || string.IsNullOrWhiteSpace(s.Name)) continue;
+                    if (!seen.Add(s.Name)) continue;
+
+                    var entry = new ServiceSnapshotEntry();
+                    entry.Name = s.Name;
+                    entry.Existed = false;
+                    entry.OriginalStart = 3;
+                    try {
+                        using (RegistryKey k = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + s.Name, false)) {
+                            if (k != null) {
+                                object stObj = k.GetValue("Start");
+                                if (stObj != null) {
+                                    entry.Existed = true;
+                                    entry.OriginalStart = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
+                                }
                             }
                         }
-                        return false;
-                    }
-                    case "ipv4_prefer": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters", false)) {
-                            if (rk != null) {
-                                object v = rk.GetValue("DisabledComponents");
-                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 32) return true;
-                            }
+                    } catch {}
+                    if (entry.Existed) list.Add(entry);
+                }
+            }
+            return list.ToArray();
+        }
+
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+            string vt = (valueType ?? "DWord").Trim();
+            string normName = NormalizeValueName(name);
+
+            if (string.Equals(vt, "DeleteKey", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rawValue, "__DELETE_KEY__", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    baseKey.DeleteSubKeyTree(path, false);
+                    return true;
+                } catch { return false; }
+            }
+
+            if (string.Equals(vt, "DeleteValue", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(rawValue, "__DELETE__", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    using (RegistryKey k = baseKey.OpenSubKey(path, true)) {
+                        if (k != null) {
+                            k.DeleteValue(normName, false);
                         }
-                        return false;
                     }
-                    case "svchost_split_off": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control", false)) {
-                            if (rk != null) {
-                                object v = rk.GetValue("SvcHostSplitThresholdInKB");
-                                if (v != null && Convert.ToInt64(v, CultureInfo.InvariantCulture) >= 16777216L) return true;
-                            }
-                        }
-                        return false;
+                    return true;
+                } catch { return false; }
+            }
+
+            try {
+                using (RegistryKey k = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                    if (k == null) return false;
+                    if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
+                        long lv;
+                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
+                        k.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
+                        return true;
                     }
-                    case "reserved_storage_off": {
-                        using (RegistryKey rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager", false)) {
-                            if (rk != null) {
-                                object v = rk.GetValue("ShippedWithReserves");
-                                if (v != null && Convert.ToInt32(v, CultureInfo.InvariantCulture) == 0) return true;
-                            }
-                        }
-                        return false;
+                    if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
+                        long lv;
+                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
+                        k.SetValue(normName, lv, RegistryValueKind.QWord);
+                        return true;
                     }
-                    default:
-                        return false;
+                    if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
+                        byte[] bytes = ParseHexBytes(rawValue);
+                        k.SetValue(normName, bytes, RegistryValueKind.Binary);
+                        return true;
+                    }
+                    if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
+                        k.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
+                        return true;
+                    }
+                    if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
+                        string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
+                        k.SetValue(normName, parts, RegistryValueKind.MultiString);
+                        return true;
+                    }
+                    k.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                    return true;
                 }
             } catch {
                 return false;
             }
         }
 
-        public static TweakProbeResult[] ProbeTweaksState(TweakProbeSpec[] specs, int currentOsBuild) {
-            if (specs == null) return new TweakProbeResult[0];
-            var results = new TweakProbeResult[specs.Length];
+        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
+            if (specs == null || specs.Length == 0) return 0;
+            int okCount = 0;
             for (int i = 0; i < specs.Length; i++) {
-                TweakProbeSpec sp = specs[i];
-                var r = new TweakProbeResult { Id = sp != null ? sp.Id : "", IsApplied = false, Supported = true, Detail = "" };
-                if (sp == null) { results[i] = r; continue; }
-
-                if (sp.MinBuild > 0 && currentOsBuild > 0 && currentOsBuild < sp.MinBuild) {
-                    r.Supported = false;
-                    r.Detail = "Y\u00EAu c\u1EA7u Windows build " + sp.MinBuild.ToString(CultureInfo.InvariantCulture) + "+";
-                    results[i] = r;
+                RegTweakSpec s = specs[i];
+                if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
+                string targetVal = undo ? s.UndoValue : s.ApplyValue;
+                string targetType = s.ValueType ?? "DWord";
+                if (undo && string.Equals(targetType, "DeleteKey", StringComparison.OrdinalIgnoreCase)) {
+                    if (string.Equals(targetVal, "__CREATE_KEY__", StringComparison.OrdinalIgnoreCase)) {
+                        try {
+                            using (RegistryKey baseKey = OpenHiveBase(s.Hive))
+                            using (RegistryKey k = baseKey.CreateSubKey(s.Path)) {
+                                if (k != null) okCount++;
+                            }
+                        } catch {}
+                    }
                     continue;
                 }
-
-                bool hasCheck = false;
-                bool allOk = true;
-
-                if (!string.IsNullOrEmpty(sp.ActionKind)) {
-                    string ak = sp.ActionKind.Trim().ToLowerInvariant();
-                    if (ak != "restore_point" && ak != "clean_temp" && ak != "disk_cleanup" && ak != "dns_switch" && ak != "remove_edge" && ak != "remove_windows_ai") {
-                        hasCheck = true;
-                        allOk = CheckActionState(sp.ActionKind, sp.ActionParam);
+                if (undo && string.Equals(targetVal, "__SKIP__", StringComparison.OrdinalIgnoreCase)) {
+                    okCount++;
+                    continue;
+                }
+                using (RegistryKey baseKey = OpenHiveBase(s.Hive)) {
+                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal)) {
+                        okCount++;
                     }
                 }
-
-                if (!hasCheck && sp.RegRules != null && sp.RegRules.Length > 0) {
-                    hasCheck = true;
-                    for (int j = 0; j < sp.RegRules.Length; j++) {
-                        if (!CheckRegistryRuleApplied(sp.RegRules[j])) {
-                            allOk = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (!hasCheck && sp.Services != null && sp.Services.Length > 0) {
-                    int foundSvc = 0;
-                    int manualOrDisabled = 0;
-                    for (int s = 0; s < sp.Services.Length; s++) {
-                        int st = GetServiceStartType(sp.Services[s]);
-                        if (st >= 0) {
-                            foundSvc++;
-                            if (st == 3 || st == 4) manualOrDisabled++;
-                        }
-                    }
-                    if (foundSvc > 0) {
-                        hasCheck = true;
-                        allOk = (manualOrDisabled >= (int)Math.Ceiling(foundSvc * 0.85));
-                    }
-                }
-
-                r.IsApplied = hasCheck && allOk;
-                results[i] = r;
             }
-            return results;
+            return okCount;
         }
 
-        public static Task<TweakProbeResult[]> ProbeTweaksStateAsync(TweakProbeSpec[] specs, int currentOsBuild) {
-            return Task.Run(() => ProbeTweaksState(specs, currentOsBuild));
+        public static int RestoreRegistrySnapshots(RegistrySnapshotEntry[] entries) {
+            if (entries == null || entries.Length == 0) return 0;
+            int restored = 0;
+            for (int i = 0; i < entries.Length; i++) {
+                RegistrySnapshotEntry e = entries[i];
+                if (e == null || string.IsNullOrWhiteSpace(e.Path)) continue;
+                using (RegistryKey baseKey = OpenHiveBase(e.Hive)) {
+                    if (!e.KeyExisted) {
+                        try { baseKey.DeleteSubKeyTree(e.Path, false); restored++; } catch {}
+                    } else if (!e.Existed) {
+                        if (WriteRegistryValueTyped(baseKey, e.Path, e.Name, "DeleteValue", "__DELETE__")) restored++;
+                    } else {
+                        if (WriteRegistryValueTyped(baseKey, e.Path, e.Name, e.Kind ?? "String", e.ValueData ?? "")) restored++;
+                    }
+                }
+            }
+            return restored;
+        }
+
+        public static int ApplyServiceSpecs(ServiceTweakSpec[] specs, bool undo) {
+            if (specs == null || specs.Length == 0) return 0;
+            int changed = 0;
+            using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)) {
+                for (int i = 0; i < specs.Length; i++) {
+                    ServiceTweakSpec s = specs[i];
+                    if (s == null || string.IsNullOrWhiteSpace(s.Name)) continue;
+                    int targetStart = undo ? s.UndoStart : s.ApplyStart;
+                    if (targetStart < 2 || targetStart > 4) continue;
+                    try {
+                        using (RegistryKey k = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + s.Name, true)) {
+                            if (k == null) continue;
+                            object curObj = k.GetValue("Start");
+                            if (curObj == null) continue;
+                            int curStart = Convert.ToInt32(curObj, CultureInfo.InvariantCulture);
+                            if (curStart <= 1) continue;
+                            if (curStart != targetStart) {
+                                k.SetValue("Start", targetStart, RegistryValueKind.DWord);
+                            }
+                            changed++;
+                        }
+                    } catch {}
+                }
+            }
+            return changed;
+        }
+
+        public static int RestoreServiceSnapshots(ServiceSnapshotEntry[] entries) {
+            if (entries == null || entries.Length == 0) return 0;
+            int restored = 0;
+            using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)) {
+                for (int i = 0; i < entries.Length; i++) {
+                    ServiceSnapshotEntry e = entries[i];
+                    if (e == null || !e.Existed || string.IsNullOrWhiteSpace(e.Name)) continue;
+                    if (e.OriginalStart < 2 || e.OriginalStart > 4) continue;
+                    try {
+                        using (RegistryKey k = baseKey.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\" + e.Name, true)) {
+                            if (k == null) continue;
+                            object curObj = k.GetValue("Start");
+                            if (curObj == null) continue;
+                            int curStart = Convert.ToInt32(curObj, CultureInfo.InvariantCulture);
+                            if (curStart <= 1) continue;
+                            k.SetValue("Start", e.OriginalStart, RegistryValueKind.DWord);
+                            restored++;
+                        }
+                    } catch {}
+                }
+            }
+            return restored;
         }
     }
 }

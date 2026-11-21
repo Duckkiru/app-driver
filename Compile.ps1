@@ -1,4 +1,4 @@
-﻿$root = $PSScriptRoot
+$root = $PSScriptRoot
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "APP-DRIVER BUNDLER - COMPILING PROJECT ARTIFACTS..." -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -111,11 +111,11 @@ function ConvertTo-AsciiPowerShellCode {
     return $sb.ToString()
 }
 
-$startCode = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1"))
-$appsJson  = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json"))
+$startCode  = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1"))
+$appsJson   = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json"))
 $tweaksJson = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\tweaks.json"))
-$xamlCode  = ConvertTo-AsciiXml (Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml"))
-$mainCode  = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1"))
+$xamlCode   = ConvertTo-AsciiXml (Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml"))
+$mainCode   = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1"))
 function Merge-CSharpCoreSources {
     param([string[]]$Sources)
     $usings = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
@@ -162,7 +162,7 @@ $sb.AppendLine() | Out-Null
 $sb.AppendLine(('$tweaksRawJson = @' + $q)) | Out-Null
 $sb.AppendLine($tweaksJson.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
-$sb.AppendLine('$TweaksCatalog = ConvertFrom-Json $tweaksRawJson') | Out-Null
+$sb.AppendLine('$TweakCatalog = ConvertFrom-Json $tweaksRawJson') | Out-Null
 $sb.AppendLine() | Out-Null
 
 $dq = [char]34
@@ -242,7 +242,7 @@ $sb.AppendLine('    }') | Out-Null
 $sb.AppendLine('    return $wpfSmoothRefs') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
-$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type])) {') | Out-Null
 $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $duckCoreCs = @' + $q)) | Out-Null
 $sb.AppendLine($combinedCoreCsCode.Trim()) | Out-Null
