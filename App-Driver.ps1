@@ -5025,7 +5025,7 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                 </StackPanel>
 
                                 <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
-                                        Padding="8,4" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        Padding="8,0" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Stretch">
                                     <Grid Width="220">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -5052,7 +5052,8 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                                  BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                  ToolTip="T&#x00EC;m nhanh &#x1EE9;ng d&#x1EE5;ng (kh&#x00F4;ng d&#x1EA5;u, g&#x1EA7;n &#x0111;&#x00FA;ng, t&#x00EA;n g&#x00F3;i WinGet/ID)..." ToolTipService.InitialShowDelay="3000"/>
                                         <Button Grid.Column="2" Name="btnClearCatalogSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
-                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="3000"/>
+                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
+                                                ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="3000"/>
                                     </Grid>
                                 </Border>
 
@@ -5233,26 +5234,42 @@ $AppCatalog = ConvertFrom-Json $appsRawJson
                                             Background="#1E293B" Foreground="#93C5FD" Padding="14,7"/>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1" Padding="8,4" Margin="0,0,8,0">
-                                        <Grid Width="200">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
-                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
-                                            <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
-                                                     BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="T&#x00EC;m ki&#x1EBF;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c phi&#x00EA;n b&#x1EA3;n..." ToolTipService.InitialShowDelay="5000"/>
-                                            <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" ToolTip="X&#x00F3;a b&#x1ED9; l&#x1ECD;c" ToolTipService.InitialShowDelay="5000"/>
-                                        </Grid>
-                                    </Border>
-                                    <Button Name="btnUninstallSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
-                                    <Button Name="btnUninstallDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Padding="10,6"/>
+                                <Border Grid.Column="1" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
+                                        Padding="8,0" Margin="10,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                                    <Grid Width="220">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                              Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                              Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
+                                        <TextBlock Grid.Column="1" Text="T&#x00EC;m &#x1EE9;ng d&#x1EE5;ng..." Foreground="#475569" FontSize="11.5"
+                                                   VerticalAlignment="Center" IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=txtUninstallSearch}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                 BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
+                                                 ToolTip="T&#x00EC;m ki&#x1EBF;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c phi&#x00EA;n b&#x1EA3;n..." ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
+                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
+                                                ToolTip="X&#x00F3;a b&#x1ED9; l&#x1ECD;c" ToolTipService.InitialShowDelay="5000"/>
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                    <Button Name="btnUninstallSelectAll" Content="Ch&#x1ECD;n t&#x1EA5;t c&#x1EA3;" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                                    <Button Name="btnUninstallDeselectAll" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}" Margin="0"/>
                                 </StackPanel>
                             </Grid>
 
