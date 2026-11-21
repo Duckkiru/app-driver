@@ -13359,9 +13359,9 @@ namespace DuckUtil
                             psi.CreateNoWindow = true;
                             using (Process p = Process.Start(psi))
                             {
-                                if (p != null) p.WaitForExit(2500);
+                                if (p != null) p.WaitForExit(800);
                             }
-                            for (int attempt = 0; attempt < 6; attempt++)
+                            for (int attempt = 0; attempt < 4; attempt++)
                             {
                                 found = FindProcessIdByNameFast("TrustedInstaller");
                                 if (found > 4) break;
@@ -15531,6 +15531,18 @@ namespace DuckUtil
                     if (kAcl != null)
                     {
                         var rs = kAcl.GetAccessControl(AccessControlSections.Access);
+                        AuthorizationRuleCollection rules = rs.GetAccessRules(true, false, typeof(SecurityIdentifier));
+                        if (rules != null)
+                        {
+                            foreach (AuthorizationRule rule in rules)
+                            {
+                                var regRule = rule as RegistryAccessRule;
+                                if (regRule != null && regRule.AccessControlType == AccessControlType.Deny)
+                                {
+                                    rs.RemoveAccessRule(regRule);
+                                }
+                            }
+                        }
                         rs.SetAccessRuleProtection(false, false);
                         rs.AddAccessRule(new RegistryAccessRule(
                             adminSid,
@@ -15595,10 +15607,41 @@ namespace DuckUtil
 
             RegistryHive elevHive = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? RegistryHive.Users : hive;
             string elevParent = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? (userSid + "\\" + parentPath) : parentPath;
+            if (isCurrentUser && !string.IsNullOrEmpty(userSid) &&
+                parentPath.StartsWith("Software\\Classes\\", StringComparison.OrdinalIgnoreCase))
+            {
+                string afterClasses = parentPath.Substring("Software\\Classes\\".Length);
+                if (!string.IsNullOrEmpty(afterClasses))
+                {
+                    string classesDirect = userSid + "_Classes\\" + afterClasses;
+                    if (RegistrySubKeyExists(RegistryHive.Users, classesDirect + "\\" + leafName))
+                    {
+                        elevParent = classesDirect;
+                    }
+                }
+            }
             string elevFull = elevParent + "\\" + leafName;
             var adminSid = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
 
             EnsureUnlockPrivileges();
+            // Step 1: Try pure NT AUTHORITY\SYSTEM first (owns AppModel\Repository\Packages etc.)
+            RunWithSystemOrTrustedInstaller(false, delegate()
+            {
+                if (TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName)) return;
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(elevHive, RegistryView.Registry64))
+                    {
+                        GrantRegistryAdminFullControlRecursive(baseKey, elevFull, adminSid, 0);
+                    }
+                }
+                catch {}
+                TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName);
+            });
+
+            if (!RegistrySubKeyExists(elevHive, elevFull)) return true;
+
+            // Step 2: Try TrustedInstaller + ACL takeover
             RunWithSystemOrTrustedInstaller(true, delegate()
             {
                 if (TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName)) return;
@@ -25554,9 +25597,9 @@ namespace DuckUtil
                             psi.CreateNoWindow = true;
                             using (Process p = Process.Start(psi))
                             {
-                                if (p != null) p.WaitForExit(2500);
+                                if (p != null) p.WaitForExit(800);
                             }
-                            for (int attempt = 0; attempt < 6; attempt++)
+                            for (int attempt = 0; attempt < 4; attempt++)
                             {
                                 found = FindProcessIdByNameFast("TrustedInstaller");
                                 if (found > 4) break;
@@ -27726,6 +27769,18 @@ namespace DuckUtil
                     if (kAcl != null)
                     {
                         var rs = kAcl.GetAccessControl(AccessControlSections.Access);
+                        AuthorizationRuleCollection rules = rs.GetAccessRules(true, false, typeof(SecurityIdentifier));
+                        if (rules != null)
+                        {
+                            foreach (AuthorizationRule rule in rules)
+                            {
+                                var regRule = rule as RegistryAccessRule;
+                                if (regRule != null && regRule.AccessControlType == AccessControlType.Deny)
+                                {
+                                    rs.RemoveAccessRule(regRule);
+                                }
+                            }
+                        }
                         rs.SetAccessRuleProtection(false, false);
                         rs.AddAccessRule(new RegistryAccessRule(
                             adminSid,
@@ -27790,10 +27845,41 @@ namespace DuckUtil
 
             RegistryHive elevHive = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? RegistryHive.Users : hive;
             string elevParent = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? (userSid + "\\" + parentPath) : parentPath;
+            if (isCurrentUser && !string.IsNullOrEmpty(userSid) &&
+                parentPath.StartsWith("Software\\Classes\\", StringComparison.OrdinalIgnoreCase))
+            {
+                string afterClasses = parentPath.Substring("Software\\Classes\\".Length);
+                if (!string.IsNullOrEmpty(afterClasses))
+                {
+                    string classesDirect = userSid + "_Classes\\" + afterClasses;
+                    if (RegistrySubKeyExists(RegistryHive.Users, classesDirect + "\\" + leafName))
+                    {
+                        elevParent = classesDirect;
+                    }
+                }
+            }
             string elevFull = elevParent + "\\" + leafName;
             var adminSid = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
 
             EnsureUnlockPrivileges();
+            // Step 1: Try pure NT AUTHORITY\SYSTEM first (owns AppModel\Repository\Packages etc.)
+            RunWithSystemOrTrustedInstaller(false, delegate()
+            {
+                if (TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName)) return;
+                try
+                {
+                    using (var baseKey = RegistryKey.OpenBaseKey(elevHive, RegistryView.Registry64))
+                    {
+                        GrantRegistryAdminFullControlRecursive(baseKey, elevFull, adminSid, 0);
+                    }
+                }
+                catch {}
+                TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName);
+            });
+
+            if (!RegistrySubKeyExists(elevHive, elevFull)) return true;
+
+            // Step 2: Try TrustedInstaller + ACL takeover
             RunWithSystemOrTrustedInstaller(true, delegate()
             {
                 if (TryDeleteRegistryTreeDirect(elevHive, elevParent, leafName)) return;
