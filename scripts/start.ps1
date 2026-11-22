@@ -122,7 +122,6 @@ if (-not $isCompanion -or -not $isAdmin) {
             }
         }
     } else {
-        $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
         $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$env:APP_DRIVER_COMPANION='1'; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
     }
 

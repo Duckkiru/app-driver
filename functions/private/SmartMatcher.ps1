@@ -123,11 +123,11 @@ function Test-AppUpdateGenuine {
     $av = $AvailableVer.Trim()
     if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown") { return $false }
     if ($av -notmatch '\d') { return $false }
-    if ([string]::IsNullOrWhiteSpace($InstalledVer)) { return $true }
+    if ([string]::IsNullOrWhiteSpace($InstalledVer)) { return $false }
     $iv = $InstalledVer.Trim()
-    if ($iv.StartsWith("<")) { return $true }
-    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $true }
+    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $false }
     $cmp = Compare-AppVersions $av $iv
+    if ($iv.StartsWith("<")) { return ($cmp -ge 0) }
     if ($cmp -gt 0) { return $true }
     $rxPre = '(?i)(?:^|[-.+_])(?:alpha|beta|rc|pre|preview|dev|canary|nightly)(?:$|[-.+_\d])'
     if ($cmp -eq 0 -and ($iv -match $rxPre) -and ($av -notmatch $rxPre)) { return $true }

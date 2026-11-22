@@ -301,7 +301,7 @@ function Invoke-SafeBackgroundAppsTweak {
 }
 
 function Repair-OemPowerAndLegionThermalMode {
-    param([switch]$Silent)
+    param([switch]$Silent, [switch]$ResetPowerPlan)
     try {
         $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
         if (Test-Path -LiteralPath $bgPath) {
@@ -348,10 +348,12 @@ function Repair-OemPowerAndLegionThermalMode {
             }
         }
 
-        $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
-        if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
-            $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-            try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+        if ($ResetPowerPlan) {
+            $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
+            if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
+                $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+                try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+            }
         }
         $psRoot = "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
         if (Test-Path -LiteralPath $psRoot) {
@@ -427,34 +429,18 @@ function Repair-OemPowerAndLegionThermalMode {
     } catch {}
 }
 
-function Invoke-OemAndCriticalServiceSelfHeal {
-    try {
-        $bgUser = (Get-ItemProperty -LiteralPath "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -ErrorAction SilentlyContinue).GlobalUserDisabled
-        $bgPol = (Get-ItemProperty -LiteralPath "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue).LetAppsRunInBackground
-        $curSplit = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
-        $curOv = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
-        $sysMainSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\SysMain" -Name "Start" -ErrorAction SilentlyContinue).Start
-        $kbFiltSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\MsKeyboardFilter" -Name "Start" -ErrorAction SilentlyContinue).Start
-        $notifPol = (Get-ItemProperty -LiteralPath "HKCU:\Software\Policies\Microsoft\Windows\Explorer" -Name "DisableNotificationCenter" -ErrorAction SilentlyContinue).DisableNotificationCenter
-        $drvPol = (Get-ItemProperty -LiteralPath "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching" -Name "DontPromptForWindowsUpdate" -ErrorAction SilentlyContinue).DontPromptForWindowsUpdate
-
-        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curSplit -eq 380000000 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4 -or $notifPol -eq 1 -or $drvPol -eq 1) {
-            Repair-OemPowerAndLegionThermalMode -Silent
-        }
-    } catch {}
-}
-
 function Restore-AllOptimizerGuardSnapshots {
     param([string[]]$FilterTweakIds = $null)
     if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return $false }
+    $isFullRestore = (-not $FilterTweakIds -or $FilterTweakIds.Count -eq 0)
     $dir = Get-OptimizerBackupDirectory
     if (-not [System.IO.Directory]::Exists($dir)) {
-        Repair-OemPowerAndLegionThermalMode
+        if ($isFullRestore) { Repair-OemPowerAndLegionThermalMode -ResetPowerPlan }
         return $true
     }
     $files = @(Get-ChildItem -LiteralPath $dir -Filter "snapshot_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
     if ($files.Count -eq 0) {
-        Repair-OemPowerAndLegionThermalMode
+        if ($isFullRestore) { Repair-OemPowerAndLegionThermalMode -ResetPowerPlan }
         return $true
     }
 
@@ -529,7 +515,9 @@ function Restore-AllOptimizerGuardSnapshots {
         } else { [void]$tkTaskAll.Wait(25000) }
     }
 
-    Repair-OemPowerAndLegionThermalMode
+    if ($isFullRestore) {
+        Repair-OemPowerAndLegionThermalMode -ResetPowerPlan
+    }
 
     if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
         $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()

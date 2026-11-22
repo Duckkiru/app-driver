@@ -50,3 +50,13 @@ jobs:
             exit 1
         }
         Write-Host "App-Driver Syntax & 7-bit ASCII Validation is 100% Valid!" -ForegroundColor Green
+
+    - name: Run Core Engine Verification (PowerShell 7)
+      shell: pwsh
+      run: |
+        pwsh -NoProfile -STA -File ./tests/Verify-CoreEngines.ps1
+
+    - name: Run Core Engine Verification (Windows PowerShell 5.1)
+      shell: pwsh
+      run: |
+        powershell -NoProfile -STA -File ./tests/Verify-CoreEngines.ps1
