@@ -9192,31 +9192,54 @@ $script:btnStartFilterAll     = $window.FindName("btnStartFilterAll")
 $script:btnStartFilterOn      = $window.FindName("btnStartFilterOn")
 $script:btnStartFilterOff     = $window.FindName("btnStartFilterOff")
 $script:btnStartFilterOrphan  = $window.FindName("btnStartFilterOrphan")
+$script:btnStartSrcAll        = $window.FindName("btnStartSrcAll")
+$script:btnStartSrcReg        = $window.FindName("btnStartSrcReg")
+$script:btnStartSrcStore      = $window.FindName("btnStartSrcStore")
+$script:btnStartSrcTask       = $window.FindName("btnStartSrcTask")
+$script:btnStartSrcSvc        = $window.FindName("btnStartSrcSvc")
 $script:txtStartSummary       = $window.FindName("txtStartSummary")
 $script:startHeaderBorder     = $window.FindName("StartHeaderBorder")
 $script:startScrollViewer     = $window.FindName("StartScrollViewer")
 $script:startRowsHost         = $window.FindName("StartRowsHost")
+$script:startEmptyState       = $window.FindName("StartEmptyState")
+$script:txtStartEmptyTitle    = $window.FindName("txtStartEmptyTitle")
+$script:txtStartEmptySub      = $window.FindName("txtStartEmptySub")
 $script:styleRowActionBtn     = $window.FindResource("RowActionButton")
 
 $script:startInitialized         = $false
 $script:startScanVersion         = 0
 $script:startFilterMode          = "All"
+$script:startSourceMode          = "All"
 $script:startRows                = [System.Collections.Generic.List[object]]::new()
 $script:startRowById             = @{}
 $script:startSyncingToggle       = $false
-$script:startOrphanApprovedCount = 0
 $script:startPollTimer           = $null
 $script:startSearchDebounceTimer = $null
 $script:startPhase2ExtTask       = $null
 $script:startPhase2Hydrate1Task  = $null
 $script:startPhase2Hydrate2Task  = $null
-$script:startPhase2OrphanCntTask = $null
+$script:startPhase2OrphanTask    = $null
 $script:startPhase2Ver           = 0
 
 $script:brushStartDisabledFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushStartDisabledFg.Freeze()
 $script:brushStartSubFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushStartSubFg.Freeze()
 $script:brushStartPillBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x22, 0x35)); $script:brushStartPillBg.Freeze()
 $script:brushStartPillBdr    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x3D, 0x57)); $script:brushStartPillBdr.Freeze()
+$script:brushStartSrcFolderBg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0F, 0x29, 0x2E)); $script:brushStartSrcFolderBg.Freeze()
+$script:brushStartSrcFolderBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1D, 0x4D, 0x57)); $script:brushStartSrcFolderBdr.Freeze()
+$script:brushStartSrcFolderFg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x5E, 0xEA, 0xD4)); $script:brushStartSrcFolderFg.Freeze()
+$script:brushStartSrcStoreBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1A, 0x1E, 0x3B)); $script:brushStartSrcStoreBg.Freeze()
+$script:brushStartSrcStoreBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x37, 0x3E, 0x73)); $script:brushStartSrcStoreBdr.Freeze()
+$script:brushStartSrcStoreFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xA5, 0xB4, 0xFC)); $script:brushStartSrcStoreFg.Freeze()
+$script:brushStartSrcTaskBg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x21, 0x10)); $script:brushStartSrcTaskBg.Freeze()
+$script:brushStartSrcTaskBdr   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x5A, 0x44, 0x1F)); $script:brushStartSrcTaskBdr.Freeze()
+$script:brushStartSrcTaskFg    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFC, 0xD3, 0x4D)); $script:brushStartSrcTaskFg.Freeze()
+$script:brushStartSrcSvcBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x23, 0x19, 0x38)); $script:brushStartSrcSvcBg.Freeze()
+$script:brushStartSrcSvcBdr    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x49, 0x34, 0x73)); $script:brushStartSrcSvcBdr.Freeze()
+$script:brushStartSrcSvcFg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xC4, 0xB5, 0xFD)); $script:brushStartSrcSvcFg.Freeze()
+$script:brushStartSrcGhostBg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x33, 0x15, 0x1B)); $script:brushStartSrcGhostBg.Freeze()
+$script:brushStartSrcGhostBdr  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x6E, 0x27, 0x34)); $script:brushStartSrcGhostBdr.Freeze()
+$script:brushStartSrcGhostFg   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xFD, 0xA4, 0xAF)); $script:brushStartSrcGhostFg.Freeze()
 $script:brushStartSysBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x17, 0x25, 0x54)); $script:brushStartSysBg.Freeze()
 $script:brushStartSysFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x93, 0xC5, 0xFD)); $script:brushStartSysFg.Freeze()
 $script:brushStartOemBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x1B, 0x4B)); $script:brushStartOemBg.Freeze()
@@ -9244,19 +9267,56 @@ $startRowHoverTrig.Value = $true
 [void]$script:styleStartRow.Triggers.Add($startRowHoverTrig)
 $script:styleStartRow.Seal()
 
+function Test-StartupRowMatchesSourceMode {
+    param($Entry, [string]$SourceMode)
+    if ($SourceMode -eq "All" -or [string]::IsNullOrWhiteSpace($SourceMode)) { return $true }
+    $sk = [string]$Entry.SourceKind
+    switch ($SourceMode) {
+        "Reg"     { return ($sk -in @("RegUser", "RegUser32", "RegSystem", "RegWow32", "RegRunOnce", "RegPolicy", "FolderUser", "FolderAll", "OrphanApproved")) }
+        "Store"   { return ($sk -eq "Store") }
+        "Task"    { return ($sk -eq "Task") }
+        "Service" { return ($sk -eq "Service") }
+        default   { return $true }
+    }
+}
+
+function Sort-StartupRowsHost {
+    if ($script:isWindowClosing -or -not $script:startRowsHost -or $script:startRows.Count -le 1) { return }
+    $ordered = @($script:startRows | Sort-Object `
+        @{ Expression = { if ($_.Entry.IsOrphanApprovedGhost) { 2 } elseif ($_.Entry.IsOrphan) { 1 } else { 0 } } },
+        @{ Expression = { if ($_.Entry.Enabled) { 0 } else { 1 } } },
+        @{ Expression = { switch ([string]$_.Entry.ImpactLevel) { "High" { 0 } "Medium" { 1 } default { 2 } } } },
+        @{ Expression = { ([string]$_.Entry.DisplayName).ToLowerInvariant() } })
+    $script:startRows.Clear()
+    $script:startRowsHost.Children.Clear()
+    foreach ($ro in $ordered) {
+        [void]$script:startRows.Add($ro)
+        [void]$script:startRowsHost.Children.Add($ro.Row)
+    }
+}
+
 function Update-StartupFooterSummary {
     if ($script:isWindowClosing) { return }
-    $total = $script:startRows.Count
+    $liveTotal = 0
     $onCnt = 0
-    $orphanRows = 0
+    $offCnt = 0
+    $totalOrphans = 0
     foreach ($r in $script:startRows) {
-        if ($r.Entry.Enabled) { $onCnt++ }
-        if ($r.Entry.IsOrphan) { $orphanRows++ }
+        $e = $r.Entry
+        if ($e.IsOrphan) { $totalOrphans++ }
+        if (-not $e.IsOrphanApprovedGhost) {
+            $liveTotal++
+            if ($e.Enabled) { $onCnt++ } else { $offCnt++ }
+        }
     }
-    $totalOrphans = $orphanRows + $script:startOrphanApprovedCount
+    if ($script:btnStartFilterAll)    { $script:btnStartFilterAll.Content    = "Tất cả ($liveTotal)" }
+    if ($script:btnStartFilterOn)     { $script:btnStartFilterOn.Content     = "Đang bật ($onCnt)" }
+    if ($script:btnStartFilterOff)    { $script:btnStartFilterOff.Content    = "Đang tắt ($offCnt)" }
+    if ($script:btnStartFilterOrphan) { $script:btnStartFilterOrphan.Content = "Mục lỗi ($totalOrphans)" }
+
     if ($script:txtStartSummary) {
-        $phaseNote = if ($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) { " (đang quét Store & Task...)" } else { "" }
-        $script:txtStartSummary.Text = "Tổng $total mục ($onCnt đang bật • $totalOrphans mục lỗi)$phaseNote"
+        $phaseNote = if (($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) -or ($script:startPhase2OrphanTask -and -not $script:startPhase2OrphanTask.IsCompleted)) { " (đang quét sâu...)" } else { "" }
+        $script:txtStartSummary.Text = "Tổng $liveTotal mục ($onCnt bật • $totalOrphans lỗi)$phaseNote"
     }
     if ($script:btnStartCleanOrphans) {
         $script:btnStartCleanOrphans.Content = if ($totalOrphans -gt 0) { "Dọn mục lỗi ($totalOrphans)" } else { "Dọn mục lỗi" }
@@ -9269,7 +9329,7 @@ function Update-StartupFooterSummary {
     }
     $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
     if ($isTab4Visible -and $script:optSubTabIndex -eq 2 -and $txtSelectionCount) {
-        $txtSelectionCount.Text = "$onCnt đang bật / $total mục"
+        $txtSelectionCount.Text = "$onCnt đang bật / $liveTotal mục"
         $txtSelectionCount.Foreground = if ($onCnt -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
     }
 }
@@ -9294,21 +9354,62 @@ function Set-StartupFilterChipVisuals {
             $btn.Foreground = $script:brushStartFilterInactFg
         }
     }
+    $srcMap = @{
+        "All"     = $script:btnStartSrcAll
+        "Reg"     = $script:btnStartSrcReg
+        "Store"   = $script:btnStartSrcStore
+        "Task"    = $script:btnStartSrcTask
+        "Service" = $script:btnStartSrcSvc
+    }
+    foreach ($sk in $srcMap.Keys) {
+        $sbtn = $srcMap[$sk]
+        if (-not $sbtn) { continue }
+        if ($script:startSourceMode -eq $sk) {
+            $sbtn.Background = $script:brushStartFilterActBg
+            $sbtn.BorderBrush = $script:brushStartFilterActBdr
+            $sbtn.Foreground = $script:brushNavActive
+        } else {
+            $sbtn.Background = $script:brushTransparent
+            $sbtn.BorderBrush = $script:brushTransparent
+            $sbtn.Foreground = $script:brushStartFilterInactFg
+        }
+    }
 }
 
 function Apply-StartupFilter {
     if ($script:isWindowClosing) { return }
     $q = if ($script:txtStartSearch) { $script:txtStartSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $visibleCount = 0
     foreach ($r in $script:startRows) {
         $e = $r.Entry
         $matchFilter = switch ($script:startFilterMode) {
-            "On"     { [bool]$e.Enabled }
-            "Off"    { -not [bool]$e.Enabled }
+            "On"     { (-not [bool]$e.IsOrphanApprovedGhost) -and [bool]$e.Enabled }
+            "Off"    { (-not [bool]$e.IsOrphanApprovedGhost) -and (-not [bool]$e.Enabled) }
             "Orphan" { [bool]$e.IsOrphan }
-            default  { $true }
+            default  { -not [bool]$e.IsOrphanApprovedGhost }
         }
+        $matchSource = Test-StartupRowMatchesSourceMode -Entry $e -SourceMode $script:startSourceMode
         $matchQuery = if ([string]::IsNullOrEmpty($q)) { $true } else { $r.SearchText.Contains($q) }
-        $r.Row.Visibility = if ($matchFilter -and $matchQuery) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $isVis = ($matchFilter -and $matchSource -and $matchQuery)
+        $r.Row.Visibility = if ($isVis) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        if ($isVis) { $visibleCount++ }
+    }
+    if ($script:startEmptyState) {
+        $isScanning = ($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) -or ($script:startPhase2OrphanTask -and -not $script:startPhase2OrphanTask.IsCompleted)
+        if ($visibleCount -eq 0 -and -not $isScanning) {
+            if ($script:txtStartEmptyTitle -and $script:txtStartEmptySub) {
+                if ($script:startFilterMode -eq "Orphan" -and [string]::IsNullOrEmpty($q)) {
+                    $script:txtStartEmptyTitle.Text = "Không phát hiện mục khởi chạy lỗi hay khóa rác nào!"
+                    $script:txtStartEmptySub.Text = "Danh sách Khởi chạy và khóa StartupApproved của Windows đang sạch sẽ."
+                } else {
+                    $script:txtStartEmptyTitle.Text = "Không có mục khởi chạy nào khớp bộ lọc"
+                    $script:txtStartEmptySub.Text = "Thử đổi bộ lọc trạng thái, nguồn hoặc xóa từ khóa tìm kiếm."
+                }
+            }
+            $script:startEmptyState.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $script:startEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
+        }
     }
     Update-StartupFooterSummary
 }
@@ -9332,9 +9433,13 @@ function New-StartupBadgePill {
 
 function Build-StartupEntryToolTip {
     param($Entry)
-    $srcDetail = Get-StartupSourceDetail -SourceKind ([string]$Entry.SourceKind)
-    $stText = if ($Entry.IsPolicyLocked) {
+    $srcDetail = Get-StartupSourceDetail -SourceKind ([string]$Entry.SourceKind) -TriggerInfo ([string]$Entry.TriggerInfo)
+    $stText = if ($Entry.IsOrphanApprovedGhost) {
+        "Khóa rác Registry (không còn ứng dụng gốc)"
+    } elseif ($Entry.IsPolicyLocked) {
         if ($Entry.Enabled) { "Đang bật (Khóa bởi Group Policy)" } else { "Đang tắt (Khóa bởi Group Policy)" }
+    } elseif ($Entry.SourceKind -eq "Service") {
+        if ($Entry.Enabled) { "Tự khởi động cùng Windows (Auto)" } else { "Thủ công / Không tự chạy khi mở máy" }
     } elseif ($Entry.Enabled) {
         "Đang bật"
     } else {
@@ -9345,8 +9450,12 @@ function Build-StartupEntryToolTip {
     if (-not [string]::IsNullOrWhiteSpace([string]$Entry.ResolvedExePath)) {
         $tip += "`nTệp đích: $($Entry.ResolvedExePath)"
     }
+    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.SecondaryTargetPath)) {
+        $tip += "`nĐích thực thi con: $($Entry.SecondaryTargetPath)"
+    }
     if ($Entry.IsOrphan) {
-        $tip += "`n[!] Cảnh báo: Tệp đích không tồn tại trên ổ đĩa (có thể là rác của ứng dụng đã gỡ)."
+        $reason = if (-not [string]::IsNullOrWhiteSpace([string]$Entry.OrphanReason)) { [string]$Entry.OrphanReason } else { "Tệp đích không tồn tại trên ổ đĩa (rác của ứng dụng đã gỡ)." }
+        $tip += "`n[!] Cảnh báo: $reason"
     }
     return $tip
 }
@@ -9364,16 +9473,27 @@ function Update-StartupRowBadgesAndImpact {
         if ($e.IsPolicyLocked) {
             [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Khóa chính sách" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
         }
-        if ($e.IsOrphan) {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Tệp không tồn tại" -BgBrush $script:brushStartErrBg -FgBrush $script:brushOptRiskCautFg))
+        if ($e.SourceKind -eq "RegRunOnce") {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Chạy 1 lần" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
+        }
+        if ($e.IsOrphanApprovedGhost) {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Rác Approved" -BgBrush $script:brushStartErrBg -FgBrush $script:brushOptRiskCautFg))
+        } elseif ($e.IsOrphan) {
+            $errLbl = if ($e.SourceKind -eq "Service") { "Dịch vụ lỗi" } else { "Tệp không tồn tại" }
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text $errLbl -BgBrush $script:brushStartErrBg -FgBrush $script:brushOptRiskCautFg))
         }
     }
     if ($RowObj.ImpactText) {
-        $RowObj.ImpactText.Text = Get-StartupImpactLabel -ImpactLevel ([string]$e.ImpactLevel)
-        $RowObj.ImpactText.Foreground = switch ([string]$e.ImpactLevel) {
-            "High"   { $script:brushOptRiskCautFg }
-            "Medium" { $script:brushOptRiskModFg }
-            default  { $script:brushOptRiskSafeFg }
+        if ($e.IsOrphanApprovedGhost) {
+            $RowObj.ImpactText.Text = "Rác"
+            $RowObj.ImpactText.Foreground = $script:brushOptRiskCautFg
+        } else {
+            $RowObj.ImpactText.Text = Get-StartupImpactLabel -ImpactLevel ([string]$e.ImpactLevel)
+            $RowObj.ImpactText.Foreground = switch ([string]$e.ImpactLevel) {
+                "High"   { $script:brushOptRiskCautFg }
+                "Medium" { $script:brushOptRiskModFg }
+                default  { $script:brushOptRiskSafeFg }
+            }
         }
     }
     if ($RowObj.TitleText) {
@@ -9381,11 +9501,15 @@ function Update-StartupRowBadgesAndImpact {
         $RowObj.TitleText.Foreground = if ($e.Enabled) { $script:brushTextWhite } else { $script:brushStartDisabledFg }
     }
     if ($RowObj.SubText) {
-        $pubPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.Publisher)) { "$($e.Publisher)  •  " } else { "" }
-        $cmdPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.ResolvedExePath)) { [string]$e.ResolvedExePath } else { [string]$e.RawCommand }
-        $RowObj.SubText.Text = "${pubPart}${cmdPart}"
+        if ($e.IsOrphanApprovedGhost) {
+            $RowObj.SubText.Text = "$($e.TriggerInfo)  •  $($e.RawCommand)"
+        } else {
+            $pubPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.Publisher)) { "$($e.Publisher)  •  " } else { "" }
+            $cmdPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.SecondaryTargetPath)) { [string]$e.SecondaryTargetPath } elseif (-not [string]::IsNullOrWhiteSpace([string]$e.ResolvedExePath)) { [string]$e.ResolvedExePath } else { [string]$e.RawCommand }
+            $RowObj.SubText.Text = "${pubPart}${cmdPart}"
+        }
     }
-    $RowObj.SearchText = ("$($e.DisplayName) $($e.Name) $($e.Publisher) $($e.RawCommand) $($e.ResolvedExePath) $($e.SourceKind)").ToLowerInvariant()
+    $RowObj.SearchText = ("$($e.DisplayName) $($e.Name) $($e.Publisher) $($e.RawCommand) $($e.ResolvedExePath) $($e.SecondaryTargetPath) $($e.SourceKind) $($e.TriggerInfo) $($e.OrphanReason)").ToLowerInvariant()
     if ($RowObj.Row) {
         $RowObj.Row.ToolTip = Build-StartupEntryToolTip -Entry $e
     }
@@ -9396,7 +9520,7 @@ function Invoke-StartupDeleteSingleRow {
     if (-not $RowObj -or -not $RowObj.Entry -or -not $RowObj.Entry.CanDelete) { return }
     $e = $RowObj.Entry
     if ($e.RequiresAdmin -and -not ([DuckUtil.StartupManagerEngine]::IsCurrentProcessAdmin())) {
-        [void](Show-OwnedMessageBox -Text "Mục '$($e.DisplayName)' thuộc phạm vi hệ thống/All Users/Task Scheduler nên yêu cầu chạy App-Driver với quyền Administrator để xóa." -Caption "Yêu cầu quyền Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+        [void](Show-OwnedMessageBox -Text "Mục '$($e.DisplayName)' thuộc phạm vi hệ thống/All Users/Task Scheduler/Dịch vụ nên yêu cầu chạy App-Driver với quyền Administrator để xóa." -Caption "Yêu cầu quyền Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
         return
     }
     $warnExtra = if ($e.ProtectionKind -eq "System" -or $e.ProtectionKind -eq "Oem") { "`n`n[!] CẢNH BÁO: Đây là thành phần Hệ thống / Hãng (âm thanh, bảo mật hoặc phím nóng). Bạn nên chỉ gạt TẮT thay vì xóa vĩnh viễn." } else { "" }
@@ -9416,7 +9540,7 @@ function Invoke-StartupDeleteSingleRow {
             [void]$script:startRowsHost.Children.Remove($RowObj.Row)
         }
         Log-Text "[OK] Khởi chạy: Đã xóa '$($e.DisplayName)'."
-        Update-StartupFooterSummary
+        Apply-StartupFilter
     } else {
         $errMsg = if ($res.RequiresAdminError) { "Cần quyền Administrator để xóa mục này ($($res.Message))." } else { "Không thể xóa mục '$($e.DisplayName)': $($res.Message)" }
         Log-Text "[ERR] $errMsg"
@@ -9432,8 +9556,8 @@ function New-StartupRowElement {
     $rowBorder.Margin = $thicknessZero
     $rowBorder.MinHeight = 46
     $rowBorder.UseLayoutRounding = $true
-    [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 500)
-    [System.Windows.Controls.ToolTipService]::SetShowDuration($rowBorder, 10000)
+    [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 450)
+    [System.Windows.Controls.ToolTipService]::SetShowDuration($rowBorder, 12000)
 
     $g = [System.Windows.Controls.Grid]::new()
     $g.UseLayoutRounding = $true
@@ -9450,7 +9574,9 @@ function New-StartupRowElement {
     $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $toggle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $toggle.IsChecked = [bool]$Entry.Enabled
-    $toggle.IsEnabled = (-not [bool]$Entry.IsPolicyLocked)
+    $canTgl = ([bool]$Entry.CanToggle -and -not [bool]$Entry.IsPolicyLocked)
+    $toggle.IsEnabled = $canTgl
+    if (-not $canTgl) { $toggle.Opacity = 0.35 }
     [System.Windows.Controls.Grid]::SetColumn($toggle, 0)
     [void]$g.Children.Add($toggle)
 
@@ -9465,7 +9591,7 @@ function New-StartupRowElement {
     $iconBorder = [System.Windows.Controls.Border]::new()
     $iconBorder.Width = 28; $iconBorder.Height = 28
     $iconBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
-    $iconBorder.Background = $script:brushStartPillBg
+    $iconBorder.Background = if ($Entry.IsOrphanApprovedGhost) { $script:brushStartSrcGhostBg } else { $script:brushStartPillBg }
     $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $iconBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $iconImg = [System.Windows.Controls.Image]::new()
@@ -9508,9 +9634,19 @@ function New-StartupRowElement {
     [System.Windows.Controls.Grid]::SetColumn($appCellGrid, 1)
     [void]$g.Children.Add($appCellGrid)
 
+    $srcBg = $script:brushStartPillBg; $srcBdr = $script:brushStartPillBdr; $srcFg = $script:brushNavInactive
+    switch ([string]$Entry.SourceKind) {
+        "FolderUser"     { $srcBg = $script:brushStartSrcFolderBg; $srcBdr = $script:brushStartSrcFolderBdr; $srcFg = $script:brushStartSrcFolderFg }
+        "FolderAll"      { $srcBg = $script:brushStartSrcFolderBg; $srcBdr = $script:brushStartSrcFolderBdr; $srcFg = $script:brushStartSrcFolderFg }
+        "Store"          { $srcBg = $script:brushStartSrcStoreBg;  $srcBdr = $script:brushStartSrcStoreBdr;  $srcFg = $script:brushStartSrcStoreFg }
+        "Task"           { $srcBg = $script:brushStartSrcTaskBg;   $srcBdr = $script:brushStartSrcTaskBdr;   $srcFg = $script:brushStartSrcTaskFg }
+        "Service"        { $srcBg = $script:brushStartSrcSvcBg;    $srcBdr = $script:brushStartSrcSvcBdr;    $srcFg = $script:brushStartSrcSvcFg }
+        "OrphanApproved" { $srcBg = $script:brushStartSrcGhostBg;  $srcBdr = $script:brushStartSrcGhostBdr;  $srcFg = $script:brushStartSrcGhostFg }
+    }
+
     $srcPill = [System.Windows.Controls.Border]::new()
-    $srcPill.Background = $script:brushStartPillBg
-    $srcPill.BorderBrush = $script:brushStartPillBdr
+    $srcPill.Background = $srcBg
+    $srcPill.BorderBrush = $srcBdr
     $srcPill.BorderThickness = $thicknessOne
     $srcPill.CornerRadius = [System.Windows.CornerRadius]::new(3)
     $srcPill.Padding = [System.Windows.Thickness]::new(8, 2, 8, 2)
@@ -9520,7 +9656,7 @@ function New-StartupRowElement {
     $srcTb.Text = Get-StartupSourceLabel -SourceKind ([string]$Entry.SourceKind)
     $srcTb.FontSize = 10.5
     $srcTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $srcTb.Foreground = $script:brushNavInactive
+    $srcTb.Foreground = $srcFg
     $srcPill.Child = $srcTb
     [System.Windows.Controls.Grid]::SetColumn($srcPill, 2)
     [void]$g.Children.Add($srcPill)
@@ -9540,7 +9676,7 @@ function New-StartupRowElement {
 
     $btnOpen = [System.Windows.Controls.Button]::new()
     if ($script:styleRowActionBtn) { $btnOpen.Style = $script:styleRowActionBtn }
-    $btnOpen.Content = "Mở tệp"
+    $btnOpen.Content = if ($Entry.IsOrphanApprovedGhost) { "Registry" } else { "Mở tệp" }
     $btnOpen.FontSize = 10.5
     $btnOpen.FontWeight = [System.Windows.FontWeights]::SemiBold
     $btnOpen.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
@@ -9598,18 +9734,32 @@ function New-StartupRowElement {
     Update-StartupRowBadgesAndImpact -RowObj $rowObj
 
     $ctx = [System.Windows.Controls.ContextMenu]::new()
-    $miOpen = [System.Windows.Controls.MenuItem]::new()
-    $miOpen.Header = "Mở thư mục chứa tệp"
-    $miOpen.Tag = $rowObj
-    $miOpen.Add_Click({ param($s,$ev) Open-StartupEntryLocation -Entry $s.Tag.Entry })
-    [void]$ctx.Items.Add($miOpen)
+    if (-not $Entry.IsOrphanApprovedGhost) {
+        $miOpen = [System.Windows.Controls.MenuItem]::new()
+        $miOpen.Header = "Mở thư mục chứa tệp"
+        $miOpen.Tag = $rowObj
+        $miOpen.Add_Click({ param($s,$ev) Open-StartupEntryLocation -Entry $s.Tag.Entry })
+        [void]$ctx.Items.Add($miOpen)
+    }
 
-    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.RegistryPath) -or $Entry.SourceKind -eq "Store") {
+    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.RegistryPath) -or $Entry.SourceKind -eq "Store" -or $Entry.SourceKind -eq "Service" -or $Entry.SourceKind -eq "OrphanApproved") {
         $miReg = [System.Windows.Controls.MenuItem]::new()
         $miReg.Header = "Mở vị trí trong Registry"
         $miReg.Tag = $rowObj
         $miReg.Add_Click({ param($s,$ev) Open-StartupEntryRegistry -Entry $s.Tag.Entry })
         [void]$ctx.Items.Add($miReg)
+    }
+    if ($Entry.SourceKind -eq "Task") {
+        $miTask = [System.Windows.Controls.MenuItem]::new()
+        $miTask.Header = "Mở Task Scheduler (taskschd.msc)"
+        $miTask.Add_Click({ try { Start-Process "taskschd.msc" } catch {} })
+        [void]$ctx.Items.Add($miTask)
+    }
+    if ($Entry.SourceKind -eq "Service") {
+        $miSvc = [System.Windows.Controls.MenuItem]::new()
+        $miSvc.Header = "Mở Services (services.msc)"
+        $miSvc.Add_Click({ try { Start-Process "services.msc" } catch {} })
+        [void]$ctx.Items.Add($miSvc)
     }
     if ($Entry.CanDelete) {
         $miDel = [System.Windows.Controls.MenuItem]::new()
@@ -9643,21 +9793,22 @@ function New-StartupRowElement {
             try { $sender.IsChecked = [bool]$ent.Enabled } finally { $script:startSyncingToggle = $prevS }
         }
 
-        if ($ent.IsPolicyLocked) {
+        if ($ent.IsPolicyLocked -or -not $ent.CanToggle) {
             & $rollback
             return
         }
 
         if ($ent.RequiresAdmin -and -not ([DuckUtil.StartupManagerEngine]::IsCurrentProcessAdmin())) {
             & $rollback
-            [void](Show-OwnedMessageBox -Text "Mục '$($ent.DisplayName)' thuộc phạm vi hệ thống/All Users/Task Scheduler nên cần mở App-Driver bằng quyền Administrator để bật/tắt." -Caption "Yêu cầu quyền Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+            [void](Show-OwnedMessageBox -Text "Mục '$($ent.DisplayName)' thuộc phạm vi hệ thống/All Users/Task Scheduler/Dịch vụ nên cần mở App-Driver bằng quyền Administrator để bật/tắt." -Caption "Yêu cầu quyền Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
             return
         }
 
         if (-not $wantEnable -and ($ent.ProtectionKind -eq "System" -or $ent.ProtectionKind -eq "Oem")) {
-            $kindTxt = if ($ent.ProtectionKind -eq "System") { "Hệ thống / Bảo mật Windows" } else { "Phần mềm Hãng / Driver phần cứng (Âm thanh, Phím nóng)" }
+            $kindTxt = if ($ent.ProtectionKind -eq "System") { "Hệ thống / Bảo mật Windows" } else { "Phần mềm Hãng / Driver phần cứng (Âm thanh, Đồ họa, Phím nóng)" }
+            $svcHint = if ($ent.SourceKind -eq "Service") { "`n(Dịch vụ sẽ chuyển về chế độ Thủ công Manual để không tự chạy khi khởi động)." } else { "" }
             $ans = Show-OwnedMessageBox `
-                -Text "'$($ent.DisplayName)' là thành phần $kindTxt.`nTắt mục này có thể ảnh hưởng đến âm thanh, bảo mật hoặc phím nóng hiệu năng trên máy.`n`nBạn vẫn chắc chắn muốn tắt khởi chạy mục này?" `
+                -Text "'$($ent.DisplayName)' là thành phần $kindTxt.`nTắt mục này có thể ảnh hưởng đến âm thanh, đồ họa, bảo mật hoặc phím nóng trên máy.$svcHint`n`nBạn vẫn chắc chắn muốn tắt khởi chạy mục này?" `
                 -Caption "Cảnh báo bảo vệ Hệ thống & Hãng" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
@@ -9676,8 +9827,13 @@ function New-StartupRowElement {
             return
         }
 
-        $actTxt = if ($wantEnable) { "Đã bật" } else { "Đã tắt" }
-        Log-Text "[OK] Khởi chạy: $actTxt '$($ent.DisplayName)'."
+        if ($ent.SourceKind -eq "Service") {
+            $actSvc = if ($wantEnable) { "Đã bật tự khởi động (Auto) cho dịch vụ" } else { "Đã chuyển dịch vụ sang Thủ công (Manual)" }
+            Log-Text "[OK] Khởi chạy: $actSvc '$($ent.DisplayName)'."
+        } else {
+            $actTxt = if ($wantEnable) { "Đã bật" } else { "Đã tắt" }
+            Log-Text "[OK] Khởi chạy: $actTxt '$($ent.DisplayName)'."
+        }
         Update-StartupRowBadgesAndImpact -RowObj $rObj
         Apply-StartupFilter
     }
@@ -9712,7 +9868,6 @@ function Start-StartupManagerRefresh {
     $script:startScanVersion++
     $ver = $script:startScanVersion
     $script:startPhase2Ver = $ver
-    $script:startOrphanApprovedCount = 0
 
     $fastEntries = [DuckUtil.StartupManagerEngine]::ScanFastCore()
     $script:startRows.Clear()
@@ -9732,11 +9887,12 @@ function Start-StartupManagerRefresh {
     } finally {
         $script:startSyncingToggle = $prevSync
     }
+    Sort-StartupRowsHost
 
     $script:startPhase2ExtTask = [DuckUtil.StartupManagerEngine]::ScanExtendedAsync()
     $script:startPhase2Hydrate1Task = [DuckUtil.StartupManagerEngine]::HydrateEntriesAndIconsAsync($fastEntries)
     $script:startPhase2Hydrate2Task = $null
-    $script:startPhase2OrphanCntTask = [System.Threading.Tasks.Task[int]]::Run([Func[int]]{ [DuckUtil.StartupManagerEngine]::CountOrphanApprovedEntries() })
+    $script:startPhase2OrphanTask = [DuckUtil.StartupManagerEngine]::ScanOrphanApprovedEntriesAsync()
 
     Apply-StartupFilter
 
@@ -9799,20 +9955,34 @@ function Start-StartupManagerRefresh {
                 }
             }
 
-            if ($script:startPhase2OrphanCntTask -and $script:startPhase2OrphanCntTask.IsCompleted) {
-                $tOrph = $script:startPhase2OrphanCntTask
-                $script:startPhase2OrphanCntTask = $null
-                if ($tOrph.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $script:startOrphanApprovedCount = [int]$tOrph.Result
+            if ($script:startPhase2OrphanTask -and $script:startPhase2OrphanTask.IsCompleted) {
+                $tOrph = $script:startPhase2OrphanTask
+                $script:startPhase2OrphanTask = $null
+                if ($tOrph.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tOrph.Result) {
+                    $prevS3 = $script:startSyncingToggle
+                    $script:startSyncingToggle = $true
+                    try {
+                        foreach ($ent in @($tOrph.Result)) {
+                            if (-not $ent -or $script:startRowById.ContainsKey([string]$ent.Id)) { continue }
+                            $rObj = New-StartupRowElement -Entry $ent
+                            [void]$script:startRows.Add($rObj)
+                            $script:startRowById[[string]$ent.Id] = $rObj
+                            if ($script:startRowsHost) { [void]$script:startRowsHost.Children.Add($rObj.Row) }
+                        }
+                    } finally {
+                        $script:startSyncingToggle = $prevS3
+                    }
                     $changed = $true
                 }
             }
 
-            if ($changed) { Apply-StartupFilter }
-
-            if (-not $script:startPhase2ExtTask -and -not $script:startPhase2Hydrate1Task -and -not $script:startPhase2Hydrate2Task -and -not $script:startPhase2OrphanCntTask) {
+            $allDone = (-not $script:startPhase2ExtTask -and -not $script:startPhase2Hydrate1Task -and -not $script:startPhase2Hydrate2Task -and -not $script:startPhase2OrphanTask)
+            if ($allDone) {
+                Sort-StartupRowsHost
                 $script:startPollTimer.Stop()
-                Update-StartupFooterSummary
+                Apply-StartupFilter
+            } elseif ($changed) {
+                Apply-StartupFilter
             }
         })
     }
@@ -9843,6 +10013,12 @@ if ($script:btnStartFilterOn)     { $script:btnStartFilterOn.Add_Click({ $script
 if ($script:btnStartFilterOff)    { $script:btnStartFilterOff.Add_Click({ $script:startFilterMode = "Off"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
 if ($script:btnStartFilterOrphan) { $script:btnStartFilterOrphan.Add_Click({ $script:startFilterMode = "Orphan"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
 
+if ($script:btnStartSrcAll)   { $script:btnStartSrcAll.Add_Click({ $script:startSourceMode = "All"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartSrcReg)   { $script:btnStartSrcReg.Add_Click({ $script:startSourceMode = "Reg"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartSrcStore) { $script:btnStartSrcStore.Add_Click({ $script:startSourceMode = "Store"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartSrcTask)  { $script:btnStartSrcTask.Add_Click({ $script:startSourceMode = "Task"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartSrcSvc)   { $script:btnStartSrcSvc.Add_Click({ $script:startSourceMode = "Service"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+
 if ($script:txtStartSearch) {
     $script:startSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new()
     $script:startSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(140)
@@ -9865,30 +10041,38 @@ if ($script:btnClearStartSearch) {
 if ($script:btnStartCleanOrphans) {
     $script:btnStartCleanOrphans.Add_Click({
         if ($script:isWindowClosing) { return }
-        $orphanEntries = @($script:startRows | Where-Object { $_.Entry.IsOrphan -and $_.Entry.CanDelete } | ForEach-Object { $_.Entry })
-        $apOrphans = [DuckUtil.StartupManagerEngine]::CountOrphanApprovedEntries()
-        if ($orphanEntries.Count -eq 0 -and $apOrphans -eq 0) {
+        $allOrphans = @($script:startRows | Where-Object { $_.Entry.IsOrphan -and $_.Entry.CanDelete } | ForEach-Object { $_.Entry })
+        $liveOrphans = @($allOrphans | Where-Object { -not $_.IsOrphanApprovedGhost })
+        $ghostOrphans = @($allOrphans | Where-Object { $_.IsOrphanApprovedGhost })
+        if ($allOrphans.Count -eq 0) {
             [void](Show-OwnedMessageBox -Text "Không phát hiện mục khởi chạy lỗi hay rác StartupApproved nào." -Caption "Dọn mục lỗi" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
             return
         }
         $ans = Show-OwnedMessageBox `
-            -Text "Phát hiện $($orphanEntries.Count) mục trỏ tới tệp không còn tồn tại và $apOrphans khóa rác StartupApproved của app đã gỡ.`n`nXóa sạch các mục lỗi này? (Các mục khởi chạy sẽ được sao lưu nguyên lô qua StartupGuard trước khi xóa)." `
+            -Text "Phát hiện $($liveOrphans.Count) mục/dịch vụ trỏ tới tệp không còn tồn tại và $($ghostOrphans.Count) khóa rác StartupApproved của app đã gỡ.`n`nXóa sạch toàn bộ $($allOrphans.Count) mục lỗi này? (StartupGuard sẽ tự động sao lưu nguyên lô trước khi xóa để có thể khôi phục bất cứ lúc nào)." `
             -Caption "Xác nhận dọn mục lỗi Khởi chạy" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        if ($orphanEntries.Count -gt 0) {
-            [void](Save-StartupGuardBatchBackup -Entries $orphanEntries)
-        }
-        $delOk = 0
-        foreach ($oe in $orphanEntries) {
+        [void](Save-StartupGuardBatchBackup -Entries $allOrphans)
+        $delLive = 0
+        $delGhost = 0
+        $skipAdmin = 0
+        foreach ($oe in $allOrphans) {
             $rDel = [DuckUtil.StartupManagerEngine]::DeleteStartupEntry($oe)
-            if ($rDel.Success) { $delOk++ }
+            if ($rDel.Success) {
+                if ($oe.IsOrphanApprovedGhost) { $delGhost++ } else { $delLive++ }
+            } elseif ($rDel.RequiresAdminError) {
+                $skipAdmin++
+            }
         }
-        $cleanRes = [DuckUtil.StartupManagerEngine]::CleanupOrphanApprovedEntries()
-        Log-Text "[OK] Khởi chạy: Đã dọn $delOk mục tệp lỗi và $($cleanRes.RemovedCount) khóa rác StartupApproved."
+        $extraAdmin = if ($skipAdmin -gt 0) { " (bỏ qua $skipAdmin mục hệ thống do cần quyền Administrator)" } else { "" }
+        Log-Text "[OK] Khởi chạy: Đã dọn $delLive mục tệp/dịch vụ lỗi và $delGhost khóa rác StartupApproved$extraAdmin."
         Start-StartupManagerRefresh
+        if ($skipAdmin -gt 0) {
+            [void](Show-OwnedMessageBox -Text "Đã dọn $delLive mục lỗi và $delGhost khóa rác StartupApproved.`n`nCòn $skipAdmin mục thuộc phạm vi hệ thống (HKLM / Dịch vụ) cần chạy App-Driver với quyền Administrator để xóa." -Caption "Hoàn tất dọn mục lỗi" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+        }
     })
 }
 
@@ -9917,8 +10101,8 @@ if ($script:btnStartAddApp) {
     $script:btnStartAddApp.Add_Click({
         if ($script:isWindowClosing) { return }
         $dlg = [Microsoft.Win32.OpenFileDialog]::new()
-        $dlg.Title = "Chọn ứng dụng (.exe) thêm vào Khởi chạy cùng Windows"
-        $dlg.Filter = "Ứng dụng (*.exe)|*.exe|Tất cả tệp (*.*)|*.*"
+        $dlg.Title = "Chọn ứng dụng hoặc kịch bản thêm vào Khởi chạy cùng Windows"
+        $dlg.Filter = "Ứng dụng & Kịch bản (*.exe;*.lnk;*.bat;*.cmd;*.vbs)|*.exe;*.lnk;*.bat;*.cmd;*.vbs|Tất cả tệp (*.*)|*.*"
         $dlg.CheckFileExists = $true
         if ($dlg.ShowDialog($window) -eq $true -and -not [string]::IsNullOrWhiteSpace($dlg.FileName)) {
             $exePath = $dlg.FileName

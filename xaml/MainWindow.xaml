@@ -1240,16 +1240,16 @@
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Name="btnStartRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#38BDF8" BorderBrush="#29527D"
-                                                ToolTip="Quét lại toàn bộ mục khởi chạy (Registry, Thư mục, Store, Task Scheduler)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Quét lại toàn bộ mục khởi chạy (Registry, Thư mục, Store, Task Scheduler, Dịch vụ chạy nền &amp; rác StartupApproved)." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnStartCleanOrphans" Content="Dọn mục lỗi" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#FBBF24" BorderBrush="#614F27"
-                                                ToolTip="Xóa các mục trỏ tới tệp không còn tồn tại và dọn rác StartupApproved của app đã gỡ (tự sao lưu StartupGuard)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Xóa các mục trỏ tới tệp không còn tồn tại, dịch vụ lỗi và khóa rác StartupApproved (tự sao lưu StartupGuard)." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnStartRestoreBackup" Content="Khôi phục đã xóa" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#34D399" BorderBrush="#1E5640"
                                                 ToolTip="Khôi phục nguyên lô mục khởi chạy vừa xóa gần nhất theo cơ chế ngăn xếp (LIFO)." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnStartAddApp" Content="+ Thêm ứng dụng" Style="{StaticResource ActionButton}"
                                                 Background="#0284C7" Foreground="#FFFFFF" Padding="12,7" Margin="0"
-                                                ToolTip="Chọn tệp thực thi (.exe) bất kỳ để thêm vào danh sách khởi chạy cùng Windows." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Chọn tệp thực thi (.exe, .lnk, .bat, .cmd, .vbs) để thêm vào danh sách khởi chạy cùng Windows." ToolTipService.InitialShowDelay="500"/>
                                     </StackPanel>
 
                                     <Border Grid.Column="2" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
@@ -1305,6 +1305,16 @@
                                                 <Button Name="btnStartFilterOrphan" Content="Mục lỗi" Style="{StaticResource FilterTabButton}"/>
                                             </StackPanel>
                                         </Border>
+                                        <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Name="btnStartSrcAll" Content="Mọi nguồn" Style="{StaticResource FilterTabButton}" Padding="7,3"
+                                                        Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
+                                                <Button Name="btnStartSrcReg" Content="App/Reg" Style="{StaticResource FilterTabButton}" Padding="7,3"/>
+                                                <Button Name="btnStartSrcStore" Content="Store" Style="{StaticResource FilterTabButton}" Padding="7,3"/>
+                                                <Button Name="btnStartSrcTask" Content="Task" Style="{StaticResource FilterTabButton}" Padding="7,3"/>
+                                                <Button Name="btnStartSrcSvc" Content="Dịch vụ" Style="{StaticResource FilterTabButton}" Padding="7,3"/>
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
 
                                     <TextBlock Grid.Column="2" Name="txtStartSummary" Text="Sẵn sàng quét danh sách khởi chạy..."
@@ -1337,10 +1347,21 @@
                             </Grid>
                         </Border>
 
-                        <ScrollViewer Grid.Row="2" Name="StartScrollViewer" VerticalScrollBarVisibility="Auto"
-                                      HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                            <StackPanel Name="StartRowsHost" Margin="16,0,16,12" UseLayoutRounding="True" SnapsToDevicePixels="True"/>
-                        </ScrollViewer>
+                        <Grid Grid.Row="2">
+                            <ScrollViewer Name="StartScrollViewer" VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                                <StackPanel Name="StartRowsHost" Margin="16,0,16,12" UseLayoutRounding="True" SnapsToDevicePixels="True"/>
+                            </ScrollViewer>
+                            <Border Name="StartEmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Background="#0E131D" BorderBrush="#263348" BorderThickness="1" CornerRadius="6" Padding="24,18" IsHitTestVisible="False">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Name="txtStartEmptyTitle" Text="Không có mục khởi chạy nào khớp bộ lọc"
+                                               Foreground="#E2E8F0" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Name="txtStartEmptySub" Text="Thử đổi bộ lọc trạng thái, nguồn hoặc xóa từ khóa tìm kiếm."
+                                               Foreground="#64748B" FontSize="11.5" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </Grid>
                 </Grid>
             </Grid>
