@@ -48,6 +48,7 @@ namespace DuckUtil {
         public string IconHintPath { get; set; }
         public bool Enabled { get; set; }
         public bool IsPolicyLocked { get; set; }
+        public string LockKind { get; set; }
         public bool IsOrphan { get; set; }
         public string ProtectionKind { get; set; }
         public string ImpactLevel { get; set; }
@@ -935,6 +936,7 @@ namespace DuckUtil {
                         entry.OrphanReason = orphanReason;
                         entry.Enabled = enabled;
                         entry.IsPolicyLocked = isPolicyLocked;
+                        entry.LockKind = isPolicyLocked ? "Policy" : "";
                         entry.IsOrphan = isMissing;
                         entry.ProtectionKind = IsProtectedOemOrSystemStartup(entry.DisplayName, rawCmd + " " + secTarget, "");
                         entry.ImpactLevel = EstimateImpact(entry.DisplayName, rawCmd + " " + secTarget, "");
@@ -1398,6 +1400,7 @@ namespace DuckUtil {
                     entry.OrphanReason = "";
                     entry.Enabled = enabled;
                     entry.IsPolicyLocked = policyLocked;
+                    entry.LockKind = policyLocked ? "Policy" : "";
                     entry.IsOrphan = false;
                     entry.ProtectionKind = IsProtectedOemOrSystemStartup(taskDisp, family + " " + mti.TaskId, publisher);
                     entry.ImpactLevel = EstimateImpact(taskDisp, family + " " + mti.TaskId, publisher);
@@ -1718,6 +1721,7 @@ namespace DuckUtil {
             }
             if (string.Equals(serviceName, "Sense", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(serviceName, "WinDefend", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(serviceName, "MDCoreSvc", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(serviceName, "WdNisSvc", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(serviceName, "WMPNetworkSvc", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(serviceName, "uhssvc", StringComparison.OrdinalIgnoreCase) ||
@@ -1738,8 +1742,28 @@ namespace DuckUtil {
             return d;
         }
 
+        private static bool CanChangeServiceConfig(IntPtr scmHandle, string serviceName) {
+            if (scmHandle == IntPtr.Zero || string.IsNullOrWhiteSpace(serviceName)) return true;
+            IntPtr hSvc = IntPtr.Zero;
+            try {
+                hSvc = OpenServiceW(scmHandle, serviceName, SERVICE_CHANGE_CONFIG);
+                if (hSvc != IntPtr.Zero) return true;
+                int err = Marshal.GetLastWin32Error();
+                return (err != 5);
+            } catch {
+                return true;
+            } finally {
+                if (hSvc != IntPtr.Zero) CloseServiceHandle(hSvc);
+            }
+        }
+
         private static void ScanThirdPartyStartupServices(List<StartupEntry> list, HashSet<string> fixedRoots) {
             Dictionary<string, TrackedServiceInfo> tracked = LoadTrackedDisabledServices();
+            bool isAdmin = IsCurrentProcessAdmin();
+            IntPtr scm = IntPtr.Zero;
+            if (isAdmin) {
+                try { scm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT); } catch { scm = IntPtr.Zero; }
+            }
             try {
                 using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 using (RegistryKey svcsRoot = hklm.OpenSubKey(RegServicesPath, false)) {
@@ -1781,13 +1805,32 @@ namespace DuckUtil {
                                 } catch {}
                                 if (isTracked && trackedInfo.DelayedAuto) delayed = true;
 
+                                bool isPackagedSvc = (svcType & 0x200) != 0;
+                                bool isProtectedLock = false;
+                                if (!isMissing && !isPackagedSvc && isAdmin && scm != IntPtr.Zero) {
+                                    isProtectedLock = !CanChangeServiceConfig(scm, svcName);
+                                }
+
                                 string rawDisp = Convert.ToString(sk.GetValue("DisplayName"), CultureInfo.InvariantCulture) ?? "";
                                 string dispName = CleanDisplayName(ResolveServiceDisplayName(rawDisp, svcName));
+                                if (isPackagedSvc &&
+                                    dispName.IndexOf("Service", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                    dispName.IndexOf("D\u1ECBch v\u1EE5", StringComparison.OrdinalIgnoreCase) < 0) {
+                                    dispName = dispName + " (D\u1ECBch v\u1EE5 MSIX)";
+                                }
 
                                 bool enabled = (startType == 2);
-                                string trigInfo = enabled
-                                    ? (delayed ? "D\u1ECBch v\u1EE5 t\u1EF1 \u0111\u1ED9ng tr\u1EC5 (Auto-Delayed)" : "D\u1ECBch v\u1EE5 t\u1EF1 \u0111\u1ED9ng (Auto)")
-                                    : (startType == 3 ? "D\u1ECBch v\u1EE5 th\u1EE7 c\u00F4ng (Manual)" : "D\u1ECBch v\u1EE5 \u0111\u00E3 v\u00F4 hi\u1EC7u h\u00F3a (Disabled)");
+                                string lockKind = isPackagedSvc ? "Msix" : (isProtectedLock ? "Protected" : "");
+                                string trigInfo;
+                                if (isPackagedSvc) {
+                                    trigInfo = "D\u1ECBch v\u1EE5 \u0111\u00F3ng g\u00F3i MSIX (Windows AppXSvc kh\u00F3a - qu\u1EA3n l\u00FD qua m\u1EE5c Store)";
+                                } else if (isProtectedLock) {
+                                    trigInfo = "D\u1ECBch v\u1EE5 \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng)";
+                                } else {
+                                    trigInfo = enabled
+                                        ? (delayed ? "D\u1ECBch v\u1EE5 t\u1EF1 \u0111\u1ED9ng tr\u1EC5 (Auto-Delayed)" : "D\u1ECBch v\u1EE5 t\u1EF1 \u0111\u1ED9ng (Auto)")
+                                        : (startType == 3 ? "D\u1ECBch v\u1EE5 th\u1EE7 c\u00F4ng (Manual)" : "D\u1ECBch v\u1EE5 \u0111\u00E3 v\u00F4 hi\u1EC7u h\u00F3a (Disabled)");
+                                }
 
                                 var entry = new StartupEntry();
                                 entry.Id = "Service|" + svcName;
@@ -1807,19 +1850,23 @@ namespace DuckUtil {
                                 entry.OrphanReason = isMissing ? "D\u1ECBch v\u1EE5 ch\u1EA1y ng\u1EA7m tr\u1ECF t\u1EDBi t\u1EC7p \u0111\u00E3 b\u1ECB x\u00F3a" : "";
                                 entry.Enabled = enabled;
                                 entry.IsPolicyLocked = false;
+                                entry.LockKind = lockKind;
                                 entry.IsOrphan = isMissing;
                                 entry.ProtectionKind = IsProtectedOemOrSystemStartup(dispName + " " + svcName, rawImg, "");
                                 entry.ImpactLevel = EstimateImpact(dispName + " " + svcName, rawImg, "");
                                 entry.RequiresAdmin = true;
-                                entry.CanDelete = isMissing;
-                                entry.CanToggle = !isMissing;
+                                entry.CanDelete = isMissing && !isPackagedSvc && !isProtectedLock;
+                                entry.CanToggle = !isMissing && !isPackagedSvc && !isProtectedLock;
                                 entry.MetadataHydrated = false;
                                 list.Add(entry);
                             }
                         } catch {}
                     }
                 }
-            } catch {}
+            } catch {
+            } finally {
+                if (scm != IntPtr.Zero) CloseServiceHandle(scm);
+            }
         }
 
         public static StartupEntry[] ScanExtended() {

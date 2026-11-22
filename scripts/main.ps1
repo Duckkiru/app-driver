@@ -9285,6 +9285,7 @@ function Sort-StartupRowsHost {
     $ordered = @($script:startRows | Sort-Object `
         @{ Expression = { if ($_.Entry.IsOrphanApprovedGhost) { 2 } elseif ($_.Entry.IsOrphan) { 1 } else { 0 } } },
         @{ Expression = { if ($_.Entry.Enabled) { 0 } else { 1 } } },
+        @{ Expression = { if ($_.Entry.CanToggle) { 0 } else { 1 } } },
         @{ Expression = { switch ([string]$_.Entry.ImpactLevel) { "High" { 0 } "Medium" { 1 } default { 2 } } } },
         @{ Expression = { ([string]$_.Entry.DisplayName).ToLowerInvariant() } })
     $script:startRows.Clear()
@@ -9434,10 +9435,15 @@ function New-StartupBadgePill {
 function Build-StartupEntryToolTip {
     param($Entry)
     $srcDetail = Get-StartupSourceDetail -SourceKind ([string]$Entry.SourceKind) -TriggerInfo ([string]$Entry.TriggerInfo)
+    $lk = [string]$Entry.LockKind
     $stText = if ($Entry.IsOrphanApprovedGhost) {
         "Khóa rác Registry (không còn ứng dụng gốc)"
-    } elseif ($Entry.IsPolicyLocked) {
+    } elseif ($Entry.IsPolicyLocked -or $lk -eq "Policy") {
         if ($Entry.Enabled) { "Đang bật (Khóa bởi Group Policy)" } else { "Đang tắt (Khóa bởi Group Policy)" }
+    } elseif ($lk -eq "Msix") {
+        "Đang bật (Dịch vụ đóng gói MSIX - khóa bởi Windows AppXSvc)"
+    } elseif ($lk -eq "Protected") {
+        "Đang bật (Khóa bảo vệ chống can thiệp Self-Defense / Hệ thống)"
     } elseif ($Entry.SourceKind -eq "Service") {
         if ($Entry.Enabled) { "Tự khởi động cùng Windows (Auto)" } else { "Thủ công / Không tự chạy khi mở máy" }
     } elseif ($Entry.Enabled) {
@@ -9452,6 +9458,11 @@ function Build-StartupEntryToolTip {
     }
     if (-not [string]::IsNullOrWhiteSpace([string]$Entry.SecondaryTargetPath)) {
         $tip += "`nĐích thực thi con: $($Entry.SecondaryTargetPath)"
+    }
+    if ($lk -eq "Msix") {
+        $tip += "`n[i] Lưu ý: Windows khóa quyền đổi cấu hình dịch vụ đóng gói MSIX ngay cả với Admin. Hãy tắt khởi chạy ứng dụng này trong mục Store hoặc gỡ ứng dụng nếu không dùng."
+    } elseif ($lk -eq "Protected") {
+        $tip += "`n[i] Lưu ý: Dịch vụ có cơ chế tự bảo vệ (Self-Defense) nên Windows từ chối tắt từ bên ngoài."
     }
     if ($Entry.IsOrphan) {
         $reason = if (-not [string]::IsNullOrWhiteSpace([string]$Entry.OrphanReason)) { [string]$Entry.OrphanReason } else { "Tệp đích không tồn tại trên ổ đĩa (rác của ứng dụng đã gỡ)." }
@@ -9470,8 +9481,13 @@ function Update-StartupRowBadgesAndImpact {
         } elseif ($e.ProtectionKind -eq "Oem") {
             [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Hãng" -BgBrush $script:brushStartOemBg -FgBrush $script:brushStartOemFg))
         }
-        if ($e.IsPolicyLocked) {
+        $lk = [string]$e.LockKind
+        if ($e.IsPolicyLocked -or $lk -eq "Policy") {
             [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Khóa chính sách" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
+        } elseif ($lk -eq "Msix") {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Khóa MSIX" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
+        } elseif ($lk -eq "Protected") {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Khóa bảo vệ" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
         }
         if ($e.SourceKind -eq "RegRunOnce") {
             [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Chạy 1 lần" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
@@ -9576,7 +9592,16 @@ function New-StartupRowElement {
     $toggle.IsChecked = [bool]$Entry.Enabled
     $canTgl = ([bool]$Entry.CanToggle -and -not [bool]$Entry.IsPolicyLocked)
     $toggle.IsEnabled = $canTgl
-    if (-not $canTgl) { $toggle.Opacity = 0.35 }
+    if (-not $canTgl) {
+        $toggle.Opacity = 0.35
+        [System.Windows.Controls.ToolTipService]::SetShowOnDisabled($toggle, $true)
+        $toggle.ToolTip = switch ([string]$Entry.LockKind) {
+            "Msix"      { "Dịch vụ đóng gói MSIX (AppXSvc) - Windows khóa không cho tắt trực tiếp. Hãy điều chỉnh ở mục Store hoặc gỡ ứng dụng." }
+            "Protected" { "Dịch vụ có bảo vệ chống can thiệp (Self-Defense / Hệ thống) - không thể gạt tắt." }
+            "Policy"    { "Mục này đang bị khóa bởi Group Policy." }
+            default     { "Không hỗ trợ bật/tắt trực tiếp mục này." }
+        }
+    }
     [System.Windows.Controls.Grid]::SetColumn($toggle, 0)
     [void]$g.Children.Add($toggle)
 
