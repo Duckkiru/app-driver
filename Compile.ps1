@@ -143,7 +143,8 @@ $csModules = @(
     @{ Name = "Catalog"; File = "csharp\AppCatalogEngine.cs";       Type = "DuckUtil.AppCatalogEngine";       Prefix = "DuckApp";    Method = "ScanCatalogSensorsAsync";      UseCoreRefs = $false },
     @{ Name = "Deep";    File = "csharp\DeepUninstallerEngine.cs";  Type = "DuckUtil.DeepUninstallerEngine";  Prefix = "DuckDeep";   Method = "ForceStopBatchDirectoriesAsync"; UseCoreRefs = $false },
     @{ Name = "Opt";     File = "csharp\WindowsOptimizerEngine.cs"; Type = "DuckUtil.WindowsOptimizerEngine"; Prefix = "DuckOpt";    Method = "ProbeTweaksStateAsync";        UseCoreRefs = $false },
-    @{ Name = "Startup"; File = "csharp\StartupManagerEngine.cs";   Type = "DuckUtil.StartupManagerEngine";   Prefix = "DuckStart";  Method = "ScanFastCoreAsync";            UseCoreRefs = $true  }
+    @{ Name = "Startup"; File = "csharp\StartupManagerEngine.cs";   Type = "DuckUtil.StartupManagerEngine";   Prefix = "DuckStart";  Method = "ScanFastCoreAsync";            UseCoreRefs = $true  },
+    @{ Name = "Resource"; File = "csharp\ResourceCleanerEngine.cs"; Type = "DuckUtil.ResourceCleanerEngine";  Prefix = "DuckRes";    Method = "ScanAllTiersAsync";            UseCoreRefs = $true  }
 )
 
 $mergedUsingsSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
@@ -254,7 +255,7 @@ $sb.AppendLine('    }') | Out-Null
 $sb.AppendLine('    return $wpfSmoothRefs') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
-$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -or -not ("DuckUtil.AppCatalogEngine" -as [type]) -or -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -or -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -or -not ("DuckUtil.StartupManagerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -or -not ("DuckUtil.AppCatalogEngine" -as [type]) -or -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -or -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -or -not ("DuckUtil.StartupManagerEngine" -as [type]) -or -not ("DuckUtil.ResourceCleanerEngine" -as [type])) {') | Out-Null
 $sb.AppendLine(('    $duckCoreUsings = @' + $q)) | Out-Null
 $sb.AppendLine($duckCoreUsingsText) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
@@ -267,9 +268,9 @@ foreach ($m in $csModules) {
     $sb.AppendLine($m.Body) | Out-Null
     $sb.AppendLine(($q + '@')) | Out-Null
 }
-$sb.AppendLine('    if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not ("DuckUtil.StartupManagerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('    if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not ("DuckUtil.StartupManagerEngine" -as [type]) -and -not ("DuckUtil.ResourceCleanerEngine" -as [type])) {') | Out-Null
 $sb.AppendLine('        try {') | Out-Null
-$sb.AppendLine('            $duckCoreCs = ($duckCoreUsings, $csBodySmooth, $csBodyCatalog, $csBodyDeep, $csBodyOpt, $csBodyStartup) -join "`r`n`r`n"') | Out-Null
+$sb.AppendLine('            $duckCoreCs = ($duckCoreUsings, $csBodySmooth, $csBodyCatalog, $csBodyDeep, $csBodyOpt, $csBodyStartup, $csBodyResource) -join "`r`n`r`n"') | Out-Null
 $sb.AppendLine('            Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -RequiredMethod "RestoreRowsFromColumns" -RefsResolver $resolveCoreRefs') | Out-Null
 $sb.AppendLine('        } catch {}') | Out-Null
 $sb.AppendLine('    }') | Out-Null
@@ -282,7 +283,7 @@ foreach ($m in $csModules) {
     $sb.AppendLine('        } catch {}') | Out-Null
     $sb.AppendLine('    }') | Out-Null
 }
-$sb.AppendLine('    $duckCoreCs = $null; $duckCoreUsings = $null; $csHdrSmooth = $null; $csBodySmooth = $null; $csHdrCatalog = $null; $csBodyCatalog = $null; $csHdrDeep = $null; $csBodyDeep = $null; $csHdrOpt = $null; $csBodyOpt = $null; $csHdrStartup = $null; $csBodyStartup = $null') | Out-Null
+$sb.AppendLine('    $duckCoreCs = $null; $duckCoreUsings = $null; $csHdrSmooth = $null; $csBodySmooth = $null; $csHdrCatalog = $null; $csBodyCatalog = $null; $csHdrDeep = $null; $csBodyDeep = $null; $csHdrOpt = $null; $csBodyOpt = $null; $csHdrStartup = $null; $csBodyStartup = $null; $csHdrResource = $null; $csBodyResource = $null') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
 $sb.AppendLine('if ("DuckUtil.ConsoleHelper" -as [type]) { try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {} }') | Out-Null

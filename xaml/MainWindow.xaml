@@ -1215,7 +1215,158 @@
                         </ScrollViewer>
                     </Grid>
 
-                    <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="btnResScan" Content="Quét ngay" Style="{StaticResource ActionButton}"
+                                                Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
+                                                ToolTip="Chạy quét sâu đa tầng 5 lớp (Temp, Cache trình duyệt/ứng dụng/Dev, Thư mục rỗng 5 lá chắn &amp; Tệp lớn)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResClean" Content="Dọn mục đã chọn" Style="{StaticResource ActionButton}"
+                                                Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
+                                                ToolTip="Dọn các hạng mục đang được tick (Tầng 1–3 xóa thẳng trước, sau đó mới đưa Tầng 4–5 vào Thùng rác)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResSelectSafe" Content="Chọn An toàn" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#34D399" BorderBrush="#1E5640"
+                                                ToolTip="Chỉ tick các hạng mục mức An toàn (không chọn Lưu ý / Nâng cao / Thùng rác)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResClearSel" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}"
+                                                ToolTip="Bỏ chọn toàn bộ hạng mục." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResAddFolder" Content="+ Quét thư mục ngoài" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
+                                                ToolTip="Thêm thư mục/ổ đĩa ngoài (ví dụ D:\, E:\) để quét thư mục rỗng đa tầng và tệp 0-byte tải hỏng." ToolTipService.InitialShowDelay="500"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <CheckBox Name="chkResRecycleTier45" Content="Thùng rác (Tầng 4–5)" IsChecked="True"
+                                                  Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                  ToolTip="Mặc định đưa Thư mục rỗng &amp; Tệp lớn (Tầng 4–5) vào Thùng rác an toàn qua COM IFileOperation (tự từ chối nếu không hỗ trợ Thùng rác, không âm thầm xóa vĩnh viễn)." ToolTipService.InitialShowDelay="300"/>
+                                        <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
+                                                Padding="8,0" VerticalAlignment="Stretch" Height="30">
+                                            <Grid Width="195">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                                      Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                      Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
+                                                <TextBlock Grid.Column="1" Text="Lọc hạng mục rác..." Foreground="#475569" FontSize="11.5"
+                                                           VerticalAlignment="Center" IsHitTestVisible="False">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Text, ElementName=txtResSearch}" Value="">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBox Grid.Column="1" Name="txtResSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                         BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"/>
+                                                <Button Grid.Column="2" Name="btnClearResSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center">
+                                                    <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                          StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Row="1" Margin="1,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Name="btnResFilterAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
+                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
+                                            <Button Name="btnResFilterSafe" Content="An toàn" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterBrowser" Content="Trình duyệt" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterAppDev" Content="Ứng dụng &amp; Dev" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterEmpty" Content="Thư mục rỗng" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterAdv" Content="Nâng cao" Style="{StaticResource FilterTabButton}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Name="txtResDiskInfo" Text="Ổ C: đang kiểm tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                <Border Width="68" Height="6" Background="#1E293B" CornerRadius="3" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                    <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="3"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock Name="txtResSummary" Text="Bấm 'Quét ngay' để phân tích rác hệ thống"
+                                                   Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Name="ResHeaderBorder" Background="#090D14" Height="34"
+                                Margin="16,8,0,0" HorizontalAlignment="Left"
+                                Width="{Binding ActualWidth, ElementName=ResRowsHost}"
+                                BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="2,2,0,0" SnapsToDevicePixels="True">
+                            <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="136"/>
+                                    <ColumnDefinition Width="136"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="CHỌN" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="1" Text="HẠNG MỤC RÁC &amp; PHẠM VI QUÉT" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="2" Text="MỨC ĐỘ" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="3" Text="DUNG LƯỢNG" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="4" Text="THAO TÁC" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="2">
+                            <ScrollViewer Name="ResScrollViewer" VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                                <StackPanel Name="ResRowsHost" Margin="16,0,16,12" UseLayoutRounding="True" SnapsToDevicePixels="True"/>
+                            </ScrollViewer>
+                            <Border Name="ResEmptyState" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Background="#0E131D" BorderBrush="#263348" BorderThickness="1" CornerRadius="6" Padding="26,20" IsHitTestVisible="False">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Name="txtResEmptyTitle" Text="Sẵn sàng quét rác đa tầng (5 tầng bảo vệ)"
+                                               Foreground="#E2E8F0" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Name="txtResEmptySub" Text="Bấm 'Quét ngay' để phân tích tệp tạm, bộ nhớ đệm trình duyệt/ứng dụng, thư mục rỗng và tệp lớn. Tab không tự đọc ổ đĩa khi mới mở."
+                                               Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="540" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
                     <Grid Name="OptPageStartup" Visibility="Collapsed" IsHitTestVisible="False">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>

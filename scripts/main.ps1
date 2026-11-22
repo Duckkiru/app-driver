@@ -7993,6 +7993,10 @@ function Stop-AllBackgroundWork {
     try { if ($script:optSearchDebounceTimer) { $script:optSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:startPollTimer) { $script:startPollTimer.Stop() } } catch {}
     try { if ($script:startSearchDebounceTimer) { $script:startSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:resPollTimer) { $script:resPollTimer.Stop() } } catch {}
+    try { if ($script:resSearchDebounceTimer) { $script:resSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:resScanCts) { $script:resScanCts.Cancel() } } catch {}
+    try { if ($script:resCleanCts) { $script:resCleanCts.Cancel() } } catch {}
     try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
@@ -8416,6 +8420,9 @@ function Set-OptimizerSubTab {
         $script:optSubBtnStartup.Foreground = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnStartup.BorderBrush = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushTransparent }
     }
+    if ($SubIndex -eq 1 -and (Get-Command "Initialize-ResourcesTabIfNeeded" -ErrorAction SilentlyContinue)) {
+        Initialize-ResourcesTabIfNeeded
+    }
     if ($SubIndex -eq 2 -and (Get-Command "Initialize-StartupTabIfNeeded" -ErrorAction SilentlyContinue)) {
         Initialize-StartupTabIfNeeded
     }
@@ -8426,6 +8433,14 @@ function Update-OptimizerSelectionCount {
     if ($script:isWindowClosing) { return }
     $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
     if (-not $isTab4Visible -or -not $txtSelectionCount) { return }
+    if ($script:optSubTabIndex -eq 1) {
+        if (Get-Command "Update-ResourcesSummary" -ErrorAction SilentlyContinue) {
+            Update-ResourcesSummary
+        } else {
+            $txtSelectionCount.Text = ""
+        }
+        return
+    }
     if ($script:optSubTabIndex -eq 2) {
         if (Get-Command "Update-StartupFooterSummary" -ErrorAction SilentlyContinue) {
             Update-StartupFooterSummary
@@ -9953,6 +9968,533 @@ if ($script:btnStartAddApp) {
         }
     })
 }
+
+#region Resources Cleaner Tab (OptPageResources - 5-Tier Deep Cleaner)
+$script:resInitialized        = $false
+$script:resFilterMode         = "All"
+$script:resScanVersion        = 0
+$script:resIsScanning         = $false
+$script:resIsCleaning         = $false
+$script:resScanTask           = $null
+$script:resCleanTask          = $null
+$script:resScanCts            = $null
+$script:resCleanCts           = $null
+$script:resPollTimer          = $null
+$script:resSearchDebounceTimer = $null
+$script:resLastReport         = $null
+$script:resRows               = [System.Collections.Generic.List[object]]::new()
+$script:resExtraFolders       = [System.Collections.Generic.List[string]]::new()
+$script:resSyncingChecks      = $false
+
+$script:btnResScan            = $window.FindName("btnResScan")
+$script:btnResClean           = $window.FindName("btnResClean")
+$script:btnResSelectSafe      = $window.FindName("btnResSelectSafe")
+$script:btnResClearSel        = $window.FindName("btnResClearSel")
+$script:btnResAddFolder       = $window.FindName("btnResAddFolder")
+$script:chkResRecycleTier45   = $window.FindName("chkResRecycleTier45")
+$script:txtResSearch          = $window.FindName("txtResSearch")
+$script:btnClearResSearch     = $window.FindName("btnClearResSearch")
+$script:btnResFilterAll       = $window.FindName("btnResFilterAll")
+$script:btnResFilterSafe      = $window.FindName("btnResFilterSafe")
+$script:btnResFilterBrowser   = $window.FindName("btnResFilterBrowser")
+$script:btnResFilterAppDev    = $window.FindName("btnResFilterAppDev")
+$script:btnResFilterEmpty     = $window.FindName("btnResFilterEmpty")
+$script:btnResFilterAdv       = $window.FindName("btnResFilterAdv")
+$script:txtResDiskInfo        = $window.FindName("txtResDiskInfo")
+$script:resDiskBarFill        = $window.FindName("resDiskBarFill")
+$script:txtResSummary         = $window.FindName("txtResSummary")
+$script:resScrollViewer       = $window.FindName("ResScrollViewer")
+$script:resRowsHost           = $window.FindName("ResRowsHost")
+$script:resEmptyState         = $window.FindName("ResEmptyState")
+$script:txtResEmptyTitle      = $window.FindName("txtResEmptyTitle")
+$script:txtResEmptySub        = $window.FindName("txtResEmptySub")
+
+$script:brushResScanBlue      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x02, 0x84, 0xC7)); $script:brushResScanBlue.Freeze()
+$script:brushResStopAmber     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0xB4, 0x53, 0x09)); $script:brushResStopAmber.Freeze()
+$script:brushResDiskGreen     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x34, 0xD3, 0x99)); $script:brushResDiskGreen.Freeze()
+$script:brushResDiskAmber     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0xFB, 0xBF, 0x24)); $script:brushResDiskAmber.Freeze()
+$script:brushResDiskRed       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0xF8, 0x71, 0x71)); $script:brushResDiskRed.Freeze()
+
+function Update-ResourcesDiskBar {
+    if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) { return }
+    try {
+        $di = [DuckUtil.ResourceCleanerEngine]::GetSystemDiskInfo()
+        if ($script:txtResDiskInfo) { $script:txtResDiskInfo.Text = $di.SummaryText }
+        if ($script:resDiskBarFill) {
+            $pct = [Math]::Max(0.0, [Math]::Min(100.0, [double]$di.UsedPercent))
+            $script:resDiskBarFill.Width = [Math]::Round(68.0 * ($pct / 100.0), 1)
+            if ($pct -ge 90.0) { $script:resDiskBarFill.Background = $script:brushResDiskRed }
+            elseif ($pct -ge 75.0) { $script:resDiskBarFill.Background = $script:brushResDiskAmber }
+            else { $script:resDiskBarFill.Background = $script:brushResDiskGreen }
+        }
+    } catch {}
+}
+
+function Set-ResourcesFilterChipVisuals {
+    $map = @{
+        "All"      = $script:btnResFilterAll
+        "Safe"     = $script:btnResFilterSafe
+        "Browser"  = $script:btnResFilterBrowser
+        "AppDev"   = $script:btnResFilterAppDev
+        "Empty"    = $script:btnResFilterEmpty
+        "Advanced" = $script:btnResFilterAdv
+    }
+    foreach ($k in $map.Keys) {
+        $btn = $map[$k]
+        if (-not $btn) { continue }
+        if ($script:resFilterMode -eq $k) {
+            $btn.Background  = $script:brushStartChipActBg
+            $btn.BorderBrush = $script:brushStartChipActBdr
+            $btn.Foreground  = $script:brushNavActive
+        } else {
+            $btn.Background  = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground  = $script:brushNavInactive
+        }
+    }
+}
+
+function Update-ResourcesSummary {
+    if ($script:isWindowClosing) { return }
+    $totBytes = 0L; $selBytes = 0L; $selCats = 0; $totEmpty = 0; $selEmpty = 0; $totItems = 0
+    foreach ($r in $script:resRows) {
+        $c = $r.Category
+        if (-not $c) { continue }
+        $totBytes += [long]$c.TotalBytes
+        if ($c.Id -eq "t4_empty_folders") { $totEmpty += [int]$c.FolderCount } else { $totItems += [int]$c.ItemCount }
+        if ($c.Selected) {
+            $hasActionable = ($c.ItemCount -gt 0 -or $c.FolderCount -gt 0 -or $c.TotalBytes -gt 0) -and (-not $c.SkippedBecauseRebootPending)
+            if ($hasActionable) {
+                $selCats++
+                if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+                    $subSel = 0L; $subEmpty = 0
+                    foreach ($it in $c.DetailItems) {
+                        if ($it.Selected) {
+                            $subSel += [long]$it.SizeBytes
+                            if ($c.Id -eq "t4_empty_folders") { $subEmpty += [Math]::Max(1, [int]$it.NestedCount) }
+                        }
+                    }
+                    $selBytes += $subSel
+                    $selEmpty += $subEmpty
+                } else {
+                    $selBytes += [long]$c.TotalBytes
+                }
+            }
+        }
+    }
+
+    $fmtTot = if ("DuckUtil.ResourceCleanerEngine" -as [type]) { [DuckUtil.ResourceCleanerEngine]::FormatBytes($totBytes) } else { "0 B" }
+    $fmtSel = if ("DuckUtil.ResourceCleanerEngine" -as [type]) { [DuckUtil.ResourceCleanerEngine]::FormatBytes($selBytes) } else { "0 B" }
+
+    if ($script:btnResClean) {
+        $script:btnResClean.IsEnabled = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $selCats -gt 0)
+        if ($script:resIsCleaning) {
+            $script:btnResClean.Content = "Đang dọn..."
+        } elseif ($selCats -gt 0) {
+            $script:btnResClean.Content = "Dọn đã chọn ($fmtSel)"
+        } else {
+            $script:btnResClean.Content = "Dọn mục đã chọn"
+        }
+    }
+    if ($script:btnResScan) {
+        $script:btnResScan.IsEnabled = (-not $script:resIsCleaning)
+        if ($script:resIsScanning) {
+            $script:btnResScan.Content = "Dừng quét"
+            $script:btnResScan.Background = $script:brushResStopAmber
+        } else {
+            $script:btnResScan.Content = "Quét ngay"
+            $script:btnResScan.Background = $script:brushResScanBlue
+        }
+    }
+    if ($script:btnResSelectSafe) { $script:btnResSelectSafe.IsEnabled = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resRows.Count -gt 0) }
+    if ($script:btnResClearSel)   { $script:btnResClearSel.IsEnabled   = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resRows.Count -gt 0) }
+    if ($script:btnResAddFolder)  { $script:btnResAddFolder.IsEnabled  = (-not $script:resIsScanning -and -not $script:resIsCleaning) }
+
+    if ($script:txtResSummary -and -not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resLastReport) {
+        $extraTag = if ($script:resExtraFolders.Count -gt 0) { " · +$($script:resExtraFolders.Count) thư mục ngoài" } else { "" }
+        $script:txtResSummary.Text = "Phát hiện $fmtTot ($totEmpty thư mục rỗng) · Đã chọn $fmtSel$extraTag"
+    }
+    $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
+    if ($isTab4Visible -and $script:optSubTabIndex -eq 1 -and $txtSelectionCount) {
+        if ($script:resLastReport) {
+            $txtSelectionCount.Text = "Đã chọn $selCats hạng mục ($fmtSel)"
+        } else {
+            $txtSelectionCount.Text = "Tài nguyên sẵn sàng"
+        }
+    }
+}
+
+function Apply-ResourcesFilter {
+    if ($script:isWindowClosing) { return }
+    $q = if ($script:txtResSearch -and -not [string]::IsNullOrWhiteSpace($script:txtResSearch.Text)) { $script:txtResSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $visibleCount = 0
+    foreach ($r in $script:resRows) {
+        $c = $r.Category
+        $show = $true
+        if ($script:resFilterMode -ne "All") {
+            if ($script:resFilterMode -eq "Safe") { $show = ($c.RiskLevel -eq "Safe") }
+            else { $show = ($c.FilterGroup -eq $script:resFilterMode) }
+        }
+        if ($show -and $q.Length -gt 0) {
+            $hay = (([string]$c.Title) + " " + ([string]$c.Description)).ToLowerInvariant()
+            if (-not $hay.Contains($q)) { $show = $false }
+        }
+        $r.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        if ($show) { $visibleCount++ }
+    }
+    if ($script:resEmptyState) {
+        if ($script:resIsScanning) {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Đang quét sâu đa tầng (5 tầng)..." }
+            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Đang phân tích Temp, Cache trình duyệt/ứng dụng/Dev, Thư mục rỗng (lá chắn 5 lớp) và Radar tệp lớn. Bạn có thể bấm 'Dừng quét' bất cứ lúc nào." }
+        } elseif ($script:resRows.Count -eq 0) {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+        } elseif ($visibleCount -eq 0) {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Không có hạng mục rác nào khớp bộ lọc" }
+            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Thử chuyển sang 'Tất cả' hoặc xóa từ khóa tìm kiếm." }
+        } else {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+    Update-ResourcesSummary
+}
+
+$script:resDetailCheckHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    if ($script:resSyncingChecks -or -not $s -or -not $s.Tag) { return }
+    $pair = $s.Tag
+    $rVis = $pair[0]
+    $dIt  = $pair[1]
+    if ($dIt) { $dIt.Selected = ($s.IsChecked -eq $true) }
+    if ($rVis -and $rVis.Category -and $rVis.Category.DetailItems) {
+        $anySel = $false
+        foreach ($x in $rVis.Category.DetailItems) { if ($x.Selected) { $anySel = $true; break } }
+        $script:resSyncingChecks = $true
+        try {
+            $rVis.Category.Selected = $anySel
+            if ($rVis.CheckBox) { $rVis.CheckBox.IsChecked = $anySel }
+        } finally { $script:resSyncingChecks = $false }
+    }
+    Update-ResourcesSummary
+}
+
+$script:resOpenDetailPathHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    $p = if ($s -and $s.Tag) { [string]$s.Tag } else { "" }
+    if ([string]::IsNullOrWhiteSpace($p)) { return }
+    try {
+        if ([System.IO.File]::Exists($p)) {
+            Start-Process "explorer.exe" -ArgumentList "/select,`"$p`""
+        } elseif ([System.IO.Directory]::Exists($p)) {
+            Start-Process "explorer.exe" -ArgumentList "`"$p`""
+        }
+    } catch {}
+}
+
+$script:resRowCheckHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    if ($script:resSyncingChecks -or -not $s -or -not $s.Tag) { return }
+    $rVis = $s.Tag
+    if ($rVis -and $rVis.Category) {
+        $isChk = ($s.IsChecked -eq $true)
+        $rVis.Category.Selected = $isChk
+        if ($rVis.Category.CleanMode -eq "ItemsList" -and $rVis.Category.DetailItems) {
+            foreach ($it in $rVis.Category.DetailItems) { $it.Selected = $isChk }
+            if ($rVis.DetailsHost -and $rVis.DetailsPopulated) {
+                $script:resSyncingChecks = $true
+                try {
+                    foreach ($child in $rVis.DetailsHost.Children) {
+                        if ($child -is [System.Windows.Controls.Grid] -and $child.Children.Count -gt 0 -and $child.Children[0] -is [System.Windows.Controls.CheckBox]) {
+                            $child.Children[0].IsChecked = $isChk
+                        }
+                    }
+                } finally { $script:resSyncingChecks = $false }
+            }
+        }
+    }
+    Update-ResourcesSummary
+}
+
+$script:resDetailsBtnHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    $rVis = if ($s -and $s.Tag) { $s.Tag } else { $null }
+    if (-not $rVis -or -not $rVis.DetailsContainer) { return }
+    $rVis.DetailsExpanded = (-not $rVis.DetailsExpanded)
+    if ($rVis.DetailsExpanded) {
+        if (-not $rVis.DetailsPopulated) {
+            [DuckUtil.ResourceCleanerEngine]::PopulateDetailsPanel($rVis, $null, $script:styleRowActionBtn, $script:resDetailCheckHandler, $script:resOpenDetailPathHandler)
+        }
+        $rVis.DetailsContainer.Visibility = [System.Windows.Visibility]::Visible
+        $rVis.DetailsBtn.Content = "Thu gọn"
+    } else {
+        $rVis.DetailsContainer.Visibility = [System.Windows.Visibility]::Collapsed
+        $rVis.DetailsBtn.Content = "Chi tiết"
+    }
+}
+
+$script:resOpenBtnHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    $rVis = if ($s -and $s.Tag) { $s.Tag } else { $null }
+    if (-not $rVis -or -not $rVis.Category -or -not $rVis.Category.RootPaths -or $rVis.Category.RootPaths.Count -eq 0) { return }
+    $target = [string]$rVis.Category.RootPaths[0]
+    try {
+        if ([System.IO.Directory]::Exists($target)) {
+            Start-Process "explorer.exe" -ArgumentList "`"$target`""
+        }
+    } catch {}
+}
+
+function Ensure-ResourcesPollTimer {
+    if ($script:resPollTimer) { return }
+    $script:resPollTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $script:resPollTimer.Interval = [TimeSpan]::FromMilliseconds(40)
+    $script:resPollTimer.Add_Tick({
+        if ($script:isWindowClosing) {
+            $script:resPollTimer.Stop()
+            return
+        }
+
+        if ($script:resScanTask -and $script:resScanTask.IsCompleted) {
+            $tScan = $script:resScanTask
+            $scanVer = $script:resScanTaskVersion
+            $script:resScanTask = $null
+            $script:resIsScanning = $false
+            if ($scanVer -eq $script:resScanVersion -and $tScan.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tScan.Result) {
+                $rep = $tScan.Result
+                $script:resLastReport = $rep
+                Update-ResourcesDiskBar
+                $script:resRows.Clear()
+                if ($script:resRowsHost) { $script:resRowsHost.Children.Clear() }
+
+                $script:resSyncingChecks = $true
+                try {
+                    foreach ($cat in @($rep.Categories)) {
+                        $rv = [DuckUtil.ResourceCleanerEngine]::CreateResourceRowVisual($cat, $script:styleStartRow, $null, $script:styleRowActionBtn)
+                        $rv.CheckBox.Add_Checked($script:resRowCheckHandler)
+                        $rv.CheckBox.Add_Unchecked($script:resRowCheckHandler)
+                        $rv.DetailsBtn.Add_Click($script:resDetailsBtnHandler)
+                        $rv.OpenBtn.Add_Click($script:resOpenBtnHandler)
+                        [void]$script:resRows.Add($rv)
+                        if ($script:resRowsHost) { [void]$script:resRowsHost.Children.Add($rv.Row) }
+                    }
+                } finally { $script:resSyncingChecks = $false }
+
+                $fmtFound = [DuckUtil.ResourceCleanerEngine]::FormatBytes($rep.TotalBytes)
+                $tagCanc = if ($rep.WasCancelled) { " (đã dừng sớm)" } else { "" }
+                Log-Text "[OK] Tài nguyên: Quét xong 5 tầng trong $($rep.ScanElapsedMs)ms — phát hiện $fmtFound & $($rep.TotalEmptyFolders) thư mục rỗng$tagCanc."
+            }
+            Apply-ResourcesFilter
+        }
+
+        if ($script:resCleanTask -and $script:resCleanTask.IsCompleted) {
+            $tClean = $script:resCleanTask
+            $script:resCleanTask = $null
+            $script:resIsCleaning = $false
+            if ($tClean.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tClean.Result) {
+                $cr = $tClean.Result
+                if ($cr.NeedsDeliveryOptCmdlet) {
+                    try {
+                        if (Get-Command "Delete-DeliveryOptimizationCache" -ErrorAction SilentlyContinue) {
+                            Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue | Out-Null
+                        }
+                    } catch {}
+                }
+                foreach ($lg in @($cr.PerCategoryLogs)) { Log-Text "   $lg" }
+                $fmtFreed = [DuckUtil.ResourceCleanerEngine]::FormatBytes($cr.FreedBytes)
+                $msg = "Đã giải phóng: $fmtFreed`n" +
+                       "• Đã xóa: $($cr.DeletedFiles) tệp, $($cr.DeletedFolders) thư mục (Đưa vào Thùng rác: $($cr.RecycledItems))`n" +
+                       "• Bỏ qua an toàn: $($cr.SkippedLockedCount) đang được Explorer/hệ thống khóa, $($cr.SkippedCloudCount) tệp đám mây/symlink"
+                if ($cr.SkippedRecycleUnsupportedCount -gt 0) {
+                    $msg += ", $($cr.SkippedRecycleUnsupportedCount) mục không hỗ trợ Thùng rác (quá dài/ổ mạng — không tự xóa vĩnh viễn)"
+                }
+                Log-Text "[OK] Dọn Tài nguyên hoàn tất trong $($cr.ElapsedMs)ms: Giải phóng $fmtFreed."
+                Update-ResourcesDiskBar
+                [void](Show-OwnedMessageBox -Text $msg -Caption "Hoàn tất dọn Tài nguyên" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+                Start-ResourcesDeepScan
+            } else {
+                Update-ResourcesSummary
+            }
+        }
+
+        if (-not $script:resScanTask -and -not $script:resCleanTask) {
+            $script:resPollTimer.Stop()
+        }
+    })
+}
+
+function Start-ResourcesDeepScan {
+    if ($script:isWindowClosing -or $script:resIsCleaning) { return }
+    if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) { return }
+    if ($script:resScanCts) {
+        try { $script:resScanCts.Cancel() } catch {}
+        try { $script:resScanCts.Dispose() } catch {}
+    }
+    $script:resScanVersion++
+    $script:resScanTaskVersion = $script:resScanVersion
+    $script:resScanCts = [System.Threading.CancellationTokenSource]::new()
+    $script:resIsScanning = $true
+    $script:resRows.Clear()
+    if ($script:resRowsHost) { $script:resRowsHost.Children.Clear() }
+    if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang quét sâu 5 tầng..." }
+    Apply-ResourcesFilter
+    $extraArr = $script:resExtraFolders.ToArray()
+    $script:resScanTask = [DuckUtil.ResourceCleanerEngine]::ScanAllTiersAsync($extraArr, $script:resScanCts.Token)
+    Ensure-ResourcesPollTimer
+    $script:resPollTimer.Start()
+}
+
+function Initialize-ResourcesTabIfNeeded {
+    if ($script:resInitialized -or $script:isWindowClosing) { return }
+    $script:resInitialized = $true
+    if ($script:resScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+        try { [DuckUtil.SmoothScrollController]::Attach($script:resScrollViewer) } catch {}
+    }
+    Set-ResourcesFilterChipVisuals
+    Update-ResourcesDiskBar
+    Update-ResourcesSummary
+}
+
+if ($script:btnResScan) {
+    $script:btnResScan.Add_Click({
+        if ($script:isWindowClosing -or $script:resIsCleaning) { return }
+        if ($script:resIsScanning) {
+            try { if ($script:resScanCts) { $script:resScanCts.Cancel() } } catch {}
+            if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang dừng quét..." }
+            return
+        }
+        Start-ResourcesDeepScan
+    })
+}
+
+if ($script:btnResClean) {
+    $script:btnResClean.Add_Click({
+        if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
+        $selectedCats = @($script:resRows | Where-Object { $_.Category.Selected -and -not $_.Category.SkippedBecauseRebootPending -and ($_.Category.ItemCount -gt 0 -or $_.Category.FolderCount -gt 0 -or $_.Category.TotalBytes -gt 0) } | ForEach-Object { $_.Category })
+        if ($selectedCats.Count -eq 0) { return }
+
+        $useRb = ($script:chkResRecycleTier45 -and $script:chkResRecycleTier45.IsChecked -eq $true)
+        $hasWarn = $false
+        $hasOneDrive = $false
+        $estBytes = 0L
+        foreach ($c in $selectedCats) {
+            if ($c.RiskLevel -ne "Safe") { $hasWarn = $true }
+            if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+                foreach ($it in $c.DetailItems) {
+                    if ($it.Selected) {
+                        $estBytes += [long]$it.SizeBytes
+                        if ($it.IsOneDrive) { $hasOneDrive = $true }
+                    }
+                }
+            } else {
+                $estBytes += [long]$c.TotalBytes
+            }
+        }
+
+        $fmtEst = [DuckUtil.ResourceCleanerEngine]::FormatBytes($estBytes)
+        $modeNote = if ($useRb) { "Tầng 1–3 xóa thẳng trước, sau đó đưa Tầng 4–5 vào Thùng rác an toàn." } else { "CẢNH BÁO: Bạn đang tắt chế độ Thùng rác — Tầng 4–5 sẽ bị xóa vĩnh viễn!" }
+        $confirmText = "Bạn sắp dọn $($selectedCats.Count) hạng mục (ước tính giải phóng ~$fmtEst).`n`n• $modeNote"
+        if ($hasWarn) { $confirmText += "`n• Có bao gồm hạng mục mức Lưu ý / Nâng cao." }
+        if ($hasOneDrive) { $confirmText += "`n• Có tệp nằm trong OneDrive — xóa tệp này sẽ đồng bộ xóa trên đám mây!" }
+        $confirmText += "`n`nTiếp tục dọn?"
+
+        $ans = Show-OwnedMessageBox `
+            -Text $confirmText `
+            -Caption "Xác nhận dọn Tài nguyên hệ thống" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+
+        if ($script:resCleanCts) {
+            try { $script:resCleanCts.Dispose() } catch {}
+        }
+        $script:resCleanCts = [System.Threading.CancellationTokenSource]::new()
+        $script:resIsCleaning = $true
+        if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang dọn $($selectedCats.Count) hạng mục..." }
+        Update-ResourcesSummary
+        Log-Text "[*] Bắt đầu dọn Tài nguyên ($($selectedCats.Count) hạng mục, ước tính ~$fmtEst)..."
+        $allCats = [System.Collections.Generic.List[DuckUtil.ResourceCleanCategory]]::new()
+        foreach ($r in $script:resRows) { [void]$allCats.Add($r.Category) }
+        $script:resCleanTask = [DuckUtil.ResourceCleanerEngine]::CleanSelectedCategoriesAsync($allCats.ToArray(), $useRb, $script:resCleanCts.Token)
+        Ensure-ResourcesPollTimer
+        $script:resPollTimer.Start()
+    })
+}
+
+if ($script:btnResSelectSafe) {
+    $script:btnResSelectSafe.Add_Click({
+        if ($script:resIsScanning -or $script:resIsCleaning) { return }
+        $script:resSyncingChecks = $true
+        try {
+            foreach ($r in $script:resRows) {
+                $c = $r.Category
+                $want = ($c.RiskLevel -eq "Safe" -and -not $c.SkippedBecauseRebootPending -and ($c.ItemCount -gt 0 -or $c.TotalBytes -gt 0))
+                $c.Selected = $want
+                if ($r.CheckBox) { $r.CheckBox.IsChecked = $want }
+            }
+        } finally { $script:resSyncingChecks = $false }
+        Update-ResourcesSummary
+    })
+}
+
+if ($script:btnResClearSel) {
+    $script:btnResClearSel.Add_Click({
+        if ($script:resIsScanning -or $script:resIsCleaning) { return }
+        $script:resSyncingChecks = $true
+        try {
+            foreach ($r in $script:resRows) {
+                $r.Category.Selected = $false
+                if ($r.CheckBox) { $r.CheckBox.IsChecked = $false }
+            }
+        } finally { $script:resSyncingChecks = $false }
+        Update-ResourcesSummary
+    })
+}
+
+if ($script:btnResAddFolder) {
+    $script:btnResAddFolder.Add_Click({
+        if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
+        $fbd = [System.Windows.Forms.FolderBrowserDialog]::new()
+        $fbd.Description = "Chọn thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng đa tầng & tệp 0-byte tải hỏng"
+        $fbd.ShowNewFolderButton = $false
+        if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK -and -not [string]::IsNullOrWhiteSpace($fbd.SelectedPath)) {
+            $picked = [DuckUtil.ResourceCleanerEngine]::NormalizeCleanPath($fbd.SelectedPath)
+            if (-not $script:resExtraFolders.Contains($picked)) {
+                [void]$script:resExtraFolders.Add($picked)
+                Log-Text "[OK] Tài nguyên: Đã thêm thư mục quét ngoài '$picked'."
+            }
+            Start-ResourcesDeepScan
+        }
+        try { $fbd.Dispose() } catch {}
+    })
+}
+
+if ($script:btnResFilterAll)     { $script:btnResFilterAll.Add_Click({ $script:resFilterMode = "All"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterSafe)    { $script:btnResFilterSafe.Add_Click({ $script:resFilterMode = "Safe"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterBrowser) { $script:btnResFilterBrowser.Add_Click({ $script:resFilterMode = "Browser"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterAppDev)  { $script:btnResFilterAppDev.Add_Click({ $script:resFilterMode = "AppDev"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterEmpty)   { $script:btnResFilterEmpty.Add_Click({ $script:resFilterMode = "Empty"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterAdv)     { $script:btnResFilterAdv.Add_Click({ $script:resFilterMode = "Advanced"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+
+if ($script:txtResSearch) {
+    $script:resSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $script:resSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(140)
+    $script:resSearchDebounceTimer.Add_Tick({
+        $script:resSearchDebounceTimer.Stop()
+        Apply-ResourcesFilter
+    })
+    $script:txtResSearch.Add_TextChanged({
+        $script:resSearchDebounceTimer.Stop()
+        $script:resSearchDebounceTimer.Start()
+    })
+}
+if ($script:btnClearResSearch) {
+    $script:btnClearResSearch.Add_Click({
+        if ($script:txtResSearch) { $script:txtResSearch.Text = "" }
+        Apply-ResourcesFilter
+    })
+}
+#endregion
 #endregion
 
 $window.ShowDialog() | Out-Null

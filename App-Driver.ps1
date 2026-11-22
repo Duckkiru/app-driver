@@ -8308,7 +8308,158 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                         </ScrollViewer>
                     </Grid>
 
-                    <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="btnResScan" Content="Qu&#x00E9;t ngay" Style="{StaticResource ActionButton}"
+                                                Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
+                                                ToolTip="Ch&#x1EA1;y qu&#x00E9;t s&#x00E2;u &#x0111;a t&#x1EA7;ng 5 l&#x1EDB;p (Temp, Cache tr&#x00EC;nh duy&#x1EC7;t/&#x1EE9;ng d&#x1EE5;ng/Dev, Th&#x01B0; m&#x1EE5;c r&#x1ED7;ng 5 l&#x00E1; ch&#x1EAF;n &amp; T&#x1EC7;p l&#x1EDB;n)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResClean" Content="D&#x1ECD;n m&#x1EE5;c &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
+                                                Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
+                                                ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c tick (T&#x1EA7;ng 1&#x2013;3 x&#x00F3;a th&#x1EB3;ng tr&#x01B0;&#x1EDB;c, sau &#x0111;&#x00F3; m&#x1EDB;i &#x0111;&#x01B0;a T&#x1EA7;ng 4&#x2013;5 v&#x00E0;o Th&#x00F9;ng r&#x00E1;c)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResSelectSafe" Content="Ch&#x1ECD;n An to&#x00E0;n" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#34D399" BorderBrush="#1E5640"
+                                                ToolTip="Ch&#x1EC9; tick c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c m&#x1EE9;c An to&#x00E0;n (kh&#x00F4;ng ch&#x1ECD;n L&#x01B0;u &#x00FD; / N&#x00E2;ng cao / Th&#x00F9;ng r&#x00E1;c)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResClearSel" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
+                                                ToolTip="B&#x1ECF; ch&#x1ECD;n to&#x00E0;n b&#x1ED9; h&#x1EA1;ng m&#x1EE5;c." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnResAddFolder" Content="+ Qu&#x00E9;t th&#x01B0; m&#x1EE5;c ngo&#x00E0;i" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
+                                                ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c/&#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i (v&#x00ED; d&#x1EE5; D:\, E:\) &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng &#x0111;a t&#x1EA7;ng v&#x00E0; t&#x1EC7;p 0-byte t&#x1EA3;i h&#x1ECF;ng." ToolTipService.InitialShowDelay="500"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <CheckBox Name="chkResRecycleTier45" Content="Th&#x00F9;ng r&#x00E1;c (T&#x1EA7;ng 4&#x2013;5)" IsChecked="True"
+                                                  Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                  ToolTip="M&#x1EB7;c &#x0111;&#x1ECB;nh &#x0111;&#x01B0;a Th&#x01B0; m&#x1EE5;c r&#x1ED7;ng &amp; T&#x1EC7;p l&#x1EDB;n (T&#x1EA7;ng 4&#x2013;5) v&#x00E0;o Th&#x00F9;ng r&#x00E1;c an to&#x00E0;n qua COM IFileOperation (t&#x1EF1; t&#x1EEB; ch&#x1ED1;i n&#x1EBF;u kh&#x00F4;ng h&#x1ED7; tr&#x1EE3; Th&#x00F9;ng r&#x00E1;c, kh&#x00F4;ng &#x00E2;m th&#x1EA7;m x&#x00F3;a v&#x0129;nh vi&#x1EC5;n)." ToolTipService.InitialShowDelay="300"/>
+                                        <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
+                                                Padding="8,0" VerticalAlignment="Stretch" Height="30">
+                                            <Grid Width="195">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                                      Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                      Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
+                                                <TextBlock Grid.Column="1" Text="L&#x1ECD;c h&#x1EA1;ng m&#x1EE5;c r&#x00E1;c..." Foreground="#475569" FontSize="11.5"
+                                                           VerticalAlignment="Center" IsHitTestVisible="False">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Text, ElementName=txtResSearch}" Value="">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBox Grid.Column="1" Name="txtResSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                         BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"/>
+                                                <Button Grid.Column="2" Name="btnClearResSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center">
+                                                    <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                          StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Row="1" Margin="1,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0" Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Name="btnResFilterAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
+                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
+                                            <Button Name="btnResFilterSafe" Content="An to&#x00E0;n" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterBrowser" Content="Tr&#x00EC;nh duy&#x1EC7;t" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterAppDev" Content="&#x1EE8;ng d&#x1EE5;ng &amp; Dev" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterEmpty" Content="Th&#x01B0; m&#x1EE5;c r&#x1ED7;ng" Style="{StaticResource FilterTabButton}"/>
+                                            <Button Name="btnResFilterAdv" Content="N&#x00E2;ng cao" Style="{StaticResource FilterTabButton}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Name="txtResDiskInfo" Text="&#x1ED4; C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                <Border Width="68" Height="6" Background="#1E293B" CornerRadius="3" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                    <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="3"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock Name="txtResSummary" Text="B&#x1EA5;m 'Qu&#x00E9;t ngay' &#x0111;&#x1EC3; ph&#x00E2;n t&#x00ED;ch r&#x00E1;c h&#x1EC7; th&#x1ED1;ng"
+                                                   Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Name="ResHeaderBorder" Background="#090D14" Height="34"
+                                Margin="16,8,0,0" HorizontalAlignment="Left"
+                                Width="{Binding ActualWidth, ElementName=ResRowsHost}"
+                                BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="2,2,0,0" SnapsToDevicePixels="True">
+                            <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="136"/>
+                                    <ColumnDefinition Width="136"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="CH&#x1ECC;N" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="1" Text="H&#x1EA0;NG M&#x1EE4;C R&#x00C1;C &amp; PH&#x1EA0;M VI QU&#x00C9;T" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="2" Text="M&#x1EE8;C &#x0110;&#x1ED8;" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="3" Text="DUNG L&#x01AF;&#x1EE2;NG" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="4" Text="THAO T&#x00C1;C" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="2">
+                            <ScrollViewer Name="ResScrollViewer" VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                                <StackPanel Name="ResRowsHost" Margin="16,0,16,12" UseLayoutRounding="True" SnapsToDevicePixels="True"/>
+                            </ScrollViewer>
+                            <Border Name="ResEmptyState" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Background="#0E131D" BorderBrush="#263348" BorderThickness="1" CornerRadius="6" Padding="26,20" IsHitTestVisible="False">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Name="txtResEmptyTitle" Text="S&#x1EB5;n s&#x00E0;ng qu&#x00E9;t r&#x00E1;c &#x0111;a t&#x1EA7;ng (5 t&#x1EA7;ng b&#x1EA3;o v&#x1EC7;)"
+                                               Foreground="#E2E8F0" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Name="txtResEmptySub" Text="B&#x1EA5;m 'Qu&#x00E9;t ngay' &#x0111;&#x1EC3; ph&#x00E2;n t&#x00ED;ch t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m tr&#x00EC;nh duy&#x1EC7;t/&#x1EE9;ng d&#x1EE5;ng, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p l&#x1EDB;n. Tab kh&#x00F4;ng t&#x1EF1; &#x0111;&#x1ECD;c &#x1ED5; &#x0111;&#x0129;a khi m&#x1EDB;i m&#x1EDF;."
+                                               Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="540" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
                     <Grid Name="OptPageStartup" Visibility="Collapsed" IsHitTestVisible="False">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -8571,7 +8722,7 @@ $resolveCoreRefs = {
     return $wpfSmoothRefs
 }
 
-if (-not ("DuckUtil.SmoothScrollController" -as [type]) -or -not ("DuckUtil.AppCatalogEngine" -as [type]) -or -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -or -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -or -not ("DuckUtil.StartupManagerEngine" -as [type])) {
+if (-not ("DuckUtil.SmoothScrollController" -as [type]) -or -not ("DuckUtil.AppCatalogEngine" -as [type]) -or -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -or -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -or -not ("DuckUtil.StartupManagerEngine" -as [type]) -or -not ("DuckUtil.ResourceCleanerEngine" -as [type])) {
     $duckCoreUsings = @'
 using Microsoft.Win32;
 using System.Collections.Concurrent;
@@ -28107,9 +28258,2026 @@ namespace DuckUtil {
     }
 }
 '@
-    if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not ("DuckUtil.StartupManagerEngine" -as [type])) {
+    $csHdrResource = @'
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using Microsoft.Win32;
+'@
+    $csBodyResource = @'
+namespace DuckUtil {
+    public sealed class ResourceDiskInfo {
+        public string DriveName { get; set; }
+        public long TotalBytes { get; set; }
+        public long FreeBytes { get; set; }
+        public long UsedBytes { get; set; }
+        public double UsedPercent { get; set; }
+        public string SummaryText { get; set; }
+    }
+
+    public sealed class ResourceDetailItem {
+        public string Path { get; set; }
+        public string DisplayPath { get; set; }
+        public long SizeBytes { get; set; }
+        public int NestedCount { get; set; }
+        public bool IsDirectory { get; set; }
+        public bool IsOneDrive { get; set; }
+        public bool Selected { get; set; }
+        public string Kind { get; set; }
+        public string Note { get; set; }
+    }
+
+    public sealed class ResourceCleanCategory {
+        public string Id { get; set; }
+        public int Tier { get; set; }
+        public string FilterGroup { get; set; }
+        public string RiskLevel { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string WarningNote { get; set; }
+        public string StatusNote { get; set; }
+        public string CleanMode { get; set; }
+        public bool SupportsRecycleBin { get; set; }
+        public bool DefaultSelected { get; set; }
+        public bool Selected { get; set; }
+        public bool SkippedBecauseRebootPending { get; set; }
+        public bool IsDeliveryOptimization { get; set; }
+        public long TotalBytes { get; set; }
+        public int ItemCount { get; set; }
+        public int FolderCount { get; set; }
+        public string[] RootPaths { get; set; }
+        public string[] FilePatterns { get; set; }
+        public List<ResourceDetailItem> DetailItems { get; set; }
+    }
+
+    public sealed class ResourceScanReport {
+        public ResourceDiskInfo DiskInfo { get; set; }
+        public ResourceCleanCategory[] Categories { get; set; }
+        public long TotalBytes { get; set; }
+        public int TotalFiles { get; set; }
+        public int TotalEmptyFolders { get; set; }
+        public long ScanElapsedMs { get; set; }
+        public bool WasCancelled { get; set; }
+    }
+
+    public sealed class ResourceCleanReport {
+        public long FreedBytes { get; set; }
+        public int DeletedFiles { get; set; }
+        public int DeletedFolders { get; set; }
+        public int RecycledItems { get; set; }
+        public int SkippedLockedCount { get; set; }
+        public int SkippedRecycleUnsupportedCount { get; set; }
+        public int SkippedCloudCount { get; set; }
+        public bool NeedsDeliveryOptCmdlet { get; set; }
+        public bool WasCancelled { get; set; }
+        public long ElapsedMs { get; set; }
+        public string[] PerCategoryLogs { get; set; }
+    }
+
+    public sealed class ResourceRowVisual {
+        public ResourceCleanCategory Category { get; set; }
+        public System.Windows.Controls.Border Row { get; set; }
+        public System.Windows.Controls.CheckBox CheckBox { get; set; }
+        public System.Windows.Controls.TextBlock TitleText { get; set; }
+        public System.Windows.Controls.TextBlock SubText { get; set; }
+        public System.Windows.Controls.TextBlock SizeText { get; set; }
+        public System.Windows.Controls.TextBlock CountText { get; set; }
+        public System.Windows.Controls.Button DetailsBtn { get; set; }
+        public System.Windows.Controls.Button OpenBtn { get; set; }
+        public System.Windows.Controls.Border DetailsContainer { get; set; }
+        public System.Windows.Controls.StackPanel DetailsHost { get; set; }
+        public bool DetailsExpanded { get; set; }
+        public bool DetailsPopulated { get; set; }
+    }
+
+    public static class ResourceCleanerEngine {
+        private const uint FILE_ATTRIBUTE_READONLY = 0x00000001u;
+        private const uint FILE_ATTRIBUTE_HIDDEN = 0x00000002u;
+        private const uint FILE_ATTRIBUTE_SYSTEM = 0x00000004u;
+        private const uint FILE_ATTRIBUTE_DIRECTORY = 0x00000010u;
+        private const uint FILE_ATTRIBUTE_NORMAL = 0x00000080u;
+        private const uint FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400u;
+        private const uint FILE_ATTRIBUTE_OFFLINE = 0x00001000u;
+        private const uint FILE_ATTRIBUTE_RECALL_ON_OPEN = 0x00040000u;
+        private const uint FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS = 0x00400000u;
+        private const uint INVALID_FILE_ATTRIBUTES = 0xFFFFFFFFu;
+        private const uint CLOUD_OR_REPARSE_MASK = FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_RECALL_ON_OPEN | FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS;
+
+        private const uint FIND_FIRST_EX_LARGE_FETCH = 0x00000002u;
+        private const int FINDEX_INFO_BASIC = 1;
+        private const int FINDEX_SEARCH_NAME_MATCH = 0;
+
+        private const uint SHERB_NOCONFIRMATION = 0x00000001u;
+        private const uint SHERB_NOPROGRESSUI = 0x00000002u;
+        private const uint SHERB_NOSOUND = 0x00000004u;
+
+        private const uint FOF_SILENT = 0x0004u;
+        private const uint FOF_NOCONFIRMATION = 0x0010u;
+        private const uint FOF_ALLOWUNDO = 0x0040u;
+        private const uint FOF_NOERRORUI = 0x0400u;
+        private const uint FOFX_RECYCLEONDELETE = 0x00080000u;
+        private const uint FOFX_ADDUNDORECORD = 0x20000000u;
+        private const uint RECYCLE_STRICT_FLAGS = FOF_SILENT | FOF_NOCONFIRMATION | FOF_ALLOWUNDO | FOF_NOERRORUI | FOFX_RECYCLEONDELETE | FOFX_ADDUNDORECORD;
+
+        private static readonly string SID_LOCAL_SYSTEM = "S-1-5-18";
+        private static readonly string SID_TRUSTED_INSTALLER = "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
+
+        private static readonly Guid FOLDERID_Downloads = new Guid("374DE290-123F-4565-9164-39C4925E467B");
+        private static readonly Guid FOLDERID_Desktop = new Guid("B4BFCC3A-DB2C-424C-B029-7FE99A87C641");
+        private static readonly Guid CLSID_FileOperation = new Guid("3ad05575-8857-4850-9277-11b85bdb8e09");
+        private static readonly Guid IID_IShellItem = new Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe");
+
+        private const long LARGE_FILE_THRESHOLD_BYTES = 500L * 1024L * 1024L;
+        private const int MAX_EMPTY_SCAN_DEPTH = 14;
+        private const int MAX_EMPTY_DETAIL_ITEMS = 500;
+        private const int MAX_ZERO_DETAIL_ITEMS = 300;
+        private const int MAX_LARGE_DETAIL_ITEMS = 120;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct FILETIME_W32 {
+            public uint dwLowDateTime;
+            public uint dwHighDateTime;
+            public DateTime ToUtcDateTime() {
+                long ft = (((long)dwHighDateTime) << 32) | dwLowDateTime;
+                if (ft <= 0) return DateTime.MinValue;
+                try { return DateTime.FromFileTimeUtc(ft); } catch { return DateTime.MinValue; }
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WIN32_FIND_DATAW {
+            public uint dwFileAttributes;
+            public FILETIME_W32 ftCreationTime;
+            public FILETIME_W32 ftLastAccessTime;
+            public FILETIME_W32 ftLastWriteTime;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        private struct SHQUERYRBINFO {
+            public uint cbSize;
+            public long i64Size;
+            public long i64NumItems;
+        }
+
+        [ComImport]
+        [Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IShellItemRC {
+            void BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
+            void GetParent(out IShellItemRC ppsi);
+            void GetDisplayName(uint sigdnName, out IntPtr ppszName);
+            void GetAttributes(uint sfgaoMask, out uint psfgaoAttribs);
+            void Compare(IShellItemRC psi, uint hint, out int piOrder);
+        }
+
+        [ComImport]
+        [Guid("947aab5f-0a5c-4c13-b4d6-4bf7836fc9f8")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IFileOperationRC {
+            [PreserveSig] int Advise(IntPtr pfops, out uint pdwCookie);
+            [PreserveSig] int Unadvise(uint dwCookie);
+            [PreserveSig] int SetOperationFlags(uint dwOperationFlags);
+            [PreserveSig] int SetProgressMessage([MarshalAs(UnmanagedType.LPWStr)] string pszMessage);
+            [PreserveSig] int SetProgressDialog(IntPtr popd);
+            [PreserveSig] int SetProperties(IntPtr pproparray);
+            [PreserveSig] int SetOwnerWindow(IntPtr hwndParent);
+            [PreserveSig] int ApplyPropertiesToItem(IShellItemRC psiItem);
+            [PreserveSig] int ApplyPropertiesToItems(IntPtr punkItems);
+            [PreserveSig] int RenameItem(IShellItemRC psiItem, [MarshalAs(UnmanagedType.LPWStr)] string pszNewName, IntPtr pfopsItem);
+            [PreserveSig] int RenameItems(IntPtr pUnkItems, [MarshalAs(UnmanagedType.LPWStr)] string pszNewName);
+            [PreserveSig] int MoveItem(IShellItemRC psiItem, IShellItemRC psiDestinationFolder, [MarshalAs(UnmanagedType.LPWStr)] string pszNewName, IntPtr pfopsItem);
+            [PreserveSig] int MoveItems(IntPtr punkItems, IShellItemRC psiDestinationFolder);
+            [PreserveSig] int CopyItem(IShellItemRC psiItem, IShellItemRC psiDestinationFolder, [MarshalAs(UnmanagedType.LPWStr)] string pszCopyName, IntPtr pfopsItem);
+            [PreserveSig] int CopyItems(IntPtr punkItems, IShellItemRC psiDestinationFolder);
+            [PreserveSig] int DeleteItem(IShellItemRC psiItem, IntPtr pfopsItem);
+            [PreserveSig] int DeleteItems(IntPtr punkItems);
+            [PreserveSig] int NewItem(IShellItemRC psiDestinationFolder, uint dwFileAttributes, [MarshalAs(UnmanagedType.LPWStr)] string pszName, [MarshalAs(UnmanagedType.LPWStr)] string pszTemplateName, IntPtr pfopsItem);
+            [PreserveSig] int PerformOperations();
+            [PreserveSig] int GetAnyOperationsAborted([MarshalAs(UnmanagedType.Bool)] out bool pfAnyOperationsAborted);
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr FindFirstFileExW(string lpFileName, int fInfoLevelId, out WIN32_FIND_DATAW lpFindFileData, int fSearchOp, IntPtr lpSearchFilter, uint dwAdditionalFlags);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool FindNextFileW(IntPtr hFindFile, out WIN32_FIND_DATAW lpFindFileData);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool FindClose(IntPtr hFindFile);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern uint GetFileAttributesW(string lpFileName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetFileAttributesW(string lpFileName, uint dwFileAttributes);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeleteFileW(string lpFileName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool RemoveDirectoryW(string lpPathName);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHGetKnownFolderPath(ref Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr ppszPath);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHQueryRecycleBinW(string pszRootPath, ref SHQUERYRBINFO pSHQueryRBInfo);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHEmptyRecycleBinW(IntPtr hwnd, string pszRootPath, uint dwFlags);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        private static extern int SHCreateItemFromParsingName([MarshalAs(UnmanagedType.LPWStr)] string pszPath, IntPtr pbc, ref Guid riid, [MarshalAs(UnmanagedType.Interface)] out IShellItemRC ppv);
+
+        private static readonly HashSet<string> HardBlockedDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "windows", "$recycle.bin", "system volume information", "recovery", "perflogs", "windowsapps",
+            "package cache", ".git", ".hg", ".svn", ".ssh", ".gnupg", ".vscode", ".idea", ".cursor",
+            "node_modules", ".venv", "venv", "__pycache__", "onedrive", "google drive", "iclouddrive",
+            "dropbox", "appdriver", "duckutil", "microsoft", "common files", "winsxs", "installer",
+            "assembly", "system32", "syswow64", "boot", "efi"
+        };
+
+        private static readonly HashSet<string> ProtectedRuntimeDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "logs", "log", "staging", "queue", "spool", "incoming", "dlc", "drop", "crashreports",
+            "plugins", "plugin", "mods", "mod", "extensions", "profiles", "default", "user data",
+            "indexeddb", "local storage", "session storage", "databases", "cache", "temp", "tmp",
+            "backups", "backup", "screenshots", "saved games", "desktop", "documents", "pictures",
+            "videos", "music", "downloads", "favorites", "links", "contacts", "searches", "appdata",
+            "roaming", "local", "locallow", "programdata", "program files", "program files (x86)",
+            "users", "public", "bin", "obj", "dist", "build", "src", "assets", "data", "config",
+            "settings", "state", "storage", "sessions", "workspaces", "zaloreceivedfiles", "zalodownloads"
+        };
+
+        private static readonly HashSet<string> DisposableZeroByteExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            ".tmp", ".temp", ".bak", ".old", ".log", ".dmp",
+            ".crdownload", ".part", ".download", ".partial", ".!ut", ".opdownload", ".filepart"
+        };
+
+        private static readonly HashSet<string> NeverTouchBrowserNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "cookies", "login data", "login data for account", "bookmarks", "bookmarks.bak",
+            "history", "web data", "local storage", "session storage", "extensions",
+            "extension state", "indexeddb", "preferences", "secure preferences", "places.sqlite",
+            "logins.json", "key4.db", "cookies.sqlite"
+        };
+
+        public static string ToExtendedPath(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return path;
+            string p = path.Trim();
+            if (p.StartsWith(@"\\?\", StringComparison.Ordinal)) return p;
+            if (p.StartsWith(@"\\", StringComparison.Ordinal)) {
+                return @"\\?\UNC\" + p.Substring(2);
+            }
+            try {
+                if (p.Length < 248) p = Path.GetFullPath(p);
+            } catch {}
+            return @"\\?\" + p;
+        }
+
+        public static string StripExtendedPath(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return path;
+            if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)) {
+                return @"\\" + path.Substring(8);
+            }
+            if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) {
+                return path.Substring(4);
+            }
+            return path;
+        }
+
+        public static string NormalizeCleanPath(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return "";
+            string s = StripExtendedPath(path.Trim());
+            try {
+                if (s.Length < 248) s = Path.GetFullPath(s);
+            } catch {}
+            if (s.Length > 3) s = s.TrimEnd('\\', '/');
+            return s;
+        }
+
+        public static string FormatBytes(long bytes) {
+            if (bytes <= 0) return "0 B";
+            double v = bytes;
+            string[] units = { "B", "KB", "MB", "GB", "TB" };
+            int idx = 0;
+            while (v >= 1024.0 && idx < units.Length - 1) {
+                v /= 1024.0;
+                idx++;
+            }
+            if (idx <= 1) return string.Format("{0:0} {1}", v, units[idx]);
+            if (v >= 100.0) return string.Format("{0:0.0} {1}", v, units[idx]);
+            return string.Format("{0:0.00} {1}", v, units[idx]);
+        }
+
+        public static string GetKnownFolderPathSafe(string kind) {
+            Guid g = string.Equals(kind, "Desktop", StringComparison.OrdinalIgnoreCase) ? FOLDERID_Desktop : FOLDERID_Downloads;
+            IntPtr pPath = IntPtr.Zero;
+            try {
+                int hr = SHGetKnownFolderPath(ref g, 0, IntPtr.Zero, out pPath);
+                if (hr == 0 && pPath != IntPtr.Zero) {
+                    string res = Marshal.PtrToStringUni(pPath);
+                    if (!string.IsNullOrWhiteSpace(res)) return NormalizeCleanPath(res);
+                }
+            } catch {}
+            finally {
+                if (pPath != IntPtr.Zero) {
+                    try { Marshal.FreeCoTaskMem(pPath); } catch {}
+                }
+            }
+            try {
+                if (string.Equals(kind, "Desktop", StringComparison.OrdinalIgnoreCase)) {
+                    return NormalizeCleanPath(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+                }
+                string prof = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                if (!string.IsNullOrWhiteSpace(prof)) return NormalizeCleanPath(Path.Combine(prof, "Downloads"));
+            } catch {}
+            return "";
+        }
+
+        public static bool IsPathInsideOneDrive(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string norm = NormalizeCleanPath(path);
+            string[] envNames = { "OneDrive", "OneDriveConsumer", "OneDriveCommercial" };
+            for (int i = 0; i < envNames.Length; i++) {
+                string od = Environment.GetEnvironmentVariable(envNames[i]);
+                if (!string.IsNullOrWhiteSpace(od)) {
+                    string odNorm = NormalizeCleanPath(od);
+                    if (norm.Equals(odNorm, StringComparison.OrdinalIgnoreCase) ||
+                        norm.StartsWith(odNorm + @"\", StringComparison.OrdinalIgnoreCase)) {
+                        return true;
+                    }
+                }
+            }
+            string lower = norm.ToLowerInvariant();
+            if (lower.Contains(@"\onedrive\") || lower.EndsWith(@"\onedrive") || lower.Contains(@"\onedrive - ")) {
+                return true;
+            }
+            return false;
+        }
+
+        public static bool IsWindowsUpdateRebootPending() {
+            try {
+                using (RegistryKey k1 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired", false)) {
+                    if (k1 != null) return true;
+                }
+            } catch {}
+            try {
+                using (RegistryKey k2 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending", false)) {
+                    if (k2 != null) return true;
+                }
+            } catch {}
+            return false;
+        }
+
+        public static ResourceDiskInfo GetSystemDiskInfo() {
+            var info = new ResourceDiskInfo();
+            string sysRoot = Environment.GetEnvironmentVariable("SystemDrive");
+            if (string.IsNullOrWhiteSpace(sysRoot)) sysRoot = "C:";
+            info.DriveName = sysRoot;
+            try {
+                var di = new DriveInfo(sysRoot);
+                if (di.IsReady) {
+                    info.TotalBytes = di.TotalSize;
+                    info.FreeBytes = di.AvailableFreeSpace;
+                    info.UsedBytes = Math.Max(0L, di.TotalSize - di.AvailableFreeSpace);
+                    info.UsedPercent = di.TotalSize > 0 ? Math.Round(((double)info.UsedBytes / (double)di.TotalSize) * 100.0, 1) : 0.0;
+                    info.SummaryText = string.Format("\u1ED4 {0} tr\u1ED1ng {1} / {2} ({3:0}% \u0111\u00E3 d\u00F9ng)",
+                        sysRoot, FormatBytes(info.FreeBytes), FormatBytes(info.TotalBytes), info.UsedPercent);
+                    return info;
+                }
+            } catch {}
+            info.SummaryText = string.Format("\u1ED4 {0}: kh\u00F4ng \u0111\u1ECDc \u0111\u01B0\u1EE3c dung l\u01B0\u1EE3ng", sysRoot);
+            return info;
+        }
+
+        public static bool IsProtectedSystemOwnerBySid(string dirPath) {
+            try {
+                string clean = StripExtendedPath(dirPath);
+                var di = new DirectoryInfo(clean);
+                DirectorySecurity sec = di.GetAccessControl(AccessControlSections.Owner);
+                IdentityReference ownerRef = sec.GetOwner(typeof(SecurityIdentifier));
+                if (ownerRef != null) {
+                    string sid = ownerRef.Value ?? "";
+                    if (string.Equals(sid, SID_TRUSTED_INSTALLER, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(sid, SID_LOCAL_SYSTEM, StringComparison.OrdinalIgnoreCase)) {
+                        return true;
+                    }
+                }
+                return false;
+            } catch (UnauthorizedAccessException) {
+                return true;
+            } catch {
+                return true;
+            }
+        }
+
+        private static bool IsHardProtectedPath(string normPath) {
+            if (string.IsNullOrWhiteSpace(normPath)) return true;
+            string winDir = NormalizeCleanPath(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
+            if (!string.IsNullOrWhiteSpace(winDir) &&
+                (normPath.Equals(winDir, StringComparison.OrdinalIgnoreCase) ||
+                 normPath.StartsWith(winDir + @"\", StringComparison.OrdinalIgnoreCase))) {
+                return true;
+            }
+            string localApp = NormalizeCleanPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            if (!string.IsNullOrWhiteSpace(localApp)) {
+                string adSess = Path.Combine(localApp, @"AppDriver\Session");
+                if (normPath.Equals(adSess, StringComparison.OrdinalIgnoreCase) ||
+                    normPath.StartsWith(adSess + @"\", StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+                string duckCache = Path.Combine(localApp, @"DuckUtil\Cache");
+                if (normPath.Equals(duckCache, StringComparison.OrdinalIgnoreCase) ||
+                    normPath.StartsWith(duckCache + @"\", StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsPathSafeForEmptyFolderScan(string normPath, string leafName) {
+            if (string.IsNullOrWhiteSpace(normPath) || string.IsNullOrWhiteSpace(leafName)) return false;
+            if (normPath.Length <= 3) return false;
+            if (HardBlockedDirNames.Contains(leafName)) return false;
+            if (ProtectedRuntimeDirNames.Contains(leafName)) return false;
+            if (IsHardProtectedPath(normPath)) return false;
+            if (IsPathInsideOneDrive(normPath)) return false;
+            string progFiles = NormalizeCleanPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
+            string progFiles86 = NormalizeCleanPath(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86));
+            string progData = NormalizeCleanPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData));
+            if ((!string.IsNullOrWhiteSpace(progFiles) && normPath.Equals(progFiles, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(progFiles86) && normPath.Equals(progFiles86, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(progData) && normPath.Equals(progData, StringComparison.OrdinalIgnoreCase))) {
+                return false;
+            }
+            return true;
+        }
+
+        private static bool DirExistsWin32(string path, out uint attr) {
+            attr = GetFileAttributesW(ToExtendedPath(path));
+            return attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        }
+
+        private static bool FileExistsWin32(string path, out uint attr) {
+            attr = GetFileAttributesW(ToExtendedPath(path));
+            return attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0;
+        }
+
+        public static string[] DeduplicateNormalizedPaths(string[] rawPaths) {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var list = new List<string>();
+            if (rawPaths == null) return list.ToArray();
+            for (int i = 0; i < rawPaths.Length; i++) {
+                string n = NormalizeCleanPath(rawPaths[i]);
+                if (string.IsNullOrWhiteSpace(n)) continue;
+                if (seen.Add(n)) list.Add(n);
+            }
+            return list.ToArray();
+        }
+
+        public static bool IsSafeBrowserCacheLeaf(string dirPath) {
+            if (string.IsNullOrWhiteSpace(dirPath)) return false;
+            string leaf = Path.GetFileName(dirPath.TrimEnd('\\', '/')) ?? "";
+            if (NeverTouchBrowserNames.Contains(leaf)) return false;
+            string low = dirPath.ToLowerInvariant();
+            if (low.Contains(@"\cookies") || low.Contains(@"\login data") || low.Contains(@"\bookmarks") ||
+                low.Contains(@"\history") || low.Contains(@"\web data") || low.Contains(@"\local storage") ||
+                low.Contains(@"\extensions") || low.Contains(@"\zaloreceivedfiles") || low.Contains(@"\zalodownloads")) {
+                return false;
+            }
+            return true;
+        }
+
+        private static void MeasureDirectoryRecursive(string rootDir, string[] patterns, bool topLevelOnly, CancellationToken ct, ref long bytes, ref int files, ref int folders, int depth) {
+            if (ct.IsCancellationRequested || depth > 24) return;
+            uint rootAttr;
+            if (!DirExistsWin32(rootDir, out rootAttr)) return;
+            if ((rootAttr & CLOUD_OR_REPARSE_MASK) != 0) return;
+
+            string normRoot = NormalizeCleanPath(rootDir);
+            if (depth > 0 && IsHardProtectedPath(normRoot)) return;
+
+            string searchSpec = ToExtendedPath(normRoot) + @"\*";
+            WIN32_FIND_DATAW fd;
+            IntPtr h = FindFirstFileExW(searchSpec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+            try {
+                do {
+                    if (ct.IsCancellationRequested) break;
+                    string name = fd.cFileName;
+                    if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                    if ((fd.dwFileAttributes & CLOUD_OR_REPARSE_MASK) != 0) continue;
+
+                    string full = normRoot + @"\" + name;
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+                        if (topLevelOnly) continue;
+                        if (IsHardProtectedPath(full)) continue;
+                        folders++;
+                        MeasureDirectoryRecursive(full, patterns, false, ct, ref bytes, ref files, ref folders, depth + 1);
+                    } else {
+                        if (NeverTouchBrowserNames.Contains(name)) continue;
+                        if (patterns != null && patterns.Length > 0 && !MatchesAnyWildcard(name, patterns)) continue;
+                        long sz = (((long)fd.nFileSizeHigh) << 32) | fd.nFileSizeLow;
+                        if (sz > 0) bytes += sz;
+                        files++;
+                    }
+                } while (FindNextFileW(h, out fd));
+            } finally {
+                FindClose(h);
+            }
+        }
+
+        private static bool MatchesAnyWildcard(string fileName, string[] patterns) {
+            if (patterns == null || patterns.Length == 0) return true;
+            for (int i = 0; i < patterns.Length; i++) {
+                string pat = patterns[i];
+                if (string.IsNullOrEmpty(pat) || pat == "*") return true;
+                if (pat.StartsWith("*", StringComparison.Ordinal) && pat.EndsWith("*", StringComparison.Ordinal) && pat.Length > 2) {
+                    string mid = pat.Substring(1, pat.Length - 2);
+                    if (fileName.IndexOf(mid, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                } else if (pat.StartsWith("*", StringComparison.Ordinal)) {
+                    if (fileName.EndsWith(pat.Substring(1), StringComparison.OrdinalIgnoreCase)) return true;
+                } else if (pat.EndsWith("*", StringComparison.Ordinal)) {
+                    if (fileName.StartsWith(pat.Substring(0, pat.Length - 1), StringComparison.OrdinalIgnoreCase)) return true;
+                } else {
+                    int star = pat.IndexOf('*');
+                    if (star > 0) {
+                        string pre = pat.Substring(0, star);
+                        string suf = pat.Substring(star + 1);
+                        if (fileName.StartsWith(pre, StringComparison.OrdinalIgnoreCase) &&
+                            fileName.EndsWith(suf, StringComparison.OrdinalIgnoreCase) &&
+                            fileName.Length >= pre.Length + suf.Length) {
+                            return true;
+                        }
+                    } else if (fileName.Equals(pat, StringComparison.OrdinalIgnoreCase)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static void PopulateDirectoryCategory(ResourceCleanCategory cat, string[] rawRoots, string[] patterns, bool topLevelOnly, CancellationToken ct) {
+            string[] roots = DeduplicateNormalizedPaths(rawRoots);
+            var validRoots = new List<string>();
+            cat.DetailItems = new List<ResourceDetailItem>();
+            long totalB = 0;
+            int totalF = 0;
+            int totalD = 0;
+
+            for (int i = 0; i < roots.Length; i++) {
+                if (ct.IsCancellationRequested) break;
+                string r = roots[i];
+                uint attr;
+                if (!DirExistsWin32(r, out attr)) continue;
+                if ((attr & CLOUD_OR_REPARSE_MASK) != 0) continue;
+
+                long rb = 0;
+                int rf = 0;
+                int rd = 0;
+                MeasureDirectoryRecursive(r, patterns, topLevelOnly, ct, ref rb, ref rf, ref rd, 0);
+                if (rf > 0 || rd > 0) {
+                    validRoots.Add(r);
+                    totalB += rb;
+                    totalF += rf;
+                    totalD += rd;
+                    cat.DetailItems.Add(new ResourceDetailItem {
+                        Path = r,
+                        DisplayPath = r,
+                        SizeBytes = rb,
+                        NestedCount = rf,
+                        IsDirectory = true,
+                        IsOneDrive = IsPathInsideOneDrive(r),
+                        Selected = true,
+                        Kind = "CacheRoot",
+                        Note = string.Format("{0} t\u1EC7p", rf)
+                    });
+                }
+            }
+            cat.RootPaths = validRoots.ToArray();
+            cat.FilePatterns = patterns;
+            cat.TotalBytes = totalB;
+            cat.ItemCount = totalF;
+            cat.FolderCount = totalD;
+            if (totalB == 0 && totalF == 0 && totalD == 0) {
+                cat.Selected = false;
+            }
+        }
+
+        private static string[] CollectChromiumCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var results = new List<string>();
+            if (string.IsNullOrWhiteSpace(local)) return results.ToArray();
+
+            string[] userDataRoots = {
+                Path.Combine(local, @"Google\Chrome\User Data"),
+                Path.Combine(local, @"Microsoft\Edge\User Data"),
+                Path.Combine(local, @"BraveSoftware\Brave-Browser\User Data"),
+                Path.Combine(local, @"Vivaldi\User Data"),
+                Path.Combine(local, @"CocCoc\Browser\User Data")
+            };
+
+            string[] cacheSubs = {
+                @"Cache\Cache_Data",
+                "Cache",
+                "Code Cache",
+                "GPUCache",
+                "DawnCache",
+                "GrShaderCache",
+                "ShaderCache",
+                @"Service Worker\CacheStorage"
+            };
+
+            var rootList = new List<string>(userDataRoots);
+            try {
+                string pkgRoot = Path.Combine(local, "Packages");
+                uint pAttr;
+                if (DirExistsWin32(pkgRoot, out pAttr)) {
+                    foreach (string pkg in Directory.GetDirectories(pkgRoot, "TheBrowserCompany.Arc_*")) {
+                        rootList.Add(Path.Combine(pkg, @"LocalCache\Local\Arc\User Data"));
+                    }
+                }
+            } catch {}
+
+            for (int r = 0; r < rootList.Count; r++) {
+                string ud = rootList[r];
+                uint uAttr;
+                if (!DirExistsWin32(ud, out uAttr)) continue;
+                try {
+                    string[] subDirs = Directory.GetDirectories(ud);
+                    for (int p = 0; p < subDirs.Length; p++) {
+                        string pName = Path.GetFileName(subDirs[p]) ?? "";
+                        if (!pName.Equals("Default", StringComparison.OrdinalIgnoreCase) &&
+                            !pName.StartsWith("Profile ", StringComparison.OrdinalIgnoreCase) &&
+                            !pName.Equals("Guest Profile", StringComparison.OrdinalIgnoreCase)) {
+                            continue;
+                        }
+                        for (int s = 0; s < cacheSubs.Length; s++) {
+                            string cand = Path.Combine(subDirs[p], cacheSubs[s]);
+                            if (cacheSubs[s] == "Cache" && Directory.Exists(Path.Combine(subDirs[p], @"Cache\Cache_Data"))) continue;
+                            uint cAttr;
+                            if (DirExistsWin32(cand, out cAttr) && IsSafeBrowserCacheLeaf(cand)) {
+                                results.Add(cand);
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectOperaCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var results = new List<string>();
+            if (string.IsNullOrWhiteSpace(local)) return results.ToArray();
+
+            string[] operaBases = {
+                Path.Combine(local, @"Opera Software\Opera Stable"),
+                Path.Combine(local, @"Opera Software\Opera GX Stable"),
+                Path.Combine(local, @"Opera Software\Opera Air Stable")
+            };
+            string[] subs = { @"Cache\Cache_Data", "System Cache", "Code Cache", "GPUCache", "ShaderCache" };
+            for (int i = 0; i < operaBases.Length; i++) {
+                uint bAttr;
+                if (!DirExistsWin32(operaBases[i], out bAttr)) continue;
+                for (int s = 0; s < subs.Length; s++) {
+                    string cand = Path.Combine(operaBases[i], subs[s]);
+                    uint cAttr;
+                    if (DirExistsWin32(cand, out cAttr) && IsSafeBrowserCacheLeaf(cand)) {
+                        results.Add(cand);
+                    }
+                }
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectGeckoCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var results = new List<string>();
+            if (string.IsNullOrWhiteSpace(local)) return results.ToArray();
+
+            string[] geckoRoots = {
+                Path.Combine(local, @"Mozilla\Firefox\Profiles"),
+                Path.Combine(local, @"zen\Profiles"),
+                Path.Combine(local, @"Floorp\Profiles"),
+                Path.Combine(local, @"LibreWolf\Profiles")
+            };
+            string[] subs = { "cache2", "startupCache", "jumpListCache" };
+            for (int i = 0; i < geckoRoots.Length; i++) {
+                uint rAttr;
+                if (!DirExistsWin32(geckoRoots[i], out rAttr)) continue;
+                try {
+                    foreach (string prof in Directory.GetDirectories(geckoRoots[i])) {
+                        for (int s = 0; s < subs.Length; s++) {
+                            string cand = Path.Combine(prof, subs[s]);
+                            uint cAttr;
+                            if (DirExistsWin32(cand, out cAttr) && IsSafeBrowserCacheLeaf(cand)) {
+                                results.Add(cand);
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectElectronAndChatCacheDirs() {
+            string roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var results = new List<string>();
+
+            string[] electronRoaming = {
+                Path.Combine(roaming, "discord"),
+                Path.Combine(roaming, "discordptb"),
+                Path.Combine(roaming, "discordcanary"),
+                Path.Combine(roaming, "Code"),
+                Path.Combine(roaming, "Slack"),
+                Path.Combine(roaming, "Notion")
+            };
+            string[] eSubs = { @"Cache\Cache_Data", "Cache", "Code Cache", "GPUCache", "DawnCache", "CachedData", "CachedExtensionVSIXs" };
+            for (int i = 0; i < electronRoaming.Length; i++) {
+                uint bAttr;
+                if (!DirExistsWin32(electronRoaming[i], out bAttr)) continue;
+                for (int s = 0; s < eSubs.Length; s++) {
+                    if (eSubs[s] == "Cache" && Directory.Exists(Path.Combine(electronRoaming[i], @"Cache\Cache_Data"))) continue;
+                    string cand = Path.Combine(electronRoaming[i], eSubs[s]);
+                    uint cAttr;
+                    if (DirExistsWin32(cand, out cAttr) && IsSafeBrowserCacheLeaf(cand)) results.Add(cand);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(local)) {
+                string spotWeb = Path.Combine(local, @"Spotify\Browser\Cache");
+                uint swAttr;
+                if (DirExistsWin32(spotWeb, out swAttr)) results.Add(spotWeb);
+
+                string tgCache = Path.Combine(roaming, @"Telegram Desktop\tdata\user_data\cache");
+                uint tgAttr;
+                if (DirExistsWin32(tgCache, out tgAttr)) results.Add(tgCache);
+
+                string zaloRoot = Path.Combine(local, "ZaloPC");
+                uint zAttr;
+                if (DirExistsWin32(zaloRoot, out zAttr)) {
+                    try {
+                        foreach (string sub in Directory.GetDirectories(zaloRoot)) {
+                            string[] zSubs = { @"Cache\Cache_Data", "Cache", "Code Cache", "GPUCache" };
+                            for (int zs = 0; zs < zSubs.Length; zs++) {
+                                if (zSubs[zs] == "Cache" && Directory.Exists(Path.Combine(sub, @"Cache\Cache_Data"))) continue;
+                                string cand = Path.Combine(sub, zSubs[zs]);
+                                uint cAttr;
+                                if (DirExistsWin32(cand, out cAttr) && IsSafeBrowserCacheLeaf(cand)) results.Add(cand);
+                            }
+                        }
+                    } catch {}
+                }
+
+                try {
+                    string pkgRoot = Path.Combine(local, "Packages");
+                    uint pAttr;
+                    if (DirExistsWin32(pkgRoot, out pAttr)) {
+                        foreach (string pkg in Directory.GetDirectories(pkgRoot, "MSTeams_*")) {
+                            string[] tSubs = {
+                                @"LocalCache\Microsoft\MSTeams\EBWebView\Default\Cache\Cache_Data",
+                                @"LocalCache\Microsoft\MSTeams\EBWebView\Default\Code Cache",
+                                @"LocalCache\Microsoft\MSTeams\EBWebView\Default\GPUCache"
+                            };
+                            for (int ts = 0; ts < tSubs.Length; ts++) {
+                                string cand = Path.Combine(pkg, tSubs[ts]);
+                                uint cAttr;
+                                if (DirExistsWin32(cand, out cAttr)) results.Add(cand);
+                            }
+                        }
+                    }
+                } catch {}
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectGameLauncherCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string prog86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var results = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(local)) {
+                results.Add(Path.Combine(local, @"Steam\htmlcache"));
+                results.Add(Path.Combine(local, @"Riot Games\Riot Client\Data\Cache"));
+                results.Add(Path.Combine(local, @"Electronic Arts\EA Desktop\cache"));
+                results.Add(Path.Combine(local, @"Ubisoft Game Launcher\cache\http2"));
+                string epicSaved = Path.Combine(local, @"EpicGamesLauncher\Saved");
+                uint eAttr;
+                if (DirExistsWin32(epicSaved, out eAttr)) {
+                    try {
+                        foreach (string wc in Directory.GetDirectories(epicSaved, "webcache*")) results.Add(wc);
+                    } catch {}
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(prog86)) {
+                results.Add(Path.Combine(prog86, @"Steam\appcache\httpcache"));
+            }
+            if (!string.IsNullOrWhiteSpace(progData)) {
+                results.Add(Path.Combine(progData, @"Battle.net\Agent\Cache"));
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectGpuShaderCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string localLow = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow");
+            var results = new List<string>();
+            if (!string.IsNullOrWhiteSpace(local)) {
+                results.Add(Path.Combine(local, "D3DSCache"));
+                results.Add(Path.Combine(local, @"NVIDIA\DXCache"));
+                results.Add(Path.Combine(local, @"NVIDIA\GLCache"));
+                results.Add(Path.Combine(local, @"AMD\DxCache"));
+                results.Add(Path.Combine(local, @"AMD\GLCache"));
+                results.Add(Path.Combine(local, @"Intel\ShaderCache"));
+            }
+            if (!string.IsNullOrWhiteSpace(localLow)) {
+                results.Add(Path.Combine(localLow, @"NVIDIA\PerDriverVersion\DXCache"));
+                results.Add(Path.Combine(localLow, @"Intel\ShaderCache"));
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectDevCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string userProf = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string tempDir = Path.GetTempPath();
+            var results = new List<string>();
+            if (!string.IsNullOrWhiteSpace(local)) {
+                results.Add(Path.Combine(local, "npm-cache"));
+                results.Add(Path.Combine(local, @"pip\Cache"));
+                results.Add(Path.Combine(local, @"uv\cache"));
+                results.Add(Path.Combine(local, @"Yarn\Cache"));
+                results.Add(Path.Combine(local, @"pnpm\cache"));
+            }
+            if (!string.IsNullOrWhiteSpace(userProf)) {
+                results.Add(Path.Combine(userProf, @".gradle\caches"));
+            }
+            if (!string.IsNullOrWhiteSpace(tempDir)) {
+                results.Add(Path.Combine(tempDir, "WinGet"));
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        // Returns: true if dirPath (and everything inside it) is an eligible empty subtree.
+        // nestedEmptyCount counts total empty directories in this subtree (including self).
+        public static bool InspectEmptyDirectorySubtree(string dirPath, DateTime cutoffUtc, bool enforceGracePeriod, bool enforceAclSidCheck, int depth, CancellationToken ct, List<ResourceDetailItem> outItems, out int nestedEmptyCount) {
+            nestedEmptyCount = 0;
+            if (ct.IsCancellationRequested || depth > MAX_EMPTY_SCAN_DEPTH) return false;
+
+            string norm = NormalizeCleanPath(dirPath);
+            if (string.IsNullOrWhiteSpace(norm) || norm.Length <= 3) return false;
+
+            uint attr;
+            if (!DirExistsWin32(norm, out attr)) return false;
+            if ((attr & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | CLOUD_OR_REPARSE_MASK)) != 0) return false;
+
+            string leaf = Path.GetFileName(norm) ?? "";
+            if (depth > 0 && !IsPathSafeForEmptyFolderScan(norm, leaf)) return false;
+
+            string spec = ToExtendedPath(norm) + @"\*";
+            WIN32_FIND_DATAW fd;
+            IntPtr h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return false;
+
+            var childDirs = new List<string>();
+            bool hasAnyFileOrBlocked = false;
+            try {
+                do {
+                    if (ct.IsCancellationRequested) return false;
+                    string name = fd.cFileName;
+                    if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                        // Strict 0-entry definition: ANY file (including hidden/system desktop.ini, .gitkeep, etc.) means NOT empty!
+                        hasAnyFileOrBlocked = true;
+                        continue;
+                    }
+                    if ((fd.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | CLOUD_OR_REPARSE_MASK)) != 0) {
+                        hasAnyFileOrBlocked = true;
+                        continue;
+                    }
+                    childDirs.Add(norm + @"\" + name);
+                } while (FindNextFileW(h, out fd));
+            } finally {
+                FindClose(h);
+            }
+
+            if (hasAnyFileOrBlocked) {
+                // Still recurse into safe child directories to find isolated empty subtrees inside non-empty parents
+                for (int i = 0; i < childDirs.Count; i++) {
+                    if (ct.IsCancellationRequested || outItems.Count >= MAX_EMPTY_DETAIL_ITEMS) break;
+                    int subCnt;
+                    if (InspectEmptyDirectorySubtree(childDirs[i], cutoffUtc, enforceGracePeriod, enforceAclSidCheck, depth + 1, ct, outItems, out subCnt)) {
+                        if (outItems.Count < MAX_EMPTY_DETAIL_ITEMS) {
+                            outItems.Add(BuildEmptyDetailItem(childDirs[i], subCnt));
+                        }
+                    }
+                }
+                return false;
+            }
+
+            var emptyChildren = new List<ResourceDetailItem>();
+            int totalChildEmpty = 0;
+            bool allChildrenEmpty = true;
+
+            for (int i = 0; i < childDirs.Count; i++) {
+                if (ct.IsCancellationRequested) return false;
+                int subCnt;
+                bool childIsEmpty = InspectEmptyDirectorySubtree(childDirs[i], cutoffUtc, enforceGracePeriod, enforceAclSidCheck, depth + 1, ct, outItems, out subCnt);
+                if (childIsEmpty) {
+                    totalChildEmpty += subCnt;
+                    emptyChildren.Add(BuildEmptyDetailItem(childDirs[i], subCnt));
+                } else {
+                    allChildrenEmpty = false;
+                }
+            }
+
+            if (!allChildrenEmpty || depth == 0) {
+                for (int i = 0; i < emptyChildren.Count; i++) {
+                    if (outItems.Count < MAX_EMPTY_DETAIL_ITEMS) outItems.Add(emptyChildren[i]);
+                }
+                return false;
+            }
+
+            // Self is strictly 0-entry (or all children are empty). Now run lazy Shield checks:
+            // Layer 5: Dual 24h Grace Period (CreationTimeUtc AND LastWriteTimeUtc)
+            if (enforceGracePeriod) {
+                try {
+                    var di = new DirectoryInfo(norm);
+                    if (di.CreationTimeUtc > cutoffUtc || di.LastWriteTimeUtc > cutoffUtc) {
+                        for (int i = 0; i < emptyChildren.Count; i++) {
+                            if (outItems.Count < MAX_EMPTY_DETAIL_ITEMS) outItems.Add(emptyChildren[i]);
+                        }
+                        return false;
+                    }
+                } catch {
+                    return false;
+                }
+            }
+
+            // Layer 3: Lazy SID-only ACL Owner check (SYSTEM / TrustedInstaller)
+            if (enforceAclSidCheck && IsProtectedSystemOwnerBySid(norm)) {
+                return false;
+            }
+
+            nestedEmptyCount = 1 + totalChildEmpty;
+            return true;
+        }
+
+        private static ResourceDetailItem BuildEmptyDetailItem(string path, int nestedCount) {
+            string note = nestedCount > 1
+                ? string.Format("{0} th\u01B0 m\u1EE5c r\u1ED7ng l\u1ED3ng nhau", nestedCount)
+                : "Th\u01B0 m\u1EE5c r\u1ED7ng (0 m\u1EE5c)";
+            return new ResourceDetailItem {
+                Path = path,
+                DisplayPath = path,
+                SizeBytes = 0,
+                NestedCount = nestedCount,
+                IsDirectory = true,
+                IsOneDrive = IsPathInsideOneDrive(path),
+                Selected = true,
+                Kind = "EmptyTree",
+                Note = note
+            };
+        }
+
+        public static bool IsDisposableZeroByteFileName(string fileName) {
+            if (string.IsNullOrWhiteSpace(fileName)) return false;
+            string ext = Path.GetExtension(fileName);
+            if (string.IsNullOrEmpty(ext)) return false;
+            return DisposableZeroByteExts.Contains(ext);
+        }
+
+        private static void ScanZeroByteAndLargeFiles(string rootDir, bool scanZeroByte, bool scanLarge, DateTime zeroCutoffUtc, int depth, CancellationToken ct, List<ResourceDetailItem> zeroOut, List<ResourceDetailItem> largeOut) {
+            if (ct.IsCancellationRequested || depth > 8) return;
+            uint rAttr;
+            if (!DirExistsWin32(rootDir, out rAttr)) return;
+            if ((rAttr & CLOUD_OR_REPARSE_MASK) != 0) return;
+
+            string norm = NormalizeCleanPath(rootDir);
+            if (depth > 0 && IsHardProtectedPath(norm)) return;
+
+            string spec = ToExtendedPath(norm) + @"\*";
+            WIN32_FIND_DATAW fd;
+            IntPtr h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+            try {
+                do {
+                    if (ct.IsCancellationRequested) break;
+                    string name = fd.cFileName;
+                    if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                    if ((fd.dwFileAttributes & CLOUD_OR_REPARSE_MASK) != 0) continue;
+
+                    string full = norm + @"\" + name;
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+                        if ((fd.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) != 0) continue;
+                        if (HardBlockedDirNames.Contains(name)) continue;
+                        ScanZeroByteAndLargeFiles(full, scanZeroByte, scanLarge, zeroCutoffUtc, depth + 1, ct, zeroOut, largeOut);
+                    } else {
+                        long sz = (((long)fd.nFileSizeHigh) << 32) | fd.nFileSizeLow;
+                        if (scanZeroByte && sz == 0 && zeroOut.Count < MAX_ZERO_DETAIL_ITEMS) {
+                            if (IsDisposableZeroByteFileName(name)) {
+                                DateTime lw = fd.ftLastWriteTime.ToUtcDateTime();
+                                if (lw == DateTime.MinValue || lw <= zeroCutoffUtc) {
+                                    zeroOut.Add(new ResourceDetailItem {
+                                        Path = full,
+                                        DisplayPath = full,
+                                        SizeBytes = 0,
+                                        NestedCount = 1,
+                                        IsDirectory = false,
+                                        IsOneDrive = IsPathInsideOneDrive(full),
+                                        Selected = true,
+                                        Kind = "ZeroByte",
+                                        Note = "0 byte (t\u1EA3i h\u1ECFng / t\u1EA1m > 24h)"
+                                    });
+                                }
+                            }
+                        }
+                        if (scanLarge && sz >= LARGE_FILE_THRESHOLD_BYTES && largeOut.Count < MAX_LARGE_DETAIL_ITEMS) {
+                            bool inOd = IsPathInsideOneDrive(full);
+                            largeOut.Add(new ResourceDetailItem {
+                                Path = full,
+                                DisplayPath = full,
+                                SizeBytes = sz,
+                                NestedCount = 1,
+                                IsDirectory = false,
+                                IsOneDrive = inOd,
+                                Selected = true,
+                                Kind = "LargeFile",
+                                Note = inOd ? "OneDrive (Cloud) \u2022 X\u00F3a s\u1EBD \u0111\u1ED3ng b\u1ED9 l\u00EAn m\u00E2y" : FormatBytes(sz)
+                            });
+                        }
+                    }
+                } while (FindNextFileW(h, out fd));
+            } finally {
+                FindClose(h);
+            }
+        }
+
+        public static ResourceScanReport ScanAllTiers(string[] extraEmptyScanRoots, CancellationToken ct) {
+            var sw = Stopwatch.StartNew();
+            var list = new List<ResourceCleanCategory>();
+            string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            string downloadsDir = GetKnownFolderPathSafe("Downloads");
+            string desktopDir = GetKnownFolderPathSafe("Desktop");
+
+            // === TIER 1: Windows Temp & System Junk ===
+            var catUserTemp = new ResourceCleanCategory {
+                Id = "t1_user_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "T\u1EC7p t\u1EA1m ng\u01B0\u1EDDi d\u00F9ng (%TEMP%)",
+                Description = "T\u1EC7p t\u1EA1m \u1EE9ng d\u1EE5ng & b\u1ED9 c\u00E0i trong %TEMP% (t\u1EF1 kh\u1EED tr\u00F9ng %LOCALAPPDATA%\\Temp, b\u1ECF qua t\u1EC7p \u0111ang m\u1EDF).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catUserTemp, new[] { Path.GetTempPath(), Path.Combine(localApp, "Temp") }, null, false, ct);
+            list.Add(catUserTemp);
+
+            var catWinTemp = new ResourceCleanCategory {
+                Id = "t1_win_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "T\u1EC7p t\u1EA1m h\u1EC7 th\u1ED1ng (C:\\Windows\\Temp)",
+                Description = "T\u1EC7p t\u1EA1m c\u1EE7a d\u1ECBch v\u1EE5 Windows v\u00E0 tr\u00ECnh c\u00E0i \u0111\u1EB7t (gi\u1EEF nguy\u00EAn th\u01B0 m\u1EE5c g\u1ED1c).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catWinTemp, new[] { Path.Combine(winDir, "Temp") }, null, false, ct);
+            list.Add(catWinTemp);
+
+            var catWer = new ResourceCleanCategory {
+                Id = "t1_wer_dumps", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "B\u00E1o c\u00E1o l\u1ED7i & Crash Dumps (WER)",
+                Description = "B\u00E1o c\u00E1o l\u1ED7i Windows Error Reporting, CrashDumps v\u00E0 Minidump c\u0169.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catWer, new[] {
+                Path.Combine(localApp, @"Microsoft\Windows\WER"),
+                Path.Combine(progData, @"Microsoft\Windows\WER"),
+                Path.Combine(localApp, "CrashDumps"),
+                Path.Combine(winDir, "Minidump")
+            }, null, false, ct);
+            list.Add(catWer);
+
+            var catThumb = new ResourceCleanCategory {
+                Id = "t1_thumbcache", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EA3nh thu nh\u1ECF (Thumbnail Cache)",
+                Description = "T\u1EC7p thumbcache_*.db c\u1EE7a Windows Explorer (t\u1EC7p \u0111ang \u0111\u01B0\u1EE3c Explorer gi\u1EEF kh\u00F3a s\u1EBD t\u1EF1 b\u1ECF qua an to\u00E0n).",
+                CleanMode = "FilePattern", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catThumb, new[] { Path.Combine(localApp, @"Microsoft\Windows\Explorer") }, new[] { "thumbcache_*.db" }, true, ct);
+            list.Add(catThumb);
+
+            bool wuRebootPending = IsWindowsUpdateRebootPending();
+            var catWuDl = new ResourceCleanCategory {
+                Id = "t1_wu_download", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA3i Windows Update",
+                Description = "G\u00F3i c\u1EADp nh\u1EADt c\u0169 trong SoftwareDistribution\\Download.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false,
+                DefaultSelected = !wuRebootPending, Selected = !wuRebootPending,
+                SkippedBecauseRebootPending = wuRebootPending
+            };
+            if (wuRebootPending) {
+                catWuDl.StatusNote = "\u0110ang c\u00F3 b\u1EA3n Windows Update ch\u1EDD kh\u1EDFi \u0111\u1ED9ng l\u1EA1i \u2014 t\u1EF1 \u0111\u1ED9ng b\u1ECF qua \u0111\u1EC3 an to\u00E0n.";
+                catWuDl.DetailItems = new List<ResourceDetailItem>();
+                catWuDl.RootPaths = new string[0];
+            } else {
+                PopulateDirectoryCategory(catWuDl, new[] { Path.Combine(winDir, @"SoftwareDistribution\Download") }, null, false, ct);
+            }
+            list.Add(catWuDl);
+
+            var catDo = new ResourceCleanCategory {
+                Id = "t1_delivery_opt", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Delivery Optimization",
+                Description = "T\u1EC7p ph\u00E2n ph\u1ED1i c\u1EADp nh\u1EADt Windows & Store (t\u1EF1 d\u00F9ng cmdlet Windows khi b\u1ECB kh\u00F3a ACL).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true,
+                IsDeliveryOptimization = true
+            };
+            PopulateDirectoryCategory(catDo, new[] { Path.Combine(winDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache") }, null, false, ct);
+            list.Add(catDo);
+
+            var catGpu = new ResourceCleanCategory {
+                Id = "t1_gpu_shader", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
+                Title = "DirectX & GPU Shader Cache (NVIDIA / AMD / Intel)",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m shader \u0111\u1ED3 h\u1ECDa. Game s\u1EBD bi\u00EAn d\u1ECBch l\u1EA1i shader \u1EDF l\u1EA7n m\u1EDF \u0111\u1EA7u sau khi d\u1ECDn.",
+                WarningNote = "Game c\u00F3 th\u1EC3 kh\u1EF1ng nh\u1EB9 \u1EDF l\u1EA7n ch\u1EA1y \u0111\u1EA7u \u0111\u1EC3 t\u1EA1o l\u1EA1i shader.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
+            };
+            PopulateDirectoryCategory(catGpu, CollectGpuShaderCacheDirs(), null, false, ct);
+            list.Add(catGpu);
+
+            var catRb = new ResourceCleanCategory {
+                Id = "t1_recycle_bin", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
+                Title = "Th\u00F9ng r\u00E1c (To\u00E0n b\u1ED9 c\u00E1c \u1ED5 \u0111\u0129a C:, D:, USB...)",
+                Description = "D\u1ECDn s\u1EA1ch Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a (lu\u00F4n ch\u1EA1y tr\u01B0\u1EDBc b\u01B0\u1EDBc \u0111\u01B0a t\u1EC7p T\u1EA7ng 4\u20135 v\u00E0o Th\u00F9ng r\u00E1c).",
+                WarningNote = "X\u00F3a v\u0129nh vi\u1EC5n to\u00E0n b\u1ED9 t\u1EC7p \u0111ang n\u1EB1m trong Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a.",
+                CleanMode = "RecycleBinAll", SupportsRecycleBin = false, DefaultSelected = false, Selected = false,
+                DetailItems = new List<ResourceDetailItem>(), RootPaths = new string[0]
+            };
+            try {
+                SHQUERYRBINFO rbInfo = new SHQUERYRBINFO();
+                rbInfo.cbSize = (uint)Marshal.SizeOf(typeof(SHQUERYRBINFO));
+                if (SHQueryRecycleBinW(null, ref rbInfo) == 0) {
+                    catRb.TotalBytes = Math.Max(0L, rbInfo.i64Size);
+                    catRb.ItemCount = (int)Math.Min(int.MaxValue, Math.Max(0L, rbInfo.i64NumItems));
+                }
+            } catch {}
+            list.Add(catRb);
+
+            // === TIER 2: Browser Caches (Cookies / Logins / Bookmarks 100% Untouched) ===
+            var catChromium = new ResourceCleanCategory {
+                Id = "t2_chromium_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
+                Title = "Cache Tr\u00ECnh duy\u1EC7t Chromium (Chrome / Edge / Brave / Arc / C\u1ED1c C\u1ED1c)",
+                Description = "Ch\u1EC9 d\u1ECDn Cache_Data, Code Cache, GPUCache \u2014 KH\u00D4NG \u0111\u1EE5ng Cookie, M\u1EADt kh\u1EA9u, Bookmark hay L\u1ECBch s\u1EED.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catChromium, CollectChromiumCacheDirs(), null, false, ct);
+            list.Add(catChromium);
+
+            var catOpera = new ResourceCleanCategory {
+                Id = "t2_opera_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
+                Title = "Cache Opera / Opera GX",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m web trong %LOCALAPPDATA%\\Opera Software (gi\u1EEF nguy\u00EAn phi\u00EAn \u0111\u0103ng nh\u1EADp).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catOpera, CollectOperaCacheDirs(), null, false, ct);
+            list.Add(catOpera);
+
+            var catGecko = new ResourceCleanCategory {
+                Id = "t2_gecko_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
+                Title = "Cache Firefox / Zen / Floorp / LibreWolf",
+                Description = "Ch\u1EC9 d\u1ECDn cache2, startupCache trong %LOCALAPPDATA% (gi\u1EEF nguy\u00EAn Profile & \u0111\u0103ng nh\u1EADp).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catGecko, CollectGeckoCacheDirs(), null, false, ct);
+            list.Add(catGecko);
+
+            // === TIER 3: App, Electron, Game Launcher & Dev Caches ===
+            var catElectron = new ResourceCleanCategory {
+                Id = "t3_electron_chat", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
+                Title = "Cache \u1EE8ng d\u1EE5ng & Chat (Discord / VS Code / Zalo CEF / Teams / Telegram)",
+                Description = "Ch\u1EC9 d\u1ECDn web cache & GPUCache (tuy\u1EC7t \u0111\u1ED1i gi\u1EEF nguy\u00EAn ZaloDownloads, ZaloReceivedFiles v\u00E0 tin nh\u1EAFn).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catElectron, CollectElectronAndChatCacheDirs(), null, false, ct);
+            list.Add(catElectron);
+
+            var catGames = new ResourceCleanCategory {
+                Id = "t3_game_launchers", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
+                Title = "Cache Game Launchers (Steam / Epic / Riot / Battle.net / EA)",
+                Description = "Ch\u1EC9 d\u1ECDn webcache/htmlcache c\u1EE7a launcher (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng d\u1EEF li\u1EC7u game hay save).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catGames, CollectGameLauncherCacheDirs(), null, false, ct);
+            list.Add(catGames);
+
+            var catSpotOff = new ResourceCleanCategory {
+                Id = "t3_spotify_offline", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Caution",
+                Title = "Spotify Offline Storage",
+                Description = "Kho l\u01B0u nh\u1EA1c/podcast t\u1EA3i offline c\u1EE7a Spotify (%LOCALAPPDATA%\\Spotify\\Storage).",
+                WarningNote = "X\u00F3a m\u1EE5c n\u00E0y s\u1EBD x\u00F3a nh\u1EA1c/podcast t\u1EA3i offline c\u1EE7a g\u00F3i Premium v\u00E0 ph\u1EA3i t\u1EA3i l\u1EA1i.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
+            };
+            PopulateDirectoryCategory(catSpotOff, new[] { Path.Combine(localApp, @"Spotify\Storage") }, null, false, ct);
+            list.Add(catSpotOff);
+
+            var catDev = new ResourceCleanCategory {
+                Id = "t3_dev_caches", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Advanced",
+                Title = "Cache C\u00F4ng c\u1EE5 L\u1EADp tr\u00ECnh (npm / pip / uv / Yarn / Gradle / WinGet)",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m g\u00F3i t\u1EA3i v\u1EC1 c\u1EE7a c\u00E1c tr\u00ECnh qu\u1EA3n l\u00FD g\u00F3i Dev (c\u1EA7n t\u1EA3i l\u1EA1i n\u1EBFu build m\u1EDBi).",
+                WarningNote = "L\u1EA7n c\u00E0i g\u00F3i/build ti\u1EBFp theo s\u1EBD c\u1EA7n t\u1EA3i l\u1EA1i cache t\u1EEB m\u1EA1ng.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
+            };
+            PopulateDirectoryCategory(catDev, CollectDevCacheDirs(), null, false, ct);
+            list.Add(catDev);
+
+            // === TIER 4: Deep Empty Folders & 0-Byte Disposable Junk (Advanced, Unchecked, Recycle Bin default) ===
+            var emptyRoots = new List<string>();
+            if (!string.IsNullOrWhiteSpace(downloadsDir) && !IsPathInsideOneDrive(downloadsDir)) {
+                emptyRoots.Add(downloadsDir);
+            }
+            if (extraEmptyScanRoots != null) {
+                for (int i = 0; i < extraEmptyScanRoots.Length; i++) {
+                    if (!string.IsNullOrWhiteSpace(extraEmptyScanRoots[i])) emptyRoots.Add(extraEmptyScanRoots[i]);
+                }
+            }
+            string[] dedupEmptyRoots = DeduplicateNormalizedPaths(emptyRoots.ToArray());
+
+            var emptyItems = new List<ResourceDetailItem>();
+            DateTime graceCutoff = DateTime.UtcNow.AddHours(-24);
+            for (int i = 0; i < dedupEmptyRoots.Length; i++) {
+                if (ct.IsCancellationRequested) break;
+                int dummyCnt;
+                InspectEmptyDirectorySubtree(dedupEmptyRoots[i], graceCutoff, true, true, 0, ct, emptyItems, out dummyCnt);
+            }
+            int totalEmptyCount = 0;
+            for (int i = 0; i < emptyItems.Count; i++) totalEmptyCount += Math.Max(1, emptyItems[i].NestedCount);
+
+            var catEmpty = new ResourceCleanCategory {
+                Id = "t4_empty_folders", Tier = 4, FilterGroup = "Empty", RiskLevel = "Advanced",
+                Title = "Th\u01B0 m\u1EE5c r\u1ED7ng \u0111a t\u1EA7ng (L\u00E1 ch\u1EAFn b\u1EA3o v\u1EC7 5 l\u1EDBp)",
+                Description = "Qu\u00E9t trong Downloads & th\u01B0 m\u1EE5c ngo\u00E0i b\u1EA1n ch\u1ECDn (0 m\u1EE5c th\u1EF1c, > 24h, kh\u00F4ng \u0111\u1EE5ng Program Files / Windows / OneDrive).",
+                WarningNote = "M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c \u0111\u1EC3 d\u1EC5 kh\u00F4i ph\u1EE5c.",
+                CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
+                TotalBytes = 0, ItemCount = emptyItems.Count, FolderCount = totalEmptyCount,
+                RootPaths = dedupEmptyRoots, DetailItems = emptyItems
+            };
+            list.Add(catEmpty);
+
+            var zeroItems = new List<ResourceDetailItem>();
+            var largeItems = new List<ResourceDetailItem>();
+            var dlScanRoots = new List<string>();
+            if (!string.IsNullOrWhiteSpace(downloadsDir)) dlScanRoots.Add(downloadsDir);
+            if (!string.IsNullOrWhiteSpace(desktopDir)) dlScanRoots.Add(desktopDir);
+            if (extraEmptyScanRoots != null) {
+                for (int i = 0; i < extraEmptyScanRoots.Length; i++) {
+                    if (!string.IsNullOrWhiteSpace(extraEmptyScanRoots[i])) dlScanRoots.Add(extraEmptyScanRoots[i]);
+                }
+            }
+            string[] dedupUserRoots = DeduplicateNormalizedPaths(dlScanRoots.ToArray());
+            for (int i = 0; i < dedupUserRoots.Length; i++) {
+                if (ct.IsCancellationRequested) break;
+                bool isLargeTarget = dedupUserRoots[i].Equals(downloadsDir, StringComparison.OrdinalIgnoreCase) ||
+                                     dedupUserRoots[i].Equals(desktopDir, StringComparison.OrdinalIgnoreCase);
+                ScanZeroByteAndLargeFiles(dedupUserRoots[i], true, isLargeTarget, graceCutoff, 0, ct, zeroItems, largeItems);
+            }
+
+            var catZero = new ResourceCleanCategory {
+                Id = "t4_zero_byte_junk", Tier = 4, FilterGroup = "Empty", RiskLevel = "Advanced",
+                Title = "T\u1EC7p r\u00E1c 0-byte & t\u1EA3i h\u1ECFng (.tmp / .crdownload / .part > 24h)",
+                Description = "Ch\u1EC9 g\u1EAFn c\u1EDD \u0111u\u00F4i t\u1EA1m/t\u1EA3i d\u1EDF r\u00F5 r\u00E0ng \u2014 tuy\u1EC7t \u0111\u1ED1i b\u1EA3o v\u1EC7 __init__.py, .gitkeep, .dat, .bin, .db.",
+                CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
+                TotalBytes = 0, ItemCount = zeroItems.Count, FolderCount = 0,
+                RootPaths = dedupUserRoots, DetailItems = zeroItems
+            };
+            list.Add(catZero);
+
+            // === TIER 5: Advanced System & Large File Radar (Unchecked, Recycle Bin default) ===
+            var catPrefetch = new ResourceCleanCategory {
+                Id = "t5_prefetch", Tier = 5, FilterGroup = "Advanced", RiskLevel = "Advanced",
+                Title = "Windows Prefetch (C:\\Windows\\Prefetch)",
+                Description = "T\u1EC7p t\u0103ng t\u1ED1c kh\u1EDFi ch\u1EA1y \u1EE9ng d\u1EE5ng (tr\u00EAn SSD kh\u00F4ng c\u1EA7n x\u00F3a th\u01B0\u1EDDng xuy\u00EAn).",
+                WarningNote = "Windows s\u1EBD t\u1EF1 t\u1EA1o l\u1EA1i Prefetch trong v\u00E0i ng\u00E0y.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
+            };
+            PopulateDirectoryCategory(catPrefetch, new[] { Path.Combine(winDir, "Prefetch") }, new[] { "*.pf" }, true, ct);
+            list.Add(catPrefetch);
+
+            largeItems.Sort(delegate(ResourceDetailItem a, ResourceDetailItem b) {
+                return b.SizeBytes.CompareTo(a.SizeBytes);
+            });
+            long largeTotal = 0;
+            for (int i = 0; i < largeItems.Count; i++) largeTotal += largeItems[i].SizeBytes;
+            var catLarge = new ResourceCleanCategory {
+                Id = "t5_large_files", Tier = 5, FilterGroup = "Advanced", RiskLevel = "Advanced",
+                Title = "Radar T\u1EC7p l\u1EDBn > 500 MB (Downloads & Desktop)",
+                Description = "Ph\u00E1t hi\u1EC7n b\u1ED9 c\u00E0i .iso/.zip/.exe l\u1EDBn b\u1ECB b\u1ECF qu\u00EAn (b\u1EA5m Chi ti\u1EBFt \u0111\u1EC3 ki\u1EC3m tra t\u1EEBng t\u1EC7p tr\u01B0\u1EDBc khi x\u00F3a).",
+                WarningNote = "Ch\u1EC9 tick khi b\u1EA1n \u0111\u00E3 ki\u1EC3m tra k\u1EF9 danh s\u00E1ch Chi ti\u1EBFt. M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c.",
+                CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
+                TotalBytes = largeTotal, ItemCount = largeItems.Count, FolderCount = 0,
+                RootPaths = DeduplicateNormalizedPaths(new[] { downloadsDir, desktopDir }),
+                DetailItems = largeItems
+            };
+            list.Add(catLarge);
+
+            long sumBytes = 0;
+            int sumFiles = 0;
+            for (int i = 0; i < list.Count; i++) {
+                sumBytes += list[i].TotalBytes;
+                if (list[i].Id != "t4_empty_folders") sumFiles += list[i].ItemCount;
+            }
+
+            sw.Stop();
+            return new ResourceScanReport {
+                DiskInfo = GetSystemDiskInfo(),
+                Categories = list.ToArray(),
+                TotalBytes = sumBytes,
+                TotalFiles = sumFiles,
+                TotalEmptyFolders = totalEmptyCount,
+                ScanElapsedMs = sw.ElapsedMilliseconds,
+                WasCancelled = ct.IsCancellationRequested
+            };
+        }
+
+        public static Task<ResourceScanReport> ScanAllTiersAsync(string[] extraEmptyScanRoots, CancellationToken ct) {
+            return Task.Run(delegate {
+                return ScanAllTiers(extraEmptyScanRoots, ct);
+            });
+        }
+
+        // Win32 long-path safe delete (works on .NET 4.8 / PS 5.1 for > 260 char paths)
+        public static bool DeleteFileWin32(string path, out bool skippedCloud) {
+            skippedCloud = false;
+            string ext = ToExtendedPath(path);
+            uint attr = GetFileAttributesW(ext);
+            if (attr == INVALID_FILE_ATTRIBUTES) return false;
+            if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
+                skippedCloud = true;
+                return false;
+            }
+            if ((attr & FILE_ATTRIBUTE_READONLY) != 0) {
+                SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
+            }
+            return DeleteFileW(ext);
+        }
+
+        public static bool RemoveDirectoryWin32(string path, out bool skippedCloud) {
+            skippedCloud = false;
+            string ext = ToExtendedPath(path);
+            uint attr = GetFileAttributesW(ext);
+            if (attr == INVALID_FILE_ATTRIBUTES) return false;
+            if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
+                skippedCloud = true;
+                return false;
+            }
+            if ((attr & FILE_ATTRIBUTE_READONLY) != 0) {
+                SetFileAttributesW(ext, attr & ~FILE_ATTRIBUTE_READONLY);
+            }
+            return RemoveDirectoryW(ext);
+        }
+
+        private static void DeleteDirectoryContentsWin32(string rootDir, string[] patterns, bool topLevelOnly, bool deleteSelf, CancellationToken ct, ref long freedBytes, ref int delFiles, ref int delFolders, ref int skippedLocked, ref int skippedCloud, int depth) {
+            if (ct.IsCancellationRequested || depth > 24) return;
+            string norm = NormalizeCleanPath(rootDir);
+            if (depth > 0 && IsHardProtectedPath(norm)) return;
+
+            uint rAttr;
+            if (!DirExistsWin32(norm, out rAttr)) return;
+            if ((rAttr & CLOUD_OR_REPARSE_MASK) != 0) { skippedCloud++; return; }
+
+            string spec = ToExtendedPath(norm) + @"\*";
+            WIN32_FIND_DATAW fd;
+            IntPtr h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+            if (h == IntPtr.Zero || h == new IntPtr(-1)) {
+                skippedLocked++;
+                return;
+            }
+            var subDirs = new List<string>();
+            var fileEntries = new List<KeyValuePair<string, long>>();
+            try {
+                do {
+                    if (ct.IsCancellationRequested) break;
+                    string name = fd.cFileName;
+                    if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                    if ((fd.dwFileAttributes & CLOUD_OR_REPARSE_MASK) != 0) { skippedCloud++; continue; }
+
+                    string full = norm + @"\" + name;
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+                        if (topLevelOnly) continue;
+                        if (IsHardProtectedPath(full)) continue;
+                        subDirs.Add(full);
+                    } else {
+                        if (NeverTouchBrowserNames.Contains(name)) continue;
+                        if (patterns != null && patterns.Length > 0 && !MatchesAnyWildcard(name, patterns)) continue;
+                        long sz = (((long)fd.nFileSizeHigh) << 32) | fd.nFileSizeLow;
+                        fileEntries.Add(new KeyValuePair<string, long>(full, sz));
+                    }
+                } while (FindNextFileW(h, out fd));
+            } finally {
+                FindClose(h);
+            }
+
+            for (int i = 0; i < fileEntries.Count; i++) {
+                if (ct.IsCancellationRequested) break;
+                bool sc;
+                if (DeleteFileWin32(fileEntries[i].Key, out sc)) {
+                    freedBytes += fileEntries[i].Value;
+                    delFiles++;
+                } else if (sc) {
+                    skippedCloud++;
+                } else {
+                    skippedLocked++;
+                }
+            }
+
+            for (int i = 0; i < subDirs.Count; i++) {
+                if (ct.IsCancellationRequested) break;
+                DeleteDirectoryContentsWin32(subDirs[i], patterns, false, true, ct, ref freedBytes, ref delFiles, ref delFolders, ref skippedLocked, ref skippedCloud, depth + 1);
+            }
+
+            if (deleteSelf && !ct.IsCancellationRequested) {
+                bool sc;
+                if (RemoveDirectoryWin32(norm, out sc)) {
+                    delFolders++;
+                } else if (sc) {
+                    skippedCloud++;
+                }
+            }
+        }
+
+        // Strict Recycle Bin via COM IFileOperation + FOFX_RECYCLEONDELETE (never silently permanently deletes!)
+        public static bool TryRecycleItemStrict(string rawPath, out string failureReason) {
+            failureReason = "";
+            if (string.IsNullOrWhiteSpace(rawPath)) {
+                failureReason = "EmptyPath";
+                return false;
+            }
+            string clean = StripExtendedPath(rawPath.Trim());
+            if (clean.StartsWith(@"\\", StringComparison.Ordinal)) {
+                failureReason = "UncNotSupportedByRecycleBin";
+                return false;
+            }
+            if (clean.Length >= 260) {
+                failureReason = "PathTooLongForRecycleBin";
+                return false;
+            }
+            uint attr = GetFileAttributesW(ToExtendedPath(clean));
+            if (attr == INVALID_FILE_ATTRIBUTES) {
+                failureReason = "NotFound";
+                return false;
+            }
+            if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
+                failureReason = "CloudOrReparseSkipped";
+                return false;
+            }
+
+            bool ok = false;
+            string err = "";
+            Exception threadEx = null;
+
+            Action runCom = delegate {
+                IFileOperationRC fileOp = null;
+                IShellItemRC shellItem = null;
+                try {
+                    Type opType = Type.GetTypeFromCLSID(CLSID_FileOperation, true);
+                    fileOp = (IFileOperationRC)Activator.CreateInstance(opType);
+                    int hrFlags = fileOp.SetOperationFlags(RECYCLE_STRICT_FLAGS);
+                    if (hrFlags < 0) { err = "SetFlagsHR=" + hrFlags.ToString("X"); return; }
+
+                    Guid iidItem = IID_IShellItem;
+                    int hrItem = SHCreateItemFromParsingName(clean, IntPtr.Zero, ref iidItem, out shellItem);
+                    if (hrItem < 0 || shellItem == null) { err = "CreateItemHR=" + hrItem.ToString("X"); return; }
+
+                    int hrDel = fileOp.DeleteItem(shellItem, IntPtr.Zero);
+                    if (hrDel < 0) { err = "DeleteItemHR=" + hrDel.ToString("X"); return; }
+
+                    int hrPerf = fileOp.PerformOperations();
+                    bool aborted = false;
+                    try { fileOp.GetAnyOperationsAborted(out aborted); } catch {}
+                    if (hrPerf < 0 || aborted) {
+                        err = aborted ? "AbortedByShell" : ("PerformHR=" + hrPerf.ToString("X"));
+                        return;
+                    }
+                    uint afterAttr = GetFileAttributesW(ToExtendedPath(clean));
+                    ok = (afterAttr == INVALID_FILE_ATTRIBUTES);
+                    if (!ok) err = "ItemStillExists";
+                } catch (Exception ex) {
+                    threadEx = ex;
+                } finally {
+                    if (shellItem != null) { try { Marshal.ReleaseComObject(shellItem); } catch {} }
+                    if (fileOp != null) { try { Marshal.ReleaseComObject(fileOp); } catch {} }
+                }
+            };
+
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) {
+                runCom();
+            } else {
+                var sta = new Thread(new ThreadStart(runCom));
+                sta.IsBackground = true;
+                sta.SetApartmentState(ApartmentState.STA);
+                sta.Start();
+                sta.Join();
+            }
+
+            if (threadEx != null) {
+                failureReason = threadEx.Message;
+                return false;
+            }
+            failureReason = err;
+            return ok;
+        }
+
+        private static void DeleteEmptySubtreeBottomUp(string rootDir, CancellationToken ct, ref int delFolders, ref int skippedLocked, ref int skippedCloud, int depth) {
+            if (ct.IsCancellationRequested || depth > MAX_EMPTY_SCAN_DEPTH + 2) return;
+            string norm = NormalizeCleanPath(rootDir);
+            uint attr;
+            if (!DirExistsWin32(norm, out attr)) return;
+            if ((attr & CLOUD_OR_REPARSE_MASK) != 0) { skippedCloud++; return; }
+
+            string spec = ToExtendedPath(norm) + @"\*";
+            WIN32_FIND_DATAW fd;
+            IntPtr h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+            if (h != IntPtr.Zero && h != new IntPtr(-1)) {
+                var children = new List<string>();
+                bool foundFile = false;
+                try {
+                    do {
+                        string name = fd.cFileName;
+                        if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                        if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                            foundFile = true;
+                            break;
+                        }
+                        if ((fd.dwFileAttributes & CLOUD_OR_REPARSE_MASK) != 0) {
+                            foundFile = true;
+                            break;
+                        }
+                        children.Add(norm + @"\" + name);
+                    } while (FindNextFileW(h, out fd));
+                } finally {
+                    FindClose(h);
+                }
+                if (foundFile) return;
+                for (int i = 0; i < children.Count; i++) {
+                    DeleteEmptySubtreeBottomUp(children[i], ct, ref delFolders, ref skippedLocked, ref skippedCloud, depth + 1);
+                }
+            }
+            bool sc;
+            if (RemoveDirectoryWin32(norm, out sc)) {
+                delFolders++;
+            } else if (sc) {
+                skippedCloud++;
+            } else {
+                skippedLocked++;
+            }
+        }
+
+        public static ResourceCleanReport CleanSelectedCategories(ResourceCleanCategory[] categories, bool useRecycleBinForTier45, CancellationToken ct) {
+            var sw = Stopwatch.StartNew();
+            var report = new ResourceCleanReport();
+            var logs = new List<string>();
+            if (categories == null) {
+                report.PerCategoryLogs = new string[0];
+                return report;
+            }
+
+            // STRICT EXECUTION ORDER:
+            // Pass 1: Tier 1-3 ALWAYS BEFORE Tier 4-5 (so SHEmptyRecycleBinW never wipes newly recycled Tier 4-5 files!)
+            var ordered = new List<ResourceCleanCategory>();
+            for (int i = 0; i < categories.Length; i++) {
+                if (categories[i] != null && categories[i].Selected && categories[i].Tier <= 3) ordered.Add(categories[i]);
+            }
+            for (int i = 0; i < categories.Length; i++) {
+                if (categories[i] != null && categories[i].Selected && categories[i].Tier >= 4) ordered.Add(categories[i]);
+            }
+
+            long freedTotal = 0;
+            int delFilesTotal = 0;
+            int delFoldersTotal = 0;
+            int recycledTotal = 0;
+            int lockedTotal = 0;
+            int recycleUnsupTotal = 0;
+            int cloudTotal = 0;
+
+            for (int idx = 0; idx < ordered.Count; idx++) {
+                if (ct.IsCancellationRequested) break;
+                var cat = ordered[idx];
+                if (cat.SkippedBecauseRebootPending) {
+                    logs.Add("[SKIP] " + cat.Title + " (Windows Update pending reboot)");
+                    continue;
+                }
+
+                long cf = 0; int cdf = 0; int cdd = 0; int crec = 0; int clk = 0; int crun = 0; int ccld = 0;
+
+                if (cat.CleanMode == "RecycleBinAll") {
+                    long beforeSz = cat.TotalBytes;
+                    int beforeItems = cat.ItemCount;
+                    try {
+                        int hr = SHEmptyRecycleBinW(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
+                        if (hr == 0) {
+                            cf += beforeSz;
+                            cdf += beforeItems;
+                        }
+                    } catch {}
+                    logs.Add(string.Format("[OK] {0}: gi\u1EA3i ph\u00F3ng {1}", cat.Title, FormatBytes(cf)));
+                } else if (cat.CleanMode == "ContentsOnly" || cat.CleanMode == "FilePattern") {
+                    bool topOnly = (cat.CleanMode == "FilePattern");
+                    if (cat.IsDeliveryOptimization) report.NeedsDeliveryOptCmdlet = true;
+                    if (cat.RootPaths != null) {
+                        for (int r = 0; r < cat.RootPaths.Length; r++) {
+                            if (ct.IsCancellationRequested) break;
+                            DeleteDirectoryContentsWin32(cat.RootPaths[r], cat.FilePatterns, topOnly, false, ct, ref cf, ref cdf, ref cdd, ref clk, ref ccld, 0);
+                        }
+                    }
+                    logs.Add(string.Format("[OK] {0}: {1} ({2} t\u1EC7p, b\u1ECF qua {3} \u0111ang kh\u00F3a)", cat.Title, FormatBytes(cf), cdf, clk));
+                } else if (cat.CleanMode == "ItemsList" && cat.DetailItems != null) {
+                    bool doRecycle = useRecycleBinForTier45 && cat.SupportsRecycleBin;
+                    for (int d = 0; d < cat.DetailItems.Count; d++) {
+                        if (ct.IsCancellationRequested) break;
+                        var it = cat.DetailItems[d];
+                        if (it == null || !it.Selected) continue;
+                        if (doRecycle) {
+                            string failReason;
+                            if (TryRecycleItemStrict(it.Path, out failReason)) {
+                                crec++;
+                                cf += it.SizeBytes;
+                                if (it.IsDirectory) cdd += Math.Max(1, it.NestedCount);
+                                else cdf++;
+                            } else if (failReason == "CloudOrReparseSkipped") {
+                                ccld++;
+                            } else if (failReason == "UncNotSupportedByRecycleBin" || failReason == "PathTooLongForRecycleBin" || failReason == "AbortedByShell") {
+                                crun++;
+                            } else {
+                                clk++;
+                            }
+                        } else {
+                            if (it.IsDirectory) {
+                                DeleteEmptySubtreeBottomUp(it.Path, ct, ref cdd, ref clk, ref ccld, 0);
+                            } else {
+                                bool sc;
+                                if (DeleteFileWin32(it.Path, out sc)) {
+                                    cf += it.SizeBytes;
+                                    cdf++;
+                                } else if (sc) {
+                                    ccld++;
+                                } else {
+                                    clk++;
+                                }
+                            }
+                        }
+                    }
+                    logs.Add(string.Format("[OK] {0}: {1} (x\u00F3a {2} t\u1EC7p / {3} th\u01B0 m\u1EE5c, Th\u00F9ng r\u00E1c: {4}, b\u1ECF qua: {5})",
+                        cat.Title, FormatBytes(cf), cdf, cdd, crec, clk + crun + ccld));
+                }
+
+                freedTotal += cf;
+                delFilesTotal += cdf;
+                delFoldersTotal += cdd;
+                recycledTotal += crec;
+                lockedTotal += clk;
+                recycleUnsupTotal += crun;
+                cloudTotal += ccld;
+            }
+
+            sw.Stop();
+            report.FreedBytes = freedTotal;
+            report.DeletedFiles = delFilesTotal;
+            report.DeletedFolders = delFoldersTotal;
+            report.RecycledItems = recycledTotal;
+            report.SkippedLockedCount = lockedTotal;
+            report.SkippedRecycleUnsupportedCount = recycleUnsupTotal;
+            report.SkippedCloudCount = cloudTotal;
+            report.WasCancelled = ct.IsCancellationRequested;
+            report.ElapsedMs = sw.ElapsedMilliseconds;
+            report.PerCategoryLogs = logs.ToArray();
+            return report;
+        }
+
+        public static Task<ResourceCleanReport> CleanSelectedCategoriesAsync(ResourceCleanCategory[] categories, bool useRecycleBinForTier45, CancellationToken ct) {
+            return Task.Run(delegate {
+                return CleanSelectedCategories(categories, useRecycleBinForTier45, ct);
+            });
+        }
+
+        // === C# WPF Visual Factory (Zero-Lag Rendering matching StartupManagerEngine) ===
+        private static System.Windows.Media.SolidColorBrush MakeFrozen(byte a, byte r, byte g, byte b) {
+            var br = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(a, r, g, b));
+            br.Freeze();
+            return br;
+        }
+
+        private static readonly System.Windows.Media.SolidColorBrush BrWhite       = MakeFrozen(255, 0xF8, 0xFA, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrMuted       = MakeFrozen(255, 0x94, 0xA3, 0xB8);
+        private static readonly System.Windows.Media.SolidColorBrush BrSub         = MakeFrozen(255, 0x64, 0x74, 0x8B);
+        private static readonly System.Windows.Media.SolidColorBrush BrAccent      = MakeFrozen(255, 0x38, 0xBD, 0xF8);
+        private static readonly System.Windows.Media.SolidColorBrush BrSafeBg      = MakeFrozen(255, 0x0D, 0x2B, 0x22);
+        private static readonly System.Windows.Media.SolidColorBrush BrSafeBdr     = MakeFrozen(255, 0x1E, 0x56, 0x40);
+        private static readonly System.Windows.Media.SolidColorBrush BrSafeFg      = MakeFrozen(255, 0x34, 0xD3, 0x99);
+        private static readonly System.Windows.Media.SolidColorBrush BrCautBg      = MakeFrozen(255, 0x2F, 0x24, 0x0F);
+        private static readonly System.Windows.Media.SolidColorBrush BrCautBdr     = MakeFrozen(255, 0x61, 0x4F, 0x27);
+        private static readonly System.Windows.Media.SolidColorBrush BrCautFg      = MakeFrozen(255, 0xFB, 0xBF, 0x24);
+        private static readonly System.Windows.Media.SolidColorBrush BrAdvBg       = MakeFrozen(255, 0x33, 0x15, 0x1B);
+        private static readonly System.Windows.Media.SolidColorBrush BrAdvBdr      = MakeFrozen(255, 0x6E, 0x27, 0x34);
+        private static readonly System.Windows.Media.SolidColorBrush BrAdvFg       = MakeFrozen(255, 0xFD, 0xA4, 0xAF);
+        private static readonly System.Windows.Media.SolidColorBrush BrDetailBg    = MakeFrozen(255, 0x09, 0x0E, 0x17);
+        private static readonly System.Windows.Media.SolidColorBrush BrDetailBdr   = MakeFrozen(255, 0x1E, 0x2B, 0x40);
+        private static readonly System.Windows.Media.SolidColorBrush BrDivider     = MakeFrozen(0x1C, 0xFF, 0xFF, 0xFF);
+        private static readonly System.Windows.Media.SolidColorBrush BrOneDriveBg  = MakeFrozen(255, 0x17, 0x25, 0x54);
+        private static readonly System.Windows.Media.SolidColorBrush BrOneDriveFg  = MakeFrozen(255, 0x93, 0xC5, 0xFD);
+
+        public static ResourceRowVisual CreateResourceRowVisual(ResourceCleanCategory cat, Style rowStyle, Style checkStyle, Style actionBtnStyle) {
+            var vis = new ResourceRowVisual();
+            vis.Category = cat;
+
+            var outer = new System.Windows.Controls.Border();
+            if (rowStyle != null) outer.Style = rowStyle;
+            outer.UseLayoutRounding = true;
+            outer.SnapsToDevicePixels = true;
+
+            var rootStack = new System.Windows.Controls.StackPanel();
+
+            var grid = new System.Windows.Controls.Grid();
+            grid.MinHeight = 52;
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(52) });
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(96) });
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(136) });
+            grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(136) });
+
+            // Col 0: CheckBox
+            var cb = new System.Windows.Controls.CheckBox();
+            if (checkStyle != null) cb.Style = checkStyle;
+            cb.HorizontalAlignment = HorizontalAlignment.Center;
+            cb.VerticalAlignment = VerticalAlignment.Center;
+            cb.IsChecked = cat.Selected;
+            cb.IsEnabled = !cat.SkippedBecauseRebootPending && (cat.ItemCount > 0 || cat.FolderCount > 0 || cat.TotalBytes > 0);
+            cb.Tag = vis;
+            System.Windows.Controls.Grid.SetColumn(cb, 0);
+            grid.Children.Add(cb);
+
+            // Col 1: Title & Description
+            var infoSp = new System.Windows.Controls.StackPanel();
+            infoSp.Margin = new Thickness(10, 7, 10, 7);
+            infoSp.VerticalAlignment = VerticalAlignment.Center;
+
+            var titleRow = new System.Windows.Controls.StackPanel();
+            titleRow.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            var tbTitle = new System.Windows.Controls.TextBlock();
+            tbTitle.Text = cat.Title ?? "";
+            tbTitle.FontSize = 12.5;
+            tbTitle.FontWeight = FontWeights.SemiBold;
+            tbTitle.Foreground = cb.IsEnabled ? BrWhite : BrMuted;
+            tbTitle.TextTrimming = TextTrimming.CharacterEllipsis;
+            titleRow.Children.Add(tbTitle);
+            infoSp.Children.Add(titleRow);
+
+            var tbSub = new System.Windows.Controls.TextBlock();
+            tbSub.Text = !string.IsNullOrWhiteSpace(cat.StatusNote) ? cat.StatusNote : (cat.Description ?? "");
+            tbSub.FontSize = 11;
+            tbSub.Foreground = !string.IsNullOrWhiteSpace(cat.StatusNote) ? BrCautFg : BrSub;
+            tbSub.Margin = new Thickness(0, 2, 0, 0);
+            tbSub.TextTrimming = TextTrimming.CharacterEllipsis;
+            infoSp.Children.Add(tbSub);
+
+            System.Windows.Controls.Grid.SetColumn(infoSp, 1);
+            grid.Children.Add(infoSp);
+
+            // Col 2: Risk Badge
+            var riskPill = new System.Windows.Controls.Border();
+            riskPill.CornerRadius = new CornerRadius(3);
+            riskPill.BorderThickness = new Thickness(1);
+            riskPill.Padding = new Thickness(8, 2, 8, 2);
+            riskPill.HorizontalAlignment = HorizontalAlignment.Center;
+            riskPill.VerticalAlignment = VerticalAlignment.Center;
+            var riskTb = new System.Windows.Controls.TextBlock();
+            riskTb.FontSize = 10.5;
+            riskTb.FontWeight = FontWeights.SemiBold;
+            if (cat.RiskLevel == "Safe") {
+                riskPill.Background = BrSafeBg; riskPill.BorderBrush = BrSafeBdr; riskTb.Foreground = BrSafeFg;
+                riskTb.Text = "An to\u00E0n";
+            } else if (cat.RiskLevel == "Caution") {
+                riskPill.Background = BrCautBg; riskPill.BorderBrush = BrCautBdr; riskTb.Foreground = BrCautFg;
+                riskTb.Text = "L\u01B0u \u00FD";
+            } else {
+                riskPill.Background = BrAdvBg; riskPill.BorderBrush = BrAdvBdr; riskTb.Foreground = BrAdvFg;
+                riskTb.Text = "N\u00E2ng cao";
+            }
+            riskPill.Child = riskTb;
+            System.Windows.Controls.Grid.SetColumn(riskPill, 2);
+            grid.Children.Add(riskPill);
+
+            // Col 3: Size & Count
+            var statSp = new System.Windows.Controls.StackPanel();
+            statSp.HorizontalAlignment = HorizontalAlignment.Right;
+            statSp.VerticalAlignment = VerticalAlignment.Center;
+            statSp.Margin = new Thickness(8, 0, 12, 0);
+
+            var tbSize = new System.Windows.Controls.TextBlock();
+            tbSize.Text = cat.Id == "t4_empty_folders"
+                ? string.Format("{0} th\u01B0 m\u1EE5c", cat.FolderCount)
+                : FormatBytes(cat.TotalBytes);
+            tbSize.FontSize = 12.5;
+            tbSize.FontWeight = FontWeights.Bold;
+            tbSize.HorizontalAlignment = HorizontalAlignment.Right;
+            tbSize.Foreground = (cat.TotalBytes >= 100L * 1024L * 1024L) ? BrCautFg : (cb.IsEnabled ? BrAccent : BrSub);
+            statSp.Children.Add(tbSize);
+
+            var tbCnt = new System.Windows.Controls.TextBlock();
+            if (cat.Id == "t4_empty_folders") {
+                tbCnt.Text = cat.ItemCount > 0 ? string.Format("{0} nh\u00E1nh r\u1ED7ng", cat.ItemCount) : "S\u1EA1ch s\u1EBD";
+            } else if (cat.ItemCount > 0) {
+                tbCnt.Text = string.Format("{0:N0} m\u1EE5c", cat.ItemCount);
+            } else {
+                tbCnt.Text = "S\u1EA1ch s\u1EBD";
+            }
+            tbCnt.FontSize = 10.5;
+            tbCnt.Foreground = BrSub;
+            tbCnt.HorizontalAlignment = HorizontalAlignment.Right;
+            statSp.Children.Add(tbCnt);
+
+            System.Windows.Controls.Grid.SetColumn(statSp, 3);
+            grid.Children.Add(statSp);
+
+            // Col 4: Actions (Details / Open)
+            var actSp = new System.Windows.Controls.StackPanel();
+            actSp.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            actSp.HorizontalAlignment = HorizontalAlignment.Center;
+            actSp.VerticalAlignment = VerticalAlignment.Center;
+
+            var btnDetails = new System.Windows.Controls.Button();
+            if (actionBtnStyle != null) btnDetails.Style = actionBtnStyle;
+            btnDetails.Content = "Chi ti\u1EBFt";
+            btnDetails.Padding = new Thickness(8, 3, 8, 3);
+            btnDetails.IsEnabled = (cat.DetailItems != null && cat.DetailItems.Count > 0);
+            btnDetails.Tag = vis;
+            actSp.Children.Add(btnDetails);
+
+            var btnOpen = new System.Windows.Controls.Button();
+            if (actionBtnStyle != null) btnOpen.Style = actionBtnStyle;
+            btnOpen.Content = "M\u1EDF";
+            btnOpen.Padding = new Thickness(8, 3, 8, 3);
+            btnOpen.Margin = new Thickness(5, 0, 0, 0);
+            btnOpen.IsEnabled = (cat.RootPaths != null && cat.RootPaths.Length > 0);
+            btnOpen.Tag = vis;
+            actSp.Children.Add(btnOpen);
+
+            System.Windows.Controls.Grid.SetColumn(actSp, 4);
+            grid.Children.Add(actSp);
+
+            for (int c = 0; c < 4; c++) {
+                var sep = new System.Windows.Controls.Border();
+                sep.Width = 1;
+                sep.HorizontalAlignment = HorizontalAlignment.Right;
+                sep.VerticalAlignment = VerticalAlignment.Stretch;
+                sep.Background = BrDivider;
+                sep.IsHitTestVisible = false;
+                System.Windows.Controls.Grid.SetColumn(sep, c);
+                grid.Children.Add(sep);
+            }
+
+            rootStack.Children.Add(grid);
+
+            var detailContainer = new System.Windows.Controls.Border();
+            detailContainer.Visibility = Visibility.Collapsed;
+            detailContainer.Background = BrDetailBg;
+            detailContainer.BorderBrush = BrDetailBdr;
+            detailContainer.BorderThickness = new Thickness(0, 1, 0, 0);
+            detailContainer.Padding = new Thickness(56, 6, 14, 8);
+            var detailHost = new System.Windows.Controls.StackPanel();
+            detailContainer.Child = detailHost;
+            rootStack.Children.Add(detailContainer);
+
+            outer.Child = rootStack;
+
+            vis.Row = outer;
+            vis.CheckBox = cb;
+            vis.TitleText = tbTitle;
+            vis.SubText = tbSub;
+            vis.SizeText = tbSize;
+            vis.CountText = tbCnt;
+            vis.DetailsBtn = btnDetails;
+            vis.OpenBtn = btnOpen;
+            vis.DetailsContainer = detailContainer;
+            vis.DetailsHost = detailHost;
+            return vis;
+        }
+
+        public static void PopulateDetailsPanel(ResourceRowVisual vis, Style checkStyle, Style actionBtnStyle, RoutedEventHandler onDetailCheckChanged, RoutedEventHandler onOpenDetailClick) {
+            if (vis == null || vis.DetailsHost == null || vis.DetailsPopulated) return;
+            vis.DetailsPopulated = true;
+            var cat = vis.Category;
+            if (cat == null || cat.DetailItems == null || cat.DetailItems.Count == 0) return;
+
+            int cap = Math.Min(cat.DetailItems.Count, 80);
+            for (int i = 0; i < cap; i++) {
+                var it = cat.DetailItems[i];
+                var row = new System.Windows.Controls.Grid();
+                row.Margin = new Thickness(0, 2, 0, 2);
+                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(26) });
+                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+
+                if (cat.CleanMode == "ItemsList") {
+                    var dcb = new System.Windows.Controls.CheckBox();
+                    if (checkStyle != null) dcb.Style = checkStyle;
+                    dcb.IsChecked = it.Selected;
+                    dcb.VerticalAlignment = VerticalAlignment.Center;
+                    dcb.Tag = new object[] { vis, it };
+                    if (onDetailCheckChanged != null) {
+                        dcb.Checked += onDetailCheckChanged;
+                        dcb.Unchecked += onDetailCheckChanged;
+                    }
+                    System.Windows.Controls.Grid.SetColumn(dcb, 0);
+                    row.Children.Add(dcb);
+                }
+
+                var pathSp = new System.Windows.Controls.StackPanel();
+                pathSp.Orientation = System.Windows.Controls.Orientation.Horizontal;
+                pathSp.VerticalAlignment = VerticalAlignment.Center;
+
+                var ptb = new System.Windows.Controls.TextBlock();
+                ptb.Text = it.DisplayPath ?? it.Path ?? "";
+                ptb.FontSize = 11;
+                ptb.Foreground = BrMuted;
+                ptb.TextTrimming = TextTrimming.CharacterEllipsis;
+                ptb.ToolTip = it.Path;
+                pathSp.Children.Add(ptb);
+
+                if (it.IsOneDrive) {
+                    var odBd = new System.Windows.Controls.Border();
+                    odBd.Background = BrOneDriveBg;
+                    odBd.CornerRadius = new CornerRadius(3);
+                    odBd.Padding = new Thickness(5, 1, 5, 1);
+                    odBd.Margin = new Thickness(6, 0, 0, 0);
+                    var odTb = new System.Windows.Controls.TextBlock();
+                    odTb.Text = "OneDrive";
+                    odTb.FontSize = 9.5;
+                    odTb.FontWeight = FontWeights.SemiBold;
+                    odTb.Foreground = BrOneDriveFg;
+                    odBd.Child = odTb;
+                    pathSp.Children.Add(odBd);
+                }
+                System.Windows.Controls.Grid.SetColumn(pathSp, 1);
+                row.Children.Add(pathSp);
+
+                var ntb = new System.Windows.Controls.TextBlock();
+                ntb.Text = it.SizeBytes > 0 ? FormatBytes(it.SizeBytes) : (it.Note ?? "");
+                ntb.FontSize = 11;
+                ntb.Foreground = BrAccent;
+                ntb.VerticalAlignment = VerticalAlignment.Center;
+                ntb.Margin = new Thickness(10, 0, 10, 0);
+                System.Windows.Controls.Grid.SetColumn(ntb, 2);
+                row.Children.Add(ntb);
+
+                var ob = new System.Windows.Controls.Button();
+                if (actionBtnStyle != null) ob.Style = actionBtnStyle;
+                ob.Content = "M\u1EDF";
+                ob.Padding = new Thickness(6, 1, 6, 1);
+                ob.FontSize = 10.5;
+                ob.Tag = it.Path;
+                if (onOpenDetailClick != null) ob.Click += onOpenDetailClick;
+                System.Windows.Controls.Grid.SetColumn(ob, 3);
+                row.Children.Add(ob);
+
+                vis.DetailsHost.Children.Add(row);
+            }
+
+            if (cat.DetailItems.Count > cap) {
+                var more = new System.Windows.Controls.TextBlock();
+                more.Text = string.Format("... v\u00E0 c\u00F2n {0} m\u1EE5c kh\u00E1c trong h\u1EA1ng m\u1EE5c n\u00E0y.", cat.DetailItems.Count - cap);
+                more.FontSize = 10.5;
+                more.Foreground = BrSub;
+                more.Margin = new Thickness(26, 4, 0, 0);
+                vis.DetailsHost.Children.Add(more);
+            }
+        }
+    }
+}
+'@
+    if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not ("DuckUtil.StartupManagerEngine" -as [type]) -and -not ("DuckUtil.ResourceCleanerEngine" -as [type])) {
         try {
-            $duckCoreCs = ($duckCoreUsings, $csBodySmooth, $csBodyCatalog, $csBodyDeep, $csBodyOpt, $csBodyStartup) -join "`r`n`r`n"
+            $duckCoreCs = ($duckCoreUsings, $csBodySmooth, $csBodyCatalog, $csBodyDeep, $csBodyOpt, $csBodyStartup, $csBodyResource) -join "`r`n`r`n"
             Import-CachedCSharpType -TypeName "DuckUtil.UiAssetPipeline" -SourceCode $duckCoreCs -Prefix "DuckCore" -RequiredMethod "RestoreRowsFromColumns" -RefsResolver $resolveCoreRefs
         } catch {}
     }
@@ -28138,7 +30306,12 @@ namespace DuckUtil {
             Import-CachedCSharpType -TypeName "DuckUtil.StartupManagerEngine" -SourceCode ($csHdrStartup + "`r`n`r`n" + $csBodyStartup) -Prefix "DuckStart" -RequiredMethod "ScanFastCoreAsync" -RefsResolver $resolveCoreRefs
         } catch {}
     }
-    $duckCoreCs = $null; $duckCoreUsings = $null; $csHdrSmooth = $null; $csBodySmooth = $null; $csHdrCatalog = $null; $csBodyCatalog = $null; $csHdrDeep = $null; $csBodyDeep = $null; $csHdrOpt = $null; $csBodyOpt = $null; $csHdrStartup = $null; $csBodyStartup = $null
+    if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) {
+        try {
+            Import-CachedCSharpType -TypeName "DuckUtil.ResourceCleanerEngine" -SourceCode ($csHdrResource + "`r`n`r`n" + $csBodyResource) -Prefix "DuckRes" -RequiredMethod "ScanAllTiersAsync" -RefsResolver $resolveCoreRefs
+        } catch {}
+    }
+    $duckCoreCs = $null; $duckCoreUsings = $null; $csHdrSmooth = $null; $csBodySmooth = $null; $csHdrCatalog = $null; $csBodyCatalog = $null; $csHdrDeep = $null; $csBodyDeep = $null; $csHdrOpt = $null; $csBodyOpt = $null; $csHdrStartup = $null; $csBodyStartup = $null; $csHdrResource = $null; $csBodyResource = $null
 }
 
 if ("DuckUtil.ConsoleHelper" -as [type]) { try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {} }
@@ -43316,6 +45489,10 @@ function Stop-AllBackgroundWork {
     try { if ($script:optSearchDebounceTimer) { $script:optSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:startPollTimer) { $script:startPollTimer.Stop() } } catch {}
     try { if ($script:startSearchDebounceTimer) { $script:startSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:resPollTimer) { $script:resPollTimer.Stop() } } catch {}
+    try { if ($script:resSearchDebounceTimer) { $script:resSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:resScanCts) { $script:resScanCts.Cancel() } } catch {}
+    try { if ($script:resCleanCts) { $script:resCleanCts.Cancel() } } catch {}
     try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
@@ -43739,6 +45916,9 @@ function Set-OptimizerSubTab {
         $script:optSubBtnStartup.Foreground = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnStartup.BorderBrush = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushTransparent }
     }
+    if ($SubIndex -eq 1 -and (Get-Command "Initialize-ResourcesTabIfNeeded" -ErrorAction SilentlyContinue)) {
+        Initialize-ResourcesTabIfNeeded
+    }
     if ($SubIndex -eq 2 -and (Get-Command "Initialize-StartupTabIfNeeded" -ErrorAction SilentlyContinue)) {
         Initialize-StartupTabIfNeeded
     }
@@ -43749,6 +45929,14 @@ function Update-OptimizerSelectionCount {
     if ($script:isWindowClosing) { return }
     $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
     if (-not $isTab4Visible -or -not $txtSelectionCount) { return }
+    if ($script:optSubTabIndex -eq 1) {
+        if (Get-Command "Update-ResourcesSummary" -ErrorAction SilentlyContinue) {
+            Update-ResourcesSummary
+        } else {
+            $txtSelectionCount.Text = ""
+        }
+        return
+    }
     if ($script:optSubTabIndex -eq 2) {
         if (Get-Command "Update-StartupFooterSummary" -ErrorAction SilentlyContinue) {
             Update-StartupFooterSummary
@@ -45276,6 +47464,533 @@ if ($script:btnStartAddApp) {
         }
     })
 }
+
+#region Resources Cleaner Tab (OptPageResources - 5-Tier Deep Cleaner)
+$script:resInitialized        = $false
+$script:resFilterMode         = "All"
+$script:resScanVersion        = 0
+$script:resIsScanning         = $false
+$script:resIsCleaning         = $false
+$script:resScanTask           = $null
+$script:resCleanTask          = $null
+$script:resScanCts            = $null
+$script:resCleanCts           = $null
+$script:resPollTimer          = $null
+$script:resSearchDebounceTimer = $null
+$script:resLastReport         = $null
+$script:resRows               = [System.Collections.Generic.List[object]]::new()
+$script:resExtraFolders       = [System.Collections.Generic.List[string]]::new()
+$script:resSyncingChecks      = $false
+
+$script:btnResScan            = $window.FindName("btnResScan")
+$script:btnResClean           = $window.FindName("btnResClean")
+$script:btnResSelectSafe      = $window.FindName("btnResSelectSafe")
+$script:btnResClearSel        = $window.FindName("btnResClearSel")
+$script:btnResAddFolder       = $window.FindName("btnResAddFolder")
+$script:chkResRecycleTier45   = $window.FindName("chkResRecycleTier45")
+$script:txtResSearch          = $window.FindName("txtResSearch")
+$script:btnClearResSearch     = $window.FindName("btnClearResSearch")
+$script:btnResFilterAll       = $window.FindName("btnResFilterAll")
+$script:btnResFilterSafe      = $window.FindName("btnResFilterSafe")
+$script:btnResFilterBrowser   = $window.FindName("btnResFilterBrowser")
+$script:btnResFilterAppDev    = $window.FindName("btnResFilterAppDev")
+$script:btnResFilterEmpty     = $window.FindName("btnResFilterEmpty")
+$script:btnResFilterAdv       = $window.FindName("btnResFilterAdv")
+$script:txtResDiskInfo        = $window.FindName("txtResDiskInfo")
+$script:resDiskBarFill        = $window.FindName("resDiskBarFill")
+$script:txtResSummary         = $window.FindName("txtResSummary")
+$script:resScrollViewer       = $window.FindName("ResScrollViewer")
+$script:resRowsHost           = $window.FindName("ResRowsHost")
+$script:resEmptyState         = $window.FindName("ResEmptyState")
+$script:txtResEmptyTitle      = $window.FindName("txtResEmptyTitle")
+$script:txtResEmptySub        = $window.FindName("txtResEmptySub")
+
+$script:brushResScanBlue      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x02, 0x84, 0xC7)); $script:brushResScanBlue.Freeze()
+$script:brushResStopAmber     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0xB4, 0x53, 0x09)); $script:brushResStopAmber.Freeze()
+$script:brushResDiskGreen     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x34, 0xD3, 0x99)); $script:brushResDiskGreen.Freeze()
+$script:brushResDiskAmber     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0xFB, 0xBF, 0x24)); $script:brushResDiskAmber.Freeze()
+$script:brushResDiskRed       = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0xF8, 0x71, 0x71)); $script:brushResDiskRed.Freeze()
+
+function Update-ResourcesDiskBar {
+    if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) { return }
+    try {
+        $di = [DuckUtil.ResourceCleanerEngine]::GetSystemDiskInfo()
+        if ($script:txtResDiskInfo) { $script:txtResDiskInfo.Text = $di.SummaryText }
+        if ($script:resDiskBarFill) {
+            $pct = [Math]::Max(0.0, [Math]::Min(100.0, [double]$di.UsedPercent))
+            $script:resDiskBarFill.Width = [Math]::Round(68.0 * ($pct / 100.0), 1)
+            if ($pct -ge 90.0) { $script:resDiskBarFill.Background = $script:brushResDiskRed }
+            elseif ($pct -ge 75.0) { $script:resDiskBarFill.Background = $script:brushResDiskAmber }
+            else { $script:resDiskBarFill.Background = $script:brushResDiskGreen }
+        }
+    } catch {}
+}
+
+function Set-ResourcesFilterChipVisuals {
+    $map = @{
+        "All"      = $script:btnResFilterAll
+        "Safe"     = $script:btnResFilterSafe
+        "Browser"  = $script:btnResFilterBrowser
+        "AppDev"   = $script:btnResFilterAppDev
+        "Empty"    = $script:btnResFilterEmpty
+        "Advanced" = $script:btnResFilterAdv
+    }
+    foreach ($k in $map.Keys) {
+        $btn = $map[$k]
+        if (-not $btn) { continue }
+        if ($script:resFilterMode -eq $k) {
+            $btn.Background  = $script:brushStartChipActBg
+            $btn.BorderBrush = $script:brushStartChipActBdr
+            $btn.Foreground  = $script:brushNavActive
+        } else {
+            $btn.Background  = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground  = $script:brushNavInactive
+        }
+    }
+}
+
+function Update-ResourcesSummary {
+    if ($script:isWindowClosing) { return }
+    $totBytes = 0L; $selBytes = 0L; $selCats = 0; $totEmpty = 0; $selEmpty = 0; $totItems = 0
+    foreach ($r in $script:resRows) {
+        $c = $r.Category
+        if (-not $c) { continue }
+        $totBytes += [long]$c.TotalBytes
+        if ($c.Id -eq "t4_empty_folders") { $totEmpty += [int]$c.FolderCount } else { $totItems += [int]$c.ItemCount }
+        if ($c.Selected) {
+            $hasActionable = ($c.ItemCount -gt 0 -or $c.FolderCount -gt 0 -or $c.TotalBytes -gt 0) -and (-not $c.SkippedBecauseRebootPending)
+            if ($hasActionable) {
+                $selCats++
+                if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+                    $subSel = 0L; $subEmpty = 0
+                    foreach ($it in $c.DetailItems) {
+                        if ($it.Selected) {
+                            $subSel += [long]$it.SizeBytes
+                            if ($c.Id -eq "t4_empty_folders") { $subEmpty += [Math]::Max(1, [int]$it.NestedCount) }
+                        }
+                    }
+                    $selBytes += $subSel
+                    $selEmpty += $subEmpty
+                } else {
+                    $selBytes += [long]$c.TotalBytes
+                }
+            }
+        }
+    }
+
+    $fmtTot = if ("DuckUtil.ResourceCleanerEngine" -as [type]) { [DuckUtil.ResourceCleanerEngine]::FormatBytes($totBytes) } else { "0 B" }
+    $fmtSel = if ("DuckUtil.ResourceCleanerEngine" -as [type]) { [DuckUtil.ResourceCleanerEngine]::FormatBytes($selBytes) } else { "0 B" }
+
+    if ($script:btnResClean) {
+        $script:btnResClean.IsEnabled = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $selCats -gt 0)
+        if ($script:resIsCleaning) {
+            $script:btnResClean.Content = "$([char]0x0110)ang d$([char]0x1ECD)n..."
+        } elseif ($selCats -gt 0) {
+            $script:btnResClean.Content = "D$([char]0x1ECD)n $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n ($fmtSel)"
+        } else {
+            $script:btnResClean.Content = "D$([char]0x1ECD)n m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n"
+        }
+    }
+    if ($script:btnResScan) {
+        $script:btnResScan.IsEnabled = (-not $script:resIsCleaning)
+        if ($script:resIsScanning) {
+            $script:btnResScan.Content = "D$([char]0x1EEB)ng qu$([char]0x00E9)t"
+            $script:btnResScan.Background = $script:brushResStopAmber
+        } else {
+            $script:btnResScan.Content = "Qu$([char]0x00E9)t ngay"
+            $script:btnResScan.Background = $script:brushResScanBlue
+        }
+    }
+    if ($script:btnResSelectSafe) { $script:btnResSelectSafe.IsEnabled = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resRows.Count -gt 0) }
+    if ($script:btnResClearSel)   { $script:btnResClearSel.IsEnabled   = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resRows.Count -gt 0) }
+    if ($script:btnResAddFolder)  { $script:btnResAddFolder.IsEnabled  = (-not $script:resIsScanning -and -not $script:resIsCleaning) }
+
+    if ($script:txtResSummary -and -not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resLastReport) {
+        $extraTag = if ($script:resExtraFolders.Count -gt 0) { " $([char]0x00B7) +$($script:resExtraFolders.Count) th$([char]0x01B0) m$([char]0x1EE5)c ngo$([char]0x00E0)i" } else { "" }
+        $script:txtResSummary.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $fmtTot ($totEmpty th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng) $([char]0x00B7) $([char]0x0110)$([char]0x00E3) ch$([char]0x1ECD)n $fmtSel$extraTag"
+    }
+    $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
+    if ($isTab4Visible -and $script:optSubTabIndex -eq 1 -and $txtSelectionCount) {
+        if ($script:resLastReport) {
+            $txtSelectionCount.Text = "$([char]0x0110)$([char]0x00E3) ch$([char]0x1ECD)n $selCats h$([char]0x1EA1)ng m$([char]0x1EE5)c ($fmtSel)"
+        } else {
+            $txtSelectionCount.Text = "T$([char]0x00E0)i nguy$([char]0x00EA)n s$([char]0x1EB5)n s$([char]0x00E0)ng"
+        }
+    }
+}
+
+function Apply-ResourcesFilter {
+    if ($script:isWindowClosing) { return }
+    $q = if ($script:txtResSearch -and -not [string]::IsNullOrWhiteSpace($script:txtResSearch.Text)) { $script:txtResSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    $visibleCount = 0
+    foreach ($r in $script:resRows) {
+        $c = $r.Category
+        $show = $true
+        if ($script:resFilterMode -ne "All") {
+            if ($script:resFilterMode -eq "Safe") { $show = ($c.RiskLevel -eq "Safe") }
+            else { $show = ($c.FilterGroup -eq $script:resFilterMode) }
+        }
+        if ($show -and $q.Length -gt 0) {
+            $hay = (([string]$c.Title) + " " + ([string]$c.Description)).ToLowerInvariant()
+            if (-not $hay.Contains($q)) { $show = $false }
+        }
+        $r.Row.Visibility = if ($show) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        if ($show) { $visibleCount++ }
+    }
+    if ($script:resEmptyState) {
+        if ($script:resIsScanning) {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "$([char]0x0110)ang qu$([char]0x00E9)t s$([char]0x00E2)u $([char]0x0111)a t$([char]0x1EA7)ng (5 t$([char]0x1EA7)ng)..." }
+            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "$([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch Temp, Cache tr$([char]0x00EC)nh duy$([char]0x1EC7)t/$([char]0x1EE9)ng d$([char]0x1EE5)ng/Dev, Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng (l$([char]0x00E1) ch$([char]0x1EAF)n 5 l$([char]0x1EDB)p) v$([char]0x00E0) Radar t$([char]0x1EC7)p l$([char]0x1EDB)n. B$([char]0x1EA1)n c$([char]0x00F3) th$([char]0x1EC3) b$([char]0x1EA5)m 'D$([char]0x1EEB)ng qu$([char]0x00E9)t' b$([char]0x1EA5)t c$([char]0x1EE9) l$([char]0x00FA)c n$([char]0x00E0)o." }
+        } elseif ($script:resRows.Count -eq 0) {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+        } elseif ($visibleCount -eq 0) {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Kh$([char]0x00F4)ng c$([char]0x00F3) h$([char]0x1EA1)ng m$([char]0x1EE5)c r$([char]0x00E1)c n$([char]0x00E0)o kh$([char]0x1EDB)p b$([char]0x1ED9) l$([char]0x1ECD)c" }
+            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Th$([char]0x1EED) chuy$([char]0x1EC3)n sang 'T$([char]0x1EA5)t c$([char]0x1EA3)' ho$([char]0x1EB7)c x$([char]0x00F3)a t$([char]0x1EEB) kh$([char]0x00F3)a t$([char]0x00EC)m ki$([char]0x1EBF)m." }
+        } else {
+            $script:resEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+    Update-ResourcesSummary
+}
+
+$script:resDetailCheckHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    if ($script:resSyncingChecks -or -not $s -or -not $s.Tag) { return }
+    $pair = $s.Tag
+    $rVis = $pair[0]
+    $dIt  = $pair[1]
+    if ($dIt) { $dIt.Selected = ($s.IsChecked -eq $true) }
+    if ($rVis -and $rVis.Category -and $rVis.Category.DetailItems) {
+        $anySel = $false
+        foreach ($x in $rVis.Category.DetailItems) { if ($x.Selected) { $anySel = $true; break } }
+        $script:resSyncingChecks = $true
+        try {
+            $rVis.Category.Selected = $anySel
+            if ($rVis.CheckBox) { $rVis.CheckBox.IsChecked = $anySel }
+        } finally { $script:resSyncingChecks = $false }
+    }
+    Update-ResourcesSummary
+}
+
+$script:resOpenDetailPathHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    $p = if ($s -and $s.Tag) { [string]$s.Tag } else { "" }
+    if ([string]::IsNullOrWhiteSpace($p)) { return }
+    try {
+        if ([System.IO.File]::Exists($p)) {
+            Start-Process "explorer.exe" -ArgumentList "/select,`"$p`""
+        } elseif ([System.IO.Directory]::Exists($p)) {
+            Start-Process "explorer.exe" -ArgumentList "`"$p`""
+        }
+    } catch {}
+}
+
+$script:resRowCheckHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    if ($script:resSyncingChecks -or -not $s -or -not $s.Tag) { return }
+    $rVis = $s.Tag
+    if ($rVis -and $rVis.Category) {
+        $isChk = ($s.IsChecked -eq $true)
+        $rVis.Category.Selected = $isChk
+        if ($rVis.Category.CleanMode -eq "ItemsList" -and $rVis.Category.DetailItems) {
+            foreach ($it in $rVis.Category.DetailItems) { $it.Selected = $isChk }
+            if ($rVis.DetailsHost -and $rVis.DetailsPopulated) {
+                $script:resSyncingChecks = $true
+                try {
+                    foreach ($child in $rVis.DetailsHost.Children) {
+                        if ($child -is [System.Windows.Controls.Grid] -and $child.Children.Count -gt 0 -and $child.Children[0] -is [System.Windows.Controls.CheckBox]) {
+                            $child.Children[0].IsChecked = $isChk
+                        }
+                    }
+                } finally { $script:resSyncingChecks = $false }
+            }
+        }
+    }
+    Update-ResourcesSummary
+}
+
+$script:resDetailsBtnHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    $rVis = if ($s -and $s.Tag) { $s.Tag } else { $null }
+    if (-not $rVis -or -not $rVis.DetailsContainer) { return }
+    $rVis.DetailsExpanded = (-not $rVis.DetailsExpanded)
+    if ($rVis.DetailsExpanded) {
+        if (-not $rVis.DetailsPopulated) {
+            [DuckUtil.ResourceCleanerEngine]::PopulateDetailsPanel($rVis, $null, $script:styleRowActionBtn, $script:resDetailCheckHandler, $script:resOpenDetailPathHandler)
+        }
+        $rVis.DetailsContainer.Visibility = [System.Windows.Visibility]::Visible
+        $rVis.DetailsBtn.Content = "Thu g$([char]0x1ECD)n"
+    } else {
+        $rVis.DetailsContainer.Visibility = [System.Windows.Visibility]::Collapsed
+        $rVis.DetailsBtn.Content = "Chi ti$([char]0x1EBF)t"
+    }
+}
+
+$script:resOpenBtnHandler = [System.Windows.RoutedEventHandler]{
+    param($s, $e)
+    $rVis = if ($s -and $s.Tag) { $s.Tag } else { $null }
+    if (-not $rVis -or -not $rVis.Category -or -not $rVis.Category.RootPaths -or $rVis.Category.RootPaths.Count -eq 0) { return }
+    $target = [string]$rVis.Category.RootPaths[0]
+    try {
+        if ([System.IO.Directory]::Exists($target)) {
+            Start-Process "explorer.exe" -ArgumentList "`"$target`""
+        }
+    } catch {}
+}
+
+function Ensure-ResourcesPollTimer {
+    if ($script:resPollTimer) { return }
+    $script:resPollTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $script:resPollTimer.Interval = [TimeSpan]::FromMilliseconds(40)
+    $script:resPollTimer.Add_Tick({
+        if ($script:isWindowClosing) {
+            $script:resPollTimer.Stop()
+            return
+        }
+
+        if ($script:resScanTask -and $script:resScanTask.IsCompleted) {
+            $tScan = $script:resScanTask
+            $scanVer = $script:resScanTaskVersion
+            $script:resScanTask = $null
+            $script:resIsScanning = $false
+            if ($scanVer -eq $script:resScanVersion -and $tScan.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tScan.Result) {
+                $rep = $tScan.Result
+                $script:resLastReport = $rep
+                Update-ResourcesDiskBar
+                $script:resRows.Clear()
+                if ($script:resRowsHost) { $script:resRowsHost.Children.Clear() }
+
+                $script:resSyncingChecks = $true
+                try {
+                    foreach ($cat in @($rep.Categories)) {
+                        $rv = [DuckUtil.ResourceCleanerEngine]::CreateResourceRowVisual($cat, $script:styleStartRow, $null, $script:styleRowActionBtn)
+                        $rv.CheckBox.Add_Checked($script:resRowCheckHandler)
+                        $rv.CheckBox.Add_Unchecked($script:resRowCheckHandler)
+                        $rv.DetailsBtn.Add_Click($script:resDetailsBtnHandler)
+                        $rv.OpenBtn.Add_Click($script:resOpenBtnHandler)
+                        [void]$script:resRows.Add($rv)
+                        if ($script:resRowsHost) { [void]$script:resRowsHost.Children.Add($rv.Row) }
+                    }
+                } finally { $script:resSyncingChecks = $false }
+
+                $fmtFound = [DuckUtil.ResourceCleanerEngine]::FormatBytes($rep.TotalBytes)
+                $tagCanc = if ($rep.WasCancelled) { " ($([char]0x0111)$([char]0x00E3) d$([char]0x1EEB)ng s$([char]0x1EDB)m)" } else { "" }
+                Log-Text "[OK] T$([char]0x00E0)i nguy$([char]0x00EA)n: Qu$([char]0x00E9)t xong 5 t$([char]0x1EA7)ng trong $($rep.ScanElapsedMs)ms $([char]0x2014) ph$([char]0x00E1)t hi$([char]0x1EC7)n $fmtFound & $($rep.TotalEmptyFolders) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng$tagCanc."
+            }
+            Apply-ResourcesFilter
+        }
+
+        if ($script:resCleanTask -and $script:resCleanTask.IsCompleted) {
+            $tClean = $script:resCleanTask
+            $script:resCleanTask = $null
+            $script:resIsCleaning = $false
+            if ($tClean.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tClean.Result) {
+                $cr = $tClean.Result
+                if ($cr.NeedsDeliveryOptCmdlet) {
+                    try {
+                        if (Get-Command "Delete-DeliveryOptimizationCache" -ErrorAction SilentlyContinue) {
+                            Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue | Out-Null
+                        }
+                    } catch {}
+                }
+                foreach ($lg in @($cr.PerCategoryLogs)) { Log-Text "   $lg" }
+                $fmtFreed = [DuckUtil.ResourceCleanerEngine]::FormatBytes($cr.FreedBytes)
+                $msg = "$([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng: $fmtFreed`n" +
+                       "$([char]0x2022) $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a: $($cr.DeletedFiles) t$([char]0x1EC7)p, $($cr.DeletedFolders) th$([char]0x01B0) m$([char]0x1EE5)c ($([char]0x0110)$([char]0x01B0)a v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c: $($cr.RecycledItems))`n" +
+                       "$([char]0x2022) B$([char]0x1ECF) qua an to$([char]0x00E0)n: $($cr.SkippedLockedCount) $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c Explorer/h$([char]0x1EC7) th$([char]0x1ED1)ng kh$([char]0x00F3)a, $($cr.SkippedCloudCount) t$([char]0x1EC7)p $([char]0x0111)$([char]0x00E1)m m$([char]0x00E2)y/symlink"
+                if ($cr.SkippedRecycleUnsupportedCount -gt 0) {
+                    $msg += ", $($cr.SkippedRecycleUnsupportedCount) m$([char]0x1EE5)c kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) Th$([char]0x00F9)ng r$([char]0x00E1)c (qu$([char]0x00E1) d$([char]0x00E0)i/$([char]0x1ED5) m$([char]0x1EA1)ng $([char]0x2014) kh$([char]0x00F4)ng t$([char]0x1EF1) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n)"
+                }
+                Log-Text "[OK] D$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n ho$([char]0x00E0)n t$([char]0x1EA5)t trong $($cr.ElapsedMs)ms: Gi$([char]0x1EA3)i ph$([char]0x00F3)ng $fmtFreed."
+                Update-ResourcesDiskBar
+                [void](Show-OwnedMessageBox -Text $msg -Caption "Ho$([char]0x00E0)n t$([char]0x1EA5)t d$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+                Start-ResourcesDeepScan
+            } else {
+                Update-ResourcesSummary
+            }
+        }
+
+        if (-not $script:resScanTask -and -not $script:resCleanTask) {
+            $script:resPollTimer.Stop()
+        }
+    })
+}
+
+function Start-ResourcesDeepScan {
+    if ($script:isWindowClosing -or $script:resIsCleaning) { return }
+    if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) { return }
+    if ($script:resScanCts) {
+        try { $script:resScanCts.Cancel() } catch {}
+        try { $script:resScanCts.Dispose() } catch {}
+    }
+    $script:resScanVersion++
+    $script:resScanTaskVersion = $script:resScanVersion
+    $script:resScanCts = [System.Threading.CancellationTokenSource]::new()
+    $script:resIsScanning = $true
+    $script:resRows.Clear()
+    if ($script:resRowsHost) { $script:resRowsHost.Children.Clear() }
+    if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang qu$([char]0x00E9)t s$([char]0x00E2)u 5 t$([char]0x1EA7)ng..." }
+    Apply-ResourcesFilter
+    $extraArr = $script:resExtraFolders.ToArray()
+    $script:resScanTask = [DuckUtil.ResourceCleanerEngine]::ScanAllTiersAsync($extraArr, $script:resScanCts.Token)
+    Ensure-ResourcesPollTimer
+    $script:resPollTimer.Start()
+}
+
+function Initialize-ResourcesTabIfNeeded {
+    if ($script:resInitialized -or $script:isWindowClosing) { return }
+    $script:resInitialized = $true
+    if ($script:resScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+        try { [DuckUtil.SmoothScrollController]::Attach($script:resScrollViewer) } catch {}
+    }
+    Set-ResourcesFilterChipVisuals
+    Update-ResourcesDiskBar
+    Update-ResourcesSummary
+}
+
+if ($script:btnResScan) {
+    $script:btnResScan.Add_Click({
+        if ($script:isWindowClosing -or $script:resIsCleaning) { return }
+        if ($script:resIsScanning) {
+            try { if ($script:resScanCts) { $script:resScanCts.Cancel() } } catch {}
+            if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng qu$([char]0x00E9)t..." }
+            return
+        }
+        Start-ResourcesDeepScan
+    })
+}
+
+if ($script:btnResClean) {
+    $script:btnResClean.Add_Click({
+        if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
+        $selectedCats = @($script:resRows | Where-Object { $_.Category.Selected -and -not $_.Category.SkippedBecauseRebootPending -and ($_.Category.ItemCount -gt 0 -or $_.Category.FolderCount -gt 0 -or $_.Category.TotalBytes -gt 0) } | ForEach-Object { $_.Category })
+        if ($selectedCats.Count -eq 0) { return }
+
+        $useRb = ($script:chkResRecycleTier45 -and $script:chkResRecycleTier45.IsChecked -eq $true)
+        $hasWarn = $false
+        $hasOneDrive = $false
+        $estBytes = 0L
+        foreach ($c in $selectedCats) {
+            if ($c.RiskLevel -ne "Safe") { $hasWarn = $true }
+            if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+                foreach ($it in $c.DetailItems) {
+                    if ($it.Selected) {
+                        $estBytes += [long]$it.SizeBytes
+                        if ($it.IsOneDrive) { $hasOneDrive = $true }
+                    }
+                }
+            } else {
+                $estBytes += [long]$c.TotalBytes
+            }
+        }
+
+        $fmtEst = [DuckUtil.ResourceCleanerEngine]::FormatBytes($estBytes)
+        $modeNote = if ($useRb) { "T$([char]0x1EA7)ng 1$([char]0x2013)3 x$([char]0x00F3)a th$([char]0x1EB3)ng tr$([char]0x01B0)$([char]0x1EDB)c, sau $([char]0x0111)$([char]0x00F3) $([char]0x0111)$([char]0x01B0)a T$([char]0x1EA7)ng 4$([char]0x2013)5 v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c an to$([char]0x00E0)n." } else { "C$([char]0x1EA2)NH B$([char]0x00C1)O: B$([char]0x1EA1)n $([char]0x0111)ang t$([char]0x1EAF)t ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Th$([char]0x00F9)ng r$([char]0x00E1)c $([char]0x2014) T$([char]0x1EA7)ng 4$([char]0x2013)5 s$([char]0x1EBD) b$([char]0x1ECB) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n!" }
+        $confirmText = "B$([char]0x1EA1)n s$([char]0x1EAF)p d$([char]0x1ECD)n $($selectedCats.Count) h$([char]0x1EA1)ng m$([char]0x1EE5)c ($([char]0x01B0)$([char]0x1EDB)c t$([char]0x00ED)nh gi$([char]0x1EA3)i ph$([char]0x00F3)ng ~$fmtEst).`n`n$([char]0x2022) $modeNote"
+        if ($hasWarn) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) bao g$([char]0x1ED3)m h$([char]0x1EA1)ng m$([char]0x1EE5)c m$([char]0x1EE9)c L$([char]0x01B0)u $([char]0x00FD) / N$([char]0x00E2)ng cao." }
+        if ($hasOneDrive) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) t$([char]0x1EC7)p n$([char]0x1EB1)m trong OneDrive $([char]0x2014) x$([char]0x00F3)a t$([char]0x1EC7)p n$([char]0x00E0)y s$([char]0x1EBD) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) x$([char]0x00F3)a tr$([char]0x00EA)n $([char]0x0111)$([char]0x00E1)m m$([char]0x00E2)y!" }
+        $confirmText += "`n`nTi$([char]0x1EBF)p t$([char]0x1EE5)c d$([char]0x1ECD)n?"
+
+        $ans = Show-OwnedMessageBox `
+            -Text $confirmText `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+
+        if ($script:resCleanCts) {
+            try { $script:resCleanCts.Dispose() } catch {}
+        }
+        $script:resCleanCts = [System.Threading.CancellationTokenSource]::new()
+        $script:resIsCleaning = $true
+        if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang d$([char]0x1ECD)n $($selectedCats.Count) h$([char]0x1EA1)ng m$([char]0x1EE5)c..." }
+        Update-ResourcesSummary
+        Log-Text "[*] B$([char]0x1EAF)t $([char]0x0111)$([char]0x1EA7)u d$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n ($($selectedCats.Count) h$([char]0x1EA1)ng m$([char]0x1EE5)c, $([char]0x01B0)$([char]0x1EDB)c t$([char]0x00ED)nh ~$fmtEst)..."
+        $allCats = [System.Collections.Generic.List[DuckUtil.ResourceCleanCategory]]::new()
+        foreach ($r in $script:resRows) { [void]$allCats.Add($r.Category) }
+        $script:resCleanTask = [DuckUtil.ResourceCleanerEngine]::CleanSelectedCategoriesAsync($allCats.ToArray(), $useRb, $script:resCleanCts.Token)
+        Ensure-ResourcesPollTimer
+        $script:resPollTimer.Start()
+    })
+}
+
+if ($script:btnResSelectSafe) {
+    $script:btnResSelectSafe.Add_Click({
+        if ($script:resIsScanning -or $script:resIsCleaning) { return }
+        $script:resSyncingChecks = $true
+        try {
+            foreach ($r in $script:resRows) {
+                $c = $r.Category
+                $want = ($c.RiskLevel -eq "Safe" -and -not $c.SkippedBecauseRebootPending -and ($c.ItemCount -gt 0 -or $c.TotalBytes -gt 0))
+                $c.Selected = $want
+                if ($r.CheckBox) { $r.CheckBox.IsChecked = $want }
+            }
+        } finally { $script:resSyncingChecks = $false }
+        Update-ResourcesSummary
+    })
+}
+
+if ($script:btnResClearSel) {
+    $script:btnResClearSel.Add_Click({
+        if ($script:resIsScanning -or $script:resIsCleaning) { return }
+        $script:resSyncingChecks = $true
+        try {
+            foreach ($r in $script:resRows) {
+                $r.Category.Selected = $false
+                if ($r.CheckBox) { $r.CheckBox.IsChecked = $false }
+            }
+        } finally { $script:resSyncingChecks = $false }
+        Update-ResourcesSummary
+    })
+}
+
+if ($script:btnResAddFolder) {
+    $script:btnResAddFolder.Add_Click({
+        if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
+        $fbd = [System.Windows.Forms.FolderBrowserDialog]::new()
+        $fbd.Description = "Ch$([char]0x1ECD)n th$([char]0x01B0) m$([char]0x1EE5)c ho$([char]0x1EB7)c $([char]0x1ED5) $([char]0x0111)$([char]0x0129)a ngo$([char]0x00E0)i $([char]0x0111)$([char]0x1EC3) qu$([char]0x00E9)t th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng $([char]0x0111)a t$([char]0x1EA7)ng & t$([char]0x1EC7)p 0-byte t$([char]0x1EA3)i h$([char]0x1ECF)ng"
+        $fbd.ShowNewFolderButton = $false
+        if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK -and -not [string]::IsNullOrWhiteSpace($fbd.SelectedPath)) {
+            $picked = [DuckUtil.ResourceCleanerEngine]::NormalizeCleanPath($fbd.SelectedPath)
+            if (-not $script:resExtraFolders.Contains($picked)) {
+                [void]$script:resExtraFolders.Add($picked)
+                Log-Text "[OK] T$([char]0x00E0)i nguy$([char]0x00EA)n: $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m th$([char]0x01B0) m$([char]0x1EE5)c qu$([char]0x00E9)t ngo$([char]0x00E0)i '$picked'."
+            }
+            Start-ResourcesDeepScan
+        }
+        try { $fbd.Dispose() } catch {}
+    })
+}
+
+if ($script:btnResFilterAll)     { $script:btnResFilterAll.Add_Click({ $script:resFilterMode = "All"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterSafe)    { $script:btnResFilterSafe.Add_Click({ $script:resFilterMode = "Safe"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterBrowser) { $script:btnResFilterBrowser.Add_Click({ $script:resFilterMode = "Browser"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterAppDev)  { $script:btnResFilterAppDev.Add_Click({ $script:resFilterMode = "AppDev"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterEmpty)   { $script:btnResFilterEmpty.Add_Click({ $script:resFilterMode = "Empty"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+if ($script:btnResFilterAdv)     { $script:btnResFilterAdv.Add_Click({ $script:resFilterMode = "Advanced"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
+
+if ($script:txtResSearch) {
+    $script:resSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $script:resSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(140)
+    $script:resSearchDebounceTimer.Add_Tick({
+        $script:resSearchDebounceTimer.Stop()
+        Apply-ResourcesFilter
+    })
+    $script:txtResSearch.Add_TextChanged({
+        $script:resSearchDebounceTimer.Stop()
+        $script:resSearchDebounceTimer.Start()
+    })
+}
+if ($script:btnClearResSearch) {
+    $script:btnClearResSearch.Add_Click({
+        if ($script:txtResSearch) { $script:txtResSearch.Text = "" }
+        Apply-ResourcesFilter
+    })
+}
+#endregion
 #endregion
 
 $window.ShowDialog() | Out-Null

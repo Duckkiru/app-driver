@@ -35,7 +35,8 @@ $dupMarkers = @(
     "public static class AppCatalogEngine",
     "public static class DeepUninstallerEngine",
     "public static class WindowsOptimizerEngine",
-    "public static class StartupManagerEngine"
+    "public static class StartupManagerEngine",
+    "public static class ResourceCleanerEngine"
 )
 $allSingle = $true
 $markerCounts = @()
@@ -69,7 +70,8 @@ $expectedTypes = @(
     "DuckUtil.AppCatalogEngine",
     "DuckUtil.DeepUninstallerEngine",
     "DuckUtil.WindowsOptimizerEngine",
-    "DuckUtil.StartupManagerEngine"
+    "DuckUtil.StartupManagerEngine",
+    "DuckUtil.ResourceCleanerEngine"
 )
 $missingTypes = @($expectedTypes | Where-Object { $null -eq ($_ -as [type]) })
 Assert-Check "AllCSharpEnginesLoaded" ($missingTypes.Count -eq 0) "PS=$($PSVersionTable.PSVersion) Missing=$($missingTypes -join ',')"
@@ -167,6 +169,138 @@ $synth.CanDelete = $true
 $synth.ImpactLevel = "Medium"
 $rowVis = [DuckUtil.StartupManagerEngine]::CreateRowVisual($synth, $null, $null, $null)
 Assert-Check "StartupCSharpRowFactory" ($null -ne $rowVis -and $null -ne $rowVis.Row -and $null -ne $rowVis.Toggle -and $rowVis.Toggle.IsChecked -eq $true) "C# WPF visual factory OK"
+
+# 7. ResourceCleanerEngine Dedup, Browser Guard & 0-Byte Whitelist
+$tempA = [System.IO.Path]::GetTempPath()
+$tempB = Join-Path $env:LOCALAPPDATA "Temp"
+$deduped = [DuckUtil.ResourceCleanerEngine]::DeduplicateNormalizedPaths(@($tempA, ($tempA.TrimEnd('\') + '\'), $tempB))
+$dedupOk = ($deduped.Count -ge 1 -and $deduped.Count -le 2)
+if ([DuckUtil.ResourceCleanerEngine]::NormalizeCleanPath($tempA) -ieq [DuckUtil.ResourceCleanerEngine]::NormalizeCleanPath($tempB)) {
+    $dedupOk = ($deduped.Count -eq 1)
+}
+$browserGuardOk = (
+    -not [DuckUtil.ResourceCleanerEngine]::IsSafeBrowserCacheLeaf("C:\Users\Test\AppData\Local\Google\Chrome\User Data\Default\Cookies") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsSafeBrowserCacheLeaf("C:\Users\Test\AppData\Local\Google\Chrome\User Data\Default\Login Data") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsSafeBrowserCacheLeaf("C:\Users\Test\AppData\Local\ZaloPC\123\ZaloReceivedFiles") -and
+    [DuckUtil.ResourceCleanerEngine]::IsSafeBrowserCacheLeaf("C:\Users\Test\AppData\Local\Google\Chrome\User Data\Default\Cache\Cache_Data")
+)
+$zeroGuardOk = (
+    [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName("broken.crdownload") -and
+    [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName("old.tmp") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName("__init__.py") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName(".gitkeep") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName("save.dat") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName("state.bin") -and
+    -not [DuckUtil.ResourceCleanerEngine]::IsDisposableZeroByteFileName("app.db")
+)
+Assert-Check "ResourceGuardsAndDedup" ($dedupOk -and $browserGuardOk -and $zeroGuardOk) "Dedup=$($deduped.Count) BrowserGuard=$browserGuardOk ZeroGuard=$zeroGuardOk"
+
+# 8. ResourceCleanerEngine 5-Layer Empty Tree Shield & Long-Path Win32 Delete
+$resRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("DuckResTest_" + [Guid]::NewGuid().ToString("N"))
+[void][System.IO.Directory]::CreateDirectory($resRoot)
+try {
+    $oldUtc = [DateTime]::UtcNow.AddDays(-3)
+    $nestedL1 = Join-Path $resRoot "NestedEmpty"
+    $nestedL2 = Join-Path $nestedL1 "L2"
+    $nestedL3 = Join-Path $nestedL2 "L3"
+    [void][System.IO.Directory]::CreateDirectory($nestedL3)
+    foreach ($d in @($nestedL3, $nestedL2, $nestedL1)) {
+        [System.IO.Directory]::SetCreationTimeUtc($d, $oldUtc)
+        [System.IO.Directory]::SetLastWriteTimeUtc($d, $oldUtc)
+    }
+
+    $recentEmpty = Join-Path $resRoot "RecentEmpty"
+    [void][System.IO.Directory]::CreateDirectory($recentEmpty)
+
+    $hasIni = Join-Path $resRoot "HasDesktopIni"
+    [void][System.IO.Directory]::CreateDirectory($hasIni)
+    $iniFile = Join-Path $hasIni "desktop.ini"
+    [System.IO.File]::WriteAllText($iniFile, "[.ShellClassInfo]`r`n")
+    [System.IO.File]::SetAttributes($iniFile, [System.IO.FileAttributes]::Hidden -bor [System.IO.FileAttributes]::System)
+    [System.IO.Directory]::SetCreationTimeUtc($hasIni, $oldUtc)
+    [System.IO.Directory]::SetLastWriteTimeUtc($hasIni, $oldUtc)
+
+    $hasFileDir = Join-Path $resRoot "HasFile"
+    $subEmpty = Join-Path $hasFileDir "SubEmpty"
+    [void][System.IO.Directory]::CreateDirectory($subEmpty)
+    [System.IO.File]::WriteAllText((Join-Path $hasFileDir "keep.txt"), "keep")
+    [System.IO.Directory]::SetCreationTimeUtc($subEmpty, $oldUtc)
+    [System.IO.Directory]::SetLastWriteTimeUtc($subEmpty, $oldUtc)
+
+    $hiddenDir = Join-Path $resRoot "HiddenEmpty"
+    [void][System.IO.Directory]::CreateDirectory($hiddenDir)
+    [System.IO.File]::SetAttributes($hiddenDir, [System.IO.FileAttributes]::Hidden)
+    [System.IO.Directory]::SetCreationTimeUtc($hiddenDir, $oldUtc)
+    [System.IO.Directory]::SetLastWriteTimeUtc($hiddenDir, $oldUtc)
+
+    $logsDir = Join-Path $resRoot "Logs"
+    [void][System.IO.Directory]::CreateDirectory($logsDir)
+    [System.IO.Directory]::SetCreationTimeUtc($logsDir, $oldUtc)
+    [System.IO.Directory]::SetLastWriteTimeUtc($logsDir, $oldUtc)
+
+    $foundEmpty = [System.Collections.Generic.List[DuckUtil.ResourceDetailItem]]::new()
+    $outCnt = 0
+    $cutoff = [DateTime]::UtcNow.AddHours(-24)
+    [void][DuckUtil.ResourceCleanerEngine]::InspectEmptyDirectorySubtree($resRoot, $cutoff, $true, $true, 0, [System.Threading.CancellationToken]::None, $foundEmpty, [ref]$outCnt)
+
+    $foundPaths = @($foundEmpty | ForEach-Object { $_.Path })
+    $nestedMatch = $foundEmpty | Where-Object { $_.Path -ieq $nestedL1 } | Select-Object -First 1
+    $subMatch    = $foundEmpty | Where-Object { $_.Path -ieq $subEmpty } | Select-Object -First 1
+    $shieldExact = (
+        $foundEmpty.Count -eq 2 -and
+        $null -ne $nestedMatch -and $nestedMatch.NestedCount -eq 3 -and
+        $null -ne $subMatch -and $subMatch.NestedCount -eq 1 -and
+        ($foundPaths -notcontains $recentEmpty) -and
+        ($foundPaths -notcontains $hasIni) -and
+        ($foundPaths -notcontains $hiddenDir) -and
+        ($foundPaths -notcontains $logsDir)
+    )
+    Assert-Check "ResourceEmptyTree5LayerShield" $shieldExact "Found=$($foundEmpty.Count) NestedCnt=$(if($nestedMatch){$nestedMatch.NestedCount}else{0})"
+
+    # Long-path Win32 deletion test (> 260 chars, critical for PS 5.1 / .NET 4.8)
+    $seg = "a" * 60
+    $longDir = $resRoot + "\" + $seg + "\" + $seg + "\" + $seg + "\" + $seg
+    $extLongDir = [DuckUtil.ResourceCleanerEngine]::ToExtendedPath($longDir)
+    [void][System.IO.Directory]::CreateDirectory($extLongDir)
+    $longFile = $longDir + "\long_test_file.tmp"
+    [System.IO.File]::WriteAllText([DuckUtil.ResourceCleanerEngine]::ToExtendedPath($longFile), "ok")
+    $skCloud = $false
+    $delLongOk = [DuckUtil.ResourceCleanerEngine]::DeleteFileWin32($longFile, [ref]$skCloud)
+    Assert-Check "ResourceWin32LongPathDelete" ($delLongOk -and -not $skCloud -and $longFile.Length -gt 260) "PathLen=$($longFile.Length) Deleted=$delLongOk"
+} finally {
+    try {
+        # Clean up long paths and hidden attributes cleanly via cmd /c rd /s /q on extended path
+        $extRoot = [DuckUtil.ResourceCleanerEngine]::ToExtendedPath($resRoot)
+        & cmd.exe /c "rd /s /q `"$extRoot`"" 2>$null | Out-Null
+    } catch {}
+}
+
+# 9. ResourceCleanerEngine Strict Recycle Guard + Zero-Lag Tab Open + C# Row Factory
+$failUnc = ""
+$uncBlocked = (-not [DuckUtil.ResourceCleanerEngine]::TryRecycleItemStrict("\\server\share\fake.tmp", [ref]$failUnc)) -and ($failUnc -eq "UncNotSupportedByRecycleBin")
+$failLong = ""
+$longBlocked = (-not [DuckUtil.ResourceCleanerEngine]::TryRecycleItemStrict(("C:\" + ("x" * 270) + ".tmp"), [ref]$failLong)) -and ($failLong -eq "PathTooLongForRecycleBin")
+
+$swResTab = [System.Diagnostics.Stopwatch]::StartNew()
+Initialize-ResourcesTabIfNeeded
+$swResTab.Stop()
+$zeroLagOk = ($swResTab.ElapsedMilliseconds -lt 100 -and -not $script:resIsScanning)
+
+$synthCat = [DuckUtil.ResourceCleanCategory]::new()
+$synthCat.Id = "t1_test"
+$synthCat.Tier = 1
+$synthCat.RiskLevel = "Safe"
+$synthCat.Title = "Test Category"
+$synthCat.Description = "Test Desc"
+$synthCat.TotalBytes = 10485760
+$synthCat.ItemCount = 42
+$synthCat.Selected = $true
+$synthCat.RootPaths = @($env:TEMP)
+$synthCat.DetailItems = [System.Collections.Generic.List[DuckUtil.ResourceDetailItem]]::new()
+$resRowVis = [DuckUtil.ResourceCleanerEngine]::CreateResourceRowVisual($synthCat, $null, $null, $null)
+$resRowOk = ($null -ne $resRowVis -and $null -ne $resRowVis.Row -and $null -ne $resRowVis.CheckBox -and $resRowVis.CheckBox.IsChecked -eq $true)
+
+Assert-Check "ResourceStrictRecycleAndZeroLag" ($uncBlocked -and $longBlocked -and $zeroLagOk -and $resRowOk) "UncBlocked=$uncBlocked LongBlocked=$longBlocked TabMs=$($swResTab.ElapsedMilliseconds) RowFactory=$resRowOk"
 
 try { Stop-AllBackgroundWork } catch {}
 Write-Output ("CORE_VERIFY_SUMMARY: PS={0} PASSED={1} FAILED={2}" -f $PSVersionTable.PSVersion, $script:pass, $script:fail)

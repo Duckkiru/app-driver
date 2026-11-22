@@ -34,12 +34,13 @@ irm https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1 | 
 ```text
 ├── App-Driver.ps1            # Bản phát hành đơn tệp 7-bit ASCII (biên dịch bởi Compile.ps1)
 ├── Compile.ps1               # Trình đóng gói AST 7-bit ASCII + kiểm tra cú pháp
-├── csharp/                   # 5 engine C# hiệu năng cao (biên dịch & cache DLL theo runtime)
+├── csharp/                   # 6 engine C# hiệu năng cao (biên dịch & cache DLL theo runtime)
 │   ├── SmoothScrollController.cs
 │   ├── AppCatalogEngine.cs
 │   ├── DeepUninstallerEngine.cs
 │   ├── WindowsOptimizerEngine.cs
-│   └── StartupManagerEngine.cs
+│   ├── StartupManagerEngine.cs
+│   └── ResourceCleanerEngine.cs
 ├── scripts/                  # Bootstrap (start.ps1) và tầng điều phối giao diện (main.ps1)
 ├── functions/                # Nghiệp vụ PowerShell (private / public)
 ├── config/                   # Danh mục ứng dụng (apps.json) và tinh chỉnh (tweaks.json)
