@@ -20662,11 +20662,18 @@ namespace DuckUtil {
         private const uint OPEN_EXISTING = 3;
         private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
         private const uint IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x00560000;
+        private const uint StorageDeviceProperty = 0;
         private const uint StorageDeviceSeekPenaltyProperty = 7;
         private const uint PropertyStandardQuery = 0;
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS sps);
+
+        [DllImport("powrprof.dll", SetLastError = true)]
+        private static extern int PowerDeterminePlatformRoleEx(uint Version);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetPhysicallyInstalledSystemMemory(out ulong totalMemoryInKilobytes);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
@@ -20695,7 +20702,9 @@ namespace DuckUtil {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
-        private static bool DetectSystemDriveIsSsd() {
+        private static string DetectSystemDriveType(out bool isSsd) {
+            isSsd = true;
+            bool isNvme = false;
             IntPtr hVol = INVALID_HANDLE_VALUE;
             IntPtr hDisk = INVALID_HANDLE_VALUE;
             try {
@@ -20721,33 +20730,52 @@ namespace DuckUtil {
 
                 string diskPath = "\\\\.\\PhysicalDrive" + diskNum.ToString(CultureInfo.InvariantCulture);
                 hDisk = CreateFileW(diskPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-                if (hDisk == INVALID_HANDLE_VALUE) return true;
-
-                STORAGE_PROPERTY_QUERY q = new STORAGE_PROPERTY_QUERY();
-                q.PropertyId = StorageDeviceSeekPenaltyProperty;
-                q.QueryType = PropertyStandardQuery;
+                if (hDisk == INVALID_HANDLE_VALUE) return "SSD";
 
                 int qSize = Marshal.SizeOf(typeof(STORAGE_PROPERTY_QUERY));
-                int dSize = Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
                 IntPtr qBuf = Marshal.AllocHGlobal(qSize);
-                IntPtr dBuf = Marshal.AllocHGlobal(dSize);
                 try {
+                    STORAGE_PROPERTY_QUERY qDev = new STORAGE_PROPERTY_QUERY();
+                    qDev.PropertyId = StorageDeviceProperty;
+                    qDev.QueryType = PropertyStandardQuery;
+                    Marshal.StructureToPtr(qDev, qBuf, false);
+                    int devBufSize = 256;
+                    IntPtr devBuf = Marshal.AllocHGlobal(devBufSize);
+                    try {
+                        uint retDev;
+                        if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, devBuf, (uint)devBufSize, out retDev, IntPtr.Zero) && retDev >= 32) {
+                            int busType = Marshal.ReadInt32(devBuf, 28);
+                            if (busType == 17) isNvme = true;
+                        }
+                    } finally {
+                        Marshal.FreeHGlobal(devBuf);
+                    }
+
+                    STORAGE_PROPERTY_QUERY q = new STORAGE_PROPERTY_QUERY();
+                    q.PropertyId = StorageDeviceSeekPenaltyProperty;
+                    q.QueryType = PropertyStandardQuery;
                     Marshal.StructureToPtr(q, qBuf, false);
-                    uint retBytes;
-                    if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, dBuf, (uint)dSize, out retBytes, IntPtr.Zero)) {
-                        DEVICE_SEEK_PENALTY_DESCRIPTOR desc = (DEVICE_SEEK_PENALTY_DESCRIPTOR)Marshal.PtrToStructure(dBuf, typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
-                        return !desc.IncursSeekPenalty;
+                    int dSize = Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
+                    IntPtr dBuf = Marshal.AllocHGlobal(dSize);
+                    try {
+                        uint retBytes;
+                        if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, dBuf, (uint)dSize, out retBytes, IntPtr.Zero)) {
+                            DEVICE_SEEK_PENALTY_DESCRIPTOR desc = (DEVICE_SEEK_PENALTY_DESCRIPTOR)Marshal.PtrToStructure(dBuf, typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
+                            isSsd = !desc.IncursSeekPenalty;
+                        }
+                    } finally {
+                        Marshal.FreeHGlobal(dBuf);
                     }
                 } finally {
                     Marshal.FreeHGlobal(qBuf);
-                    Marshal.FreeHGlobal(dBuf);
                 }
             } catch {
             } finally {
                 if (hDisk != INVALID_HANDLE_VALUE) { try { CloseHandle(hDisk); } catch {} }
                 if (hVol != INVALID_HANDLE_VALUE) { try { CloseHandle(hVol); } catch {} }
             }
-            return true;
+            if (isNvme) { isSsd = true; return "NVMe SSD"; }
+            return isSsd ? "SSD" : "HDD";
         }
 
         public static HardwareProfile DetectHardwareProfile() {
@@ -20760,21 +20788,47 @@ namespace DuckUtil {
             hp.IsWindows11 = false;
             hp.IsSystemDriveSsd = true;
 
+            bool roleResolved = false;
             try {
-                SYSTEM_POWER_STATUS sps;
-                if (GetSystemPowerStatus(out sps)) {
-                    hp.IsLaptop = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
+                int role = PowerDeterminePlatformRoleEx(2);
+                if (role == 2 || role == 8) {
+                    hp.IsLaptop = true;
+                    roleResolved = true;
+                } else if (role == 1 || role == 3 || role == 4 || role == 5 || role == 6 || role == 7) {
+                    hp.IsLaptop = false;
+                    roleResolved = true;
                 }
             } catch {}
 
+            if (!roleResolved) {
+                try {
+                    SYSTEM_POWER_STATUS sps;
+                    if (GetSystemPowerStatus(out sps)) {
+                        hp.IsLaptop = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
+                    }
+                } catch {}
+            }
+
+            bool ramResolved = false;
             try {
-                MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
-                mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-                if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
-                    double gb = (double)mem.ullTotalPhys / 1073741824.0;
+                ulong installedKb;
+                if (GetPhysicallyInstalledSystemMemory(out installedKb) && installedKb > 0) {
+                    double gb = (double)installedKb / 1048576.0;
                     hp.TotalRamGb = Math.Max(1, (int)Math.Round(gb));
+                    ramResolved = true;
                 }
             } catch {}
+
+            if (!ramResolved) {
+                try {
+                    MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                    mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                    if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                        double gb = (double)mem.ullTotalPhys / 1073741824.0;
+                        hp.TotalRamGb = Math.Max(1, (int)Math.Ceiling(gb));
+                    }
+                } catch {}
+            }
 
             try {
                 using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
@@ -20801,10 +20855,11 @@ namespace DuckUtil {
             } catch {}
 
             hp.IsWindows11 = (hp.OsBuild >= 22000);
-            hp.IsSystemDriveSsd = DetectSystemDriveIsSsd();
+            bool isSsdDrive;
+            string driveType = DetectSystemDriveType(out isSsdDrive);
+            hp.IsSystemDriveSsd = isSsdDrive;
 
             string devType = hp.IsLaptop ? "Laptop" : "PC";
-            string driveType = hp.IsSystemDriveSsd ? "SSD" : "HDD";
             string osTag = (hp.IsWindows11 ? "Win 11" : "Win 10") + (string.IsNullOrEmpty(hp.DisplayVersion) ? "" : (" " + hp.DisplayVersion));
             hp.SummaryText = devType + " | " + hp.TotalRamGb.ToString(CultureInfo.InvariantCulture) + " GB RAM | " + driveType + " | " + osTag;
             return hp;
@@ -21405,11 +21460,16 @@ namespace DuckUtil {
                 }
                 if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
                     try {
-                        MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
-                        mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-                        if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
-                            ulong kb = mem.ullTotalPhys / 1024UL;
-                            targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                        ulong installedKb;
+                        if (GetPhysicallyInstalledSystemMemory(out installedKb) && installedKb > 0) {
+                            targetVal = installedKb.ToString(CultureInfo.InvariantCulture);
+                        } else {
+                            MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                            mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                            if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                                ulong kb = mem.ullTotalPhys / 1024UL;
+                                targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                            }
                         }
                     } catch {}
                 }
@@ -34101,11 +34161,18 @@ namespace DuckUtil {
         private const uint OPEN_EXISTING = 3;
         private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
         private const uint IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS = 0x00560000;
+        private const uint StorageDeviceProperty = 0;
         private const uint StorageDeviceSeekPenaltyProperty = 7;
         private const uint PropertyStandardQuery = 0;
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS sps);
+
+        [DllImport("powrprof.dll", SetLastError = true)]
+        private static extern int PowerDeterminePlatformRoleEx(uint Version);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetPhysicallyInstalledSystemMemory(out ulong totalMemoryInKilobytes);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
@@ -34134,7 +34201,9 @@ namespace DuckUtil {
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
-        private static bool DetectSystemDriveIsSsd() {
+        private static string DetectSystemDriveType(out bool isSsd) {
+            isSsd = true;
+            bool isNvme = false;
             IntPtr hVol = INVALID_HANDLE_VALUE;
             IntPtr hDisk = INVALID_HANDLE_VALUE;
             try {
@@ -34160,33 +34229,52 @@ namespace DuckUtil {
 
                 string diskPath = "\\\\.\\PhysicalDrive" + diskNum.ToString(CultureInfo.InvariantCulture);
                 hDisk = CreateFileW(diskPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-                if (hDisk == INVALID_HANDLE_VALUE) return true;
-
-                STORAGE_PROPERTY_QUERY q = new STORAGE_PROPERTY_QUERY();
-                q.PropertyId = StorageDeviceSeekPenaltyProperty;
-                q.QueryType = PropertyStandardQuery;
+                if (hDisk == INVALID_HANDLE_VALUE) return "SSD";
 
                 int qSize = Marshal.SizeOf(typeof(STORAGE_PROPERTY_QUERY));
-                int dSize = Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
                 IntPtr qBuf = Marshal.AllocHGlobal(qSize);
-                IntPtr dBuf = Marshal.AllocHGlobal(dSize);
                 try {
+                    STORAGE_PROPERTY_QUERY qDev = new STORAGE_PROPERTY_QUERY();
+                    qDev.PropertyId = StorageDeviceProperty;
+                    qDev.QueryType = PropertyStandardQuery;
+                    Marshal.StructureToPtr(qDev, qBuf, false);
+                    int devBufSize = 256;
+                    IntPtr devBuf = Marshal.AllocHGlobal(devBufSize);
+                    try {
+                        uint retDev;
+                        if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, devBuf, (uint)devBufSize, out retDev, IntPtr.Zero) && retDev >= 32) {
+                            int busType = Marshal.ReadInt32(devBuf, 28);
+                            if (busType == 17) isNvme = true;
+                        }
+                    } finally {
+                        Marshal.FreeHGlobal(devBuf);
+                    }
+
+                    STORAGE_PROPERTY_QUERY q = new STORAGE_PROPERTY_QUERY();
+                    q.PropertyId = StorageDeviceSeekPenaltyProperty;
+                    q.QueryType = PropertyStandardQuery;
                     Marshal.StructureToPtr(q, qBuf, false);
-                    uint retBytes;
-                    if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, dBuf, (uint)dSize, out retBytes, IntPtr.Zero)) {
-                        DEVICE_SEEK_PENALTY_DESCRIPTOR desc = (DEVICE_SEEK_PENALTY_DESCRIPTOR)Marshal.PtrToStructure(dBuf, typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
-                        return !desc.IncursSeekPenalty;
+                    int dSize = Marshal.SizeOf(typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
+                    IntPtr dBuf = Marshal.AllocHGlobal(dSize);
+                    try {
+                        uint retBytes;
+                        if (DeviceIoControl(hDisk, IOCTL_STORAGE_QUERY_PROPERTY, qBuf, (uint)qSize, dBuf, (uint)dSize, out retBytes, IntPtr.Zero)) {
+                            DEVICE_SEEK_PENALTY_DESCRIPTOR desc = (DEVICE_SEEK_PENALTY_DESCRIPTOR)Marshal.PtrToStructure(dBuf, typeof(DEVICE_SEEK_PENALTY_DESCRIPTOR));
+                            isSsd = !desc.IncursSeekPenalty;
+                        }
+                    } finally {
+                        Marshal.FreeHGlobal(dBuf);
                     }
                 } finally {
                     Marshal.FreeHGlobal(qBuf);
-                    Marshal.FreeHGlobal(dBuf);
                 }
             } catch {
             } finally {
                 if (hDisk != INVALID_HANDLE_VALUE) { try { CloseHandle(hDisk); } catch {} }
                 if (hVol != INVALID_HANDLE_VALUE) { try { CloseHandle(hVol); } catch {} }
             }
-            return true;
+            if (isNvme) { isSsd = true; return "NVMe SSD"; }
+            return isSsd ? "SSD" : "HDD";
         }
 
         public static HardwareProfile DetectHardwareProfile() {
@@ -34199,21 +34287,47 @@ namespace DuckUtil {
             hp.IsWindows11 = false;
             hp.IsSystemDriveSsd = true;
 
+            bool roleResolved = false;
             try {
-                SYSTEM_POWER_STATUS sps;
-                if (GetSystemPowerStatus(out sps)) {
-                    hp.IsLaptop = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
+                int role = PowerDeterminePlatformRoleEx(2);
+                if (role == 2 || role == 8) {
+                    hp.IsLaptop = true;
+                    roleResolved = true;
+                } else if (role == 1 || role == 3 || role == 4 || role == 5 || role == 6 || role == 7) {
+                    hp.IsLaptop = false;
+                    roleResolved = true;
                 }
             } catch {}
 
+            if (!roleResolved) {
+                try {
+                    SYSTEM_POWER_STATUS sps;
+                    if (GetSystemPowerStatus(out sps)) {
+                        hp.IsLaptop = (sps.BatteryFlag != 128 && sps.BatteryFlag != 255);
+                    }
+                } catch {}
+            }
+
+            bool ramResolved = false;
             try {
-                MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
-                mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-                if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
-                    double gb = (double)mem.ullTotalPhys / 1073741824.0;
+                ulong installedKb;
+                if (GetPhysicallyInstalledSystemMemory(out installedKb) && installedKb > 0) {
+                    double gb = (double)installedKb / 1048576.0;
                     hp.TotalRamGb = Math.Max(1, (int)Math.Round(gb));
+                    ramResolved = true;
                 }
             } catch {}
+
+            if (!ramResolved) {
+                try {
+                    MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                    mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                    if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                        double gb = (double)mem.ullTotalPhys / 1073741824.0;
+                        hp.TotalRamGb = Math.Max(1, (int)Math.Ceiling(gb));
+                    }
+                } catch {}
+            }
 
             try {
                 using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
@@ -34240,10 +34354,11 @@ namespace DuckUtil {
             } catch {}
 
             hp.IsWindows11 = (hp.OsBuild >= 22000);
-            hp.IsSystemDriveSsd = DetectSystemDriveIsSsd();
+            bool isSsdDrive;
+            string driveType = DetectSystemDriveType(out isSsdDrive);
+            hp.IsSystemDriveSsd = isSsdDrive;
 
             string devType = hp.IsLaptop ? "Laptop" : "PC";
-            string driveType = hp.IsSystemDriveSsd ? "SSD" : "HDD";
             string osTag = (hp.IsWindows11 ? "Win 11" : "Win 10") + (string.IsNullOrEmpty(hp.DisplayVersion) ? "" : (" " + hp.DisplayVersion));
             hp.SummaryText = devType + " | " + hp.TotalRamGb.ToString(CultureInfo.InvariantCulture) + " GB RAM | " + driveType + " | " + osTag;
             return hp;
@@ -34844,11 +34959,16 @@ namespace DuckUtil {
                 }
                 if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
                     try {
-                        MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
-                        mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-                        if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
-                            ulong kb = mem.ullTotalPhys / 1024UL;
-                            targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                        ulong installedKb;
+                        if (GetPhysicallyInstalledSystemMemory(out installedKb) && installedKb > 0) {
+                            targetVal = installedKb.ToString(CultureInfo.InvariantCulture);
+                        } else {
+                            MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                            mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                            if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                                ulong kb = mem.ullTotalPhys / 1024UL;
+                                targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                            }
                         }
                     } catch {}
                 }
