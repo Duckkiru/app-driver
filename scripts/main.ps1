@@ -1,4 +1,4 @@
-Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+﻿Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
 if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
     Start-WingetBackgroundPreScan
 }
@@ -30,6 +30,7 @@ $txtSelectionCount     = $window.FindName("txtSelectionCount")
 $cardsContainer    = $window.FindName("CardsContainer")
 
 $script:brushNavActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x38, 0xBD, 0xF8)); $script:brushNavActive.Freeze()
+$script:brushSelActive   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x34, 0xD3, 0x99)); $script:brushSelActive.Freeze()
 $script:brushNavInactive = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xCB, 0xD5, 0xE1)); $script:brushNavInactive.Freeze()
 $script:brushTransparent = [System.Windows.Media.Brushes]::Transparent
 
@@ -1429,6 +1430,7 @@ function Set-ActiveTab {
             $sel0 = 0
             foreach ($cb in $allCheckBoxes) { if ($cb.IsChecked -eq $true) { $sel0++ } }
             $txtSelectionCount.Text = "$sel0 app được chọn"
+            $txtSelectionCount.Foreground = if ($sel0 -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
         }
     } elseif ($index -eq 1) {
         if (-not $script:uninstallerLoadedOnce -or $script:uninstallerStale) {
@@ -2057,6 +2059,7 @@ function Update-UninstallerSelectionButtons {
     }
     if ($txtSelectionCount -and $script:tabPages -and $script:tabPages.Count -gt 1 -and $script:tabPages[1] -and $script:tabPages[1].Visibility -eq [System.Windows.Visibility]::Visible) {
         $txtSelectionCount.Text = "$Count app được chọn"
+        $txtSelectionCount.Foreground = if ($Count -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
     }
 }
 
@@ -3419,6 +3422,7 @@ function Update-SelectionCount {
     }
     if ($txtSelectionCount -and (-not $script:tabPages -or $script:tabPages.Count -eq 0 -or -not $script:tabPages[0] -or $script:tabPages[0].Visibility -eq [System.Windows.Visibility]::Visible)) {
         $txtSelectionCount.Text = "$selectedCount app được chọn"
+        $txtSelectionCount.Foreground = if ($selectedCount -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
     }
     if ($script:hasCompletedAppScan -and (Get-Command "Schedule-AutoAppRefresh" -ErrorAction SilentlyContinue)) {
         Schedule-AutoAppRefresh -DelaySeconds 12 -FollowUpPasses 1 -Reason "selection"
@@ -8293,7 +8297,9 @@ function Update-OptimizerSelectionCount {
             if ($isCh) { $cbCnt++ }
         }
     }
-    $txtSelectionCount.Text = "$($cbCnt + $tgChanged) thay đổi chờ lưu"
+    $totalPending = $cbCnt + $tgChanged
+    $txtSelectionCount.Text = "$totalPending thay đổi chờ lưu"
+    $txtSelectionCount.Foreground = if ($totalPending -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
 }
 
 function Set-OptimizerEntryVisualState {
