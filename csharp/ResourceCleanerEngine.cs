@@ -1079,7 +1079,7 @@ namespace DuckUtil {
                 NestedCount = nestedCount,
                 IsDirectory = true,
                 IsOneDrive = IsPathInsideOneDrive(path),
-                Selected = true,
+                Selected = false,
                 Kind = "EmptyTree",
                 Note = note
             };
@@ -1130,7 +1130,7 @@ namespace DuckUtil {
                                         NestedCount = 1,
                                         IsDirectory = false,
                                         IsOneDrive = IsPathInsideOneDrive(full),
-                                        Selected = true,
+                                        Selected = false,
                                         Kind = "ZeroByte",
                                         Note = "0 byte (t\u1EA3i h\u1ECFng / t\u1EA1m > 24h)"
                                     });
@@ -1146,7 +1146,7 @@ namespace DuckUtil {
                                 NestedCount = 1,
                                 IsDirectory = false,
                                 IsOneDrive = inOd,
-                                Selected = true,
+                                Selected = false,
                                 Kind = "LargeFile",
                                 Note = inOd ? "OneDrive (Cloud) \u2022 X\u00F3a s\u1EBD \u0111\u1ED3ng b\u1ED9 l\u00EAn m\u00E2y" : FormatBytes(sz)
                             });
@@ -1172,7 +1172,7 @@ namespace DuckUtil {
                 Id = "t1_user_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "T\u1EC7p t\u1EA1m ng\u01B0\u1EDDi d\u00F9ng",
                 Description = "T\u1EC7p t\u1EA1m \u1EE9ng d\u1EE5ng v\u00E0 b\u1ED9 c\u00E0i trong th\u01B0 m\u1EE5c Temp.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catUserTemp, new[] { Path.GetTempPath(), Path.Combine(localApp, "Temp") }, null, false, ct);
             list.Add(catUserTemp);
@@ -1181,7 +1181,7 @@ namespace DuckUtil {
                 Id = "t1_win_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "T\u1EC7p t\u1EA1m Windows",
                 Description = "T\u1EC7p t\u1EA1m h\u1EC7 th\u1ED1ng trong C:\\Windows\\Temp.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catWinTemp, new[] { Path.Combine(winDir, "Temp") }, null, false, ct);
             list.Add(catWinTemp);
@@ -1190,7 +1190,7 @@ namespace DuckUtil {
                 Id = "t1_wer_dumps", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "B\u00E1o c\u00E1o l\u1ED7i & Crash Dumps",
                 Description = "Nh\u1EADt k\u00FD l\u1ED7i h\u1EC7 th\u1ED1ng, CrashDumps v\u00E0 Minidump c\u0169.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catWer, new[] {
                 Path.Combine(localApp, @"Microsoft\Windows\WER"),
@@ -1204,7 +1204,7 @@ namespace DuckUtil {
                 Id = "t1_thumbcache", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EA3nh thu nh\u1ECF",
                 Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m thumbnail c\u1EE7a Windows Explorer.",
-                CleanMode = "FilePattern", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "FilePattern", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catThumb, new[] { Path.Combine(localApp, @"Microsoft\Windows\Explorer") }, new[] { "thumbcache_*.db" }, true, ct);
             list.Add(catThumb);
@@ -1215,7 +1215,7 @@ namespace DuckUtil {
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Windows Update",
                 Description = "T\u1EC7p c\u00E0i \u0111\u1EB7t c\u0169 c\u1EE7a Windows Update.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false,
-                DefaultSelected = !wuRebootPending, Selected = !wuRebootPending,
+                DefaultSelected = false, Selected = false,
                 SkippedBecauseRebootPending = wuRebootPending
             };
             if (wuRebootPending) {
@@ -1231,7 +1231,7 @@ namespace DuckUtil {
                 Id = "t1_delivery_opt", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Delivery Optimization",
                 Description = "T\u1EC7p ph\u00E2n ph\u1ED1i c\u1EADp nh\u1EADt Windows v\u00E0 Microsoft Store.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true,
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false,
                 IsDeliveryOptimization = true
             };
             PopulateDirectoryCategory(catDo, new[] { Path.Combine(winDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache") }, null, false, ct);
@@ -1241,7 +1241,7 @@ namespace DuckUtil {
                 Id = "t1_driver_installers", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "B\u1ED9 c\u00E0i Driver c\u0169 (NVIDIA / AMD)",
                 Description = "T\u1EC7p gi\u1EA3i n\u00E9n c\u00E0i \u0111\u1EB7t c\u0169 trong NVIDIA Downloader, C:\\NVIDIA v\u00E0 C:\\AMD (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver \u0111ang ch\u1EA1y).",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catDrvInst, CollectDriverInstallerDirs(), null, false, ct);
             list.Add(catDrvInst);
@@ -1279,7 +1279,7 @@ namespace DuckUtil {
                 Id = "t2_chromium_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Chrome / Edge / Brave / Arc / C\u1ED1c C\u1ED1c",
                 Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn m\u1EADt kh\u1EA9u, cookie v\u00E0 d\u1EA5u trang.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catChromium, CollectChromiumCacheDirs(), null, false, ct);
             list.Add(catChromium);
@@ -1288,7 +1288,7 @@ namespace DuckUtil {
                 Id = "t2_opera_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Opera / Opera GX",
                 Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn phi\u00EAn \u0111\u0103ng nh\u1EADp.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catOpera, CollectOperaCacheDirs(), null, false, ct);
             list.Add(catOpera);
@@ -1297,7 +1297,7 @@ namespace DuckUtil {
                 Id = "t2_gecko_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Firefox / Zen / Floorp",
                 Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn h\u1ED3 s\u01A1 v\u00E0 \u0111\u0103ng nh\u1EADp.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catGecko, CollectGeckoCacheDirs(), null, false, ct);
             list.Add(catGecko);
@@ -1307,7 +1307,7 @@ namespace DuckUtil {
                 Id = "t3_electron_chat", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EE9ng d\u1EE5ng (Discord / VS Code / Zalo / Teams / Telegram)",
                 Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA1m \u2014 gi\u1EEF nguy\u00EAn tin nh\u1EAFn v\u00E0 t\u1EC7p \u0111\u00E3 t\u1EA3i.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catElectron, CollectElectronAndChatCacheDirs(), null, false, ct);
             list.Add(catElectron);
@@ -1316,7 +1316,7 @@ namespace DuckUtil {
                 Id = "t3_game_launchers", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Game Launcher (Steam / Epic / Riot / Battle.net)",
                 Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m tr\u00ECnh kh\u1EDFi ch\u1EA1y \u2014 kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng d\u1EEF li\u1EC7u game.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catGames, CollectGameLauncherCacheDirs(), null, false, ct);
             list.Add(catGames);
@@ -1325,7 +1325,7 @@ namespace DuckUtil {
                 Id = "t3_media_editors", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m d\u1EF1ng phim (CapCut / Adobe Media Cache)",
                 Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA1m \u2014 kh\u00F4ng x\u00F3a d\u1EF1 \u00E1n hay video g\u1ED1c.",
-                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catMediaEd, CollectMediaEditorCacheDirs(), null, false, ct);
             list.Add(catMediaEd);
