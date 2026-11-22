@@ -1,4 +1,4 @@
-function Get-OptimizerBackupDirectory {
+﻿function Get-OptimizerBackupDirectory {
     return (Join-Path $env:LOCALAPPDATA "AppDriver\OptimizerBackups")
 }
 
@@ -92,10 +92,17 @@ function New-OptimizerRestorePoint {
             }
             Set-ItemProperty -LiteralPath $freqPath -Name "SystemRestorePointCreationFrequency" -Value 0 -Type DWord -ErrorAction SilentlyContinue
         }
-        try { Enable-ComputerRestore -Drive ($env:SystemDrive + "\") -ErrorAction SilentlyContinue } catch {}
-        Checkpoint-Computer -Description ("App-Driver Optimizer " + (Get-Date -Format "yyyy-MM-dd HH:mm")) -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
-        Log-Text "[OK] Đã tạo điểm khôi phục hệ thống (System Restore Point)."
-        return $true
+        $desc = "App-Driver Optimizer " + (Get-Date -Format "yyyy-MM-dd HH:mm")
+        $sysDrv = ($env:SystemDrive + "\").Replace("'", "''")
+        $psCmd = "try { Enable-ComputerRestore -Drive '$sysDrv' -ErrorAction SilentlyContinue } catch {}; Checkpoint-Computer -Description '$desc' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop"
+        $b64Cmd = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($psCmd))
+        $code = Run-CliStream "powershell.exe" "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $b64Cmd" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 90 -IdleTimeoutSeconds 60
+        if ($code -eq 0) {
+            Log-Text "[OK] Đã tạo điểm khôi phục hệ thống (System Restore Point)."
+            return $true
+        }
+        Log-Text "[WARN] Không thể tạo Restore Point (mã thoát $code - có thể System Protection đang tắt hoặc mới tạo gần đây)."
+        return $false
     } catch {
         Log-Text "[WARN] Không thể tạo Restore Point: $($_.Exception.Message)"
         return $false
@@ -164,7 +171,7 @@ function Save-OptimizerGuardSnapshot {
     if (-not [System.IO.Directory]::Exists($dir)) {
         [System.IO.Directory]::CreateDirectory($dir) | Out-Null
     }
-    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $stamp = (Get-Date -Format "yyyyMMdd_HHmmss_fff") + "_" + ([Guid]::NewGuid().ToString("N").Substring(0, 6))
     $snapPath = Join-Path $dir "snapshot_$stamp.json"
 
     $payload = [PSCustomObject]@{
@@ -228,10 +235,12 @@ function Restore-OptimizerGuardSnapshot {
         }
 
         if ($obj.Tasks) {
-            foreach ($tk in @($obj.Tasks)) {
-                if (-not [string]::IsNullOrWhiteSpace([string]$tk)) {
-                    try { & schtasks.exe /Change /TN "$tk" /Enable 2>$null | Out-Null } catch {}
-                }
+            $tkArr = @($obj.Tasks | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+            if ($tkArr.Count -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+                $tkTask = [DuckUtil.WindowsOptimizerEngine]::SetScheduledTasksEnabledAsync([string[]]$tkArr, $true)
+                if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                    [void](Wait-TaskNonBlocking -Task $tkTask -TimeoutSeconds 20 -CancelCheck { [bool]$script:cancelRequested })
+                } else { [void]$tkTask.Wait(20000) }
             }
         }
 
@@ -513,11 +522,21 @@ function Restore-AllOptimizerGuardSnapshots {
     foreach ($v in $earliestSvc.Values) { [void]$svcArr.Add($v) }
     $svcRestored = if ($svcArr.Count -gt 0) { [DuckUtil.WindowsOptimizerEngine]::RestoreServiceSnapshots($svcArr.ToArray()) } else { 0 }
 
-    foreach ($tk in $allTasks) {
-        try { & schtasks.exe /Change /TN "$tk" /Enable 2>$null | Out-Null } catch {}
+    if ($allTasks.Count -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $tkTaskAll = [DuckUtil.WindowsOptimizerEngine]::SetScheduledTasksEnabledAsync([string[]]$allTasks.ToArray(), $true)
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $tkTaskAll -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
+        } else { [void]$tkTaskAll.Wait(25000) }
     }
 
     Repair-OemPowerAndLegionThermalMode
+
+    if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+        $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 3)
+        } else { [void]$bTask.Wait(3000) }
+    }
 
     if ($needsExplorer) {
         Restart-ExplorerSoft
@@ -530,8 +549,17 @@ function Restore-AllOptimizerGuardSnapshots {
 function Restart-ExplorerSoft {
     try {
         Log-Text "[*] Đang khởi động lại nhanh Windows Explorer để áp dụng thay đổi giao diện..."
+        if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+            $tExp = [DuckUtil.WindowsOptimizerEngine]::RestartExplorerSoftAsync()
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $tExp -TimeoutSeconds 5)
+            } else {
+                [void]$tExp.Wait(5000)
+            }
+            return
+        }
         Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Milliseconds 700
+        Start-Sleep -Milliseconds 600
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
@@ -578,7 +606,7 @@ function Invoke-OptimizerSpecialAction {
         }
         "Hibernation" {
             $arg = if ($isUndo) { "/hibernate on" } else { "/hibernate off" }
-            $code = Run-CliStream "powercfg.exe" $arg -IsolateStdin -AllowCancel
+            $code = Run-CliStream "powercfg.exe" $arg -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 30 -IdleTimeoutSeconds 20
             return ($code -eq 0)
         }
         "SafeDisableBgApps" {
@@ -586,20 +614,18 @@ function Invoke-OptimizerSpecialAction {
         }
         "UltimatePerf" {
             if ($isUndo) {
-                $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
-                if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
-                    $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-                    [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
-                }
-                Repair-OemPowerAndLegionThermalMode -Silent
-                return $true
+                $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+                $cUndo = Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 15 -IdleTimeoutSeconds 10
+                return ($cUndo -eq 0)
             }
-            $listOut = (& powercfg.exe /list 2>$null) -join "`n"
+            $listRun = Run-CliStream "powercfg.exe" "/list" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
+            $listOut = if ($listRun) { [string]$listRun.StdOut } else { "" }
             $ultGuid = ""
             if ($listOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s*\([^)]*Ultimate Performance[^)]*\)') {
                 $ultGuid = $Matches[1]
             } else {
-                $dupOut = (& powercfg.exe -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null) -join "`n"
+                $dupRun = Run-CliStream "powercfg.exe" "-duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
+                $dupOut = if ($dupRun) { [string]$dupRun.StdOut } else { "" }
                 if ($dupOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
                     $ultGuid = $Matches[1]
                 }
@@ -608,39 +634,43 @@ function Invoke-OptimizerSpecialAction {
                 Log-Text "[WARN] Không tìm thấy hoặc không hỗ trợ gói nguồn Ultimate Performance trên thiết bị này."
                 return $false
             }
-            $c = Run-CliStream "powercfg.exe" "/setactive $ultGuid" -IsolateStdin -AllowCancel
+            $c = Run-CliStream "powercfg.exe" "/setactive $ultGuid" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 15 -IdleTimeoutSeconds 10
             return ($c -eq 0)
         }
         "ReservedStorage" {
             $stateArg = if ($isUndo) { "Enabled" } else { "Disabled" }
-            $code = Run-CliStream "dism.exe" "/Online /Set-ReservedStorageState /State:$stateArg" -IsolateStdin -AllowCancel
+            $code = Run-CliStream "dism.exe" "/Online /Set-ReservedStorageState /State:$stateArg" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 120 -IdleTimeoutSeconds 60
             return ($code -eq 0)
         }
         "DnsApply" {
             $dnsChoice = if ($isUndo) { "Mặc định (DHCP)" } else { $ComboValue }
-            $servers = @()
+            $primaryDns = ""
+            $secondaryDns = ""
+            $resetDhcp = $true
             switch -Regex ($dnsChoice) {
-                'Cloudflare|1\.1\.1\.1' { $servers = @("1.1.1.1", "1.0.0.1") }
-                'AdGuard|94\.140'       { $servers = @("94.140.14.14", "94.140.15.15") }
-                'Google|8\.8\.8\.8'     { $servers = @("8.8.8.8", "8.8.4.4") }
-                'Quad9|9\.9\.9\.9'      { $servers = @("9.9.9.9", "149.112.112.112") }
-                default                 { $servers = @() }
+                'Cloudflare|1\.1\.1\.1' { $primaryDns = "1.1.1.1"; $secondaryDns = "1.0.0.1"; $resetDhcp = $false }
+                'AdGuard|94\.140'       { $primaryDns = "94.140.14.14"; $secondaryDns = "94.140.15.15"; $resetDhcp = $false }
+                'Google|8\.8\.8\.8'     { $primaryDns = "8.8.8.8"; $secondaryDns = "8.8.4.4"; $resetDhcp = $false }
+                'Quad9|9\.9\.9\.9'      { $primaryDns = "9.9.9.9"; $secondaryDns = "149.112.112.112"; $resetDhcp = $false }
+                default                 { $primaryDns = ""; $secondaryDns = ""; $resetDhcp = $true }
             }
             try {
-                $adapters = @(Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' })
-                if ($adapters.Count -eq 0) {
-                    $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' -and $_.InterfaceDescription -notmatch 'Loopback|Virtual' })
-                }
-                foreach ($ad in $adapters) {
-                    if ($servers.Count -gt 0) {
-                        Set-DnsClientServerAddress -InterfaceIndex $ad.ifIndex -ServerAddresses $servers -ErrorAction SilentlyContinue
+                if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+                    $dnsTask = [DuckUtil.WindowsOptimizerEngine]::ApplyDnsAsync($primaryDns, $secondaryDns, $resetDhcp)
+                    if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                        [void](Wait-TaskNonBlocking -Task $dnsTask -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
                     } else {
-                        Set-DnsClientServerAddress -InterfaceIndex $ad.ifIndex -ResetServerAddresses -ErrorAction SilentlyContinue
+                        [void]$dnsTask.Wait(25000)
                     }
+                    $okDns = ($dnsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) -and [bool]$dnsTask.Result
+                    if ($okDns) {
+                        Log-Text "[OK] Đã cập nhật DNS ($dnsChoice) và làm mới DNS cache."
+                        return $true
+                    }
+                    Log-Text "[ERR] Không thể áp dụng DNS ($dnsChoice) — kiểm tra quyền Administrator và kết nối mạng."
+                    return $false
                 }
-                & ipconfig.exe /flushdns 2>$null | Out-Null
-                Log-Text "[OK] Đã cập nhật DNS ($dnsChoice) và làm mới DNS cache."
-                return $true
+                return $false
             } catch {
                 Log-Text "[ERR] Lỗi đổi DNS: $($_.Exception.Message)"
                 return $false
@@ -686,7 +716,7 @@ function Invoke-OptimizerSpecialAction {
                     (Join-Path $env:SystemRoot "SysWOW64\OneDriveSetup.exe")
                 )) {
                     if (Test-Path -LiteralPath $odSetup) {
-                        [void](Run-CliStream $odSetup "/uninstall" -IsolateStdin -AllowCancel)
+                        [void](Run-CliStream $odSetup "/uninstall" -IsolateStdin -AllowCancel -TimeoutSeconds 120 -IdleTimeoutSeconds 60)
                         break
                     }
                 }
@@ -708,7 +738,7 @@ function Invoke-OptimizerSpecialAction {
                     if (-not (Test-Path -LiteralPath $instRoot)) { continue }
                     $setupExe = Get-ChildItem -LiteralPath $instRoot -Filter "setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                     if ($setupExe) {
-                        [void](Run-CliStream $setupExe.FullName "--uninstall --system-level --verbose-logging --force-uninstall" -IsolateStdin -AllowCancel)
+                        [void](Run-CliStream $setupExe.FullName "--uninstall --system-level --verbose-logging --force-uninstall" -IsolateStdin -AllowCancel -TimeoutSeconds 120 -IdleTimeoutSeconds 60)
                         return $true
                     }
                 }
@@ -752,7 +782,7 @@ function Invoke-OptimizerSpecialAction {
         "DisableBitLocker" {
             if ($isUndo) { return $true }
             try {
-                $code = Run-CliStream "manage-bde.exe" "-off $($env:SystemDrive)" -IsolateStdin -AllowCancel
+                $code = Run-CliStream "manage-bde.exe" "-off $($env:SystemDrive)" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 60 -IdleTimeoutSeconds 30
                 return ($code -eq 0 -or $code -eq -2147024891)
             } catch {
                 return $false
@@ -824,6 +854,156 @@ function Invoke-OptimizerSpecialAction {
     return $true
 }
 
+function Test-OptimizerTweakRequiresAdmin {
+    param($Tweak)
+    if (-not $Tweak) { return $false }
+    if ($Tweak.Services -and @($Tweak.Services).Count -gt 0) { return $true }
+    if ($Tweak.Tasks -and @($Tweak.Tasks).Count -gt 0) { return $true }
+    if ($Tweak.Registry) {
+        foreach ($r in @($Tweak.Registry)) {
+            $hv = if ([string]::IsNullOrWhiteSpace([string]$r.Hive)) { "HKLM" } else { [string]$r.Hive }
+            if ($hv -ieq "HKLM" -or $hv -ieq "HKCR") { return $true }
+            if ([string]$r.Path -match '(?i)^Software\\Policies\\') { return $true }
+        }
+    }
+    $act = [string]$Tweak.Action
+    if ($act -in @("RestorePoint","Hibernation","UltimatePerf","ReservedStorage","DnsApply","NagleDisable","RemoveEdge","AdobeBlock","DisableBitLocker","PauseWindowsUpdate35d","DisableWindowsUpdateAll","ResetWindowsUpdateDefault")) {
+        return $true
+    }
+    return $false
+}
+
+function Invoke-SingleOptimizerTweak {
+    param(
+        [Parameter(Mandatory = $true)]$Tweak,
+        [ValidateSet("Apply", "Undo")][string]$Mode = "Apply",
+        [string]$ComboValue = ""
+    )
+    $ok = $true
+    $isUndo = ($Mode -eq "Undo")
+    $errList = [System.Collections.Generic.List[string]]::new()
+
+    $regSpecs = ConvertTo-RegTweakSpecs @($Tweak)
+    if ($regSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $regTask = [DuckUtil.WindowsOptimizerEngine]::ApplyRegistrySpecsDetailedAsync($regSpecs, $isUndo)
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15 -CancelCheck { [bool]$script:cancelRequested })
+        } else { [void]$regTask.Wait(15000) }
+        if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $regTask.Result) {
+            $rr = $regTask.Result
+            if ($rr.OkCount -lt $rr.TotalCount) {
+                $ok = $false
+                foreach ($er in @($rr.Errors)) {
+                    if (-not [string]::IsNullOrWhiteSpace($er)) { [void]$errList.Add($er) }
+                }
+            }
+        } else {
+            $ok = $false
+            [void]$errList.Add("Ghi Registry hết thời gian chờ hoặc bị gián đoạn")
+        }
+    }
+
+    $svcSpecs = ConvertTo-ServiceTweakSpecs @($Tweak)
+    if ($svcSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $svcTask = [DuckUtil.WindowsOptimizerEngine]::ApplyServiceSpecsAsync($svcSpecs, $isUndo)
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15 -CancelCheck { [bool]$script:cancelRequested })
+        } else { [void]$svcTask.Wait(15000) }
+    }
+
+    if ($Tweak.Tasks) {
+        $tkArr = @($Tweak.Tasks | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+        if ($tkArr.Count -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+            $tkTask = [DuckUtil.WindowsOptimizerEngine]::SetScheduledTasksEnabledAsync([string[]]$tkArr, $isUndo)
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $tkTask -TimeoutSeconds 20 -CancelCheck { [bool]$script:cancelRequested })
+            } else { [void]$tkTask.Wait(20000) }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Tweak.Action)) {
+        $actOk = Invoke-OptimizerSpecialAction -Action ([string]$Tweak.Action) -Mode $Mode -ComboValue $ComboValue
+        if (-not $actOk) {
+            $ok = $false
+            [void]$errList.Add("Tác vụ '$($Tweak.Action)' trả về thất bại")
+        }
+    }
+
+    return [PSCustomObject]@{
+        Success = $ok
+        Errors  = @($errList)
+    }
+}
+
+function Invoke-SingleOptimizerToggle {
+    param(
+        [Parameter(Mandatory = $true)]$Tweak,
+        [Parameter(Mandatory = $true)][bool]$TargetEnabled,
+        [string]$ComboValue = "",
+        $HardwareProfile = $null
+    )
+    $isAdmin = if ("DuckUtil.WindowsOptimizerEngine" -as [type]) { [DuckUtil.WindowsOptimizerEngine]::IsCurrentProcessAdmin() } else { $true }
+    if ((Test-OptimizerTweakRequiresAdmin -Tweak $Tweak) -and -not $isAdmin) {
+        return [PSCustomObject]@{
+            Success        = $false
+            NeedsAdmin     = $true
+            VerifiedState  = if ($TargetEnabled) { "Default" } else { "Applied" }
+            VerifiedDetail = ""
+            Errors         = @("Yêu cầu quyền Administrator")
+        }
+    }
+
+    $mode = if ($TargetEnabled) { "Apply" } else { "Undo" }
+    if ($TargetEnabled) {
+        [void](Save-OptimizerGuardSnapshot -Tweaks @($Tweak) -HardwareProfile $HardwareProfile)
+    }
+
+    $execRes = Invoke-SingleOptimizerTweak -Tweak $Tweak -Mode $mode -ComboValue $ComboValue
+
+    if ($execRes.Success -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 3)
+        } else { [void]$bTask.Wait(3000) }
+
+        if ($Tweak.NeedsExplorerRestart -and ([string]$Tweak.Id -in @("opt_classic_context_menu","opt_dark_mode","opt_disable_bing_search","opt_start_recommendations","opt_explorer_this_pc"))) {
+            Restart-ExplorerSoft
+        }
+    }
+
+    $vState = if ($execRes.Success) { if ($TargetEnabled) { "Applied" } else { "Default" } } else { if ($TargetEnabled) { "Default" } else { "Applied" } }
+    $vDetail = ""
+    if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+        try {
+            $reqArr = Build-TweakProbeRequests @($Tweak)
+            $pTask = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($reqArr)
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $pTask -TimeoutSeconds 5)
+            } else { [void]$pTask.Wait(5000) }
+            if ($pTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $pTask.Result -and $pTask.Result.Length -gt 0) {
+                $vState = [string]$pTask.Result[0].State
+                $vDetail = [string]$pTask.Result[0].Detail
+            }
+        } catch {}
+    }
+
+    $verifiedMatch = if ($TargetEnabled) { ($vState -eq "Applied") } else { ($vState -ne "Applied") }
+    $finalOk = $execRes.Success -and $verifiedMatch
+    $errs = [System.Collections.Generic.List[string]]::new()
+    foreach ($er in @($execRes.Errors)) { [void]$errs.Add($er) }
+    if ($execRes.Success -and -not $verifiedMatch) {
+        [void]$errs.Add("Windows không giữ lại thay đổi sau khi ghi (trạng thái thực tế: $vState)")
+    }
+
+    return [PSCustomObject]@{
+        Success        = $finalOk
+        NeedsAdmin     = $false
+        VerifiedState  = $vState
+        VerifiedDetail = $vDetail
+        Errors         = @($errs)
+    }
+}
+
 function Invoke-OptimizerBatch {
     param(
         [Parameter(Mandatory = $true)]$Tweaks,
@@ -845,6 +1025,7 @@ function Invoke-OptimizerBatch {
     $needsReboot = $false
     $total = $tweakList.Count
     $idx = 0
+    $isUndo = ($Mode -eq "Undo")
 
     foreach ($tw in $tweakList) {
         if ($script:cancelRequested -or $script:isWindowClosing) { break }
@@ -852,38 +1033,14 @@ function Invoke-OptimizerBatch {
         if ($ProgressCallback) {
             try { & $ProgressCallback $idx $total ([string]$tw.Name) } catch {}
         }
-
-        $ok = $true
-        $isUndo = ($Mode -eq "Undo")
-
-        $regSpecs = ConvertTo-RegTweakSpecs @($tw)
-        if ($regSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
-            $regDone = [DuckUtil.WindowsOptimizerEngine]::ApplyRegistrySpecs($regSpecs, $isUndo)
-            if ($regDone -lt $regSpecs.Length) { $ok = $false }
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(10)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
         }
 
-        $svcSpecs = ConvertTo-ServiceTweakSpecs @($tw)
-        if ($svcSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
-            [void][DuckUtil.WindowsOptimizerEngine]::ApplyServiceSpecs($svcSpecs, $isUndo)
-        }
+        $comboVal = if ($ComboSelections -and $ComboSelections.ContainsKey([string]$tw.Id)) { [string]$ComboSelections[[string]$tw.Id] } else { "" }
+        $resOne = Invoke-SingleOptimizerTweak -Tweak $tw -Mode $Mode -ComboValue $comboVal
 
-        if ($tw.Tasks) {
-            foreach ($tk in @($tw.Tasks)) {
-                if ([string]::IsNullOrWhiteSpace([string]$tk)) { continue }
-                try {
-                    $taskFlag = if ($isUndo) { "/Enable" } else { "/Disable" }
-                    & schtasks.exe /Change /TN "$tk" $taskFlag 2>$null | Out-Null
-                } catch {}
-            }
-        }
-
-        if (-not [string]::IsNullOrWhiteSpace([string]$tw.Action)) {
-            $comboVal = if ($ComboSelections -and $ComboSelections.ContainsKey([string]$tw.Id)) { [string]$ComboSelections[[string]$tw.Id] } else { "" }
-            $actOk = Invoke-OptimizerSpecialAction -Action ([string]$tw.Action) -Mode $Mode -ComboValue $comboVal
-            if (-not $actOk) { $ok = $false }
-        }
-
-        if ($ok) {
+        if ($resOne.Success) {
             $applied++
             if ($tw.NeedsExplorerRestart) { $needsExplorer = $true }
             if ($tw.NeedsReboot) { $needsReboot = $true }
@@ -891,8 +1048,16 @@ function Invoke-OptimizerBatch {
             Log-Text "   [OK] ${actLabel}: $($tw.Name)"
         } else {
             $failed++
-            Log-Text "   [ERR] Không thể xử lý: $($tw.Name)"
+            $errDetail = if ($resOne.Errors -and $resOne.Errors.Count -gt 0) { " ($($resOne.Errors[0]))" } else { "" }
+            Log-Text "   [ERR] Không thể xử lý: $($tw.Name)$errDetail"
         }
+    }
+
+    if ($applied -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not $script:isWindowClosing) {
+        $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 3)
+        } else { [void]$bTask.Wait(3000) }
     }
 
     if ($needsExplorer -and -not $script:cancelRequested -and -not $script:isWindowClosing) {

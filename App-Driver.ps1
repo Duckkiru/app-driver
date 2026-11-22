@@ -8533,6 +8533,7 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -21201,6 +21202,12 @@ namespace DuckUtil {
         public int OriginalStart { get; set; }
     }
 
+    public sealed class ApplyRegBatchResult {
+        public int OkCount { get; set; }
+        public int TotalCount { get; set; }
+        public string[] Errors { get; set; }
+    }
+
     public static class WindowsOptimizerEngine {
         [StructLayout(LayoutKind.Sequential)]
         private struct SYSTEM_POWER_STATUS {
@@ -21293,6 +21300,47 @@ namespace DuckUtil {
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr SendMessageTimeoutW(
+            IntPtr hWnd,
+            uint Msg,
+            UIntPtr wParam,
+            string lParam,
+            uint fuFlags,
+            uint uTimeout,
+            out UIntPtr lpdwResult);
+
+        [DllImport("shell32.dll")]
+        private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
+        public static bool IsCurrentProcessAdmin() {
+            try {
+                using (WindowsIdentity id = WindowsIdentity.GetCurrent()) {
+                    var pr = new WindowsPrincipal(id);
+                    return pr.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static void BroadcastSettingsChange() {
+            try {
+                IntPtr hwndBroadcast = new IntPtr(0xFFFF);
+                UIntPtr res;
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "ImmersiveColorSet", 0x0002, 500, out res);
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "Environment", 0x0002, 500, out res);
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "Policy", 0x0002, 500, out res);
+            } catch {}
+            try {
+                SHChangeNotify(0x08000000u, 0x0000u, IntPtr.Zero, IntPtr.Zero);
+            } catch {}
+        }
+
+        public static Task BroadcastSettingsChangeAsync() {
+            return Task.Run(delegate() { BroadcastSettingsChange(); });
+        }
 
         private static string DetectSystemDriveType(out bool isSsd) {
             isSsd = true;
@@ -21639,9 +21687,45 @@ namespace DuckUtil {
 
         private static TweakProbeResult ProbeSpecialKind(TweakProbeRequest req, string activePowerScheme) {
             string kind = req.ProbeKind ?? "";
-            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase)) {
                 return new TweakProbeResult { Id = req.Id, State = "Action", Detail = "" };
+            }
+            if (string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+                string detectedProvider = "";
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey root = b.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces", false)) {
+                        if (root != null) {
+                            foreach (string sub in root.GetSubKeyNames()) {
+                                using (RegistryKey sk = root.OpenSubKey(sub, false)) {
+                                    if (sk == null) continue;
+                                    string dhIp = (sk.GetValue("DhcpIPAddress") ?? "").ToString();
+                                    string stIp = "";
+                                    object ipObj = sk.GetValue("IPAddress");
+                                    if (ipObj is string[]) {
+                                        string[] arr = (string[])ipObj;
+                                        if (arr.Length > 0) stIp = arr[0] ?? "";
+                                    } else if (ipObj != null) {
+                                        stIp = ipObj.ToString();
+                                    }
+                                    bool hasIp = (!string.IsNullOrWhiteSpace(dhIp) && dhIp != "0.0.0.0") ||
+                                                 (!string.IsNullOrWhiteSpace(stIp) && stIp != "0.0.0.0");
+                                    if (!hasIp) continue;
+                                    string ns = (sk.GetValue("NameServer") ?? "").ToString().Trim();
+                                    if (string.IsNullOrEmpty(ns)) continue;
+                                    if (ns.IndexOf("1.1.1.1", StringComparison.Ordinal) >= 0) { detectedProvider = "Cloudflare (1.1.1.1)"; break; }
+                                    if (ns.IndexOf("94.140.14.14", StringComparison.Ordinal) >= 0) { detectedProvider = "AdGuard Ch\u1EB7n QC (94.140.14.14)"; break; }
+                                    if (ns.IndexOf("8.8.8.8", StringComparison.Ordinal) >= 0) { detectedProvider = "Google (8.8.8.8)"; break; }
+                                    if (ns.IndexOf("9.9.9.9", StringComparison.Ordinal) >= 0) { detectedProvider = "Quad9 (9.9.9.9)"; break; }
+                                }
+                            }
+                        }
+                    }
+                } catch {}
+                if (!string.IsNullOrEmpty(detectedProvider)) {
+                    return new TweakProbeResult { Id = req.Id, State = "Applied", Detail = detectedProvider };
+                }
+                return new TweakProbeResult { Id = req.Id, State = "Default", Detail = "M\u1EB7c \u0111\u1ECBnh (DHCP)" };
             }
             if (string.Equals(kind, "Hibernation", StringComparison.OrdinalIgnoreCase)) {
                 bool hiberOff = false;
@@ -21922,7 +22006,8 @@ namespace DuckUtil {
             return list.ToArray();
         }
 
-        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue, out string errMsg) {
+            errMsg = "";
             string vt = (valueType ?? "DWord").Trim();
             string normName = NormalizeValueName(name);
 
@@ -21935,7 +22020,7 @@ namespace DuckUtil {
                     }
                     baseKey.DeleteSubKeyTree(delPath, false);
                     return true;
-                } catch { return false; }
+                } catch (Exception ex) { errMsg = ex.Message; return false; }
             }
 
             if (string.Equals(vt, "DeleteValue", StringComparison.OrdinalIgnoreCase) ||
@@ -21947,44 +22032,63 @@ namespace DuckUtil {
                         }
                     }
                     return true;
-                } catch { return false; }
+                } catch (Exception ex) { errMsg = ex.Message; return false; }
             }
 
+            RegistryKey targetKey = null;
             try {
-                using (RegistryKey k = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
-                    if (k == null) return false;
-                    if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
-                        long lv;
-                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
-                        k.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
-                        return true;
-                    }
-                    if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
-                        long lv;
-                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
-                        k.SetValue(normName, lv, RegistryValueKind.QWord);
-                        return true;
-                    }
-                    if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
-                        byte[] bytes = ParseHexBytes(rawValue);
-                        k.SetValue(normName, bytes, RegistryValueKind.Binary);
-                        return true;
-                    }
-                    if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
-                        k.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
-                        return true;
-                    }
-                    if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
-                        string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
-                        k.SetValue(normName, parts, RegistryValueKind.MultiString);
-                        return true;
-                    }
-                    k.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                try {
+                    targetKey = baseKey.OpenSubKey(path, true);
+                } catch (Exception openEx) {
+                    errMsg = openEx.Message;
+                    targetKey = null;
+                }
+                if (targetKey == null) {
+                    targetKey = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree);
+                }
+                if (targetKey == null) {
+                    if (string.IsNullOrEmpty(errMsg)) errMsg = "CreateSubKey returned null";
+                    return false;
+                }
+                if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
+                    long lv;
+                    if (!TryParseInt64Flexible(rawValue, out lv)) { errMsg = "Invalid DWord: " + rawValue; return false; }
+                    targetKey.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
                     return true;
                 }
-            } catch {
+                if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
+                    long lv;
+                    if (!TryParseInt64Flexible(rawValue, out lv)) { errMsg = "Invalid QWord: " + rawValue; return false; }
+                    targetKey.SetValue(normName, lv, RegistryValueKind.QWord);
+                    return true;
+                }
+                if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = ParseHexBytes(rawValue);
+                    targetKey.SetValue(normName, bytes, RegistryValueKind.Binary);
+                    return true;
+                }
+                if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
+                    targetKey.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
+                    return true;
+                }
+                if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
+                    string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
+                    targetKey.SetValue(normName, parts, RegistryValueKind.MultiString);
+                    return true;
+                }
+                targetKey.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                return true;
+            } catch (Exception ex) {
+                errMsg = ex.Message;
                 return false;
+            } finally {
+                if (targetKey != null) { try { targetKey.Dispose(); } catch {} }
             }
+        }
+
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+            string ignored;
+            return WriteRegistryValueTyped(baseKey, path, name, valueType, rawValue, out ignored);
         }
 
         private static readonly string[] ExactProtectedServices = new string[] {
@@ -22030,8 +22134,11 @@ namespace DuckUtil {
             return false;
         }
 
-        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
-            if (specs == null || specs.Length == 0) return 0;
+        public static ApplyRegBatchResult ApplyRegistrySpecsDetailed(RegTweakSpec[] specs, bool undo) {
+            var errs = new List<string>();
+            if (specs == null || specs.Length == 0) {
+                return new ApplyRegBatchResult { OkCount = 0, TotalCount = 0, Errors = new string[0] };
+            }
             int okCount = 0;
             for (int i = 0; i < specs.Length; i++) {
                 RegTweakSpec s = specs[i];
@@ -22072,7 +22179,7 @@ namespace DuckUtil {
                             using (RegistryKey k = baseKey.CreateSubKey(s.Path)) {
                                 if (k != null) okCount++;
                             }
-                        } catch {}
+                        } catch (Exception ex) { errs.Add((s.Hive ?? "HKLM") + "\\" + s.Path + ": " + ex.Message); }
                     }
                     continue;
                 }
@@ -22081,12 +22188,162 @@ namespace DuckUtil {
                     continue;
                 }
                 using (RegistryKey baseKey = OpenHiveBase(s.Hive)) {
-                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal)) {
+                    string writeErr;
+                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal, out writeErr)) {
                         okCount++;
+                    } else {
+                        errs.Add((s.Hive ?? "HKLM") + "\\" + s.Path + " [" + (s.Name ?? "") + "]: " + writeErr);
                     }
                 }
             }
-            return okCount;
+            return new ApplyRegBatchResult {
+                OkCount = okCount,
+                TotalCount = specs.Length,
+                Errors = errs.ToArray()
+            };
+        }
+
+        public static Task<ApplyRegBatchResult> ApplyRegistrySpecsDetailedAsync(RegTweakSpec[] specs, bool undo) {
+            return Task.Run(delegate() { return ApplyRegistrySpecsDetailed(specs, undo); });
+        }
+
+        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
+            return ApplyRegistrySpecsDetailed(specs, undo).OkCount;
+        }
+
+        public static Task<int> ApplyServiceSpecsAsync(ServiceTweakSpec[] specs, bool undo) {
+            return Task.Run(delegate() { return ApplyServiceSpecs(specs, undo); });
+        }
+
+        public static Task<int> SetScheduledTasksEnabledAsync(string[] tasks, bool enable) {
+            return Task.Run(delegate() {
+                if (tasks == null || tasks.Length == 0) return 0;
+                int done = 0;
+                string flag = enable ? "/Enable" : "/Disable";
+                for (int i = 0; i < tasks.Length; i++) {
+                    string tk = tasks[i];
+                    if (string.IsNullOrWhiteSpace(tk)) continue;
+                    try {
+                        var psi = new ProcessStartInfo();
+                        psi.FileName = "schtasks.exe";
+                        psi.Arguments = "/Change /TN \"" + tk.Replace("\"", "") + "\" " + flag;
+                        psi.CreateNoWindow = true;
+                        psi.UseShellExecute = false;
+                        psi.RedirectStandardOutput = true;
+                        psi.RedirectStandardError = true;
+                        using (Process p = Process.Start(psi)) {
+                            if (p != null) {
+                                var tOut = p.StandardOutput.ReadToEndAsync();
+                                var tErr = p.StandardError.ReadToEndAsync();
+                                if (!p.WaitForExit(5000)) { try { p.Kill(); } catch {} }
+                                else if (p.ExitCode == 0) { done++; }
+                                GC.KeepAlive(tOut); GC.KeepAlive(tErr);
+                            }
+                        }
+                    } catch {}
+                }
+                return done;
+            });
+        }
+
+        public static Task<bool> ApplyDnsAsync(string primaryDns, string secondaryDns, bool resetDhcp) {
+            return Task.Run(delegate() {
+                try {
+                    var targetIndices = new List<int>();
+                    var fallbackIndices = new List<int>();
+                    NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+                    for (int i = 0; i < nics.Length; i++) {
+                        NetworkInterface ni = nics[i];
+                        if (ni == null || ni.OperationalStatus != OperationalStatus.Up) continue;
+                        if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                            ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel) continue;
+                        try {
+                            IPInterfaceProperties props = ni.GetIPProperties();
+                            if (props == null) continue;
+                            IPv4InterfaceProperties v4 = props.GetIPv4Properties();
+                            if (v4 == null || v4.Index <= 0) continue;
+                            string desc = ni.Description ?? "";
+                            bool isVirtual = desc.IndexOf("Virtual", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Hyper-V", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("VMware", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("VirtualBox", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("TAP-", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Wintun", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Loopback", StringComparison.OrdinalIgnoreCase) >= 0;
+                            if (!isVirtual) targetIndices.Add(v4.Index);
+                            else fallbackIndices.Add(v4.Index);
+                        } catch {}
+                    }
+                    if (targetIndices.Count == 0) targetIndices = fallbackIndices;
+                    if (targetIndices.Count == 0) return false;
+
+                    int okNics = 0;
+                    for (int i = 0; i < targetIndices.Count; i++) {
+                        int idx = targetIndices[i];
+                        string idxStr = idx.ToString(CultureInfo.InvariantCulture);
+                        if (resetDhcp || string.IsNullOrWhiteSpace(primaryDns)) {
+                            if (RunHiddenNetsh("interface ipv4 set dnsservers name=" + idxStr + " source=dhcp", 8000)) okNics++;
+                        } else {
+                            if (RunHiddenNetsh("interface ipv4 set dnsservers name=" + idxStr + " source=static address=" + primaryDns + " register=primary validate=no", 8000)) {
+                                okNics++;
+                                if (!string.IsNullOrWhiteSpace(secondaryDns)) {
+                                    RunHiddenNetsh("interface ipv4 add dnsservers name=" + idxStr + " address=" + secondaryDns + " index=2 validate=no", 8000);
+                                }
+                            }
+                        }
+                    }
+                    RunQuickCmdOut("ipconfig.exe", "/flushdns", 4000);
+                    return okNics > 0;
+                } catch {
+                    return false;
+                }
+            });
+        }
+
+        private static bool RunHiddenNetsh(string args, int timeoutMs) {
+            try {
+                var psi = new ProcessStartInfo();
+                psi.FileName = "netsh.exe";
+                psi.Arguments = args;
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (Process p = Process.Start(psi)) {
+                    if (p == null) return false;
+                    var tOut = p.StandardOutput.ReadToEndAsync();
+                    var tErr = p.StandardError.ReadToEndAsync();
+                    if (!p.WaitForExit(timeoutMs)) {
+                        try { p.Kill(); } catch {}
+                        return false;
+                    }
+                    GC.KeepAlive(tOut); GC.KeepAlive(tErr);
+                    return p.ExitCode == 0;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static Task RestartExplorerSoftAsync() {
+            return Task.Run(delegate() {
+                try {
+                    Process[] procs = Process.GetProcessesByName("explorer");
+                    for (int i = 0; i < procs.Length; i++) {
+                        try { procs[i].Kill(); } catch {}
+                        try { procs[i].Dispose(); } catch {}
+                    }
+                    Thread.Sleep(650);
+                    Process[] after = Process.GetProcessesByName("explorer");
+                    bool anyAlive = after != null && after.Length > 0;
+                    if (after != null) {
+                        for (int i = 0; i < after.Length; i++) { try { after[i].Dispose(); } catch {} }
+                    }
+                    if (!anyAlive) {
+                        Process.Start("explorer.exe");
+                    }
+                } catch {}
+            });
         }
 
         public static int RestoreRegistrySnapshots(RegistrySnapshotEntry[] entries) {
@@ -36279,8 +36536,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 
@@ -36338,6 +36598,12 @@ namespace DuckUtil {
         public string Name { get; set; }
         public bool Existed { get; set; }
         public int OriginalStart { get; set; }
+    }
+
+    public sealed class ApplyRegBatchResult {
+        public int OkCount { get; set; }
+        public int TotalCount { get; set; }
+        public string[] Errors { get; set; }
     }
 
     public static class WindowsOptimizerEngine {
@@ -36432,6 +36698,47 @@ namespace DuckUtil {
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr SendMessageTimeoutW(
+            IntPtr hWnd,
+            uint Msg,
+            UIntPtr wParam,
+            string lParam,
+            uint fuFlags,
+            uint uTimeout,
+            out UIntPtr lpdwResult);
+
+        [DllImport("shell32.dll")]
+        private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
+        public static bool IsCurrentProcessAdmin() {
+            try {
+                using (WindowsIdentity id = WindowsIdentity.GetCurrent()) {
+                    var pr = new WindowsPrincipal(id);
+                    return pr.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static void BroadcastSettingsChange() {
+            try {
+                IntPtr hwndBroadcast = new IntPtr(0xFFFF);
+                UIntPtr res;
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "ImmersiveColorSet", 0x0002, 500, out res);
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "Environment", 0x0002, 500, out res);
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "Policy", 0x0002, 500, out res);
+            } catch {}
+            try {
+                SHChangeNotify(0x08000000u, 0x0000u, IntPtr.Zero, IntPtr.Zero);
+            } catch {}
+        }
+
+        public static Task BroadcastSettingsChangeAsync() {
+            return Task.Run(delegate() { BroadcastSettingsChange(); });
+        }
 
         private static string DetectSystemDriveType(out bool isSsd) {
             isSsd = true;
@@ -36778,9 +37085,45 @@ namespace DuckUtil {
 
         private static TweakProbeResult ProbeSpecialKind(TweakProbeRequest req, string activePowerScheme) {
             string kind = req.ProbeKind ?? "";
-            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase)) {
                 return new TweakProbeResult { Id = req.Id, State = "Action", Detail = "" };
+            }
+            if (string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+                string detectedProvider = "";
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey root = b.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces", false)) {
+                        if (root != null) {
+                            foreach (string sub in root.GetSubKeyNames()) {
+                                using (RegistryKey sk = root.OpenSubKey(sub, false)) {
+                                    if (sk == null) continue;
+                                    string dhIp = (sk.GetValue("DhcpIPAddress") ?? "").ToString();
+                                    string stIp = "";
+                                    object ipObj = sk.GetValue("IPAddress");
+                                    if (ipObj is string[]) {
+                                        string[] arr = (string[])ipObj;
+                                        if (arr.Length > 0) stIp = arr[0] ?? "";
+                                    } else if (ipObj != null) {
+                                        stIp = ipObj.ToString();
+                                    }
+                                    bool hasIp = (!string.IsNullOrWhiteSpace(dhIp) && dhIp != "0.0.0.0") ||
+                                                 (!string.IsNullOrWhiteSpace(stIp) && stIp != "0.0.0.0");
+                                    if (!hasIp) continue;
+                                    string ns = (sk.GetValue("NameServer") ?? "").ToString().Trim();
+                                    if (string.IsNullOrEmpty(ns)) continue;
+                                    if (ns.IndexOf("1.1.1.1", StringComparison.Ordinal) >= 0) { detectedProvider = "Cloudflare (1.1.1.1)"; break; }
+                                    if (ns.IndexOf("94.140.14.14", StringComparison.Ordinal) >= 0) { detectedProvider = "AdGuard Ch\u1EB7n QC (94.140.14.14)"; break; }
+                                    if (ns.IndexOf("8.8.8.8", StringComparison.Ordinal) >= 0) { detectedProvider = "Google (8.8.8.8)"; break; }
+                                    if (ns.IndexOf("9.9.9.9", StringComparison.Ordinal) >= 0) { detectedProvider = "Quad9 (9.9.9.9)"; break; }
+                                }
+                            }
+                        }
+                    }
+                } catch {}
+                if (!string.IsNullOrEmpty(detectedProvider)) {
+                    return new TweakProbeResult { Id = req.Id, State = "Applied", Detail = detectedProvider };
+                }
+                return new TweakProbeResult { Id = req.Id, State = "Default", Detail = "M\u1EB7c \u0111\u1ECBnh (DHCP)" };
             }
             if (string.Equals(kind, "Hibernation", StringComparison.OrdinalIgnoreCase)) {
                 bool hiberOff = false;
@@ -37061,7 +37404,8 @@ namespace DuckUtil {
             return list.ToArray();
         }
 
-        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue, out string errMsg) {
+            errMsg = "";
             string vt = (valueType ?? "DWord").Trim();
             string normName = NormalizeValueName(name);
 
@@ -37074,7 +37418,7 @@ namespace DuckUtil {
                     }
                     baseKey.DeleteSubKeyTree(delPath, false);
                     return true;
-                } catch { return false; }
+                } catch (Exception ex) { errMsg = ex.Message; return false; }
             }
 
             if (string.Equals(vt, "DeleteValue", StringComparison.OrdinalIgnoreCase) ||
@@ -37086,44 +37430,63 @@ namespace DuckUtil {
                         }
                     }
                     return true;
-                } catch { return false; }
+                } catch (Exception ex) { errMsg = ex.Message; return false; }
             }
 
+            RegistryKey targetKey = null;
             try {
-                using (RegistryKey k = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
-                    if (k == null) return false;
-                    if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
-                        long lv;
-                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
-                        k.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
-                        return true;
-                    }
-                    if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
-                        long lv;
-                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
-                        k.SetValue(normName, lv, RegistryValueKind.QWord);
-                        return true;
-                    }
-                    if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
-                        byte[] bytes = ParseHexBytes(rawValue);
-                        k.SetValue(normName, bytes, RegistryValueKind.Binary);
-                        return true;
-                    }
-                    if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
-                        k.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
-                        return true;
-                    }
-                    if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
-                        string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
-                        k.SetValue(normName, parts, RegistryValueKind.MultiString);
-                        return true;
-                    }
-                    k.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                try {
+                    targetKey = baseKey.OpenSubKey(path, true);
+                } catch (Exception openEx) {
+                    errMsg = openEx.Message;
+                    targetKey = null;
+                }
+                if (targetKey == null) {
+                    targetKey = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree);
+                }
+                if (targetKey == null) {
+                    if (string.IsNullOrEmpty(errMsg)) errMsg = "CreateSubKey returned null";
+                    return false;
+                }
+                if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
+                    long lv;
+                    if (!TryParseInt64Flexible(rawValue, out lv)) { errMsg = "Invalid DWord: " + rawValue; return false; }
+                    targetKey.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
                     return true;
                 }
-            } catch {
+                if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
+                    long lv;
+                    if (!TryParseInt64Flexible(rawValue, out lv)) { errMsg = "Invalid QWord: " + rawValue; return false; }
+                    targetKey.SetValue(normName, lv, RegistryValueKind.QWord);
+                    return true;
+                }
+                if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = ParseHexBytes(rawValue);
+                    targetKey.SetValue(normName, bytes, RegistryValueKind.Binary);
+                    return true;
+                }
+                if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
+                    targetKey.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
+                    return true;
+                }
+                if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
+                    string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
+                    targetKey.SetValue(normName, parts, RegistryValueKind.MultiString);
+                    return true;
+                }
+                targetKey.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                return true;
+            } catch (Exception ex) {
+                errMsg = ex.Message;
                 return false;
+            } finally {
+                if (targetKey != null) { try { targetKey.Dispose(); } catch {} }
             }
+        }
+
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+            string ignored;
+            return WriteRegistryValueTyped(baseKey, path, name, valueType, rawValue, out ignored);
         }
 
         private static readonly string[] ExactProtectedServices = new string[] {
@@ -37169,8 +37532,11 @@ namespace DuckUtil {
             return false;
         }
 
-        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
-            if (specs == null || specs.Length == 0) return 0;
+        public static ApplyRegBatchResult ApplyRegistrySpecsDetailed(RegTweakSpec[] specs, bool undo) {
+            var errs = new List<string>();
+            if (specs == null || specs.Length == 0) {
+                return new ApplyRegBatchResult { OkCount = 0, TotalCount = 0, Errors = new string[0] };
+            }
             int okCount = 0;
             for (int i = 0; i < specs.Length; i++) {
                 RegTweakSpec s = specs[i];
@@ -37211,7 +37577,7 @@ namespace DuckUtil {
                             using (RegistryKey k = baseKey.CreateSubKey(s.Path)) {
                                 if (k != null) okCount++;
                             }
-                        } catch {}
+                        } catch (Exception ex) { errs.Add((s.Hive ?? "HKLM") + "\\" + s.Path + ": " + ex.Message); }
                     }
                     continue;
                 }
@@ -37220,12 +37586,162 @@ namespace DuckUtil {
                     continue;
                 }
                 using (RegistryKey baseKey = OpenHiveBase(s.Hive)) {
-                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal)) {
+                    string writeErr;
+                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal, out writeErr)) {
                         okCount++;
+                    } else {
+                        errs.Add((s.Hive ?? "HKLM") + "\\" + s.Path + " [" + (s.Name ?? "") + "]: " + writeErr);
                     }
                 }
             }
-            return okCount;
+            return new ApplyRegBatchResult {
+                OkCount = okCount,
+                TotalCount = specs.Length,
+                Errors = errs.ToArray()
+            };
+        }
+
+        public static Task<ApplyRegBatchResult> ApplyRegistrySpecsDetailedAsync(RegTweakSpec[] specs, bool undo) {
+            return Task.Run(delegate() { return ApplyRegistrySpecsDetailed(specs, undo); });
+        }
+
+        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
+            return ApplyRegistrySpecsDetailed(specs, undo).OkCount;
+        }
+
+        public static Task<int> ApplyServiceSpecsAsync(ServiceTweakSpec[] specs, bool undo) {
+            return Task.Run(delegate() { return ApplyServiceSpecs(specs, undo); });
+        }
+
+        public static Task<int> SetScheduledTasksEnabledAsync(string[] tasks, bool enable) {
+            return Task.Run(delegate() {
+                if (tasks == null || tasks.Length == 0) return 0;
+                int done = 0;
+                string flag = enable ? "/Enable" : "/Disable";
+                for (int i = 0; i < tasks.Length; i++) {
+                    string tk = tasks[i];
+                    if (string.IsNullOrWhiteSpace(tk)) continue;
+                    try {
+                        var psi = new ProcessStartInfo();
+                        psi.FileName = "schtasks.exe";
+                        psi.Arguments = "/Change /TN \"" + tk.Replace("\"", "") + "\" " + flag;
+                        psi.CreateNoWindow = true;
+                        psi.UseShellExecute = false;
+                        psi.RedirectStandardOutput = true;
+                        psi.RedirectStandardError = true;
+                        using (Process p = Process.Start(psi)) {
+                            if (p != null) {
+                                var tOut = p.StandardOutput.ReadToEndAsync();
+                                var tErr = p.StandardError.ReadToEndAsync();
+                                if (!p.WaitForExit(5000)) { try { p.Kill(); } catch {} }
+                                else if (p.ExitCode == 0) { done++; }
+                                GC.KeepAlive(tOut); GC.KeepAlive(tErr);
+                            }
+                        }
+                    } catch {}
+                }
+                return done;
+            });
+        }
+
+        public static Task<bool> ApplyDnsAsync(string primaryDns, string secondaryDns, bool resetDhcp) {
+            return Task.Run(delegate() {
+                try {
+                    var targetIndices = new List<int>();
+                    var fallbackIndices = new List<int>();
+                    NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+                    for (int i = 0; i < nics.Length; i++) {
+                        NetworkInterface ni = nics[i];
+                        if (ni == null || ni.OperationalStatus != OperationalStatus.Up) continue;
+                        if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                            ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel) continue;
+                        try {
+                            IPInterfaceProperties props = ni.GetIPProperties();
+                            if (props == null) continue;
+                            IPv4InterfaceProperties v4 = props.GetIPv4Properties();
+                            if (v4 == null || v4.Index <= 0) continue;
+                            string desc = ni.Description ?? "";
+                            bool isVirtual = desc.IndexOf("Virtual", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Hyper-V", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("VMware", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("VirtualBox", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("TAP-", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Wintun", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Loopback", StringComparison.OrdinalIgnoreCase) >= 0;
+                            if (!isVirtual) targetIndices.Add(v4.Index);
+                            else fallbackIndices.Add(v4.Index);
+                        } catch {}
+                    }
+                    if (targetIndices.Count == 0) targetIndices = fallbackIndices;
+                    if (targetIndices.Count == 0) return false;
+
+                    int okNics = 0;
+                    for (int i = 0; i < targetIndices.Count; i++) {
+                        int idx = targetIndices[i];
+                        string idxStr = idx.ToString(CultureInfo.InvariantCulture);
+                        if (resetDhcp || string.IsNullOrWhiteSpace(primaryDns)) {
+                            if (RunHiddenNetsh("interface ipv4 set dnsservers name=" + idxStr + " source=dhcp", 8000)) okNics++;
+                        } else {
+                            if (RunHiddenNetsh("interface ipv4 set dnsservers name=" + idxStr + " source=static address=" + primaryDns + " register=primary validate=no", 8000)) {
+                                okNics++;
+                                if (!string.IsNullOrWhiteSpace(secondaryDns)) {
+                                    RunHiddenNetsh("interface ipv4 add dnsservers name=" + idxStr + " address=" + secondaryDns + " index=2 validate=no", 8000);
+                                }
+                            }
+                        }
+                    }
+                    RunQuickCmdOut("ipconfig.exe", "/flushdns", 4000);
+                    return okNics > 0;
+                } catch {
+                    return false;
+                }
+            });
+        }
+
+        private static bool RunHiddenNetsh(string args, int timeoutMs) {
+            try {
+                var psi = new ProcessStartInfo();
+                psi.FileName = "netsh.exe";
+                psi.Arguments = args;
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (Process p = Process.Start(psi)) {
+                    if (p == null) return false;
+                    var tOut = p.StandardOutput.ReadToEndAsync();
+                    var tErr = p.StandardError.ReadToEndAsync();
+                    if (!p.WaitForExit(timeoutMs)) {
+                        try { p.Kill(); } catch {}
+                        return false;
+                    }
+                    GC.KeepAlive(tOut); GC.KeepAlive(tErr);
+                    return p.ExitCode == 0;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static Task RestartExplorerSoftAsync() {
+            return Task.Run(delegate() {
+                try {
+                    Process[] procs = Process.GetProcessesByName("explorer");
+                    for (int i = 0; i < procs.Length; i++) {
+                        try { procs[i].Kill(); } catch {}
+                        try { procs[i].Dispose(); } catch {}
+                    }
+                    Thread.Sleep(650);
+                    Process[] after = Process.GetProcessesByName("explorer");
+                    bool anyAlive = after != null && after.Length > 0;
+                    if (after != null) {
+                        for (int i = 0; i < after.Length; i++) { try { after[i].Dispose(); } catch {} }
+                    }
+                    if (!anyAlive) {
+                        Process.Start("explorer.exe");
+                    }
+                } catch {}
+            });
         }
 
         public static int RestoreRegistrySnapshots(RegistrySnapshotEntry[] entries) {
@@ -44945,10 +45461,17 @@ function New-OptimizerRestorePoint {
             }
             Set-ItemProperty -LiteralPath $freqPath -Name "SystemRestorePointCreationFrequency" -Value 0 -Type DWord -ErrorAction SilentlyContinue
         }
-        try { Enable-ComputerRestore -Drive ($env:SystemDrive + "\") -ErrorAction SilentlyContinue } catch {}
-        Checkpoint-Computer -Description ("App-Driver Optimizer " + (Get-Date -Format "yyyy-MM-dd HH:mm")) -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
-        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) t$([char]0x1EA1)o $([char]0x0111)i$([char]0x1EC3)m kh$([char]0x00F4)i ph$([char]0x1EE5)c h$([char]0x1EC7) th$([char]0x1ED1)ng (System Restore Point)."
-        return $true
+        $desc = "App-Driver Optimizer " + (Get-Date -Format "yyyy-MM-dd HH:mm")
+        $sysDrv = ($env:SystemDrive + "\").Replace("'", "''")
+        $psCmd = "try { Enable-ComputerRestore -Drive '$sysDrv' -ErrorAction SilentlyContinue } catch {}; Checkpoint-Computer -Description '$desc' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop"
+        $b64Cmd = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($psCmd))
+        $code = Run-CliStream "powershell.exe" "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $b64Cmd" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 90 -IdleTimeoutSeconds 60
+        if ($code -eq 0) {
+            Log-Text "[OK] $([char]0x0110)$([char]0x00E3) t$([char]0x1EA1)o $([char]0x0111)i$([char]0x1EC3)m kh$([char]0x00F4)i ph$([char]0x1EE5)c h$([char]0x1EC7) th$([char]0x1ED1)ng (System Restore Point)."
+            return $true
+        }
+        Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) t$([char]0x1EA1)o Restore Point (m$([char]0x00E3) tho$([char]0x00E1)t $code - c$([char]0x00F3) th$([char]0x1EC3) System Protection $([char]0x0111)ang t$([char]0x1EAF)t ho$([char]0x1EB7)c m$([char]0x1EDB)i t$([char]0x1EA1)o g$([char]0x1EA7)n $([char]0x0111)$([char]0x00E2)y)."
+        return $false
     } catch {
         Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) t$([char]0x1EA1)o Restore Point: $($_.Exception.Message)"
         return $false
@@ -45017,7 +45540,7 @@ function Save-OptimizerGuardSnapshot {
     if (-not [System.IO.Directory]::Exists($dir)) {
         [System.IO.Directory]::CreateDirectory($dir) | Out-Null
     }
-    $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $stamp = (Get-Date -Format "yyyyMMdd_HHmmss_fff") + "_" + ([Guid]::NewGuid().ToString("N").Substring(0, 6))
     $snapPath = Join-Path $dir "snapshot_$stamp.json"
 
     $payload = [PSCustomObject]@{
@@ -45081,10 +45604,12 @@ function Restore-OptimizerGuardSnapshot {
         }
 
         if ($obj.Tasks) {
-            foreach ($tk in @($obj.Tasks)) {
-                if (-not [string]::IsNullOrWhiteSpace([string]$tk)) {
-                    try { & schtasks.exe /Change /TN "$tk" /Enable 2>$null | Out-Null } catch {}
-                }
+            $tkArr = @($obj.Tasks | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+            if ($tkArr.Count -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+                $tkTask = [DuckUtil.WindowsOptimizerEngine]::SetScheduledTasksEnabledAsync([string[]]$tkArr, $true)
+                if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                    [void](Wait-TaskNonBlocking -Task $tkTask -TimeoutSeconds 20 -CancelCheck { [bool]$script:cancelRequested })
+                } else { [void]$tkTask.Wait(20000) }
             }
         }
 
@@ -45366,11 +45891,21 @@ function Restore-AllOptimizerGuardSnapshots {
     foreach ($v in $earliestSvc.Values) { [void]$svcArr.Add($v) }
     $svcRestored = if ($svcArr.Count -gt 0) { [DuckUtil.WindowsOptimizerEngine]::RestoreServiceSnapshots($svcArr.ToArray()) } else { 0 }
 
-    foreach ($tk in $allTasks) {
-        try { & schtasks.exe /Change /TN "$tk" /Enable 2>$null | Out-Null } catch {}
+    if ($allTasks.Count -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $tkTaskAll = [DuckUtil.WindowsOptimizerEngine]::SetScheduledTasksEnabledAsync([string[]]$allTasks.ToArray(), $true)
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $tkTaskAll -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
+        } else { [void]$tkTaskAll.Wait(25000) }
     }
 
     Repair-OemPowerAndLegionThermalMode
+
+    if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+        $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 3)
+        } else { [void]$bTask.Wait(3000) }
+    }
 
     if ($needsExplorer) {
         Restart-ExplorerSoft
@@ -45383,8 +45918,17 @@ function Restore-AllOptimizerGuardSnapshots {
 function Restart-ExplorerSoft {
     try {
         Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i nhanh Windows Explorer $([char]0x0111)$([char]0x1EC3) $([char]0x00E1)p d$([char]0x1EE5)ng thay $([char]0x0111)$([char]0x1ED5)i giao di$([char]0x1EC7)n..."
+        if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+            $tExp = [DuckUtil.WindowsOptimizerEngine]::RestartExplorerSoftAsync()
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $tExp -TimeoutSeconds 5)
+            } else {
+                [void]$tExp.Wait(5000)
+            }
+            return
+        }
         Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Milliseconds 700
+        Start-Sleep -Milliseconds 600
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
@@ -45431,7 +45975,7 @@ function Invoke-OptimizerSpecialAction {
         }
         "Hibernation" {
             $arg = if ($isUndo) { "/hibernate on" } else { "/hibernate off" }
-            $code = Run-CliStream "powercfg.exe" $arg -IsolateStdin -AllowCancel
+            $code = Run-CliStream "powercfg.exe" $arg -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 30 -IdleTimeoutSeconds 20
             return ($code -eq 0)
         }
         "SafeDisableBgApps" {
@@ -45439,20 +45983,18 @@ function Invoke-OptimizerSpecialAction {
         }
         "UltimatePerf" {
             if ($isUndo) {
-                $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
-                if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
-                    $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-                    [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
-                }
-                Repair-OemPowerAndLegionThermalMode -Silent
-                return $true
+                $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+                $cUndo = Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 15 -IdleTimeoutSeconds 10
+                return ($cUndo -eq 0)
             }
-            $listOut = (& powercfg.exe /list 2>$null) -join "`n"
+            $listRun = Run-CliStream "powercfg.exe" "/list" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
+            $listOut = if ($listRun) { [string]$listRun.StdOut } else { "" }
             $ultGuid = ""
             if ($listOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s*\([^)]*Ultimate Performance[^)]*\)') {
                 $ultGuid = $Matches[1]
             } else {
-                $dupOut = (& powercfg.exe -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 2>$null) -join "`n"
+                $dupRun = Run-CliStream "powercfg.exe" "-duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
+                $dupOut = if ($dupRun) { [string]$dupRun.StdOut } else { "" }
                 if ($dupOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
                     $ultGuid = $Matches[1]
                 }
@@ -45461,39 +46003,43 @@ function Invoke-OptimizerSpecialAction {
                 Log-Text "[WARN] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y ho$([char]0x1EB7)c kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) g$([char]0x00F3)i ngu$([char]0x1ED3)n Ultimate Performance tr$([char]0x00EA)n thi$([char]0x1EBF)t b$([char]0x1ECB) n$([char]0x00E0)y."
                 return $false
             }
-            $c = Run-CliStream "powercfg.exe" "/setactive $ultGuid" -IsolateStdin -AllowCancel
+            $c = Run-CliStream "powercfg.exe" "/setactive $ultGuid" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 15 -IdleTimeoutSeconds 10
             return ($c -eq 0)
         }
         "ReservedStorage" {
             $stateArg = if ($isUndo) { "Enabled" } else { "Disabled" }
-            $code = Run-CliStream "dism.exe" "/Online /Set-ReservedStorageState /State:$stateArg" -IsolateStdin -AllowCancel
+            $code = Run-CliStream "dism.exe" "/Online /Set-ReservedStorageState /State:$stateArg" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 120 -IdleTimeoutSeconds 60
             return ($code -eq 0)
         }
         "DnsApply" {
             $dnsChoice = if ($isUndo) { "M$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh (DHCP)" } else { $ComboValue }
-            $servers = @()
+            $primaryDns = ""
+            $secondaryDns = ""
+            $resetDhcp = $true
             switch -Regex ($dnsChoice) {
-                'Cloudflare|1\.1\.1\.1' { $servers = @("1.1.1.1", "1.0.0.1") }
-                'AdGuard|94\.140'       { $servers = @("94.140.14.14", "94.140.15.15") }
-                'Google|8\.8\.8\.8'     { $servers = @("8.8.8.8", "8.8.4.4") }
-                'Quad9|9\.9\.9\.9'      { $servers = @("9.9.9.9", "149.112.112.112") }
-                default                 { $servers = @() }
+                'Cloudflare|1\.1\.1\.1' { $primaryDns = "1.1.1.1"; $secondaryDns = "1.0.0.1"; $resetDhcp = $false }
+                'AdGuard|94\.140'       { $primaryDns = "94.140.14.14"; $secondaryDns = "94.140.15.15"; $resetDhcp = $false }
+                'Google|8\.8\.8\.8'     { $primaryDns = "8.8.8.8"; $secondaryDns = "8.8.4.4"; $resetDhcp = $false }
+                'Quad9|9\.9\.9\.9'      { $primaryDns = "9.9.9.9"; $secondaryDns = "149.112.112.112"; $resetDhcp = $false }
+                default                 { $primaryDns = ""; $secondaryDns = ""; $resetDhcp = $true }
             }
             try {
-                $adapters = @(Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' })
-                if ($adapters.Count -eq 0) {
-                    $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' -and $_.InterfaceDescription -notmatch 'Loopback|Virtual' })
-                }
-                foreach ($ad in $adapters) {
-                    if ($servers.Count -gt 0) {
-                        Set-DnsClientServerAddress -InterfaceIndex $ad.ifIndex -ServerAddresses $servers -ErrorAction SilentlyContinue
+                if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+                    $dnsTask = [DuckUtil.WindowsOptimizerEngine]::ApplyDnsAsync($primaryDns, $secondaryDns, $resetDhcp)
+                    if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                        [void](Wait-TaskNonBlocking -Task $dnsTask -TimeoutSeconds 25 -CancelCheck { [bool]$script:cancelRequested })
                     } else {
-                        Set-DnsClientServerAddress -InterfaceIndex $ad.ifIndex -ResetServerAddresses -ErrorAction SilentlyContinue
+                        [void]$dnsTask.Wait(25000)
                     }
+                    $okDns = ($dnsTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) -and [bool]$dnsTask.Result
+                    if ($okDns) {
+                        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) c$([char]0x1EAD)p nh$([char]0x1EAD)t DNS ($dnsChoice) v$([char]0x00E0) l$([char]0x00E0)m m$([char]0x1EDB)i DNS cache."
+                        return $true
+                    }
+                    Log-Text "[ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) $([char]0x00E1)p d$([char]0x1EE5)ng DNS ($dnsChoice) $([char]0x2014) ki$([char]0x1EC3)m tra quy$([char]0x1EC1)n Administrator v$([char]0x00E0) k$([char]0x1EBF)t n$([char]0x1ED1)i m$([char]0x1EA1)ng."
+                    return $false
                 }
-                & ipconfig.exe /flushdns 2>$null | Out-Null
-                Log-Text "[OK] $([char]0x0110)$([char]0x00E3) c$([char]0x1EAD)p nh$([char]0x1EAD)t DNS ($dnsChoice) v$([char]0x00E0) l$([char]0x00E0)m m$([char]0x1EDB)i DNS cache."
-                return $true
+                return $false
             } catch {
                 Log-Text "[ERR] L$([char]0x1ED7)i $([char]0x0111)$([char]0x1ED5)i DNS: $($_.Exception.Message)"
                 return $false
@@ -45539,7 +46085,7 @@ function Invoke-OptimizerSpecialAction {
                     (Join-Path $env:SystemRoot "SysWOW64\OneDriveSetup.exe")
                 )) {
                     if (Test-Path -LiteralPath $odSetup) {
-                        [void](Run-CliStream $odSetup "/uninstall" -IsolateStdin -AllowCancel)
+                        [void](Run-CliStream $odSetup "/uninstall" -IsolateStdin -AllowCancel -TimeoutSeconds 120 -IdleTimeoutSeconds 60)
                         break
                     }
                 }
@@ -45561,7 +46107,7 @@ function Invoke-OptimizerSpecialAction {
                     if (-not (Test-Path -LiteralPath $instRoot)) { continue }
                     $setupExe = Get-ChildItem -LiteralPath $instRoot -Filter "setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
                     if ($setupExe) {
-                        [void](Run-CliStream $setupExe.FullName "--uninstall --system-level --verbose-logging --force-uninstall" -IsolateStdin -AllowCancel)
+                        [void](Run-CliStream $setupExe.FullName "--uninstall --system-level --verbose-logging --force-uninstall" -IsolateStdin -AllowCancel -TimeoutSeconds 120 -IdleTimeoutSeconds 60)
                         return $true
                     }
                 }
@@ -45605,7 +46151,7 @@ function Invoke-OptimizerSpecialAction {
         "DisableBitLocker" {
             if ($isUndo) { return $true }
             try {
-                $code = Run-CliStream "manage-bde.exe" "-off $($env:SystemDrive)" -IsolateStdin -AllowCancel
+                $code = Run-CliStream "manage-bde.exe" "-off $($env:SystemDrive)" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 60 -IdleTimeoutSeconds 30
                 return ($code -eq 0 -or $code -eq -2147024891)
             } catch {
                 return $false
@@ -45677,6 +46223,156 @@ function Invoke-OptimizerSpecialAction {
     return $true
 }
 
+function Test-OptimizerTweakRequiresAdmin {
+    param($Tweak)
+    if (-not $Tweak) { return $false }
+    if ($Tweak.Services -and @($Tweak.Services).Count -gt 0) { return $true }
+    if ($Tweak.Tasks -and @($Tweak.Tasks).Count -gt 0) { return $true }
+    if ($Tweak.Registry) {
+        foreach ($r in @($Tweak.Registry)) {
+            $hv = if ([string]::IsNullOrWhiteSpace([string]$r.Hive)) { "HKLM" } else { [string]$r.Hive }
+            if ($hv -ieq "HKLM" -or $hv -ieq "HKCR") { return $true }
+            if ([string]$r.Path -match '(?i)^Software\\Policies\\') { return $true }
+        }
+    }
+    $act = [string]$Tweak.Action
+    if ($act -in @("RestorePoint","Hibernation","UltimatePerf","ReservedStorage","DnsApply","NagleDisable","RemoveEdge","AdobeBlock","DisableBitLocker","PauseWindowsUpdate35d","DisableWindowsUpdateAll","ResetWindowsUpdateDefault")) {
+        return $true
+    }
+    return $false
+}
+
+function Invoke-SingleOptimizerTweak {
+    param(
+        [Parameter(Mandatory = $true)]$Tweak,
+        [ValidateSet("Apply", "Undo")][string]$Mode = "Apply",
+        [string]$ComboValue = ""
+    )
+    $ok = $true
+    $isUndo = ($Mode -eq "Undo")
+    $errList = [System.Collections.Generic.List[string]]::new()
+
+    $regSpecs = ConvertTo-RegTweakSpecs @($Tweak)
+    if ($regSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $regTask = [DuckUtil.WindowsOptimizerEngine]::ApplyRegistrySpecsDetailedAsync($regSpecs, $isUndo)
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15 -CancelCheck { [bool]$script:cancelRequested })
+        } else { [void]$regTask.Wait(15000) }
+        if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $regTask.Result) {
+            $rr = $regTask.Result
+            if ($rr.OkCount -lt $rr.TotalCount) {
+                $ok = $false
+                foreach ($er in @($rr.Errors)) {
+                    if (-not [string]::IsNullOrWhiteSpace($er)) { [void]$errList.Add($er) }
+                }
+            }
+        } else {
+            $ok = $false
+            [void]$errList.Add("Ghi Registry h$([char]0x1EBF)t th$([char]0x1EDD)i gian ch$([char]0x1EDD) ho$([char]0x1EB7)c b$([char]0x1ECB) gi$([char]0x00E1)n $([char]0x0111)o$([char]0x1EA1)n")
+        }
+    }
+
+    $svcSpecs = ConvertTo-ServiceTweakSpecs @($Tweak)
+    if ($svcSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $svcTask = [DuckUtil.WindowsOptimizerEngine]::ApplyServiceSpecsAsync($svcSpecs, $isUndo)
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15 -CancelCheck { [bool]$script:cancelRequested })
+        } else { [void]$svcTask.Wait(15000) }
+    }
+
+    if ($Tweak.Tasks) {
+        $tkArr = @($Tweak.Tasks | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ })
+        if ($tkArr.Count -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+            $tkTask = [DuckUtil.WindowsOptimizerEngine]::SetScheduledTasksEnabledAsync([string[]]$tkArr, $isUndo)
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $tkTask -TimeoutSeconds 20 -CancelCheck { [bool]$script:cancelRequested })
+            } else { [void]$tkTask.Wait(20000) }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Tweak.Action)) {
+        $actOk = Invoke-OptimizerSpecialAction -Action ([string]$Tweak.Action) -Mode $Mode -ComboValue $ComboValue
+        if (-not $actOk) {
+            $ok = $false
+            [void]$errList.Add("T$([char]0x00E1)c v$([char]0x1EE5) '$($Tweak.Action)' tr$([char]0x1EA3) v$([char]0x1EC1) th$([char]0x1EA5)t b$([char]0x1EA1)i")
+        }
+    }
+
+    return [PSCustomObject]@{
+        Success = $ok
+        Errors  = @($errList)
+    }
+}
+
+function Invoke-SingleOptimizerToggle {
+    param(
+        [Parameter(Mandatory = $true)]$Tweak,
+        [Parameter(Mandatory = $true)][bool]$TargetEnabled,
+        [string]$ComboValue = "",
+        $HardwareProfile = $null
+    )
+    $isAdmin = if ("DuckUtil.WindowsOptimizerEngine" -as [type]) { [DuckUtil.WindowsOptimizerEngine]::IsCurrentProcessAdmin() } else { $true }
+    if ((Test-OptimizerTweakRequiresAdmin -Tweak $Tweak) -and -not $isAdmin) {
+        return [PSCustomObject]@{
+            Success        = $false
+            NeedsAdmin     = $true
+            VerifiedState  = if ($TargetEnabled) { "Default" } else { "Applied" }
+            VerifiedDetail = ""
+            Errors         = @("Y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n Administrator")
+        }
+    }
+
+    $mode = if ($TargetEnabled) { "Apply" } else { "Undo" }
+    if ($TargetEnabled) {
+        [void](Save-OptimizerGuardSnapshot -Tweaks @($Tweak) -HardwareProfile $HardwareProfile)
+    }
+
+    $execRes = Invoke-SingleOptimizerTweak -Tweak $Tweak -Mode $mode -ComboValue $ComboValue
+
+    if ($execRes.Success -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+        $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 3)
+        } else { [void]$bTask.Wait(3000) }
+
+        if ($Tweak.NeedsExplorerRestart -and ([string]$Tweak.Id -in @("opt_classic_context_menu","opt_dark_mode","opt_disable_bing_search","opt_start_recommendations","opt_explorer_this_pc"))) {
+            Restart-ExplorerSoft
+        }
+    }
+
+    $vState = if ($execRes.Success) { if ($TargetEnabled) { "Applied" } else { "Default" } } else { if ($TargetEnabled) { "Default" } else { "Applied" } }
+    $vDetail = ""
+    if ("DuckUtil.WindowsOptimizerEngine" -as [type]) {
+        try {
+            $reqArr = Build-TweakProbeRequests @($Tweak)
+            $pTask = [DuckUtil.WindowsOptimizerEngine]::ProbeTweaksStateAsync($reqArr)
+            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+                [void](Wait-TaskNonBlocking -Task $pTask -TimeoutSeconds 5)
+            } else { [void]$pTask.Wait(5000) }
+            if ($pTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $pTask.Result -and $pTask.Result.Length -gt 0) {
+                $vState = [string]$pTask.Result[0].State
+                $vDetail = [string]$pTask.Result[0].Detail
+            }
+        } catch {}
+    }
+
+    $verifiedMatch = if ($TargetEnabled) { ($vState -eq "Applied") } else { ($vState -ne "Applied") }
+    $finalOk = $execRes.Success -and $verifiedMatch
+    $errs = [System.Collections.Generic.List[string]]::new()
+    foreach ($er in @($execRes.Errors)) { [void]$errs.Add($er) }
+    if ($execRes.Success -and -not $verifiedMatch) {
+        [void]$errs.Add("Windows kh$([char]0x00F4)ng gi$([char]0x1EEF) l$([char]0x1EA1)i thay $([char]0x0111)$([char]0x1ED5)i sau khi ghi (tr$([char]0x1EA1)ng th$([char]0x00E1)i th$([char]0x1EF1)c t$([char]0x1EBF): $vState)")
+    }
+
+    return [PSCustomObject]@{
+        Success        = $finalOk
+        NeedsAdmin     = $false
+        VerifiedState  = $vState
+        VerifiedDetail = $vDetail
+        Errors         = @($errs)
+    }
+}
+
 function Invoke-OptimizerBatch {
     param(
         [Parameter(Mandatory = $true)]$Tweaks,
@@ -45698,6 +46394,7 @@ function Invoke-OptimizerBatch {
     $needsReboot = $false
     $total = $tweakList.Count
     $idx = 0
+    $isUndo = ($Mode -eq "Undo")
 
     foreach ($tw in $tweakList) {
         if ($script:cancelRequested -or $script:isWindowClosing) { break }
@@ -45705,38 +46402,14 @@ function Invoke-OptimizerBatch {
         if ($ProgressCallback) {
             try { & $ProgressCallback $idx $total ([string]$tw.Name) } catch {}
         }
-
-        $ok = $true
-        $isUndo = ($Mode -eq "Undo")
-
-        $regSpecs = ConvertTo-RegTweakSpecs @($tw)
-        if ($regSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
-            $regDone = [DuckUtil.WindowsOptimizerEngine]::ApplyRegistrySpecs($regSpecs, $isUndo)
-            if ($regDone -lt $regSpecs.Length) { $ok = $false }
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(10)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
         }
 
-        $svcSpecs = ConvertTo-ServiceTweakSpecs @($tw)
-        if ($svcSpecs.Length -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
-            [void][DuckUtil.WindowsOptimizerEngine]::ApplyServiceSpecs($svcSpecs, $isUndo)
-        }
+        $comboVal = if ($ComboSelections -and $ComboSelections.ContainsKey([string]$tw.Id)) { [string]$ComboSelections[[string]$tw.Id] } else { "" }
+        $resOne = Invoke-SingleOptimizerTweak -Tweak $tw -Mode $Mode -ComboValue $comboVal
 
-        if ($tw.Tasks) {
-            foreach ($tk in @($tw.Tasks)) {
-                if ([string]::IsNullOrWhiteSpace([string]$tk)) { continue }
-                try {
-                    $taskFlag = if ($isUndo) { "/Enable" } else { "/Disable" }
-                    & schtasks.exe /Change /TN "$tk" $taskFlag 2>$null | Out-Null
-                } catch {}
-            }
-        }
-
-        if (-not [string]::IsNullOrWhiteSpace([string]$tw.Action)) {
-            $comboVal = if ($ComboSelections -and $ComboSelections.ContainsKey([string]$tw.Id)) { [string]$ComboSelections[[string]$tw.Id] } else { "" }
-            $actOk = Invoke-OptimizerSpecialAction -Action ([string]$tw.Action) -Mode $Mode -ComboValue $comboVal
-            if (-not $actOk) { $ok = $false }
-        }
-
-        if ($ok) {
+        if ($resOne.Success) {
             $applied++
             if ($tw.NeedsExplorerRestart) { $needsExplorer = $true }
             if ($tw.NeedsReboot) { $needsReboot = $true }
@@ -45744,8 +46417,16 @@ function Invoke-OptimizerBatch {
             Log-Text "   [OK] ${actLabel}: $($tw.Name)"
         } else {
             $failed++
-            Log-Text "   [ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x1EED) l$([char]0x00FD): $($tw.Name)"
+            $errDetail = if ($resOne.Errors -and $resOne.Errors.Count -gt 0) { " ($($resOne.Errors[0]))" } else { "" }
+            Log-Text "   [ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x1EED) l$([char]0x00FD): $($tw.Name)$errDetail"
         }
+    }
+
+    if ($applied -gt 0 -and ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not $script:isWindowClosing) {
+        $bTask = [DuckUtil.WindowsOptimizerEngine]::BroadcastSettingsChangeAsync()
+        if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
+            [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 3)
+        } else { [void]$bTask.Wait(3000) }
     }
 
     if ($needsExplorer -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
@@ -54126,30 +54807,25 @@ function Update-OptimizerSelectionCount {
         return
     }
     $cbCnt = 0
-    $tgChanged = 0
     foreach ($ent in $script:optEntries) {
         if (-not $ent.CheckBox) { continue }
-        $isCh = ($ent.CheckBox.IsChecked -eq $true)
-        if ($ent.IsToggle) {
-            if ($isCh -ne ([bool]$ent.InitialToggleState)) { $tgChanged++ }
-        } else {
-            if ($isCh) { $cbCnt++ }
+        if (-not $ent.IsToggle -and $ent.CheckBox.IsChecked -eq $true) {
+            $cbCnt++
         }
     }
-    $totalPending = $cbCnt + $tgChanged
-    $txtSelectionCount.Text = "$totalPending thay $([char]0x0111)$([char]0x1ED5)i ch$([char]0x1EDD) l$([char]0x01B0)u"
-    $txtSelectionCount.Foreground = if ($totalPending -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
+    $txtSelectionCount.Text = "$cbCnt t$([char]0x00F9)y ch$([char]0x1EC9)nh ch$([char]0x1EDD) l$([char]0x01B0)u"
+    $txtSelectionCount.Foreground = if ($cbCnt -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
 }
 
 function Set-OptimizerEntryVisualState {
-    param($Entry, [string]$State)
+    param($Entry, [string]$State, [string]$Detail = "")
     if (-not $Entry) { return }
     $Entry.State = $State
     $titleTb = $Entry.TitleText
     switch ($State) {
         "Applied" {
             if ($titleTb) { $titleTb.Foreground = $script:brushOptRiskSafeFg }
-            $stateDesc = "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: $([char]0x0110)ang b$([char]0x1EAD)t"
+            $stateDesc = if (-not [string]::IsNullOrWhiteSpace($Detail) -and $Entry.ComboBox) { "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: $([char]0x0110)ang b$([char]0x1EAD)t ($Detail)" } else { "Tr$([char]0x1EA1)ng th$([char]0x00E1)i: $([char]0x0110)ang b$([char]0x1EAD)t" }
         }
         "Partial" {
             if ($titleTb) { $titleTb.Foreground = $script:brushOptRiskModFg }
@@ -54168,9 +54844,143 @@ function Set-OptimizerEntryVisualState {
         $liveBool = ($State -eq "Applied")
         $Entry.InitialToggleState = $liveBool
         if ($Entry.CheckBox) { $Entry.CheckBox.IsChecked = $liveBool }
+        if ($Entry.ComboBox -and -not [string]::IsNullOrWhiteSpace($Detail)) {
+            for ($ci = 0; $ci -lt $Entry.ComboBox.Items.Count; $ci++) {
+                if ([string]$Entry.ComboBox.Items[$ci] -ieq $Detail) {
+                    $Entry.ComboBox.SelectedIndex = $ci
+                    break
+                }
+            }
+        }
     }
     if ($Entry.Row -and $Entry.BaseToolTip) {
         $Entry.Row.ToolTip = "$($Entry.BaseToolTip)`n$stateDesc"
+    }
+}
+
+$script:optApplyingSingleToggle = $false
+
+function Invoke-OptimizerInstantToggle {
+    param(
+        [Parameter(Mandatory = $true)]$Entry,
+        [Parameter(Mandatory = $true)][bool]$WantEnabled,
+        [switch]$ForceApply
+    )
+    if (-not $Entry -or -not $Entry.Tweak -or -not $Entry.CheckBox) { return }
+
+    $rollbackToggle = {
+        $prevS = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            $Entry.CheckBox.IsChecked = [bool]$Entry.InitialToggleState
+        } finally {
+            $script:optSyncingVisuals = $prevS
+        }
+    }
+
+    if ($script:isWindowClosing -or $script:optApplyingSingleToggle -or $script:isActionRunning) {
+        & $rollbackToggle
+        if ($script:isActionRunning -and $txtStatus) {
+            $txtStatus.Text = "$([char]0x0110)ang x$([char]0x1EED) l$([char]0x00FD) t$([char]0x00E1)c v$([char]0x1EE5) kh$([char]0x00E1)c, vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i xong r$([char]0x1ED3)i g$([char]0x1EA1)t l$([char]0x1EA1)i..."
+        }
+        return
+    }
+    if (-not $ForceApply -and $WantEnabled -eq [bool]$Entry.InitialToggleState) { return }
+
+    $tw = $Entry.Tweak
+    $tid = [string]$tw.Id
+
+    if ($WantEnabled -and $tw.Risk -eq "Caution") {
+        $ans = Show-OwnedMessageBox `
+            -Text "T$([char]0x00F9)y ch$([char]0x1EC9)nh '$($tw.Name)' thu$([char]0x1ED9)c m$([char]0x1EE9)c N$([char]0x00E2)ng cao.`n$($tw.Description)`n`nApp-Driver s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c qua OptimizerGuard tr$([char]0x01B0)$([char]0x1EDB)c khi $([char]0x00E1)p d$([char]0x1EE5)ng. Ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n b$([char]0x1EAD)t t$([char]0x00F9)y ch$([char]0x1EC9)nh n$([char]0x00E2)ng cao" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
+            & $rollbackToggle
+            return
+        }
+    }
+
+    $isAdminNow = if ("DuckUtil.WindowsOptimizerEngine" -as [type]) { [DuckUtil.WindowsOptimizerEngine]::IsCurrentProcessAdmin() } else { $true }
+    if ((Test-OptimizerTweakRequiresAdmin -Tweak $tw) -and -not $isAdminNow) {
+        & $rollbackToggle
+        Log-Text "[WARN] T$([char]0x00F9)y ch$([char]0x1EC9)nh '$($tw.Name)' c$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) ghi v$([char]0x00E0)o h$([char]0x1EC7) th$([char]0x1ED1)ng (HKLM/Service)."
+        if ($txtStatus) { $txtStatus.Text = "C$([char]0x1EA7)n m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) b$([char]0x1EAD)t '$($tw.Name)'" }
+        [void](Show-OwnedMessageBox -Text "T$([char]0x00F9)y ch$([char]0x1EC9)nh '$($tw.Name)' ghi v$([char]0x00E0)o nh$([char]0x00E1)nh h$([char]0x1EC7) th$([char]0x1ED1)ng (HKLM/Service) n$([char]0x00EA)n c$([char]0x1EA7)n ch$([char]0x1EA1)y App-Driver v$([char]0x1EDB)i quy$([char]0x1EC1)n Administrator." -Caption "Y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+        return
+    }
+
+    $comboVal = ""
+    if ($Entry.ComboBox) {
+        if ($WantEnabled) {
+            $selItem = [string]$Entry.ComboBox.SelectedItem
+            if ([string]::IsNullOrWhiteSpace($selItem) -or $selItem -match 'DHCP') {
+                $prevS2 = $script:optSyncingVisuals
+                $script:optSyncingVisuals = $true
+                try {
+                    if ($Entry.ComboBox.Items.Count -gt 0) {
+                        $Entry.ComboBox.SelectedIndex = 0
+                        $selItem = [string]$Entry.ComboBox.SelectedItem
+                    }
+                } finally {
+                    $script:optSyncingVisuals = $prevS2
+                }
+            }
+            $comboVal = $selItem
+        } else {
+            $comboVal = "M$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh (DHCP)"
+        }
+    }
+
+    $script:optApplyingSingleToggle = $true
+    $Entry.CheckBox.IsEnabled = $false
+    if ($Entry.ComboBox) { $Entry.ComboBox.IsEnabled = $false }
+    $actVerb = if ($WantEnabled) { "b$([char]0x1EAD)t" } else { "t$([char]0x1EAF)t" }
+    if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ${actVerb}: $($tw.Name)..." }
+
+    try {
+        if ($WantEnabled) {
+            $conflictId = if ($tid -eq "opt_prefer_ipv4") { "opt_disable_ipv6" } elseif ($tid -eq "opt_disable_ipv6") { "opt_prefer_ipv4" } else { "" }
+            if (-not [string]::IsNullOrEmpty($conflictId) -and $script:optEntryById.ContainsKey($conflictId)) {
+                $otherEnt = $script:optEntryById[$conflictId]
+                if ($otherEnt -and $otherEnt.InitialToggleState) {
+                    $cRes = Invoke-SingleOptimizerToggle -Tweak $otherEnt.Tweak -TargetEnabled $false -HardwareProfile $script:optHardwareProfile
+                    $prevSc = $script:optSyncingVisuals
+                    $script:optSyncingVisuals = $true
+                    try {
+                        Set-OptimizerEntryVisualState -Entry $otherEnt -State ([string]$cRes.VerifiedState) -Detail ([string]$cRes.VerifiedDetail)
+                    } finally {
+                        $script:optSyncingVisuals = $prevSc
+                    }
+                }
+            }
+        }
+
+        $res = Invoke-SingleOptimizerToggle -Tweak $tw -TargetEnabled $WantEnabled -ComboValue $comboVal -HardwareProfile $script:optHardwareProfile
+        $prevS3 = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            Set-OptimizerEntryVisualState -Entry $Entry -State ([string]$res.VerifiedState) -Detail ([string]$res.VerifiedDetail)
+        } finally {
+            $script:optSyncingVisuals = $prevS3
+        }
+
+        if ($res.Success) {
+            $detailSuffix = if (-not [string]::IsNullOrWhiteSpace($comboVal) -and $WantEnabled) { " ($comboVal)" } else { "" }
+            Log-Text "[OK] T$([char]0x00F9)y ch$([char]0x1EC9)nh: $([char]0x0110)$([char]0x00E3) ${actVerb} '$($tw.Name)'$detailSuffix."
+            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) ${actVerb}: $($tw.Name)$detailSuffix" }
+        } else {
+            $errMsg = if ($res.Errors -and $res.Errors.Count -gt 0) { $res.Errors[0] } else { "Kh$([char]0x00F4)ng th$([char]0x1EC3) ghi c$([char]0x1EA5)u h$([char]0x00EC)nh v$([char]0x00E0)o h$([char]0x1EC7) th$([char]0x1ED1)ng" }
+            Log-Text "[ERR] T$([char]0x00F9)y ch$([char]0x1EC9)nh '$($tw.Name)': $errMsg"
+            if ($txtStatus) { $txtStatus.Text = "L$([char]0x1ED7)i ${actVerb} '$($tw.Name)' $([char]0x2014) $([char]0x0111)$([char]0x00E3) ho$([char]0x00E0)n l$([char]0x1EA1)i tr$([char]0x1EA1)ng th$([char]0x00E1)i th$([char]0x1EF1)c t$([char]0x1EBF)" }
+        }
+        Apply-OptimizerFilter
+        Update-OptimizerSelectionCount
+    } finally {
+        $Entry.CheckBox.IsEnabled = $true
+        if ($Entry.ComboBox) { $Entry.ComboBox.IsEnabled = $true }
+        $script:optApplyingSingleToggle = $false
     }
 }
 
@@ -54220,7 +55030,7 @@ function Refresh-OptimizerLiveState {
         try {
             foreach ($res in $task.Result) {
                 if ($script:optEntryById.ContainsKey([string]$res.Id)) {
-                    Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State)
+                    Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State) -Detail ([string]$res.Detail)
                 }
             }
         } finally {
@@ -54291,13 +55101,6 @@ function New-OptimizerTweakRowElement {
         $comboCtrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         foreach ($opt in @($Tweak.ComboOptions)) { [void]$comboCtrl.Items.Add([string]$opt) }
         if ($comboCtrl.Items.Count -gt 0) { $comboCtrl.SelectedIndex = 0 }
-        $comboCtrl.Tag = $ctrl
-        $comboCtrl.Add_SelectionChanged({
-            param($cs, $ce)
-            if (-not $script:optSyncingVisuals -and $cs.Tag) {
-                $cs.Tag.IsChecked = $true
-            }
-        })
         [System.Windows.Controls.Grid]::SetColumn($comboCtrl, 2)
         [void]$g.Children.Add($comboCtrl)
     }
@@ -54319,10 +55122,22 @@ function New-OptimizerTweakRowElement {
         SearchText         = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
     }
     $b.Tag = $entry
+    $ctrl.Tag = $entry
+    if ($comboCtrl) {
+        $comboCtrl.Tag = $entry
+        $comboCtrl.Add_SelectionChanged({
+            param($cs, $ce)
+            if ($script:optSyncingVisuals -or -not $cs.Tag) { return }
+            $selDns = [string]$cs.SelectedItem
+            if ([string]::IsNullOrWhiteSpace($selDns)) { return }
+            $wantDnsOn = -not ($selDns -match 'DHCP')
+            Invoke-OptimizerInstantToggle -Entry $cs.Tag -WantEnabled $wantDnsOn -ForceApply
+        })
+    }
     $prevSync = $script:optSyncingVisuals
     $script:optSyncingVisuals = $true
     try {
-        Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action" -or $Tweak.ProbeKind -eq "DnsCustom") { "Action" } else { "Default" })
+        Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action") { "Action" } else { "Default" })
     } finally {
         $script:optSyncingVisuals = $prevSync
     }
@@ -54364,31 +55179,31 @@ function Initialize-OptimizerTabIfNeeded {
                     param($sender, $e)
                     if ($script:optSyncingVisuals) { return }
                     $srcTb = $e.OriginalSource -as [System.Windows.Controls.Primitives.ToggleButton]
-                    if ($srcTb) {
-                        $pRow = [System.Windows.Media.VisualTreeHelper]::GetParent([System.Windows.Media.VisualTreeHelper]::GetParent($srcTb))
-                        if ($pRow -and $pRow.Tag -and $pRow.Tag.Tweak) {
-                            $tid = [string]$pRow.Tag.Tweak.Id
-                            if ($tid -eq "opt_prefer_ipv4" -and $script:optEntryById.ContainsKey("opt_disable_ipv6")) {
-                                $other = $script:optEntryById["opt_disable_ipv6"]
-                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
-                            } elseif ($tid -eq "opt_disable_ipv6" -and $script:optEntryById.ContainsKey("opt_prefer_ipv4")) {
-                                $other = $script:optEntryById["opt_prefer_ipv4"]
-                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
-                            }
-                        }
+                    if ($srcTb -and -not ($srcTb -is [System.Windows.Controls.CheckBox]) -and $srcTb.Tag) {
+                        Invoke-OptimizerInstantToggle -Entry $srcTb.Tag -WantEnabled $true
+                        return
                     }
                     Update-OptimizerSelectionCount
                 }
             )
             $script:optTweaksHost.AddHandler(
                 [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
-                [System.Windows.RoutedEventHandler]{ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } }
+                [System.Windows.RoutedEventHandler]{
+                    param($sender, $e)
+                    if ($script:optSyncingVisuals) { return }
+                    $srcTb = $e.OriginalSource -as [System.Windows.Controls.Primitives.ToggleButton]
+                    if ($srcTb -and -not ($srcTb -is [System.Windows.Controls.CheckBox]) -and $srcTb.Tag) {
+                        Invoke-OptimizerInstantToggle -Entry $srcTb.Tag -WantEnabled $false
+                        return
+                    }
+                    Update-OptimizerSelectionCount
+                }
             )
             $script:optTweaksHost.AddHandler(
                 [System.Windows.UIElement]::MouseLeftButtonUpEvent,
                 [System.Windows.Input.MouseButtonEventHandler]{
                     param($sender, $e)
-                    if ($e.Handled -or $script:isActionRunning -or $script:isWindowClosing) { return }
+                    if ($e.Handled -or $script:isActionRunning -or $script:optApplyingSingleToggle -or $script:isWindowClosing) { return }
                     $cur = $e.OriginalSource -as [System.Windows.DependencyObject]
                     while ($cur -and $cur -ne $sender) {
                         if ($cur -is [System.Windows.Controls.Primitives.ToggleButton] -or
@@ -54539,7 +55354,6 @@ function Initialize-OptimizerTabIfNeeded {
         })
     }
 
-    Invoke-OemAndCriticalServiceSelfHeal
     Refresh-OptimizerLiveState
     Update-OptimizerSelectionCount
     if ($script:optLanesGrid) {
@@ -54574,7 +55388,8 @@ if ($script:btnOptApply) {
             $_.CheckBox -and $_.IsToggle -and $_.InitialToggleState -and ($_.CheckBox.IsChecked -ne $true)
         })
         if ($toApply.Count -eq 0 -and $toUndo.Count -eq 0) {
-            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n t$([char]0x00F9)y ch$([char]0x1EC9)nh ho$([char]0x1EB7)c g$([char]0x1EA1)t thay $([char]0x0111)$([char]0x1ED5)i n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) l$([char]0x01B0)u!"
+            Log-Text "[!] Ch$([char]0x01B0)a c$([char]0x00F3) t$([char]0x00F9)y ch$([char]0x1EC9)nh $([char]0x00F4) ch$([char]0x1ECD)n (c$([char]0x1ED9)t tr$([char]0x00E1)i) n$([char]0x00E0)o $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c tick. C$([char]0x00E1)c c$([char]0x00F4)ng t$([char]0x1EAF)c g$([char]0x1EA1)t (c$([char]0x1ED9)t ph$([char]0x1EA3)i) $([char]0x0111)$([char]0x00E3) t$([char]0x1EF1) l$([char]0x01B0)u ngay khi g$([char]0x1EA1)t!"
+            if ($txtStatus) { $txtStatus.Text = "Ch$([char]0x01B0)a tick m$([char]0x1EE5)c n$([char]0x00E0)o $([char]0x1EDF) c$([char]0x1ED9)t tr$([char]0x00E1)i (c$([char]0x00F4)ng t$([char]0x1EAF)c g$([char]0x1EA1)t c$([char]0x1ED9)t ph$([char]0x1EA3)i t$([char]0x1EF1) l$([char]0x01B0)u ngay khi g$([char]0x1EA1)t)." }
             return
         }
         $cautionItems = @($toApply | Where-Object { $_.Tweak.Risk -eq "Caution" })
@@ -54587,7 +55402,12 @@ if ($script:btnOptApply) {
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
             if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
         }
-        Invoke-GuardedAction "L$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u Windows" {
+        Invoke-GuardedAction "L$([char]0x01B0)u c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1ED1)i $([char]0x01B0)u Windows" -AllowDuringUninstallerLoad {
+            if ($btnCancelAction) {
+                $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+                $btnCancelAction.IsEnabled = $true
+                $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+            }
             $totalApplied = 0
             $totalFailed = 0
             if ($toUndo.Count -gt 0) {
@@ -54676,7 +55496,12 @@ if ($script:btnOptUndo) {
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        Invoke-GuardedAction "$([char]0x0110)$([char]0x1EB7)t t$([char]0x1ED1)i $([char]0x01B0)u v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh" {
+        Invoke-GuardedAction "$([char]0x0110)$([char]0x1EB7)t t$([char]0x1ED1)i $([char]0x01B0)u v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh" -AllowDuringUninstallerLoad {
+            if ($btnCancelAction) {
+                $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
+                $btnCancelAction.IsEnabled = $true
+                $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+            }
             $twObjs = @($targets | ForEach-Object { $_.Tweak })
             $twIds = @($twObjs | ForEach-Object { [string]$_.Id })
             Log-Text "=========================================================="
@@ -54715,7 +55540,7 @@ if ($script:btnOptRestoreBackup) {
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        Invoke-GuardedAction "Kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" {
+        Invoke-GuardedAction "Kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" -AllowDuringUninstallerLoad {
             [void](Restore-AllOptimizerGuardSnapshots)
             if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) b$([char]0x1EA3)n sao l$([char]0x01B0)u g$([char]0x1ED1)c OptimizerGuard" }
             Refresh-OptimizerLiveState

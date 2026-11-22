@@ -8359,30 +8359,25 @@ function Update-OptimizerSelectionCount {
         return
     }
     $cbCnt = 0
-    $tgChanged = 0
     foreach ($ent in $script:optEntries) {
         if (-not $ent.CheckBox) { continue }
-        $isCh = ($ent.CheckBox.IsChecked -eq $true)
-        if ($ent.IsToggle) {
-            if ($isCh -ne ([bool]$ent.InitialToggleState)) { $tgChanged++ }
-        } else {
-            if ($isCh) { $cbCnt++ }
+        if (-not $ent.IsToggle -and $ent.CheckBox.IsChecked -eq $true) {
+            $cbCnt++
         }
     }
-    $totalPending = $cbCnt + $tgChanged
-    $txtSelectionCount.Text = "$totalPending thay đổi chờ lưu"
-    $txtSelectionCount.Foreground = if ($totalPending -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
+    $txtSelectionCount.Text = "$cbCnt tùy chỉnh chờ lưu"
+    $txtSelectionCount.Foreground = if ($cbCnt -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
 }
 
 function Set-OptimizerEntryVisualState {
-    param($Entry, [string]$State)
+    param($Entry, [string]$State, [string]$Detail = "")
     if (-not $Entry) { return }
     $Entry.State = $State
     $titleTb = $Entry.TitleText
     switch ($State) {
         "Applied" {
             if ($titleTb) { $titleTb.Foreground = $script:brushOptRiskSafeFg }
-            $stateDesc = "Trạng thái: Đang bật"
+            $stateDesc = if (-not [string]::IsNullOrWhiteSpace($Detail) -and $Entry.ComboBox) { "Trạng thái: Đang bật ($Detail)" } else { "Trạng thái: Đang bật" }
         }
         "Partial" {
             if ($titleTb) { $titleTb.Foreground = $script:brushOptRiskModFg }
@@ -8401,9 +8396,143 @@ function Set-OptimizerEntryVisualState {
         $liveBool = ($State -eq "Applied")
         $Entry.InitialToggleState = $liveBool
         if ($Entry.CheckBox) { $Entry.CheckBox.IsChecked = $liveBool }
+        if ($Entry.ComboBox -and -not [string]::IsNullOrWhiteSpace($Detail)) {
+            for ($ci = 0; $ci -lt $Entry.ComboBox.Items.Count; $ci++) {
+                if ([string]$Entry.ComboBox.Items[$ci] -ieq $Detail) {
+                    $Entry.ComboBox.SelectedIndex = $ci
+                    break
+                }
+            }
+        }
     }
     if ($Entry.Row -and $Entry.BaseToolTip) {
         $Entry.Row.ToolTip = "$($Entry.BaseToolTip)`n$stateDesc"
+    }
+}
+
+$script:optApplyingSingleToggle = $false
+
+function Invoke-OptimizerInstantToggle {
+    param(
+        [Parameter(Mandatory = $true)]$Entry,
+        [Parameter(Mandatory = $true)][bool]$WantEnabled,
+        [switch]$ForceApply
+    )
+    if (-not $Entry -or -not $Entry.Tweak -or -not $Entry.CheckBox) { return }
+
+    $rollbackToggle = {
+        $prevS = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            $Entry.CheckBox.IsChecked = [bool]$Entry.InitialToggleState
+        } finally {
+            $script:optSyncingVisuals = $prevS
+        }
+    }
+
+    if ($script:isWindowClosing -or $script:optApplyingSingleToggle -or $script:isActionRunning) {
+        & $rollbackToggle
+        if ($script:isActionRunning -and $txtStatus) {
+            $txtStatus.Text = "Đang xử lý tác vụ khác, vui lòng đợi xong rồi gạt lại..."
+        }
+        return
+    }
+    if (-not $ForceApply -and $WantEnabled -eq [bool]$Entry.InitialToggleState) { return }
+
+    $tw = $Entry.Tweak
+    $tid = [string]$tw.Id
+
+    if ($WantEnabled -and $tw.Risk -eq "Caution") {
+        $ans = Show-OwnedMessageBox `
+            -Text "Tùy chỉnh '$($tw.Name)' thuộc mức Nâng cao.`n$($tw.Description)`n`nApp-Driver sẽ tự động sao lưu trạng thái gốc qua OptimizerGuard trước khi áp dụng. Tiếp tục?" `
+            -Caption "Xác nhận bật tùy chỉnh nâng cao" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
+            & $rollbackToggle
+            return
+        }
+    }
+
+    $isAdminNow = if ("DuckUtil.WindowsOptimizerEngine" -as [type]) { [DuckUtil.WindowsOptimizerEngine]::IsCurrentProcessAdmin() } else { $true }
+    if ((Test-OptimizerTweakRequiresAdmin -Tweak $tw) -and -not $isAdminNow) {
+        & $rollbackToggle
+        Log-Text "[WARN] Tùy chỉnh '$($tw.Name)' cần quyền Administrator để ghi vào hệ thống (HKLM/Service)."
+        if ($txtStatus) { $txtStatus.Text = "Cần mở App-Driver bằng quyền Administrator để bật '$($tw.Name)'" }
+        [void](Show-OwnedMessageBox -Text "Tùy chỉnh '$($tw.Name)' ghi vào nhánh hệ thống (HKLM/Service) nên cần chạy App-Driver với quyền Administrator." -Caption "Yêu cầu quyền Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+        return
+    }
+
+    $comboVal = ""
+    if ($Entry.ComboBox) {
+        if ($WantEnabled) {
+            $selItem = [string]$Entry.ComboBox.SelectedItem
+            if ([string]::IsNullOrWhiteSpace($selItem) -or $selItem -match 'DHCP') {
+                $prevS2 = $script:optSyncingVisuals
+                $script:optSyncingVisuals = $true
+                try {
+                    if ($Entry.ComboBox.Items.Count -gt 0) {
+                        $Entry.ComboBox.SelectedIndex = 0
+                        $selItem = [string]$Entry.ComboBox.SelectedItem
+                    }
+                } finally {
+                    $script:optSyncingVisuals = $prevS2
+                }
+            }
+            $comboVal = $selItem
+        } else {
+            $comboVal = "Mặc định (DHCP)"
+        }
+    }
+
+    $script:optApplyingSingleToggle = $true
+    $Entry.CheckBox.IsEnabled = $false
+    if ($Entry.ComboBox) { $Entry.ComboBox.IsEnabled = $false }
+    $actVerb = if ($WantEnabled) { "bật" } else { "tắt" }
+    if ($txtStatus) { $txtStatus.Text = "Đang ${actVerb}: $($tw.Name)..." }
+
+    try {
+        if ($WantEnabled) {
+            $conflictId = if ($tid -eq "opt_prefer_ipv4") { "opt_disable_ipv6" } elseif ($tid -eq "opt_disable_ipv6") { "opt_prefer_ipv4" } else { "" }
+            if (-not [string]::IsNullOrEmpty($conflictId) -and $script:optEntryById.ContainsKey($conflictId)) {
+                $otherEnt = $script:optEntryById[$conflictId]
+                if ($otherEnt -and $otherEnt.InitialToggleState) {
+                    $cRes = Invoke-SingleOptimizerToggle -Tweak $otherEnt.Tweak -TargetEnabled $false -HardwareProfile $script:optHardwareProfile
+                    $prevSc = $script:optSyncingVisuals
+                    $script:optSyncingVisuals = $true
+                    try {
+                        Set-OptimizerEntryVisualState -Entry $otherEnt -State ([string]$cRes.VerifiedState) -Detail ([string]$cRes.VerifiedDetail)
+                    } finally {
+                        $script:optSyncingVisuals = $prevSc
+                    }
+                }
+            }
+        }
+
+        $res = Invoke-SingleOptimizerToggle -Tweak $tw -TargetEnabled $WantEnabled -ComboValue $comboVal -HardwareProfile $script:optHardwareProfile
+        $prevS3 = $script:optSyncingVisuals
+        $script:optSyncingVisuals = $true
+        try {
+            Set-OptimizerEntryVisualState -Entry $Entry -State ([string]$res.VerifiedState) -Detail ([string]$res.VerifiedDetail)
+        } finally {
+            $script:optSyncingVisuals = $prevS3
+        }
+
+        if ($res.Success) {
+            $detailSuffix = if (-not [string]::IsNullOrWhiteSpace($comboVal) -and $WantEnabled) { " ($comboVal)" } else { "" }
+            Log-Text "[OK] Tùy chỉnh: Đã ${actVerb} '$($tw.Name)'$detailSuffix."
+            if ($txtStatus) { $txtStatus.Text = "Đã ${actVerb}: $($tw.Name)$detailSuffix" }
+        } else {
+            $errMsg = if ($res.Errors -and $res.Errors.Count -gt 0) { $res.Errors[0] } else { "Không thể ghi cấu hình vào hệ thống" }
+            Log-Text "[ERR] Tùy chỉnh '$($tw.Name)': $errMsg"
+            if ($txtStatus) { $txtStatus.Text = "Lỗi ${actVerb} '$($tw.Name)' — đã hoàn lại trạng thái thực tế" }
+        }
+        Apply-OptimizerFilter
+        Update-OptimizerSelectionCount
+    } finally {
+        $Entry.CheckBox.IsEnabled = $true
+        if ($Entry.ComboBox) { $Entry.ComboBox.IsEnabled = $true }
+        $script:optApplyingSingleToggle = $false
     }
 }
 
@@ -8453,7 +8582,7 @@ function Refresh-OptimizerLiveState {
         try {
             foreach ($res in $task.Result) {
                 if ($script:optEntryById.ContainsKey([string]$res.Id)) {
-                    Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State)
+                    Set-OptimizerEntryVisualState -Entry $script:optEntryById[[string]$res.Id] -State ([string]$res.State) -Detail ([string]$res.Detail)
                 }
             }
         } finally {
@@ -8524,13 +8653,6 @@ function New-OptimizerTweakRowElement {
         $comboCtrl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         foreach ($opt in @($Tweak.ComboOptions)) { [void]$comboCtrl.Items.Add([string]$opt) }
         if ($comboCtrl.Items.Count -gt 0) { $comboCtrl.SelectedIndex = 0 }
-        $comboCtrl.Tag = $ctrl
-        $comboCtrl.Add_SelectionChanged({
-            param($cs, $ce)
-            if (-not $script:optSyncingVisuals -and $cs.Tag) {
-                $cs.Tag.IsChecked = $true
-            }
-        })
         [System.Windows.Controls.Grid]::SetColumn($comboCtrl, 2)
         [void]$g.Children.Add($comboCtrl)
     }
@@ -8552,10 +8674,22 @@ function New-OptimizerTweakRowElement {
         SearchText         = ("$($Tweak.Name) $($Tweak.Description) $($Tweak.Category) $($Tweak.Id)").ToLowerInvariant()
     }
     $b.Tag = $entry
+    $ctrl.Tag = $entry
+    if ($comboCtrl) {
+        $comboCtrl.Tag = $entry
+        $comboCtrl.Add_SelectionChanged({
+            param($cs, $ce)
+            if ($script:optSyncingVisuals -or -not $cs.Tag) { return }
+            $selDns = [string]$cs.SelectedItem
+            if ([string]::IsNullOrWhiteSpace($selDns)) { return }
+            $wantDnsOn = -not ($selDns -match 'DHCP')
+            Invoke-OptimizerInstantToggle -Entry $cs.Tag -WantEnabled $wantDnsOn -ForceApply
+        })
+    }
     $prevSync = $script:optSyncingVisuals
     $script:optSyncingVisuals = $true
     try {
-        Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action" -or $Tweak.ProbeKind -eq "DnsCustom") { "Action" } else { "Default" })
+        Set-OptimizerEntryVisualState -Entry $entry -State $(if ($Tweak.ProbeKind -eq "Action") { "Action" } else { "Default" })
     } finally {
         $script:optSyncingVisuals = $prevSync
     }
@@ -8597,31 +8731,31 @@ function Initialize-OptimizerTabIfNeeded {
                     param($sender, $e)
                     if ($script:optSyncingVisuals) { return }
                     $srcTb = $e.OriginalSource -as [System.Windows.Controls.Primitives.ToggleButton]
-                    if ($srcTb) {
-                        $pRow = [System.Windows.Media.VisualTreeHelper]::GetParent([System.Windows.Media.VisualTreeHelper]::GetParent($srcTb))
-                        if ($pRow -and $pRow.Tag -and $pRow.Tag.Tweak) {
-                            $tid = [string]$pRow.Tag.Tweak.Id
-                            if ($tid -eq "opt_prefer_ipv4" -and $script:optEntryById.ContainsKey("opt_disable_ipv6")) {
-                                $other = $script:optEntryById["opt_disable_ipv6"]
-                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
-                            } elseif ($tid -eq "opt_disable_ipv6" -and $script:optEntryById.ContainsKey("opt_prefer_ipv4")) {
-                                $other = $script:optEntryById["opt_prefer_ipv4"]
-                                if ($other.CheckBox -and $other.CheckBox.IsChecked -eq $true) { $other.CheckBox.IsChecked = $false }
-                            }
-                        }
+                    if ($srcTb -and -not ($srcTb -is [System.Windows.Controls.CheckBox]) -and $srcTb.Tag) {
+                        Invoke-OptimizerInstantToggle -Entry $srcTb.Tag -WantEnabled $true
+                        return
                     }
                     Update-OptimizerSelectionCount
                 }
             )
             $script:optTweaksHost.AddHandler(
                 [System.Windows.Controls.Primitives.ToggleButton]::UncheckedEvent,
-                [System.Windows.RoutedEventHandler]{ if (-not $script:optSyncingVisuals) { Update-OptimizerSelectionCount } }
+                [System.Windows.RoutedEventHandler]{
+                    param($sender, $e)
+                    if ($script:optSyncingVisuals) { return }
+                    $srcTb = $e.OriginalSource -as [System.Windows.Controls.Primitives.ToggleButton]
+                    if ($srcTb -and -not ($srcTb -is [System.Windows.Controls.CheckBox]) -and $srcTb.Tag) {
+                        Invoke-OptimizerInstantToggle -Entry $srcTb.Tag -WantEnabled $false
+                        return
+                    }
+                    Update-OptimizerSelectionCount
+                }
             )
             $script:optTweaksHost.AddHandler(
                 [System.Windows.UIElement]::MouseLeftButtonUpEvent,
                 [System.Windows.Input.MouseButtonEventHandler]{
                     param($sender, $e)
-                    if ($e.Handled -or $script:isActionRunning -or $script:isWindowClosing) { return }
+                    if ($e.Handled -or $script:isActionRunning -or $script:optApplyingSingleToggle -or $script:isWindowClosing) { return }
                     $cur = $e.OriginalSource -as [System.Windows.DependencyObject]
                     while ($cur -and $cur -ne $sender) {
                         if ($cur -is [System.Windows.Controls.Primitives.ToggleButton] -or
@@ -8772,7 +8906,6 @@ function Initialize-OptimizerTabIfNeeded {
         })
     }
 
-    Invoke-OemAndCriticalServiceSelfHeal
     Refresh-OptimizerLiveState
     Update-OptimizerSelectionCount
     if ($script:optLanesGrid) {
@@ -8807,7 +8940,8 @@ if ($script:btnOptApply) {
             $_.CheckBox -and $_.IsToggle -and $_.InitialToggleState -and ($_.CheckBox.IsChecked -ne $true)
         })
         if ($toApply.Count -eq 0 -and $toUndo.Count -eq 0) {
-            Log-Text "[!] Bạn chưa chọn tùy chỉnh hoặc gạt thay đổi nào để lưu!"
+            Log-Text "[!] Chưa có tùy chỉnh ô chọn (cột trái) nào được tick. Các công tắc gạt (cột phải) đã tự lưu ngay khi gạt!"
+            if ($txtStatus) { $txtStatus.Text = "Chưa tick mục nào ở cột trái (công tắc gạt cột phải tự lưu ngay khi gạt)." }
             return
         }
         $cautionItems = @($toApply | Where-Object { $_.Tweak.Risk -eq "Caution" })
@@ -8820,7 +8954,12 @@ if ($script:btnOptApply) {
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
             if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
         }
-        Invoke-GuardedAction "Lưu cấu hình tối ưu Windows" {
+        Invoke-GuardedAction "Lưu cấu hình tối ưu Windows" -AllowDuringUninstallerLoad {
+            if ($btnCancelAction) {
+                $btnCancelAction.Content = "Dừng tác vụ"
+                $btnCancelAction.IsEnabled = $true
+                $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+            }
             $totalApplied = 0
             $totalFailed = 0
             if ($toUndo.Count -gt 0) {
@@ -8909,7 +9048,12 @@ if ($script:btnOptUndo) {
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        Invoke-GuardedAction "Đặt tối ưu về mặc định" {
+        Invoke-GuardedAction "Đặt tối ưu về mặc định" -AllowDuringUninstallerLoad {
+            if ($btnCancelAction) {
+                $btnCancelAction.Content = "Dừng tác vụ"
+                $btnCancelAction.IsEnabled = $true
+                $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+            }
             $twObjs = @($targets | ForEach-Object { $_.Tweak })
             $twIds = @($twObjs | ForEach-Object { [string]$_.Id })
             Log-Text "=========================================================="
@@ -8948,7 +9092,7 @@ if ($script:btnOptRestoreBackup) {
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        Invoke-GuardedAction "Khôi phục toàn bộ bản sao lưu OptimizerGuard" {
+        Invoke-GuardedAction "Khôi phục toàn bộ bản sao lưu OptimizerGuard" -AllowDuringUninstallerLoad {
             [void](Restore-AllOptimizerGuardSnapshots)
             if ($txtStatus) { $txtStatus.Text = "Đã khôi phục toàn bộ bản sao lưu gốc OptimizerGuard" }
             Refresh-OptimizerLiveState

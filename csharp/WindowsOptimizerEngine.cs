@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 
@@ -62,6 +65,12 @@ namespace DuckUtil {
         public string Name { get; set; }
         public bool Existed { get; set; }
         public int OriginalStart { get; set; }
+    }
+
+    public sealed class ApplyRegBatchResult {
+        public int OkCount { get; set; }
+        public int TotalCount { get; set; }
+        public string[] Errors { get; set; }
     }
 
     public static class WindowsOptimizerEngine {
@@ -156,6 +165,47 @@ namespace DuckUtil {
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr SendMessageTimeoutW(
+            IntPtr hWnd,
+            uint Msg,
+            UIntPtr wParam,
+            string lParam,
+            uint fuFlags,
+            uint uTimeout,
+            out UIntPtr lpdwResult);
+
+        [DllImport("shell32.dll")]
+        private static extern void SHChangeNotify(uint wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
+        public static bool IsCurrentProcessAdmin() {
+            try {
+                using (WindowsIdentity id = WindowsIdentity.GetCurrent()) {
+                    var pr = new WindowsPrincipal(id);
+                    return pr.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static void BroadcastSettingsChange() {
+            try {
+                IntPtr hwndBroadcast = new IntPtr(0xFFFF);
+                UIntPtr res;
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "ImmersiveColorSet", 0x0002, 500, out res);
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "Environment", 0x0002, 500, out res);
+                SendMessageTimeoutW(hwndBroadcast, 0x001A, UIntPtr.Zero, "Policy", 0x0002, 500, out res);
+            } catch {}
+            try {
+                SHChangeNotify(0x08000000u, 0x0000u, IntPtr.Zero, IntPtr.Zero);
+            } catch {}
+        }
+
+        public static Task BroadcastSettingsChangeAsync() {
+            return Task.Run(delegate() { BroadcastSettingsChange(); });
+        }
 
         private static string DetectSystemDriveType(out bool isSsd) {
             isSsd = true;
@@ -502,9 +552,45 @@ namespace DuckUtil {
 
         private static TweakProbeResult ProbeSpecialKind(TweakProbeRequest req, string activePowerScheme) {
             string kind = req.ProbeKind ?? "";
-            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(kind, "Action", StringComparison.OrdinalIgnoreCase)) {
                 return new TweakProbeResult { Id = req.Id, State = "Action", Detail = "" };
+            }
+            if (string.Equals(kind, "DnsCustom", StringComparison.OrdinalIgnoreCase)) {
+                string detectedProvider = "";
+                try {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey root = b.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces", false)) {
+                        if (root != null) {
+                            foreach (string sub in root.GetSubKeyNames()) {
+                                using (RegistryKey sk = root.OpenSubKey(sub, false)) {
+                                    if (sk == null) continue;
+                                    string dhIp = (sk.GetValue("DhcpIPAddress") ?? "").ToString();
+                                    string stIp = "";
+                                    object ipObj = sk.GetValue("IPAddress");
+                                    if (ipObj is string[]) {
+                                        string[] arr = (string[])ipObj;
+                                        if (arr.Length > 0) stIp = arr[0] ?? "";
+                                    } else if (ipObj != null) {
+                                        stIp = ipObj.ToString();
+                                    }
+                                    bool hasIp = (!string.IsNullOrWhiteSpace(dhIp) && dhIp != "0.0.0.0") ||
+                                                 (!string.IsNullOrWhiteSpace(stIp) && stIp != "0.0.0.0");
+                                    if (!hasIp) continue;
+                                    string ns = (sk.GetValue("NameServer") ?? "").ToString().Trim();
+                                    if (string.IsNullOrEmpty(ns)) continue;
+                                    if (ns.IndexOf("1.1.1.1", StringComparison.Ordinal) >= 0) { detectedProvider = "Cloudflare (1.1.1.1)"; break; }
+                                    if (ns.IndexOf("94.140.14.14", StringComparison.Ordinal) >= 0) { detectedProvider = "AdGuard Ch\u1EB7n QC (94.140.14.14)"; break; }
+                                    if (ns.IndexOf("8.8.8.8", StringComparison.Ordinal) >= 0) { detectedProvider = "Google (8.8.8.8)"; break; }
+                                    if (ns.IndexOf("9.9.9.9", StringComparison.Ordinal) >= 0) { detectedProvider = "Quad9 (9.9.9.9)"; break; }
+                                }
+                            }
+                        }
+                    }
+                } catch {}
+                if (!string.IsNullOrEmpty(detectedProvider)) {
+                    return new TweakProbeResult { Id = req.Id, State = "Applied", Detail = detectedProvider };
+                }
+                return new TweakProbeResult { Id = req.Id, State = "Default", Detail = "M\u1EB7c \u0111\u1ECBnh (DHCP)" };
             }
             if (string.Equals(kind, "Hibernation", StringComparison.OrdinalIgnoreCase)) {
                 bool hiberOff = false;
@@ -785,7 +871,8 @@ namespace DuckUtil {
             return list.ToArray();
         }
 
-        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue, out string errMsg) {
+            errMsg = "";
             string vt = (valueType ?? "DWord").Trim();
             string normName = NormalizeValueName(name);
 
@@ -798,7 +885,7 @@ namespace DuckUtil {
                     }
                     baseKey.DeleteSubKeyTree(delPath, false);
                     return true;
-                } catch { return false; }
+                } catch (Exception ex) { errMsg = ex.Message; return false; }
             }
 
             if (string.Equals(vt, "DeleteValue", StringComparison.OrdinalIgnoreCase) ||
@@ -810,44 +897,63 @@ namespace DuckUtil {
                         }
                     }
                     return true;
-                } catch { return false; }
+                } catch (Exception ex) { errMsg = ex.Message; return false; }
             }
 
+            RegistryKey targetKey = null;
             try {
-                using (RegistryKey k = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
-                    if (k == null) return false;
-                    if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
-                        long lv;
-                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
-                        k.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
-                        return true;
-                    }
-                    if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
-                        long lv;
-                        if (!TryParseInt64Flexible(rawValue, out lv)) return false;
-                        k.SetValue(normName, lv, RegistryValueKind.QWord);
-                        return true;
-                    }
-                    if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
-                        byte[] bytes = ParseHexBytes(rawValue);
-                        k.SetValue(normName, bytes, RegistryValueKind.Binary);
-                        return true;
-                    }
-                    if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
-                        k.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
-                        return true;
-                    }
-                    if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
-                        string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
-                        k.SetValue(normName, parts, RegistryValueKind.MultiString);
-                        return true;
-                    }
-                    k.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                try {
+                    targetKey = baseKey.OpenSubKey(path, true);
+                } catch (Exception openEx) {
+                    errMsg = openEx.Message;
+                    targetKey = null;
+                }
+                if (targetKey == null) {
+                    targetKey = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree);
+                }
+                if (targetKey == null) {
+                    if (string.IsNullOrEmpty(errMsg)) errMsg = "CreateSubKey returned null";
+                    return false;
+                }
+                if (string.Equals(vt, "DWord", StringComparison.OrdinalIgnoreCase)) {
+                    long lv;
+                    if (!TryParseInt64Flexible(rawValue, out lv)) { errMsg = "Invalid DWord: " + rawValue; return false; }
+                    targetKey.SetValue(normName, unchecked((int)lv), RegistryValueKind.DWord);
                     return true;
                 }
-            } catch {
+                if (string.Equals(vt, "QWord", StringComparison.OrdinalIgnoreCase)) {
+                    long lv;
+                    if (!TryParseInt64Flexible(rawValue, out lv)) { errMsg = "Invalid QWord: " + rawValue; return false; }
+                    targetKey.SetValue(normName, lv, RegistryValueKind.QWord);
+                    return true;
+                }
+                if (string.Equals(vt, "Binary", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = ParseHexBytes(rawValue);
+                    targetKey.SetValue(normName, bytes, RegistryValueKind.Binary);
+                    return true;
+                }
+                if (string.Equals(vt, "ExpandString", StringComparison.OrdinalIgnoreCase)) {
+                    targetKey.SetValue(normName, rawValue ?? "", RegistryValueKind.ExpandString);
+                    return true;
+                }
+                if (string.Equals(vt, "MultiString", StringComparison.OrdinalIgnoreCase)) {
+                    string[] parts = string.IsNullOrEmpty(rawValue) ? new string[0] : rawValue.Split(new char[] { '\n' });
+                    targetKey.SetValue(normName, parts, RegistryValueKind.MultiString);
+                    return true;
+                }
+                targetKey.SetValue(normName, rawValue ?? "", RegistryValueKind.String);
+                return true;
+            } catch (Exception ex) {
+                errMsg = ex.Message;
                 return false;
+            } finally {
+                if (targetKey != null) { try { targetKey.Dispose(); } catch {} }
             }
+        }
+
+        private static bool WriteRegistryValueTyped(RegistryKey baseKey, string path, string name, string valueType, string rawValue) {
+            string ignored;
+            return WriteRegistryValueTyped(baseKey, path, name, valueType, rawValue, out ignored);
         }
 
         private static readonly string[] ExactProtectedServices = new string[] {
@@ -893,8 +999,11 @@ namespace DuckUtil {
             return false;
         }
 
-        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
-            if (specs == null || specs.Length == 0) return 0;
+        public static ApplyRegBatchResult ApplyRegistrySpecsDetailed(RegTweakSpec[] specs, bool undo) {
+            var errs = new List<string>();
+            if (specs == null || specs.Length == 0) {
+                return new ApplyRegBatchResult { OkCount = 0, TotalCount = 0, Errors = new string[0] };
+            }
             int okCount = 0;
             for (int i = 0; i < specs.Length; i++) {
                 RegTweakSpec s = specs[i];
@@ -935,7 +1044,7 @@ namespace DuckUtil {
                             using (RegistryKey k = baseKey.CreateSubKey(s.Path)) {
                                 if (k != null) okCount++;
                             }
-                        } catch {}
+                        } catch (Exception ex) { errs.Add((s.Hive ?? "HKLM") + "\\" + s.Path + ": " + ex.Message); }
                     }
                     continue;
                 }
@@ -944,12 +1053,162 @@ namespace DuckUtil {
                     continue;
                 }
                 using (RegistryKey baseKey = OpenHiveBase(s.Hive)) {
-                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal)) {
+                    string writeErr;
+                    if (WriteRegistryValueTyped(baseKey, s.Path, s.Name, targetType, targetVal, out writeErr)) {
                         okCount++;
+                    } else {
+                        errs.Add((s.Hive ?? "HKLM") + "\\" + s.Path + " [" + (s.Name ?? "") + "]: " + writeErr);
                     }
                 }
             }
-            return okCount;
+            return new ApplyRegBatchResult {
+                OkCount = okCount,
+                TotalCount = specs.Length,
+                Errors = errs.ToArray()
+            };
+        }
+
+        public static Task<ApplyRegBatchResult> ApplyRegistrySpecsDetailedAsync(RegTweakSpec[] specs, bool undo) {
+            return Task.Run(delegate() { return ApplyRegistrySpecsDetailed(specs, undo); });
+        }
+
+        public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
+            return ApplyRegistrySpecsDetailed(specs, undo).OkCount;
+        }
+
+        public static Task<int> ApplyServiceSpecsAsync(ServiceTweakSpec[] specs, bool undo) {
+            return Task.Run(delegate() { return ApplyServiceSpecs(specs, undo); });
+        }
+
+        public static Task<int> SetScheduledTasksEnabledAsync(string[] tasks, bool enable) {
+            return Task.Run(delegate() {
+                if (tasks == null || tasks.Length == 0) return 0;
+                int done = 0;
+                string flag = enable ? "/Enable" : "/Disable";
+                for (int i = 0; i < tasks.Length; i++) {
+                    string tk = tasks[i];
+                    if (string.IsNullOrWhiteSpace(tk)) continue;
+                    try {
+                        var psi = new ProcessStartInfo();
+                        psi.FileName = "schtasks.exe";
+                        psi.Arguments = "/Change /TN \"" + tk.Replace("\"", "") + "\" " + flag;
+                        psi.CreateNoWindow = true;
+                        psi.UseShellExecute = false;
+                        psi.RedirectStandardOutput = true;
+                        psi.RedirectStandardError = true;
+                        using (Process p = Process.Start(psi)) {
+                            if (p != null) {
+                                var tOut = p.StandardOutput.ReadToEndAsync();
+                                var tErr = p.StandardError.ReadToEndAsync();
+                                if (!p.WaitForExit(5000)) { try { p.Kill(); } catch {} }
+                                else if (p.ExitCode == 0) { done++; }
+                                GC.KeepAlive(tOut); GC.KeepAlive(tErr);
+                            }
+                        }
+                    } catch {}
+                }
+                return done;
+            });
+        }
+
+        public static Task<bool> ApplyDnsAsync(string primaryDns, string secondaryDns, bool resetDhcp) {
+            return Task.Run(delegate() {
+                try {
+                    var targetIndices = new List<int>();
+                    var fallbackIndices = new List<int>();
+                    NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+                    for (int i = 0; i < nics.Length; i++) {
+                        NetworkInterface ni = nics[i];
+                        if (ni == null || ni.OperationalStatus != OperationalStatus.Up) continue;
+                        if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                            ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel) continue;
+                        try {
+                            IPInterfaceProperties props = ni.GetIPProperties();
+                            if (props == null) continue;
+                            IPv4InterfaceProperties v4 = props.GetIPv4Properties();
+                            if (v4 == null || v4.Index <= 0) continue;
+                            string desc = ni.Description ?? "";
+                            bool isVirtual = desc.IndexOf("Virtual", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Hyper-V", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("VMware", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("VirtualBox", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("TAP-", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Wintun", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             desc.IndexOf("Loopback", StringComparison.OrdinalIgnoreCase) >= 0;
+                            if (!isVirtual) targetIndices.Add(v4.Index);
+                            else fallbackIndices.Add(v4.Index);
+                        } catch {}
+                    }
+                    if (targetIndices.Count == 0) targetIndices = fallbackIndices;
+                    if (targetIndices.Count == 0) return false;
+
+                    int okNics = 0;
+                    for (int i = 0; i < targetIndices.Count; i++) {
+                        int idx = targetIndices[i];
+                        string idxStr = idx.ToString(CultureInfo.InvariantCulture);
+                        if (resetDhcp || string.IsNullOrWhiteSpace(primaryDns)) {
+                            if (RunHiddenNetsh("interface ipv4 set dnsservers name=" + idxStr + " source=dhcp", 8000)) okNics++;
+                        } else {
+                            if (RunHiddenNetsh("interface ipv4 set dnsservers name=" + idxStr + " source=static address=" + primaryDns + " register=primary validate=no", 8000)) {
+                                okNics++;
+                                if (!string.IsNullOrWhiteSpace(secondaryDns)) {
+                                    RunHiddenNetsh("interface ipv4 add dnsservers name=" + idxStr + " address=" + secondaryDns + " index=2 validate=no", 8000);
+                                }
+                            }
+                        }
+                    }
+                    RunQuickCmdOut("ipconfig.exe", "/flushdns", 4000);
+                    return okNics > 0;
+                } catch {
+                    return false;
+                }
+            });
+        }
+
+        private static bool RunHiddenNetsh(string args, int timeoutMs) {
+            try {
+                var psi = new ProcessStartInfo();
+                psi.FileName = "netsh.exe";
+                psi.Arguments = args;
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                using (Process p = Process.Start(psi)) {
+                    if (p == null) return false;
+                    var tOut = p.StandardOutput.ReadToEndAsync();
+                    var tErr = p.StandardError.ReadToEndAsync();
+                    if (!p.WaitForExit(timeoutMs)) {
+                        try { p.Kill(); } catch {}
+                        return false;
+                    }
+                    GC.KeepAlive(tOut); GC.KeepAlive(tErr);
+                    return p.ExitCode == 0;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static Task RestartExplorerSoftAsync() {
+            return Task.Run(delegate() {
+                try {
+                    Process[] procs = Process.GetProcessesByName("explorer");
+                    for (int i = 0; i < procs.Length; i++) {
+                        try { procs[i].Kill(); } catch {}
+                        try { procs[i].Dispose(); } catch {}
+                    }
+                    Thread.Sleep(650);
+                    Process[] after = Process.GetProcessesByName("explorer");
+                    bool anyAlive = after != null && after.Length > 0;
+                    if (after != null) {
+                        for (int i = 0; i < after.Length; i++) { try { after[i].Dispose(); } catch {} }
+                    }
+                    if (!anyAlive) {
+                        Process.Start("explorer.exe");
+                    }
+                } catch {}
+            });
         }
 
         public static int RestoreRegistrySnapshots(RegistrySnapshotEntry[] entries) {
