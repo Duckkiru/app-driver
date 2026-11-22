@@ -10484,6 +10484,285 @@ if ($script:btnResAddFolder) {
 #endregion
 #endregion
 
+#region Personal Profile Export & Import (.json)
+$script:btnProfileMenu = $window.FindName("btnProfileMenu")
+
+function Build-AppDriverProfileObject {
+    if (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue) {
+        try { Initialize-OptimizerTabIfNeeded } catch {}
+    }
+
+    $checkedApps = [System.Collections.Generic.List[string]]::new()
+    $installedApps = [System.Collections.Generic.List[string]]::new()
+    $seenChk = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $seenInst = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($cb in $allCheckBoxes) {
+        if (-not $cb -or -not $cb.Tag) { continue }
+        $appObj = $cb.Tag["App"]
+        $id = if ($appObj) { [string]$appObj.ID } else { "" }
+        if ([string]::IsNullOrWhiteSpace($id)) { continue }
+        if ($cb.IsChecked -eq $true -and $seenChk.Add($id)) {
+            [void]$checkedApps.Add($id)
+        }
+        $st = [string]$cb.Tag["Status"]
+        if (($st -eq "LATEST" -or $st -eq "OUTDATED") -and $seenInst.Add($id)) {
+            [void]$installedApps.Add($id)
+        }
+    }
+
+    $optEnabled = [System.Collections.Generic.List[string]]::new()
+    $seenOpt = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $comboVals = [ordered]@{}
+
+    foreach ($ent in $script:optEntries) {
+        if (-not $ent -or -not $ent.Tweak) { continue }
+        $tid = [string]$ent.Tweak.Id
+        if ([string]::IsNullOrWhiteSpace($tid)) { continue }
+        $isActiveOrChecked = $false
+        if ($ent.IsToggle) {
+            if ($ent.InitialToggleState -or ($ent.CheckBox -and $ent.CheckBox.IsChecked -eq $true)) {
+                $isActiveOrChecked = $true
+            }
+        } else {
+            if ($ent.State -eq "Active" -or ($ent.CheckBox -and $ent.CheckBox.IsChecked -eq $true)) {
+                $isActiveOrChecked = $true
+            }
+        }
+        if ($isActiveOrChecked -and $seenOpt.Add($tid)) {
+            [void]$optEnabled.Add($tid)
+        }
+        if ($ent.ComboBox -and $ent.ComboBox.SelectedItem) {
+            $selVal = [string]$ent.ComboBox.SelectedItem
+            if (-not [string]::IsNullOrWhiteSpace($selVal) -and -not ($selVal -match 'DHCP')) {
+                $comboVals[$tid] = $selVal
+            }
+        }
+    }
+
+    $hwText = if ($script:txtOptHardwareInfo) { [string]$script:txtOptHardwareInfo.Text } else { "" }
+    $exportAppMode = if ($checkedApps.Count -gt 0) { "Selected" } else { "Installed" }
+
+    return [ordered]@{
+        SchemaVersion = 1
+        AppName       = "App-Driver"
+        ExportedAt    = [DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:sszzz")
+        SourceMachine = $hwText
+        Apps          = [ordered]@{
+            Mode                = $exportAppMode
+            SelectedIds         = @($checkedApps.ToArray())
+            InstalledCatalogIds = @($installedApps.ToArray())
+        }
+        Customize     = [ordered]@{
+            EnabledIds  = @($optEnabled.ToArray())
+            ComboValues = $comboVals
+        }
+    }
+}
+
+function Import-AppDriverProfileObject {
+    param([Parameter(Mandatory = $true)]$Profile)
+
+    if (-not $Profile -or -not $Profile.PSObject.Properties["SchemaVersion"]) {
+        throw "Tệp JSON không phải định dạng hồ sơ App-Driver hợp lệ."
+    }
+
+    if (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue) {
+        try { Initialize-OptimizerTabIfNeeded } catch {}
+    }
+
+    $targetAppIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($Profile.Apps) {
+        $srcApps = @()
+        if ($Profile.Apps.SelectedIds -and @($Profile.Apps.SelectedIds).Count -gt 0) {
+            $srcApps = @($Profile.Apps.SelectedIds)
+        } elseif ($Profile.Apps.InstalledCatalogIds) {
+            $srcApps = @($Profile.Apps.InstalledCatalogIds)
+        }
+        foreach ($aid in $srcApps) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$aid)) { [void]$targetAppIds.Add([string]$aid) }
+        }
+    }
+
+    $appsSelected = 0
+    $appsSkippedLatest = 0
+    $matchedAppIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    $prevSup = $script:suppressSelectionCount
+    $script:suppressSelectionCount = $true
+    try {
+        foreach ($cb in $allCheckBoxes) {
+            if (-not $cb -or -not $cb.Tag -or -not $cb.Tag["App"]) { continue }
+            $id = [string]$cb.Tag["App"].ID
+            if ($targetAppIds.Contains($id)) {
+                [void]$matchedAppIds.Add($id)
+                $st = [string]$cb.Tag["Status"]
+                if ($st -eq "LATEST") {
+                    $cb.IsChecked = $false
+                    $appsSkippedLatest++
+                } else {
+                    $cb.IsChecked = $true
+                    $appsSelected++
+                }
+            }
+        }
+    } finally {
+        $script:suppressSelectionCount = $prevSup
+    }
+    Update-SelectionCount
+
+    $targetOptIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($Profile.Customize -and $Profile.Customize.EnabledIds) {
+        foreach ($oid in @($Profile.Customize.EnabledIds)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$oid)) { [void]$targetOptIds.Add([string]$oid) }
+        }
+    }
+
+    $comboMap = @{}
+    if ($Profile.Customize -and $Profile.Customize.ComboValues) {
+        foreach ($p in $Profile.Customize.ComboValues.PSObject.Properties) {
+            $comboMap[[string]$p.Name] = [string]$p.Value
+        }
+    }
+
+    $optStaged = 0
+    $optAlreadyActive = 0
+    $optSkippedHw = 0
+    $matchedOptIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    $prevOptSync = $script:optSyncingVisuals
+    $script:optSyncingVisuals = $true
+    try {
+        foreach ($ent in $script:optEntries) {
+            if (-not $ent -or -not $ent.Tweak -or -not $ent.CheckBox) { continue }
+            $tid = [string]$ent.Tweak.Id
+            if (-not $targetOptIds.Contains($tid) -and -not $comboMap.ContainsKey($tid)) { continue }
+            [void]$matchedOptIds.Add($tid)
+
+            if (-not $ent.CheckBox.IsEnabled -or ($ent.Row -and $ent.Row.Visibility -ne [System.Windows.Visibility]::Visible)) {
+                $optSkippedHw++
+                continue
+            }
+
+            if ($ent.ComboBox -and $comboMap.ContainsKey($tid)) {
+                $wantVal = $comboMap[$tid]
+                for ($ci = 0; $ci -lt $ent.ComboBox.Items.Count; $ci++) {
+                    if ([string]$ent.ComboBox.Items[$ci] -eq $wantVal) {
+                        $ent.ComboBox.SelectedIndex = $ci
+                        break
+                    }
+                }
+            }
+
+            if ($ent.IsToggle) {
+                if ($ent.InitialToggleState) {
+                    $optAlreadyActive++
+                } else {
+                    $ent.CheckBox.IsChecked = $true
+                    $optStaged++
+                }
+            } else {
+                if ($ent.State -eq "Active") {
+                    $optAlreadyActive++
+                } else {
+                    $ent.CheckBox.IsChecked = $true
+                    $optStaged++
+                }
+            }
+        }
+    } finally {
+        $script:optSyncingVisuals = $prevOptSync
+    }
+    Update-OptimizerSelectionCount
+
+    $unknownCount = ($targetAppIds.Count - $matchedAppIds.Count) + ($targetOptIds.Count - $matchedOptIds.Count)
+    return @{
+        AppsSelected       = $appsSelected
+        AppsSkippedLatest  = $appsSkippedLatest
+        OptStaged          = $optStaged
+        OptAlreadyActive   = $optAlreadyActive
+        OptSkippedHardware = $optSkippedHw
+        UnknownCount       = [Math]::Max(0, $unknownCount)
+    }
+}
+
+if ($script:btnProfileMenu) {
+    $script:profileContextMenu = [System.Windows.Controls.ContextMenu]::new()
+    $script:profileContextMenu.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x0E, 0x13, 0x1D))
+    $script:profileContextMenu.BorderBrush = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x2B, 0x3D, 0x57))
+    $script:profileContextMenu.BorderThickness = [System.Windows.Thickness]::new(1)
+    $script:profileContextMenu.Foreground = $script:brushTextWhite
+
+    $miExport = [System.Windows.Controls.MenuItem]::new()
+    $miExport.Header = "Xuất cấu hình (.json)..."
+    $miExport.Foreground = $script:brushTextWhite
+    $miExport.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $sfd = [Microsoft.Win32.SaveFileDialog]::new()
+        $sfd.Title = "Xuất cấu hình cá nhân App-Driver"
+        $sfd.Filter = "App-Driver Profile (*.json)|*.json"
+        $sfd.FileName = "AppDriver-Profile-" + [DateTime]::Now.ToString("yyyyMMdd") + ".json"
+        if ($sfd.ShowDialog($window) -eq $true -and -not [string]::IsNullOrWhiteSpace($sfd.FileName)) {
+            try {
+                $prof = Build-AppDriverProfileObject
+                $jsonOut = $prof | ConvertTo-Json -Depth 6
+                [System.IO.File]::WriteAllText($sfd.FileName, $jsonOut, [System.Text.UTF8Encoding]::new($false))
+                $appCnt = if ($prof.Apps.Mode -eq "Selected") { @($prof.Apps.SelectedIds).Count } else { @($prof.Apps.InstalledCatalogIds).Count }
+                $appLabel = if ($prof.Apps.Mode -eq "Selected") { "$appCnt ứng dụng đang đánh dấu" } else { "$appCnt ứng dụng đang cài trên máy" }
+                $optCnt = @($prof.Customize.EnabledIds).Count
+                Log-Text "[OK] Hồ sơ: Đã xuất cấu hình ra '$($sfd.FileName)' ($appLabel, $optCnt tùy chỉnh)."
+                [void](Show-OwnedMessageBox `
+                    -Text "Đã xuất cấu hình cá nhân thành công!`n`n• Ứng dụng: $appLabel`n• Tùy chỉnh: $optCnt mục đang bật/chọn`n• Đường dẫn: $($sfd.FileName)" `
+                    -Caption "Xuất cấu hình" `
+                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
+                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+            } catch {
+                Log-Text "[ERR] Xuất cấu hình thất bại: $($_.Exception.Message)"
+                [void](Show-OwnedMessageBox -Text "Không thể xuất cấu hình: $($_.Exception.Message)" -Caption "Lỗi xuất cấu hình" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+            }
+        }
+    })
+
+    $miImport = [System.Windows.Controls.MenuItem]::new()
+    $miImport.Header = "Nhập cấu hình (.json)..."
+    $miImport.Foreground = $script:brushTextWhite
+    $miImport.Add_Click({
+        if ($script:isWindowClosing -or $script:isActionRunning) { return }
+        $ofd = [Microsoft.Win32.OpenFileDialog]::new()
+        $ofd.Title = "Chọn tệp cấu hình cá nhân App-Driver"
+        $ofd.Filter = "App-Driver Profile (*.json)|*.json"
+        $ofd.CheckFileExists = $true
+        if ($ofd.ShowDialog($window) -eq $true -and -not [string]::IsNullOrWhiteSpace($ofd.FileName)) {
+            try {
+                $rawJson = [System.IO.File]::ReadAllText($ofd.FileName, [System.Text.Encoding]::UTF8)
+                $parsed = ConvertFrom-Json $rawJson
+                $res = Import-AppDriverProfileObject -Profile $parsed
+                $msg = "Đã nạp cấu hình từ tệp hồ sơ (chưa tự áp dụng để bạn kiểm tra lại):`n`n" +
+                       "• Ứng dụng: đã chọn $($res.AppsSelected) app cần cài/cập nhật (bỏ qua $($res.AppsSkippedLatest) đã mới nhất)`n" +
+                       "• Tùy chỉnh: đã đánh dấu $($res.OptStaged) mục chờ lưu (bỏ qua $($res.OptAlreadyActive) đã bật sẵn"
+                if ($res.OptSkippedHardware -gt 0) { $msg += ", $($res.OptSkippedHardware) không phù hợp phần cứng" }
+                $msg += ")`n`nNhấn 'Cài đặt & Cập nhật' ở tab Ứng dụng hoặc 'Lưu' ở tab Tùy chỉnh để áp dụng."
+                Log-Text "[OK] Hồ sơ: Đã nạp '$($ofd.FileName)' (App: +$($res.AppsSelected), Tùy chỉnh: +$($res.OptStaged))."
+                [void](Show-OwnedMessageBox -Text $msg -Caption "Nhập cấu hình" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+            } catch {
+                Log-Text "[ERR] Nhập cấu hình thất bại: $($_.Exception.Message)"
+                [void](Show-OwnedMessageBox -Text "Tệp cấu hình không hợp lệ: $($_.Exception.Message)" -Caption "Lỗi nhập cấu hình" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+            }
+        }
+    })
+
+    [void]$script:profileContextMenu.Items.Add($miExport)
+    [void]$script:profileContextMenu.Items.Add($miImport)
+
+    $script:btnProfileMenu.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $script:profileContextMenu.PlacementTarget = $script:btnProfileMenu
+        $script:profileContextMenu.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Bottom
+        $script:profileContextMenu.IsOpen = $true
+    })
+}
+#endregion
+
 $window.ShowDialog() | Out-Null
 if (-not $script:SkipHostExit) {
     Stop-AllBackgroundWork

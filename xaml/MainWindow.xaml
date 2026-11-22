@@ -616,8 +616,14 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="8,0,4,0"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Name="btnProfileMenu" Content="Hồ sơ ▾" Style="{StaticResource SecondaryButton}"
+                            Height="25" Padding="10,0" Margin="0,0,10,0" FontSize="11"
+                            Background="#101827" BorderBrush="#293B56" Foreground="#CBD5E1"
+                            ToolTip="Xuất hoặc nhập cấu hình cá nhân (.json) gồm danh sách Ứng dụng và Tùy chỉnh." ToolTipService.InitialShowDelay="5000"/>
+                    <TextBlock Text="App-Driver" VerticalAlignment="Center"
+                               Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
+                </StackPanel>
             </Grid>
         </Border>
 

@@ -302,6 +302,30 @@ $resRowOk = ($null -ne $resRowVis -and $null -ne $resRowVis.Row -and $null -ne $
 
 Assert-Check "ResourceStrictRecycleAndZeroLag" ($uncBlocked -and $longBlocked -and $zeroLagOk -and $resRowOk) "UncBlocked=$uncBlocked LongBlocked=$longBlocked TabMs=$($swResTab.ElapsedMilliseconds) RowFactory=$resRowOk"
 
+# 10. Personal Profile Export / Import Round-Trip (Non-destructive)
+$expObj = Build-AppDriverProfileObject
+$expJson = $expObj | ConvertTo-Json -Depth 6
+$rtObj = ConvertFrom-Json $expJson
+$synthProfile = [PSCustomObject]@{
+    SchemaVersion = 1
+    Apps = [PSCustomObject]@{
+        SelectedIds = @("7zip.7zip", "NonExistent.FakeApp999")
+    }
+    Customize = [PSCustomObject]@{
+        EnabledIds = @("opt_telemetry", "NonExistentOpt999")
+        ComboValues = [PSCustomObject]@{}
+    }
+}
+$impRes = Import-AppDriverProfileObject -Profile $synthProfile
+$profOk = (
+    $rtObj.SchemaVersion -eq 1 -and
+    $rtObj.AppName -eq "App-Driver" -and
+    ($impRes.AppsSelected + $impRes.AppsSkippedLatest) -eq 1 -and
+    ($impRes.OptStaged + $impRes.OptAlreadyActive + $impRes.OptSkippedHardware) -eq 1 -and
+    $impRes.UnknownCount -eq 2
+)
+Assert-Check "ProfileExportImportRoundTrip" $profOk "AppSel=$($impRes.AppsSelected) OptStaged=$($impRes.OptStaged) Unknown=$($impRes.UnknownCount)"
+
 try { Stop-AllBackgroundWork } catch {}
 Write-Output ("CORE_VERIFY_SUMMARY: PS={0} PASSED={1} FAILED={2}" -f $PSVersionTable.PSVersion, $script:pass, $script:fail)
 if ($script:fail -gt 0) { exit 1 }

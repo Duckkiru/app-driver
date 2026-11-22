@@ -7709,8 +7709,14 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                         </StackPanel>
                     </Button>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="8,0,4,0"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Name="btnProfileMenu" Content="H&#x1ED3; s&#x01A1; &#x25BE;" Style="{StaticResource SecondaryButton}"
+                            Height="25" Padding="10,0" Margin="0,0,10,0" FontSize="11"
+                            Background="#101827" BorderBrush="#293B56" Foreground="#CBD5E1"
+                            ToolTip="Xu&#x1EA5;t ho&#x1EB7;c nh&#x1EAD;p c&#x1EA5;u h&#x00EC;nh c&#x00E1; nh&#x00E2;n (.json) g&#x1ED3;m danh s&#x00E1;ch &#x1EE8;ng d&#x1EE5;ng v&#x00E0; T&#x00F9;y ch&#x1EC9;nh." ToolTipService.InitialShowDelay="5000"/>
+                    <TextBlock Text="App-Driver" VerticalAlignment="Center"
+                               Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -47949,6 +47955,285 @@ if ($script:btnResAddFolder) {
     })
 }
 #endregion
+#endregion
+
+#region Personal Profile Export & Import (.json)
+$script:btnProfileMenu = $window.FindName("btnProfileMenu")
+
+function Build-AppDriverProfileObject {
+    if (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue) {
+        try { Initialize-OptimizerTabIfNeeded } catch {}
+    }
+
+    $checkedApps = [System.Collections.Generic.List[string]]::new()
+    $installedApps = [System.Collections.Generic.List[string]]::new()
+    $seenChk = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $seenInst = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($cb in $allCheckBoxes) {
+        if (-not $cb -or -not $cb.Tag) { continue }
+        $appObj = $cb.Tag["App"]
+        $id = if ($appObj) { [string]$appObj.ID } else { "" }
+        if ([string]::IsNullOrWhiteSpace($id)) { continue }
+        if ($cb.IsChecked -eq $true -and $seenChk.Add($id)) {
+            [void]$checkedApps.Add($id)
+        }
+        $st = [string]$cb.Tag["Status"]
+        if (($st -eq "LATEST" -or $st -eq "OUTDATED") -and $seenInst.Add($id)) {
+            [void]$installedApps.Add($id)
+        }
+    }
+
+    $optEnabled = [System.Collections.Generic.List[string]]::new()
+    $seenOpt = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $comboVals = [ordered]@{}
+
+    foreach ($ent in $script:optEntries) {
+        if (-not $ent -or -not $ent.Tweak) { continue }
+        $tid = [string]$ent.Tweak.Id
+        if ([string]::IsNullOrWhiteSpace($tid)) { continue }
+        $isActiveOrChecked = $false
+        if ($ent.IsToggle) {
+            if ($ent.InitialToggleState -or ($ent.CheckBox -and $ent.CheckBox.IsChecked -eq $true)) {
+                $isActiveOrChecked = $true
+            }
+        } else {
+            if ($ent.State -eq "Active" -or ($ent.CheckBox -and $ent.CheckBox.IsChecked -eq $true)) {
+                $isActiveOrChecked = $true
+            }
+        }
+        if ($isActiveOrChecked -and $seenOpt.Add($tid)) {
+            [void]$optEnabled.Add($tid)
+        }
+        if ($ent.ComboBox -and $ent.ComboBox.SelectedItem) {
+            $selVal = [string]$ent.ComboBox.SelectedItem
+            if (-not [string]::IsNullOrWhiteSpace($selVal) -and -not ($selVal -match 'DHCP')) {
+                $comboVals[$tid] = $selVal
+            }
+        }
+    }
+
+    $hwText = if ($script:txtOptHardwareInfo) { [string]$script:txtOptHardwareInfo.Text } else { "" }
+    $exportAppMode = if ($checkedApps.Count -gt 0) { "Selected" } else { "Installed" }
+
+    return [ordered]@{
+        SchemaVersion = 1
+        AppName       = "App-Driver"
+        ExportedAt    = [DateTime]::Now.ToString("yyyy-MM-ddTHH:mm:sszzz")
+        SourceMachine = $hwText
+        Apps          = [ordered]@{
+            Mode                = $exportAppMode
+            SelectedIds         = @($checkedApps.ToArray())
+            InstalledCatalogIds = @($installedApps.ToArray())
+        }
+        Customize     = [ordered]@{
+            EnabledIds  = @($optEnabled.ToArray())
+            ComboValues = $comboVals
+        }
+    }
+}
+
+function Import-AppDriverProfileObject {
+    param([Parameter(Mandatory = $true)]$Profile)
+
+    if (-not $Profile -or -not $Profile.PSObject.Properties["SchemaVersion"]) {
+        throw "T$([char]0x1EC7)p JSON kh$([char]0x00F4)ng ph$([char]0x1EA3)i $([char]0x0111)$([char]0x1ECB)nh d$([char]0x1EA1)ng h$([char]0x1ED3) s$([char]0x01A1) App-Driver h$([char]0x1EE3)p l$([char]0x1EC7)."
+    }
+
+    if (Get-Command "Initialize-OptimizerTabIfNeeded" -ErrorAction SilentlyContinue) {
+        try { Initialize-OptimizerTabIfNeeded } catch {}
+    }
+
+    $targetAppIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($Profile.Apps) {
+        $srcApps = @()
+        if ($Profile.Apps.SelectedIds -and @($Profile.Apps.SelectedIds).Count -gt 0) {
+            $srcApps = @($Profile.Apps.SelectedIds)
+        } elseif ($Profile.Apps.InstalledCatalogIds) {
+            $srcApps = @($Profile.Apps.InstalledCatalogIds)
+        }
+        foreach ($aid in $srcApps) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$aid)) { [void]$targetAppIds.Add([string]$aid) }
+        }
+    }
+
+    $appsSelected = 0
+    $appsSkippedLatest = 0
+    $matchedAppIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    $prevSup = $script:suppressSelectionCount
+    $script:suppressSelectionCount = $true
+    try {
+        foreach ($cb in $allCheckBoxes) {
+            if (-not $cb -or -not $cb.Tag -or -not $cb.Tag["App"]) { continue }
+            $id = [string]$cb.Tag["App"].ID
+            if ($targetAppIds.Contains($id)) {
+                [void]$matchedAppIds.Add($id)
+                $st = [string]$cb.Tag["Status"]
+                if ($st -eq "LATEST") {
+                    $cb.IsChecked = $false
+                    $appsSkippedLatest++
+                } else {
+                    $cb.IsChecked = $true
+                    $appsSelected++
+                }
+            }
+        }
+    } finally {
+        $script:suppressSelectionCount = $prevSup
+    }
+    Update-SelectionCount
+
+    $targetOptIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if ($Profile.Customize -and $Profile.Customize.EnabledIds) {
+        foreach ($oid in @($Profile.Customize.EnabledIds)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$oid)) { [void]$targetOptIds.Add([string]$oid) }
+        }
+    }
+
+    $comboMap = @{}
+    if ($Profile.Customize -and $Profile.Customize.ComboValues) {
+        foreach ($p in $Profile.Customize.ComboValues.PSObject.Properties) {
+            $comboMap[[string]$p.Name] = [string]$p.Value
+        }
+    }
+
+    $optStaged = 0
+    $optAlreadyActive = 0
+    $optSkippedHw = 0
+    $matchedOptIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    $prevOptSync = $script:optSyncingVisuals
+    $script:optSyncingVisuals = $true
+    try {
+        foreach ($ent in $script:optEntries) {
+            if (-not $ent -or -not $ent.Tweak -or -not $ent.CheckBox) { continue }
+            $tid = [string]$ent.Tweak.Id
+            if (-not $targetOptIds.Contains($tid) -and -not $comboMap.ContainsKey($tid)) { continue }
+            [void]$matchedOptIds.Add($tid)
+
+            if (-not $ent.CheckBox.IsEnabled -or ($ent.Row -and $ent.Row.Visibility -ne [System.Windows.Visibility]::Visible)) {
+                $optSkippedHw++
+                continue
+            }
+
+            if ($ent.ComboBox -and $comboMap.ContainsKey($tid)) {
+                $wantVal = $comboMap[$tid]
+                for ($ci = 0; $ci -lt $ent.ComboBox.Items.Count; $ci++) {
+                    if ([string]$ent.ComboBox.Items[$ci] -eq $wantVal) {
+                        $ent.ComboBox.SelectedIndex = $ci
+                        break
+                    }
+                }
+            }
+
+            if ($ent.IsToggle) {
+                if ($ent.InitialToggleState) {
+                    $optAlreadyActive++
+                } else {
+                    $ent.CheckBox.IsChecked = $true
+                    $optStaged++
+                }
+            } else {
+                if ($ent.State -eq "Active") {
+                    $optAlreadyActive++
+                } else {
+                    $ent.CheckBox.IsChecked = $true
+                    $optStaged++
+                }
+            }
+        }
+    } finally {
+        $script:optSyncingVisuals = $prevOptSync
+    }
+    Update-OptimizerSelectionCount
+
+    $unknownCount = ($targetAppIds.Count - $matchedAppIds.Count) + ($targetOptIds.Count - $matchedOptIds.Count)
+    return @{
+        AppsSelected       = $appsSelected
+        AppsSkippedLatest  = $appsSkippedLatest
+        OptStaged          = $optStaged
+        OptAlreadyActive   = $optAlreadyActive
+        OptSkippedHardware = $optSkippedHw
+        UnknownCount       = [Math]::Max(0, $unknownCount)
+    }
+}
+
+if ($script:btnProfileMenu) {
+    $script:profileContextMenu = [System.Windows.Controls.ContextMenu]::new()
+    $script:profileContextMenu.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x0E, 0x13, 0x1D))
+    $script:profileContextMenu.BorderBrush = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromRgb(0x2B, 0x3D, 0x57))
+    $script:profileContextMenu.BorderThickness = [System.Windows.Thickness]::new(1)
+    $script:profileContextMenu.Foreground = $script:brushTextWhite
+
+    $miExport = [System.Windows.Controls.MenuItem]::new()
+    $miExport.Header = "Xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh (.json)..."
+    $miExport.Foreground = $script:brushTextWhite
+    $miExport.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $sfd = [Microsoft.Win32.SaveFileDialog]::new()
+        $sfd.Title = "Xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh c$([char]0x00E1) nh$([char]0x00E2)n App-Driver"
+        $sfd.Filter = "App-Driver Profile (*.json)|*.json"
+        $sfd.FileName = "AppDriver-Profile-" + [DateTime]::Now.ToString("yyyyMMdd") + ".json"
+        if ($sfd.ShowDialog($window) -eq $true -and -not [string]::IsNullOrWhiteSpace($sfd.FileName)) {
+            try {
+                $prof = Build-AppDriverProfileObject
+                $jsonOut = $prof | ConvertTo-Json -Depth 6
+                [System.IO.File]::WriteAllText($sfd.FileName, $jsonOut, [System.Text.UTF8Encoding]::new($false))
+                $appCnt = if ($prof.Apps.Mode -eq "Selected") { @($prof.Apps.SelectedIds).Count } else { @($prof.Apps.InstalledCatalogIds).Count }
+                $appLabel = if ($prof.Apps.Mode -eq "Selected") { "$appCnt $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang $([char]0x0111)$([char]0x00E1)nh d$([char]0x1EA5)u" } else { "$appCnt $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang c$([char]0x00E0)i tr$([char]0x00EA)n m$([char]0x00E1)y" }
+                $optCnt = @($prof.Customize.EnabledIds).Count
+                Log-Text "[OK] H$([char]0x1ED3) s$([char]0x01A1): $([char]0x0110)$([char]0x00E3) xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh ra '$($sfd.FileName)' ($appLabel, $optCnt t$([char]0x00F9)y ch$([char]0x1EC9)nh)."
+                [void](Show-OwnedMessageBox `
+                    -Text "$([char]0x0110)$([char]0x00E3) xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh c$([char]0x00E1) nh$([char]0x00E2)n th$([char]0x00E0)nh c$([char]0x00F4)ng!`n`n$([char]0x2022) $([char]0x1EE8)ng d$([char]0x1EE5)ng: $appLabel`n$([char]0x2022) T$([char]0x00F9)y ch$([char]0x1EC9)nh: $optCnt m$([char]0x1EE5)c $([char]0x0111)ang b$([char]0x1EAD)t/ch$([char]0x1ECD)n`n$([char]0x2022) $([char]0x0110)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n: $($sfd.FileName)" `
+                    -Caption "Xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh" `
+                    -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
+                    -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+            } catch {
+                Log-Text "[ERR] Xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh th$([char]0x1EA5)t b$([char]0x1EA1)i: $($_.Exception.Message)"
+                [void](Show-OwnedMessageBox -Text "Kh$([char]0x00F4)ng th$([char]0x1EC3) xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh: $($_.Exception.Message)" -Caption "L$([char]0x1ED7)i xu$([char]0x1EA5)t c$([char]0x1EA5)u h$([char]0x00EC)nh" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+            }
+        }
+    })
+
+    $miImport = [System.Windows.Controls.MenuItem]::new()
+    $miImport.Header = "Nh$([char]0x1EAD)p c$([char]0x1EA5)u h$([char]0x00EC)nh (.json)..."
+    $miImport.Foreground = $script:brushTextWhite
+    $miImport.Add_Click({
+        if ($script:isWindowClosing -or $script:isActionRunning) { return }
+        $ofd = [Microsoft.Win32.OpenFileDialog]::new()
+        $ofd.Title = "Ch$([char]0x1ECD)n t$([char]0x1EC7)p c$([char]0x1EA5)u h$([char]0x00EC)nh c$([char]0x00E1) nh$([char]0x00E2)n App-Driver"
+        $ofd.Filter = "App-Driver Profile (*.json)|*.json"
+        $ofd.CheckFileExists = $true
+        if ($ofd.ShowDialog($window) -eq $true -and -not [string]::IsNullOrWhiteSpace($ofd.FileName)) {
+            try {
+                $rawJson = [System.IO.File]::ReadAllText($ofd.FileName, [System.Text.Encoding]::UTF8)
+                $parsed = ConvertFrom-Json $rawJson
+                $res = Import-AppDriverProfileObject -Profile $parsed
+                $msg = "$([char]0x0110)$([char]0x00E3) n$([char]0x1EA1)p c$([char]0x1EA5)u h$([char]0x00EC)nh t$([char]0x1EEB) t$([char]0x1EC7)p h$([char]0x1ED3) s$([char]0x01A1) (ch$([char]0x01B0)a t$([char]0x1EF1) $([char]0x00E1)p d$([char]0x1EE5)ng $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n ki$([char]0x1EC3)m tra l$([char]0x1EA1)i):`n`n" +
+                       "$([char]0x2022) $([char]0x1EE8)ng d$([char]0x1EE5)ng: $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n $($res.AppsSelected) app c$([char]0x1EA7)n c$([char]0x00E0)i/c$([char]0x1EAD)p nh$([char]0x1EAD)t (b$([char]0x1ECF) qua $($res.AppsSkippedLatest) $([char]0x0111)$([char]0x00E3) m$([char]0x1EDB)i nh$([char]0x1EA5)t)`n" +
+                       "$([char]0x2022) T$([char]0x00F9)y ch$([char]0x1EC9)nh: $([char]0x0111)$([char]0x00E3) $([char]0x0111)$([char]0x00E1)nh d$([char]0x1EA5)u $($res.OptStaged) m$([char]0x1EE5)c ch$([char]0x1EDD) l$([char]0x01B0)u (b$([char]0x1ECF) qua $($res.OptAlreadyActive) $([char]0x0111)$([char]0x00E3) b$([char]0x1EAD)t s$([char]0x1EB5)n"
+                if ($res.OptSkippedHardware -gt 0) { $msg += ", $($res.OptSkippedHardware) kh$([char]0x00F4)ng ph$([char]0x00F9) h$([char]0x1EE3)p ph$([char]0x1EA7)n c$([char]0x1EE9)ng" }
+                $msg += ")`n`nNh$([char]0x1EA5)n 'C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t & C$([char]0x1EAD)p nh$([char]0x1EAD)t' $([char]0x1EDF) tab $([char]0x1EE8)ng d$([char]0x1EE5)ng ho$([char]0x1EB7)c 'L$([char]0x01B0)u' $([char]0x1EDF) tab T$([char]0x00F9)y ch$([char]0x1EC9)nh $([char]0x0111)$([char]0x1EC3) $([char]0x00E1)p d$([char]0x1EE5)ng."
+                Log-Text "[OK] H$([char]0x1ED3) s$([char]0x01A1): $([char]0x0110)$([char]0x00E3) n$([char]0x1EA1)p '$($ofd.FileName)' (App: +$($res.AppsSelected), T$([char]0x00F9)y ch$([char]0x1EC9)nh: +$($res.OptStaged))."
+                [void](Show-OwnedMessageBox -Text $msg -Caption "Nh$([char]0x1EAD)p c$([char]0x1EA5)u h$([char]0x00EC)nh" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+            } catch {
+                Log-Text "[ERR] Nh$([char]0x1EAD)p c$([char]0x1EA5)u h$([char]0x00EC)nh th$([char]0x1EA5)t b$([char]0x1EA1)i: $($_.Exception.Message)"
+                [void](Show-OwnedMessageBox -Text "T$([char]0x1EC7)p c$([char]0x1EA5)u h$([char]0x00EC)nh kh$([char]0x00F4)ng h$([char]0x1EE3)p l$([char]0x1EC7): $($_.Exception.Message)" -Caption "L$([char]0x1ED7)i nh$([char]0x1EAD)p c$([char]0x1EA5)u h$([char]0x00EC)nh" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+            }
+        }
+    })
+
+    [void]$script:profileContextMenu.Items.Add($miExport)
+    [void]$script:profileContextMenu.Items.Add($miImport)
+
+    $script:btnProfileMenu.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $script:profileContextMenu.PlacementTarget = $script:btnProfileMenu
+        $script:profileContextMenu.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Bottom
+        $script:profileContextMenu.IsOpen = $true
+    })
+}
 #endregion
 
 $window.ShowDialog() | Out-Null
