@@ -10145,13 +10145,13 @@ function Apply-ResourcesFilter {
     if ($script:resEmptyState) {
         if ($script:resIsScanning) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
-            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Đang quét sâu đa tầng (5 tầng)..." }
-            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Đang phân tích Temp, Cache trình duyệt/ứng dụng/Dev, Thư mục rỗng (lá chắn 5 lớp) và Radar tệp lớn. Bạn có thể bấm 'Dừng quét' bất cứ lúc nào." }
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Đang phân tích hệ thống..." }
+            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Đang quét tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." }
         } elseif ($script:resRows.Count -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
         } elseif ($visibleCount -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
-            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Không có hạng mục rác nào khớp bộ lọc" }
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Không có hạng mục nào khớp bộ lọc" }
             if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Thử chuyển sang 'Tất cả' hoặc xóa từ khóa tìm kiếm." }
         } else {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
@@ -10282,7 +10282,7 @@ function Ensure-ResourcesPollTimer {
 
                 $fmtFound = [DuckUtil.ResourceCleanerEngine]::FormatBytes($rep.TotalBytes)
                 $tagCanc = if ($rep.WasCancelled) { " (đã dừng sớm)" } else { "" }
-                Log-Text "[OK] Tài nguyên: Quét xong 5 tầng trong $($rep.ScanElapsedMs)ms — phát hiện $fmtFound & $($rep.TotalEmptyFolders) thư mục rỗng$tagCanc."
+                Log-Text "[OK] Tài nguyên: Phân tích xong trong $($rep.ScanElapsedMs)ms — phát hiện $fmtFound ($($rep.TotalEmptyFolders) thư mục rỗng)$tagCanc."
             }
             Apply-ResourcesFilter
         }
@@ -10303,14 +10303,14 @@ function Ensure-ResourcesPollTimer {
                 foreach ($lg in @($cr.PerCategoryLogs)) { Log-Text "   $lg" }
                 $fmtFreed = [DuckUtil.ResourceCleanerEngine]::FormatBytes($cr.FreedBytes)
                 $msg = "Đã giải phóng: $fmtFreed`n" +
-                       "• Đã xóa: $($cr.DeletedFiles) tệp, $($cr.DeletedFolders) thư mục (Đưa vào Thùng rác: $($cr.RecycledItems))`n" +
-                       "• Bỏ qua an toàn: $($cr.SkippedLockedCount) đang được Explorer/hệ thống khóa, $($cr.SkippedCloudCount) tệp đám mây/symlink"
+                       "• Đã xử lý: $($cr.DeletedFiles) tệp, $($cr.DeletedFolders) thư mục (Thùng rác: $($cr.RecycledItems))`n" +
+                       "• Bỏ qua an toàn: $($cr.SkippedLockedCount) đang sử dụng, $($cr.SkippedCloudCount) tệp đồng bộ/liên kết"
                 if ($cr.SkippedRecycleUnsupportedCount -gt 0) {
-                    $msg += ", $($cr.SkippedRecycleUnsupportedCount) mục không hỗ trợ Thùng rác (quá dài/ổ mạng — không tự xóa vĩnh viễn)"
+                    $msg += ", $($cr.SkippedRecycleUnsupportedCount) mục không hỗ trợ Thùng rác"
                 }
                 Log-Text "[OK] Dọn Tài nguyên hoàn tất trong $($cr.ElapsedMs)ms: Giải phóng $fmtFreed."
                 Update-ResourcesDiskBar
-                [void](Show-OwnedMessageBox -Text $msg -Caption "Hoàn tất dọn Tài nguyên" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+                [void](Show-OwnedMessageBox -Text $msg -Caption "Hoàn tất dọn dẹp" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
                 Start-ResourcesDeepScan
             } else {
                 Update-ResourcesSummary
@@ -10336,7 +10336,7 @@ function Start-ResourcesDeepScan {
     $script:resIsScanning = $true
     $script:resRows.Clear()
     if ($script:resRowsHost) { $script:resRowsHost.Children.Clear() }
-    if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang quét sâu 5 tầng..." }
+    if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang phân tích..." }
     Apply-ResourcesFilter
     $extraArr = $script:resExtraFolders.ToArray()
     $script:resScanTask = [DuckUtil.ResourceCleanerEngine]::ScanAllTiersAsync($extraArr, $script:resScanCts.Token)
@@ -10392,15 +10392,15 @@ if ($script:btnResClean) {
         }
 
         $fmtEst = [DuckUtil.ResourceCleanerEngine]::FormatBytes($estBytes)
-        $modeNote = if ($useRb) { "Tầng 1–3 xóa thẳng trước, sau đó đưa Tầng 4–5 vào Thùng rác an toàn." } else { "CẢNH BÁO: Bạn đang tắt chế độ Thùng rác — Tầng 4–5 sẽ bị xóa vĩnh viễn!" }
+        $modeNote = if ($useRb) { "Tệp tạm & bộ nhớ đệm sẽ được xóa trực tiếp; thư mục rỗng và tệp lớn sẽ được đưa vào Thùng rác." } else { "Cảnh báo: Chế độ Thùng rác đang tắt — toàn bộ mục đã chọn sẽ bị xóa vĩnh viễn." }
         $confirmText = "Bạn sắp dọn $($selectedCats.Count) hạng mục (ước tính giải phóng ~$fmtEst).`n`n• $modeNote"
         if ($hasWarn) { $confirmText += "`n• Có bao gồm hạng mục mức Lưu ý / Nâng cao." }
-        if ($hasOneDrive) { $confirmText += "`n• Có tệp nằm trong OneDrive — xóa tệp này sẽ đồng bộ xóa trên đám mây!" }
-        $confirmText += "`n`nTiếp tục dọn?"
+        if ($hasOneDrive) { $confirmText += "`n• Có tệp thuộc OneDrive — thao tác xóa sẽ đồng bộ lên đám mây." }
+        $confirmText += "`n`nTiếp tục dọn dẹp?"
 
         $ans = Show-OwnedMessageBox `
             -Text $confirmText `
-            -Caption "Xác nhận dọn Tài nguyên hệ thống" `
+            -Caption "Xác nhận dọn dẹp" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
@@ -10455,7 +10455,7 @@ if ($script:btnResAddFolder) {
     $script:btnResAddFolder.Add_Click({
         if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
         $fbd = [System.Windows.Forms.FolderBrowserDialog]::new()
-        $fbd.Description = "Chọn thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng đa tầng & tệp 0-byte tải hỏng"
+        $fbd.Description = "Chọn thư mục hoặc ổ đĩa để quét thư mục rỗng và tệp tải lỗi"
         $fbd.ShowNewFolderButton = $false
         if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK -and -not [string]::IsNullOrWhiteSpace($fbd.SelectedPath)) {
             $picked = [DuckUtil.ResourceCleanerEngine]::NormalizeCleanPath($fbd.SelectedPath)

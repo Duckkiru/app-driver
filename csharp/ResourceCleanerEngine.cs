@@ -1087,8 +1087,8 @@ namespace DuckUtil {
             // === TIER 1: Windows Temp & System Junk ===
             var catUserTemp = new ResourceCleanCategory {
                 Id = "t1_user_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "T\u1EC7p t\u1EA1m ng\u01B0\u1EDDi d\u00F9ng (%TEMP%)",
-                Description = "T\u1EC7p t\u1EA1m \u1EE9ng d\u1EE5ng & b\u1ED9 c\u00E0i trong %TEMP% (t\u1EF1 kh\u1EED tr\u00F9ng %LOCALAPPDATA%\\Temp, b\u1ECF qua t\u1EC7p \u0111ang m\u1EDF).",
+                Title = "T\u1EC7p t\u1EA1m ng\u01B0\u1EDDi d\u00F9ng",
+                Description = "T\u1EC7p t\u1EA1m \u1EE9ng d\u1EE5ng v\u00E0 b\u1ED9 c\u00E0i trong th\u01B0 m\u1EE5c Temp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catUserTemp, new[] { Path.GetTempPath(), Path.Combine(localApp, "Temp") }, null, false, ct);
@@ -1096,8 +1096,8 @@ namespace DuckUtil {
 
             var catWinTemp = new ResourceCleanCategory {
                 Id = "t1_win_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "T\u1EC7p t\u1EA1m h\u1EC7 th\u1ED1ng (C:\\Windows\\Temp)",
-                Description = "T\u1EC7p t\u1EA1m c\u1EE7a d\u1ECBch v\u1EE5 Windows v\u00E0 tr\u00ECnh c\u00E0i \u0111\u1EB7t (gi\u1EEF nguy\u00EAn th\u01B0 m\u1EE5c g\u1ED1c).",
+                Title = "T\u1EC7p t\u1EA1m Windows",
+                Description = "T\u1EC7p t\u1EA1m h\u1EC7 th\u1ED1ng trong C:\\Windows\\Temp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catWinTemp, new[] { Path.Combine(winDir, "Temp") }, null, false, ct);
@@ -1105,8 +1105,8 @@ namespace DuckUtil {
 
             var catWer = new ResourceCleanCategory {
                 Id = "t1_wer_dumps", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "B\u00E1o c\u00E1o l\u1ED7i & Crash Dumps (WER)",
-                Description = "B\u00E1o c\u00E1o l\u1ED7i Windows Error Reporting, CrashDumps v\u00E0 Minidump c\u0169.",
+                Title = "B\u00E1o c\u00E1o l\u1ED7i & Crash Dumps",
+                Description = "Nh\u1EADt k\u00FD l\u1ED7i h\u1EC7 th\u1ED1ng, CrashDumps v\u00E0 Minidump c\u0169.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catWer, new[] {
@@ -1119,8 +1119,8 @@ namespace DuckUtil {
 
             var catThumb = new ResourceCleanCategory {
                 Id = "t1_thumbcache", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EA3nh thu nh\u1ECF (Thumbnail Cache)",
-                Description = "T\u1EC7p thumbcache_*.db c\u1EE7a Windows Explorer (t\u1EC7p \u0111ang \u0111\u01B0\u1EE3c Explorer gi\u1EEF kh\u00F3a s\u1EBD t\u1EF1 b\u1ECF qua an to\u00E0n).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EA3nh thu nh\u1ECF",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m thumbnail c\u1EE7a Windows Explorer.",
                 CleanMode = "FilePattern", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catThumb, new[] { Path.Combine(localApp, @"Microsoft\Windows\Explorer") }, new[] { "thumbcache_*.db" }, true, ct);
@@ -1129,14 +1129,14 @@ namespace DuckUtil {
             bool wuRebootPending = IsWindowsUpdateRebootPending();
             var catWuDl = new ResourceCleanCategory {
                 Id = "t1_wu_download", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA3i Windows Update",
-                Description = "G\u00F3i c\u1EADp nh\u1EADt c\u0169 trong SoftwareDistribution\\Download.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Windows Update",
+                Description = "T\u1EC7p c\u00E0i \u0111\u1EB7t c\u0169 c\u1EE7a Windows Update.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false,
                 DefaultSelected = !wuRebootPending, Selected = !wuRebootPending,
                 SkippedBecauseRebootPending = wuRebootPending
             };
             if (wuRebootPending) {
-                catWuDl.StatusNote = "\u0110ang c\u00F3 b\u1EA3n Windows Update ch\u1EDD kh\u1EDFi \u0111\u1ED9ng l\u1EA1i \u2014 t\u1EF1 \u0111\u1ED9ng b\u1ECF qua \u0111\u1EC3 an to\u00E0n.";
+                catWuDl.StatusNote = "\u0110ang ch\u1EDD kh\u1EDFi \u0111\u1ED9ng l\u1EA1i \u0111\u1EC3 ho\u00E0n t\u1EA5t c\u1EADp nh\u1EADt \u2014 t\u1EA1m b\u1ECF qua.";
                 catWuDl.DetailItems = new List<ResourceDetailItem>();
                 catWuDl.RootPaths = new string[0];
             } else {
@@ -1147,7 +1147,7 @@ namespace DuckUtil {
             var catDo = new ResourceCleanCategory {
                 Id = "t1_delivery_opt", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Delivery Optimization",
-                Description = "T\u1EC7p ph\u00E2n ph\u1ED1i c\u1EADp nh\u1EADt Windows & Store (t\u1EF1 d\u00F9ng cmdlet Windows khi b\u1ECB kh\u00F3a ACL).",
+                Description = "T\u1EC7p ph\u00E2n ph\u1ED1i c\u1EADp nh\u1EADt Windows v\u00E0 Microsoft Store.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true,
                 IsDeliveryOptimization = true
             };
@@ -1156,9 +1156,9 @@ namespace DuckUtil {
 
             var catGpu = new ResourceCleanCategory {
                 Id = "t1_gpu_shader", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
-                Title = "DirectX & GPU Shader Cache (NVIDIA / AMD / Intel)",
-                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m shader \u0111\u1ED3 h\u1ECDa. Game s\u1EBD bi\u00EAn d\u1ECBch l\u1EA1i shader \u1EDF l\u1EA7n m\u1EDF \u0111\u1EA7u sau khi d\u1ECDn.",
-                WarningNote = "Game c\u00F3 th\u1EC3 kh\u1EF1ng nh\u1EB9 \u1EDF l\u1EA7n ch\u1EA1y \u0111\u1EA7u \u0111\u1EC3 t\u1EA1o l\u1EA1i shader.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Shader \u0111\u1ED3 h\u1ECDa",
+                Description = "DirectX, NVIDIA, AMD v\u00E0 Intel Shader Cache (t\u1EF1 t\u1EA1o l\u1EA1i khi m\u1EDF game).",
+                WarningNote = "Game c\u00F3 th\u1EC3 t\u1EA1o l\u1EA1i shader \u1EDF l\u1EA7n m\u1EDF \u0111\u1EA7u ti\u00EAn.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catGpu, CollectGpuShaderCacheDirs(), null, false, ct);
@@ -1166,9 +1166,9 @@ namespace DuckUtil {
 
             var catRb = new ResourceCleanCategory {
                 Id = "t1_recycle_bin", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
-                Title = "Th\u00F9ng r\u00E1c (To\u00E0n b\u1ED9 c\u00E1c \u1ED5 \u0111\u0129a C:, D:, USB...)",
-                Description = "D\u1ECDn s\u1EA1ch Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a (lu\u00F4n ch\u1EA1y tr\u01B0\u1EDBc b\u01B0\u1EDBc \u0111\u01B0a t\u1EC7p T\u1EA7ng 4\u20135 v\u00E0o Th\u00F9ng r\u00E1c).",
-                WarningNote = "X\u00F3a v\u0129nh vi\u1EC5n to\u00E0n b\u1ED9 t\u1EC7p \u0111ang n\u1EB1m trong Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a.",
+                Title = "Th\u00F9ng r\u00E1c (T\u1EA5t c\u1EA3 \u1ED5 \u0111\u0129a)",
+                Description = "D\u1ECDn s\u1EA1ch to\u00E0n b\u1ED9 t\u1EC7p trong Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a.",
+                WarningNote = "X\u00F3a v\u0129nh vi\u1EC5n to\u00E0n b\u1ED9 t\u1EC7p trong Th\u00F9ng r\u00E1c.",
                 CleanMode = "RecycleBinAll", SupportsRecycleBin = false, DefaultSelected = false, Selected = false,
                 DetailItems = new List<ResourceDetailItem>(), RootPaths = new string[0]
             };
@@ -1185,8 +1185,8 @@ namespace DuckUtil {
             // === TIER 2: Browser Caches (Cookies / Logins / Bookmarks 100% Untouched) ===
             var catChromium = new ResourceCleanCategory {
                 Id = "t2_chromium_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
-                Title = "Cache Tr\u00ECnh duy\u1EC7t Chromium (Chrome / Edge / Brave / Arc / C\u1ED1c C\u1ED1c)",
-                Description = "Ch\u1EC9 d\u1ECDn Cache_Data, Code Cache, GPUCache \u2014 KH\u00D4NG \u0111\u1EE5ng Cookie, M\u1EADt kh\u1EA9u, Bookmark hay L\u1ECBch s\u1EED.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Chrome / Edge / Brave / Arc / C\u1ED1c C\u1ED1c",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn m\u1EADt kh\u1EA9u, cookie v\u00E0 d\u1EA5u trang.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catChromium, CollectChromiumCacheDirs(), null, false, ct);
@@ -1194,8 +1194,8 @@ namespace DuckUtil {
 
             var catOpera = new ResourceCleanCategory {
                 Id = "t2_opera_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
-                Title = "Cache Opera / Opera GX",
-                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m web trong %LOCALAPPDATA%\\Opera Software (gi\u1EEF nguy\u00EAn phi\u00EAn \u0111\u0103ng nh\u1EADp).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Opera / Opera GX",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn phi\u00EAn \u0111\u0103ng nh\u1EADp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catOpera, CollectOperaCacheDirs(), null, false, ct);
@@ -1203,8 +1203,8 @@ namespace DuckUtil {
 
             var catGecko = new ResourceCleanCategory {
                 Id = "t2_gecko_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
-                Title = "Cache Firefox / Zen / Floorp / LibreWolf",
-                Description = "Ch\u1EC9 d\u1ECDn cache2, startupCache trong %LOCALAPPDATA% (gi\u1EEF nguy\u00EAn Profile & \u0111\u0103ng nh\u1EADp).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Firefox / Zen / Floorp",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn h\u1ED3 s\u01A1 v\u00E0 \u0111\u0103ng nh\u1EADp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catGecko, CollectGeckoCacheDirs(), null, false, ct);
@@ -1213,8 +1213,8 @@ namespace DuckUtil {
             // === TIER 3: App, Electron, Game Launcher & Dev Caches ===
             var catElectron = new ResourceCleanCategory {
                 Id = "t3_electron_chat", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
-                Title = "Cache \u1EE8ng d\u1EE5ng & Chat (Discord / VS Code / Zalo CEF / Teams / Telegram)",
-                Description = "Ch\u1EC9 d\u1ECDn web cache & GPUCache (tuy\u1EC7t \u0111\u1ED1i gi\u1EEF nguy\u00EAn ZaloDownloads, ZaloReceivedFiles v\u00E0 tin nh\u1EAFn).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EE9ng d\u1EE5ng (Discord / VS Code / Zalo / Teams / Telegram)",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA1m \u2014 gi\u1EEF nguy\u00EAn tin nh\u1EAFn v\u00E0 t\u1EC7p \u0111\u00E3 t\u1EA3i.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catElectron, CollectElectronAndChatCacheDirs(), null, false, ct);
@@ -1222,8 +1222,8 @@ namespace DuckUtil {
 
             var catGames = new ResourceCleanCategory {
                 Id = "t3_game_launchers", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
-                Title = "Cache Game Launchers (Steam / Epic / Riot / Battle.net / EA)",
-                Description = "Ch\u1EC9 d\u1ECDn webcache/htmlcache c\u1EE7a launcher (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng d\u1EEF li\u1EC7u game hay save).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Game Launcher (Steam / Epic / Riot / Battle.net)",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m tr\u00ECnh kh\u1EDFi ch\u1EA1y \u2014 kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng d\u1EEF li\u1EC7u game.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catGames, CollectGameLauncherCacheDirs(), null, false, ct);
@@ -1231,9 +1231,9 @@ namespace DuckUtil {
 
             var catSpotOff = new ResourceCleanCategory {
                 Id = "t3_spotify_offline", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Caution",
-                Title = "Spotify Offline Storage",
-                Description = "Kho l\u01B0u nh\u1EA1c/podcast t\u1EA3i offline c\u1EE7a Spotify (%LOCALAPPDATA%\\Spotify\\Storage).",
-                WarningNote = "X\u00F3a m\u1EE5c n\u00E0y s\u1EBD x\u00F3a nh\u1EA1c/podcast t\u1EA3i offline c\u1EE7a g\u00F3i Premium v\u00E0 ph\u1EA3i t\u1EA3i l\u1EA1i.",
+                Title = "D\u1EEF li\u1EC7u ngo\u1EA1i tuy\u1EBFn Spotify",
+                Description = "Nh\u1EA1c v\u00E0 podcast \u0111\u00E3 t\u1EA3i xu\u1ED1ng \u0111\u1EC3 nghe ngo\u1EA1i tuy\u1EBFn.",
+                WarningNote = "Nh\u1EA1c v\u00E0 podcast t\u1EA3i ngo\u1EA1i tuy\u1EBFn s\u1EBD c\u1EA7n t\u1EA3i l\u1EA1i.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catSpotOff, new[] { Path.Combine(localApp, @"Spotify\Storage") }, null, false, ct);
@@ -1241,9 +1241,9 @@ namespace DuckUtil {
 
             var catDev = new ResourceCleanCategory {
                 Id = "t3_dev_caches", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Advanced",
-                Title = "Cache C\u00F4ng c\u1EE5 L\u1EADp tr\u00ECnh (npm / pip / uv / Yarn / Gradle / WinGet)",
-                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m g\u00F3i t\u1EA3i v\u1EC1 c\u1EE7a c\u00E1c tr\u00ECnh qu\u1EA3n l\u00FD g\u00F3i Dev (c\u1EA7n t\u1EA3i l\u1EA1i n\u1EBFu build m\u1EDBi).",
-                WarningNote = "L\u1EA7n c\u00E0i g\u00F3i/build ti\u1EBFp theo s\u1EBD c\u1EA7n t\u1EA3i l\u1EA1i cache t\u1EEB m\u1EA1ng.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m c\u00F4ng c\u1EE5 l\u1EADp tr\u00ECnh (npm / pip / uv / Yarn / Gradle)",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m g\u00F3i th\u01B0 vi\u1EC7n (t\u1EF1 t\u1EA3i l\u1EA1i khi c\u00E0i \u0111\u1EB7t m\u1EDBi).",
+                WarningNote = "C\u00E1c g\u00F3i th\u01B0 vi\u1EC7n s\u1EBD t\u1EA3i l\u1EA1i t\u1EEB m\u1EA1ng khi c\u1EA7n.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catDev, CollectDevCacheDirs(), null, false, ct);
@@ -1273,9 +1273,9 @@ namespace DuckUtil {
 
             var catEmpty = new ResourceCleanCategory {
                 Id = "t4_empty_folders", Tier = 4, FilterGroup = "Empty", RiskLevel = "Advanced",
-                Title = "Th\u01B0 m\u1EE5c r\u1ED7ng \u0111a t\u1EA7ng (L\u00E1 ch\u1EAFn b\u1EA3o v\u1EC7 5 l\u1EDBp)",
-                Description = "Qu\u00E9t trong Downloads & th\u01B0 m\u1EE5c ngo\u00E0i b\u1EA1n ch\u1ECDn (0 m\u1EE5c th\u1EF1c, > 24h, kh\u00F4ng \u0111\u1EE5ng Program Files / Windows / OneDrive).",
-                WarningNote = "M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c \u0111\u1EC3 d\u1EC5 kh\u00F4i ph\u1EE5c.",
+                Title = "Th\u01B0 m\u1EE5c r\u1ED7ng",
+                Description = "Th\u01B0 m\u1EE5c tr\u1ED1ng kh\u00F4ng s\u1EED d\u1EE5ng trong Downloads v\u00E0 th\u01B0 m\u1EE5c b\u1EA1n ch\u1ECDn th\u00EAm.",
+                WarningNote = "M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c.",
                 CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
                 TotalBytes = 0, ItemCount = emptyItems.Count, FolderCount = totalEmptyCount,
                 RootPaths = dedupEmptyRoots, DetailItems = emptyItems
@@ -1302,8 +1302,8 @@ namespace DuckUtil {
 
             var catZero = new ResourceCleanCategory {
                 Id = "t4_zero_byte_junk", Tier = 4, FilterGroup = "Empty", RiskLevel = "Advanced",
-                Title = "T\u1EC7p r\u00E1c 0-byte & t\u1EA3i h\u1ECFng (.tmp / .crdownload / .part > 24h)",
-                Description = "Ch\u1EC9 g\u1EAFn c\u1EDD \u0111u\u00F4i t\u1EA1m/t\u1EA3i d\u1EDF r\u00F5 r\u00E0ng \u2014 tuy\u1EC7t \u0111\u1ED1i b\u1EA3o v\u1EC7 __init__.py, .gitkeep, .dat, .bin, .db.",
+                Title = "T\u1EC7p t\u1EA1m & t\u1EA3i l\u1ED7i (0 byte)",
+                Description = "T\u1EC7p t\u1EA1m v\u00E0 t\u1EC7p t\u1EA3i d\u1EDF (.tmp, .crdownload, .part) c\u0169 h\u01A1n 24 gi\u1EDD.",
                 CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
                 TotalBytes = 0, ItemCount = zeroItems.Count, FolderCount = 0,
                 RootPaths = dedupUserRoots, DetailItems = zeroItems
@@ -1313,9 +1313,9 @@ namespace DuckUtil {
             // === TIER 5: Advanced System & Large File Radar (Unchecked, Recycle Bin default) ===
             var catPrefetch = new ResourceCleanCategory {
                 Id = "t5_prefetch", Tier = 5, FilterGroup = "Advanced", RiskLevel = "Advanced",
-                Title = "Windows Prefetch (C:\\Windows\\Prefetch)",
-                Description = "T\u1EC7p t\u0103ng t\u1ED1c kh\u1EDFi ch\u1EA1y \u1EE9ng d\u1EE5ng (tr\u00EAn SSD kh\u00F4ng c\u1EA7n x\u00F3a th\u01B0\u1EDDng xuy\u00EAn).",
-                WarningNote = "Windows s\u1EBD t\u1EF1 t\u1EA1o l\u1EA1i Prefetch trong v\u00E0i ng\u00E0y.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Windows Prefetch",
+                Description = "D\u1EEF li\u1EC7u t\u0103ng t\u1ED1c kh\u1EDFi ch\u1EA1y \u1EE9ng d\u1EE5ng (t\u1EF1 t\u1EA1o l\u1EA1i khi s\u1EED d\u1EE5ng).",
+                WarningNote = "Windows s\u1EBD t\u1EF1 t\u1EA1o l\u1EA1i Prefetch trong qu\u00E1 tr\u00ECnh s\u1EED d\u1EE5ng.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catPrefetch, new[] { Path.Combine(winDir, "Prefetch") }, new[] { "*.pf" }, true, ct);
@@ -1328,9 +1328,9 @@ namespace DuckUtil {
             for (int i = 0; i < largeItems.Count; i++) largeTotal += largeItems[i].SizeBytes;
             var catLarge = new ResourceCleanCategory {
                 Id = "t5_large_files", Tier = 5, FilterGroup = "Advanced", RiskLevel = "Advanced",
-                Title = "Radar T\u1EC7p l\u1EDBn > 500 MB (Downloads & Desktop)",
-                Description = "Ph\u00E1t hi\u1EC7n b\u1ED9 c\u00E0i .iso/.zip/.exe l\u1EDBn b\u1ECB b\u1ECF qu\u00EAn (b\u1EA5m Chi ti\u1EBFt \u0111\u1EC3 ki\u1EC3m tra t\u1EEBng t\u1EC7p tr\u01B0\u1EDBc khi x\u00F3a).",
-                WarningNote = "Ch\u1EC9 tick khi b\u1EA1n \u0111\u00E3 ki\u1EC3m tra k\u1EF9 danh s\u00E1ch Chi ti\u1EBFt. M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c.",
+                Title = "T\u1EC7p dung l\u01B0\u1EE3ng l\u1EDBn (> 500 MB)",
+                Description = "C\u00E1c t\u1EC7p l\u1EDBn trong Downloads v\u00E0 Desktop \u2014 ki\u1EC3m tra Chi ti\u1EBFt tr\u01B0\u1EDBc khi d\u1ECDn.",
+                WarningNote = "Ki\u1EC3m tra danh s\u00E1ch Chi ti\u1EBFt tr\u01B0\u1EDBc khi x\u00F3a.",
                 CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
                 TotalBytes = largeTotal, ItemCount = largeItems.Count, FolderCount = 0,
                 RootPaths = DeduplicateNormalizedPaths(new[] { downloadsDir, desktopDir }),

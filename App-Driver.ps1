@@ -8332,24 +8332,24 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Name="btnResScan" Content="Qu&#x00E9;t ngay" Style="{StaticResource ActionButton}"
                                                 Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                                ToolTip="Ch&#x1EA1;y qu&#x00E9;t s&#x00E2;u &#x0111;a t&#x1EA7;ng 5 l&#x1EDB;p (Temp, Cache tr&#x00EC;nh duy&#x1EC7;t/&#x1EE9;ng d&#x1EE5;ng/Dev, Th&#x01B0; m&#x1EE5;c r&#x1ED7;ng 5 l&#x00E1; ch&#x1EAF;n &amp; T&#x1EC7;p l&#x1EDB;n)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Ph&#x00E2;n t&#x00ED;ch t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResClean" Content="D&#x1ECD;n m&#x1EE5;c &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
                                                 Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
-                                                ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c tick (T&#x1EA7;ng 1&#x2013;3 x&#x00F3;a th&#x1EB3;ng tr&#x01B0;&#x1EDB;c, sau &#x0111;&#x00F3; m&#x1EDB;i &#x0111;&#x01B0;a T&#x1EA7;ng 4&#x2013;5 v&#x00E0;o Th&#x00F9;ng r&#x00E1;c)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n &#x0111;&#x1EC3; gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; &#x0111;&#x0129;a." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResSelectSafe" Content="Ch&#x1ECD;n An to&#x00E0;n" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#34D399" BorderBrush="#1E5640"
-                                                ToolTip="Ch&#x1EC9; tick c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c m&#x1EE9;c An to&#x00E0;n (kh&#x00F4;ng ch&#x1ECD;n L&#x01B0;u &#x00FD; / N&#x00E2;ng cao / Th&#x00F9;ng r&#x00E1;c)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Ch&#x1EC9; ch&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x1EDF; m&#x1EE9;c An to&#x00E0;n." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResClearSel" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
                                                 ToolTip="B&#x1ECF; ch&#x1ECD;n to&#x00E0;n b&#x1ED9; h&#x1EA1;ng m&#x1EE5;c." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResAddFolder" Content="+ Qu&#x00E9;t th&#x01B0; m&#x1EE5;c ngo&#x00E0;i" Style="{StaticResource SecondaryButton}"
+                                        <Button Name="btnResAddFolder" Content="+ Ch&#x1ECD;n th&#x01B0; m&#x1EE5;c" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
-                                                ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c/&#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i (v&#x00ED; d&#x1EE5; D:\, E:\) &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng &#x0111;a t&#x1EA7;ng v&#x00E0; t&#x1EC7;p 0-byte t&#x1EA3;i h&#x1ECF;ng." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c ho&#x1EB7;c &#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i." ToolTipService.InitialShowDelay="500"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <CheckBox Name="chkResRecycleTier45" Content="Th&#x00F9;ng r&#x00E1;c (T&#x1EA7;ng 4&#x2013;5)" IsChecked="True"
+                                        <CheckBox Name="chkResRecycleTier45" Content="&#x0110;&#x01B0;a v&#x00E0;o Th&#x00F9;ng r&#x00E1;c" IsChecked="True"
                                                   Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,10,0"
-                                                  ToolTip="M&#x1EB7;c &#x0111;&#x1ECB;nh &#x0111;&#x01B0;a Th&#x01B0; m&#x1EE5;c r&#x1ED7;ng &amp; T&#x1EC7;p l&#x1EDB;n (T&#x1EA7;ng 4&#x2013;5) v&#x00E0;o Th&#x00F9;ng r&#x00E1;c an to&#x00E0;n qua COM IFileOperation (t&#x1EF1; t&#x1EEB; ch&#x1ED1;i n&#x1EBF;u kh&#x00F4;ng h&#x1ED7; tr&#x1EE3; Th&#x00F9;ng r&#x00E1;c, kh&#x00F4;ng &#x00E2;m th&#x1EA7;m x&#x00F3;a v&#x0129;nh vi&#x1EC5;n)." ToolTipService.InitialShowDelay="300"/>
+                                                  ToolTip="&#x0110;&#x01B0;a th&#x01B0; m&#x1EE5;c r&#x1ED7;ng, t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i v&#x00E0; t&#x1EC7;p l&#x1EDB;n v&#x00E0;o Th&#x00F9;ng r&#x00E1;c thay v&#x00EC; x&#x00F3;a v&#x0129;nh vi&#x1EC5;n." ToolTipService.InitialShowDelay="300"/>
                                         <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
                                                 Padding="8,0" VerticalAlignment="Stretch" Height="30">
                                             <Grid Width="195">
@@ -8361,7 +8361,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                                 <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
                                                       Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                                       Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
-                                                <TextBlock Grid.Column="1" Text="L&#x1ECD;c h&#x1EA1;ng m&#x1EE5;c r&#x00E1;c..." Foreground="#475569" FontSize="11.5"
+                                                <TextBlock Grid.Column="1" Text="T&#x00EC;m h&#x1EA1;ng m&#x1EE5;c..." Foreground="#475569" FontSize="11.5"
                                                            VerticalAlignment="Center" IsHitTestVisible="False">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -8413,7 +8413,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                                 </Border>
                                             </StackPanel>
                                         </Border>
-                                        <TextBlock Name="txtResSummary" Text="B&#x1EA5;m 'Qu&#x00E9;t ngay' &#x0111;&#x1EC3; ph&#x00E2;n t&#x00ED;ch r&#x00E1;c h&#x1EC7; th&#x1ED1;ng"
+                                        <TextBlock Name="txtResSummary" Text="S&#x1EB5;n s&#x00E0;ng ph&#x00E2;n t&#x00ED;ch dung l&#x01B0;&#x1EE3;ng"
                                                    Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
@@ -8434,7 +8434,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="CH&#x1ECC;N" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                                <TextBlock Grid.Column="1" Text="H&#x1EA0;NG M&#x1EE4;C R&#x00C1;C &amp; PH&#x1EA0;M VI QU&#x00C9;T" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="H&#x1EA0;NG M&#x1EE4;C &amp; V&#x1ECA; TR&#x00CD;" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                                 <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                                 <TextBlock Grid.Column="2" Text="M&#x1EE8;C &#x0110;&#x1ED8;" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
@@ -8452,10 +8452,10 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                             <Border Name="ResEmptyState" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Center"
                                     Background="#0E131D" BorderBrush="#263348" BorderThickness="1" CornerRadius="6" Padding="26,20" IsHitTestVisible="False">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Name="txtResEmptyTitle" Text="S&#x1EB5;n s&#x00E0;ng qu&#x00E9;t r&#x00E1;c &#x0111;a t&#x1EA7;ng (5 t&#x1EA7;ng b&#x1EA3;o v&#x1EC7;)"
+                                    <TextBlock Name="txtResEmptyTitle" Text="S&#x1EB5;n s&#x00E0;ng d&#x1ECD;n d&#x1EB9;p h&#x1EC7; th&#x1ED1;ng"
                                                Foreground="#E2E8F0" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                    <TextBlock Name="txtResEmptySub" Text="B&#x1EA5;m 'Qu&#x00E9;t ngay' &#x0111;&#x1EC3; ph&#x00E2;n t&#x00ED;ch t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m tr&#x00EC;nh duy&#x1EC7;t/&#x1EE9;ng d&#x1EE5;ng, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p l&#x1EDB;n. Tab kh&#x00F4;ng t&#x1EF1; &#x0111;&#x1ECD;c &#x1ED5; &#x0111;&#x0129;a khi m&#x1EDB;i m&#x1EDF;."
-                                               Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="540" TextWrapping="Wrap"/>
+                                    <TextBlock Name="txtResEmptySub" Text="Nh&#x1EA5;n 'Qu&#x00E9;t ngay' &#x0111;&#x1EC3; ph&#x00E2;n t&#x00ED;ch t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n."
+                                               Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="520" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -29349,8 +29349,8 @@ namespace DuckUtil {
             // === TIER 1: Windows Temp & System Junk ===
             var catUserTemp = new ResourceCleanCategory {
                 Id = "t1_user_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "T\u1EC7p t\u1EA1m ng\u01B0\u1EDDi d\u00F9ng (%TEMP%)",
-                Description = "T\u1EC7p t\u1EA1m \u1EE9ng d\u1EE5ng & b\u1ED9 c\u00E0i trong %TEMP% (t\u1EF1 kh\u1EED tr\u00F9ng %LOCALAPPDATA%\\Temp, b\u1ECF qua t\u1EC7p \u0111ang m\u1EDF).",
+                Title = "T\u1EC7p t\u1EA1m ng\u01B0\u1EDDi d\u00F9ng",
+                Description = "T\u1EC7p t\u1EA1m \u1EE9ng d\u1EE5ng v\u00E0 b\u1ED9 c\u00E0i trong th\u01B0 m\u1EE5c Temp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catUserTemp, new[] { Path.GetTempPath(), Path.Combine(localApp, "Temp") }, null, false, ct);
@@ -29358,8 +29358,8 @@ namespace DuckUtil {
 
             var catWinTemp = new ResourceCleanCategory {
                 Id = "t1_win_temp", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "T\u1EC7p t\u1EA1m h\u1EC7 th\u1ED1ng (C:\\Windows\\Temp)",
-                Description = "T\u1EC7p t\u1EA1m c\u1EE7a d\u1ECBch v\u1EE5 Windows v\u00E0 tr\u00ECnh c\u00E0i \u0111\u1EB7t (gi\u1EEF nguy\u00EAn th\u01B0 m\u1EE5c g\u1ED1c).",
+                Title = "T\u1EC7p t\u1EA1m Windows",
+                Description = "T\u1EC7p t\u1EA1m h\u1EC7 th\u1ED1ng trong C:\\Windows\\Temp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catWinTemp, new[] { Path.Combine(winDir, "Temp") }, null, false, ct);
@@ -29367,8 +29367,8 @@ namespace DuckUtil {
 
             var catWer = new ResourceCleanCategory {
                 Id = "t1_wer_dumps", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "B\u00E1o c\u00E1o l\u1ED7i & Crash Dumps (WER)",
-                Description = "B\u00E1o c\u00E1o l\u1ED7i Windows Error Reporting, CrashDumps v\u00E0 Minidump c\u0169.",
+                Title = "B\u00E1o c\u00E1o l\u1ED7i & Crash Dumps",
+                Description = "Nh\u1EADt k\u00FD l\u1ED7i h\u1EC7 th\u1ED1ng, CrashDumps v\u00E0 Minidump c\u0169.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catWer, new[] {
@@ -29381,8 +29381,8 @@ namespace DuckUtil {
 
             var catThumb = new ResourceCleanCategory {
                 Id = "t1_thumbcache", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EA3nh thu nh\u1ECF (Thumbnail Cache)",
-                Description = "T\u1EC7p thumbcache_*.db c\u1EE7a Windows Explorer (t\u1EC7p \u0111ang \u0111\u01B0\u1EE3c Explorer gi\u1EEF kh\u00F3a s\u1EBD t\u1EF1 b\u1ECF qua an to\u00E0n).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EA3nh thu nh\u1ECF",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m thumbnail c\u1EE7a Windows Explorer.",
                 CleanMode = "FilePattern", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catThumb, new[] { Path.Combine(localApp, @"Microsoft\Windows\Explorer") }, new[] { "thumbcache_*.db" }, true, ct);
@@ -29391,14 +29391,14 @@ namespace DuckUtil {
             bool wuRebootPending = IsWindowsUpdateRebootPending();
             var catWuDl = new ResourceCleanCategory {
                 Id = "t1_wu_download", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
-                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA3i Windows Update",
-                Description = "G\u00F3i c\u1EADp nh\u1EADt c\u0169 trong SoftwareDistribution\\Download.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Windows Update",
+                Description = "T\u1EC7p c\u00E0i \u0111\u1EB7t c\u0169 c\u1EE7a Windows Update.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false,
                 DefaultSelected = !wuRebootPending, Selected = !wuRebootPending,
                 SkippedBecauseRebootPending = wuRebootPending
             };
             if (wuRebootPending) {
-                catWuDl.StatusNote = "\u0110ang c\u00F3 b\u1EA3n Windows Update ch\u1EDD kh\u1EDFi \u0111\u1ED9ng l\u1EA1i \u2014 t\u1EF1 \u0111\u1ED9ng b\u1ECF qua \u0111\u1EC3 an to\u00E0n.";
+                catWuDl.StatusNote = "\u0110ang ch\u1EDD kh\u1EDFi \u0111\u1ED9ng l\u1EA1i \u0111\u1EC3 ho\u00E0n t\u1EA5t c\u1EADp nh\u1EADt \u2014 t\u1EA1m b\u1ECF qua.";
                 catWuDl.DetailItems = new List<ResourceDetailItem>();
                 catWuDl.RootPaths = new string[0];
             } else {
@@ -29409,7 +29409,7 @@ namespace DuckUtil {
             var catDo = new ResourceCleanCategory {
                 Id = "t1_delivery_opt", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Delivery Optimization",
-                Description = "T\u1EC7p ph\u00E2n ph\u1ED1i c\u1EADp nh\u1EADt Windows & Store (t\u1EF1 d\u00F9ng cmdlet Windows khi b\u1ECB kh\u00F3a ACL).",
+                Description = "T\u1EC7p ph\u00E2n ph\u1ED1i c\u1EADp nh\u1EADt Windows v\u00E0 Microsoft Store.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true,
                 IsDeliveryOptimization = true
             };
@@ -29418,9 +29418,9 @@ namespace DuckUtil {
 
             var catGpu = new ResourceCleanCategory {
                 Id = "t1_gpu_shader", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
-                Title = "DirectX & GPU Shader Cache (NVIDIA / AMD / Intel)",
-                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m shader \u0111\u1ED3 h\u1ECDa. Game s\u1EBD bi\u00EAn d\u1ECBch l\u1EA1i shader \u1EDF l\u1EA7n m\u1EDF \u0111\u1EA7u sau khi d\u1ECDn.",
-                WarningNote = "Game c\u00F3 th\u1EC3 kh\u1EF1ng nh\u1EB9 \u1EDF l\u1EA7n ch\u1EA1y \u0111\u1EA7u \u0111\u1EC3 t\u1EA1o l\u1EA1i shader.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Shader \u0111\u1ED3 h\u1ECDa",
+                Description = "DirectX, NVIDIA, AMD v\u00E0 Intel Shader Cache (t\u1EF1 t\u1EA1o l\u1EA1i khi m\u1EDF game).",
+                WarningNote = "Game c\u00F3 th\u1EC3 t\u1EA1o l\u1EA1i shader \u1EDF l\u1EA7n m\u1EDF \u0111\u1EA7u ti\u00EAn.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catGpu, CollectGpuShaderCacheDirs(), null, false, ct);
@@ -29428,9 +29428,9 @@ namespace DuckUtil {
 
             var catRb = new ResourceCleanCategory {
                 Id = "t1_recycle_bin", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
-                Title = "Th\u00F9ng r\u00E1c (To\u00E0n b\u1ED9 c\u00E1c \u1ED5 \u0111\u0129a C:, D:, USB...)",
-                Description = "D\u1ECDn s\u1EA1ch Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a (lu\u00F4n ch\u1EA1y tr\u01B0\u1EDBc b\u01B0\u1EDBc \u0111\u01B0a t\u1EC7p T\u1EA7ng 4\u20135 v\u00E0o Th\u00F9ng r\u00E1c).",
-                WarningNote = "X\u00F3a v\u0129nh vi\u1EC5n to\u00E0n b\u1ED9 t\u1EC7p \u0111ang n\u1EB1m trong Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a.",
+                Title = "Th\u00F9ng r\u00E1c (T\u1EA5t c\u1EA3 \u1ED5 \u0111\u0129a)",
+                Description = "D\u1ECDn s\u1EA1ch to\u00E0n b\u1ED9 t\u1EC7p trong Th\u00F9ng r\u00E1c tr\u00EAn m\u1ECDi \u1ED5 \u0111\u0129a.",
+                WarningNote = "X\u00F3a v\u0129nh vi\u1EC5n to\u00E0n b\u1ED9 t\u1EC7p trong Th\u00F9ng r\u00E1c.",
                 CleanMode = "RecycleBinAll", SupportsRecycleBin = false, DefaultSelected = false, Selected = false,
                 DetailItems = new List<ResourceDetailItem>(), RootPaths = new string[0]
             };
@@ -29447,8 +29447,8 @@ namespace DuckUtil {
             // === TIER 2: Browser Caches (Cookies / Logins / Bookmarks 100% Untouched) ===
             var catChromium = new ResourceCleanCategory {
                 Id = "t2_chromium_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
-                Title = "Cache Tr\u00ECnh duy\u1EC7t Chromium (Chrome / Edge / Brave / Arc / C\u1ED1c C\u1ED1c)",
-                Description = "Ch\u1EC9 d\u1ECDn Cache_Data, Code Cache, GPUCache \u2014 KH\u00D4NG \u0111\u1EE5ng Cookie, M\u1EADt kh\u1EA9u, Bookmark hay L\u1ECBch s\u1EED.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Chrome / Edge / Brave / Arc / C\u1ED1c C\u1ED1c",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn m\u1EADt kh\u1EA9u, cookie v\u00E0 d\u1EA5u trang.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catChromium, CollectChromiumCacheDirs(), null, false, ct);
@@ -29456,8 +29456,8 @@ namespace DuckUtil {
 
             var catOpera = new ResourceCleanCategory {
                 Id = "t2_opera_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
-                Title = "Cache Opera / Opera GX",
-                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m web trong %LOCALAPPDATA%\\Opera Software (gi\u1EEF nguy\u00EAn phi\u00EAn \u0111\u0103ng nh\u1EADp).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Opera / Opera GX",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn phi\u00EAn \u0111\u0103ng nh\u1EADp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catOpera, CollectOperaCacheDirs(), null, false, ct);
@@ -29465,8 +29465,8 @@ namespace DuckUtil {
 
             var catGecko = new ResourceCleanCategory {
                 Id = "t2_gecko_cache", Tier = 2, FilterGroup = "Browser", RiskLevel = "Safe",
-                Title = "Cache Firefox / Zen / Floorp / LibreWolf",
-                Description = "Ch\u1EC9 d\u1ECDn cache2, startupCache trong %LOCALAPPDATA% (gi\u1EEF nguy\u00EAn Profile & \u0111\u0103ng nh\u1EADp).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Firefox / Zen / Floorp",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m web \u2014 gi\u1EEF nguy\u00EAn h\u1ED3 s\u01A1 v\u00E0 \u0111\u0103ng nh\u1EADp.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catGecko, CollectGeckoCacheDirs(), null, false, ct);
@@ -29475,8 +29475,8 @@ namespace DuckUtil {
             // === TIER 3: App, Electron, Game Launcher & Dev Caches ===
             var catElectron = new ResourceCleanCategory {
                 Id = "t3_electron_chat", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
-                Title = "Cache \u1EE8ng d\u1EE5ng & Chat (Discord / VS Code / Zalo CEF / Teams / Telegram)",
-                Description = "Ch\u1EC9 d\u1ECDn web cache & GPUCache (tuy\u1EC7t \u0111\u1ED1i gi\u1EEF nguy\u00EAn ZaloDownloads, ZaloReceivedFiles v\u00E0 tin nh\u1EAFn).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m \u1EE9ng d\u1EE5ng (Discord / VS Code / Zalo / Teams / Telegram)",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA1m \u2014 gi\u1EEF nguy\u00EAn tin nh\u1EAFn v\u00E0 t\u1EC7p \u0111\u00E3 t\u1EA3i.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catElectron, CollectElectronAndChatCacheDirs(), null, false, ct);
@@ -29484,8 +29484,8 @@ namespace DuckUtil {
 
             var catGames = new ResourceCleanCategory {
                 Id = "t3_game_launchers", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
-                Title = "Cache Game Launchers (Steam / Epic / Riot / Battle.net / EA)",
-                Description = "Ch\u1EC9 d\u1ECDn webcache/htmlcache c\u1EE7a launcher (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng d\u1EEF li\u1EC7u game hay save).",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Game Launcher (Steam / Epic / Riot / Battle.net)",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m tr\u00ECnh kh\u1EDFi ch\u1EA1y \u2014 kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng d\u1EEF li\u1EC7u game.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
             };
             PopulateDirectoryCategory(catGames, CollectGameLauncherCacheDirs(), null, false, ct);
@@ -29493,9 +29493,9 @@ namespace DuckUtil {
 
             var catSpotOff = new ResourceCleanCategory {
                 Id = "t3_spotify_offline", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Caution",
-                Title = "Spotify Offline Storage",
-                Description = "Kho l\u01B0u nh\u1EA1c/podcast t\u1EA3i offline c\u1EE7a Spotify (%LOCALAPPDATA%\\Spotify\\Storage).",
-                WarningNote = "X\u00F3a m\u1EE5c n\u00E0y s\u1EBD x\u00F3a nh\u1EA1c/podcast t\u1EA3i offline c\u1EE7a g\u00F3i Premium v\u00E0 ph\u1EA3i t\u1EA3i l\u1EA1i.",
+                Title = "D\u1EEF li\u1EC7u ngo\u1EA1i tuy\u1EBFn Spotify",
+                Description = "Nh\u1EA1c v\u00E0 podcast \u0111\u00E3 t\u1EA3i xu\u1ED1ng \u0111\u1EC3 nghe ngo\u1EA1i tuy\u1EBFn.",
+                WarningNote = "Nh\u1EA1c v\u00E0 podcast t\u1EA3i ngo\u1EA1i tuy\u1EBFn s\u1EBD c\u1EA7n t\u1EA3i l\u1EA1i.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catSpotOff, new[] { Path.Combine(localApp, @"Spotify\Storage") }, null, false, ct);
@@ -29503,9 +29503,9 @@ namespace DuckUtil {
 
             var catDev = new ResourceCleanCategory {
                 Id = "t3_dev_caches", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Advanced",
-                Title = "Cache C\u00F4ng c\u1EE5 L\u1EADp tr\u00ECnh (npm / pip / uv / Yarn / Gradle / WinGet)",
-                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m g\u00F3i t\u1EA3i v\u1EC1 c\u1EE7a c\u00E1c tr\u00ECnh qu\u1EA3n l\u00FD g\u00F3i Dev (c\u1EA7n t\u1EA3i l\u1EA1i n\u1EBFu build m\u1EDBi).",
-                WarningNote = "L\u1EA7n c\u00E0i g\u00F3i/build ti\u1EBFp theo s\u1EBD c\u1EA7n t\u1EA3i l\u1EA1i cache t\u1EEB m\u1EA1ng.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m c\u00F4ng c\u1EE5 l\u1EADp tr\u00ECnh (npm / pip / uv / Yarn / Gradle)",
+                Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m g\u00F3i th\u01B0 vi\u1EC7n (t\u1EF1 t\u1EA3i l\u1EA1i khi c\u00E0i \u0111\u1EB7t m\u1EDBi).",
+                WarningNote = "C\u00E1c g\u00F3i th\u01B0 vi\u1EC7n s\u1EBD t\u1EA3i l\u1EA1i t\u1EEB m\u1EA1ng khi c\u1EA7n.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catDev, CollectDevCacheDirs(), null, false, ct);
@@ -29535,9 +29535,9 @@ namespace DuckUtil {
 
             var catEmpty = new ResourceCleanCategory {
                 Id = "t4_empty_folders", Tier = 4, FilterGroup = "Empty", RiskLevel = "Advanced",
-                Title = "Th\u01B0 m\u1EE5c r\u1ED7ng \u0111a t\u1EA7ng (L\u00E1 ch\u1EAFn b\u1EA3o v\u1EC7 5 l\u1EDBp)",
-                Description = "Qu\u00E9t trong Downloads & th\u01B0 m\u1EE5c ngo\u00E0i b\u1EA1n ch\u1ECDn (0 m\u1EE5c th\u1EF1c, > 24h, kh\u00F4ng \u0111\u1EE5ng Program Files / Windows / OneDrive).",
-                WarningNote = "M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c \u0111\u1EC3 d\u1EC5 kh\u00F4i ph\u1EE5c.",
+                Title = "Th\u01B0 m\u1EE5c r\u1ED7ng",
+                Description = "Th\u01B0 m\u1EE5c tr\u1ED1ng kh\u00F4ng s\u1EED d\u1EE5ng trong Downloads v\u00E0 th\u01B0 m\u1EE5c b\u1EA1n ch\u1ECDn th\u00EAm.",
+                WarningNote = "M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c.",
                 CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
                 TotalBytes = 0, ItemCount = emptyItems.Count, FolderCount = totalEmptyCount,
                 RootPaths = dedupEmptyRoots, DetailItems = emptyItems
@@ -29564,8 +29564,8 @@ namespace DuckUtil {
 
             var catZero = new ResourceCleanCategory {
                 Id = "t4_zero_byte_junk", Tier = 4, FilterGroup = "Empty", RiskLevel = "Advanced",
-                Title = "T\u1EC7p r\u00E1c 0-byte & t\u1EA3i h\u1ECFng (.tmp / .crdownload / .part > 24h)",
-                Description = "Ch\u1EC9 g\u1EAFn c\u1EDD \u0111u\u00F4i t\u1EA1m/t\u1EA3i d\u1EDF r\u00F5 r\u00E0ng \u2014 tuy\u1EC7t \u0111\u1ED1i b\u1EA3o v\u1EC7 __init__.py, .gitkeep, .dat, .bin, .db.",
+                Title = "T\u1EC7p t\u1EA1m & t\u1EA3i l\u1ED7i (0 byte)",
+                Description = "T\u1EC7p t\u1EA1m v\u00E0 t\u1EC7p t\u1EA3i d\u1EDF (.tmp, .crdownload, .part) c\u0169 h\u01A1n 24 gi\u1EDD.",
                 CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
                 TotalBytes = 0, ItemCount = zeroItems.Count, FolderCount = 0,
                 RootPaths = dedupUserRoots, DetailItems = zeroItems
@@ -29575,9 +29575,9 @@ namespace DuckUtil {
             // === TIER 5: Advanced System & Large File Radar (Unchecked, Recycle Bin default) ===
             var catPrefetch = new ResourceCleanCategory {
                 Id = "t5_prefetch", Tier = 5, FilterGroup = "Advanced", RiskLevel = "Advanced",
-                Title = "Windows Prefetch (C:\\Windows\\Prefetch)",
-                Description = "T\u1EC7p t\u0103ng t\u1ED1c kh\u1EDFi ch\u1EA1y \u1EE9ng d\u1EE5ng (tr\u00EAn SSD kh\u00F4ng c\u1EA7n x\u00F3a th\u01B0\u1EDDng xuy\u00EAn).",
-                WarningNote = "Windows s\u1EBD t\u1EF1 t\u1EA1o l\u1EA1i Prefetch trong v\u00E0i ng\u00E0y.",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Windows Prefetch",
+                Description = "D\u1EEF li\u1EC7u t\u0103ng t\u1ED1c kh\u1EDFi ch\u1EA1y \u1EE9ng d\u1EE5ng (t\u1EF1 t\u1EA1o l\u1EA1i khi s\u1EED d\u1EE5ng).",
+                WarningNote = "Windows s\u1EBD t\u1EF1 t\u1EA1o l\u1EA1i Prefetch trong qu\u00E1 tr\u00ECnh s\u1EED d\u1EE5ng.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catPrefetch, new[] { Path.Combine(winDir, "Prefetch") }, new[] { "*.pf" }, true, ct);
@@ -29590,9 +29590,9 @@ namespace DuckUtil {
             for (int i = 0; i < largeItems.Count; i++) largeTotal += largeItems[i].SizeBytes;
             var catLarge = new ResourceCleanCategory {
                 Id = "t5_large_files", Tier = 5, FilterGroup = "Advanced", RiskLevel = "Advanced",
-                Title = "Radar T\u1EC7p l\u1EDBn > 500 MB (Downloads & Desktop)",
-                Description = "Ph\u00E1t hi\u1EC7n b\u1ED9 c\u00E0i .iso/.zip/.exe l\u1EDBn b\u1ECB b\u1ECF qu\u00EAn (b\u1EA5m Chi ti\u1EBFt \u0111\u1EC3 ki\u1EC3m tra t\u1EEBng t\u1EC7p tr\u01B0\u1EDBc khi x\u00F3a).",
-                WarningNote = "Ch\u1EC9 tick khi b\u1EA1n \u0111\u00E3 ki\u1EC3m tra k\u1EF9 danh s\u00E1ch Chi ti\u1EBFt. M\u1EB7c \u0111\u1ECBnh \u0111\u01B0a v\u00E0o Th\u00F9ng r\u00E1c.",
+                Title = "T\u1EC7p dung l\u01B0\u1EE3ng l\u1EDBn (> 500 MB)",
+                Description = "C\u00E1c t\u1EC7p l\u1EDBn trong Downloads v\u00E0 Desktop \u2014 ki\u1EC3m tra Chi ti\u1EBFt tr\u01B0\u1EDBc khi d\u1ECDn.",
+                WarningNote = "Ki\u1EC3m tra danh s\u00E1ch Chi ti\u1EBFt tr\u01B0\u1EDBc khi x\u00F3a.",
                 CleanMode = "ItemsList", SupportsRecycleBin = true, DefaultSelected = false, Selected = false,
                 TotalBytes = largeTotal, ItemCount = largeItems.Count, FolderCount = 0,
                 RootPaths = DeduplicateNormalizedPaths(new[] { downloadsDir, desktopDir }),
@@ -47641,13 +47641,13 @@ function Apply-ResourcesFilter {
     if ($script:resEmptyState) {
         if ($script:resIsScanning) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
-            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "$([char]0x0110)ang qu$([char]0x00E9)t s$([char]0x00E2)u $([char]0x0111)a t$([char]0x1EA7)ng (5 t$([char]0x1EA7)ng)..." }
-            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "$([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch Temp, Cache tr$([char]0x00EC)nh duy$([char]0x1EC7)t/$([char]0x1EE9)ng d$([char]0x1EE5)ng/Dev, Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng (l$([char]0x00E1) ch$([char]0x1EAF)n 5 l$([char]0x1EDB)p) v$([char]0x00E0) Radar t$([char]0x1EC7)p l$([char]0x1EDB)n. B$([char]0x1EA1)n c$([char]0x00F3) th$([char]0x1EC3) b$([char]0x1EA5)m 'D$([char]0x1EEB)ng qu$([char]0x00E9)t' b$([char]0x1EA5)t c$([char]0x1EE9) l$([char]0x00FA)c n$([char]0x00E0)o." }
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "$([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch h$([char]0x1EC7) th$([char]0x1ED1)ng..." }
+            if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "$([char]0x0110)ang qu$([char]0x00E9)t t$([char]0x1EC7)p t$([char]0x1EA1)m, b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m, th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng v$([char]0x00E0) t$([char]0x1EC7)p dung l$([char]0x01B0)$([char]0x1EE3)ng l$([char]0x1EDB)n." }
         } elseif ($script:resRows.Count -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
         } elseif ($visibleCount -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
-            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Kh$([char]0x00F4)ng c$([char]0x00F3) h$([char]0x1EA1)ng m$([char]0x1EE5)c r$([char]0x00E1)c n$([char]0x00E0)o kh$([char]0x1EDB)p b$([char]0x1ED9) l$([char]0x1ECD)c" }
+            if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Kh$([char]0x00F4)ng c$([char]0x00F3) h$([char]0x1EA1)ng m$([char]0x1EE5)c n$([char]0x00E0)o kh$([char]0x1EDB)p b$([char]0x1ED9) l$([char]0x1ECD)c" }
             if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Th$([char]0x1EED) chuy$([char]0x1EC3)n sang 'T$([char]0x1EA5)t c$([char]0x1EA3)' ho$([char]0x1EB7)c x$([char]0x00F3)a t$([char]0x1EEB) kh$([char]0x00F3)a t$([char]0x00EC)m ki$([char]0x1EBF)m." }
         } else {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
@@ -47778,7 +47778,7 @@ function Ensure-ResourcesPollTimer {
 
                 $fmtFound = [DuckUtil.ResourceCleanerEngine]::FormatBytes($rep.TotalBytes)
                 $tagCanc = if ($rep.WasCancelled) { " ($([char]0x0111)$([char]0x00E3) d$([char]0x1EEB)ng s$([char]0x1EDB)m)" } else { "" }
-                Log-Text "[OK] T$([char]0x00E0)i nguy$([char]0x00EA)n: Qu$([char]0x00E9)t xong 5 t$([char]0x1EA7)ng trong $($rep.ScanElapsedMs)ms $([char]0x2014) ph$([char]0x00E1)t hi$([char]0x1EC7)n $fmtFound & $($rep.TotalEmptyFolders) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng$tagCanc."
+                Log-Text "[OK] T$([char]0x00E0)i nguy$([char]0x00EA)n: Ph$([char]0x00E2)n t$([char]0x00ED)ch xong trong $($rep.ScanElapsedMs)ms $([char]0x2014) ph$([char]0x00E1)t hi$([char]0x1EC7)n $fmtFound ($($rep.TotalEmptyFolders) th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng)$tagCanc."
             }
             Apply-ResourcesFilter
         }
@@ -47799,14 +47799,14 @@ function Ensure-ResourcesPollTimer {
                 foreach ($lg in @($cr.PerCategoryLogs)) { Log-Text "   $lg" }
                 $fmtFreed = [DuckUtil.ResourceCleanerEngine]::FormatBytes($cr.FreedBytes)
                 $msg = "$([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng: $fmtFreed`n" +
-                       "$([char]0x2022) $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a: $($cr.DeletedFiles) t$([char]0x1EC7)p, $($cr.DeletedFolders) th$([char]0x01B0) m$([char]0x1EE5)c ($([char]0x0110)$([char]0x01B0)a v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c: $($cr.RecycledItems))`n" +
-                       "$([char]0x2022) B$([char]0x1ECF) qua an to$([char]0x00E0)n: $($cr.SkippedLockedCount) $([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c Explorer/h$([char]0x1EC7) th$([char]0x1ED1)ng kh$([char]0x00F3)a, $($cr.SkippedCloudCount) t$([char]0x1EC7)p $([char]0x0111)$([char]0x00E1)m m$([char]0x00E2)y/symlink"
+                       "$([char]0x2022) $([char]0x0110)$([char]0x00E3) x$([char]0x1EED) l$([char]0x00FD): $($cr.DeletedFiles) t$([char]0x1EC7)p, $($cr.DeletedFolders) th$([char]0x01B0) m$([char]0x1EE5)c (Th$([char]0x00F9)ng r$([char]0x00E1)c: $($cr.RecycledItems))`n" +
+                       "$([char]0x2022) B$([char]0x1ECF) qua an to$([char]0x00E0)n: $($cr.SkippedLockedCount) $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng, $($cr.SkippedCloudCount) t$([char]0x1EC7)p $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9)/li$([char]0x00EA)n k$([char]0x1EBF)t"
                 if ($cr.SkippedRecycleUnsupportedCount -gt 0) {
-                    $msg += ", $($cr.SkippedRecycleUnsupportedCount) m$([char]0x1EE5)c kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) Th$([char]0x00F9)ng r$([char]0x00E1)c (qu$([char]0x00E1) d$([char]0x00E0)i/$([char]0x1ED5) m$([char]0x1EA1)ng $([char]0x2014) kh$([char]0x00F4)ng t$([char]0x1EF1) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n)"
+                    $msg += ", $($cr.SkippedRecycleUnsupportedCount) m$([char]0x1EE5)c kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) Th$([char]0x00F9)ng r$([char]0x00E1)c"
                 }
                 Log-Text "[OK] D$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n ho$([char]0x00E0)n t$([char]0x1EA5)t trong $($cr.ElapsedMs)ms: Gi$([char]0x1EA3)i ph$([char]0x00F3)ng $fmtFreed."
                 Update-ResourcesDiskBar
-                [void](Show-OwnedMessageBox -Text $msg -Caption "Ho$([char]0x00E0)n t$([char]0x1EA5)t d$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+                [void](Show-OwnedMessageBox -Text $msg -Caption "Ho$([char]0x00E0)n t$([char]0x1EA5)t d$([char]0x1ECD)n d$([char]0x1EB9)p" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
                 Start-ResourcesDeepScan
             } else {
                 Update-ResourcesSummary
@@ -47832,7 +47832,7 @@ function Start-ResourcesDeepScan {
     $script:resIsScanning = $true
     $script:resRows.Clear()
     if ($script:resRowsHost) { $script:resRowsHost.Children.Clear() }
-    if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang qu$([char]0x00E9)t s$([char]0x00E2)u 5 t$([char]0x1EA7)ng..." }
+    if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch..." }
     Apply-ResourcesFilter
     $extraArr = $script:resExtraFolders.ToArray()
     $script:resScanTask = [DuckUtil.ResourceCleanerEngine]::ScanAllTiersAsync($extraArr, $script:resScanCts.Token)
@@ -47888,15 +47888,15 @@ if ($script:btnResClean) {
         }
 
         $fmtEst = [DuckUtil.ResourceCleanerEngine]::FormatBytes($estBytes)
-        $modeNote = if ($useRb) { "T$([char]0x1EA7)ng 1$([char]0x2013)3 x$([char]0x00F3)a th$([char]0x1EB3)ng tr$([char]0x01B0)$([char]0x1EDB)c, sau $([char]0x0111)$([char]0x00F3) $([char]0x0111)$([char]0x01B0)a T$([char]0x1EA7)ng 4$([char]0x2013)5 v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c an to$([char]0x00E0)n." } else { "C$([char]0x1EA2)NH B$([char]0x00C1)O: B$([char]0x1EA1)n $([char]0x0111)ang t$([char]0x1EAF)t ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Th$([char]0x00F9)ng r$([char]0x00E1)c $([char]0x2014) T$([char]0x1EA7)ng 4$([char]0x2013)5 s$([char]0x1EBD) b$([char]0x1ECB) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n!" }
+        $modeNote = if ($useRb) { "T$([char]0x1EC7)p t$([char]0x1EA1)m & b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m s$([char]0x1EBD) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p; th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng v$([char]0x00E0) t$([char]0x1EC7)p l$([char]0x1EDB)n s$([char]0x1EBD) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c $([char]0x0111)$([char]0x01B0)a v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c." } else { "C$([char]0x1EA3)nh b$([char]0x00E1)o: Ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Th$([char]0x00F9)ng r$([char]0x00E1)c $([char]0x0111)ang t$([char]0x1EAF)t $([char]0x2014) to$([char]0x00E0)n b$([char]0x1ED9) m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n s$([char]0x1EBD) b$([char]0x1ECB) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n." }
         $confirmText = "B$([char]0x1EA1)n s$([char]0x1EAF)p d$([char]0x1ECD)n $($selectedCats.Count) h$([char]0x1EA1)ng m$([char]0x1EE5)c ($([char]0x01B0)$([char]0x1EDB)c t$([char]0x00ED)nh gi$([char]0x1EA3)i ph$([char]0x00F3)ng ~$fmtEst).`n`n$([char]0x2022) $modeNote"
         if ($hasWarn) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) bao g$([char]0x1ED3)m h$([char]0x1EA1)ng m$([char]0x1EE5)c m$([char]0x1EE9)c L$([char]0x01B0)u $([char]0x00FD) / N$([char]0x00E2)ng cao." }
-        if ($hasOneDrive) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) t$([char]0x1EC7)p n$([char]0x1EB1)m trong OneDrive $([char]0x2014) x$([char]0x00F3)a t$([char]0x1EC7)p n$([char]0x00E0)y s$([char]0x1EBD) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) x$([char]0x00F3)a tr$([char]0x00EA)n $([char]0x0111)$([char]0x00E1)m m$([char]0x00E2)y!" }
-        $confirmText += "`n`nTi$([char]0x1EBF)p t$([char]0x1EE5)c d$([char]0x1ECD)n?"
+        if ($hasOneDrive) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) t$([char]0x1EC7)p thu$([char]0x1ED9)c OneDrive $([char]0x2014) thao t$([char]0x00E1)c x$([char]0x00F3)a s$([char]0x1EBD) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x00EA)n $([char]0x0111)$([char]0x00E1)m m$([char]0x00E2)y." }
+        $confirmText += "`n`nTi$([char]0x1EBF)p t$([char]0x1EE5)c d$([char]0x1ECD)n d$([char]0x1EB9)p?"
 
         $ans = Show-OwnedMessageBox `
             -Text $confirmText `
-            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng" `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n d$([char]0x1EB9)p" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
@@ -47951,7 +47951,7 @@ if ($script:btnResAddFolder) {
     $script:btnResAddFolder.Add_Click({
         if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
         $fbd = [System.Windows.Forms.FolderBrowserDialog]::new()
-        $fbd.Description = "Ch$([char]0x1ECD)n th$([char]0x01B0) m$([char]0x1EE5)c ho$([char]0x1EB7)c $([char]0x1ED5) $([char]0x0111)$([char]0x0129)a ngo$([char]0x00E0)i $([char]0x0111)$([char]0x1EC3) qu$([char]0x00E9)t th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng $([char]0x0111)a t$([char]0x1EA7)ng & t$([char]0x1EC7)p 0-byte t$([char]0x1EA3)i h$([char]0x1ECF)ng"
+        $fbd.Description = "Ch$([char]0x1ECD)n th$([char]0x01B0) m$([char]0x1EE5)c ho$([char]0x1EB7)c $([char]0x1ED5) $([char]0x0111)$([char]0x0129)a $([char]0x0111)$([char]0x1EC3) qu$([char]0x00E9)t th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng v$([char]0x00E0) t$([char]0x1EC7)p t$([char]0x1EA3)i l$([char]0x1ED7)i"
         $fbd.ShowNewFolderButton = $false
         if ($fbd.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK -and -not [string]::IsNullOrWhiteSpace($fbd.SelectedPath)) {
             $picked = [DuckUtil.ResourceCleanerEngine]::NormalizeCleanPath($fbd.SelectedPath)

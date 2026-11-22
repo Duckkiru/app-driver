@@ -1239,24 +1239,24 @@
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Name="btnResScan" Content="Quét ngay" Style="{StaticResource ActionButton}"
                                                 Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                                ToolTip="Chạy quét sâu đa tầng 5 lớp (Temp, Cache trình duyệt/ứng dụng/Dev, Thư mục rỗng 5 lá chắn &amp; Tệp lớn)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Phân tích tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResClean" Content="Dọn mục đã chọn" Style="{StaticResource ActionButton}"
                                                 Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
-                                                ToolTip="Dọn các hạng mục đang được tick (Tầng 1–3 xóa thẳng trước, sau đó mới đưa Tầng 4–5 vào Thùng rác)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Dọn các hạng mục đang được chọn để giải phóng dung lượng ổ đĩa." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResSelectSafe" Content="Chọn An toàn" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#34D399" BorderBrush="#1E5640"
-                                                ToolTip="Chỉ tick các hạng mục mức An toàn (không chọn Lưu ý / Nâng cao / Thùng rác)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Chỉ chọn các hạng mục ở mức An toàn." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResClearSel" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}"
                                                 ToolTip="Bỏ chọn toàn bộ hạng mục." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResAddFolder" Content="+ Quét thư mục ngoài" Style="{StaticResource SecondaryButton}"
+                                        <Button Name="btnResAddFolder" Content="+ Chọn thư mục" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
-                                                ToolTip="Thêm thư mục/ổ đĩa ngoài (ví dụ D:\, E:\) để quét thư mục rỗng đa tầng và tệp 0-byte tải hỏng." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Thêm thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng và tệp tải lỗi." ToolTipService.InitialShowDelay="500"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <CheckBox Name="chkResRecycleTier45" Content="Thùng rác (Tầng 4–5)" IsChecked="True"
+                                        <CheckBox Name="chkResRecycleTier45" Content="Đưa vào Thùng rác" IsChecked="True"
                                                   Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,10,0"
-                                                  ToolTip="Mặc định đưa Thư mục rỗng &amp; Tệp lớn (Tầng 4–5) vào Thùng rác an toàn qua COM IFileOperation (tự từ chối nếu không hỗ trợ Thùng rác, không âm thầm xóa vĩnh viễn)." ToolTipService.InitialShowDelay="300"/>
+                                                  ToolTip="Đưa thư mục rỗng, tệp tải lỗi và tệp lớn vào Thùng rác thay vì xóa vĩnh viễn." ToolTipService.InitialShowDelay="300"/>
                                         <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
                                                 Padding="8,0" VerticalAlignment="Stretch" Height="30">
                                             <Grid Width="195">
@@ -1268,7 +1268,7 @@
                                                 <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
                                                       Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                                       Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
-                                                <TextBlock Grid.Column="1" Text="Lọc hạng mục rác..." Foreground="#475569" FontSize="11.5"
+                                                <TextBlock Grid.Column="1" Text="Tìm hạng mục..." Foreground="#475569" FontSize="11.5"
                                                            VerticalAlignment="Center" IsHitTestVisible="False">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -1320,7 +1320,7 @@
                                                 </Border>
                                             </StackPanel>
                                         </Border>
-                                        <TextBlock Name="txtResSummary" Text="Bấm 'Quét ngay' để phân tích rác hệ thống"
+                                        <TextBlock Name="txtResSummary" Text="Sẵn sàng phân tích dung lượng"
                                                    Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
@@ -1341,7 +1341,7 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="CHỌN" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
-                                <TextBlock Grid.Column="1" Text="HẠNG MỤC RÁC &amp; PHẠM VI QUÉT" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="HẠNG MỤC &amp; VỊ TRÍ" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
                                 <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
                                 <TextBlock Grid.Column="2" Text="MỨC ĐỘ" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
@@ -1359,10 +1359,10 @@
                             <Border Name="ResEmptyState" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Center"
                                     Background="#0E131D" BorderBrush="#263348" BorderThickness="1" CornerRadius="6" Padding="26,20" IsHitTestVisible="False">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Name="txtResEmptyTitle" Text="Sẵn sàng quét rác đa tầng (5 tầng bảo vệ)"
+                                    <TextBlock Name="txtResEmptyTitle" Text="Sẵn sàng dọn dẹp hệ thống"
                                                Foreground="#E2E8F0" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                    <TextBlock Name="txtResEmptySub" Text="Bấm 'Quét ngay' để phân tích tệp tạm, bộ nhớ đệm trình duyệt/ứng dụng, thư mục rỗng và tệp lớn. Tab không tự đọc ổ đĩa khi mới mở."
-                                               Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="540" TextWrapping="Wrap"/>
+                                    <TextBlock Name="txtResEmptySub" Text="Nhấn 'Quét ngay' để phân tích tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn."
+                                               Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="520" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
