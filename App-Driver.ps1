@@ -7947,10 +7947,10 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnOptApply" Content="L&#x01B0;u" Style="{StaticResource ActionButton}"
                                             Background="#059669" Padding="16,7"
-                                            ToolTip="&#x00C1;p d&#x1EE5;ng v&#x00E0; l&#x01B0;u c&#x00E1;c tinh ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n ho&#x1EB7;c c&#x1EA7;n g&#x1EA1;t thay &#x0111;&#x1ED5;i (t&#x1EF1; ch&#x1EE5;p sao l&#x01B0;u OptimizerGuard tr&#x01B0;&#x1EDB;c khi thay &#x0111;&#x1ED5;i)." ToolTipService.InitialShowDelay="5000"/>
+                                            ToolTip="&#x00C1;p d&#x1EE5;ng v&#x00E0; l&#x01B0;u c&#x00E1;c t&#x00F9;y ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n ho&#x1EB7;c c&#x1EA7;n g&#x1EA1;t thay &#x0111;&#x1ED5;i (t&#x1EF1; ch&#x1EE5;p sao l&#x01B0;u OptimizerGuard tr&#x01B0;&#x1EDB;c khi thay &#x0111;&#x1ED5;i)." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnOptUndo" Content="&#x0110;&#x1EB7;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh" Style="{StaticResource SecondaryButton}"
                                             Foreground="#FBBF24" BorderBrush="#614F27"
-                                            ToolTip="&#x0110;&#x1EB7;t c&#x00E1;c tinh ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh Windows (n&#x1EBF;u ch&#x01B0;a ch&#x1ECD;n m&#x1EE5;c n&#x00E0;o s&#x1EBD; h&#x1ECF;i &#x0111;&#x1EB7;t to&#x00E0;n b&#x1ED9; m&#x1EE5;c &#x0111;ang b&#x1EAD;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh)." ToolTipService.InitialShowDelay="5000"/>
+                                            ToolTip="&#x0110;&#x1EB7;t c&#x00E1;c t&#x00F9;y ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh Windows (n&#x1EBF;u ch&#x01B0;a ch&#x1ECD;n m&#x1EE5;c n&#x00E0;o s&#x1EBD; h&#x1ECF;i &#x0111;&#x1EB7;t to&#x00E0;n b&#x1ED9; m&#x1EE5;c &#x0111;ang b&#x1EAD;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh)." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnOptRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c sao l&#x01B0;u" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#29527D"/>
                                     <Button Name="btnOptRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
@@ -7965,7 +7965,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtOptSummary" Text="72 tinh ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
+                                    <TextBlock Name="txtOptSummary" Text="72 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
@@ -41521,7 +41521,7 @@ function Invoke-OptimizerBatch {
     }
 
     if ($needsReboot) {
-        Log-Text "[WARN] M$([char]0x1ED9)t s$([char]0x1ED1) tinh ch$([char]0x1EC9)nh y$([char]0x00EA)u c$([char]0x1EA7)u kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i Windows $([char]0x0111)$([char]0x1EC3) c$([char]0x00F3) hi$([char]0x1EC7)u l$([char]0x1EF1)c ho$([char]0x00E0)n to$([char]0x00E0)n."
+        Log-Text "[WARN] M$([char]0x1ED9)t s$([char]0x1ED1) t$([char]0x00F9)y ch$([char]0x1EC9)nh y$([char]0x00EA)u c$([char]0x1EA7)u kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i Windows $([char]0x0111)$([char]0x1EC3) c$([char]0x00F3) hi$([char]0x1EC7)u l$([char]0x1EF1)c ho$([char]0x00E0)n to$([char]0x00E0)n."
     }
 
     return [PSCustomObject]@{
@@ -49879,7 +49879,7 @@ function Apply-OptimizerFilter {
 
     if ($script:txtOptSummary) {
         $total = $script:optEntries.Count
-        $script:txtOptSummary.Text = "T$([char]0x1ED5)ng $total tinh ch$([char]0x1EC9)nh ($appliedCount $([char]0x0111)ang b$([char]0x1EAD)t)"
+        $script:txtOptSummary.Text = "T$([char]0x1ED5)ng $total t$([char]0x00F9)y ch$([char]0x1EC9)nh ($appliedCount $([char]0x0111)ang b$([char]0x1EAD)t)"
     }
 }
 
@@ -50236,7 +50236,7 @@ if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({
         if (-not $script:isWindowClosing -and -not $script:isActionRunning) {
             Refresh-OptimizerLiveState
-            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) l$([char]0x00E0)m m$([char]0x1EDB)i tr$([char]0x1EA1)ng th$([char]0x00E1)i th$([char]0x1EF1)c t$([char]0x1EBF) c$([char]0x1EE7)a $($script:optEntries.Count) tinh ch$([char]0x1EC9)nh."
+            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) l$([char]0x00E0)m m$([char]0x1EDB)i tr$([char]0x1EA1)ng th$([char]0x00E1)i th$([char]0x1EF1)c t$([char]0x1EBF) c$([char]0x1EE7)a $($script:optEntries.Count) t$([char]0x00F9)y ch$([char]0x1EC9)nh."
         }
     })
 }
@@ -50253,15 +50253,15 @@ if ($script:btnOptApply) {
             $_.CheckBox -and $_.IsToggle -and $_.InitialToggleState -and ($_.CheckBox.IsChecked -ne $true)
         })
         if ($toApply.Count -eq 0 -and $toUndo.Count -eq 0) {
-            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n tinh ch$([char]0x1EC9)nh ho$([char]0x1EB7)c g$([char]0x1EA1)t thay $([char]0x0111)$([char]0x1ED5)i n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) l$([char]0x01B0)u!"
+            Log-Text "[!] B$([char]0x1EA1)n ch$([char]0x01B0)a ch$([char]0x1ECD)n t$([char]0x00F9)y ch$([char]0x1EC9)nh ho$([char]0x1EB7)c g$([char]0x1EA1)t thay $([char]0x0111)$([char]0x1ED5)i n$([char]0x00E0)o $([char]0x0111)$([char]0x1EC3) l$([char]0x01B0)u!"
             return
         }
         $cautionItems = @($toApply | Where-Object { $_.Tweak.Risk -eq "Caution" })
         if ($cautionItems.Count -gt 0) {
             $cNames = ($cautionItems | ForEach-Object { "$([char]0x2022) $($_.Tweak.Name)" }) -join "`n"
             $ans = Show-OwnedMessageBox `
-                -Text "B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n $($cautionItems.Count) tinh ch$([char]0x1EC9)nh m$([char]0x1EE9)c N$([char]0x00E2)ng cao:`n$cNames`n`nApp-Driver s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c tr$([char]0x01B0)$([char]0x1EDB)c khi l$([char]0x01B0)u. Ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
-                -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n l$([char]0x01B0)u tinh ch$([char]0x1EC9)nh n$([char]0x00E2)ng cao" `
+                -Text "B$([char]0x1EA1)n $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n $($cautionItems.Count) t$([char]0x00F9)y ch$([char]0x1EC9)nh m$([char]0x1EE9)c N$([char]0x00E2)ng cao:`n$cNames`n`nApp-Driver s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c tr$([char]0x01B0)$([char]0x1EDB)c khi l$([char]0x01B0)u. Ti$([char]0x1EBF)p t$([char]0x1EE5)c?" `
+                -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n l$([char]0x01B0)u t$([char]0x00F9)y ch$([char]0x1EC9)nh n$([char]0x00E2)ng cao" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
             if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
@@ -50292,7 +50292,7 @@ if ($script:btnOptApply) {
                     }
                 }
                 Log-Text "=========================================================="
-                Log-Text "[OPTIMIZER] L$([char]0x01AF)U & B$([char]0x1EAC)T $($twObjs.Count) TINH CH$([char]0x1EC8)NH WINDOWS"
+                Log-Text "[OPTIMIZER] L$([char]0x01AF)U & B$([char]0x1EAC)T $($twObjs.Count) T$([char]0x00D9)Y CH$([char]0x1EC8)NH WINDOWS"
                 Log-Text "=========================================================="
                 $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Apply" -ComboSelections $combos -HardwareProfile $script:optHardwareProfile -ProgressCallback {
                     param($cur, $tot, $nm)
@@ -50317,7 +50317,7 @@ if ($script:btnOptApply) {
             if ($totalFailed -gt 0) {
                 $isAdminNow = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
                 if (-not $isAdminNow) {
-                    Log-Text "[WARN] M$([char]0x1ED9)t s$([char]0x1ED1) tinh ch$([char]0x1EC9)nh h$([char]0x1EC7) th$([char]0x1ED1)ng (HKLM/Service) y$([char]0x00EA)u c$([char]0x1EA7)u m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator."
+                    Log-Text "[WARN] M$([char]0x1ED9)t s$([char]0x1ED1) t$([char]0x00F9)y ch$([char]0x1EC9)nh h$([char]0x1EC7) th$([char]0x1ED1)ng (HKLM/Service) y$([char]0x00EA)u c$([char]0x1EA7)u m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator."
                 }
             }
             Refresh-OptimizerLiveState
@@ -50337,15 +50337,15 @@ if ($script:btnOptUndo) {
         $promptText = ""
         if ($selected.Count -gt 0) {
             $targets = $selected
-            $promptText = "$([char]0x0110)$([char]0x1EB7)t $($targets.Count) tinh ch$([char]0x1EC9)nh $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh c$([char]0x1EE7)a Windows?"
+            $promptText = "$([char]0x0110)$([char]0x1EB7)t $($targets.Count) t$([char]0x00F9)y ch$([char]0x1EC9)nh $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh c$([char]0x1EE7)a Windows?"
         } else {
             $appliedList = @($script:optEntries | Where-Object { $_.State -eq "Applied" -or $_.State -eq "Partial" })
             if ($appliedList.Count -eq 0) {
-                [void](Show-OwnedMessageBox -Text "Hi$([char]0x1EC7)n ch$([char]0x01B0)a c$([char]0x00F3) tinh ch$([char]0x1EC9)nh n$([char]0x00E0)o $([char]0x0111)ang b$([char]0x1EAD)t $([char]0x0111)$([char]0x1EC3) $([char]0x0111)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh." -Caption "$([char]0x0110)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+                [void](Show-OwnedMessageBox -Text "Hi$([char]0x1EC7)n ch$([char]0x01B0)a c$([char]0x00F3) t$([char]0x00F9)y ch$([char]0x1EC9)nh n$([char]0x00E0)o $([char]0x0111)ang b$([char]0x1EAD)t $([char]0x0111)$([char]0x1EC3) $([char]0x0111)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh." -Caption "$([char]0x0110)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
                 return
             }
             $targets = $appliedList
-            $promptText = "B$([char]0x1EA1)n ch$([char]0x01B0)a tick m$([char]0x1EE5)c n$([char]0x00E0)o.`n$([char]0x0110)$([char]0x1EB7)t to$([char]0x00E0)n b$([char]0x1ED9) $($targets.Count) tinh ch$([char]0x1EC9)nh $([char]0x0111)ang b$([char]0x1EAD)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh c$([char]0x1EE7)a Windows?"
+            $promptText = "B$([char]0x1EA1)n ch$([char]0x01B0)a tick m$([char]0x1EE5)c n$([char]0x00E0)o.`n$([char]0x0110)$([char]0x1EB7)t to$([char]0x00E0)n b$([char]0x1ED9) $($targets.Count) t$([char]0x00F9)y ch$([char]0x1EC9)nh $([char]0x0111)ang b$([char]0x1EAD)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh c$([char]0x1EE7)a Windows?"
         }
 
         $ans = Show-OwnedMessageBox `
@@ -50359,7 +50359,7 @@ if ($script:btnOptUndo) {
             $twObjs = @($targets | ForEach-Object { $_.Tweak })
             $twIds = @($twObjs | ForEach-Object { [string]$_.Id })
             Log-Text "=========================================================="
-            Log-Text "[OPTIMIZER] $([char]0x0110)$([char]0x1EB6)T $($twObjs.Count) TINH CH$([char]0x1EC8)NH V$([char]0x1EC0) M$([char]0x1EB6)C $([char]0x0110)$([char]0x1ECA)NH"
+            Log-Text "[OPTIMIZER] $([char]0x0110)$([char]0x1EB6)T $($twObjs.Count) T$([char]0x00D9)Y CH$([char]0x1EC8)NH V$([char]0x1EC0) M$([char]0x1EB6)C $([char]0x0110)$([char]0x1ECA)NH"
             Log-Text "=========================================================="
             $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
                 param($cur, $tot, $nm)
@@ -50371,7 +50371,7 @@ if ($script:btnOptUndo) {
             }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh ($($res.Applied) th$([char]0x00E0)nh c$([char]0x00F4)ng)" }
-            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t $($res.Applied) tinh ch$([char]0x1EC9)nh v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh ($($res.Failed) l$([char]0x1ED7)i)."
+            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t $($res.Applied) t$([char]0x00F9)y ch$([char]0x1EC9)nh v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh ($($res.Failed) l$([char]0x1ED7)i)."
             Refresh-OptimizerLiveState
         }
     })

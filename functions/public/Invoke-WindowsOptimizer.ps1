@@ -868,7 +868,7 @@ function Invoke-OptimizerBatch {
     }
 
     if ($needsReboot) {
-        Log-Text "[WARN] Một số tinh chỉnh yêu cầu khởi động lại Windows để có hiệu lực hoàn toàn."
+        Log-Text "[WARN] Một số tùy chỉnh yêu cầu khởi động lại Windows để có hiệu lực hoàn toàn."
     }
 
     return [PSCustomObject]@{

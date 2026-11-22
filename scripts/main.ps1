@@ -8344,7 +8344,7 @@ function Apply-OptimizerFilter {
 
     if ($script:txtOptSummary) {
         $total = $script:optEntries.Count
-        $script:txtOptSummary.Text = "Tổng $total tinh chỉnh ($appliedCount đang bật)"
+        $script:txtOptSummary.Text = "Tổng $total tùy chỉnh ($appliedCount đang bật)"
     }
 }
 
@@ -8701,7 +8701,7 @@ if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({
         if (-not $script:isWindowClosing -and -not $script:isActionRunning) {
             Refresh-OptimizerLiveState
-            Log-Text "[SUCC] Đã làm mới trạng thái thực tế của $($script:optEntries.Count) tinh chỉnh."
+            Log-Text "[SUCC] Đã làm mới trạng thái thực tế của $($script:optEntries.Count) tùy chỉnh."
         }
     })
 }
@@ -8718,15 +8718,15 @@ if ($script:btnOptApply) {
             $_.CheckBox -and $_.IsToggle -and $_.InitialToggleState -and ($_.CheckBox.IsChecked -ne $true)
         })
         if ($toApply.Count -eq 0 -and $toUndo.Count -eq 0) {
-            Log-Text "[!] Bạn chưa chọn tinh chỉnh hoặc gạt thay đổi nào để lưu!"
+            Log-Text "[!] Bạn chưa chọn tùy chỉnh hoặc gạt thay đổi nào để lưu!"
             return
         }
         $cautionItems = @($toApply | Where-Object { $_.Tweak.Risk -eq "Caution" })
         if ($cautionItems.Count -gt 0) {
             $cNames = ($cautionItems | ForEach-Object { "• $($_.Tweak.Name)" }) -join "`n"
             $ans = Show-OwnedMessageBox `
-                -Text "Bạn đã chọn $($cautionItems.Count) tinh chỉnh mức Nâng cao:`n$cNames`n`nApp-Driver sẽ tự động sao lưu trạng thái gốc trước khi lưu. Tiếp tục?" `
-                -Caption "Xác nhận lưu tinh chỉnh nâng cao" `
+                -Text "Bạn đã chọn $($cautionItems.Count) tùy chỉnh mức Nâng cao:`n$cNames`n`nApp-Driver sẽ tự động sao lưu trạng thái gốc trước khi lưu. Tiếp tục?" `
+                -Caption "Xác nhận lưu tùy chỉnh nâng cao" `
                 -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
                 -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
             if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
@@ -8757,7 +8757,7 @@ if ($script:btnOptApply) {
                     }
                 }
                 Log-Text "=========================================================="
-                Log-Text "[OPTIMIZER] LƯU & BẬT $($twObjs.Count) TINH CHỈNH WINDOWS"
+                Log-Text "[OPTIMIZER] LƯU & BẬT $($twObjs.Count) TÙY CHỈNH WINDOWS"
                 Log-Text "=========================================================="
                 $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Apply" -ComboSelections $combos -HardwareProfile $script:optHardwareProfile -ProgressCallback {
                     param($cur, $tot, $nm)
@@ -8782,7 +8782,7 @@ if ($script:btnOptApply) {
             if ($totalFailed -gt 0) {
                 $isAdminNow = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
                 if (-not $isAdminNow) {
-                    Log-Text "[WARN] Một số tinh chỉnh hệ thống (HKLM/Service) yêu cầu mở App-Driver bằng quyền Administrator."
+                    Log-Text "[WARN] Một số tùy chỉnh hệ thống (HKLM/Service) yêu cầu mở App-Driver bằng quyền Administrator."
                 }
             }
             Refresh-OptimizerLiveState
@@ -8802,15 +8802,15 @@ if ($script:btnOptUndo) {
         $promptText = ""
         if ($selected.Count -gt 0) {
             $targets = $selected
-            $promptText = "Đặt $($targets.Count) tinh chỉnh đã chọn về mặc định của Windows?"
+            $promptText = "Đặt $($targets.Count) tùy chỉnh đã chọn về mặc định của Windows?"
         } else {
             $appliedList = @($script:optEntries | Where-Object { $_.State -eq "Applied" -or $_.State -eq "Partial" })
             if ($appliedList.Count -eq 0) {
-                [void](Show-OwnedMessageBox -Text "Hiện chưa có tinh chỉnh nào đang bật để đặt về mặc định." -Caption "Đặt về mặc định" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+                [void](Show-OwnedMessageBox -Text "Hiện chưa có tùy chỉnh nào đang bật để đặt về mặc định." -Caption "Đặt về mặc định" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
                 return
             }
             $targets = $appliedList
-            $promptText = "Bạn chưa tick mục nào.`nĐặt toàn bộ $($targets.Count) tinh chỉnh đang bật về mặc định của Windows?"
+            $promptText = "Bạn chưa tick mục nào.`nĐặt toàn bộ $($targets.Count) tùy chỉnh đang bật về mặc định của Windows?"
         }
 
         $ans = Show-OwnedMessageBox `
@@ -8824,7 +8824,7 @@ if ($script:btnOptUndo) {
             $twObjs = @($targets | ForEach-Object { $_.Tweak })
             $twIds = @($twObjs | ForEach-Object { [string]$_.Id })
             Log-Text "=========================================================="
-            Log-Text "[OPTIMIZER] ĐẶT $($twObjs.Count) TINH CHỈNH VỀ MẶC ĐỊNH"
+            Log-Text "[OPTIMIZER] ĐẶT $($twObjs.Count) TÙY CHỈNH VỀ MẶC ĐỊNH"
             Log-Text "=========================================================="
             $res = Invoke-OptimizerBatch -Tweaks $twObjs -Mode "Undo" -HardwareProfile $script:optHardwareProfile -ProgressCallback {
                 param($cur, $tot, $nm)
@@ -8836,7 +8836,7 @@ if ($script:btnOptUndo) {
             }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "Đã đặt về mặc định ($($res.Applied) thành công)" }
-            Log-Text "[SUCC] Đã đặt $($res.Applied) tinh chỉnh về mặc định ($($res.Failed) lỗi)."
+            Log-Text "[SUCC] Đã đặt $($res.Applied) tùy chỉnh về mặc định ($($res.Failed) lỗi)."
             Refresh-OptimizerLiveState
         }
     })
