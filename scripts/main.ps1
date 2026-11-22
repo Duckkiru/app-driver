@@ -1545,6 +1545,10 @@ $btnUninstallSelectAll   = $window.FindName("btnUninstallSelectAll")
 $btnUninstallDeselectAll = $window.FindName("btnUninstallDeselectAll")
 $txtUninstallerSummary   = $window.FindName("txtUninstallerSummary")
 $uninstallerRowsPanel    = $window.FindName("UninstallerRowsPanel")
+$uninstallerEmptyState   = $window.FindName("UninstallerEmptyState")
+$txtUninstEmptyTitle     = $window.FindName("txtUninstEmptyTitle")
+$txtUninstEmptySub       = $window.FindName("txtUninstEmptySub")
+$btnUninstEmptyScan      = $window.FindName("btnUninstEmptyScan")
 
 $script:cachedUninstallerApps = @()
 $script:uninstallerRowEntries = [System.Collections.Generic.List[object]]::new()
@@ -2129,10 +2133,31 @@ function Apply-UninstallerFilter {
             ($script:uninstallerSortMode -eq "Size"),
             [bool]$Resort
         )
-        if ($txtUninstallerSummary -and $stats) {
-            $vMb = [double]$stats.VisibleBytes / 1MB
-            $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
-            $txtUninstallerSummary.Text = "Đang hiển thị $($stats.VisibleCount) / $($stats.TotalCount) ứng dụng (Tổng: $totalSizeStr • $($stats.BrokenCount) bị lỗi / còn sót)"
+        if ($stats) {
+            if ($btnFilterUninstBroken) {
+                $btnFilterUninstBroken.Content = "Bị lỗi / Còn sót ($($stats.BrokenCount))"
+            }
+            if ($txtUninstallerSummary) {
+                $vMb = [double]$stats.VisibleBytes / 1MB
+                $totalSizeStr = if ($vMb -ge 1024) { "{0:N2} GB" -f ($vMb / 1024.0) } else { "{0:N1} MB" -f $vMb }
+                $txtUninstallerSummary.Text = "Đang hiển thị $($stats.VisibleCount) / $($stats.TotalCount) ứng dụng (Tổng: $totalSizeStr • $($stats.BrokenCount) bị lỗi / còn sót)"
+            }
+            if ($uninstallerEmptyState) {
+                if ($stats.VisibleCount -eq 0 -and $script:uninstallerLoadedOnce) {
+                    if ($script:uninstallerFilterMode -eq "Broken" -and [string]::IsNullOrWhiteSpace($q)) {
+                        if ($txtUninstEmptyTitle) { $txtUninstEmptyTitle.Text = "Không phát hiện ứng dụng lỗi hay dữ liệu còn sót" }
+                        if ($txtUninstEmptySub) { $txtUninstEmptySub.Text = "Danh sách ứng dụng hiện sạch. Bạn có thể bấm nút bên dưới để quét sâu Firewall, App Paths, MuiCache, Service, Task và AppData." }
+                        if ($btnUninstEmptyScan) { $btnUninstEmptyScan.Visibility = [System.Windows.Visibility]::Visible }
+                    } else {
+                        if ($txtUninstEmptyTitle) { $txtUninstEmptyTitle.Text = "Không tìm thấy ứng dụng phù hợp" }
+                        if ($txtUninstEmptySub) { $txtUninstEmptySub.Text = "Thử xóa bộ lọc tìm kiếm hoặc chuyển sang chế độ Tất cả để xem toàn bộ danh sách." }
+                        if ($btnUninstEmptyScan) { $btnUninstEmptyScan.Visibility = [System.Windows.Visibility]::Collapsed }
+                    }
+                    $uninstallerEmptyState.Visibility = [System.Windows.Visibility]::Visible
+                } else {
+                    $uninstallerEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
         }
         Update-UninstallerSelectionButtons -Count $(if ($stats) { [int]$stats.SelectedCount } else { 0 })
         return
@@ -2180,6 +2205,25 @@ function Apply-UninstallerFilter {
         Sync-UninstallerViewport -Force
     }
 
+    if ($btnFilterUninstBroken) {
+        $btnFilterUninstBroken.Content = "Bị lỗi / Còn sót ($brokenCount)"
+    }
+    if ($uninstallerEmptyState) {
+        if ($visibleCount -eq 0 -and $script:uninstallerLoadedOnce) {
+            if ($script:uninstallerFilterMode -eq "Broken" -and [string]::IsNullOrEmpty($q)) {
+                if ($txtUninstEmptyTitle) { $txtUninstEmptyTitle.Text = "Không phát hiện ứng dụng lỗi hay dữ liệu còn sót" }
+                if ($txtUninstEmptySub) { $txtUninstEmptySub.Text = "Danh sách ứng dụng hiện sạch. Bạn có thể bấm nút bên dưới để quét sâu Firewall, App Paths, MuiCache, Service, Task và AppData." }
+                if ($btnUninstEmptyScan) { $btnUninstEmptyScan.Visibility = [System.Windows.Visibility]::Visible }
+            } else {
+                if ($txtUninstEmptyTitle) { $txtUninstEmptyTitle.Text = "Không tìm thấy ứng dụng phù hợp" }
+                if ($txtUninstEmptySub) { $txtUninstEmptySub.Text = "Thử xóa bộ lọc tìm kiếm hoặc chuyển sang chế độ Tất cả để xem toàn bộ danh sách." }
+                if ($btnUninstEmptyScan) { $btnUninstEmptyScan.Visibility = [System.Windows.Visibility]::Collapsed }
+            }
+            $uninstallerEmptyState.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $uninstallerEmptyState.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
     if ($txtUninstallerSummary) {
         $total = $script:cachedUninstallerApps.Count
         $vMb = [double]$visibleBytes / 1MB
@@ -2440,7 +2484,18 @@ function Update-UninstallerList {
         $script:uninstLastEnd   = -1
 
         $deepType = "DuckUtil.DeepUninstallerEngine" -as [type]
-        if ($deepType -and $null -ne $deepType.GetMethod("GetInstalledAppsAsync")) {
+        if ($deepType -and $null -ne $deepType.GetMethod("GetInstalledAppsWithOrphansAsync")) {
+            $scanTask = $deepType::GetInstalledAppsWithOrphansAsync()
+            [void](Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 45)
+            if ($script:isWindowClosing) { return }
+            if ($scanTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                $script:cachedUninstallerApps = @($scanTask.Result)
+            } elseif (Get-Command "Get-SystemInstalledAppsFast" -ErrorAction SilentlyContinue) {
+                $script:cachedUninstallerApps = @(Get-SystemInstalledAppsFast)
+            } else {
+                $script:cachedUninstallerApps = @()
+            }
+        } elseif ($deepType -and $null -ne $deepType.GetMethod("GetInstalledAppsAsync")) {
             $scanTask = $deepType::GetInstalledAppsAsync()
             [void](Wait-TaskNonBlocking -Task $scanTask -TimeoutSeconds 45)
             if ($script:isWindowClosing) { return }
@@ -2948,7 +3003,7 @@ if ($btnUninstallDeselectAll) {
 
 if ($btnRefreshUninstaller) {
     $btnRefreshUninstaller.Add_Click({
-        Invoke-GuardedAction "Làm mới danh sách Gỡ cài đặt" -DeferExpand {
+        Invoke-GuardedAction "Làm mới danh sách Gỡ cài đặt" -DeferExpand -AllowDuringUninstallerLoad {
             Update-UninstallerList -Force
         }
     })
@@ -3308,7 +3363,7 @@ if ($btnDeepUninstall) {
             return
         }
 
-        Invoke-GuardedAction "Gỡ cài đặt ứng dụng" -DeferExpand {
+        Invoke-GuardedAction "Gỡ cài đặt ứng dụng" -DeferExpand -AllowDuringUninstallerLoad {
             $selectedNow = Get-SelectedUninstallerApps
             $planChoice = Confirm-UnifiedUninstallSelection -Items $selectedNow
             if ($null -eq $planChoice) { return }
@@ -3319,42 +3374,67 @@ if ($btnDeepUninstall) {
     })
 }
 
-if ($btnScanOrphans) {
-    $btnScanOrphans.Add_Click({
-        Invoke-GuardedAction "Quét tệp rác & dữ liệu còn sót" -DeferExpand {
-            if ($script:isWindowClosing) { return }
-            if ($txtStatus) { $txtStatus.Text = "Đang quét tệp rác, Registry & driver còn sót..." }
-            if ($progressBar) { $progressBar.IsIndeterminate = $true }
-            try {
-                if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
-                    $orphans = @(Find-SystemOrphanLeftovers -InstalledApps $script:cachedUninstallerApps -CatalogApps $AppCatalog)
-                    if ($progressBar) { $progressBar.IsIndeterminate = $false }
-                    if ($script:isWindowClosing) { return }
-                    if ($orphans.Count -eq 0) {
-                        if ($txtStatus) { $txtStatus.Text = "Không phát hiện dữ liệu rác còn sót" }
-                        Show-OwnedMessageBox `
-                            -Text "Không phát hiện tệp rác, Registry hay ứng dụng nào bị lỗi/còn sót trên hệ thống!" `
-                            -Caption "Quét Tệp Rác & Dữ Liệu Còn Sót" `
-                            -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
-                            -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
-                    } else {
-                        if ($txtStatus) { $txtStatus.Text = "Phát hiện $($orphans.Count) mục dữ liệu còn sót" }
-                        if (-not $script:isWindowClosing -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
-                            Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Quét Tệp Rác & Dữ Liệu Còn Sót"
-                        }
-                        if (-not $script:isWindowClosing) {
-                            Update-UninstallerList -Force
-                        }
+$script:runSystemOrphanScanAction = {
+    Invoke-GuardedAction "Quét tệp rác & dữ liệu còn sót" -DeferExpand -AllowDuringUninstallerLoad {
+        if ($script:isWindowClosing) { return }
+        $script:cancelRequested = $false
+        if ($btnCancelAction) {
+            $btnCancelAction.Content = "Dừng quét"
+            $btnCancelAction.IsEnabled = $true
+            $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
+        }
+        if ($txtStatus) { $txtStatus.Text = "Đang quét sâu app lỗi, thư mục rác, Service, Task, Firewall & Registry..." }
+        if ($progressBar) { $progressBar.IsIndeterminate = $true }
+        try {
+            if (Get-Command "Find-SystemOrphanLeftovers" -ErrorAction SilentlyContinue) {
+                $orphans = @(Find-SystemOrphanLeftovers -InstalledApps $script:cachedUninstallerApps -CatalogApps $AppCatalog -AllowCancel)
+                if ($progressBar) { $progressBar.IsIndeterminate = $false }
+                if ($script:isWindowClosing) { return }
+                if ($script:cancelRequested) {
+                    if ($txtStatus) { $txtStatus.Text = "Đã hủy quét tệp rác & dữ liệu còn sót" }
+                    return
+                }
+                if ($orphans.Count -eq 0) {
+                    if ($txtStatus) { $txtStatus.Text = "Không phát hiện dữ liệu rác còn sót" }
+                    Show-OwnedMessageBox `
+                        -Text "Không phát hiện tệp rác, Registry, Service hay ứng dụng nào bị lỗi/còn sót trên hệ thống!" `
+                        -Caption "Quét Tệp Rác & Dữ Liệu Còn Sót" `
+                        -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) `
+                        -Icon ([System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+                } else {
+                    $totalOrphMb = [math]::Round((($orphans | Measure-Object -Property SizeBytes -Sum).Sum) / 1MB, 1)
+                    if ($txtStatus) { $txtStatus.Text = "Phát hiện $($orphans.Count) mục dữ liệu còn sót (~$totalOrphMb MB)" }
+                    $dlgRes = $null
+                    if (-not $script:isWindowClosing -and (Get-Command "Show-LeftoverReviewDialog" -ErrorAction SilentlyContinue)) {
+                        $dlgRes = Show-LeftoverReviewDialog -OwnerWindow $window -Items $orphans -Title "Quét Tệp Rác & Dữ Liệu Còn Sót"
+                    }
+                    if (-not $script:isWindowClosing -and $dlgRes -and $dlgRes.Confirmed -and $dlgRes.RemovedCount -gt 0) {
+                        $freedMb = [math]::Round($dlgRes.FreedBytes / 1MB, 2)
+                        Log-Text "[OK] Đã dọn sạch $($dlgRes.RemovedCount) mục tồn dư (~$freedMb MB)."
+                        if ($txtStatus) { $txtStatus.Text = "Đã dọn $($dlgRes.RemovedCount) mục tồn dư (~$freedMb MB) — Đang làm mới..." }
+                        Update-UninstallerList -Force
                     }
                 }
-            } finally {
-                if ($progressBar) { $progressBar.IsIndeterminate = $false }
-                if ($txtStatus -and -not $script:isWindowClosing -and $txtStatus.Text -like "Đang quét tệp rác*") {
-                    $txtStatus.Text = "Sẵn sàng"
-                }
+            }
+        } finally {
+            if ($progressBar) { $progressBar.IsIndeterminate = $false }
+            if ($btnCancelAction) {
+                $btnCancelAction.Visibility = [System.Windows.Visibility]::Collapsed
+                $btnCancelAction.IsEnabled = $true
+                $btnCancelAction.Content = "Dừng tác vụ"
+            }
+            if ($txtStatus -and -not $script:isWindowClosing -and $txtStatus.Text -like "Đang quét*") {
+                $txtStatus.Text = "Sẵn sàng"
             }
         }
-    })
+    }
+}
+
+if ($btnScanOrphans) {
+    $btnScanOrphans.Add_Click($script:runSystemOrphanScanAction)
+}
+if ($btnUninstEmptyScan) {
+    $btnUninstEmptyScan.Add_Click($script:runSystemOrphanScanAction)
 }
 
 function Expand-TerminalLog {

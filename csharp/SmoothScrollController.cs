@@ -2146,6 +2146,7 @@ namespace DuckUtil {
         public string SizeText { get; set; }
         public long SizeBytes { get; set; }
         public bool IsBrokenOrphan { get; set; }
+        public string BrokenReason { get; set; }
         public string TargetFolder { get; set; }
         public string InstallLocation { get; set; }
         public string DataLocation { get; set; }
@@ -2425,7 +2426,7 @@ namespace DuckUtil {
                 if (!File.Exists(msiExe)) msiExe = "";
 
                 PropertyInfo pId = null, pName = null, pVer = null, pPub = null, pSize = null;
-                PropertyInfo pBroken = null, pInstLoc = null, pDataLoc = null, pUninst = null;
+                PropertyInfo pBroken = null, pBrokenReason = null, pInstLoc = null, pDataLoc = null, pUninst = null;
                 PropertyInfo pRawReg = null, pIconSrc = null, pTargetFolder = null, pSearchIdx = null;
                 Type cachedType = null;
 
@@ -2442,6 +2443,7 @@ namespace DuckUtil {
                         pPub = t.GetProperty("Publisher");
                         pSize = t.GetProperty("SizeBytes");
                         pBroken = t.GetProperty("IsBrokenOrphan");
+                        pBrokenReason = t.GetProperty("BrokenReason");
                         pInstLoc = t.GetProperty("InstallLocation");
                         pDataLoc = t.GetProperty("DataLocation");
                         pUninst = t.GetProperty("UninstallString");
@@ -2465,6 +2467,7 @@ namespace DuckUtil {
                         object brObj = pBroken.GetValue(app, null);
                         if (brObj != null) { try { isBroken = Convert.ToBoolean(brObj); } catch {} }
                     }
+                    string brokenReason = pBrokenReason != null ? (pBrokenReason.GetValue(app, null) as string ?? "") : "";
                     string instLoc = pInstLoc != null ? (pInstLoc.GetValue(app, null) as string ?? "") : "";
                     string dataLoc = pDataLoc != null ? (pDataLoc.GetValue(app, null) as string ?? "") : "";
                     string uninstStr = pUninst != null ? (pUninst.GetValue(app, null) as string ?? "") : "";
@@ -2497,7 +2500,9 @@ namespace DuckUtil {
                     string dispTrim = string.IsNullOrEmpty(dispName) ? "A" : dispName.Trim();
                     string badgeLetter = isBroken ? "!" : (dispTrim.Length > 0 ? dispTrim.Substring(0, 1).ToUpperInvariant() : "\u2022");
 
-                    string iconTarget = ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, msiExe);
+                    string iconTarget = isBroken
+                        ? ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, "")
+                        : ResolveBestIconTarget(id, dispName, iconSrc, catalogIconLookup, iconsCacheDir, msiExe);
 
                     string foldedName = UiAssetPipeline.NormalizeSearchFold(dispName);
                     string foldedSearch = UiAssetPipeline.NormalizeSearchFold(searchIdx);
@@ -2510,6 +2515,7 @@ namespace DuckUtil {
                         SizeText = sizeText,
                         SizeBytes = sizeBytes,
                         IsBrokenOrphan = isBroken,
+                        BrokenReason = brokenReason,
                         TargetFolder = targetFolder,
                         InstallLocation = instLoc,
                         DataLocation = dataLoc,
@@ -2829,7 +2835,7 @@ namespace DuckUtil {
             rowBorder.SnapsToDevicePixels = true;
             rowBorder.Cursor = Cursors.Hand;
             rowBorder.ToolTip = "";
-            ToolTipService.SetInitialShowDelay(rowBorder, 5000);
+            ToolTipService.SetInitialShowDelay(rowBorder, 700);
             Canvas.SetLeft(rowBorder, 0.0);
 
             var rowGrid = new Grid();
@@ -3099,6 +3105,11 @@ namespace DuckUtil {
             var slot = b.Tag as UninstRowSlot;
             if (slot == null || slot.BoundItem == null) { e.Handled = true; return; }
             UninstVirtualItem it = slot.BoundItem;
+            if (it.IsBrokenOrphan && !string.IsNullOrWhiteSpace(it.BrokenReason)) {
+                string pathLine = !string.IsNullOrWhiteSpace(it.TargetFolder) ? ("\nTh\u01B0 m\u1EE5c ch\u00EDnh: " + it.TargetFolder) : "";
+                b.ToolTip = it.DisplayName + " [L\u1ED7i / C\u00F2n s\u00F3t]\n" + it.BrokenReason + pathLine;
+                return;
+            }
             string dataTip = !string.IsNullOrWhiteSpace(it.DataLocation) ? ("\nKhu d\u1EEF li\u1EC7u ri\u00EAng: " + it.DataLocation) : "";
             b.ToolTip = it.DisplayName + "\nPhi\u00EAn b\u1EA3n: " + it.DisplayVersion + "\nNh\u00E0 ph\u00E1t h\u00E0nh: " + it.Publisher + "\n\u0110\u01B0\u1EDDng d\u1EABn: " + it.InstallLocation + dataTip + "\nL\u1EC7nh g\u1EE1: " + it.UninstallString;
         }

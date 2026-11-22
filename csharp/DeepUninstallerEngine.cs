@@ -76,12 +76,28 @@ namespace DuckUtil
     public class DeepResidualArtifact
     {
         public string ArtifactKind { get; set; }
+        public string AppName { get; set; }
         public string Path { get; set; }
         public string RegistryValueName { get; set; }
+        public string[] RegistryValueNames { get; set; }
         public long SizeBytes { get; set; }
         public bool IsRegistry { get; set; }
         public string ConfidenceTier { get; set; }
+        public string Details { get; set; }
     }
+
+    public class SystemOrphanScanResult
+    {
+        public List<DeepResidualArtifact> Artifacts { get; set; }
+        public List<InstalledAppInfo> ResidualOrphanApps { get; set; }
+
+        public SystemOrphanScanResult()
+        {
+            Artifacts = new List<DeepResidualArtifact>();
+            ResidualOrphanApps = new List<InstalledAppInfo>();
+        }
+    }
+
     public class InstalledAppInfo
     {
         public string Id { get; set; }
@@ -90,6 +106,7 @@ namespace DuckUtil
         public string Publisher { get; set; }
         public string InstallDate { get; set; }
         public string InstallLocation { get; set; }
+        public string RawInstallLocation { get; set; }
         public string DataLocation { get; set; }
         public string DisplayIcon { get; set; }
         public string IconSourcePath { get; set; }
@@ -100,6 +117,8 @@ namespace DuckUtil
         public string Scope { get; set; }
         public long SizeBytes { get; set; }
         public bool IsBrokenOrphan { get; set; }
+        public string BrokenReason { get; set; }
+        public List<DeepResidualArtifact> OrphanArtifacts { get; set; }
         public string TargetFolder { get; set; }
         public string SearchIndex { get; set; }
     }
@@ -531,7 +550,17 @@ namespace DuckUtil
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern uint GetFileAttributesW(string lpFileName);
 
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool SetFileAttributesW(string lpFileName, uint dwFileAttributes);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool DeleteFileW(string lpFileName);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool RemoveDirectoryW(string lpPathName);
+
         private static readonly IntPtr INVALID_FIND_HANDLE = new IntPtr(-1);
+        private const uint W32_FILE_ATTRIBUTE_NORMAL = 0x80;
         private const uint W32_FILE_ATTRIBUTE_DIRECTORY = 0x10;
         private const uint W32_FILE_ATTRIBUTE_REPARSE_POINT = 0x400;
         private const uint W32_INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF;
@@ -770,6 +799,7 @@ namespace DuckUtil
                                     info.Publisher = (appKey.GetValue("Publisher") as string ?? "").Trim();
                                     info.InstallDate = (appKey.GetValue("InstallDate") as string ?? "").Trim();
                                     info.InstallLocation = (appKey.GetValue("InstallLocation") as string ?? "").Trim().Trim('\"');
+                                    info.RawInstallLocation = info.InstallLocation;
                                     info.DataLocation = ResolveExternalDataLocation(appKey, info.InstallLocation);
                                     info.UninstallString = (appKey.GetValue("UninstallString") as string ?? "").Trim();
                                     info.QuietUninstallString = (appKey.GetValue("QuietUninstallString") as string ?? "").Trim();
@@ -906,6 +936,7 @@ namespace DuckUtil
                                         Publisher = publisher,
                                         InstallDate = "",
                                         InstallLocation = rootFolder,
+                                        RawInstallLocation = rootFolder,
                                         DataLocation = "",
                                         DisplayIcon = "",
                                         UninstallString = uninstCmd,
@@ -959,7 +990,9 @@ namespace DuckUtil
                             if (dataDiskSize > 0) info.SizeBytes += dataDiskSize;
                         }
                     }
-                    info.IsBrokenOrphan = CheckIsBrokenOrphan(info.UninstallString, info.InstallLocation);
+                    string brokenReason;
+                    info.IsBrokenOrphan = CheckIsBrokenOrphanDetailed(info, info.RawInstallLocation, out brokenReason);
+                    info.BrokenReason = brokenReason ?? "";
                     if (!string.IsNullOrEmpty(info.InstallLocation) && Directory.Exists(info.InstallLocation))
                     {
                         info.TargetFolder = info.InstallLocation;
@@ -1613,43 +1646,340 @@ namespace DuckUtil
             return "";
         }
 
-        private static bool CheckIsBrokenOrphan(string uninstallString, string installLocation)
+        private static HashSet<string> GetMountedFixedDriveRoots()
         {
-            if (string.IsNullOrWhiteSpace(uninstallString)) return false;
-            string u = Environment.ExpandEnvironmentVariables(uninstallString).Trim();
-            if (u.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+            var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                DriveInfo[] drives = DriveInfo.GetDrives();
+                for (int i = 0; i < drives.Length; i++)
+                {
+                    try
+                    {
+                        if (drives[i].DriveType == DriveType.Fixed && drives[i].IsReady)
+                        {
+                            string r = drives[i].Name;
+                            if (!string.IsNullOrEmpty(r) && r.Length >= 2)
+                            {
+                                roots.Add(r.Substring(0, 2));
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+            if (roots.Count == 0)
+            {
+                string sysDrv = Environment.GetEnvironmentVariable("SystemDrive");
+                if (!string.IsNullOrEmpty(sysDrv) && sysDrv.Length >= 2)
+                {
+                    roots.Add(sysDrv.Substring(0, 2));
+                }
+                else
+                {
+                    roots.Add("C:");
+                }
+            }
+            return roots;
+        }
 
-            string exePath = ExtractExePath(u);
+        public static bool IsPathOnMountedFixedDrive(string path, HashSet<string> mountedRoots)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string p = path.Trim().Trim('\"');
+            if (p.Length < 3 || !char.IsLetter(p[0]) || p[1] != ':' || p[2] != '\\') return false;
+            string drv = p.Substring(0, 2);
+            if (mountedRoots != null)
+            {
+                return mountedRoots.Contains(drv);
+            }
+            return GetMountedFixedDriveRoots().Contains(drv);
+        }
+
+        private static bool IsMsiProductRegistered(string guid)
+        {
+            if (string.IsNullOrWhiteSpace(guid)) return false;
+            string packed = ConvertToPackedGuid(guid);
+            if (string.IsNullOrEmpty(packed)) return false;
+            try
+            {
+                using (var lm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                {
+                    using (var k1 = lm.OpenSubKey(@"SOFTWARE\Classes\Installer\Products\" + packed, false))
+                    {
+                        if (k1 != null) return true;
+                    }
+                    using (var k2 = lm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Installer\UserData\S-1-5-18\Products\" + packed, false))
+                    {
+                        if (k2 != null) return true;
+                    }
+                }
+            }
+            catch {}
+            try
+            {
+                using (var cu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Default))
+                using (var k3 = cu.OpenSubKey(@"Software\Microsoft\Installer\Products\" + packed, false))
+                {
+                    if (k3 != null) return true;
+                }
+            }
+            catch {}
+            return false;
+        }
+
+        private static bool IsSystemWrapperExe(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath)) return false;
+            string trim = exePath.Trim().Trim('\"');
+            if (trim.Length < 3 || !char.IsLetter(trim[0]) || trim[1] != ':' || trim[2] != '\\')
+            {
+                return true;
+            }
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            if (!string.IsNullOrEmpty(winDir))
+            {
+                string winPref = winDir.TrimEnd('\\') + "\\";
+                if (trim.StartsWith(winPref, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static string ExtractLocalArgTargetFromWrapper(string fullCmd)
+        {
+            if (string.IsNullOrWhiteSpace(fullCmd)) return "";
+            string exp = Environment.ExpandEnvironmentVariables(fullCmd).Trim();
+            MatchCollection mc = Regex.Matches(exp, @"(?:""([A-Za-z]:\\[^""]+?\.(?:dll|exe|bat|cmd|vbs|ps1|msi))""|([A-Za-z]:\\[^\s"",]+?\.(?:dll|exe|bat|cmd|vbs|ps1|msi)))", RegexOptions.IgnoreCase);
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
+            foreach (Match m in mc)
+            {
+                string cand = m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value;
+                if (string.IsNullOrWhiteSpace(cand)) continue;
+                if (!string.IsNullOrEmpty(winDir) && cand.StartsWith(winDir + "\\", StringComparison.OrdinalIgnoreCase)) continue;
+                return cand.Trim('\"', ' ');
+            }
+            return "";
+        }
+
+        private static bool IsDirectoryMissingOrHollow(string dirPath)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return true;
+            string exp = Environment.ExpandEnvironmentVariables(dirPath).Trim().Trim('\"', ' ').TrimEnd('\\');
+            if (exp.Length <= 3) return false;
+            try
+            {
+                if (!Directory.Exists(exp)) return true;
+                long hSz = GetHollowDirectorySize(exp, 4, 52428800L);
+                return hSz >= 0L;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsGenericSharedVendorDir(string dirPath)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return true;
+            string norm = dirPath.Trim().Trim('\"', ' ').TrimEnd('\\');
+            string[] parts = norm.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return true;
+            string leaf = parts[parts.Length - 1];
+            if (parts.Length == 2)
+            {
+                if (leaf.Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+                    leaf.Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase) ||
+                    leaf.Equals("ProgramData", StringComparison.OrdinalIgnoreCase) ||
+                    leaf.Equals("Windows", StringComparison.OrdinalIgnoreCase) ||
+                    leaf.Equals("Users", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            if (leaf.Equals("Common Files", StringComparison.OrdinalIgnoreCase) ||
+                leaf.Equals("Common", StringComparison.OrdinalIgnoreCase) ||
+                leaf.Equals("Programs", StringComparison.OrdinalIgnoreCase) ||
+                leaf.Equals("Package Cache", StringComparison.OrdinalIgnoreCase) ||
+                leaf.Equals("System32", StringComparison.OrdinalIgnoreCase) ||
+                leaf.Equals("SysWOW64", StringComparison.OrdinalIgnoreCase) ||
+                leaf.Equals("Temp", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static bool CheckIsBrokenOrphan(string uninstallString, string installLocation)
+        {
+            var tmp = new InstalledAppInfo
+            {
+                UninstallString = uninstallString ?? "",
+                InstallLocation = installLocation ?? "",
+                RawInstallLocation = installLocation ?? ""
+            };
+            string dummy;
+            return CheckIsBrokenOrphanDetailed(tmp, installLocation ?? "", out dummy);
+        }
+
+        public static bool CheckIsBrokenOrphanDetailed(InstalledAppInfo info, string rawRegInstallLocation, out string reason)
+        {
+            reason = "";
+            if (info == null) return false;
+            HashSet<string> fixedDrives = GetMountedFixedDriveRoots();
+
+            string id = info.Id ?? "";
+            string rawLoc = !string.IsNullOrWhiteSpace(rawRegInstallLocation)
+                ? Environment.ExpandEnvironmentVariables(rawRegInstallLocation).Trim().Trim('\"', ' ').TrimEnd('\\')
+                : "";
+            string resolvedLoc = !string.IsNullOrWhiteSpace(info.InstallLocation)
+                ? Environment.ExpandEnvironmentVariables(info.InstallLocation).Trim().Trim('\"', ' ').TrimEnd('\\')
+                : "";
+            string uStr = !string.IsNullOrWhiteSpace(info.UninstallString)
+                ? Environment.ExpandEnvironmentVariables(info.UninstallString).Trim()
+                : "";
+            string qStr = !string.IsNullOrWhiteSpace(info.QuietUninstallString)
+                ? Environment.ExpandEnvironmentVariables(info.QuietUninstallString).Trim()
+                : "";
+
+            // Case 1: MSIX / Store package
+            if (id.StartsWith("MSIX\\", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrEmpty(rawLoc) && IsPathOnMountedFixedDrive(rawLoc, fixedDrives))
+                {
+                    bool exists = false;
+                    try { exists = Directory.Exists(rawLoc); } catch {}
+                    if (!exists)
+                    {
+                        reason = "G\u00F3i Microsoft Store (MSIX) b\u1ECB thi\u1EBFu th\u01B0 m\u1EE5c g\u1ED1c";
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Case 2: MSI (MsiExec) entry
+            string primaryCmd = !string.IsNullOrEmpty(uStr) ? uStr : qStr;
+            if (!string.IsNullOrEmpty(primaryCmd) && primaryCmd.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                string guid = "";
+                Match mg = Regex.Match(primaryCmd, @"\{[0-9A-Fa-f]{8}\-[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{12}\}");
+                if (mg.Success) guid = mg.Value;
+                else if (id.StartsWith("{") && id.EndsWith("}")) guid = id;
+
+                bool msiRegistered = !string.IsNullOrEmpty(guid) && IsMsiProductRegistered(guid);
+                bool hasRawLoc = !string.IsNullOrEmpty(rawLoc) && rawLoc.Length > 3 && !IsGenericSharedVendorDir(rawLoc);
+                bool rawOnFixed = hasRawLoc && IsPathOnMountedFixedDrive(rawLoc, fixedDrives);
+                bool rawMissingOrHollow = rawOnFixed && IsDirectoryMissingOrHollow(rawLoc);
+
+                if (!string.IsNullOrEmpty(guid) && !msiRegistered)
+                {
+                    if (!hasRawLoc || rawMissingOrHollow)
+                    {
+                        reason = "G\u00F3i MSI \u0111\u00E3 m\u1EA5t \u0111\u0103ng k\u00FD Windows Installer";
+                        return true;
+                    }
+                }
+                if (rawOnFixed && rawMissingOrHollow && info.SizeBytes <= 0)
+                {
+                    string iconFile = CleanIconFilePath(info.DisplayIcon);
+                    if (string.IsNullOrEmpty(iconFile))
+                    {
+                        reason = "Th\u01B0 m\u1EE5c c\u00E0i \u0111\u1EB7t g\u00F3i MSI kh\u00F4ng c\u00F2n t\u1ED3n t\u1EA1i";
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Case 3: Both UninstallString and QuietUninstallString empty
+            if (string.IsNullOrEmpty(uStr) && string.IsNullOrEmpty(qStr))
+            {
+                if (!string.IsNullOrEmpty(rawLoc) && rawLoc.Length > 3 && !IsGenericSharedVendorDir(rawLoc) && IsPathOnMountedFixedDrive(rawLoc, fixedDrives))
+                {
+                    if (IsDirectoryMissingOrHollow(rawLoc))
+                    {
+                        reason = "Thi\u1EBFu l\u1EC7nh g\u1EE1 c\u00E0i \u0111\u1EB7t & th\u01B0 m\u1EE5c kh\u00F4ng c\u00F2n t\u1ED3n t\u1EA1i";
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Case 4: Standard EXE / Script / Wrapper uninstaller
+            string exePath = ExtractExePath(primaryCmd);
             if (string.IsNullOrEmpty(exePath)) return false;
-            exePath = exePath.Trim('\"', ' ');
-            if (!Regex.IsMatch(exePath, @"^[a-zA-Z]:\\")) return false;
+
+            if (IsSystemWrapperExe(exePath))
+            {
+                string wrappedTarget = ExtractLocalArgTargetFromWrapper(primaryCmd);
+                if (string.IsNullOrEmpty(wrappedTarget) || !IsPathOnMountedFixedDrive(wrappedTarget, fixedDrives))
+                {
+                    return false;
+                }
+                exePath = wrappedTarget;
+            }
+
+            if (!IsPathOnMountedFixedDrive(exePath, fixedDrives)) return false;
 
             bool exeExists = false;
             try { exeExists = File.Exists(exePath); } catch {}
+            if (exeExists) return false;
 
-            if (!exeExists)
+            // Check if alternate QuietUninstallString / UninstallString has a working exe
+            string altCmd = (!string.IsNullOrEmpty(uStr) && !string.IsNullOrEmpty(qStr)) ? qStr : "";
+            if (!string.IsNullOrEmpty(altCmd) && !string.Equals(altCmd, primaryCmd, StringComparison.OrdinalIgnoreCase))
             {
-                bool locExists = false;
-                try
+                if (altCmd.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+                string altExe = ExtractExePath(altCmd);
+                if (!string.IsNullOrEmpty(altExe) && !IsSystemWrapperExe(altExe))
                 {
-                    if (!string.IsNullOrWhiteSpace(installLocation))
-                    {
-                        string expLoc = Environment.ExpandEnvironmentVariables(installLocation).Trim('\"', ' ');
-                        if (!string.IsNullOrEmpty(expLoc) && Directory.Exists(expLoc))
-                        {
-                            locExists = true;
-                        }
-                    }
+                    try { if (File.Exists(altExe)) return false; } catch {}
                 }
-                catch {}
+            }
 
-                if (!locExists) return true;
+            // Uninstaller binary is missing on a mounted fixed drive!
+            // Now check whether install location is missing or hollow (empty/logs-only)
+            bool hasDataDir = !string.IsNullOrEmpty(info.DataLocation) && Directory.Exists(info.DataLocation) && !IsDirectoryMissingOrHollow(info.DataLocation);
+            if (hasDataDir) return false;
+
+            if (!string.IsNullOrEmpty(rawLoc) && rawLoc.Length > 3 && !IsGenericSharedVendorDir(rawLoc))
+            {
+                if (!IsPathOnMountedFixedDrive(rawLoc, fixedDrives)) return false;
+                if (IsDirectoryMissingOrHollow(rawLoc))
+                {
+                    bool dirStillExists = false;
+                    try { dirStillExists = Directory.Exists(rawLoc); } catch {}
+                    reason = dirStillExists
+                        ? "Tr\u00ECnh g\u1EE1 \u0111\u00E3 b\u1ECB x\u00F3a & th\u01B0 m\u1EE5c c\u00E0i \u0111\u1EB7t ch\u1EC9 c\u00F2n v\u1ECF r\u1ED7ng"
+                        : "Tr\u00ECnh g\u1EE1 c\u00E0i \u0111\u1EB7t & th\u01B0 m\u1EE5c c\u00E0i \u0111\u1EB7t kh\u00F4ng c\u00F2n t\u1ED3n t\u1EA1i";
+                    return true;
+                }
+                return false;
+            }
+
+            // No explicit InstallLocation in Registry: check uninstaller's own parent dir AND inferred InstallLocation
+            string exeDir = "";
+            try { exeDir = (Path.GetDirectoryName(exePath) ?? "").TrimEnd('\\'); } catch {}
+            bool exeDirMissingOrHollow = string.IsNullOrEmpty(exeDir) || (!IsGenericSharedVendorDir(exeDir) && IsDirectoryMissingOrHollow(exeDir));
+            bool resLocMissingOrHollow = string.IsNullOrEmpty(resolvedLoc) || IsGenericSharedVendorDir(resolvedLoc) || IsDirectoryMissingOrHollow(resolvedLoc);
+
+            if (exeDirMissingOrHollow && resLocMissingOrHollow)
+            {
+                bool anyDirExists = (!string.IsNullOrEmpty(exeDir) && Directory.Exists(exeDir)) || (!string.IsNullOrEmpty(resolvedLoc) && Directory.Exists(resolvedLoc));
+                reason = anyDirExists
+                    ? "Tr\u00ECnh g\u1EE1 \u0111\u00E3 b\u1ECB x\u00F3a & ch\u1EC9 c\u00F2n th\u01B0 m\u1EE5c r\u1ED7ng"
+                    : "Tr\u00ECnh g\u1EE1 c\u00E0i \u0111\u1EB7t kh\u00F4ng c\u00F2n t\u1ED3n t\u1EA1i";
+                return true;
             }
 
             return false;
         }
 
-        private static string ExtractExePath(string raw)
+        public static string ExtractExePath(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return null;
             raw = Environment.ExpandEnvironmentVariables(raw).Trim();
@@ -1662,11 +1992,21 @@ namespace DuckUtil
                 }
             }
 
-            int exeIdx = raw.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
-            if (exeIdx > 0)
+            Match extMatch = Regex.Match(raw, @"^(.+?\.(?:exe|bat|cmd|msi|vbs|ps1|msc))(?=$|[\s,""'/])", RegexOptions.IgnoreCase);
+            if (extMatch.Success)
             {
-                return raw.Substring(0, exeIdx + 4).Trim('\"', ' ');
+                return extMatch.Groups[1].Value.Trim('\"', ' ');
             }
+
+            string trimmed = raw.Trim('\"', ' ');
+            try
+            {
+                if (trimmed.Length >= 3 && char.IsLetter(trimmed[0]) && trimmed[1] == ':' && trimmed[2] == '\\' && File.Exists(trimmed))
+                {
+                    return trimmed;
+                }
+            }
+            catch {}
 
             int spaceIdx = raw.IndexOf(' ');
             if (spaceIdx > 0)
@@ -1674,7 +2014,23 @@ namespace DuckUtil
                 return raw.Substring(0, spaceIdx).Trim('\"', ' ');
             }
 
-            return raw.Trim('\"', ' ');
+            return trimmed;
+        }
+
+        private static string ToLongPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return path;
+            if (path.Length < 240) return path;
+            if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) return path;
+            if (path.StartsWith(@"\\", StringComparison.Ordinal))
+            {
+                return @"\\?\UNC\" + path.Substring(2);
+            }
+            if (path.Length >= 3 && char.IsLetter(path[0]) && path[1] == ':' && path[2] == '\\')
+            {
+                return @"\\?\" + path;
+            }
+            return path;
         }
 
         private static bool IsReparsePoint(string path)
@@ -1682,7 +2038,8 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(path)) return false;
             try
             {
-                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+                uint attr = GetFileAttributesW(ToLongPath(path));
+                return attr != W32_INVALID_FILE_ATTRIBUTES && (attr & W32_FILE_ATTRIBUTE_REPARSE_POINT) != 0;
             }
             catch { return false; }
         }
@@ -1819,39 +2176,93 @@ namespace DuckUtil
             return GetDirectorySizeCapped(rootPath, maxDepth, 10000);
         }
 
+        private static bool PathExistsLong(string path, out bool isDirectory)
+        {
+            isDirectory = false;
+            if (string.IsNullOrEmpty(path)) return false;
+            uint attr = GetFileAttributesW(ToLongPath(path));
+            if (attr == W32_INVALID_FILE_ATTRIBUTES) return false;
+            isDirectory = (attr & W32_FILE_ATTRIBUTE_DIRECTORY) != 0;
+            return true;
+        }
+
+        private static bool FileExistsLong(string path)
+        {
+            bool isDir;
+            return PathExistsLong(path, out isDir) && !isDir;
+        }
+
+        private static bool DirectoryExistsLong(string path)
+        {
+            bool isDir;
+            return PathExistsLong(path, out isDir) && isDir;
+        }
+
+        private static bool MatchesSimpleWildcard(string name, string pattern)
+        {
+            if (string.IsNullOrEmpty(pattern) || pattern == "*" || pattern == "*.*") return true;
+            if (string.IsNullOrEmpty(name)) return false;
+            if (pattern.StartsWith("*.", StringComparison.Ordinal))
+            {
+                string ext = pattern.Substring(1);
+                return name.EndsWith(ext, StringComparison.OrdinalIgnoreCase);
+            }
+            return name.IndexOf(pattern.Trim('*'), StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private static List<string> EnumerateFilesSafe(string rootDir, string pattern, int maxDepth)
         {
             var results = new List<string>();
             if (string.IsNullOrEmpty(rootDir)) return results;
             try
             {
-                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
+                if (!DirectoryExistsLong(rootDir) || IsReparsePoint(rootDir)) return results;
             }
             catch { return results; }
 
-            var currentLevel = new List<string> { rootDir };
+            var currentLevel = new List<string> { rootDir.TrimEnd('\\') };
 
             for (int depth = 0; depth <= maxDepth; depth++)
             {
                 var nextLevel = new List<string>();
-                foreach (var dir in currentLevel)
+                for (int di = 0; di < currentLevel.Count; di++)
                 {
+                    string dir = currentLevel[di];
+                    string search = ToLongPath(dir) + "\\*";
+                    WIN32_FIND_DATAW fd;
+                    IntPtr h = INVALID_FIND_HANDLE;
                     try
                     {
-                        foreach (var file in Directory.EnumerateFiles(dir, pattern))
+                        h = FindFirstFileExW(search, 1, out fd, 0, IntPtr.Zero, 2);
+                        if (h == INVALID_FIND_HANDLE)
                         {
-                            results.Add(file);
+                            h = FindFirstFileExW(search, 0, out fd, 0, IntPtr.Zero, 0);
                         }
-
-                        if (depth < maxDepth)
+                        if (h == INVALID_FIND_HANDLE) continue;
+                        do
                         {
-                            foreach (var sub in Directory.EnumerateDirectories(dir))
+                            string name = fd.cFileName;
+                            if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                            string full = dir + "\\" + name;
+                            if ((fd.dwFileAttributes & W32_FILE_ATTRIBUTE_DIRECTORY) != 0)
                             {
-                                if (!IsReparsePoint(sub)) nextLevel.Add(sub);
+                                if (depth < maxDepth && (fd.dwFileAttributes & W32_FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                                {
+                                    nextLevel.Add(full);
+                                }
+                            }
+                            else if (MatchesSimpleWildcard(name, pattern))
+                            {
+                                results.Add(full);
                             }
                         }
+                        while (FindNextFileW(h, out fd));
                     }
                     catch {}
+                    finally
+                    {
+                        if (h != INVALID_FIND_HANDLE) { try { FindClose(h); } catch {} }
+                    }
                 }
                 if (nextLevel.Count == 0) break;
                 currentLevel = nextLevel;
@@ -1866,29 +2277,50 @@ namespace DuckUtil
             if (string.IsNullOrEmpty(rootDir)) return results;
             try
             {
-                if (!Directory.Exists(rootDir) || IsReparsePoint(rootDir)) return results;
+                if (!DirectoryExistsLong(rootDir) || IsReparsePoint(rootDir)) return results;
             }
             catch { return results; }
 
-            var currentLevel = new List<string> { rootDir };
+            var currentLevel = new List<string> { rootDir.TrimEnd('\\') };
 
             for (int depth = 0; depth <= maxDepth; depth++)
             {
                 var nextLevel = new List<string>();
-                foreach (var dir in currentLevel)
+                for (int di = 0; di < currentLevel.Count; di++)
                 {
+                    string dir = currentLevel[di];
+                    string search = ToLongPath(dir) + "\\*";
+                    WIN32_FIND_DATAW fd;
+                    IntPtr h = INVALID_FIND_HANDLE;
                     try
                     {
-                        foreach (var sub in Directory.EnumerateDirectories(dir))
+                        h = FindFirstFileExW(search, 1, out fd, 0, IntPtr.Zero, 2);
+                        if (h == INVALID_FIND_HANDLE)
                         {
-                            results.Add(sub);
-                            if (depth < maxDepth && !IsReparsePoint(sub))
+                            h = FindFirstFileExW(search, 0, out fd, 0, IntPtr.Zero, 0);
+                        }
+                        if (h == INVALID_FIND_HANDLE) continue;
+                        do
+                        {
+                            string name = fd.cFileName;
+                            if (string.IsNullOrEmpty(name) || name == "." || name == "..") continue;
+                            if ((fd.dwFileAttributes & W32_FILE_ATTRIBUTE_DIRECTORY) != 0)
                             {
-                                nextLevel.Add(sub);
+                                string full = dir + "\\" + name;
+                                results.Add(full);
+                                if (depth < maxDepth && (fd.dwFileAttributes & W32_FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                                {
+                                    nextLevel.Add(full);
+                                }
                             }
                         }
+                        while (FindNextFileW(h, out fd));
                     }
                     catch {}
+                    finally
+                    {
+                        if (h != INVALID_FIND_HANDLE) { try { FindClose(h); } catch {} }
+                    }
                 }
                 if (nextLevel.Count == 0) break;
                 currentLevel = nextLevel;
@@ -3872,7 +4304,7 @@ namespace DuckUtil
         private static string NormalizeServiceImagePath(string rawImgPath)
         {
             if (string.IsNullOrWhiteSpace(rawImgPath)) return "";
-            string s = rawImgPath.Trim('\"', ' ');
+            string s = rawImgPath.Trim();
             if (s.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
             {
                 s = s.Substring(4);
@@ -3883,6 +4315,53 @@ namespace DuckUtil
             }
             try { s = Environment.ExpandEnvironmentVariables(s); } catch {}
             return s.Trim('\"', ' ');
+        }
+
+        public static string ExtractServiceBinaryPath(string rawImgPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawImgPath)) return "";
+            string s = rawImgPath.Trim();
+            if (s.StartsWith(@"\??\", StringComparison.OrdinalIgnoreCase))
+            {
+                s = s.Substring(4).Trim();
+            }
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            if (s.StartsWith(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(winDir))
+            {
+                s = Path.Combine(winDir, s.Substring(12));
+            }
+            try { s = Environment.ExpandEnvironmentVariables(s); } catch {}
+            s = s.Trim();
+
+            string extracted = "";
+            if (s.StartsWith("\""))
+            {
+                int q2 = s.IndexOf('\"', 1);
+                if (q2 > 1)
+                {
+                    extracted = s.Substring(1, q2 - 1).Trim();
+                }
+            }
+            if (string.IsNullOrEmpty(extracted))
+            {
+                Match m = Regex.Match(s, @"^(.+?\.(?:exe|sys|dll))(?=$|[\s""'/])", RegexOptions.IgnoreCase);
+                if (m.Success)
+                {
+                    extracted = m.Groups[1].Value.Trim('\"', ' ');
+                }
+                else
+                {
+                    extracted = s.Trim('\"', ' ');
+                }
+            }
+
+            if ((extracted.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
+                 extracted.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase)) &&
+                !string.IsNullOrEmpty(winDir))
+            {
+                extracted = Path.Combine(winDir, extracted);
+            }
+            return extracted.Trim('\"', ' ');
         }
 
         private static void StopSingleServiceHandleAndWait(IntPtr hSvc)
@@ -4482,6 +4961,89 @@ namespace DuckUtil
             return Task.Run(delegate() { return ForceDeleteRegistryKey(rawPath); });
         }
 
+        private static int TryDeleteRegistryValuesDirect(RegistryHive hive, string subPath, string[] valueNames)
+        {
+            int deleted = 0;
+            try
+            {
+                using (var baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (var key = baseKey.OpenSubKey(subPath, true))
+                {
+                    if (key == null) return 0;
+                    for (int i = 0; i < valueNames.Length; i++)
+                    {
+                        string vn = valueNames[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        try
+                        {
+                            if (key.GetValue(vn, null, RegistryValueOptions.DoNotExpandEnvironmentNames) != null)
+                            {
+                                key.DeleteValue(vn, false);
+                                deleted++;
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return deleted;
+        }
+
+        public static int ForceDeleteRegistryValues(string rawKeyPath, string[] valueNames)
+        {
+            if (string.IsNullOrWhiteSpace(rawKeyPath) || valueNames == null || valueNames.Length == 0) return 0;
+            RegistryHive hive;
+            string subPath;
+            bool isCurrentUser;
+            if (!TryParseRegistryPath(rawKeyPath, out hive, out subPath, out isCurrentUser)) return 0;
+
+            int deleted = TryDeleteRegistryValuesDirect(hive, subPath, valueNames);
+            if (deleted >= valueNames.Length) return deleted;
+
+            string userSid = "";
+            if (isCurrentUser)
+            {
+                try
+                {
+                    using (var wi = WindowsIdentity.GetCurrent())
+                    {
+                        if (wi != null && wi.User != null) userSid = wi.User.Value;
+                    }
+                }
+                catch {}
+            }
+
+            RegistryHive elevHive = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? RegistryHive.Users : hive;
+            string elevSub = (isCurrentUser && !string.IsNullOrEmpty(userSid)) ? (userSid + "\\" + subPath) : subPath;
+            if (isCurrentUser && !string.IsNullOrEmpty(userSid) &&
+                subPath.StartsWith("Software\\Classes\\", StringComparison.OrdinalIgnoreCase))
+            {
+                string afterClasses = subPath.Substring("Software\\Classes\\".Length);
+                if (!string.IsNullOrEmpty(afterClasses))
+                {
+                    string classesDirect = userSid + "_Classes\\" + afterClasses;
+                    if (RegistrySubKeyExists(RegistryHive.Users, classesDirect))
+                    {
+                        elevSub = classesDirect;
+                    }
+                }
+            }
+
+            EnsureUnlockPrivileges();
+            int extra = 0;
+            RunWithSystemOrTrustedInstaller(true, delegate()
+            {
+                extra += TryDeleteRegistryValuesDirect(elevHive, elevSub, valueNames);
+            });
+            return deleted + extra;
+        }
+
+        public static Task<int> ForceDeleteRegistryValuesAsync(string rawKeyPath, string[] valueNames)
+        {
+            return Task.Run(delegate() { return ForceDeleteRegistryValues(rawKeyPath, valueNames); });
+        }
+
         private static void RunHiddenProcess(string exe, string args, int timeoutMs)
         {
             try
@@ -4949,62 +5511,83 @@ namespace DuckUtil
 
         private static bool TryDeleteSingleFileAggressively(string file, bool allowParentAclUnlock)
         {
-            if (!File.Exists(file)) return true;
+            if (!FileExistsLong(file)) return true;
+            string longFile = ToLongPath(file);
+            try
+            {
+                SetFileAttributesW(longFile, W32_FILE_ATTRIBUTE_NORMAL);
+                if (DeleteFileW(longFile) && !FileExistsLong(file)) return true;
+            }
+            catch {}
+
             try
             {
                 File.SetAttributes(file, FileAttributes.Normal);
                 File.Delete(file);
-                if (!File.Exists(file)) return true;
+                if (!FileExistsLong(file)) return true;
             }
             catch {}
 
-            if (TryPosixUnlinkFile(file)) return true;
+            if (TryPosixUnlinkFile(longFile)) return true;
 
             if (TryTakeOwnershipAndGrantAdminAccess(file))
             {
                 try
                 {
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                    if (!File.Exists(file)) return true;
+                    SetFileAttributesW(longFile, W32_FILE_ATTRIBUTE_NORMAL);
+                    if (DeleteFileW(longFile) && !FileExistsLong(file)) return true;
                 }
                 catch {}
-                if (TryPosixUnlinkFile(file)) return true;
+                try
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                    File.Delete(file);
+                    if (!FileExistsLong(file)) return true;
+                }
+                catch {}
+                if (TryPosixUnlinkFile(longFile)) return true;
             }
 
             if (allowParentAclUnlock)
             {
-                string parentDir = Path.GetDirectoryName(file);
+                string parentDir = "";
+                try { parentDir = Path.GetDirectoryName(file); } catch {}
                 if (!string.IsNullOrEmpty(parentDir) && TryTakeOwnershipAndGrantAdminAccess(parentDir))
                 {
                     try
                     {
-                        File.SetAttributes(file, FileAttributes.Normal);
-                        File.Delete(file);
-                        if (!File.Exists(file)) return true;
+                        SetFileAttributesW(longFile, W32_FILE_ATTRIBUTE_NORMAL);
+                        if (DeleteFileW(longFile) && !FileExistsLong(file)) return true;
                     }
                     catch {}
-                    if (TryPosixUnlinkFile(file)) return true;
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                        if (!FileExistsLong(file)) return true;
+                    }
+                    catch {}
+                    if (TryPosixUnlinkFile(longFile)) return true;
                 }
             }
 
-            if (File.Exists(file))
+            if (FileExistsLong(file))
             {
                 RunWithSystemOrTrustedInstaller(true, delegate()
                 {
                     TryTakeOwnershipAndGrantAdminAccessCore(file, false);
-                    if (!TryPosixUnlinkFile(file) && File.Exists(file))
+                    if (!TryPosixUnlinkFile(longFile) && FileExistsLong(file))
                     {
                         try
                         {
-                            File.SetAttributes(file, FileAttributes.Normal);
-                            File.Delete(file);
+                            SetFileAttributesW(longFile, W32_FILE_ATTRIBUTE_NORMAL);
+                            DeleteFileW(longFile);
                         }
                         catch {}
                     }
                 });
             }
-            return !File.Exists(file);
+            return !FileExistsLong(file);
         }
 
         public static ForceDeleteResult ForceDeleteDirectoryWithResult(string targetDir, bool runFullLockerStop)
@@ -5081,15 +5664,7 @@ namespace DuckUtil
                                 catch {}
                                 int baseType = sType & 0x0F;
                                 bool isDrv = (baseType == 1 || baseType == 2 || baseType == 8);
-                                string normImg = NormalizeServiceImagePath(rawImg);
-                                string resolved = normImg;
-                                if (!string.IsNullOrEmpty(resolved) &&
-                                    (resolved.StartsWith(@"system32\", StringComparison.OrdinalIgnoreCase) ||
-                                     resolved.StartsWith(@"syswow64\", StringComparison.OrdinalIgnoreCase)) &&
-                                    !string.IsNullOrEmpty(winDir))
-                                {
-                                    resolved = Path.Combine(winDir, resolved);
-                                }
+                                string resolved = ExtractServiceBinaryPath(rawImg);
                                 result.Add(new ServiceScanEntry
                                 {
                                     ServiceName = sName,
@@ -5208,7 +5783,7 @@ namespace DuckUtil
 
             try
             {
-                foreach (string file in EnumerateFilesSafe(norm, "*", 10))
+                foreach (string file in EnumerateFilesSafe(norm, "*", 16))
                 {
                     if (TryDeleteSingleFileAggressively(file, true)) continue;
 
@@ -5249,20 +5824,28 @@ namespace DuckUtil
 
             try
             {
-                List<string> subDirs = EnumerateDirectoriesSafe(norm, 10);
+                List<string> subDirs = EnumerateDirectoriesSafe(norm, 16);
                 subDirs.Sort(delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
                 foreach (string sd in subDirs)
                 {
+                    string longSd = ToLongPath(sd);
                     try
                     {
                         if (IsReparsePoint(sd))
                         {
-                            Directory.Delete(sd, false);
+                            if (!RemoveDirectoryW(longSd))
+                            {
+                                Directory.Delete(sd, false);
+                            }
                         }
                         else
                         {
-                            File.SetAttributes(sd, FileAttributes.Normal);
-                            Directory.Delete(sd, false);
+                            SetFileAttributesW(longSd, W32_FILE_ATTRIBUTE_NORMAL);
+                            if (!RemoveDirectoryW(longSd))
+                            {
+                                File.SetAttributes(sd, FileAttributes.Normal);
+                                Directory.Delete(sd, false);
+                            }
                         }
                     }
                     catch
@@ -5272,7 +5855,7 @@ namespace DuckUtil
                         {
                             try
                             {
-                                foreach (string innerFile in Directory.GetFiles(sd))
+                                foreach (string innerFile in EnumerateFilesSafe(sd, "*", 0))
                                 {
                                     if (!TryDeleteSingleFileAggressively(innerFile, false))
                                     {
@@ -5283,13 +5866,21 @@ namespace DuckUtil
                             catch {}
                             try
                             {
-                                File.SetAttributes(sd, FileAttributes.Normal);
-                                Directory.Delete(sd, false);
-                                dirRecovered = true;
+                                SetFileAttributesW(longSd, W32_FILE_ATTRIBUTE_NORMAL);
+                                if (RemoveDirectoryW(longSd) || !DirectoryExistsLong(sd))
+                                {
+                                    dirRecovered = true;
+                                }
+                                else
+                                {
+                                    File.SetAttributes(sd, FileAttributes.Normal);
+                                    Directory.Delete(sd, false);
+                                    dirRecovered = true;
+                                }
                             }
                             catch {}
                         }
-                        if (!dirRecovered)
+                        if (!dirRecovered && DirectoryExistsLong(sd))
                         {
                             ScheduleMoveFileExUnique(sd, existingPending);
                         }
@@ -5867,6 +6458,8 @@ namespace DuckUtil
                             allLnks.AddRange(EnumerateFilesSafe(root, "*.lnk", 6));
                         }
 
+                        HashSet<string> fixedDrives = GetMountedFixedDriveRoots();
+                        string winDirSc = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
                         var fastDead = new ConcurrentBag<DeadShortcutResult>();
                         var fallbackBag = new ConcurrentBag<string>();
                         if (allLnks.Count > 0)
@@ -5878,11 +6471,12 @@ namespace DuckUtil
                                 if (TryExtractLnkTargetFast(lnk, out target))
                                 {
                                     if (!string.IsNullOrEmpty(target) &&
-                                        target.Length >= 7 &&
-                                        char.IsLetter(target[0]) &&
-                                        target[1] == ':' &&
-                                        target[2] == '\\' &&
-                                        target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                        IsPathOnMountedFixedDrive(target, fixedDrives) &&
+                                        (string.IsNullOrEmpty(winDirSc) || !target.StartsWith(winDirSc + "\\", StringComparison.OrdinalIgnoreCase)) &&
+                                        (target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+                                         target.EndsWith(".bat", StringComparison.OrdinalIgnoreCase) ||
+                                         target.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ||
+                                         target.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) &&
                                         !File.Exists(target))
                                     {
                                         fastDead.Add(new DeadShortcutResult
@@ -5919,11 +6513,12 @@ namespace DuckUtil
                                         {
                                             string target = sc.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, sc, null) as string;
                                             if (!string.IsNullOrEmpty(target) &&
-                                                target.Length >= 7 &&
-                                                char.IsLetter(target[0]) &&
-                                                target[1] == ':' &&
-                                                target[2] == '\\' &&
-                                                target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                                                IsPathOnMountedFixedDrive(target, fixedDrives) &&
+                                                (string.IsNullOrEmpty(winDirSc) || !target.StartsWith(winDirSc + "\\", StringComparison.OrdinalIgnoreCase)) &&
+                                                (target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+                                                 target.EndsWith(".bat", StringComparison.OrdinalIgnoreCase) ||
+                                                 target.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ||
+                                                 target.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) &&
                                                 !File.Exists(target))
                                             {
                                                 results.Add(new DeadShortcutResult
@@ -6277,12 +6872,1743 @@ namespace DuckUtil
             }
             catch {}
 
+            // Windows Firewall rules referencing targetLocPrefix
+            try
+            {
+                using (var lm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var fwKey = lm.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules", false))
+                {
+                    if (fwKey != null)
+                    {
+                        var matchedFwVals = new List<string>();
+                        foreach (string vn in fwKey.GetValueNames())
+                        {
+                            try
+                            {
+                                string rawRule = fwKey.GetValue(vn) as string;
+                                if (string.IsNullOrEmpty(rawRule)) continue;
+                                string appPath = ExtractFirewallRuleAppPath(rawRule);
+                                if (!string.IsNullOrEmpty(appPath) && appPath.StartsWith(normPrefix, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    matchedFwVals.Add(vn);
+                                }
+                            }
+                            catch {}
+                        }
+                        if (matchedFwVals.Count > 0)
+                        {
+                            results.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "FirewallRuleGroup",
+                                Path = @"HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules",
+                                RegistryValueName = matchedFwVals.Count == 1 ? matchedFwVals[0] : (matchedFwVals.Count + " Firewall rules"),
+                                RegistryValueNames = matchedFwVals.ToArray(),
+                                SizeBytes = 0L,
+                                IsRegistry = true,
+                                ConfidenceTier = "Safe100"
+                            });
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            // Shell Context Menu handlers referencing targetLocPrefix
+            var ctxTargets = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.ClassesRoot, RegistryView.Registry64, @"*\shell", @"HKCR:\"),
+                new ScanTarget(RegistryHive.ClassesRoot, RegistryView.Registry64, @"Directory\shell", @"HKCR:\"),
+                new ScanTarget(RegistryHive.ClassesRoot, RegistryView.Registry64, @"Directory\Background\shell", @"HKCR:\"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Classes\*\shell", @"HKCU:\"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Classes\Directory\shell", @"HKCU:\"),
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Classes\Directory\Background\shell", @"HKCU:\")
+            };
+            foreach (var ct in ctxTargets)
+            {
+                try
+                {
+                    using (var bk = RegistryKey.OpenBaseKey(ct.Hive, ct.View))
+                    using (var rk = bk.OpenSubKey(ct.SubKey, false))
+                    {
+                        if (rk == null) continue;
+                        foreach (string verb in rk.GetSubKeyNames())
+                        {
+                            try
+                            {
+                                using (var vk = rk.OpenSubKey(verb, false))
+                                {
+                                    if (vk == null) continue;
+                                    string iconVal = ((vk.GetValue("Icon") as string) ?? "").Trim();
+                                    string cmdVal = "";
+                                    using (var ck = vk.OpenSubKey("command", false))
+                                    {
+                                        if (ck != null) cmdVal = ((ck.GetValue("") as string) ?? "").Trim();
+                                    }
+                                    if ((!string.IsNullOrEmpty(cmdVal) && cmdVal.IndexOf(normPrefix, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                        (!string.IsNullOrEmpty(iconVal) && iconVal.IndexOf(normPrefix, StringComparison.OrdinalIgnoreCase) >= 0))
+                                    {
+                                        results.Add(new DeepResidualArtifact
+                                        {
+                                            ArtifactKind = "ContextMenu",
+                                            Path = ct.Scope + ct.SubKey + "\\" + verb,
+                                            RegistryValueName = "",
+                                            SizeBytes = 0L,
+                                            IsRegistry = true,
+                                            ConfidenceTier = "Safe100"
+                                        });
+                                    }
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+                catch {}
+            }
+
             return results;
         }
 
         public static Task<List<DeepResidualArtifact>> ScanDeepAppResidualsFastAsync(string targetLocPrefix)
         {
             return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
+        }
+
+        private static readonly HashSet<string> _systemProtectedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Microsoft", "Windows", "WindowsApps", "ModifiableWindowsApps", "WindowsPowerShell", "PowerShell",
+            "Windows Defender", "Windows Defender Advanced Threat Protection", "Windows Mail", "Windows Media Player",
+            "Windows NT", "Windows Photo Viewer", "Windows Portable Devices", "Windows Security", "Windows Sidebar",
+            "Windows Kits", "Windows Update", "Internet Explorer", "Common", "Common Files", "Programs", "Temp",
+            "Packages", "Package Cache", "Uninstall Information", "InstallShield Installation Information",
+            "Application Verifier", "Reference Assemblies", "MSBuild", "dotnet", "WSL", "Visual Studio",
+            "Microsoft SQL Server", "Microsoft Update Health Tools", "Microsoft Office", "Microsoft Office 15",
+            "Microsoft SDKs", "Microsoft.NET", "Microsoft Shared", "Microsoft Help", "WindowsPowerShell",
+            "Intel", "AMD", "ATI", "NVIDIA", "NVIDIA Corporation", "Realtek", "Qualcomm", "MediaTek", "Broadcom",
+            "Dell", "HP", "Hewlett-Packard", "Lenovo", "ASUS", "Acer", "MSI", "Gigabyte", "Logitech", "Logi",
+            "Razer", "Corsair", "SteelSeries", "Kingston", "Samsung", "SanDisk", "Western Digital", "Seagate",
+            "Synaptics", "ELAN", "Dolby", "Nahimic", "Bluetooth", "Apple", "Google", "Adobe", "Oracle", "Java",
+            "Python", "Node", "nodejs", "npm", "npm-cache", "pnpm", "yarn", "Git", "GitHub", "Docker", "Android",
+            "JetBrains", "Steam", "Epic Games", "Riot Games", "Ubisoft", "Electronic Arts", "EA", "Battle.net",
+            "NuGet", "pip", "uv", "cargo", "rustup", "go", "golang", "vcpkg", "chocolatey", "scoop", "winget",
+            "OpenSSH", "CrashDumps", "D3DSCache", "ElevatedDiagnostics", "ConnectedDevicesPlatform", "Comms",
+            "PeerDistRepub", "PlaceholderTileLogoFolder", "Publishers", "VirtualStore", "SquirrelTemp",
+            "FontCache", "IconCache", "Diagnostics", "History", "INetCache", "INetCookies", "Low", "Mozilla",
+            "Identities", "Credentials", "Protect", "SystemCertificates", "Crypto", "Default", "Public",
+            "All Users", "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music", "OneDrive",
+            "AppDriver", "DuckUtil", "Antigravity", "Gemini", "OpenAI", "Claude", "Cache", "Caches",
+            "Logs", "Log", "Data", "Config", "Settings", "Bin", "Runtime", "Resources", "Application",
+            "Applications", "Apps", "App", "Game", "Games", "Software", "Softwares", "Tools", "System",
+            "System32", "SysWOW64", "Driver", "Drivers", "Service", "Services", "Update", "Updater",
+            "Client", "Server", "Helper", "Launcher", "Setup", "Installer", "Policies", "Classes", "RegisteredApplications",
+            "WOW6432Node", "Clients", "ODBC", "DirectX", "Khronos", "Vulkan", "OpenCL", "OpenGL", "Speech", "Squirrel",
+            "Accessories", "Administrative Tools", "Maintenance", "Startup", "System Tools", "Accessibility",
+            "Windows Accessories", "Windows Administrative Tools", "Windows System", "Windows Ease of Access",
+            "Windows PowerShell", "Edge", "Microsoft Edge", "Start Menu", "Taskbar", "Explorer", "Shell"
+        };
+
+        private static readonly HashSet<string> _genericPathSegments = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "program files", "program files (x86)", "programdata", "users", "appdata", "local", "roaming",
+            "locallow", "programs", "common", "common files", "bin", "bin64", "binaries", "binary",
+            "x64", "x86", "win32", "win64", "windowsnoeditor", "engine",
+            "application", "applications", "app", "apps", "game", "games", "software", "tools", "runtime",
+            "resources", "app.asar.unpacked", "driver", "drivers", "vdfs", "jre", "jre-legacy", "java",
+            "java-runtime-alpha", "java-runtime-beta", "java-runtime-gamma", "java-runtime-delta",
+            "jdk", "windows", "system32", "syswow64", "update", "updater", "install", "installer", "client",
+            "server", "service", "services", "launcher", "data", "cache", "temp", "tmp", "core", "lib",
+            "plugins", "modules", "release", "debug", "dist", "build", "current", "latest", "main",
+            "javaw", "java.exe", "python", "pythonw", "node", "cmd", "powershell", "pwsh", "rundll32",
+            "msiexec", "svchost", "explorer", "uninstall", "uninst", "unins000", "setup", "helper", "crashhandler"
+        };
+
+        private static string ExtractFirewallRuleAppPath(string rawRule)
+        {
+            if (string.IsNullOrEmpty(rawRule)) return "";
+            int idx = rawRule.IndexOf("|App=", StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+            {
+                if (rawRule.StartsWith("App=", StringComparison.OrdinalIgnoreCase)) idx = 0;
+                else return "";
+            }
+            else
+            {
+                idx += 1;
+            }
+            int valStart = idx + 4;
+            int barEnd = rawRule.IndexOf('|', valStart);
+            string rawPath = (barEnd > valStart) ? rawRule.Substring(valStart, barEnd - valStart) : rawRule.Substring(valStart);
+            rawPath = rawPath.Trim().Trim('\"');
+            if (string.IsNullOrEmpty(rawPath)) return "";
+            try { rawPath = Environment.ExpandEnvironmentVariables(rawPath); } catch {}
+            return rawPath.Trim('\"', ' ');
+        }
+
+        private static string ExtractFirewallRuleName(string rawRule, string fallbackKey)
+        {
+            if (string.IsNullOrEmpty(rawRule)) return fallbackKey ?? "";
+            int idx = rawRule.IndexOf("|Name=", StringComparison.OrdinalIgnoreCase);
+            if (idx < 0) return fallbackKey ?? "";
+            int valStart = idx + 6;
+            int barEnd = rawRule.IndexOf('|', valStart);
+            string name = (barEnd > valStart) ? rawRule.Substring(valStart, barEnd - valStart) : rawRule.Substring(valStart);
+            name = name.Trim();
+            if (string.IsNullOrEmpty(name) || name.StartsWith("@", StringComparison.Ordinal)) return fallbackKey ?? "";
+            return name;
+        }
+
+        private static bool IsVersionLikeSegment(string seg)
+        {
+            if (string.IsNullOrWhiteSpace(seg)) return true;
+            string s = seg.Trim();
+            if (Regex.IsMatch(s, @"^v?\d+(\.\d+)+([-_\.\w]*)$", RegexOptions.IgnoreCase)) return true;
+            if (Regex.IsMatch(s, @"^app-\d+(\.\d+)+$", RegexOptions.IgnoreCase)) return true;
+            if (Regex.IsMatch(s, @"^\{?[0-9A-Fa-f\-]{16,}\}?$")) return true;
+            return false;
+        }
+
+        private static string ExtractMeaningfulAppTokenFromPath(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)) return "";
+            string norm = filePath.Trim().Trim('\"');
+            string[] parts = norm.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return "";
+
+            // Prefer immediate folder under Program Files / Program Files (x86) / Local\Programs / ProgramData
+            for (int i = 1; i < parts.Length - 1; i++)
+            {
+                string seg = parts[i];
+                if (seg.Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+                    seg.Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase) ||
+                    seg.Equals("Programs", StringComparison.OrdinalIgnoreCase) ||
+                    seg.Equals("ProgramData", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < parts.Length - 1)
+                    {
+                        string cand = parts[i + 1];
+                        if (cand.Equals("JetBrains", StringComparison.OrdinalIgnoreCase) ||
+                            cand.Equals("Tencent", StringComparison.OrdinalIgnoreCase) ||
+                            cand.Equals("Adobe", StringComparison.OrdinalIgnoreCase) ||
+                            cand.Equals("Google", StringComparison.OrdinalIgnoreCase) ||
+                            cand.Equals("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                            cand.Equals("Common Files", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (i + 2 < parts.Length - 1 && !IsVersionLikeSegment(parts[i + 2]) && !_genericPathSegments.Contains(parts[i + 2]))
+                            {
+                                return StripTrailingVersion(parts[i + 2]);
+                            }
+                            return "";
+                        }
+                        if (!IsVersionLikeSegment(cand) && !_genericPathSegments.Contains(cand) && !_systemProtectedNames.Contains(cand))
+                        {
+                            return StripTrailingVersion(cand);
+                        }
+                    }
+                }
+            }
+
+            // Fallback: walk from file's parent upward to find first non-generic, non-version directory
+            for (int i = parts.Length - 2; i >= 1; i--)
+            {
+                string seg = parts[i];
+                if (seg.Length < 3) continue;
+                if (IsVersionLikeSegment(seg)) continue;
+                if (_genericPathSegments.Contains(seg)) continue;
+                if (_systemProtectedNames.Contains(seg)) continue;
+                if (seg.Equals("Users", StringComparison.OrdinalIgnoreCase)) break;
+                if (i == 2 && parts[1].Equals("Users", StringComparison.OrdinalIgnoreCase)) continue;
+                return StripTrailingVersion(seg);
+            }
+
+            string exeBase = "";
+            try { exeBase = Path.GetFileNameWithoutExtension(norm) ?? ""; } catch {}
+            if (exeBase.Length >= 4 && !_genericPathSegments.Contains(exeBase) && !_systemProtectedNames.Contains(exeBase))
+            {
+                return StripTrailingVersion(exeBase);
+            }
+            return "";
+        }
+
+        private static string StripTrailingVersion(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            string s = Regex.Replace(name.Trim(), @"[\s_\-]+\d+(\.\d+)+.*$", "");
+            s = Regex.Replace(s, @"\s*\((?:x64|x86|64-bit|32-bit)\)\s*$", "", RegexOptions.IgnoreCase);
+            return s.Trim();
+        }
+
+        private static string NormalizeOrphanToken(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            var sb = new StringBuilder(s.Length);
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) sb.Append(c);
+                else if (c >= 'A' && c <= 'Z') sb.Append((char)(c + 32));
+                else if (c >= 0x4E00 && c <= 0x9FFF) sb.Append(c);
+                else if (c >= 0x3040 && c <= 0x30FF) sb.Append(c);
+                else if (c >= 0xAC00 && c <= 0xD7AF) sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
+        private static bool HasCjkChar(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                if ((c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3040 && c <= 0x30FF) || (c >= 0xAC00 && c <= 0xD7AF)) return true;
+            }
+            return false;
+        }
+
+        private static string FormatOrphanDisplayName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "";
+            string s = raw.Trim();
+            if (s.Equals("tlauncher", StringComparison.OrdinalIgnoreCase)) return "TLauncher";
+            if (s.Equals("windsurf", StringComparison.OrdinalIgnoreCase)) return "Windsurf";
+            if (s.Equals("pcsuite", StringComparison.OrdinalIgnoreCase)) return "vivo PC Suite (pcsuite)";
+            if (s.Equals("cursor", StringComparison.OrdinalIgnoreCase)) return "Cursor";
+            if (s.Equals("clion", StringComparison.OrdinalIgnoreCase)) return "CLion";
+            if (s.Equals("pycharm", StringComparison.OrdinalIgnoreCase)) return "PyCharm";
+            if (s.Length > 1 && char.IsLower(s[0]) && s.Equals(s.ToLowerInvariant(), StringComparison.Ordinal))
+            {
+                return char.ToUpperInvariant(s[0]) + s.Substring(1);
+            }
+            return s;
+        }
+
+        private sealed class ActiveFootprint
+        {
+            public HashSet<string> ExactDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> ClaimedTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> ClaimedRawNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> ActiveVendorRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public List<string> ActiveSearchCorpus = new List<string>();
+
+            public void AddToken(string raw)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) return;
+                string trim = raw.Trim();
+                if (trim.Length >= 2) ClaimedRawNames.Add(trim);
+                string norm = NormalizeOrphanToken(trim);
+                int minLen = HasCjkChar(norm) ? 2 : 3;
+                if (norm.Length >= minLen) ClaimedTokens.Add(norm);
+                string clean = StripTrailingVersion(trim);
+                if (clean.Length >= 2)
+                {
+                    ClaimedRawNames.Add(clean);
+                    string cn = NormalizeOrphanToken(clean);
+                    if (cn.Length >= minLen) ClaimedTokens.Add(cn);
+                }
+            }
+
+            public void AddDirectoryAndVendor(string dir)
+            {
+                if (string.IsNullOrWhiteSpace(dir)) return;
+                string d = dir.Trim().Trim('\"').TrimEnd('\\');
+                if (d.Length <= 3) return;
+                ExactDirs.Add(d);
+                string[] parts = d.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2)
+                {
+                    string leaf = parts[parts.Length - 1];
+                    if (leaf.Length >= 2 && !_genericPathSegments.Contains(leaf))
+                    {
+                        AddToken(leaf);
+                    }
+                    for (int i = 1; i < parts.Length - 1; i++)
+                    {
+                        if ((parts[i].Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+                             parts[i].Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase) ||
+                             parts[i].Equals("Programs", StringComparison.OrdinalIgnoreCase)) && i + 1 < parts.Length)
+                        {
+                            string topDir = parts[0] + "\\" + parts[1];
+                            for (int k = 2; k <= i + 1; k++) topDir += "\\" + parts[k];
+                            ActiveVendorRoots.Add(topDir);
+                            AddToken(parts[i + 1]);
+                        }
+                    }
+                }
+            }
+
+            public bool IsDirectoryActive(string dirPath)
+            {
+                if (string.IsNullOrWhiteSpace(dirPath)) return true;
+                string norm = dirPath.Trim().TrimEnd('\\');
+                if (ExactDirs.Contains(norm) || ActiveVendorRoots.Contains(norm)) return true;
+                string prefix = norm + "\\";
+                foreach (string act in ExactDirs)
+                {
+                    if (act.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (norm.StartsWith(act + "\\", StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                return false;
+            }
+
+            public bool IsTokenClaimed(string candidate)
+            {
+                if (string.IsNullOrWhiteSpace(candidate)) return true;
+                string trim = candidate.Trim().TrimStart('.');
+                if (_systemProtectedNames.Contains(trim) || _genericPathSegments.Contains(trim)) return true;
+                if (ClaimedRawNames.Contains(trim)) return true;
+                string norm = NormalizeOrphanToken(trim);
+                int minLen = HasCjkChar(norm) ? 2 : 3;
+                if (norm.Length < minLen) return true;
+                if (ClaimedTokens.Contains(norm)) return true;
+                foreach (string ct in ClaimedTokens)
+                {
+                    if (ct.Length >= 4 && norm.Length >= 4)
+                    {
+                        if (ct.Equals(norm, StringComparison.OrdinalIgnoreCase)) return true;
+                        if (norm.Length >= 5 && ct.IndexOf(norm, StringComparison.OrdinalIgnoreCase) >= 0 && ct.Length <= norm.Length + 12) return true;
+                    }
+                }
+                return false;
+            }
+
+            public bool HasVendorPattern(string pattern)
+            {
+                for (int i = 0; i < ActiveSearchCorpus.Count; i++)
+                {
+                    if (Regex.IsMatch(ActiveSearchCorpus[i], pattern, RegexOptions.IgnoreCase)) return true;
+                }
+                return false;
+            }
+        }
+
+        private static ActiveFootprint BuildActiveFootprint(List<InstalledAppInfo> installedApps, HashSet<string> fixedDrives)
+        {
+            var fp = new ActiveFootprint();
+            if (installedApps != null)
+            {
+                for (int i = 0; i < installedApps.Count; i++)
+                {
+                    InstalledAppInfo app = installedApps[i];
+                    if (app == null || app.IsBrokenOrphan) continue;
+                    string dn = app.DisplayName ?? "";
+                    string pub = app.Publisher ?? "";
+                    string il = app.InstallLocation ?? "";
+                    string dl = app.DataLocation ?? "";
+                    fp.ActiveSearchCorpus.Add(dn + " " + pub + " " + il + " " + dl);
+                    fp.AddToken(dn);
+                    fp.AddToken(CleanDisplayNameForDedup(dn));
+                    if (!string.IsNullOrWhiteSpace(pub)) fp.AddToken(pub);
+                    fp.AddDirectoryAndVendor(il);
+                    fp.AddDirectoryAndVendor(dl);
+                    if (!string.IsNullOrWhiteSpace(app.UninstallString) && app.UninstallString.IndexOf("msiexec", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        string uExe = ExtractExePath(app.UninstallString);
+                        if (!string.IsNullOrEmpty(uExe))
+                        {
+                            try
+                            {
+                                string uDir = Path.GetDirectoryName(uExe);
+                                if (!string.IsNullOrEmpty(uDir) && uDir.IndexOf(@"\Package Cache\", StringComparison.OrdinalIgnoreCase) < 0)
+                                {
+                                    fp.AddDirectoryAndVendor(uDir);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+            }
+
+            // Running processes protect active portable apps & live services
+            try
+            {
+                Process[] procs = Process.GetProcesses();
+                var sb = new StringBuilder(1024);
+                for (int i = 0; i < procs.Length; i++)
+                {
+                    Process p = procs[i];
+                    if (p == null) continue;
+                    try
+                    {
+                        if (p.Id <= 4) continue;
+                        string pn = p.ProcessName ?? "";
+                        if (!string.IsNullOrEmpty(pn))
+                        {
+                            fp.AddToken(pn);
+                            fp.ActiveSearchCorpus.Add(pn);
+                        }
+                        IntPtr hp = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, p.Id);
+                        if (hp != IntPtr.Zero)
+                        {
+                            try
+                            {
+                                sb.Length = 0;
+                                uint sz = (uint)sb.Capacity;
+                                if (QueryFullProcessImageNameW(hp, 0, sb, ref sz) && sz > 0)
+                                {
+                                    string img = NormalizeDosOrNtPath(sb.ToString(0, (int)sz));
+                                    if (!string.IsNullOrEmpty(img))
+                                    {
+                                        string pDir = Path.GetDirectoryName(img);
+                                        if (!string.IsNullOrEmpty(pDir))
+                                        {
+                                            fp.AddDirectoryAndVendor(pDir);
+                                            fp.ActiveSearchCorpus.Add(img);
+                                        }
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                CloseHandle(hp);
+                            }
+                        }
+                    }
+                    catch {}
+                    finally
+                    {
+                        try { p.Dispose(); } catch {}
+                    }
+                }
+            }
+            catch {}
+
+            // Valid shortcuts protect portable apps placed on Desktop or Start Menu
+            string[] scRoots = new string[]
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory),
+                Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms)
+            };
+            for (int r = 0; r < scRoots.Length; r++)
+            {
+                string root = scRoots[r];
+                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                List<string> lnks = EnumerateFilesSafe(root, "*.lnk", 4);
+                for (int li = 0; li < lnks.Count; li++)
+                {
+                    string target;
+                    if (TryExtractLnkTargetFast(lnks[li], out target) && !string.IsNullOrEmpty(target))
+                    {
+                        bool exists = false;
+                        try { exists = File.Exists(target) || Directory.Exists(target); } catch {}
+                        if (exists)
+                        {
+                            string scName = Path.GetFileNameWithoutExtension(lnks[li]) ?? "";
+                            if (!string.IsNullOrEmpty(scName)) fp.AddToken(scName);
+                            try
+                            {
+                                string tDir = File.Exists(target) ? Path.GetDirectoryName(target) : target;
+                                if (!string.IsNullOrEmpty(tDir))
+                                {
+                                    fp.AddDirectoryAndVendor(tDir);
+                                    fp.ActiveSearchCorpus.Add(target);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                }
+            }
+
+            return fp;
+        }
+
+        private static bool IsUninstallerOrResidualOnlyDir(string dirPath)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath) || !Directory.Exists(dirPath)) return false;
+            try
+            {
+                List<string> exes = EnumerateFilesSafe(dirPath, "*.exe", 4);
+                if (exes.Count == 0) return false;
+                if (exes.Count > 6) return false;
+                string folderName = Path.GetFileName(dirPath.TrimEnd('\\')) ?? "";
+                string normFolder = NormalizeLookupToken(folderName);
+                bool hasUninstallIndicator = false;
+                for (int i = 0; i < exes.Count; i++)
+                {
+                    string fn = (Path.GetFileNameWithoutExtension(exes[i]) ?? "").ToLowerInvariant();
+                    string normFn = NormalizeLookupToken(fn);
+                    if (fn.Contains("uninst") || fn.Contains("unins0") || fn.Contains("owuninstall"))
+                    {
+                        hasUninstallIndicator = true;
+                        continue;
+                    }
+                    if (fn.Contains("crash") || fn.Contains("helper") || fn.Contains("update") ||
+                        fn.Contains("browser") || fn.Contains("elevat") || fn.Contains("setup") ||
+                        fn.Contains("repair") || fn.Contains("reporter") || fn.Contains("stub"))
+                    {
+                        continue;
+                    }
+                    // If there is a real main executable matching the folder name (or unrelated main app binary), NOT residual-only!
+                    if (normFn == normFolder || fn.Length >= 3)
+                    {
+                        return false;
+                    }
+                }
+                return hasUninstallIndicator;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsSystemStartMenuFolder(string folderName)
+        {
+            if (string.IsNullOrWhiteSpace(folderName)) return true;
+            string n = folderName.Trim();
+            if (_systemProtectedNames.Contains(n)) return true;
+            if (n.StartsWith("Windows ", StringComparison.OrdinalIgnoreCase) ||
+                n.StartsWith("Microsoft ", StringComparison.OrdinalIgnoreCase) ||
+                n.StartsWith("Administrative", StringComparison.OrdinalIgnoreCase) ||
+                n.StartsWith("Accessibility", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static bool TryExtractTaskXmlCommand(string xmlText, out string commandPath)
+        {
+            commandPath = "";
+            if (string.IsNullOrEmpty(xmlText)) return false;
+            Match m = Regex.Match(xmlText, @"<Command>\s*([^<]+?)\s*</Command>", RegexOptions.IgnoreCase);
+            if (!m.Success) return false;
+            string raw = System.Net.WebUtility.HtmlDecode(m.Groups[1].Value).Trim().Trim('\"');
+            if (string.IsNullOrEmpty(raw)) return false;
+            try { raw = Environment.ExpandEnvironmentVariables(raw); } catch {}
+            commandPath = ExtractExePath(raw) ?? raw.Trim('\"', ' ');
+            return !string.IsNullOrEmpty(commandPath);
+        }
+
+        public static SystemOrphanScanResult ScanSystemOrphansComprehensive(List<InstalledAppInfo> installedApps, bool includeMuiAndFirewallOnly)
+        {
+            var result = new SystemOrphanScanResult();
+            HashSet<string> fixedDrives = GetMountedFixedDriveRoots();
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
+            string winPrefix = winDir + "\\";
+
+            if (installedApps == null)
+            {
+                installedApps = GetInstalledApps();
+            }
+
+            ActiveFootprint fp = BuildActiveFootprint(installedApps, fixedDrives);
+            var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var ghostTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // token -> friendlyAppName
+
+            Action<string, string> addGhost = delegate(string token, string friendly)
+            {
+                if (string.IsNullOrWhiteSpace(token)) return;
+                string t = token.Trim().TrimStart('.');
+                if (t.Length < 3) return;
+                if (fp.IsTokenClaimed(t)) return;
+                if (!ghostTokens.ContainsKey(t))
+                {
+                    ghostTokens[t] = string.IsNullOrWhiteSpace(friendly) ? t : friendly.Trim();
+                }
+            };
+
+            // Seed ghost tokens from broken ARP apps
+            for (int i = 0; i < installedApps.Count; i++)
+            {
+                InstalledAppInfo app = installedApps[i];
+                if (app == null || !app.IsBrokenOrphan) continue;
+                string clean = CleanDisplayNameForDedup(app.DisplayName);
+                if (!string.IsNullOrWhiteSpace(clean)) addGhost(clean, app.DisplayName);
+                if (!string.IsNullOrWhiteSpace(app.InstallLocation))
+                {
+                    string leaf = Path.GetFileName(app.InstallLocation.TrimEnd('\\'));
+                    if (!string.IsNullOrWhiteSpace(leaf)) addGhost(leaf, app.DisplayName);
+                }
+            }
+
+            // Prepare parallel scans
+            var deadServicesBag = new ConcurrentBag<DeepResidualArtifact>();
+            var deadTasksBag = new ConcurrentBag<DeepResidualArtifact>();
+            var deadStartupBag = new ConcurrentBag<DeepResidualArtifact>();
+            var deadAppPathsBag = new ConcurrentBag<DeepResidualArtifact>();
+            var deadFwGroups = new ConcurrentDictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            var deadFwAppPathMap = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var deadFwDisplayMap = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var deadMuiVals = new ConcurrentBag<string>();
+            var deadCompatVals = new ConcurrentBag<string>();
+            var deadShortcutsBag = new ConcurrentBag<DeepResidualArtifact>();
+            var emptyStartMenuBag = new ConcurrentBag<DeepResidualArtifact>();
+            var progDirsBag = new ConcurrentBag<DeepResidualArtifact>();
+            var ghostEvidenceBag = new ConcurrentBag<KeyValuePair<string, string>>();
+
+            // Leg 1: Dead Services & Dead/Rogue Kernel Drivers
+            Task tServices = Task.Run(delegate()
+            {
+                List<ServiceScanEntry> allSvcs = ScanServicesAndDrivers();
+                for (int i = 0; i < allSvcs.Count; i++)
+                {
+                    ServiceScanEntry se = allSvcs[i];
+                    if (se == null || string.IsNullOrWhiteSpace(se.ServiceName)) continue;
+                    string img = se.ResolvedImagePath ?? "";
+                    if (string.IsNullOrWhiteSpace(img)) continue;
+
+                    // Case A: Non-Windows service/driver binary missing on mounted fixed drive
+                    if (IsPathOnMountedFixedDrive(img, fixedDrives) &&
+                        !img.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase) &&
+                        !File.Exists(img) &&
+                        IsSafeNonMicrosoftFilterTarget(se.ServiceName))
+                    {
+                        string tok = ExtractMeaningfulAppTokenFromPath(img);
+                        bool vendorStillActive = !string.IsNullOrEmpty(tok) && fp.IsTokenClaimed(tok);
+                        string appLabel = !string.IsNullOrEmpty(tok) ? tok : se.ServiceName;
+                        if (!vendorStillActive && !string.IsNullOrEmpty(tok))
+                        {
+                            ghostEvidenceBag.Add(new KeyValuePair<string, string>(tok, appLabel));
+                        }
+                        deadServicesBag.Add(new DeepResidualArtifact
+                        {
+                            ArtifactKind = se.IsKernelDriver ? "DeadDriver" : "DeadService",
+                            AppName = appLabel + " (" + se.ServiceName + ")",
+                            Path = @"HKLM:\SYSTEM\CurrentControlSet\Services\" + se.ServiceName,
+                            RegistryValueName = "",
+                            SizeBytes = 0L,
+                            IsRegistry = true,
+                            ConfidenceTier = vendorStillActive ? "High" : "Safe100",
+                            Details = "T\u1EC7p d\u1ECBch v\u1EE5 kh\u00F4ng c\u00F2n t\u1ED3n t\u1EA1i: " + img
+                        });
+                        continue;
+                    }
+
+                    // Case B: Verified rogue kernel drivers still sitting in System32\drivers after app removal
+                    if (se.IsKernelDriver && File.Exists(img) && IsVerifiedRogueKernelDriverFile(img))
+                    {
+                        try
+                        {
+                            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(img);
+                            string meta = Path.GetFileName(img) + " " + (fvi.CompanyName ?? "") + " " + (fvi.ProductName ?? "") + " " + (fvi.FileDescription ?? "");
+                            string drvVendor = "360 Total Security";
+                            string vPat = @"(360|Qihu|Qihoo)";
+                            if (Regex.IsMatch(meta, "2345", RegexOptions.IgnoreCase)) { drvVendor = "2345 Security"; vPat = "2345"; }
+                            else if (Regex.IsMatch(meta, "Kingsoft", RegexOptions.IgnoreCase)) { drvVendor = "Kingsoft"; vPat = "Kingsoft"; }
+                            else if (Regex.IsMatch(meta, "Baidu", RegexOptions.IgnoreCase)) { drvVendor = "Baidu"; vPat = "Baidu"; }
+
+                            if (!fp.HasVendorPattern(vPat))
+                            {
+                                deadServicesBag.Add(new DeepResidualArtifact
+                                {
+                                    ArtifactKind = "RogueDriverReg",
+                                    AppName = drvVendor + " (" + se.ServiceName + ")",
+                                    Path = @"HKLM:\SYSTEM\CurrentControlSet\Services\" + se.ServiceName,
+                                    RegistryValueName = "",
+                                    SizeBytes = 0L,
+                                    IsRegistry = true,
+                                    ConfidenceTier = "Safe100",
+                                    Details = "Driver h\u1EC7 th\u1ED1ng c\u00F2n s\u00F3t"
+                                });
+                                long fLen = 0L;
+                                try { fLen = new FileInfo(img).Length; } catch {}
+                                deadServicesBag.Add(new DeepResidualArtifact
+                                {
+                                    ArtifactKind = "RogueDriverFile",
+                                    AppName = drvVendor + " (" + Path.GetFileName(img) + ")",
+                                    Path = img,
+                                    RegistryValueName = "",
+                                    SizeBytes = fLen,
+                                    IsRegistry = false,
+                                    ConfidenceTier = "Safe100",
+                                    Details = "T\u1EC7p driver .sys c\u00F2n s\u00F3t"
+                                });
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            });
+
+            // Leg 2: Dead Scheduled Tasks
+            Task tTasks = Task.Run(delegate()
+            {
+                string tasksDir = string.IsNullOrEmpty(winDir) ? "" : Path.Combine(winDir, @"System32\Tasks");
+                if (string.IsNullOrEmpty(tasksDir) || !Directory.Exists(tasksDir)) return;
+                List<string> taskFiles = EnumerateFilesSafe(tasksDir, "*", 5);
+                Parallel.For(0, taskFiles.Count, delegate(int ti)
+                {
+                    string tf = taskFiles[ti];
+                    try
+                    {
+                        string rel = tf.Substring(tasksDir.Length).TrimStart('\\');
+                        if (rel.StartsWith("Microsoft\\Windows\\", StringComparison.OrdinalIgnoreCase) ||
+                            rel.StartsWith("Microsoft\\Office\\", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return;
+                        }
+                        var fi = new FileInfo(tf);
+                        if (fi.Length <= 0 || fi.Length > 262144) return;
+                        string xml = File.ReadAllText(tf);
+                        string cmdPath;
+                        if (TryExtractTaskXmlCommand(xml, out cmdPath) &&
+                            !IsSystemWrapperExe(cmdPath) &&
+                            IsPathOnMountedFixedDrive(cmdPath, fixedDrives) &&
+                            !cmdPath.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase) &&
+                            !File.Exists(cmdPath))
+                        {
+                            string tok = ExtractMeaningfulAppTokenFromPath(cmdPath);
+                            string appLabel = !string.IsNullOrEmpty(tok) ? tok : Path.GetFileName(tf);
+                            if (!string.IsNullOrEmpty(tok)) ghostEvidenceBag.Add(new KeyValuePair<string, string>(tok, appLabel));
+                            deadTasksBag.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "DeadTask",
+                                AppName = appLabel,
+                                Path = tf,
+                                RegistryValueName = "\\" + rel,
+                                SizeBytes = fi.Length,
+                                IsRegistry = false,
+                                ConfidenceTier = "Safe100",
+                                Details = "T\u00E1c v\u1EE5 tr\u1ECF t\u1EDBi t\u1EC7p kh\u00F4ng t\u1ED3n t\u1EA1i: " + cmdPath
+                            });
+                        }
+                    }
+                    catch {}
+                });
+            });
+
+            // Leg 3: Dead Startup Run/RunOnce + Dead App Paths + Dead MuiCache/AppCompat + Dead Firewall Rules
+            Task tRegistryOrphans = Task.Run(delegate()
+            {
+                // Startup Run / RunOnce
+                var runTargets = new ScanTarget[]
+                {
+                    new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\Run", @"HKCU:\"),
+                    new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\RunOnce", @"HKCU:\"),
+                    new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", @"HKLM:\"),
+                    new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce", @"HKLM:\"),
+                    new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", @"HKLM:\")
+                };
+                foreach (var rt in runTargets)
+                {
+                    try
+                    {
+                        using (var bk = RegistryKey.OpenBaseKey(rt.Hive, rt.View))
+                        using (var rk = bk.OpenSubKey(rt.SubKey, false))
+                        {
+                            if (rk == null) continue;
+                            string fullSub = rt.SubKey;
+                            if (rt.Hive == RegistryHive.LocalMachine && rt.View == RegistryView.Registry32 &&
+                                fullSub.StartsWith(@"SOFTWARE\", StringComparison.OrdinalIgnoreCase) &&
+                                fullSub.IndexOf(@"WOW6432Node\", StringComparison.OrdinalIgnoreCase) < 0)
+                            {
+                                fullSub = @"SOFTWARE\WOW6432Node\" + fullSub.Substring(@"SOFTWARE\".Length);
+                            }
+                            foreach (string vn in rk.GetValueNames())
+                            {
+                                if (string.IsNullOrWhiteSpace(vn)) continue;
+                                string rawVal = rk.GetValue(vn) as string;
+                                if (string.IsNullOrWhiteSpace(rawVal)) continue;
+                                string exe = ExtractExePath(rawVal);
+                                if (string.IsNullOrEmpty(exe) || IsSystemWrapperExe(exe)) continue;
+                                if (IsPathOnMountedFixedDrive(exe, fixedDrives) &&
+                                    !exe.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase) &&
+                                    !File.Exists(exe))
+                                {
+                                    string tok = ExtractMeaningfulAppTokenFromPath(exe);
+                                    if (!string.IsNullOrEmpty(tok)) ghostEvidenceBag.Add(new KeyValuePair<string, string>(tok, tok));
+                                    deadStartupBag.Add(new DeepResidualArtifact
+                                    {
+                                        ArtifactKind = "DeadStartup",
+                                        AppName = !string.IsNullOrEmpty(tok) ? tok : vn,
+                                        Path = rt.Scope + fullSub,
+                                        RegistryValueName = vn,
+                                        SizeBytes = 0L,
+                                        IsRegistry = true,
+                                        ConfidenceTier = "Safe100",
+                                        Details = "M\u1EE5c kh\u1EDFi ch\u1EA1y tr\u1ECF t\u1EDBi t\u1EC7p kh\u00F4ng t\u1ED3n t\u1EA1i: " + exe
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                // Dead App Paths
+                var apTargets = new ScanTarget[]
+                {
+                    new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", @"HKLM:\"),
+                    new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software\Microsoft\Windows\CurrentVersion\App Paths", @"HKCU:\")
+                };
+                foreach (var apt in apTargets)
+                {
+                    try
+                    {
+                        using (var bk = RegistryKey.OpenBaseKey(apt.Hive, apt.View))
+                        using (var rk = bk.OpenSubKey(apt.SubKey, false))
+                        {
+                            if (rk == null) continue;
+                            foreach (string sub in rk.GetSubKeyNames())
+                            {
+                                try
+                                {
+                                    using (var sk = rk.OpenSubKey(sub, false))
+                                    {
+                                        if (sk == null) continue;
+                                        string defVal = sk.GetValue("") as string;
+                                        if (string.IsNullOrWhiteSpace(defVal)) continue;
+                                        string exe = ExtractExePath(defVal);
+                                        if (string.IsNullOrEmpty(exe)) continue;
+                                        if (IsPathOnMountedFixedDrive(exe, fixedDrives) &&
+                                            !exe.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase) &&
+                                            !File.Exists(exe))
+                                        {
+                                            string tok = ExtractMeaningfulAppTokenFromPath(exe);
+                                            deadAppPathsBag.Add(new DeepResidualArtifact
+                                            {
+                                                ArtifactKind = "DeadAppPath",
+                                                AppName = Path.GetFileNameWithoutExtension(sub) ?? sub,
+                                                Path = apt.Scope + apt.SubKey + "\\" + sub,
+                                                RegistryValueName = "",
+                                                SizeBytes = 0L,
+                                                IsRegistry = true,
+                                                ConfidenceTier = "Safe100",
+                                                Details = "App Path tr\u1ECF t\u1EDBi t\u1EC7p kh\u00F4ng t\u1ED3n t\u1EA1i: " + exe
+                                            });
+                                            if (!string.IsNullOrEmpty(tok) && !fp.IsTokenClaimed(tok))
+                                            {
+                                                ghostEvidenceBag.Add(new KeyValuePair<string, string>(tok, tok));
+                                            }
+                                        }
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                // Dead Windows Firewall Rules (grouped by app!)
+                try
+                {
+                    using (var lm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (var fwKey = lm.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules", false))
+                    {
+                        if (fwKey != null)
+                        {
+                            foreach (string vn in fwKey.GetValueNames())
+                            {
+                                try
+                                {
+                                    string rawRule = fwKey.GetValue(vn) as string;
+                                    if (string.IsNullOrEmpty(rawRule)) continue;
+                                    string appPath = ExtractFirewallRuleAppPath(rawRule);
+                                    if (string.IsNullOrEmpty(appPath)) continue;
+                                    if (!IsPathOnMountedFixedDrive(appPath, fixedDrives)) continue;
+                                    if (appPath.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase)) continue;
+                                    if (appPath.IndexOf(@"\Microsoft\EdgeWebView\", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                                    if (File.Exists(appPath)) continue;
+
+                                    string tok = ExtractMeaningfulAppTokenFromPath(appPath);
+                                    string ruleDisp = ExtractFirewallRuleName(rawRule, tok);
+                                    string groupKey = !string.IsNullOrEmpty(tok) ? tok : ruleDisp;
+                                    if (string.IsNullOrWhiteSpace(groupKey)) groupKey = Path.GetFileNameWithoutExtension(appPath) ?? "FirewallRule";
+
+                                    List<string> list = deadFwGroups.GetOrAdd(groupKey, delegate(string k) { return new List<string>(); });
+                                    lock (list) { list.Add(vn); }
+                                    deadFwAppPathMap.TryAdd(groupKey, appPath);
+                                    deadFwDisplayMap.TryAdd(groupKey, !string.IsNullOrEmpty(tok) ? tok : ruleDisp);
+
+                                    if (!string.IsNullOrEmpty(tok))
+                                    {
+                                        ghostEvidenceBag.Add(new KeyValuePair<string, string>(tok, tok));
+                                    }
+                                }
+                                catch {}
+                            }
+                        }
+                    }
+                }
+                catch {}
+
+                // Dead MuiCache & AppCompatFlags\Layers (grouped!)
+                if (includeMuiAndFirewallOnly)
+                {
+                    try
+                    {
+                        using (var cu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Default))
+                        {
+                            using (var mc = cu.OpenSubKey(@"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache", false))
+                            {
+                                if (mc != null)
+                                {
+                                    foreach (string vn in mc.GetValueNames())
+                                    {
+                                        if (string.IsNullOrWhiteSpace(vn)) continue;
+                                        string cleanP = Regex.Replace(vn, @"\.(FriendlyAppName|ApplicationCompany)$", "", RegexOptions.IgnoreCase);
+                                        if (IsPathOnMountedFixedDrive(cleanP, fixedDrives) &&
+                                            !cleanP.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase) &&
+                                            !File.Exists(cleanP))
+                                        {
+                                            deadMuiVals.Add(vn);
+                                        }
+                                    }
+                                }
+                            }
+                            using (var ac = cu.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers", false))
+                            {
+                                if (ac != null)
+                                {
+                                    foreach (string vn in ac.GetValueNames())
+                                    {
+                                        if (string.IsNullOrWhiteSpace(vn)) continue;
+                                        if (IsPathOnMountedFixedDrive(vn, fixedDrives) &&
+                                            !vn.StartsWith(winPrefix, StringComparison.OrdinalIgnoreCase) &&
+                                            !File.Exists(vn))
+                                        {
+                                            deadCompatVals.Add(vn);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            });
+
+            // Leg 4: Dead Shortcuts + Empty/Dead Non-System Start Menu Folders
+            Task tShortcuts = Task.Run(delegate()
+            {
+                string[] scRoots = new string[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory),
+                    Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms)
+                };
+                var deadLnkSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                try
+                {
+                    List<DeadShortcutResult> deadLnks = ScanDeadShortcutsAsync(scRoots).GetAwaiter().GetResult();
+                    if (deadLnks != null)
+                    {
+                        for (int i = 0; i < deadLnks.Count; i++)
+                        {
+                            DeadShortcutResult dl = deadLnks[i];
+                            if (dl == null || string.IsNullOrEmpty(dl.LnkPath)) continue;
+                            deadLnkSet.Add(dl.LnkPath);
+                            deadShortcutsBag.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "DeadShortcut",
+                                AppName = dl.AppName,
+                                Path = dl.LnkPath,
+                                RegistryValueName = "",
+                                SizeBytes = 0L,
+                                IsRegistry = false,
+                                ConfidenceTier = "Safe100",
+                                Details = "Shortcut tr\u1ECF t\u1EDBi \u1EE9ng d\u1EE5ng \u0111\u00E3 b\u1ECB x\u00F3a"
+                            });
+                            if (!string.IsNullOrWhiteSpace(dl.AppName))
+                            {
+                                ghostEvidenceBag.Add(new KeyValuePair<string, string>(dl.AppName, dl.AppName));
+                            }
+                        }
+                    }
+                }
+                catch {}
+
+                // Empty or dead-only Start Menu folders (non-system, non-active)
+                string[] smRoots = new string[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms)
+                };
+                for (int r = 0; r < smRoots.Length; r++)
+                {
+                    string smRoot = smRoots[r];
+                    if (string.IsNullOrWhiteSpace(smRoot) || !Directory.Exists(smRoot)) continue;
+                    try
+                    {
+                        string[] subDirs = Directory.GetDirectories(smRoot);
+                        for (int s = 0; s < subDirs.Length; s++)
+                        {
+                            string sd = subDirs[s];
+                            string dirName = Path.GetFileName(sd) ?? "";
+                            if (IsSystemStartMenuFolder(dirName)) continue;
+                            if (fp.IsTokenClaimed(dirName)) continue;
+                            List<string> allFiles = EnumerateFilesSafe(sd, "*", 3);
+                            bool allDead = true;
+                            for (int fi = 0; fi < allFiles.Count; fi++)
+                            {
+                                string fn = Path.GetFileName(allFiles[fi]) ?? "";
+                                if (fn.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase)) continue;
+                                if (!deadLnkSet.Contains(allFiles[fi]))
+                                {
+                                    allDead = false;
+                                    break;
+                                }
+                            }
+                            if (allDead)
+                            {
+                                emptyStartMenuBag.Add(new DeepResidualArtifact
+                                {
+                                    ArtifactKind = "EmptyStartMenuDir",
+                                    AppName = dirName,
+                                    Path = sd,
+                                    RegistryValueName = "",
+                                    SizeBytes = 0L,
+                                    IsRegistry = false,
+                                    ConfidenceTier = "Safe100",
+                                    Details = "Th\u01B0 m\u1EE5c Start Menu r\u1ED7ng / ch\u1EC9 ch\u1EE9a shortcut h\u1ECFng"
+                                });
+                                ghostEvidenceBag.Add(new KeyValuePair<string, string>(dirName, dirName));
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            });
+
+            // Leg 5: Hollow & Residual Program Files / Local\Programs Directories
+            Task tProgramDirs = Task.Run(delegate()
+            {
+                var progRoots = new List<string>();
+                foreach (string drv in fixedDrives)
+                {
+                    string pf1 = drv + "\\Program Files";
+                    string pf2 = drv + "\\Program Files (x86)";
+                    if (Directory.Exists(pf1)) progRoots.Add(pf1);
+                    if (Directory.Exists(pf2)) progRoots.Add(pf2);
+                }
+                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrEmpty(localApp))
+                {
+                    string lp = Path.Combine(localApp, "Programs");
+                    if (Directory.Exists(lp)) progRoots.Add(lp);
+                }
+
+                var candidates = new List<string>();
+                for (int ri = 0; ri < progRoots.Count; ri++)
+                {
+                    try
+                    {
+                        string[] subs = Directory.GetDirectories(progRoots[ri]);
+                        for (int si = 0; si < subs.Length; si++)
+                        {
+                            string sd = subs[si];
+                            string dirName = Path.GetFileName(sd) ?? "";
+                            if (string.IsNullOrWhiteSpace(dirName)) continue;
+                            if (_systemProtectedNames.Contains(dirName)) continue;
+                            if (dirName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) ||
+                                dirName.StartsWith("Windows", StringComparison.OrdinalIgnoreCase)) continue;
+                            if (fp.IsDirectoryActive(sd)) continue;
+                            if (fp.IsTokenClaimed(dirName)) continue;
+                            candidates.Add(sd);
+                        }
+                    }
+                    catch {}
+                }
+
+                Parallel.For(0, candidates.Count, delegate(int idx)
+                {
+                    string sd = candidates[idx];
+                    string dirName = Path.GetFileName(sd) ?? sd;
+                    try
+                    {
+                        // 1) Hollow/empty folder (0 EXEs/DLLs/SYSs)
+                        long hSize = GetHollowDirectorySize(sd, 4, 52428800L);
+                        if (hSize >= 0L)
+                        {
+                            progDirsBag.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "HollowDir",
+                                AppName = dirName,
+                                Path = sd,
+                                RegistryValueName = "",
+                                SizeBytes = hSize,
+                                IsRegistry = false,
+                                ConfidenceTier = "Safe100",
+                                Details = "Th\u01B0 m\u1EE5c r\u1ED7ng c\u00F2n s\u00F3t trong Program Files"
+                            });
+                            ghostEvidenceBag.Add(new KeyValuePair<string, string>(dirName, dirName));
+                            return;
+                        }
+
+                        // 2) Residual uninstaller/helper-only folder (e.g. Overwolf 300MB with OWUninstallMenu.exe & no main Overwolf.exe)
+                        if (IsUninstallerOrResidualOnlyDir(sd))
+                        {
+                            long fullSz = GetDirectorySizeCapped(sd, 6, 25000);
+                            progDirsBag.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "ResidualAppDir",
+                                AppName = dirName,
+                                Path = sd,
+                                RegistryValueName = "",
+                                SizeBytes = fullSz,
+                                IsRegistry = false,
+                                ConfidenceTier = "High",
+                                Details = "Th\u01B0 m\u1EE5c c\u00F2n s\u00F3t sau g\u1EE1 c\u00E0i \u0111\u1EB7t (thi\u1EBFu t\u1EC7p ch\u1EA1y ch\u00EDnh)"
+                            });
+                            ghostEvidenceBag.Add(new KeyValuePair<string, string>(dirName, dirName));
+                            return;
+                        }
+
+                        // 3) Known high-residue hypervisor / rogue vendor folders when parent app is completely uninstalled
+                        bool isLdPlayerBox = dirName.Equals("ldplayer9box", StringComparison.OrdinalIgnoreCase) ||
+                                             dirName.Equals("ldplayerbox", StringComparison.OrdinalIgnoreCase) ||
+                                             dirName.Equals("dnplayerext2", StringComparison.OrdinalIgnoreCase);
+                        if (isLdPlayerBox && !fp.HasVendorPattern(@"(LDPlayer|dnplayer|XuanZhi|leidian)"))
+                        {
+                            long fullSz = GetDirectorySizeCapped(sd, 6, 25000);
+                            progDirsBag.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "ResidualAppDir",
+                                AppName = "LDPlayer (" + dirName + ")",
+                                Path = sd,
+                                RegistryValueName = "",
+                                SizeBytes = fullSz,
+                                IsRegistry = false,
+                                ConfidenceTier = "High",
+                                Details = "Th\u01B0 m\u1EE5c m\u00E1y \u1EA3o LDPlayer c\u00F2n s\u00F3t sau khi g\u1EE1"
+                            });
+                            ghostEvidenceBag.Add(new KeyValuePair<string, string>("LDPlayer", "LDPlayer"));
+                            return;
+                        }
+
+                        bool isRogueDir = Regex.IsMatch(dirName, @"^(360Safe|360TotalSecurity|360se\d*|360Desktop|360Quarant|Qihoo360|Qihu|2345Soft|2345Safe|2345Pic|2345Explorer|LuDaShi)", RegexOptions.IgnoreCase);
+                        if (isRogueDir)
+                        {
+                            string vPat = dirName.StartsWith("2345", StringComparison.OrdinalIgnoreCase) ? "2345"
+                                : (dirName.StartsWith("LuDaShi", StringComparison.OrdinalIgnoreCase) ? "LuDaShi" : @"(360|Qihu|Qihoo)");
+                            if (!fp.HasVendorPattern(vPat))
+                            {
+                                long fullSz = GetDirectorySizeCapped(sd, 6, 25000);
+                                progDirsBag.Add(new DeepResidualArtifact
+                                {
+                                    ArtifactKind = "ResidualAppDir",
+                                    AppName = dirName,
+                                    Path = sd,
+                                    RegistryValueName = "",
+                                    SizeBytes = fullSz,
+                                    IsRegistry = false,
+                                    ConfidenceTier = "Safe100",
+                                    Details = "Th\u01B0 m\u1EE5c ph\u1EA7n m\u1EC1m \u0111\u00E3 g\u1EE1 c\u00F2n s\u00F3t"
+                                });
+                            }
+                        }
+                    }
+                    catch {}
+                });
+            });
+
+            Task.WaitAll(tServices, tTasks, tRegistryOrphans, tShortcuts, tProgramDirs);
+
+            // Merge ghost evidence collected from all 5 legs
+            foreach (KeyValuePair<string, string> ge in ghostEvidenceBag)
+            {
+                addGhost(ge.Key, ge.Value);
+            }
+
+            // Expand well-known multi-name aliases ONLY for confirmed ghost tokens
+            var extraGhosts = new List<KeyValuePair<string, string>>();
+            foreach (KeyValuePair<string, string> kv in ghostTokens)
+            {
+                string tk = kv.Key;
+                if (tk.IndexOf("Opera", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    extraGhosts.Add(new KeyValuePair<string, string>("Opera Software", kv.Value));
+                }
+                if (tk.IndexOf("Androws", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    extraGhosts.Add(new KeyValuePair<string, string>("AndrowsFG", "Tencent Androws"));
+                }
+                if (tk.IndexOf("CPUID", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    extraGhosts.Add(new KeyValuePair<string, string>("CPUID Software", "CPUID"));
+                }
+                if (tk.IndexOf("Overwolf", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    extraGhosts.Add(new KeyValuePair<string, string>("OverwolfElectron", "Overwolf"));
+                    extraGhosts.Add(new KeyValuePair<string, string>("OverwolfPersist", "Overwolf"));
+                }
+            }
+            for (int i = 0; i < extraGhosts.Count; i++)
+            {
+                addGhost(extraGhosts[i].Key, extraGhosts[i].Value);
+            }
+
+            // Phase 2: Correlate Ghost Tokens + Known Uninstalled Rogue Footprints against AppData / ProgramData / HKCU & HKLM Software
+            var orphanDataBag = new ConcurrentBag<DeepResidualArtifact>();
+            var orphanRegBag = new ConcurrentBag<DeepResidualArtifact>();
+
+            bool has360Active = fp.HasVendorPattern(@"(360\s*Total|360Safe|360se|Qihu|Qihoo)");
+            bool has2345Active = fp.HasVendorPattern(@"2345");
+            bool hasKingsoftActive = fp.HasVendorPattern(@"(Kingsoft|WPS\s*Office)");
+            bool hasLuDaShiActive = fp.HasVendorPattern(@"(LuDaShi|ComputerZ)");
+
+            string[] dataRoots = new string[]
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), @"AppData\LocalLow"),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)
+            };
+
+            var dataCandidates = new List<KeyValuePair<string, KeyValuePair<string, bool>>>(); // path -> (appName, isRogue)
+            var seenDataPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int r = 0; r < dataRoots.Length; r++)
+            {
+                string root = dataRoots[r];
+                if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) continue;
+                try
+                {
+                    string[] subs = Directory.GetDirectories(root);
+                    for (int s = 0; s < subs.Length; s++)
+                    {
+                        string sd = subs[s];
+                        if (IsReparsePoint(sd)) continue;
+                        string dirName = Path.GetFileName(sd) ?? "";
+                        if (string.IsNullOrWhiteSpace(dirName)) continue;
+                        if (_systemProtectedNames.Contains(dirName)) continue;
+                        if (fp.IsDirectoryActive(sd)) continue;
+
+                        string trimName = dirName.TrimStart('.');
+                        if (fp.IsTokenClaimed(trimName)) continue;
+
+                        // Check known uninstalled rogue footprints first (high precision)
+                        string rogueApp = "";
+                        if (!has360Active && Regex.IsMatch(dirName, @"^(360Safe|360TotalSecurity|360DesktopLite|360Quarant|360se\d*|h8n_360ts|Qihoo360|360SoftMgr|360Browser)", RegexOptions.IgnoreCase))
+                        {
+                            rogueApp = "360 Total Security";
+                        }
+                        else if (!has2345Active && Regex.IsMatch(dirName, @"^(2345Soft|2345Pic|2345Explorer|2345Safe|2345Pinyin)", RegexOptions.IgnoreCase))
+                        {
+                            rogueApp = "2345 Security";
+                        }
+                        else if (!hasLuDaShiActive && Regex.IsMatch(dirName, @"^(LuDaShi|ComputerZ)", RegexOptions.IgnoreCase))
+                        {
+                            rogueApp = "LuDaShi";
+                        }
+                        else if (!hasKingsoftActive && Regex.IsMatch(dirName, @"^(Kingsoft|ksolaunch)", RegexOptions.IgnoreCase))
+                        {
+                            rogueApp = "Kingsoft";
+                        }
+
+                        if (!string.IsNullOrEmpty(rogueApp))
+                        {
+                            if (seenDataPaths.Add(sd))
+                            {
+                                dataCandidates.Add(new KeyValuePair<string, KeyValuePair<string, bool>>(sd, new KeyValuePair<string, bool>(rogueApp, true)));
+                            }
+                            continue;
+                        }
+
+                        // Forensic match against verified ghost tokens
+                        string matchedFriendly = "";
+                        if (ghostTokens.TryGetValue(trimName, out matchedFriendly))
+                        {
+                            if (seenDataPaths.Add(sd))
+                            {
+                                dataCandidates.Add(new KeyValuePair<string, KeyValuePair<string, bool>>(sd, new KeyValuePair<string, bool>(matchedFriendly, false)));
+                            }
+                            continue;
+                        }
+
+                        // Match "<token>-updater" or "<token> Software"
+                        if (trimName.EndsWith("-updater", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string baseTok = trimName.Substring(0, trimName.Length - "-updater".Length);
+                            if (ghostTokens.TryGetValue(baseTok, out matchedFriendly) && !fp.IsTokenClaimed(baseTok))
+                            {
+                                if (seenDataPaths.Add(sd))
+                                {
+                                    dataCandidates.Add(new KeyValuePair<string, KeyValuePair<string, bool>>(sd, new KeyValuePair<string, bool>(matchedFriendly, false)));
+                                }
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            if (dataCandidates.Count > 0)
+            {
+                Parallel.For(0, dataCandidates.Count, delegate(int idx)
+                {
+                    string sd = dataCandidates[idx].Key;
+                    string appNm = dataCandidates[idx].Value.Key;
+                    bool isRogue = dataCandidates[idx].Value.Value;
+                    try
+                    {
+                        long sz = GetDirectorySizeCapped(sd, 6, 30000);
+                        // Protect large user-data folders (> 100 MB, non-rogue, non-updater) by defaulting to "Check" (unchecked)
+                        string leaf = Path.GetFileName(sd) ?? "";
+                        bool isUpdater = leaf.EndsWith("-updater", StringComparison.OrdinalIgnoreCase);
+                        string conf = isRogue ? "Safe100"
+                            : ((sz > 104857600L && !isUpdater) ? "Check" : "High");
+                        orphanDataBag.Add(new DeepResidualArtifact
+                        {
+                            ArtifactKind = "OrphanAppData",
+                            AppName = appNm,
+                            Path = sd,
+                            RegistryValueName = "",
+                            SizeBytes = sz,
+                            IsRegistry = false,
+                            ConfidenceTier = conf,
+                            Details = isRogue
+                                ? "D\u1EEF li\u1EC7u c\u00F2n s\u00F3t c\u1EE7a ph\u1EA7n m\u1EC1m \u0111\u00E3 g\u1EE1"
+                                : ((conf == "Check")
+                                    ? "Th\u01B0 m\u1EE5c d\u1EEF li\u1EC7u l\u1EDBn c\u1EE7a app \u0111\u00E3 g\u1EE1 (ki\u1EC3m tra tr\u01B0\u1EDBc khi x\u00F3a)"
+                                    : "Th\u01B0 m\u1EE5c AppData/ProgramData c\u00F2n s\u00F3t")
+                        });
+                    }
+                    catch {}
+                });
+            }
+
+            // Forensic Registry keys in HKCU\Software, HKLM\SOFTWARE, HKLM\SOFTWARE\WOW6432Node
+            var swRegTargets = new ScanTarget[]
+            {
+                new ScanTarget(RegistryHive.CurrentUser, RegistryView.Default, @"Software", @"HKCU:\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry64, @"SOFTWARE", @"HKLM:\"),
+                new ScanTarget(RegistryHive.LocalMachine, RegistryView.Registry32, @"SOFTWARE", @"HKLM:\")
+            };
+            foreach (var srt in swRegTargets)
+            {
+                try
+                {
+                    using (var bk = RegistryKey.OpenBaseKey(srt.Hive, srt.View))
+                    using (var rk = bk.OpenSubKey(srt.SubKey, false))
+                    {
+                        if (rk == null) continue;
+                        string fullPrefix = (srt.Hive == RegistryHive.LocalMachine && srt.View == RegistryView.Registry32)
+                            ? @"HKLM:\SOFTWARE\WOW6432Node\"
+                            : (srt.Scope + srt.SubKey + "\\");
+                        foreach (string sub in rk.GetSubKeyNames())
+                        {
+                            if (string.IsNullOrWhiteSpace(sub)) continue;
+                            if (_systemProtectedNames.Contains(sub)) continue;
+                            if (fp.IsTokenClaimed(sub)) continue;
+
+                            string appLabel = "";
+                            string conf = "High";
+                            if (!has360Active && Regex.IsMatch(sub, @"^(360|360Safe|360SoftMgr|360TotalSecurity|360se|Qihoo360|Qihu)$", RegexOptions.IgnoreCase))
+                            {
+                                appLabel = "360 Total Security";
+                                conf = "Safe100";
+                            }
+                            else if (!has2345Active && Regex.IsMatch(sub, @"^(2345|2345Soft|2345Safe|2345Pic|2345Explorer)$", RegexOptions.IgnoreCase))
+                            {
+                                appLabel = "2345 Security";
+                                conf = "Safe100";
+                            }
+                            else if (!hasLuDaShiActive && Regex.IsMatch(sub, @"^(LuDaShi|ComputerZ)$", RegexOptions.IgnoreCase))
+                            {
+                                appLabel = "LuDaShi";
+                                conf = "Safe100";
+                            }
+                            else if (!ghostTokens.TryGetValue(sub, out appLabel))
+                            {
+                                continue;
+                            }
+
+                            string regFull = fullPrefix + sub;
+                            orphanRegBag.Add(new DeepResidualArtifact
+                            {
+                                ArtifactKind = "OrphanRegistry",
+                                AppName = appLabel,
+                                Path = regFull,
+                                RegistryValueName = "",
+                                SizeBytes = 0L,
+                                IsRegistry = true,
+                                ConfidenceTier = conf,
+                                Details = "Kh\u00F3a Registry c\u00F2n s\u00F3t sau khi g\u1EE1"
+                            });
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            // Assemble deduplicated Artifacts list
+            Action<DeepResidualArtifact> addArt = delegate(DeepResidualArtifact a)
+            {
+                if (a == null || string.IsNullOrEmpty(a.Path)) return;
+                string dk = a.IsRegistry && !string.IsNullOrEmpty(a.RegistryValueName)
+                    ? (a.Path + "->" + a.RegistryValueName)
+                    : a.Path;
+                if (seenKeys.Add(dk))
+                {
+                    result.Artifacts.Add(a);
+                }
+            };
+
+            foreach (var a in progDirsBag) addArt(a);
+            foreach (var a in orphanDataBag) addArt(a);
+            foreach (var a in deadServicesBag) addArt(a);
+            foreach (var a in deadTasksBag) addArt(a);
+            foreach (var a in deadStartupBag) addArt(a);
+            foreach (var a in deadShortcutsBag) addArt(a);
+            foreach (var a in emptyStartMenuBag) addArt(a);
+            foreach (var a in orphanRegBag) addArt(a);
+            foreach (var a in deadAppPathsBag) addArt(a);
+
+            // Grouped Dead Firewall Rules
+            foreach (KeyValuePair<string, List<string>> kv in deadFwGroups)
+            {
+                string gk = kv.Key;
+                List<string> vals = kv.Value;
+                if (vals == null || vals.Count == 0) continue;
+                string disp;
+                if (!deadFwDisplayMap.TryGetValue(gk, out disp) || string.IsNullOrWhiteSpace(disp)) disp = gk;
+                string samplePath;
+                if (!deadFwAppPathMap.TryGetValue(gk, out samplePath)) samplePath = "";
+                bool isGhostGroup = ghostTokens.ContainsKey(gk) || !fp.IsTokenClaimed(gk);
+                if (!includeMuiAndFirewallOnly && !isGhostGroup) continue;
+
+                addArt(new DeepResidualArtifact
+                {
+                    ArtifactKind = "FirewallRuleGroup",
+                    AppName = disp + " (" + vals.Count + " Firewall rules)",
+                    Path = @"HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules",
+                    RegistryValueName = disp + " (" + vals.Count + " rules)",
+                    RegistryValueNames = vals.ToArray(),
+                    SizeBytes = 0L,
+                    IsRegistry = true,
+                    ConfidenceTier = "Safe100",
+                    Details = "Firewall rules tr\u1ECF t\u1EDBi t\u1EC7p \u0111\u00E3 x\u00F3a: " + samplePath
+                });
+            }
+
+            // Grouped MuiCache & AppCompatFlags
+            if (includeMuiAndFirewallOnly)
+            {
+                string[] muiArr = deadMuiVals.ToArray();
+                if (muiArr.Length > 0)
+                {
+                    addArt(new DeepResidualArtifact
+                    {
+                        ArtifactKind = "RegistryCacheGroup",
+                        AppName = "Windows MuiCache (" + muiArr.Length + " m\u1EE5c h\u1ECFng)",
+                        Path = @"HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache",
+                        RegistryValueName = muiArr.Length + " m\u1EE5c c\u00F2n s\u00F3t",
+                        RegistryValueNames = muiArr,
+                        SizeBytes = 0L,
+                        IsRegistry = true,
+                        ConfidenceTier = "Safe100",
+                        Details = "Cache t\u00EAn \u1EE9ng d\u1EE5ng \u0111\u00E3 x\u00F3a"
+                    });
+                }
+                string[] compatArr = deadCompatVals.ToArray();
+                if (compatArr.Length > 0)
+                {
+                    addArt(new DeepResidualArtifact
+                    {
+                        ArtifactKind = "RegistryCacheGroup",
+                        AppName = "Windows AppCompat (" + compatArr.Length + " m\u1EE5c h\u1ECFng)",
+                        Path = @"HKCU:\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers",
+                        RegistryValueName = compatArr.Length + " m\u1EE5c c\u00F2n s\u00F3t",
+                        RegistryValueNames = compatArr,
+                        SizeBytes = 0L,
+                        IsRegistry = true,
+                        ConfidenceTier = "Safe100",
+                        Details = "C\u1EA5u h\u00ECnh t\u01B0\u01A1ng th\u00EDch c\u1EE7a \u1EE9ng d\u1EE5ng \u0111\u00E3 x\u00F3a"
+                    });
+                }
+            }
+
+            // Synthesize clean grouped ResidualOrphanApps for TabPage1 ("Bi loi / Con sot")
+            var brokenAppNorms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < installedApps.Count; i++)
+            {
+                if (installedApps[i] != null && installedApps[i].IsBrokenOrphan)
+                {
+                    string bn = NormalizeLookupToken(CleanDisplayNameForDedup(installedApps[i].DisplayName));
+                    if (!string.IsNullOrEmpty(bn)) brokenAppNorms.Add(bn);
+                }
+            }
+
+            var grouped = new Dictionary<string, List<DeepResidualArtifact>>(StringComparer.OrdinalIgnoreCase);
+            var groupDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < result.Artifacts.Count; i++)
+            {
+                DeepResidualArtifact a = result.Artifacts[i];
+                if (a.ArtifactKind == "RegistryCacheGroup" || a.ArtifactKind == "DeadAppPath") continue;
+                // Extract clean app name (before " (...")
+                string baseName = a.AppName ?? "";
+                int pIdx = baseName.IndexOf(" (", StringComparison.Ordinal);
+                if (pIdx > 1) baseName = baseName.Substring(0, pIdx).Trim();
+                if (string.IsNullOrWhiteSpace(baseName)) continue;
+
+                // Canonicalize aliases into unified app groups
+                if (Regex.IsMatch(baseName, @"^(360|360Safe|360TotalSecurity|360DesktopLite|360Quarant|h8n_360ts|Qihoo360)", RegexOptions.IgnoreCase))
+                    baseName = "360 Total Security";
+                else if (Regex.IsMatch(baseName, @"^(LDPlayer|ldplayer9box|ldplayerbox)", RegexOptions.IgnoreCase))
+                    baseName = "LDPlayer";
+                else if (Regex.IsMatch(baseName, @"^(Androws|AndrowsFG|AndrowsSvr|Tencent Androws)", RegexOptions.IgnoreCase))
+                    baseName = "Tencent Androws";
+                else if (Regex.IsMatch(baseName, @"^(CPUID|CPUID Software)", RegexOptions.IgnoreCase))
+                    baseName = "CPUID";
+                else if (Regex.IsMatch(baseName, @"^(Overwolf|OverwolfElectron|OverwolfPersist)", RegexOptions.IgnoreCase))
+                    baseName = "Overwolf";
+                else if (Regex.IsMatch(baseName, @"^(Opera|Opera GX|Opera Software)", RegexOptions.IgnoreCase))
+                    baseName = "Opera GX";
+
+                string gKey = NormalizeOrphanToken(baseName);
+                if (string.IsNullOrEmpty(gKey)) gKey = baseName.ToLowerInvariant();
+                if (brokenAppNorms.Contains(gKey)) continue;
+                if (fp.IsTokenClaimed(baseName)) continue;
+
+                List<DeepResidualArtifact> gList;
+                if (!grouped.TryGetValue(gKey, out gList))
+                {
+                    gList = new List<DeepResidualArtifact>();
+                    grouped[gKey] = gList;
+                    groupDisplayNames[gKey] = FormatOrphanDisplayName(baseName);
+                }
+                gList.Add(a);
+            }
+
+            foreach (KeyValuePair<string, List<DeepResidualArtifact>> kv in grouped)
+            {
+                List<DeepResidualArtifact> items = kv.Value;
+                if (items == null || items.Count == 0) continue;
+
+                items.Sort(delegate(DeepResidualArtifact x, DeepResidualArtifact y)
+                {
+                    int c = y.SizeBytes.CompareTo(x.SizeBytes);
+                    if (c != 0) return c;
+                    return string.Compare(x.Path, y.Path, StringComparison.OrdinalIgnoreCase);
+                });
+
+                // Require at least one physical/system footprint (Folder, Service/Driver, Shortcut/StartMenu, or OrphanRegistry)
+                // so TabPage1 isn't cluttered by standalone 0-byte firewall-only ghosts
+                bool hasPhysicalOrSystem = false;
+                long totalSize = 0L;
+                string primaryFolder = "";
+                long primaryFolderSize = -1L;
+                int dirCount = 0;
+                int regCount = 0;
+                int svcCount = 0;
+                int scCount = 0;
+                int fwCount = 0;
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    DeepResidualArtifact it = items[i];
+                    totalSize += it.SizeBytes;
+                    if (it.ArtifactKind == "HollowDir" || it.ArtifactKind == "ResidualAppDir" || it.ArtifactKind == "OrphanAppData")
+                    {
+                        hasPhysicalOrSystem = true;
+                        dirCount++;
+                        if (Directory.Exists(it.Path))
+                        {
+                            bool preferProgramDir = (it.ArtifactKind == "ResidualAppDir" || it.ArtifactKind == "HollowDir");
+                            if (string.IsNullOrEmpty(primaryFolder) || (preferProgramDir && primaryFolderSize <= 0) || it.SizeBytes > primaryFolderSize)
+                            {
+                                primaryFolder = it.Path;
+                                primaryFolderSize = it.SizeBytes;
+                            }
+                        }
+                    }
+                    else if (it.ArtifactKind == "DeadService" || it.ArtifactKind == "DeadDriver" || it.ArtifactKind == "RogueDriverReg" || it.ArtifactKind == "RogueDriverFile")
+                    {
+                        hasPhysicalOrSystem = true;
+                        svcCount++;
+                    }
+                    else if (it.ArtifactKind == "DeadShortcut" || it.ArtifactKind == "EmptyStartMenuDir")
+                    {
+                        hasPhysicalOrSystem = true;
+                        scCount++;
+                        if (string.IsNullOrEmpty(primaryFolder) && it.ArtifactKind == "EmptyStartMenuDir" && Directory.Exists(it.Path))
+                        {
+                            primaryFolder = it.Path;
+                        }
+                    }
+                    else if (it.ArtifactKind == "OrphanRegistry" || it.ArtifactKind == "DeadStartup" || it.ArtifactKind == "DeadTask")
+                    {
+                        hasPhysicalOrSystem = true;
+                        regCount++;
+                    }
+                    else if (it.ArtifactKind == "FirewallRuleGroup")
+                    {
+                        fwCount++;
+                    }
+                }
+
+                if (!hasPhysicalOrSystem) continue;
+
+                string dispName = groupDisplayNames[kv.Key];
+                var parts = new List<string>();
+                if (dirCount > 0) parts.Add(dirCount + " th\u01B0 m\u1EE5c");
+                if (svcCount > 0) parts.Add(svcCount + " service/driver");
+                if (regCount > 0) parts.Add(regCount + " registry");
+                if (scCount > 0) parts.Add(scCount + " shortcut");
+                if (fwCount > 0) parts.Add("firewall");
+
+                string summaryText = "C\u00F2n s\u00F3t: " + string.Join(", ", parts.ToArray());
+                var detailLines = new List<string>();
+                for (int i = 0; i < items.Count && i < 6; i++)
+                {
+                    detailLines.Add("- " + items[i].Path);
+                }
+                if (items.Count > 6) detailLines.Add("... (+" + (items.Count - 6) + " m\u1EE5c kh\u00E1c)");
+
+                result.ResidualOrphanApps.Add(new InstalledAppInfo
+                {
+                    Id = "ORPHAN\\" + kv.Key,
+                    DisplayName = dispName,
+                    DisplayVersion = "C\u00F2n s\u00F3t",
+                    Publisher = summaryText,
+                    InstallDate = "",
+                    InstallLocation = primaryFolder,
+                    RawInstallLocation = primaryFolder,
+                    DataLocation = "",
+                    DisplayIcon = "",
+                    IconSourcePath = "",
+                    UninstallString = "",
+                    QuietUninstallString = "",
+                    RegistryPath = "",
+                    RawRegPath = "ORPHAN\\" + kv.Key,
+                    Scope = "Orphan",
+                    SizeBytes = totalSize,
+                    IsBrokenOrphan = true,
+                    BrokenReason = summaryText + "\n" + string.Join("\n", detailLines.ToArray()),
+                    OrphanArtifacts = items,
+                    TargetFolder = primaryFolder,
+                    SearchIndex = (dispName + " " + summaryText + " con sot orphan").ToLowerInvariant()
+                });
+            }
+
+            result.ResidualOrphanApps.Sort(delegate(InstalledAppInfo a, InstalledAppInfo b)
+            {
+                int c = b.SizeBytes.CompareTo(a.SizeBytes);
+                if (c != 0) return c;
+                return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+            });
+
+            return result;
+        }
+
+        public static Task<SystemOrphanScanResult> ScanSystemOrphansComprehensiveAsync(List<InstalledAppInfo> installedApps, bool includeMuiAndFirewallOnly)
+        {
+            return Task.Run(delegate() { return ScanSystemOrphansComprehensive(installedApps, includeMuiAndFirewallOnly); });
+        }
+
+        public static Task<List<InstalledAppInfo>> GetInstalledAppsWithOrphansAsync()
+        {
+            return Task.Run(delegate()
+            {
+                List<InstalledAppInfo> baseApps = GetInstalledApps();
+                try
+                {
+                    SystemOrphanScanResult orph = ScanSystemOrphansComprehensive(baseApps, false);
+                    if (orph != null && orph.ResidualOrphanApps != null && orph.ResidualOrphanApps.Count > 0)
+                    {
+                        baseApps.AddRange(orph.ResidualOrphanApps);
+                    }
+                }
+                catch {}
+                return baseApps;
+            });
         }
     }
 

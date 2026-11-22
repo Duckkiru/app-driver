@@ -254,6 +254,67 @@ function Test-PathClaimedByActiveApp {
     return $false
 }
 
+function Convert-DeepResidualArtifactToLeftoverItem {
+    param(
+        [Parameter(Mandatory = $true)]$Artifact,
+        [Parameter(Mandatory = $false)][string]$FallbackAppName = "",
+        [switch]$BracketBadge
+    )
+    $typeLabel = switch ([string]$Artifact.ArtifactKind) {
+        "ResidualAppDir"     { "Th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "HollowDir"          { "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng" }
+        "OrphanAppData"      { "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData" }
+        "DeadDriver"         { "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "RogueDriverReg"     { "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "RogueDriverFile"    { "Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "DeadService"        { "Service c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "DeadTask"           { "Task c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "ScheduledTask"      { "Task c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "DeadStartup"        { "Startup c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "DeadShortcut"       { "Shortcut h$([char]0x1ECF)ng" }
+        "EmptyStartMenuDir"  { "Start Menu r$([char]0x1ED7)ng" }
+        "DeadAppPath"        { "App Path h$([char]0x1ECF)ng" }
+        "RegistryAppPath"    { "App Path c$([char]0x00F2)n s$([char]0x00F3)t" }
+        "FirewallRuleGroup"  { "Firewall rule r$([char]0x00E1)c" }
+        "ContextMenu"        { "Context Menu r$([char]0x00E1)c" }
+        "RegistryCache"      { "Registry Cache r$([char]0x00E1)c" }
+        "RegistryCacheGroup" { "Registry Cache r$([char]0x00E1)c" }
+        default              { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
+    }
+    if ($BracketBadge) { $typeLabel = "[$typeLabel]" }
+
+    $confLabel = switch ([string]$Artifact.ConfidenceTier) {
+        "Check" { "N$([char]0x00EA)n ki$([char]0x1EC3)m tra" }
+        "High"  { "Tin c$([char]0x1EAD)y cao" }
+        default { "An to$([char]0x00E0)n 100%" }
+    }
+
+    $appDisplay = if ($Artifact.PSObject.Properties['AppName'] -and -not [string]::IsNullOrWhiteSpace($Artifact.AppName)) {
+        [string]$Artifact.AppName
+    } else {
+        $FallbackAppName
+    }
+    $valNames = if ($Artifact.PSObject.Properties['RegistryValueNames'] -and $null -ne $Artifact.RegistryValueNames -and $Artifact.RegistryValueNames.Count -gt 0) {
+        [string[]]@($Artifact.RegistryValueNames)
+    } else {
+        $null
+    }
+    $isTask = ($Artifact.ArtifactKind -eq "ScheduledTask" -or $Artifact.ArtifactKind -eq "DeadTask")
+    return [PSCustomObject]@{
+        Type               = $typeLabel
+        Confidence         = $confLabel
+        AppName            = $appDisplay
+        Path               = [string]$Artifact.Path
+        SizeBytes          = [long]$Artifact.SizeBytes
+        SizeMB             = [math]::Round(([long]$Artifact.SizeBytes) / 1MB, 2)
+        IsRegistry         = [bool]$Artifact.IsRegistry
+        RegistryValueName  = if ($Artifact.IsRegistry) { [string]$Artifact.RegistryValueName } else { "" }
+        RegistryValueNames = $valNames
+        TaskName           = if ($isTask) { [string]$Artifact.RegistryValueName } else { "" }
+        Details            = if ($Artifact.PSObject.Properties['Details']) { [string]$Artifact.Details } else { "" }
+    }
+}
+
 function Find-AppLeftovers {
     param(
         [Parameter(Mandatory = $true)]$AppEntry,
@@ -263,6 +324,19 @@ function Find-AppLeftovers {
 
     $leftovers = [System.Collections.Generic.List[object]]::new()
     $seenPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+    if ($AppEntry -and $AppEntry.PSObject.Properties['OrphanArtifacts'] -and $null -ne $AppEntry.OrphanArtifacts -and $AppEntry.OrphanArtifacts.Count -gt 0) {
+        foreach ($oa in $AppEntry.OrphanArtifacts) {
+            if ($null -eq $oa -or [string]::IsNullOrWhiteSpace($oa.Path)) { continue }
+            $oaDedup = if ($oa.IsRegistry -and $oa.RegistryValueName) { "$($oa.Path)->$($oa.RegistryValueName)" } else { [string]$oa.Path }
+            if ($seenPaths.Add($oaDedup)) {
+                $leftovers.Add((Convert-DeepResidualArtifactToLeftoverItem -Artifact $oa -FallbackAppName $AppEntry.DisplayName))
+            }
+        }
+        if ($AppEntry.Id -like 'ORPHAN\*') {
+            return @($leftovers)
+        }
+    }
 
     $exclusions = @(
         'Microsoft', 'Windows', 'Intel', 'AMD', 'NVIDIA', 'Google', 'Common Files',
@@ -691,7 +765,9 @@ function Find-AppLeftovers {
 
     $runKeys = @(
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce",
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce",
         "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
     )
     $locPrefixForRun = if ($AppEntry.InstallLocation) { $AppEntry.InstallLocation.Trim().TrimEnd('\') + "\" } else { "" }
@@ -797,23 +873,7 @@ function Find-AppLeftovers {
                 foreach ($art in $deepArtifacts) {
                     $artDedup = if ($art.IsRegistry -and $art.RegistryValueName) { "$($art.Path)->$($art.RegistryValueName)" } else { $art.Path }
                     if ($seenPaths.Add($artDedup)) {
-                        $artType = switch ($art.ArtifactKind) {
-                            "ScheduledTask" { "Task c$([char]0x00F2)n s$([char]0x00F3)t" }
-                            "RegistryAppPath" { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
-                            "RegistryCache" { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
-                            default { "Registry c$([char]0x00F2)n s$([char]0x00F3)t" }
-                        }
-                        $leftovers.Add([PSCustomObject]@{
-                            Type              = $artType
-                            Confidence        = "An to$([char]0x00E0)n 100%"
-                            AppName           = $AppEntry.DisplayName
-                            Path              = $art.Path
-                            SizeBytes         = [long]$art.SizeBytes
-                            SizeMB            = [math]::Round($art.SizeBytes / 1MB, 2)
-                            IsRegistry        = [bool]$art.IsRegistry
-                            RegistryValueName = if ($art.IsRegistry) { [string]$art.RegistryValueName } else { "" }
-                            TaskName          = if ($art.ArtifactKind -eq "ScheduledTask") { [string]$art.RegistryValueName } else { "" }
-                        })
+                        $leftovers.Add((Convert-DeepResidualArtifactToLeftoverItem -Artifact $art -FallbackAppName $AppEntry.DisplayName))
                     }
                 }
             }
@@ -925,24 +985,65 @@ function Find-AppLeftovers {
         } catch {}
     }
 
+    if ($AppEntry.Id -and $AppEntry.Id -like 'MSIX\*' -and $env:LOCALAPPDATA) {
+        try {
+            $pkgFullMsix = $AppEntry.Id.Substring(5)
+            $pkgParts = $pkgFullMsix -split '_'
+            if ($pkgParts.Count -ge 2) {
+                $pfnCand = "$($pkgParts[0])_$($pkgParts[$pkgParts.Count - 1])"
+                $pfnDir = Join-Path (Join-Path $env:LOCALAPPDATA "Packages") $pfnCand
+                if ((Test-Path -LiteralPath $pfnDir) -and $seenPaths.Add($pfnDir)) {
+                    $pfnSz = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($pfnDir, 4)
+                    $leftovers.Add([PSCustomObject]@{
+                        Type              = "Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData"
+                        Confidence        = "An to$([char]0x00E0)n 100%"
+                        AppName           = $AppEntry.DisplayName
+                        Path              = $pfnDir
+                        SizeBytes         = [long]$pfnSz
+                        SizeMB            = [math]::Round($pfnSz / 1MB, 2)
+                        IsRegistry        = $false
+                        RegistryValueName = ""
+                    })
+                }
+            }
+        } catch {}
+    }
+
     return @($leftovers)
 }
 
 function Find-SystemOrphanLeftovers {
     param(
         [Parameter(Mandatory = $false)]$InstalledApps,
-        [Parameter(Mandatory = $false)]$CatalogApps
+        [Parameter(Mandatory = $false)]$CatalogApps,
+        [switch]$AllowCancel
     )
 
-    if ($null -eq $InstalledApps) {
-        $InstalledApps = Get-SystemInstalledAppsFast
+    $engType = "DuckUtil.DeepUninstallerEngine" -as [type]
+    $canWaitOrph = ($null -ne (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue))
+    $cancelCbOrph = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+
+    if ($null -eq $InstalledApps -or $InstalledApps.Count -eq 0) {
+        if ($canWaitOrph -and $null -ne $engType -and $null -ne $engType.GetMethod("GetInstalledAppsAsync")) {
+            $iaTask = $engType::GetInstalledAppsAsync()
+            [void](Wait-TaskNonBlocking -Task $iaTask -TimeoutSeconds 45 -CancelCheck $cancelCbOrph)
+            if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return @() }
+            if ($iaTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $iaTask.Result) {
+                $InstalledApps = @($iaTask.Result)
+            } else {
+                $InstalledApps = @(Get-SystemInstalledAppsFast)
+            }
+        } else {
+            $InstalledApps = @(Get-SystemInstalledAppsFast)
+        }
     }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return @() }
 
     $orphans = [System.Collections.Generic.List[object]]::new()
     $seenPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
     $exclusions = [string[]]@(
-        'Microsoft', 'Windows', 'Intel', 'AMD', 'NVIDIA', 'Google', 'Common Files',
+        'Microsoft', 'Windows', 'Intel', 'AMD', 'NVIDIA', 'Google', 'Common', 'Common Files',
         'WindowsApps', 'ModifiableWindowsApps', 'Internet Explorer', 'Windows Defender',
         'Windows Mail', 'Windows Media Player', 'Windows NT', 'Windows Photo Viewer',
         'Windows Portable Devices', 'Windows Security', 'Windows Sidebar', 'WindowsPowerShell',
@@ -950,10 +1051,14 @@ function Find-SystemOrphanLeftovers {
         'Packages', 'Temp', 'System32', 'Uninstall Information'
     )
 
+    $baseInstalledList = [System.Collections.Generic.List[DuckUtil.InstalledAppInfo]]::new()
     $activeApps = [System.Collections.Generic.List[object]]::new()
     $activeNormIdentities = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     $activeInstallLocs = [System.Collections.Generic.List[string]]::new()
     foreach ($ia in $InstalledApps) {
+        if ($null -eq $ia) { continue }
+        if ($ia.Id -like 'ORPHAN\*') { continue }
+        if ($ia -is [DuckUtil.InstalledAppInfo]) { $baseInstalledList.Add($ia) }
         if (-not $ia.IsBrokenOrphan) {
             $activeApps.Add($ia)
             $normIa = Get-NormalizedAppIdentity $ia.DisplayName
@@ -967,26 +1072,78 @@ function Find-SystemOrphanLeftovers {
         }
     }
 
-    $programRoots = [System.Collections.Generic.List[string]]::new()
-    try {
-        foreach ($drv in [System.IO.DriveInfo]::GetDrives()) {
-            if ($drv.DriveType -eq [System.IO.DriveType]::Fixed -and $drv.IsReady) {
-                $pf1 = Join-Path $drv.RootDirectory.FullName "Program Files"
-                $pf2 = Join-Path $drv.RootDirectory.FullName "Program Files (x86)"
-                if ([System.IO.Directory]::Exists($pf1)) { $programRoots.Add($pf1) }
-                if ([System.IO.Directory]::Exists($pf2)) { $programRoots.Add($pf2) }
+    # 1. Run Comprehensive Parallel C# Forensic Orphan Scanner (non-blocking)
+    $usedComprehensive = $false
+    if ($null -ne $engType -and $null -ne $engType.GetMethod("ScanSystemOrphansComprehensiveAsync")) {
+        try {
+            $compTask = $engType::ScanSystemOrphansComprehensiveAsync($baseInstalledList, $true)
+            if ($canWaitOrph) {
+                [void](Wait-TaskNonBlocking -Task $compTask -TimeoutSeconds 45 -CancelCheck $cancelCbOrph)
+            } else {
+                try { [void]$compTask.Wait(45000) } catch {}
+            }
+            if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return @() }
+            if ($compTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $compTask.Result) {
+                $usedComprehensive = $true
+                foreach ($art in $compTask.Result.Artifacts) {
+                    if ($null -eq $art -or [string]::IsNullOrWhiteSpace($art.Path)) { continue }
+                    $artDedup = if ($art.IsRegistry -and $art.RegistryValueName) { "$($art.Path)->$($art.RegistryValueName)" } else { [string]$art.Path }
+                    if ($seenPaths.Add($artDedup)) {
+                        $orphans.Add((Convert-DeepResidualArtifactToLeftoverItem -Artifact $art -BracketBadge))
+                    }
+                }
+            }
+        } catch {}
+    }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return @() }
+
+    # 2. Broken ARP / MSI / MSIX Uninstall Registry Entries + their specific leftovers
+    foreach ($app in $InstalledApps) {
+        if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { break }
+        if ($null -eq $app -or -not $app.IsBrokenOrphan) { continue }
+        if ($app.Id -like 'ORPHAN\*') { continue }
+
+        if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
+            if ($seenPaths.Add($app.RegistryPath)) {
+                $orphans.Add([PSCustomObject]@{
+                    Type              = "[Registry b$([char]0x1ECB) l$([char]0x1ED7)i]"
+                    Confidence        = "An to$([char]0x00E0)n 100%"
+                    AppName           = $app.DisplayName
+                    Path              = $app.RegistryPath
+                    SizeBytes         = 0L
+                    SizeMB            = 0.0
+                    IsRegistry        = $true
+                    RegistryValueName = ""
+                })
             }
         }
-    } catch {
-        foreach ($fallbackPf in @($env:ProgramW6432, $env:ProgramFiles, ${env:ProgramFiles(x86)})) {
-            if (-not [string]::IsNullOrWhiteSpace($fallbackPf) -and [System.IO.Directory]::Exists($fallbackPf) -and -not $programRoots.Contains($fallbackPf)) {
-                $programRoots.Add($fallbackPf)
+
+        $brokenNorm = Get-NormalizedAppIdentity $app.DisplayName
+        if ($brokenNorm -and $activeNormIdentities.Contains($brokenNorm)) { continue }
+
+        $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps
+        foreach ($lo in $appLeftovers) {
+            $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
+            if ($seenPaths.Add($dedupKey)) {
+                $badgeType = if ($lo.Type -like '[*') { [string]$lo.Type } else { "[$($lo.Type)]" }
+                $orphans.Add([PSCustomObject]@{
+                    Type               = $badgeType
+                    Confidence         = if ($lo.Confidence) { $lo.Confidence } else { "An to$([char]0x00E0)n 100%" }
+                    AppName            = $app.DisplayName
+                    Path               = $lo.Path
+                    SizeBytes          = [long]$lo.SizeBytes
+                    SizeMB             = [double]$lo.SizeMB
+                    IsRegistry         = [bool]$lo.IsRegistry
+                    RegistryValueName  = [string]$lo.RegistryValueName
+                    RegistryValueNames = if ($lo.PSObject.Properties['RegistryValueNames']) { $lo.RegistryValueNames } else { $null }
+                    TaskName           = if ($lo.PSObject.Properties['TaskName']) { [string]$lo.TaskName } else { "" }
+                })
             }
         }
     }
-    $localProgs = Join-Path $env:LOCALAPPDATA "Programs"
-    if ([System.IO.Directory]::Exists($localProgs)) { $programRoots.Add($localProgs) }
+    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return @() }
 
+    # 3. Uninstalled Catalog AppData / ProgramData leftovers (catches uninstalled catalog apps even with no dead firewall/service trace!)
     $candAppDataPaths = [System.Collections.Generic.List[string]]::new()
     $candAppDataNames = [System.Collections.Generic.List[string]]::new()
     if ($CatalogApps) {
@@ -1008,14 +1165,16 @@ function Find-SystemOrphanLeftovers {
             }
         }
 
-        $appDataRoots = @($env:APPDATA, $env:LOCALAPPDATA)
+        $localLowR = if ($env:USERPROFILE) { Join-Path $env:USERPROFILE "AppData\LocalLow" } else { "" }
+        $appDataRoots = @($env:APPDATA, $env:LOCALAPPDATA, $localLowR, $env:ProgramData)
         $candPathSeen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
         foreach ($catApp in $CatalogApps) {
-            if ($script:isWindowClosing) { break }
+            if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { break }
             if ($catApp.ID -and $catalogInstalledIds.Contains($catApp.ID)) { continue }
 
             $catName = ($catApp.Name -replace '\(.*?\)', '').Trim()
             if ($catName.Length -lt 5) { continue }
+            if ($exclusions -contains $catName) { continue }
 
             $candidateDirs = $null
             foreach ($ar in $appDataRoots) {
@@ -1063,7 +1222,7 @@ function Find-SystemOrphanLeftovers {
             if (-not $isInstalled) {
                 foreach ($cand in $candidateDirs) {
                     $full = Resolve-PathSafe -Path $cand
-                    if ($full -and $candPathSeen.Add($full)) {
+                    if ($full -and -not $seenPaths.Contains($full) -and $candPathSeen.Add($full)) {
                         $candAppDataPaths.Add($full)
                         $candAppDataNames.Add($catApp.Name)
                     }
@@ -1072,195 +1231,25 @@ function Find-SystemOrphanLeftovers {
         }
     }
 
-    $desktopPaths = [string[]]@(
-        [Environment]::GetFolderPath('Desktop'),
-        [Environment]::GetFolderPath('CommonDesktopDirectory'),
-        [Environment]::GetFolderPath('Programs'),
-        [Environment]::GetFolderPath('CommonPrograms')
-    )
-
-    $engType = "DuckUtil.DeepUninstallerEngine" -as [type]
-    $hasParallelEngine = ($null -ne $engType) -and
-        ($null -ne $engType.GetMethod("ScanHollowProgramDirsAsync")) -and
-        ($null -ne $engType.GetMethod("ScanHollowPathsWithSizesAsync")) -and
-        ($null -ne $engType.GetMethod("ScanDeadShortcutsAsync"))
-
-    $hollowProgTask = $null
-    $hollowAppDataTask = $null
-    $deadLnkTask = $null
-    $svcTask = $null
-    $svcAndRogueTask = $null
-    $svcList = $null
-    $verifiedRogueDrivers = $null
-
-    if ($hasParallelEngine) {
-        $taskList = [System.Collections.Generic.List[System.Threading.Tasks.Task]]::new()
-        $hollowProgTask = [DuckUtil.DeepUninstallerEngine]::ScanHollowProgramDirsAsync($programRoots.ToArray(), $exclusions, $activeInstallLocs.ToArray())
-        $taskList.Add($hollowProgTask)
-        if ($candAppDataPaths.Count -gt 0) {
-            $hollowAppDataTask = [DuckUtil.DeepUninstallerEngine]::ScanHollowPathsWithSizesAsync($candAppDataPaths.ToArray(), $candAppDataNames.ToArray())
-            $taskList.Add($hollowAppDataTask)
-        }
-        $deadLnkTask = [DuckUtil.DeepUninstallerEngine]::ScanDeadShortcutsAsync($desktopPaths)
-        $taskList.Add($deadLnkTask)
-        if ($engType.GetMethod("ScanServicesAndRogueDriversAsync")) {
-            $svcAndRogueTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndRogueDriversAsync()
-            $taskList.Add($svcAndRogueTask)
-        } elseif ($engType.GetMethod("IsVerifiedRogueKernelDriverFile") -and $engType.GetMethod("ScanServicesAndDriversAsync")) {
-            $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
-            $taskList.Add($svcTask)
-        }
-
-        if ($taskList.Count -gt 0) {
-            $allOrphTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]]$taskList.ToArray())
-            if (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue) {
-                [void](Wait-TaskNonBlocking -Task $allOrphTask -TimeoutSeconds 45)
+    if ($candAppDataPaths.Count -gt 0 -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested)) {
+        if ($null -ne $engType -and $null -ne $engType.GetMethod("ScanHollowPathsWithSizesAsync")) {
+            $hollowAppDataTask = $engType::ScanHollowPathsWithSizesAsync($candAppDataPaths.ToArray(), $candAppDataNames.ToArray())
+            if ($canWaitOrph) {
+                [void](Wait-TaskNonBlocking -Task $hollowAppDataTask -TimeoutSeconds 30 -CancelCheck $cancelCbOrph)
             } else {
-                try { [void]$allOrphTask.Wait(45000) } catch {}
+                try { [void]$hollowAppDataTask.Wait(30000) } catch {}
             }
-        }
-        if ($null -ne $svcAndRogueTask -and $svcAndRogueTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $svcAndRogueTask.Result) {
-            $svcList = $svcAndRogueTask.Result.AllServices
-            $verifiedRogueDrivers = $svcAndRogueTask.Result.RogueDrivers
-        } elseif ($null -ne $svcTask -and $svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-            $svcList = $svcTask.Result
-        }
-    }
-
-    foreach ($app in $InstalledApps) {
-        if ($script:isWindowClosing) { break }
-        if ($app.IsBrokenOrphan) {
-            if ($app.RegistryPath -and (Test-Path -LiteralPath $app.RegistryPath)) {
-                if ($seenPaths.Add($app.RegistryPath)) {
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = "[Registry c$([char]0x00F2)n s$([char]0x00F3)t]"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
-                        AppName           = $app.DisplayName
-                        Path              = $app.RegistryPath
-                        SizeBytes         = 0L
-                        SizeMB            = 0.0
-                        IsRegistry        = $true
-                        RegistryValueName = ""
-                    })
-                }
-            }
-
-            $brokenNorm = Get-NormalizedAppIdentity $app.DisplayName
-            if ($brokenNorm -and $activeNormIdentities.Contains($brokenNorm)) {
-                continue
-            }
-
-            $appLeftovers = Find-AppLeftovers -AppEntry $app -AllInstalledApps $InstalledApps -PreloadedServices $svcList
-            foreach ($lo in $appLeftovers) {
-                $dedupKey = if ($lo.RegistryValueName) { "$($lo.Path)->$($lo.RegistryValueName)" } else { $lo.Path }
-                if ($seenPaths.Add($dedupKey)) {
-                    $badgeType = if ($lo.Type -like "*Driver*") {
-                        "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
-                    } elseif ($lo.IsRegistry) {
-                        "[Registry c$([char]0x00F2)n s$([char]0x00F3)t]"
-                    } else {
-                        "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                    }
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = $badgeType
-                        Confidence        = if ($lo.Confidence) { $lo.Confidence } else { "An to$([char]0x00E0)n 100%" }
-                        AppName           = $app.DisplayName
-                        Path              = $lo.Path
-                        SizeBytes         = [long]$lo.SizeBytes
-                        SizeMB            = [double]$lo.SizeMB
-                        IsRegistry        = [bool]$lo.IsRegistry
-                        RegistryValueName = [string]$lo.RegistryValueName
-                    })
-                }
-            }
-        }
-    }
-
-    if ($hasParallelEngine) {
-        if ($null -ne $hollowProgTask -and $hollowProgTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $hollowProgTask.Result) {
-            foreach ($hr in $hollowProgTask.Result) {
-                if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
-                        AppName           = $hr.AppName
-                        Path              = $hr.Path
-                        SizeBytes         = [long]$hr.SizeBytes
-                        SizeMB            = [math]::Round($hr.SizeBytes / 1MB, 2)
-                        IsRegistry        = $false
-                        RegistryValueName = ""
-                    })
-                }
-            }
-        }
-
-        if ($null -ne $hollowAppDataTask -and $hollowAppDataTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $hollowAppDataTask.Result) {
-            foreach ($hr in $hollowAppDataTask.Result) {
-                if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
-                        AppName           = $hr.AppName
-                        Path              = $hr.Path
-                        SizeBytes         = [long]$hr.SizeBytes
-                        SizeMB            = [math]::Round($hr.SizeBytes / 1MB, 2)
-                        IsRegistry        = $false
-                        RegistryValueName = ""
-                    })
-                }
-            }
-        }
-
-        if ($null -ne $deadLnkTask -and $deadLnkTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $deadLnkTask.Result) {
-            foreach ($dl in $deadLnkTask.Result) {
-                if ($dl -and $dl.LnkPath -and $seenPaths.Add($dl.LnkPath)) {
-                    $orphans.Add([PSCustomObject]@{
-                        Type              = "[Shortcut h$([char]0x1ECF)ng]"
-                        Confidence        = "An to$([char]0x00E0)n 100%"
-                        AppName           = $dl.AppName
-                        Path              = $dl.LnkPath
-                        SizeBytes         = 0L
-                        SizeMB            = 0.0
-                        IsRegistry        = $false
-                        RegistryValueName = ""
-                    })
-                }
-            }
-        }
-    } else {
-        foreach ($pRoot in $programRoots) {
-            if ($script:isWindowClosing) { break }
-            if (-not (Test-Path -LiteralPath $pRoot)) { continue }
-            $subDirs = Get-DirectoriesSafe -RootPath $pRoot
-            foreach ($sd in $subDirs) {
-                $dirName = [System.IO.Path]::GetFileName($sd)
-                $isExcluded = $false
-                foreach ($ex in $exclusions) {
-                    if ($dirName -like "$ex*" -or $dirName -eq $ex) { $isExcluded = $true; break }
-                }
-                if ($isExcluded) { continue }
-
-                $sdNorm = $sd.Trim().TrimEnd('\')
-                $isUsedByActiveApp = $false
-                foreach ($actLoc in $activeInstallLocs) {
-                    if ($actLoc.Equals($sdNorm, [System.StringComparison]::OrdinalIgnoreCase) -or
-                        $actLoc.StartsWith($sdNorm + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
-                        $isUsedByActiveApp = $true
-                        break
-                    }
-                }
-                if ($isUsedByActiveApp) { continue }
-
-                $hollowSize = [DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($sd, 3, 52428800L)
-                if ($hollowSize -ge 0L) {
-                    if ($seenPaths.Add($sd)) {
+            if ($hollowAppDataTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $hollowAppDataTask.Result) {
+                foreach ($hr in $hollowAppDataTask.Result) {
+                    if ($hr -and $hr.Path -and $seenPaths.Add($hr.Path)) {
+                        $confCat = if ([long]$hr.SizeBytes -gt 104857600L) { "N$([char]0x00EA)n ki$([char]0x1EC3)m tra" } else { "Tin c$([char]0x1EAD)y cao" }
                         $orphans.Add([PSCustomObject]@{
-                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng]"
-                            Confidence        = "An to$([char]0x00E0)n 100%"
-                            AppName           = $dirName
-                            Path              = $sd
-                            SizeBytes         = [long]$hollowSize
-                            SizeMB            = [math]::Round($hollowSize / 1MB, 2)
+                            Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
+                            Confidence        = $confCat
+                            AppName           = $hr.AppName
+                            Path              = $hr.Path
+                            SizeBytes         = [long]$hr.SizeBytes
+                            SizeMB            = [math]::Round($hr.SizeBytes / 1MB, 2)
                             IsRegistry        = $false
                             RegistryValueName = ""
                         })
@@ -1268,151 +1257,14 @@ function Find-SystemOrphanLeftovers {
                 }
             }
         }
-
-        for ($ci = 0; $ci -lt $candAppDataPaths.Count; $ci++) {
-            if ($script:isWindowClosing) { break }
-            $full = $candAppDataPaths[$ci]
-            if (([DuckUtil.DeepUninstallerEngine]::GetHollowDirectorySize($full, 3, 52428800L)) -lt 0L) {
-                continue
-            }
-            if ($seenPaths.Add($full)) {
-                $dirSize = [DuckUtil.DeepUninstallerEngine]::GetDirectorySizeFast($full, 3)
-                $orphans.Add([PSCustomObject]@{
-                    Type              = "[Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x00E1)c AppData]"
-                    Confidence        = "An to$([char]0x00E0)n 100%"
-                    AppName           = $candAppDataNames[$ci]
-                    Path              = $full
-                    SizeBytes         = [long]$dirSize
-                    SizeMB            = [math]::Round($dirSize / 1MB, 2)
-                    IsRegistry        = $false
-                    RegistryValueName = ""
-                })
-            }
-        }
-
-        $wsh = $null
-        try {
-            $wsh = New-Object -ComObject WScript.Shell
-            foreach ($dp in $desktopPaths) {
-                if ($script:isWindowClosing) { break }
-                if ([string]::IsNullOrWhiteSpace($dp) -or -not [System.IO.Directory]::Exists($dp)) { continue }
-                $lnks = Get-FilesRecursiveSafe -RootPath $dp -SearchPattern "*.lnk"
-                foreach ($lnk in $lnks) {
-                    try {
-                        $sc = $wsh.CreateShortcut($lnk)
-                        $target = $sc.TargetPath
-                        if ($target -and $target -match '^[A-Za-z]:\\' -and $target.EndsWith(".exe", [System.StringComparison]::OrdinalIgnoreCase)) {
-                            if (-not [System.IO.File]::Exists($target)) {
-                                if ($seenPaths.Add($lnk)) {
-                                    $orphans.Add([PSCustomObject]@{
-                                        Type              = "[Shortcut h$([char]0x1ECF)ng]"
-                                        Confidence        = "An to$([char]0x00E0)n 100%"
-                                        AppName           = [System.IO.Path]::GetFileNameWithoutExtension($lnk)
-                                        Path              = $lnk
-                                        SizeBytes         = 0L
-                                        SizeMB            = 0.0
-                                        IsRegistry        = $false
-                                        RegistryValueName = ""
-                                    })
-                                }
-                            }
-                        }
-                    } catch {}
-                }
-            }
-        } catch {} finally {
-            if ($null -ne $wsh) {
-                try { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($wsh) | Out-Null } catch {}
-                $wsh = $null
-            }
-        }
     }
 
-    if ($engType -and ($engType.GetMethod("IsVerifiedRogueKernelDriverFile"))) {
-        try {
-            $rogueDriversToProcess = $null
-            if ($null -ne $verifiedRogueDrivers) {
-                $rogueDriversToProcess = $verifiedRogueDrivers
-            } else {
-                if ($null -eq $svcList) {
-                    if ($engType.GetMethod("ScanServicesAndDriversAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
-                        $svcTask = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDriversAsync()
-                        [void](Wait-TaskNonBlocking -Task $svcTask -TimeoutSeconds 15)
-                        if ($svcTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                            $svcList = $svcTask.Result
-                        }
-                    } elseif ($engType.GetMethod("ScanServicesAndDrivers")) {
-                        $svcList = [DuckUtil.DeepUninstallerEngine]::ScanServicesAndDrivers()
-                    }
-                }
-                if ($null -ne $svcList) {
-                    $rogueDriversToProcess = [System.Collections.Generic.List[object]]::new()
-                    foreach ($se in $svcList) {
-                        if ($script:isWindowClosing) { break }
-                        if (-not $se.IsKernelDriver) { continue }
-                        $img = $se.ResolvedImagePath
-                        if ([string]::IsNullOrWhiteSpace($img)) { continue }
-                        if ([System.IO.File]::Exists($img) -and [DuckUtil.DeepUninstallerEngine]::IsVerifiedRogueKernelDriverFile($img)) {
-                            $rogueDriversToProcess.Add($se)
-                        }
-                    }
-                }
-            }
-
-            if ($null -ne $rogueDriversToProcess) {
-                foreach ($se in $rogueDriversToProcess) {
-                    if ($script:isWindowClosing) { break }
-                    $img = $se.ResolvedImagePath
-                    if ([string]::IsNullOrWhiteSpace($img)) { continue }
-                    $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($img)
-                    $meta = "$([System.IO.Path]::GetFileName($img)) $($vi.CompanyName) $($vi.ProductName) $($vi.FileDescription)"
-                    $drvVendor = "360 Total Security"
-                    $vendorPattern = '(?i)(360|Qihu|Qihoo)'
-                    if ($meta -match '(?i)2345') { $drvVendor = "2345 Security"; $vendorPattern = '(?i)2345' }
-                    elseif ($meta -match '(?i)Kingsoft') { $drvVendor = "Kingsoft"; $vendorPattern = '(?i)Kingsoft' }
-                    elseif ($meta -match '(?i)Baidu') { $drvVendor = "Baidu"; $vendorPattern = '(?i)Baidu' }
-
-                    $vendorStillActive = $false
-                    foreach ($actApp in $activeApps) {
-                        if ("$($actApp.DisplayName) $($actApp.Publisher) $($actApp.InstallLocation)" -match $vendorPattern) {
-                            $vendorStillActive = $true
-                            break
-                        }
-                    }
-                    if (-not $vendorStillActive) {
-                        $regSvcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$($se.ServiceName)"
-                        if ($seenPaths.Add($regSvcPath)) {
-                            $orphans.Add([PSCustomObject]@{
-                                Type              = "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
-                                Confidence        = "An to$([char]0x00E0)n 100%"
-                                AppName           = "$drvVendor ($($se.ServiceName))"
-                                Path              = $regSvcPath
-                                SizeBytes         = 0L
-                                SizeMB            = 0.0
-                                IsRegistry        = $true
-                                RegistryValueName = ""
-                            })
-                        }
-                        if ($seenPaths.Add($img)) {
-                            $fLen = try { (Get-Item -LiteralPath $img -Force).Length } catch { 0L }
-                            $orphans.Add([PSCustomObject]@{
-                                Type              = "[Driver h$([char]0x1EC7) th$([char]0x1ED1)ng c$([char]0x00F2)n s$([char]0x00F3)t]"
-                                Confidence        = "An to$([char]0x00E0)n 100%"
-                                AppName           = "$drvVendor ($([System.IO.Path]::GetFileName($img)))"
-                                Path              = $img
-                                SizeBytes         = [long]$fLen
-                                SizeMB            = [math]::Round($fLen / 1MB, 2)
-                                IsRegistry        = $false
-                                RegistryValueName = ""
-                            })
-                        }
-                    }
-                }
-            }
-        } catch {}
-    }
-
-    return @($orphans)
+    # Sort cleanly: Safe100 -> High -> Check, largest SizeBytes first within each tier
+    $sortedOrphans = @($orphans | Sort-Object -Property `
+        @{ Expression = { if ($_.Confidence -like '*ki*m tra*') { 2 } elseif ($_.Confidence -like '*cao*') { 1 } else { 0 } }; Ascending = $true }, `
+        @{ Expression = { [long]$_.SizeBytes }; Descending = $true }, `
+        @{ Expression = { [string]$_.AppName }; Ascending = $true })
+    return $sortedOrphans
 }
 
 function Invoke-ForceStopPathLockers {
@@ -1621,6 +1473,8 @@ function Show-LeftoverReviewDialog {
                 "Task"     = (& $mkC "#C2410C")
                 "Registry" = (& $mkC "#991B1B")
                 "Startup"  = (& $mkC "#9F1239")
+                "Firewall" = (& $mkC "#0E7490")
+                "AppPath"  = (& $mkC "#9A3412")
                 "AppData"  = (& $mkC "#B45309")
                 "Hollow"   = (& $mkC "#1D4ED8")
                 "Shortcut" = (& $mkC "#6D28D9")
@@ -1729,7 +1583,7 @@ function Show-LeftoverReviewDialog {
     $rootGrid.RowDefinitions.Add($rowList) | Out-Null
     $rootGrid.RowDefinitions.Add($rowBottom) | Out-Null
 
-    $headerPanel = New-Object System.Windows.Controls.DockPanel
+    $headerPanel = New-Object System.Windows.Controls.StackPanel
     $headerPanel.Margin = New-Object System.Windows.Thickness(18, 14, 18, 10)
     $titleBlock = New-Object System.Windows.Controls.TextBlock
     $titleBlock.Text = $Title
@@ -1737,6 +1591,22 @@ function Show-LeftoverReviewDialog {
     $titleBlock.FontWeight = [System.Windows.FontWeights]::Bold
     $titleBlock.Foreground = $pal.TitleFg
     $headerPanel.Children.Add($titleBlock) | Out-Null
+
+    $safeCntHdr = 0
+    $chkCntHdr = 0
+    [long]$totBytesHdr = 0L
+    foreach ($itH in $Items) {
+        if ($itH.SizeBytes) { $totBytesHdr += [long]$itH.SizeBytes }
+        if ($itH.Confidence -like "*ki$([char]0x1EC3)m tra*") { $chkCntHdr++ } else { $safeCntHdr++ }
+    }
+    $totMbHdr = [math]::Round($totBytesHdr / 1MB, 2)
+    $subHeaderBlock = New-Object System.Windows.Controls.TextBlock
+    $subHeaderBlock.Text = "T$([char]0x1ED5)ng $($Items.Count) m$([char]0x1EE5)c ($safeCntHdr an to$([char]0x00E0)n/tin c$([char]0x1EAD)y cao $([char]0x2022) $chkCntHdr n$([char]0x00EA)n ki$([char]0x1EC3)m tra $([char]0x2022) ~$totMbHdr MB). M$([char]0x1EE5)c 'N$([char]0x00EA)n ki$([char]0x1EC3)m tra' m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh b$([char]0x1ECF) ch$([char]0x1ECD)n $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA3)o v$([char]0x1EC7) d$([char]0x1EEF) li$([char]0x1EC7)u."
+    $subHeaderBlock.FontSize = 11.5
+    $subHeaderBlock.Foreground = $pal.SizeRegFg
+    $subHeaderBlock.Margin = New-Object System.Windows.Thickness(0, 3, 0, 0)
+    $headerPanel.Children.Add($subHeaderBlock) | Out-Null
+
     [System.Windows.Controls.Grid]::SetRow($headerPanel, 0)
     $rootGrid.Children.Add($headerPanel) | Out-Null
 
@@ -1777,7 +1647,7 @@ function Show-LeftoverReviewDialog {
             if ($null -eq $tg) { return }
             try {
                 if ($tg.IsRegistry) {
-                    $rawKey = $tg.Path -replace '^HKCU:\\', 'HKEY_CURRENT_USER\' -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\'
+                    $rawKey = $tg.Path -replace '^HKCU:\\', 'HKEY_CURRENT_USER\' -replace '^HKLM:\\', 'HKEY_LOCAL_MACHINE\' -replace '^HKCR:\\', 'HKEY_CLASSES_ROOT\'
                     $regApplet = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit"
                     if (-not (Test-Path -LiteralPath $regApplet)) {
                         New-Item -Path $regApplet -Force | Out-Null
@@ -1801,10 +1671,15 @@ function Show-LeftoverReviewDialog {
             "*Driver*" { "Ring0" }
             "*Service*" { "Service" }
             "*Task*" { "Task" }
+            "*Firewall*" { "Firewall" }
+            "*App Path*" { "AppPath" }
+            "*Context*" { "Shortcut" }
             "*Registry*" { "Registry" }
             "*Startup*" { "Startup" }
             "*R$([char]0x00E1)c AppData*" { "AppData" }
+            "*Th$([char]0x01B0) m$([char]0x1EE5)c c$([char]0x00F2)n s$([char]0x00F3)t*" { "AppData" }
             "*Th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng*" { "Hollow" }
+            "*Start Menu*" { "Hollow" }
             "*V$([char]0x1ECF) th$([char]0x01B0) m$([char]0x1EE5)c*" { "Hollow" }
             "*Shortcut*" { "Shortcut" }
             "*Crash Dump*" { "Dump" }
@@ -2217,15 +2092,57 @@ function Show-LeftoverReviewDialog {
                 }
                 try {
                     if ($ci.IsRegistry) {
-                        if ($ci.RegistryValueName) {
-                            if (Test-Path -LiteralPath $ci.Path) {
-                                Remove-ItemProperty -LiteralPath $ci.Path -Name $ci.RegistryValueName -Force -ErrorAction Stop
-                                $removed++
-                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Startup Registry: $($ci.Path) [$($ci.RegistryValueName)]"
+                        $psRegPath = if ($ci.Path -match '^HKCR:\\') {
+                            "Registry::HKEY_CLASSES_ROOT\" + $ci.Path.Substring(6)
+                        } else {
+                            [string]$ci.Path
+                        }
+                        $hasMultiVals = ($ci.PSObject.Properties['RegistryValueNames'] -and $null -ne $ci.RegistryValueNames -and $ci.RegistryValueNames.Count -gt 0)
+                        if ($hasMultiVals) {
+                            $delValCount = 0
+                            $valArr = [string[]]@($ci.RegistryValueNames)
+                            if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryValuesAsync")) {
+                                $rvTask = $deepType::ForceDeleteRegistryValuesAsync([string]$ci.Path, $valArr)
+                                [void](Wait-TaskNonBlocking -Task $rvTask -TimeoutSeconds 20)
+                                if ($rvTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                    $delValCount = [int]$rvTask.Result
+                                }
+                            } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryValues")) {
+                                $delValCount = [int]$deepType::ForceDeleteRegistryValues([string]$ci.Path, $valArr)
+                            } else {
+                                foreach ($vn in $valArr) {
+                                    try {
+                                        Remove-ItemProperty -LiteralPath $psRegPath -Name $vn -Force -ErrorAction Stop
+                                        $delValCount++
+                                    } catch {}
                                 }
                             }
-                        } elseif (Test-Path -LiteralPath $ci.Path) {
+                            if ($delValCount -gt 0) {
+                                $removed++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a $delValCount gi$([char]0x00E1) tr$([char]0x1ECB) Registry ($($ci.AppName)): $($ci.Path)"
+                                }
+                            }
+                        } elseif ($ci.RegistryValueName) {
+                            if (Test-Path -LiteralPath $psRegPath) {
+                                $valDelOk = $false
+                                try {
+                                    Remove-ItemProperty -LiteralPath $psRegPath -Name $ci.RegistryValueName -Force -ErrorAction Stop
+                                    $valDelOk = $true
+                                } catch {
+                                    if ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryValues")) {
+                                        $valDelOk = ([int]$deepType::ForceDeleteRegistryValues([string]$ci.Path, [string[]]@([string]$ci.RegistryValueName)) -gt 0)
+                                    }
+                                    if (-not $valDelOk) { throw }
+                                }
+                                if ($valDelOk) {
+                                    $removed++
+                                    if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                        Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry Value: $($ci.Path) [$($ci.RegistryValueName)]"
+                                    }
+                                }
+                            }
+                        } elseif (Test-Path -LiteralPath $psRegPath) {
                             $neutralizedSvc = $false
                             if ($ci.Path -match '(?i)^HKLM:\\SYSTEM\\CurrentControlSet\\Services\\([^\\]+)$') {
                                 $svcTargetName = $Matches[1]
@@ -2240,17 +2157,17 @@ function Show-LeftoverReviewDialog {
                                 }
                             }
                             $usedElevatedRegDel = $false
-                            if (Test-Path -LiteralPath $ci.Path) {
+                            if (Test-Path -LiteralPath $psRegPath) {
                                 if ($neutralizedSvc) {
-                                    Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction SilentlyContinue
+                                    Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction SilentlyContinue
                                 } else {
                                     $regErr = $null
                                     try {
-                                        Remove-Item -LiteralPath $ci.Path -Recurse -Force -ErrorAction Stop
+                                        Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction Stop
                                     } catch {
                                         $regErr = $_
                                     }
-                                    if ($null -ne $regErr -and (Test-Path -LiteralPath $ci.Path)) {
+                                    if ($null -ne $regErr -and (Test-Path -LiteralPath $psRegPath)) {
                                         $elevOk = $false
                                         if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKeyAsync")) {
                                             $regTask = $deepType::ForceDeleteRegistryKeyAsync([string]$ci.Path)
@@ -2261,7 +2178,7 @@ function Show-LeftoverReviewDialog {
                                         } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKey")) {
                                             $elevOk = [bool]$deepType::ForceDeleteRegistryKey([string]$ci.Path)
                                         }
-                                        if ($elevOk -or -not (Test-Path -LiteralPath $ci.Path)) {
+                                        if ($elevOk -or -not (Test-Path -LiteralPath $psRegPath)) {
                                             $usedElevatedRegDel = $true
                                         } else {
                                             throw $regErr
@@ -2359,19 +2276,22 @@ function Show-LeftoverReviewDialog {
                             }
 
                             if ($explorerRestartDecision) {
-                                $unlockState = @{ Deleted = $false; RebootCount = 0 }
+                                $script:_loExpUnlockPath = [string]$ci.Path
+                                $script:_loExpUnlockUseRecycle = [bool]($useRecycle -and $hasSilentRecycle)
+                                $script:_loExpUnlockDeleted = $false
+                                $script:_loExpUnlockReboot = 0
                                 Restart-WindowsExplorerForUnlock -OnUnlockedCallback {
-                                    if ($useRecycle -and $hasSilentRecycle) {
-                                        $unlockState.Deleted = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
+                                    if ($script:_loExpUnlockUseRecycle) {
+                                        $script:_loExpUnlockDeleted = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($script:_loExpUnlockPath)
                                     }
-                                    if (-not $unlockState.Deleted) {
+                                    if (-not $script:_loExpUnlockDeleted) {
                                         $rbInner = 0
-                                        $unlockState.Deleted = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($ci.Path, [ref]$rbInner)
-                                        $unlockState.RebootCount = $rbInner
+                                        $script:_loExpUnlockDeleted = [DuckUtil.DeepUninstallerEngine]::ForceDeleteDirectory($script:_loExpUnlockPath, [ref]$rbInner)
+                                        $script:_loExpUnlockReboot = $rbInner
                                     }
-                                }.GetNewClosure()
-                                $deletedOk = [bool]$unlockState.Deleted
-                                $rebootTotal += [int]$unlockState.RebootCount
+                                }
+                                $deletedOk = [bool]$script:_loExpUnlockDeleted
+                                $rebootTotal += [int]$script:_loExpUnlockReboot
                             }
                         }
 
@@ -2726,8 +2646,9 @@ function Invoke-DeepAppUninstall {
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
+    $isResidualOrphanRow = ($AppEntry.Id -and $AppEntry.Id -like 'ORPHAN\*')
     $safeLoc = ""
-    if ($AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
+    if (-not $isResidualOrphanRow -and $AppEntry.InstallLocation -and (Test-Path -LiteralPath $AppEntry.InstallLocation)) {
         $loc = try { (Resolve-Path -LiteralPath $AppEntry.InstallLocation).Path.TrimEnd('\') } catch { $AppEntry.InstallLocation.Trim().TrimEnd('\') }
         if (Test-SafeAppDirectoryForCleanup -Path $loc -AppEntry $AppEntry -AllInstalledApps $allInstalledNow) {
             $safeLoc = $loc
@@ -2799,11 +2720,13 @@ function Invoke-DeepAppUninstall {
     }
 
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
-    if ($canWaitNonBlocking) {
-        $cancelCb2 = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
-        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(800)) -TimeoutSeconds 3 -CancelCheck $cancelCb2)
-    } else {
-        Start-Sleep -Milliseconds 800
+    if (-not $isResidualOrphanRow) {
+        if ($canWaitNonBlocking) {
+            $cancelCb2 = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
+            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(800)) -TimeoutSeconds 3 -CancelCheck $cancelCb2)
+        } else {
+            Start-Sleep -Milliseconds 800
+        }
     }
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 

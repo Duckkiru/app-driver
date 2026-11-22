@@ -975,11 +975,24 @@
                         </Grid>
                     </Border>
 
-                    <ScrollViewer Grid.Row="2" Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
-                        <Canvas Name="UninstallerRowsPanel" Margin="16,0,16,12" Background="Transparent" ClipToBounds="True"
-                                UseLayoutRounding="True" SnapsToDevicePixels="True"/>
-                    </ScrollViewer>
+                    <Grid Grid.Row="2">
+                        <ScrollViewer Name="UninstallerScrollViewer" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                            <Canvas Name="UninstallerRowsPanel" Margin="16,0,16,12" Background="Transparent" ClipToBounds="True"
+                                    UseLayoutRounding="True" SnapsToDevicePixels="True"/>
+                        </ScrollViewer>
+                        <Border Name="UninstallerEmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Background="#111722" BorderBrush="#2A384E" BorderThickness="1" CornerRadius="4" Padding="26,20" Margin="20">
+                            <StackPanel HorizontalAlignment="Center" MaxWidth="460">
+                                <TextBlock Name="txtUninstEmptyTitle" Text="Không phát hiện ứng dụng lỗi hay dữ liệu còn sót"
+                                           FontSize="13.5" FontWeight="SemiBold" Foreground="#E2E8F0" TextAlignment="Center" TextWrapping="Wrap"/>
+                                <TextBlock Name="txtUninstEmptySub" Text="Hệ thống hiện khá sạch. Bạn vẫn có thể bấm nút bên dưới để quét sâu Firewall, App Paths, MuiCache, Service, Task và AppData."
+                                           FontSize="11.5" Foreground="#94A3B8" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,14"/>
+                                <Button Name="btnUninstEmptyScan" Content="Quét Rác &amp; App Lỗi toàn hệ thống" Style="{StaticResource ActionButton}"
+                                        Background="#0284C7" Foreground="#FFFFFF" Padding="14,7" HorizontalAlignment="Center" Margin="0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
             </Grid>
 
             <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
