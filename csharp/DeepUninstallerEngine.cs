@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6282,6 +6283,151 @@ namespace DuckUtil
         public static Task<List<DeepResidualArtifact>> ScanDeepAppResidualsFastAsync(string targetLocPrefix)
         {
             return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
+        }
+    }
+
+    public sealed class ProcessOutputPump
+    {
+        private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex _rxSpinnerOnly = new Regex("^[\\s\\-\\\\|/\u2588\u2593\u2592\u2591\u25A0\u25A1\u25AA\u25AB\u00B7\\.]+$", RegexOptions.Compiled);
+        private static readonly Regex _rxProgressBar = new Regex(@"^\s*\d+(\.\d+)?\s*(B|KB|MB|GB)\s*/\s*\d+(\.\d+)?\s*(B|KB|MB|GB)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private readonly object _outLock = new object();
+        private readonly object _errLock = new object();
+        private readonly StringBuilder _stdOut = new StringBuilder(4096);
+        private readonly StringBuilder _stdErr = new StringBuilder(1024);
+        private readonly ConcurrentQueue<string> _liveQueue = new ConcurrentQueue<string>();
+        private readonly Task _outTask;
+        private readonly Task _errTask;
+        private long _lastActivityTicks;
+        private long _lastProgressEmitTicks;
+        private int _liveQueueCount;
+        private string _lastEmittedLine = "";
+
+        public Task ReadersTask { get; private set; }
+
+        public ProcessOutputPump(Process proc)
+        {
+            _lastActivityTicks = DateTime.UtcNow.Ticks;
+            _lastProgressEmitTicks = 0L;
+            _outTask = Task.Run(delegate() { ReadLoop(proc != null ? proc.StandardOutput : null, false); });
+            _errTask = Task.Run(delegate() { ReadLoop(proc != null ? proc.StandardError : null, true); });
+            ReadersTask = Task.WhenAll(_outTask, _errTask);
+        }
+
+        public double IdleSeconds
+        {
+            get
+            {
+                long ticks = Interlocked.Read(ref _lastActivityTicks);
+                return Math.Max(0.0, (DateTime.UtcNow.Ticks - ticks) / (double)TimeSpan.TicksPerSecond);
+            }
+        }
+
+        public string GetStdOut()
+        {
+            lock (_outLock) { return _stdOut.ToString(); }
+        }
+
+        public string GetStdErr()
+        {
+            lock (_errLock) { return _stdErr.ToString(); }
+        }
+
+        public string[] DrainLiveLines(int maxCount)
+        {
+            if (_liveQueue.IsEmpty) return new string[0];
+            if (maxCount <= 0) maxCount = 32;
+            var list = new List<string>(Math.Min(maxCount, 64));
+            string item;
+            while (list.Count < maxCount && _liveQueue.TryDequeue(out item))
+            {
+                Interlocked.Decrement(ref _liveQueueCount);
+                if (!string.IsNullOrEmpty(item)) list.Add(item);
+            }
+            return list.ToArray();
+        }
+
+        private void ReadLoop(StreamReader reader, bool isErr)
+        {
+            if (reader == null) return;
+            var buf = new char[512];
+            var lineBuf = new StringBuilder(256);
+            try
+            {
+                int read;
+                while ((read = reader.Read(buf, 0, buf.Length)) > 0)
+                {
+                    Interlocked.Exchange(ref _lastActivityTicks, DateTime.UtcNow.Ticks);
+                    for (int i = 0; i < read; i++)
+                    {
+                        char ch = buf[i];
+                        if (ch == '\r' || ch == '\n')
+                        {
+                            if (lineBuf.Length > 0)
+                            {
+                                FlushSegment(lineBuf.ToString(), isErr, ch == '\r');
+                                lineBuf.Length = 0;
+                            }
+                        }
+                        else
+                        {
+                            if (lineBuf.Length < 4096) lineBuf.Append(ch);
+                        }
+                    }
+                }
+                if (lineBuf.Length > 0)
+                {
+                    FlushSegment(lineBuf.ToString(), isErr, false);
+                }
+            }
+            catch {}
+        }
+
+        private void FlushSegment(string raw, bool isErr, bool isCrOnly)
+        {
+            if (string.IsNullOrEmpty(raw)) return;
+            string clean = _rxAnsi.Replace(raw, "").Trim();
+            if (string.IsNullOrEmpty(clean)) return;
+
+            bool isSpinner = _rxSpinnerOnly.IsMatch(clean);
+            if (!isSpinner)
+            {
+                if (isErr)
+                {
+                    lock (_errLock)
+                    {
+                        if (_stdErr.Length < 1048576) { _stdErr.AppendLine(clean); }
+                    }
+                }
+                else
+                {
+                    lock (_outLock)
+                    {
+                        if (_stdOut.Length < 2097152) { _stdOut.AppendLine(clean); }
+                    }
+                }
+            }
+
+            if (isSpinner) return;
+
+            bool isProgress = _rxProgressBar.IsMatch(clean) || (isCrOnly && (clean.IndexOf("MB /", StringComparison.OrdinalIgnoreCase) >= 0 || clean.IndexOf("KB /", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (isProgress)
+            {
+                long nowTicks = DateTime.UtcNow.Ticks;
+                long prevTicks = Interlocked.Read(ref _lastProgressEmitTicks);
+                if ((nowTicks - prevTicks) < TimeSpan.TicksPerSecond * 2) return;
+                Interlocked.Exchange(ref _lastProgressEmitTicks, nowTicks);
+            }
+
+            string prevEmitted = Interlocked.Exchange(ref _lastEmittedLine, clean);
+            if (string.Equals(clean, prevEmitted, StringComparison.Ordinal)) return;
+
+            if (Volatile.Read(ref _liveQueueCount) < 4000)
+            {
+                _liveQueue.Enqueue(isErr ? ("[stderr] " + clean) : clean);
+                Interlocked.Increment(ref _liveQueueCount);
+            }
         }
     }
 }

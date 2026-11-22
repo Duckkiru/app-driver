@@ -1211,10 +1211,14 @@ function Wait-TaskNonBlocking {
     param(
         [Parameter(Mandatory = $true)][System.Threading.Tasks.Task]$Task,
         [double]$TimeoutSeconds = 60,
-        [scriptblock]$CancelCheck = $null
+        [scriptblock]$CancelCheck = $null,
+        [scriptblock]$OnTick = $null
     )
     if ($null -eq $Task) { return $true }
-    if ($Task.IsCompleted) { return $true }
+    if ($Task.IsCompleted) {
+        if ($OnTick) { try { & $OnTick } catch {} }
+        return $true
+    }
     if ($script:isWindowClosing) { return $false }
 
     if ($window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
@@ -1225,15 +1229,29 @@ function Wait-TaskNonBlocking {
 
         $guardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
         $guardTimer.Interval = [TimeSpan]::FromMilliseconds(40)
+        $guardTimer.Tag = @{
+            Task        = $Task
+            Frame       = $frame
+            Sw          = $sw
+            Timeout     = $TimeoutSeconds
+            CancelCheck = $CancelCheck
+            OnTick      = $OnTick
+        }
         $guardTimer.Add_Tick({
+            param($s, $e)
+            $st = $s.Tag
+            if ($null -eq $st) { return }
+            if ($st.OnTick) {
+                try { & $st.OnTick } catch {}
+            }
             $canceledNow = $false
-            if ($CancelCheck) {
-                try { $canceledNow = [bool](& $CancelCheck) } catch {}
+            if ($st.CancelCheck) {
+                try { $canceledNow = [bool](& $st.CancelCheck) } catch {}
             }
-            if ($Task.IsCompleted -or $script:isWindowClosing -or $canceledNow -or $sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
-                $frame.Continue = $false
+            if ($st.Task.IsCompleted -or $script:isWindowClosing -or $canceledNow -or $st.Sw.Elapsed.TotalSeconds -ge $st.Timeout) {
+                $st.Frame.Continue = $false
             }
-        }.GetNewClosure())
+        })
 
         try {
             $smoothType = "DuckUtil.SmoothScrollController" -as [type]
@@ -1246,8 +1264,10 @@ function Wait-TaskNonBlocking {
                 $guardTimer.Start()
                 [System.Windows.Threading.Dispatcher]::PushFrame($frame)
             }
+            if ($OnTick) { try { & $OnTick } catch {} }
         } finally {
             try { $guardTimer.Stop() } catch {}
+            try { $guardTimer.Tag = $null } catch {}
             try { [void]$script:activeWaitFrames.Remove($frame) } catch {}
         }
         return $Task.IsCompleted
@@ -1255,11 +1275,13 @@ function Wait-TaskNonBlocking {
 
     $swFallback = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $Task.IsCompleted) {
+        if ($OnTick) { try { & $OnTick } catch {} }
         $canceledFb = $false
         if ($CancelCheck) { try { $canceledFb = [bool](& $CancelCheck) } catch {} }
         if ($script:isWindowClosing -or $canceledFb -or $swFallback.Elapsed.TotalSeconds -ge $TimeoutSeconds) { break }
         try { [void]$Task.Wait(25) } catch {}
     }
+    if ($OnTick) { try { & $OnTick } catch {} }
     return $Task.IsCompleted
 }
 
@@ -1280,8 +1302,8 @@ function Invoke-GuardedAction {
     $busyUninstaller = (-not $AllowDuringUninstallerLoad) -and $script:isUpdatingUninstaller
     if ($script:isActionRunning -or $script:isScanningApps -or $busyUninstaller -or $script:isUninstallingQueue) {
         Log-Text "[WARN] Đang có một tác vụ khác đang thực thi ($ActionName). Vui lòng đợi!"
-        if ($DeferExpand -and -not $script:isActionRunning -and -not $script:isUninstallingQueue -and $txtStatus) {
-            $txtStatus.Text = "Đang có tác vụ nền khác chạy ($ActionName), vui lòng đợi..."
+        if ($txtStatus) {
+            $txtStatus.Text = "Đang có tác vụ khác chạy, vui lòng đợi xong rồi bấm lại ($ActionName)..."
         }
         return
     }
@@ -5420,18 +5442,26 @@ function Test-IsStandardInstallLocation {
 }
 
 function Invoke-WinGetWithMsiRetry {
-    param([Parameter(Mandatory = $true)][string]$Arguments)
+    param(
+        [Parameter(Mandatory = $true)][string]$Arguments,
+        [int]$TimeoutSeconds = 300,
+        [int]$IdleTimeoutSeconds = 150
+    )
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
+    if (-not (Get-Command "winget" -CommandType Application -ErrorAction SilentlyContinue)) {
+        Log-Text "[WARN] Không tìm thấy WinGet trên hệ thống (sẽ chuyển sang nguồn tải trực tiếp dự phòng)."
+        return -1
+    }
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
-    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput
+    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
     if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978334974 -or $code -eq 1618)) {
         Log-Text "[!] Windows Installer đang bận (1618), đang chờ giải phóng để thử lại..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
         if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
         [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(1200)) -TimeoutSeconds 3 -CancelCheck { [bool]$script:cancelRequested })
         if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
-        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput
+        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
     }
     return $code
 }
@@ -6858,7 +6888,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     $code = Invoke-WinGetSourceAware -BaseArguments $upArgs -App $app -Id $upgradeId
-    if ($code -ne 0 -and $needCustomLocArg -and $existingLoc -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+    if ($code -ne 0 -and $code -ne -3 -and $needCustomLocArg -and $existingLoc -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         Log-Text "[!] Nâng cấp kèm đường dẫn cố định không khả dụng (Code: $code), đang thử lại bỏ tham số --location..."
         $upArgsNoLoc = $baseUpArgs
         if ($scope) { $upArgsNoLoc += " --scope $scope" }
@@ -6866,7 +6896,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     $scopeSupported = $true
-    if ($code -ne 0 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+    if ($code -ne 0 -and $code -ne -3 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         $scopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $scope
         if (-not $scopeSupported) {
             Log-Text "[!] $($app.Name): Bản đang cài thuộc scope '$scope', nhưng WinGet không có bộ cài cho scope '$scope' (từ chối cài chồng scope khác để tránh trùng 2 bản)."
@@ -6959,8 +6989,8 @@ function Invoke-CatalogUpgradeWithFallback {
     try {
         # Tier 1: WinGet CLI (strict scope & location)
         $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade -Context $ctx -SkipGuard
-        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
-        if ($upCode -in @(0, 2, 3, -2) -or $script:cancelRequested -or $script:isWindowClosing) {
+        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2, -3))
+        if ($upCode -in @(0, 2, 3, -2, -3) -or $script:cancelRequested -or $script:isWindowClosing) {
             $finalCode = $upCode
             return $finalCode
         }
@@ -7107,7 +7137,7 @@ function Invoke-CatalogFreshInstallFallback {
 }
 
 Register-Click "btnInstall" {
-    Invoke-GuardedAction "Cài đặt & Cập nhật" {
+    Invoke-GuardedAction "Cài đặt & Cập nhật" -AllowDuringUninstallerLoad {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -7218,6 +7248,9 @@ Register-Click "btnInstall" {
                         $webCount++
                     } elseif ($upCode -eq -2 -or $script:cancelRequested) {
                         Log-Text "   [!] Đã hủy cập nhật $($app.Name)."
+                    } elseif ($upCode -eq -3) {
+                        Log-Text "   [WARN - HẾT THỜI GIAN CHỜ] $($app.Name) không phản hồi - đã bỏ qua để tiếp tục."
+                        $failCount++
                     } else {
                         Log-Text "   [ERR - CẬP NHẬT] $($app.Name) (Exit Code: $upCode)"
                         $failCount++
@@ -7369,43 +7402,66 @@ Register-Click "btnInstall" {
 }
 
 Register-Click "btnUpgradeAll" {
-    Invoke-GuardedAction "Nâng cấp toàn bộ" {
+    Invoke-GuardedAction "Nâng cấp toàn bộ" -AllowDuringUninstallerLoad {
         Log-Text "=========================================================="
         Log-Text "[UPGRADE] BẮT ĐẦU NÂNG CẤP TOÀN BỘ PHẦN MỀM TRÊN MÁY"
         Log-Text "=========================================================="
-        if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp tất cả ứng dụng..." }
+        if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra danh sách ứng dụng cần cập nhật..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         if ($btnCancelAction) {
             $btnCancelAction.Content = "Dừng tác vụ"
             $btnCancelAction.IsEnabled = $true
             $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
         }
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(20)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
 
         if (-not $script:isUpdatingUninstaller) {
             $script:cachedUninstallerApps = @()
+        }
+
+        if (-not $script:hasCompletedAppScan -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+            Log-Text "[*] Đang hoàn tất quét danh sách ứng dụng trước khi cập nhật..."
+            Scan-And-ColorizeApps
         }
 
         $bulkOk = 0
         $bulkAlready = 0
         $bulkSkip = 0
         $bulkFail = 0
-        $bulkCode = 0
+        $selfHostBlockRegex = '^(?i)(Microsoft\.AppInstaller|Microsoft\.WindowsTerminal|Microsoft\.PowerShell|Microsoft\.WindowsAppRuntime\..*|Microsoft\.UI\.Xaml\..*|Microsoft\.VCLibs\..*)$'
 
         try {
             $outdatedRows = @($allItemBorders | Where-Object { $_.Tag -and $_.Tag.Status -eq "OUTDATED" })
             $crackBlockedCount = 0
             $safeOutdatedRows = [System.Collections.Generic.List[object]]::new()
-            $msStoreOutdatedRows = [System.Collections.Generic.List[object]]::new()
-            $safeWingetOutdatedRows = [System.Collections.Generic.List[object]]::new()
-            if ($outdatedRows.Count -gt 0) {
-                $instAppsBulk = if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-                    [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
-                } else { @() }
+
+            if ($outdatedRows.Count -gt 0 -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+                $instAppsBulk = @()
+                if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+                    try {
+                        $tApps = [DuckUtil.DeepUninstallerEngine]::GetInstalledAppsAsync()
+                        [void](Wait-TaskNonBlocking -Task $tApps -TimeoutSeconds 15 -CancelCheck { [bool]$script:cancelRequested })
+                        if ($tApps.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tApps.Result) {
+                            $instAppsBulk = @($tApps.Result)
+                        }
+                    } catch {
+                        $instAppsBulk = @()
+                    }
+                }
                 $hasCrackChecker = [bool]("DuckUtil.AppCatalogEngine" -as [type])
 
                 foreach ($row in $outdatedRows) {
+                    if ($script:isWindowClosing -or $script:cancelRequested) { break }
                     $tagOut = $row.Tag
                     $appOut = $tagOut.App
+                    $chkPkgId = if ($tagOut.DetectedId -and $tagOut.DetectedId -notmatch '^(ARP|MSIX|LOCAL)\\') { [string]$tagOut.DetectedId } elseif ($appOut) { [string]$appOut.ID } else { "" }
+
+                    if ($chkPkgId -match $selfHostBlockRegex) {
+                        $bulkSkip++
+                        Log-Text "[SKIP - BẢO VỆ TIẾN TRÌNH ĐANG CHẠY] Tự động bỏ qua $($appOut.Name) ($chkPkgId) để tránh đóng đột ngột App-Driver."
+                        continue
+                    }
+
                     $isCracked = $false
                     if ($hasCrackChecker -and $appOut) {
                         $regM = Find-RegistryMatchForCatalogApp -App $appOut -InstalledList $instAppsBulk -DetectedId ([string]$tagOut.DetectedId) -InstalledVersion ([string]$tagOut.InstalledVersion)
@@ -7421,130 +7477,116 @@ Register-Click "btnUpgradeAll" {
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } else {
                         [void]$safeOutdatedRows.Add($row)
-                        if (($appOut -and $appOut.Source -eq "msstore") -or ($tagOut.DetectedId -match '^9[A-Z0-9]{11}$')) {
-                            [void]$msStoreOutdatedRows.Add($row)
-                        } else {
-                            [void]$safeWingetOutdatedRows.Add($row)
-                        }
                     }
                 }
             }
 
             if (-not $script:isWindowClosing -and -not $script:cancelRequested) {
-                $runPerAppSafeList = $false
-                if ($crackBlockedCount -eq 0 -and ($outdatedRows.Count -eq 0 -or $safeOutdatedRows.Count -gt 0)) {
-                    if ($txtStatus) { $txtStatus.Text = "Đang nâng cấp toàn bộ ứng dụng (nhanh - an toàn)..." }
-                    Log-Text "[*] Đã kiểm tra bảo vệ Crack/Patch xong (0 cảnh báo) - chạy nâng cấp gộp..."
-                    $bulkCode = Invoke-WinGetWithMsiRetry -Arguments "upgrade --all --source winget --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
-                    $bulkOutcome = Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun
-                    if ($bulkCode -ne 0 -or $bulkOutcome -eq "Failed") {
-                        Log-Text "[WARN] Lệnh 'winget upgrade --all' kết thúc với mã $bulkCode (một số gói có thể lỗi hoặc khác scope)."
-                        if ($safeWingetOutdatedRows.Count -gt 0 -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
-                            Log-Text "[*] Đang kiểm tra và nâng cấp từng gói an toàn trong danh mục..."
-                            $runPerAppSafeList = $true
-                        } elseif ($bulkCode -ne 0) {
-                            $bulkFail++
-                        }
-                    } elseif ($safeWingetOutdatedRows.Count -gt 0) {
-                        $postBulkCap = if (Get-Command "Invoke-WingetListCapture" -ErrorAction SilentlyContinue) {
-                            Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25
-                        } else { $null }
-                        if ($postBulkCap -and $postBulkCap.Available -and -not $postBulkCap.TimedOut -and -not $postBulkCap.WasCanceled -and -not [string]::IsNullOrWhiteSpace($postBulkCap.StdOut)) {
-                            $postBulkParsed = ConvertFrom-WingetListOutput -RawText $postBulkCap.StdOut -AllowHeaderless ($postBulkCap.ExitCode -eq 0)
-                            if ($postBulkParsed -and $postBulkParsed.Items.Count -gt 0) {
-                                $stillOutIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-                                foreach ($pbIt in $postBulkParsed.Items) {
-                                    if ($pbIt -and $pbIt.HasUpdate -and -not [string]::IsNullOrWhiteSpace($pbIt.ID)) {
-                                        [void]$stillOutIds.Add($pbIt.ID)
-                                    }
-                                }
-                                $fallbackAfterBulk = [System.Collections.Generic.List[object]]::new()
-                                foreach ($srCheck in $safeWingetOutdatedRows) {
-                                    $chkTag = $srCheck.Tag
-                                    $chkApp = $chkTag.App
-                                    $chkId = if ($chkTag.DetectedId -and $chkTag.DetectedId -notmatch '^(ARP|MSIX|LOCAL)\\') { [string]$chkTag.DetectedId } else { [string]$chkApp.ID }
-                                    if ($stillOutIds.Contains($chkId) -or ($chkApp -and $chkApp.ID -and $stillOutIds.Contains([string]$chkApp.ID))) {
-                                        [void]$fallbackAfterBulk.Add($srCheck)
-                                    } else {
-                                        $bulkOk++
-                                        if ($chkTag.CheckBox) { $chkTag.CheckBox.IsChecked = $false }
-                                    }
-                                }
-                                if ($fallbackAfterBulk.Count -gt 0) {
-                                    Log-Text "[*] Phát hiện $($fallbackAfterBulk.Count) gói chưa được 'upgrade --all' xử lý triệt để; đang kiểm tra và nâng cấp riêng từng gói..."
-                                    $safeWingetOutdatedRows = $fallbackAfterBulk
-                                    $runPerAppSafeList = $true
-                                }
-                            } else {
-                                $bulkOk += $safeWingetOutdatedRows.Count
-                            }
-                        } else {
-                            $bulkOk += $safeWingetOutdatedRows.Count
-                        }
-                    }
-
-                    foreach ($stRow in $msStoreOutdatedRows) {
-                        if ($script:isWindowClosing -or $script:cancelRequested) { break }
-                        $stCode = Invoke-CatalogUpgradeWithFallback -Tag $stRow.Tag -IsBulkUpgrade
-                        if ($stCode -eq 0) {
-                            Log-Text "   [OK - ĐÃ NÂNG CẤP] $($stRow.Tag.App.Name)"
-                            $bulkOk++
-                            if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
-                        } elseif ($stCode -eq 2) {
-                            Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($stRow.Tag.App.Name) để giữ nguyên file patch."
-                            $bulkSkip++
-                            if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
-                        } elseif ($stCode -eq 3) {
-                            Log-Text "   [INFO - ĐÃ LÀ BẢN MỚI NHẤT] $($stRow.Tag.App.Name)"
-                            $bulkAlready++
-                        } elseif ($stCode -eq 4) {
-                            Log-Text "   [WARN - CHƯA THAY ĐỔI PHIÊN BẢN] $($stRow.Tag.App.Name) chưa ghi nhận phiên bản mới."
-                            $bulkFail++
-                        } elseif ($stCode -eq 5) {
-                            $bulkSkip++
-                        } elseif ($stCode -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - NÂNG CẤP] $($stRow.Tag.App.Name) (Exit Code: $stCode)"
-                            $bulkFail++
-                        }
-                    }
-                } elseif ($safeOutdatedRows.Count -gt 0) {
-                    $runPerAppSafeList = $true
-                    $safeWingetOutdatedRows = $safeOutdatedRows
-                }
-
-                if ($runPerAppSafeList -and $safeWingetOutdatedRows.Count -gt 0) {
-                    $totalOut = $safeWingetOutdatedRows.Count
+                if ($safeOutdatedRows.Count -gt 0) {
+                    $totalOut = $safeOutdatedRows.Count
                     $idxOut = 0
-                    foreach ($row in $safeWingetOutdatedRows) {
+                    Log-Text "[*] Đã kiểm tra bảo vệ xong ($crackBlockedCount cảnh báo Crack/Patch) - tiến hành nâng cấp lần lượt $totalOut ứng dụng an toàn..."
+                    foreach ($row in $safeOutdatedRows) {
                         if ($script:isWindowClosing -or $script:cancelRequested) { break }
                         $idxOut++
                         $tagOut = $row.Tag
+                        $appLabel = if ($tagOut.App) { [string]$tagOut.App.Name } else { "Ứng dụng #$idxOut" }
+                        $verHint = if (-not [string]::IsNullOrWhiteSpace([string]$tagOut.InstalledVersion) -and $tagOut.PSObject.Properties['AvailableVersion'] -and -not [string]::IsNullOrWhiteSpace([string]$tagOut.AvailableVersion)) {
+                            " ($($tagOut.InstalledVersion) -> $($tagOut.AvailableVersion))"
+                        } else { "" }
                         if ($progressBar) {
                             $progressBar.IsIndeterminate = $false
                             $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100)
                         }
-                        if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..." }
-                        Log-Text "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..."
+                        if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] Đang nâng cấp: $appLabel$verHint..." }
+                        Log-Text "[$idxOut/$totalOut] Đang nâng cấp an toàn: $appLabel$verHint..."
+                        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(15)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
+
                         $codeOut = Invoke-CatalogUpgradeWithFallback -Tag $tagOut -IsBulkUpgrade
                         if ($codeOut -eq 0) {
-                            Log-Text "   [OK - ĐÃ NÂNG CẤP] $($tagOut.App.Name)"
+                            Log-Text "   [OK - ĐÃ NÂNG CẤP] $appLabel"
                             $bulkOk++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 2) {
-                            Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $($tagOut.App.Name) để giữ nguyên file patch."
+                            Log-Text "   [SKIP - BẢO VỆ CRACK/PATCH] Đã bỏ qua $appLabel để giữ nguyên file patch."
                             $bulkSkip++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 3) {
-                            Log-Text "   [INFO - ĐÃ LÀ BẢN MỚI NHẤT] $($tagOut.App.Name)"
+                            Log-Text "   [INFO - ĐÃ LÀ BẢN MỚI NHẤT] $appLabel"
                             $bulkAlready++
                         } elseif ($codeOut -eq 4) {
-                            Log-Text "   [WARN - CHƯA THAY ĐỔI PHIÊN BẢN] $($tagOut.App.Name) chưa ghi nhận phiên bản mới."
+                            Log-Text "   [WARN - CHƯA THAY ĐỔI PHIÊN BẢN] $appLabel chưa ghi nhận phiên bản mới."
                             $bulkFail++
                         } elseif ($codeOut -eq 5) {
                             $bulkSkip++
-                        } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - NÂNG CẤP] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                        } elseif ($codeOut -eq -3) {
+                            Log-Text "   [WARN - HẾT THỜI GIAN CHỜ] $appLabel không phản hồi - đã bỏ qua để tiếp tục ứng dụng kế tiếp."
                             $bulkFail++
+                        } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
+                            Log-Text "   [ERR - NÂNG CẤP] $appLabel (Exit Code: $codeOut)"
+                            $bulkFail++
+                        }
+                    }
+                } elseif ($outdatedRows.Count -eq 0) {
+                    if (-not (Get-Command "winget" -CommandType Application -ErrorAction SilentlyContinue)) {
+                        Log-Text "[OK] Toàn bộ ứng dụng trong danh mục đã ở phiên bản mới nhất (máy chưa cài WinGet)."
+                    } else {
+                        if ($txtStatus) { $txtStatus.Text = "Đang kiểm tra gói WinGet ngoài danh mục..." }
+                        Log-Text "[*] Danh mục chính đã mới nhất - đang kiểm tra nhanh các ứng dụng WinGet ngoài danh mục..."
+                        $extCap = if (Get-Command "Invoke-WingetListCapture" -ErrorAction SilentlyContinue) {
+                            Invoke-WingetListCapture -Arguments "upgrade --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25
+                        } else { $null }
+                        $extTargets = [System.Collections.Generic.List[object]]::new()
+                        if ($extCap -and $extCap.Available -and -not $extCap.TimedOut -and -not $extCap.WasCanceled -and -not [string]::IsNullOrWhiteSpace($extCap.StdOut)) {
+                            $extParsed = ConvertFrom-WingetListOutput -RawText $extCap.StdOut -AllowHeaderless ($extCap.ExitCode -eq 0)
+                            if ($extParsed -and $extParsed.Items.Count -gt 0) {
+                                foreach ($ep in $extParsed.Items) {
+                                    if (-not $ep -or -not $ep.HasUpdate -or [string]::IsNullOrWhiteSpace($ep.ID)) { continue }
+                                    if ($ep.ID -match '^(ARP|MSIX|LOCAL)\\') { continue }
+                                    if ($ep.Version -match '^(<|Unknown)') { continue }
+                                    if ($ep.ID -match $selfHostBlockRegex) {
+                                        $bulkSkip++
+                                        Log-Text "[SKIP - BẢO VỆ TIẾN TRÌNH ĐANG CHẠY] Bỏ qua $($ep.Name) ($($ep.ID)) để giữ ổn định App-Driver."
+                                        continue
+                                    }
+                                    [void]$extTargets.Add($ep)
+                                }
+                            }
+                        }
+
+                        if ($extTargets.Count -eq 0) {
+                            Log-Text "[OK] Toàn bộ phần mềm trên máy đều đã ở phiên bản mới nhất!"
+                        } else {
+                            $totExt = $extTargets.Count
+                            $idxExt = 0
+                            Log-Text "[*] Phát hiện $totExt ứng dụng ngoài danh mục có bản mới - đang nâng cấp lần lượt..."
+                            foreach ($et in $extTargets) {
+                                if ($script:isWindowClosing -or $script:cancelRequested) { break }
+                                $idxExt++
+                                if ($progressBar) {
+                                    $progressBar.IsIndeterminate = $false
+                                    $progressBar.Value = [math]::Round(($idxExt / $totExt) * 100)
+                                }
+                                if ($txtStatus) { $txtStatus.Text = "[$idxExt/$totExt] Đang nâng cấp: $($et.Name) ($($et.Version) -> $($et.Available))..." }
+                                Log-Text "[$idxExt/$totExt] Đang nâng cấp: $($et.Name) ($($et.ID): $($et.Version) -> $($et.Available))..."
+                                $extCode = Invoke-WinGetWithMsiRetry -Arguments ("upgrade --id `"$($et.ID)`" --exact --source winget --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -TimeoutSeconds 240 -IdleTimeoutSeconds 120
+                                $extOut = Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun
+                                if ($extCode -in @(0, 3010, 1641) -and $extOut -ne "Failed") {
+                                    if ($extOut -eq "NoUpgradeAvailable") {
+                                        Log-Text "   [INFO - ĐÃ LÀ BẢN MỚI NHẤT] $($et.Name)"
+                                        $bulkAlready++
+                                    } else {
+                                        Log-Text "   [OK - ĐÃ NÂNG CẤP] $($et.Name)"
+                                        $bulkOk++
+                                    }
+                                } elseif ($extCode -eq -3) {
+                                    Log-Text "   [WARN - HẾT THỜI GIAN CHỜ] $($et.Name) không phản hồi - bỏ qua để tiếp tục."
+                                    $bulkFail++
+                                } elseif ($extCode -ne -2 -and -not $script:cancelRequested) {
+                                    Log-Text "   [ERR - NÂNG CẤP] $($et.Name) (Exit Code: $extCode)"
+                                    $bulkFail++
+                                }
+                            }
                         }
                     }
                 }
@@ -7572,7 +7614,7 @@ Register-Click "btnUpgradeAll" {
             if (-not $script:isWindowClosing) {
                 if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) { Stop-PreSpawnedWinget }
                 Scan-And-ColorizeApps
-                if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
+                if (-not $script:cancelRequested) {
                     foreach ($sr in $safeOutdatedRows) {
                         if ($sr.Tag -and $sr.Tag.Status -ne "OUTDATED" -and $sr.Tag.CheckBox -and $sr.Tag.CheckBox.IsChecked -eq $true) {
                             $sr.Tag.CheckBox.IsChecked = $false

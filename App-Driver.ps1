@@ -20997,6 +20997,151 @@ namespace DuckUtil
             return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
         }
     }
+
+    public sealed class ProcessOutputPump
+    {
+        private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex _rxSpinnerOnly = new Regex("^[\\s\\-\\\\|/\u2588\u2593\u2592\u2591\u25A0\u25A1\u25AA\u25AB\u00B7\\.]+$", RegexOptions.Compiled);
+        private static readonly Regex _rxProgressBar = new Regex(@"^\s*\d+(\.\d+)?\s*(B|KB|MB|GB)\s*/\s*\d+(\.\d+)?\s*(B|KB|MB|GB)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private readonly object _outLock = new object();
+        private readonly object _errLock = new object();
+        private readonly StringBuilder _stdOut = new StringBuilder(4096);
+        private readonly StringBuilder _stdErr = new StringBuilder(1024);
+        private readonly ConcurrentQueue<string> _liveQueue = new ConcurrentQueue<string>();
+        private readonly Task _outTask;
+        private readonly Task _errTask;
+        private long _lastActivityTicks;
+        private long _lastProgressEmitTicks;
+        private int _liveQueueCount;
+        private string _lastEmittedLine = "";
+
+        public Task ReadersTask { get; private set; }
+
+        public ProcessOutputPump(Process proc)
+        {
+            _lastActivityTicks = DateTime.UtcNow.Ticks;
+            _lastProgressEmitTicks = 0L;
+            _outTask = Task.Run(delegate() { ReadLoop(proc != null ? proc.StandardOutput : null, false); });
+            _errTask = Task.Run(delegate() { ReadLoop(proc != null ? proc.StandardError : null, true); });
+            ReadersTask = Task.WhenAll(_outTask, _errTask);
+        }
+
+        public double IdleSeconds
+        {
+            get
+            {
+                long ticks = Interlocked.Read(ref _lastActivityTicks);
+                return Math.Max(0.0, (DateTime.UtcNow.Ticks - ticks) / (double)TimeSpan.TicksPerSecond);
+            }
+        }
+
+        public string GetStdOut()
+        {
+            lock (_outLock) { return _stdOut.ToString(); }
+        }
+
+        public string GetStdErr()
+        {
+            lock (_errLock) { return _stdErr.ToString(); }
+        }
+
+        public string[] DrainLiveLines(int maxCount)
+        {
+            if (_liveQueue.IsEmpty) return new string[0];
+            if (maxCount <= 0) maxCount = 32;
+            var list = new List<string>(Math.Min(maxCount, 64));
+            string item;
+            while (list.Count < maxCount && _liveQueue.TryDequeue(out item))
+            {
+                Interlocked.Decrement(ref _liveQueueCount);
+                if (!string.IsNullOrEmpty(item)) list.Add(item);
+            }
+            return list.ToArray();
+        }
+
+        private void ReadLoop(StreamReader reader, bool isErr)
+        {
+            if (reader == null) return;
+            var buf = new char[512];
+            var lineBuf = new StringBuilder(256);
+            try
+            {
+                int read;
+                while ((read = reader.Read(buf, 0, buf.Length)) > 0)
+                {
+                    Interlocked.Exchange(ref _lastActivityTicks, DateTime.UtcNow.Ticks);
+                    for (int i = 0; i < read; i++)
+                    {
+                        char ch = buf[i];
+                        if (ch == '\r' || ch == '\n')
+                        {
+                            if (lineBuf.Length > 0)
+                            {
+                                FlushSegment(lineBuf.ToString(), isErr, ch == '\r');
+                                lineBuf.Length = 0;
+                            }
+                        }
+                        else
+                        {
+                            if (lineBuf.Length < 4096) lineBuf.Append(ch);
+                        }
+                    }
+                }
+                if (lineBuf.Length > 0)
+                {
+                    FlushSegment(lineBuf.ToString(), isErr, false);
+                }
+            }
+            catch {}
+        }
+
+        private void FlushSegment(string raw, bool isErr, bool isCrOnly)
+        {
+            if (string.IsNullOrEmpty(raw)) return;
+            string clean = _rxAnsi.Replace(raw, "").Trim();
+            if (string.IsNullOrEmpty(clean)) return;
+
+            bool isSpinner = _rxSpinnerOnly.IsMatch(clean);
+            if (!isSpinner)
+            {
+                if (isErr)
+                {
+                    lock (_errLock)
+                    {
+                        if (_stdErr.Length < 1048576) { _stdErr.AppendLine(clean); }
+                    }
+                }
+                else
+                {
+                    lock (_outLock)
+                    {
+                        if (_stdOut.Length < 2097152) { _stdOut.AppendLine(clean); }
+                    }
+                }
+            }
+
+            if (isSpinner) return;
+
+            bool isProgress = _rxProgressBar.IsMatch(clean) || (isCrOnly && (clean.IndexOf("MB /", StringComparison.OrdinalIgnoreCase) >= 0 || clean.IndexOf("KB /", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (isProgress)
+            {
+                long nowTicks = DateTime.UtcNow.Ticks;
+                long prevTicks = Interlocked.Read(ref _lastProgressEmitTicks);
+                if ((nowTicks - prevTicks) < TimeSpan.TicksPerSecond * 2) return;
+                Interlocked.Exchange(ref _lastProgressEmitTicks, nowTicks);
+            }
+
+            string prevEmitted = Interlocked.Exchange(ref _lastEmittedLine, clean);
+            if (string.Equals(clean, prevEmitted, StringComparison.Ordinal)) return;
+
+            if (Volatile.Read(ref _liveQueueCount) < 4000)
+            {
+                _liveQueue.Enqueue(isErr ? ("[stderr] " + clean) : clean);
+                Interlocked.Increment(ref _liveQueueCount);
+            }
+        }
+    }
 }
 
 
@@ -29699,6 +29844,7 @@ using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35974,6 +36120,151 @@ namespace DuckUtil
             return Task.Run(delegate() { return ScanDeepAppResidualsFast(targetLocPrefix); });
         }
     }
+
+    public sealed class ProcessOutputPump
+    {
+        private static readonly Regex _rxAnsi = new Regex(@"\x1B\[[0-9;?]*[A-Za-z]", RegexOptions.Compiled);
+        private static readonly Regex _rxSpinnerOnly = new Regex("^[\\s\\-\\\\|/\u2588\u2593\u2592\u2591\u25A0\u25A1\u25AA\u25AB\u00B7\\.]+$", RegexOptions.Compiled);
+        private static readonly Regex _rxProgressBar = new Regex(@"^\s*\d+(\.\d+)?\s*(B|KB|MB|GB)\s*/\s*\d+(\.\d+)?\s*(B|KB|MB|GB)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private readonly object _outLock = new object();
+        private readonly object _errLock = new object();
+        private readonly StringBuilder _stdOut = new StringBuilder(4096);
+        private readonly StringBuilder _stdErr = new StringBuilder(1024);
+        private readonly ConcurrentQueue<string> _liveQueue = new ConcurrentQueue<string>();
+        private readonly Task _outTask;
+        private readonly Task _errTask;
+        private long _lastActivityTicks;
+        private long _lastProgressEmitTicks;
+        private int _liveQueueCount;
+        private string _lastEmittedLine = "";
+
+        public Task ReadersTask { get; private set; }
+
+        public ProcessOutputPump(Process proc)
+        {
+            _lastActivityTicks = DateTime.UtcNow.Ticks;
+            _lastProgressEmitTicks = 0L;
+            _outTask = Task.Run(delegate() { ReadLoop(proc != null ? proc.StandardOutput : null, false); });
+            _errTask = Task.Run(delegate() { ReadLoop(proc != null ? proc.StandardError : null, true); });
+            ReadersTask = Task.WhenAll(_outTask, _errTask);
+        }
+
+        public double IdleSeconds
+        {
+            get
+            {
+                long ticks = Interlocked.Read(ref _lastActivityTicks);
+                return Math.Max(0.0, (DateTime.UtcNow.Ticks - ticks) / (double)TimeSpan.TicksPerSecond);
+            }
+        }
+
+        public string GetStdOut()
+        {
+            lock (_outLock) { return _stdOut.ToString(); }
+        }
+
+        public string GetStdErr()
+        {
+            lock (_errLock) { return _stdErr.ToString(); }
+        }
+
+        public string[] DrainLiveLines(int maxCount)
+        {
+            if (_liveQueue.IsEmpty) return new string[0];
+            if (maxCount <= 0) maxCount = 32;
+            var list = new List<string>(Math.Min(maxCount, 64));
+            string item;
+            while (list.Count < maxCount && _liveQueue.TryDequeue(out item))
+            {
+                Interlocked.Decrement(ref _liveQueueCount);
+                if (!string.IsNullOrEmpty(item)) list.Add(item);
+            }
+            return list.ToArray();
+        }
+
+        private void ReadLoop(StreamReader reader, bool isErr)
+        {
+            if (reader == null) return;
+            var buf = new char[512];
+            var lineBuf = new StringBuilder(256);
+            try
+            {
+                int read;
+                while ((read = reader.Read(buf, 0, buf.Length)) > 0)
+                {
+                    Interlocked.Exchange(ref _lastActivityTicks, DateTime.UtcNow.Ticks);
+                    for (int i = 0; i < read; i++)
+                    {
+                        char ch = buf[i];
+                        if (ch == '\r' || ch == '\n')
+                        {
+                            if (lineBuf.Length > 0)
+                            {
+                                FlushSegment(lineBuf.ToString(), isErr, ch == '\r');
+                                lineBuf.Length = 0;
+                            }
+                        }
+                        else
+                        {
+                            if (lineBuf.Length < 4096) lineBuf.Append(ch);
+                        }
+                    }
+                }
+                if (lineBuf.Length > 0)
+                {
+                    FlushSegment(lineBuf.ToString(), isErr, false);
+                }
+            }
+            catch {}
+        }
+
+        private void FlushSegment(string raw, bool isErr, bool isCrOnly)
+        {
+            if (string.IsNullOrEmpty(raw)) return;
+            string clean = _rxAnsi.Replace(raw, "").Trim();
+            if (string.IsNullOrEmpty(clean)) return;
+
+            bool isSpinner = _rxSpinnerOnly.IsMatch(clean);
+            if (!isSpinner)
+            {
+                if (isErr)
+                {
+                    lock (_errLock)
+                    {
+                        if (_stdErr.Length < 1048576) { _stdErr.AppendLine(clean); }
+                    }
+                }
+                else
+                {
+                    lock (_outLock)
+                    {
+                        if (_stdOut.Length < 2097152) { _stdOut.AppendLine(clean); }
+                    }
+                }
+            }
+
+            if (isSpinner) return;
+
+            bool isProgress = _rxProgressBar.IsMatch(clean) || (isCrOnly && (clean.IndexOf("MB /", StringComparison.OrdinalIgnoreCase) >= 0 || clean.IndexOf("KB /", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (isProgress)
+            {
+                long nowTicks = DateTime.UtcNow.Ticks;
+                long prevTicks = Interlocked.Read(ref _lastProgressEmitTicks);
+                if ((nowTicks - prevTicks) < TimeSpan.TicksPerSecond * 2) return;
+                Interlocked.Exchange(ref _lastProgressEmitTicks, nowTicks);
+            }
+
+            string prevEmitted = Interlocked.Exchange(ref _lastEmittedLine, clean);
+            if (string.Equals(clean, prevEmitted, StringComparison.Ordinal)) return;
+
+            if (Volatile.Read(ref _liveQueueCount) < 4000)
+            {
+                _liveQueue.Enqueue(isErr ? ("[stderr] " + clean) : clean);
+                Interlocked.Increment(ref _liveQueueCount);
+            }
+        }
+    }
 }
 '@
         Import-CachedCSharpType -TypeName "DuckUtil.DeepUninstallerEngine" -SourceCode $deepUninstCs -Prefix "DuckDeep" -RequiredMethod "ForceStopBatchDirectoriesAsync"
@@ -38581,7 +38872,7 @@ function Log-Text {
 function Run-CliStream {
     <#
     .SYNOPSIS
-        Execute an external command without blocking the WPF Dispatcher, optionally capturing UTF-8 output.
+        Execute an external command without blocking the WPF Dispatcher, streaming UTF-8 output live while capturing it and guarding against hangs.
     #>
     param(
         [Parameter(Mandatory = $true)]
@@ -38592,7 +38883,9 @@ function Run-CliStream {
         [switch]$IsolateStdin,
         [switch]$AllowCancel,
         [switch]$CaptureOutput,
-        [switch]$ReturnResult
+        [switch]$ReturnResult,
+        [int]$TimeoutSeconds = 360,
+        [int]$IdleTimeoutSeconds = 180
     )
 
     $script:lastCliRun = [PSCustomObject]@{
@@ -38601,6 +38894,7 @@ function Run-CliStream {
         ExitCode  = -1
         StdOut    = ""
         StdErr    = ""
+        TimedOut  = $false
     }
 
     if ($script:isWindowClosing) {
@@ -38648,12 +38942,32 @@ function Run-CliStream {
             try { $p.StandardInput.Close() } catch {}
         }
 
+        $pump = $null
         $readTask = $null
         $errTask = $null
         if ($CaptureOutput) {
-            $readTask = $p.StandardOutput.ReadToEndAsync()
-            $errTask = $p.StandardError.ReadToEndAsync()
+            if ("DuckUtil.ProcessOutputPump" -as [type]) {
+                $pump = [DuckUtil.ProcessOutputPump]::new($p)
+            } else {
+                $readTask = $p.StandardOutput.ReadToEndAsync()
+                $errTask = $p.StandardError.ReadToEndAsync()
+            }
         }
+
+        $effTimeout = if ($TimeoutSeconds -gt 0) { [double]$TimeoutSeconds } else { 3600.0 }
+        $effIdle = if ($CaptureOutput -and $null -ne $pump -and $IdleTimeoutSeconds -gt 0) { [double]$IdleTimeoutSeconds } else { 0.0 }
+        $cliSw = [System.Diagnostics.Stopwatch]::StartNew()
+        $timedOutState = @{ TimedOut = $false; Reason = "" }
+
+        $drainPumpLive = {
+            if ($null -eq $pump) { return }
+            $lines = $pump.DrainLiveLines(32)
+            foreach ($ln in $lines) {
+                if (-not [string]::IsNullOrWhiteSpace($ln)) {
+                    Log-Text "   $ln"
+                }
+            }
+        }.GetNewClosure()
 
         $prevActiveChild = $script:activeChildProcess
         $script:activeChildProcesses.Add($p) | Out-Null
@@ -38667,43 +38981,103 @@ function Run-CliStream {
 
             if ($canAsyncWait) {
                 $exitTask = $deepEngType::WaitForProcessExitAsync($p)
-                $cancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
-                [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds 3600 -CancelCheck $cancelCb)
-                if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                $cancelVarRef = Get-Variable -Name cancelRequested -Scope Script -ErrorAction SilentlyContinue
+                $closingVarRef = Get-Variable -Name isWindowClosing -Scope Script -ErrorAction SilentlyContinue
+                $cancelOrHangCb = {
+                    if ($null -ne $closingVarRef -and [bool]$closingVarRef.Value) { return $true }
+                    if ($AllowCancel -and $null -ne $cancelVarRef -and [bool]$cancelVarRef.Value) { return $true }
+                    if ($cliSw.Elapsed.TotalSeconds -ge $effTimeout) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "t$([char]0x1ED5)ng th$([char]0x1EDD)i gian v$([char]0x01B0)$([char]0x1EE3)t qu$([char]0x00E1) $([int]$effTimeout)s"
+                        return $true
+                    }
+                    if ($effIdle -gt 0 -and $null -ne $pump -and $pump.IdleSeconds -ge $effIdle) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "kh$([char]0x00F4)ng c$([char]0x00F3) ph$([char]0x1EA3)n h$([char]0x1ED3)i qu$([char]0x00E1) $([int]$effIdle)s"
+                        return $true
+                    }
+                    return $false
+                }.GetNewClosure()
+                [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds ($effTimeout + 2.0) -CancelCheck $cancelOrHangCb -OnTick $drainPumpLive)
+                & $drainPumpLive
+
+                if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested) -or $timedOutState.TimedOut) {
                     Stop-ChildProcessTree $p
+                } elseif ($CaptureOutput -and $null -ne $pump) {
+                    [void](Wait-TaskNonBlocking -Task $pump.ReadersTask -TimeoutSeconds 1.2 -CancelCheck $cancelOrHangCb -OnTick $drainPumpLive)
+                    & $drainPumpLive
                 } elseif ($CaptureOutput -and $null -ne $readTask -and $null -ne $errTask) {
                     $flushTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]]@($readTask, $errTask))
-                    [void](Wait-TaskNonBlocking -Task $flushTask -TimeoutSeconds 2.0 -CancelCheck $cancelCb)
+                    [void](Wait-TaskNonBlocking -Task $flushTask -TimeoutSeconds 2.0 -CancelCheck $cancelOrHangCb)
                 }
             } else {
                 while ($true) {
+                    & $drainPumpLive
                     $stillRunning = try { -not $p.HasExited } catch { $false }
                     if (-not $stillRunning) { break }
                     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
                         Stop-ChildProcessTree $p
                         break
                     }
-                    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                    if ($cliSw.Elapsed.TotalSeconds -ge $effTimeout) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "t$([char]0x1ED5)ng th$([char]0x1EDD)i gian v$([char]0x01B0)$([char]0x1EE3)t qu$([char]0x00E1) $([int]$effTimeout)s"
                         Stop-ChildProcessTree $p
                         break
                     }
-                    Start-Sleep -Milliseconds 25
+                    if ($effIdle -gt 0 -and $null -ne $pump -and $pump.IdleSeconds -ge $effIdle) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "kh$([char]0x00F4)ng c$([char]0x00F3) ph$([char]0x1EA3)n h$([char]0x1ED3)i qu$([char]0x00E1) $([int]$effIdle)s"
+                        Stop-ChildProcessTree $p
+                        break
+                    }
+                    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                    Start-Sleep -Milliseconds 30
                 }
-                if ($CaptureOutput -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested) -and $null -ne $readTask -and $null -ne $errTask) {
-                    $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
-                    while ((-not $readTask.IsCompleted -or -not $errTask.IsCompleted) -and $flushSw.ElapsedMilliseconds -lt 1500) {
-                        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                        Start-Sleep -Milliseconds 20
+                & $drainPumpLive
+                if ($CaptureOutput -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested) -and -not $timedOutState.TimedOut) {
+                    if ($null -ne $pump) {
+                        $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
+                        while (-not $pump.ReadersTask.IsCompleted -and $flushSw.ElapsedMilliseconds -lt 1200) {
+                            & $drainPumpLive
+                            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                            Start-Sleep -Milliseconds 20
+                        }
+                        & $drainPumpLive
+                    } elseif ($null -ne $readTask -and $null -ne $errTask) {
+                        $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
+                        while ((-not $readTask.IsCompleted -or -not $errTask.IsCompleted) -and $flushSw.ElapsedMilliseconds -lt 1500) {
+                            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                            Start-Sleep -Milliseconds 20
+                        }
                     }
                 }
             }
 
             if ($AllowCancel -and $script:cancelRequested) {
                 $script:lastCliRun.ExitCode = -2
+                if ($null -ne $pump) {
+                    $script:lastCliRun.StdOut = $pump.GetStdOut()
+                    $script:lastCliRun.StdErr = $pump.GetStdErr()
+                }
                 if ($ReturnResult) { return $script:lastCliRun }
                 return -2
             }
+
+            if ($timedOutState.TimedOut) {
+                Log-Text "[WARN] Ti$([char]0x1EBF)n tr$([char]0x00EC)nh '$FileName' b$([char]0x1ECB) treo ($($timedOutState.Reason)) - $([char]0x0111)$([char]0x00E3) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng d$([char]0x1EEB)ng $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh k$([char]0x1EB9)t!"
+                $script:lastCliRun = [PSCustomObject]@{
+                    FileName  = $FileName
+                    Arguments = $Arguments
+                    ExitCode  = -3
+                    StdOut    = if ($null -ne $pump) { $pump.GetStdOut() } else { "" }
+                    StdErr    = if ($null -ne $pump) { $pump.GetStdErr() } else { "" }
+                    TimedOut  = $true
+                }
+                if ($ReturnResult) { return $script:lastCliRun }
+                return -3
+            }
+
             if (-not $script:isWindowClosing) {
                 try { [void]$p.WaitForExit(3000) } catch {}
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
@@ -38715,27 +39089,33 @@ function Run-CliStream {
             $stdOutText = ""
             $stdErrText = ""
             if ($CaptureOutput) {
-                if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $stdOutText = [string]$readTask.Result
-                }
-                if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $stdErrText = [string]$errTask.Result
-                }
-                if (-not [string]::IsNullOrWhiteSpace($stdOutText)) {
-                    foreach ($rawOutLine in ($stdOutText -split "`n")) {
-                        $cleanLine = ($rawOutLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '')
-                        if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
-                        $cleanLine = $cleanLine.Trim()
-                        if ([string]::IsNullOrWhiteSpace($cleanLine)) { continue }
-                        if ($cleanLine -match '^[-\\|/]+$' -or $cleanLine -match '^\s*\d+(\.\d+)?\s*(KB|MB|GB)\s*/\s*\d+') { continue }
-                        Log-Text "   $cleanLine"
+                if ($null -ne $pump) {
+                    & $drainPumpLive
+                    $stdOutText = $pump.GetStdOut()
+                    $stdErrText = $pump.GetStdErr()
+                } else {
+                    if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        $stdOutText = [string]$readTask.Result
                     }
-                }
-                if (-not [string]::IsNullOrWhiteSpace($stdErrText)) {
-                    foreach ($rawErrLine in ($stdErrText -split "`n")) {
-                        $cleanErr = ($rawErrLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '').Trim()
-                        if (-not [string]::IsNullOrWhiteSpace($cleanErr)) {
-                            Log-Text "   [stderr] $cleanErr"
+                    if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        $stdErrText = [string]$errTask.Result
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($stdOutText)) {
+                        foreach ($rawOutLine in ($stdOutText -split "`n")) {
+                            $cleanLine = ($rawOutLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '')
+                            if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+                            $cleanLine = $cleanLine.Trim()
+                            if ([string]::IsNullOrWhiteSpace($cleanLine)) { continue }
+                            if ($cleanLine -match '^[-\\|/]+$' -or $cleanLine -match '^\s*\d+(\.\d+)?\s*(KB|MB|GB)\s*/\s*\d+') { continue }
+                            Log-Text "   $cleanLine"
+                        }
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($stdErrText)) {
+                        foreach ($rawErrLine in ($stdErrText -split "`n")) {
+                            $cleanErr = ($rawErrLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '').Trim()
+                            if (-not [string]::IsNullOrWhiteSpace($cleanErr)) {
+                                Log-Text "   [stderr] $cleanErr"
+                            }
                         }
                     }
                 }
@@ -38747,6 +39127,7 @@ function Run-CliStream {
                 ExitCode  = $exitCode
                 StdOut    = $stdOutText
                 StdErr    = $stdErrText
+                TimedOut  = $false
             }
             if ($ReturnResult) { return $script:lastCliRun }
             return $exitCode
@@ -46597,10 +46978,14 @@ function Wait-TaskNonBlocking {
     param(
         [Parameter(Mandatory = $true)][System.Threading.Tasks.Task]$Task,
         [double]$TimeoutSeconds = 60,
-        [scriptblock]$CancelCheck = $null
+        [scriptblock]$CancelCheck = $null,
+        [scriptblock]$OnTick = $null
     )
     if ($null -eq $Task) { return $true }
-    if ($Task.IsCompleted) { return $true }
+    if ($Task.IsCompleted) {
+        if ($OnTick) { try { & $OnTick } catch {} }
+        return $true
+    }
     if ($script:isWindowClosing) { return $false }
 
     if ($window -and $window.Dispatcher -and $window.Dispatcher.CheckAccess()) {
@@ -46611,15 +46996,29 @@ function Wait-TaskNonBlocking {
 
         $guardTimer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
         $guardTimer.Interval = [TimeSpan]::FromMilliseconds(40)
+        $guardTimer.Tag = @{
+            Task        = $Task
+            Frame       = $frame
+            Sw          = $sw
+            Timeout     = $TimeoutSeconds
+            CancelCheck = $CancelCheck
+            OnTick      = $OnTick
+        }
         $guardTimer.Add_Tick({
+            param($s, $e)
+            $st = $s.Tag
+            if ($null -eq $st) { return }
+            if ($st.OnTick) {
+                try { & $st.OnTick } catch {}
+            }
             $canceledNow = $false
-            if ($CancelCheck) {
-                try { $canceledNow = [bool](& $CancelCheck) } catch {}
+            if ($st.CancelCheck) {
+                try { $canceledNow = [bool](& $st.CancelCheck) } catch {}
             }
-            if ($Task.IsCompleted -or $script:isWindowClosing -or $canceledNow -or $sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
-                $frame.Continue = $false
+            if ($st.Task.IsCompleted -or $script:isWindowClosing -or $canceledNow -or $st.Sw.Elapsed.TotalSeconds -ge $st.Timeout) {
+                $st.Frame.Continue = $false
             }
-        }.GetNewClosure())
+        })
 
         try {
             $smoothType = "DuckUtil.SmoothScrollController" -as [type]
@@ -46632,8 +47031,10 @@ function Wait-TaskNonBlocking {
                 $guardTimer.Start()
                 [System.Windows.Threading.Dispatcher]::PushFrame($frame)
             }
+            if ($OnTick) { try { & $OnTick } catch {} }
         } finally {
             try { $guardTimer.Stop() } catch {}
+            try { $guardTimer.Tag = $null } catch {}
             try { [void]$script:activeWaitFrames.Remove($frame) } catch {}
         }
         return $Task.IsCompleted
@@ -46641,11 +47042,13 @@ function Wait-TaskNonBlocking {
 
     $swFallback = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $Task.IsCompleted) {
+        if ($OnTick) { try { & $OnTick } catch {} }
         $canceledFb = $false
         if ($CancelCheck) { try { $canceledFb = [bool](& $CancelCheck) } catch {} }
         if ($script:isWindowClosing -or $canceledFb -or $swFallback.Elapsed.TotalSeconds -ge $TimeoutSeconds) { break }
         try { [void]$Task.Wait(25) } catch {}
     }
+    if ($OnTick) { try { & $OnTick } catch {} }
     return $Task.IsCompleted
 }
 
@@ -46666,8 +47069,8 @@ function Invoke-GuardedAction {
     $busyUninstaller = (-not $AllowDuringUninstallerLoad) -and $script:isUpdatingUninstaller
     if ($script:isActionRunning -or $script:isScanningApps -or $busyUninstaller -or $script:isUninstallingQueue) {
         Log-Text "[WARN] $([char]0x0110)ang c$([char]0x00F3) m$([char]0x1ED9)t t$([char]0x00E1)c v$([char]0x1EE5) kh$([char]0x00E1)c $([char]0x0111)ang th$([char]0x1EF1)c thi ($ActionName). Vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i!"
-        if ($DeferExpand -and -not $script:isActionRunning -and -not $script:isUninstallingQueue -and $txtStatus) {
-            $txtStatus.Text = "$([char]0x0110)ang c$([char]0x00F3) t$([char]0x00E1)c v$([char]0x1EE5) n$([char]0x1EC1)n kh$([char]0x00E1)c ch$([char]0x1EA1)y ($ActionName), vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i..."
+        if ($txtStatus) {
+            $txtStatus.Text = "$([char]0x0110)ang c$([char]0x00F3) t$([char]0x00E1)c v$([char]0x1EE5) kh$([char]0x00E1)c ch$([char]0x1EA1)y, vui l$([char]0x00F2)ng $([char]0x0111)$([char]0x1EE3)i xong r$([char]0x1ED3)i b$([char]0x1EA5)m l$([char]0x1EA1)i ($ActionName)..."
         }
         return
     }
@@ -50806,18 +51209,26 @@ function Test-IsStandardInstallLocation {
 }
 
 function Invoke-WinGetWithMsiRetry {
-    param([Parameter(Mandatory = $true)][string]$Arguments)
+    param(
+        [Parameter(Mandatory = $true)][string]$Arguments,
+        [int]$TimeoutSeconds = 300,
+        [int]$IdleTimeoutSeconds = 150
+    )
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
+    if (-not (Get-Command "winget" -CommandType Application -ErrorAction SilentlyContinue)) {
+        Log-Text "[WARN] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y WinGet tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng (s$([char]0x1EBD) chuy$([char]0x1EC3)n sang ngu$([char]0x1ED3)n t$([char]0x1EA3)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p d$([char]0x1EF1) ph$([char]0x00F2)ng)."
+        return -1
+    }
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
-    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput
+    $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
     if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978334974 -or $code -eq 1618)) {
         Log-Text "[!] Windows Installer $([char]0x0111)ang b$([char]0x1EAD)n (1618), $([char]0x0111)ang ch$([char]0x1EDD) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $([char]0x0111)$([char]0x1EC3) th$([char]0x1EED) l$([char]0x1EA1)i..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
         if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
         [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(1200)) -TimeoutSeconds 3 -CancelCheck { [bool]$script:cancelRequested })
         if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
-        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput
+        $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
     }
     return $code
 }
@@ -52244,7 +52655,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     $code = Invoke-WinGetSourceAware -BaseArguments $upArgs -App $app -Id $upgradeId
-    if ($code -ne 0 -and $needCustomLocArg -and $existingLoc -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+    if ($code -ne 0 -and $code -ne -3 -and $needCustomLocArg -and $existingLoc -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         Log-Text "[!] N$([char]0x00E2)ng c$([char]0x1EA5)p k$([char]0x00E8)m $([char]0x0111)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n c$([char]0x1ED1) $([char]0x0111)$([char]0x1ECB)nh kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng (Code: $code), $([char]0x0111)ang th$([char]0x1EED) l$([char]0x1EA1)i b$([char]0x1ECF) tham s$([char]0x1ED1) --location..."
         $upArgsNoLoc = $baseUpArgs
         if ($scope) { $upArgsNoLoc += " --scope $scope" }
@@ -52252,7 +52663,7 @@ function Invoke-SmartAppUpgrade {
     }
 
     $scopeSupported = $true
-    if ($code -ne 0 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+    if ($code -ne 0 -and $code -ne -3 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         $scopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $scope
         if (-not $scopeSupported) {
             Log-Text "[!] $($app.Name): B$([char]0x1EA3)n $([char]0x0111)ang c$([char]0x00E0)i thu$([char]0x1ED9)c scope '$scope', nh$([char]0x01B0)ng WinGet kh$([char]0x00F4)ng c$([char]0x00F3) b$([char]0x1ED9) c$([char]0x00E0)i cho scope '$scope' (t$([char]0x1EEB) ch$([char]0x1ED1)i c$([char]0x00E0)i ch$([char]0x1ED3)ng scope kh$([char]0x00E1)c $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh tr$([char]0x00F9)ng 2 b$([char]0x1EA3)n)."
@@ -52345,8 +52756,8 @@ function Invoke-CatalogUpgradeWithFallback {
     try {
         # Tier 1: WinGet CLI (strict scope & location)
         $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade -Context $ctx -SkipGuard
-        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2))
-        if ($upCode -in @(0, 2, 3, -2) -or $script:cancelRequested -or $script:isWindowClosing) {
+        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2, -3))
+        if ($upCode -in @(0, 2, 3, -2, -3) -or $script:cancelRequested -or $script:isWindowClosing) {
             $finalCode = $upCode
             return $finalCode
         }
@@ -52493,7 +52904,7 @@ function Invoke-CatalogFreshInstallFallback {
 }
 
 Register-Click "btnInstall" {
-    Invoke-GuardedAction "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t & C$([char]0x1EAD)p nh$([char]0x1EAD)t" {
+    Invoke-GuardedAction "C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t & C$([char]0x1EAD)p nh$([char]0x1EAD)t" -AllowDuringUninstallerLoad {
         $selectedTags = [System.Collections.Generic.List[object]]::new()
         foreach ($cb in $allCheckBoxes) {
             if ($cb.IsChecked -eq $true) {
@@ -52604,6 +53015,9 @@ Register-Click "btnInstall" {
                         $webCount++
                     } elseif ($upCode -eq -2 -or $script:cancelRequested) {
                         Log-Text "   [!] $([char]0x0110)$([char]0x00E3) h$([char]0x1EE7)y c$([char]0x1EAD)p nh$([char]0x1EAD)t $($app.Name)."
+                    } elseif ($upCode -eq -3) {
+                        Log-Text "   [WARN - H$([char]0x1EBE)T TH$([char]0x1EDC)I GIAN CH$([char]0x1EDC)] $($app.Name) kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i - $([char]0x0111)$([char]0x00E3) b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ti$([char]0x1EBF)p t$([char]0x1EE5)c."
+                        $failCount++
                     } else {
                         Log-Text "   [ERR - C$([char]0x1EAC)P NH$([char]0x1EAC)T] $($app.Name) (Exit Code: $upCode)"
                         $failCount++
@@ -52755,43 +53169,66 @@ Register-Click "btnInstall" {
 }
 
 Register-Click "btnUpgradeAll" {
-    Invoke-GuardedAction "N$([char]0x00E2)ng c$([char]0x1EA5)p to$([char]0x00E0)n b$([char]0x1ED9)" {
+    Invoke-GuardedAction "N$([char]0x00E2)ng c$([char]0x1EA5)p to$([char]0x00E0)n b$([char]0x1ED9)" -AllowDuringUninstallerLoad {
         Log-Text "=========================================================="
         Log-Text "[UPGRADE] B$([char]0x1EAE)T $([char]0x0110)$([char]0x1EA6)U N$([char]0x00C2)NG C$([char]0x1EA4)P TO$([char]0x00C0)N B$([char]0x1ED8) PH$([char]0x1EA6)N M$([char]0x1EC0)M TR$([char]0x00CA)N M$([char]0x00C1)Y"
         Log-Text "=========================================================="
-        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p t$([char]0x1EA5)t c$([char]0x1EA3) $([char]0x1EE9)ng d$([char]0x1EE5)ng..." }
+        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ki$([char]0x1EC3)m tra danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng c$([char]0x1EA7)n c$([char]0x1EAD)p nh$([char]0x1EAD)t..." }
         if ($progressBar) { $progressBar.IsIndeterminate = $true }
         if ($btnCancelAction) {
             $btnCancelAction.Content = "D$([char]0x1EEB)ng t$([char]0x00E1)c v$([char]0x1EE5)"
             $btnCancelAction.IsEnabled = $true
             $btnCancelAction.Visibility = [System.Windows.Visibility]::Visible
         }
+        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(20)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
 
         if (-not $script:isUpdatingUninstaller) {
             $script:cachedUninstallerApps = @()
+        }
+
+        if (-not $script:hasCompletedAppScan -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+            Log-Text "[*] $([char]0x0110)ang ho$([char]0x00E0)n t$([char]0x1EA5)t qu$([char]0x00E9)t danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng tr$([char]0x01B0)$([char]0x1EDB)c khi c$([char]0x1EAD)p nh$([char]0x1EAD)t..."
+            Scan-And-ColorizeApps
         }
 
         $bulkOk = 0
         $bulkAlready = 0
         $bulkSkip = 0
         $bulkFail = 0
-        $bulkCode = 0
+        $selfHostBlockRegex = '^(?i)(Microsoft\.AppInstaller|Microsoft\.WindowsTerminal|Microsoft\.PowerShell|Microsoft\.WindowsAppRuntime\..*|Microsoft\.UI\.Xaml\..*|Microsoft\.VCLibs\..*)$'
 
         try {
             $outdatedRows = @($allItemBorders | Where-Object { $_.Tag -and $_.Tag.Status -eq "OUTDATED" })
             $crackBlockedCount = 0
             $safeOutdatedRows = [System.Collections.Generic.List[object]]::new()
-            $msStoreOutdatedRows = [System.Collections.Generic.List[object]]::new()
-            $safeWingetOutdatedRows = [System.Collections.Generic.List[object]]::new()
-            if ($outdatedRows.Count -gt 0) {
-                $instAppsBulk = if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
-                    [DuckUtil.DeepUninstallerEngine]::GetInstalledApps()
-                } else { @() }
+
+            if ($outdatedRows.Count -gt 0 -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+                $instAppsBulk = @()
+                if ("DuckUtil.DeepUninstallerEngine" -as [type]) {
+                    try {
+                        $tApps = [DuckUtil.DeepUninstallerEngine]::GetInstalledAppsAsync()
+                        [void](Wait-TaskNonBlocking -Task $tApps -TimeoutSeconds 15 -CancelCheck { [bool]$script:cancelRequested })
+                        if ($tApps.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tApps.Result) {
+                            $instAppsBulk = @($tApps.Result)
+                        }
+                    } catch {
+                        $instAppsBulk = @()
+                    }
+                }
                 $hasCrackChecker = [bool]("DuckUtil.AppCatalogEngine" -as [type])
 
                 foreach ($row in $outdatedRows) {
+                    if ($script:isWindowClosing -or $script:cancelRequested) { break }
                     $tagOut = $row.Tag
                     $appOut = $tagOut.App
+                    $chkPkgId = if ($tagOut.DetectedId -and $tagOut.DetectedId -notmatch '^(ARP|MSIX|LOCAL)\\') { [string]$tagOut.DetectedId } elseif ($appOut) { [string]$appOut.ID } else { "" }
+
+                    if ($chkPkgId -match $selfHostBlockRegex) {
+                        $bulkSkip++
+                        Log-Text "[SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) TI$([char]0x1EBE)N TR$([char]0x00CC)NH $([char]0x0110)ANG CH$([char]0x1EA0)Y] T$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng b$([char]0x1ECF) qua $($appOut.Name) ($chkPkgId) $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh $([char]0x0111)$([char]0x00F3)ng $([char]0x0111)$([char]0x1ED9)t ng$([char]0x1ED9)t App-Driver."
+                        continue
+                    }
+
                     $isCracked = $false
                     if ($hasCrackChecker -and $appOut) {
                         $regM = Find-RegistryMatchForCatalogApp -App $appOut -InstalledList $instAppsBulk -DetectedId ([string]$tagOut.DetectedId) -InstalledVersion ([string]$tagOut.InstalledVersion)
@@ -52807,130 +53244,116 @@ Register-Click "btnUpgradeAll" {
                         if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                     } else {
                         [void]$safeOutdatedRows.Add($row)
-                        if (($appOut -and $appOut.Source -eq "msstore") -or ($tagOut.DetectedId -match '^9[A-Z0-9]{11}$')) {
-                            [void]$msStoreOutdatedRows.Add($row)
-                        } else {
-                            [void]$safeWingetOutdatedRows.Add($row)
-                        }
                     }
                 }
             }
 
             if (-not $script:isWindowClosing -and -not $script:cancelRequested) {
-                $runPerAppSafeList = $false
-                if ($crackBlockedCount -eq 0 -and ($outdatedRows.Count -eq 0 -or $safeOutdatedRows.Count -gt 0)) {
-                    if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p to$([char]0x00E0)n b$([char]0x1ED9) $([char]0x1EE9)ng d$([char]0x1EE5)ng (nhanh - an to$([char]0x00E0)n)..." }
-                    Log-Text "[*] $([char]0x0110)$([char]0x00E3) ki$([char]0x1EC3)m tra b$([char]0x1EA3)o v$([char]0x1EC7) Crack/Patch xong (0 c$([char]0x1EA3)nh b$([char]0x00E1)o) - ch$([char]0x1EA1)y n$([char]0x00E2)ng c$([char]0x1EA5)p g$([char]0x1ED9)p..."
-                    $bulkCode = Invoke-WinGetWithMsiRetry -Arguments "upgrade --all --source winget --silent --disable-interactivity --accept-package-agreements --accept-source-agreements"
-                    $bulkOutcome = Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun
-                    if ($bulkCode -ne 0 -or $bulkOutcome -eq "Failed") {
-                        Log-Text "[WARN] L$([char]0x1EC7)nh 'winget upgrade --all' k$([char]0x1EBF)t th$([char]0x00FA)c v$([char]0x1EDB)i m$([char]0x00E3) $bulkCode (m$([char]0x1ED9)t s$([char]0x1ED1) g$([char]0x00F3)i c$([char]0x00F3) th$([char]0x1EC3) l$([char]0x1ED7)i ho$([char]0x1EB7)c kh$([char]0x00E1)c scope)."
-                        if ($safeWingetOutdatedRows.Count -gt 0 -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
-                            Log-Text "[*] $([char]0x0110)ang ki$([char]0x1EC3)m tra v$([char]0x00E0) n$([char]0x00E2)ng c$([char]0x1EA5)p t$([char]0x1EEB)ng g$([char]0x00F3)i an to$([char]0x00E0)n trong danh m$([char]0x1EE5)c..."
-                            $runPerAppSafeList = $true
-                        } elseif ($bulkCode -ne 0) {
-                            $bulkFail++
-                        }
-                    } elseif ($safeWingetOutdatedRows.Count -gt 0) {
-                        $postBulkCap = if (Get-Command "Invoke-WingetListCapture" -ErrorAction SilentlyContinue) {
-                            Invoke-WingetListCapture -Arguments "list --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25
-                        } else { $null }
-                        if ($postBulkCap -and $postBulkCap.Available -and -not $postBulkCap.TimedOut -and -not $postBulkCap.WasCanceled -and -not [string]::IsNullOrWhiteSpace($postBulkCap.StdOut)) {
-                            $postBulkParsed = ConvertFrom-WingetListOutput -RawText $postBulkCap.StdOut -AllowHeaderless ($postBulkCap.ExitCode -eq 0)
-                            if ($postBulkParsed -and $postBulkParsed.Items.Count -gt 0) {
-                                $stillOutIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-                                foreach ($pbIt in $postBulkParsed.Items) {
-                                    if ($pbIt -and $pbIt.HasUpdate -and -not [string]::IsNullOrWhiteSpace($pbIt.ID)) {
-                                        [void]$stillOutIds.Add($pbIt.ID)
-                                    }
-                                }
-                                $fallbackAfterBulk = [System.Collections.Generic.List[object]]::new()
-                                foreach ($srCheck in $safeWingetOutdatedRows) {
-                                    $chkTag = $srCheck.Tag
-                                    $chkApp = $chkTag.App
-                                    $chkId = if ($chkTag.DetectedId -and $chkTag.DetectedId -notmatch '^(ARP|MSIX|LOCAL)\\') { [string]$chkTag.DetectedId } else { [string]$chkApp.ID }
-                                    if ($stillOutIds.Contains($chkId) -or ($chkApp -and $chkApp.ID -and $stillOutIds.Contains([string]$chkApp.ID))) {
-                                        [void]$fallbackAfterBulk.Add($srCheck)
-                                    } else {
-                                        $bulkOk++
-                                        if ($chkTag.CheckBox) { $chkTag.CheckBox.IsChecked = $false }
-                                    }
-                                }
-                                if ($fallbackAfterBulk.Count -gt 0) {
-                                    Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($fallbackAfterBulk.Count) g$([char]0x00F3)i ch$([char]0x01B0)a $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c 'upgrade --all' x$([char]0x1EED) l$([char]0x00FD) tri$([char]0x1EC7)t $([char]0x0111)$([char]0x1EC3); $([char]0x0111)ang ki$([char]0x1EC3)m tra v$([char]0x00E0) n$([char]0x00E2)ng c$([char]0x1EA5)p ri$([char]0x00EA)ng t$([char]0x1EEB)ng g$([char]0x00F3)i..."
-                                    $safeWingetOutdatedRows = $fallbackAfterBulk
-                                    $runPerAppSafeList = $true
-                                }
-                            } else {
-                                $bulkOk += $safeWingetOutdatedRows.Count
-                            }
-                        } else {
-                            $bulkOk += $safeWingetOutdatedRows.Count
-                        }
-                    }
-
-                    foreach ($stRow in $msStoreOutdatedRows) {
-                        if ($script:isWindowClosing -or $script:cancelRequested) { break }
-                        $stCode = Invoke-CatalogUpgradeWithFallback -Tag $stRow.Tag -IsBulkUpgrade
-                        if ($stCode -eq 0) {
-                            Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P] $($stRow.Tag.App.Name)"
-                            $bulkOk++
-                            if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
-                        } elseif ($stCode -eq 2) {
-                            Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($stRow.Tag.App.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
-                            $bulkSkip++
-                            if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
-                        } elseif ($stCode -eq 3) {
-                            Log-Text "   [INFO - $([char]0x0110)$([char]0x00C3) L$([char]0x00C0) B$([char]0x1EA2)N M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($stRow.Tag.App.Name)"
-                            $bulkAlready++
-                        } elseif ($stCode -eq 4) {
-                            Log-Text "   [WARN - CH$([char]0x01AF)A THAY $([char]0x0110)$([char]0x1ED4)I PHI$([char]0x00CA)N B$([char]0x1EA2)N] $($stRow.Tag.App.Name) ch$([char]0x01B0)a ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i."
-                            $bulkFail++
-                        } elseif ($stCode -eq 5) {
-                            $bulkSkip++
-                        } elseif ($stCode -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($stRow.Tag.App.Name) (Exit Code: $stCode)"
-                            $bulkFail++
-                        }
-                    }
-                } elseif ($safeOutdatedRows.Count -gt 0) {
-                    $runPerAppSafeList = $true
-                    $safeWingetOutdatedRows = $safeOutdatedRows
-                }
-
-                if ($runPerAppSafeList -and $safeWingetOutdatedRows.Count -gt 0) {
-                    $totalOut = $safeWingetOutdatedRows.Count
+                if ($safeOutdatedRows.Count -gt 0) {
+                    $totalOut = $safeOutdatedRows.Count
                     $idxOut = 0
-                    foreach ($row in $safeWingetOutdatedRows) {
+                    Log-Text "[*] $([char]0x0110)$([char]0x00E3) ki$([char]0x1EC3)m tra b$([char]0x1EA3)o v$([char]0x1EC7) xong ($crackBlockedCount c$([char]0x1EA3)nh b$([char]0x00E1)o Crack/Patch) - ti$([char]0x1EBF)n h$([char]0x00E0)nh n$([char]0x00E2)ng c$([char]0x1EA5)p l$([char]0x1EA7)n l$([char]0x01B0)$([char]0x1EE3)t $totalOut $([char]0x1EE9)ng d$([char]0x1EE5)ng an to$([char]0x00E0)n..."
+                    foreach ($row in $safeOutdatedRows) {
                         if ($script:isWindowClosing -or $script:cancelRequested) { break }
                         $idxOut++
                         $tagOut = $row.Tag
+                        $appLabel = if ($tagOut.App) { [string]$tagOut.App.Name } else { "$([char]0x1EE8)ng d$([char]0x1EE5)ng #$idxOut" }
+                        $verHint = if (-not [string]::IsNullOrWhiteSpace([string]$tagOut.InstalledVersion) -and $tagOut.PSObject.Properties['AvailableVersion'] -and -not [string]::IsNullOrWhiteSpace([string]$tagOut.AvailableVersion)) {
+                            " ($($tagOut.InstalledVersion) -> $($tagOut.AvailableVersion))"
+                        } else { "" }
                         if ($progressBar) {
                             $progressBar.IsIndeterminate = $false
                             $progressBar.Value = [math]::Round(($idxOut / $totalOut) * 100)
                         }
-                        if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..." }
-                        Log-Text "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $($tagOut.App.Name)..."
+                        if ($txtStatus) { $txtStatus.Text = "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $appLabel$verHint..." }
+                        Log-Text "[$idxOut/$totalOut] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p an to$([char]0x00E0)n: $appLabel$verHint..."
+                        [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(15)) -TimeoutSeconds 1 -CancelCheck { [bool]$script:cancelRequested })
+
                         $codeOut = Invoke-CatalogUpgradeWithFallback -Tag $tagOut -IsBulkUpgrade
                         if ($codeOut -eq 0) {
-                            Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P] $($tagOut.App.Name)"
+                            Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P] $appLabel"
                             $bulkOk++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 2) {
-                            Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $($tagOut.App.Name) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
+                            Log-Text "   [SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) CRACK/PATCH] $([char]0x0110)$([char]0x00E3) b$([char]0x1ECF) qua $appLabel $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) nguy$([char]0x00EA)n file patch."
                             $bulkSkip++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 3) {
-                            Log-Text "   [INFO - $([char]0x0110)$([char]0x00C3) L$([char]0x00C0) B$([char]0x1EA2)N M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($tagOut.App.Name)"
+                            Log-Text "   [INFO - $([char]0x0110)$([char]0x00C3) L$([char]0x00C0) B$([char]0x1EA2)N M$([char]0x1EDA)I NH$([char]0x1EA4)T] $appLabel"
                             $bulkAlready++
                         } elseif ($codeOut -eq 4) {
-                            Log-Text "   [WARN - CH$([char]0x01AF)A THAY $([char]0x0110)$([char]0x1ED4)I PHI$([char]0x00CA)N B$([char]0x1EA2)N] $($tagOut.App.Name) ch$([char]0x01B0)a ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i."
+                            Log-Text "   [WARN - CH$([char]0x01AF)A THAY $([char]0x0110)$([char]0x1ED4)I PHI$([char]0x00CA)N B$([char]0x1EA2)N] $appLabel ch$([char]0x01B0)a ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i."
                             $bulkFail++
                         } elseif ($codeOut -eq 5) {
                             $bulkSkip++
-                        } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($tagOut.App.Name) (Exit Code: $codeOut)"
+                        } elseif ($codeOut -eq -3) {
+                            Log-Text "   [WARN - H$([char]0x1EBE)T TH$([char]0x1EDC)I GIAN CH$([char]0x1EDC)] $appLabel kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i - $([char]0x0111)$([char]0x00E3) b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ti$([char]0x1EBF)p t$([char]0x1EE5)c $([char]0x1EE9)ng d$([char]0x1EE5)ng k$([char]0x1EBF) ti$([char]0x1EBF)p."
                             $bulkFail++
+                        } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
+                            Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $appLabel (Exit Code: $codeOut)"
+                            $bulkFail++
+                        }
+                    }
+                } elseif ($outdatedRows.Count -eq 0) {
+                    if (-not (Get-Command "winget" -CommandType Application -ErrorAction SilentlyContinue)) {
+                        Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) $([char]0x1EE9)ng d$([char]0x1EE5)ng trong danh m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) $([char]0x1EDF) phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t (m$([char]0x00E1)y ch$([char]0x01B0)a c$([char]0x00E0)i WinGet)."
+                    } else {
+                        if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)ang ki$([char]0x1EC3)m tra g$([char]0x00F3)i WinGet ngo$([char]0x00E0)i danh m$([char]0x1EE5)c..." }
+                        Log-Text "[*] Danh m$([char]0x1EE5)c ch$([char]0x00ED)nh $([char]0x0111)$([char]0x00E3) m$([char]0x1EDB)i nh$([char]0x1EA5)t - $([char]0x0111)ang ki$([char]0x1EC3)m tra nhanh c$([char]0x00E1)c $([char]0x1EE9)ng d$([char]0x1EE5)ng WinGet ngo$([char]0x00E0)i danh m$([char]0x1EE5)c..."
+                        $extCap = if (Get-Command "Invoke-WingetListCapture" -ErrorAction SilentlyContinue) {
+                            Invoke-WingetListCapture -Arguments "upgrade --source winget --disable-interactivity --accept-source-agreements" -TimeoutSeconds 25
+                        } else { $null }
+                        $extTargets = [System.Collections.Generic.List[object]]::new()
+                        if ($extCap -and $extCap.Available -and -not $extCap.TimedOut -and -not $extCap.WasCanceled -and -not [string]::IsNullOrWhiteSpace($extCap.StdOut)) {
+                            $extParsed = ConvertFrom-WingetListOutput -RawText $extCap.StdOut -AllowHeaderless ($extCap.ExitCode -eq 0)
+                            if ($extParsed -and $extParsed.Items.Count -gt 0) {
+                                foreach ($ep in $extParsed.Items) {
+                                    if (-not $ep -or -not $ep.HasUpdate -or [string]::IsNullOrWhiteSpace($ep.ID)) { continue }
+                                    if ($ep.ID -match '^(ARP|MSIX|LOCAL)\\') { continue }
+                                    if ($ep.Version -match '^(<|Unknown)') { continue }
+                                    if ($ep.ID -match $selfHostBlockRegex) {
+                                        $bulkSkip++
+                                        Log-Text "[SKIP - B$([char]0x1EA2)O V$([char]0x1EC6) TI$([char]0x1EBE)N TR$([char]0x00CC)NH $([char]0x0110)ANG CH$([char]0x1EA0)Y] B$([char]0x1ECF) qua $($ep.Name) ($($ep.ID)) $([char]0x0111)$([char]0x1EC3) gi$([char]0x1EEF) $([char]0x1ED5)n $([char]0x0111)$([char]0x1ECB)nh App-Driver."
+                                        continue
+                                    }
+                                    [void]$extTargets.Add($ep)
+                                }
+                            }
+                        }
+
+                        if ($extTargets.Count -eq 0) {
+                            Log-Text "[OK] To$([char]0x00E0)n b$([char]0x1ED9) ph$([char]0x1EA7)n m$([char]0x1EC1)m tr$([char]0x00EA)n m$([char]0x00E1)y $([char]0x0111)$([char]0x1EC1)u $([char]0x0111)$([char]0x00E3) $([char]0x1EDF) phi$([char]0x00EA)n b$([char]0x1EA3)n m$([char]0x1EDB)i nh$([char]0x1EA5)t!"
+                        } else {
+                            $totExt = $extTargets.Count
+                            $idxExt = 0
+                            Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n $totExt $([char]0x1EE9)ng d$([char]0x1EE5)ng ngo$([char]0x00E0)i danh m$([char]0x1EE5)c c$([char]0x00F3) b$([char]0x1EA3)n m$([char]0x1EDB)i - $([char]0x0111)ang n$([char]0x00E2)ng c$([char]0x1EA5)p l$([char]0x1EA7)n l$([char]0x01B0)$([char]0x1EE3)t..."
+                            foreach ($et in $extTargets) {
+                                if ($script:isWindowClosing -or $script:cancelRequested) { break }
+                                $idxExt++
+                                if ($progressBar) {
+                                    $progressBar.IsIndeterminate = $false
+                                    $progressBar.Value = [math]::Round(($idxExt / $totExt) * 100)
+                                }
+                                if ($txtStatus) { $txtStatus.Text = "[$idxExt/$totExt] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $($et.Name) ($($et.Version) -> $($et.Available))..." }
+                                Log-Text "[$idxExt/$totExt] $([char]0x0110)ang n$([char]0x00E2)ng c$([char]0x1EA5)p: $($et.Name) ($($et.ID): $($et.Version) -> $($et.Available))..."
+                                $extCode = Invoke-WinGetWithMsiRetry -Arguments ("upgrade --id `"$($et.ID)`" --exact --source winget --silent --disable-interactivity --accept-package-agreements --accept-source-agreements") -TimeoutSeconds 240 -IdleTimeoutSeconds 120
+                                $extOut = Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun
+                                if ($extCode -in @(0, 3010, 1641) -and $extOut -ne "Failed") {
+                                    if ($extOut -eq "NoUpgradeAvailable") {
+                                        Log-Text "   [INFO - $([char]0x0110)$([char]0x00C3) L$([char]0x00C0) B$([char]0x1EA2)N M$([char]0x1EDA)I NH$([char]0x1EA4)T] $($et.Name)"
+                                        $bulkAlready++
+                                    } else {
+                                        Log-Text "   [OK - $([char]0x0110)$([char]0x00C3) N$([char]0x00C2)NG C$([char]0x1EA4)P] $($et.Name)"
+                                        $bulkOk++
+                                    }
+                                } elseif ($extCode -eq -3) {
+                                    Log-Text "   [WARN - H$([char]0x1EBE)T TH$([char]0x1EDC)I GIAN CH$([char]0x1EDC)] $($et.Name) kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i - b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ti$([char]0x1EBF)p t$([char]0x1EE5)c."
+                                    $bulkFail++
+                                } elseif ($extCode -ne -2 -and -not $script:cancelRequested) {
+                                    Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($et.Name) (Exit Code: $extCode)"
+                                    $bulkFail++
+                                }
+                            }
                         }
                     }
                 }
@@ -52958,7 +53381,7 @@ Register-Click "btnUpgradeAll" {
             if (-not $script:isWindowClosing) {
                 if (Get-Command "Stop-PreSpawnedWinget" -ErrorAction SilentlyContinue) { Stop-PreSpawnedWinget }
                 Scan-And-ColorizeApps
-                if ($bulkCode -eq 0 -and -not $script:cancelRequested) {
+                if (-not $script:cancelRequested) {
                     foreach ($sr in $safeOutdatedRows) {
                         if ($sr.Tag -and $sr.Tag.Status -ne "OUTDATED" -and $sr.Tag.CheckBox -and $sr.Tag.CheckBox.IsChecked -eq $true) {
                             $sr.Tag.CheckBox.IsChecked = $false

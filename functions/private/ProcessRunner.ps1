@@ -101,7 +101,7 @@ function Log-Text {
 function Run-CliStream {
     <#
     .SYNOPSIS
-        Execute an external command without blocking the WPF Dispatcher, optionally capturing UTF-8 output.
+        Execute an external command without blocking the WPF Dispatcher, streaming UTF-8 output live while capturing it and guarding against hangs.
     #>
     param(
         [Parameter(Mandatory = $true)]
@@ -112,7 +112,9 @@ function Run-CliStream {
         [switch]$IsolateStdin,
         [switch]$AllowCancel,
         [switch]$CaptureOutput,
-        [switch]$ReturnResult
+        [switch]$ReturnResult,
+        [int]$TimeoutSeconds = 360,
+        [int]$IdleTimeoutSeconds = 180
     )
 
     $script:lastCliRun = [PSCustomObject]@{
@@ -121,6 +123,7 @@ function Run-CliStream {
         ExitCode  = -1
         StdOut    = ""
         StdErr    = ""
+        TimedOut  = $false
     }
 
     if ($script:isWindowClosing) {
@@ -168,12 +171,32 @@ function Run-CliStream {
             try { $p.StandardInput.Close() } catch {}
         }
 
+        $pump = $null
         $readTask = $null
         $errTask = $null
         if ($CaptureOutput) {
-            $readTask = $p.StandardOutput.ReadToEndAsync()
-            $errTask = $p.StandardError.ReadToEndAsync()
+            if ("DuckUtil.ProcessOutputPump" -as [type]) {
+                $pump = [DuckUtil.ProcessOutputPump]::new($p)
+            } else {
+                $readTask = $p.StandardOutput.ReadToEndAsync()
+                $errTask = $p.StandardError.ReadToEndAsync()
+            }
         }
+
+        $effTimeout = if ($TimeoutSeconds -gt 0) { [double]$TimeoutSeconds } else { 3600.0 }
+        $effIdle = if ($CaptureOutput -and $null -ne $pump -and $IdleTimeoutSeconds -gt 0) { [double]$IdleTimeoutSeconds } else { 0.0 }
+        $cliSw = [System.Diagnostics.Stopwatch]::StartNew()
+        $timedOutState = @{ TimedOut = $false; Reason = "" }
+
+        $drainPumpLive = {
+            if ($null -eq $pump) { return }
+            $lines = $pump.DrainLiveLines(32)
+            foreach ($ln in $lines) {
+                if (-not [string]::IsNullOrWhiteSpace($ln)) {
+                    Log-Text "   $ln"
+                }
+            }
+        }.GetNewClosure()
 
         $prevActiveChild = $script:activeChildProcess
         $script:activeChildProcesses.Add($p) | Out-Null
@@ -187,43 +210,103 @@ function Run-CliStream {
 
             if ($canAsyncWait) {
                 $exitTask = $deepEngType::WaitForProcessExitAsync($p)
-                $cancelCb = if ($AllowCancel) { { [bool]$script:cancelRequested } } else { $null }
-                [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds 3600 -CancelCheck $cancelCb)
-                if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                $cancelVarRef = Get-Variable -Name cancelRequested -Scope Script -ErrorAction SilentlyContinue
+                $closingVarRef = Get-Variable -Name isWindowClosing -Scope Script -ErrorAction SilentlyContinue
+                $cancelOrHangCb = {
+                    if ($null -ne $closingVarRef -and [bool]$closingVarRef.Value) { return $true }
+                    if ($AllowCancel -and $null -ne $cancelVarRef -and [bool]$cancelVarRef.Value) { return $true }
+                    if ($cliSw.Elapsed.TotalSeconds -ge $effTimeout) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "tổng thời gian vượt quá $([int]$effTimeout)s"
+                        return $true
+                    }
+                    if ($effIdle -gt 0 -and $null -ne $pump -and $pump.IdleSeconds -ge $effIdle) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "không có phản hồi quá $([int]$effIdle)s"
+                        return $true
+                    }
+                    return $false
+                }.GetNewClosure()
+                [void](Wait-TaskNonBlocking -Task $exitTask -TimeoutSeconds ($effTimeout + 2.0) -CancelCheck $cancelOrHangCb -OnTick $drainPumpLive)
+                & $drainPumpLive
+
+                if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested) -or $timedOutState.TimedOut) {
                     Stop-ChildProcessTree $p
+                } elseif ($CaptureOutput -and $null -ne $pump) {
+                    [void](Wait-TaskNonBlocking -Task $pump.ReadersTask -TimeoutSeconds 1.2 -CancelCheck $cancelOrHangCb -OnTick $drainPumpLive)
+                    & $drainPumpLive
                 } elseif ($CaptureOutput -and $null -ne $readTask -and $null -ne $errTask) {
                     $flushTask = [System.Threading.Tasks.Task]::WhenAll([System.Threading.Tasks.Task[]]@($readTask, $errTask))
-                    [void](Wait-TaskNonBlocking -Task $flushTask -TimeoutSeconds 2.0 -CancelCheck $cancelCb)
+                    [void](Wait-TaskNonBlocking -Task $flushTask -TimeoutSeconds 2.0 -CancelCheck $cancelOrHangCb)
                 }
             } else {
                 while ($true) {
+                    & $drainPumpLive
                     $stillRunning = try { -not $p.HasExited } catch { $false }
                     if (-not $stillRunning) { break }
                     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
                         Stop-ChildProcessTree $p
                         break
                     }
-                    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                    if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) {
+                    if ($cliSw.Elapsed.TotalSeconds -ge $effTimeout) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "tổng thời gian vượt quá $([int]$effTimeout)s"
                         Stop-ChildProcessTree $p
                         break
                     }
-                    Start-Sleep -Milliseconds 25
+                    if ($effIdle -gt 0 -and $null -ne $pump -and $pump.IdleSeconds -ge $effIdle) {
+                        $timedOutState.TimedOut = $true
+                        $timedOutState.Reason = "không có phản hồi quá $([int]$effIdle)s"
+                        Stop-ChildProcessTree $p
+                        break
+                    }
+                    try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                    Start-Sleep -Milliseconds 30
                 }
-                if ($CaptureOutput -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested) -and $null -ne $readTask -and $null -ne $errTask) {
-                    $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
-                    while ((-not $readTask.IsCompleted -or -not $errTask.IsCompleted) -and $flushSw.ElapsedMilliseconds -lt 1500) {
-                        try { [System.Windows.Forms.Application]::DoEvents() } catch {}
-                        Start-Sleep -Milliseconds 20
+                & $drainPumpLive
+                if ($CaptureOutput -and -not $script:isWindowClosing -and -not ($AllowCancel -and $script:cancelRequested) -and -not $timedOutState.TimedOut) {
+                    if ($null -ne $pump) {
+                        $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
+                        while (-not $pump.ReadersTask.IsCompleted -and $flushSw.ElapsedMilliseconds -lt 1200) {
+                            & $drainPumpLive
+                            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                            Start-Sleep -Milliseconds 20
+                        }
+                        & $drainPumpLive
+                    } elseif ($null -ne $readTask -and $null -ne $errTask) {
+                        $flushSw = [System.Diagnostics.Stopwatch]::StartNew()
+                        while ((-not $readTask.IsCompleted -or -not $errTask.IsCompleted) -and $flushSw.ElapsedMilliseconds -lt 1500) {
+                            try { [System.Windows.Forms.Application]::DoEvents() } catch {}
+                            Start-Sleep -Milliseconds 20
+                        }
                     }
                 }
             }
 
             if ($AllowCancel -and $script:cancelRequested) {
                 $script:lastCliRun.ExitCode = -2
+                if ($null -ne $pump) {
+                    $script:lastCliRun.StdOut = $pump.GetStdOut()
+                    $script:lastCliRun.StdErr = $pump.GetStdErr()
+                }
                 if ($ReturnResult) { return $script:lastCliRun }
                 return -2
             }
+
+            if ($timedOutState.TimedOut) {
+                Log-Text "[WARN] Tiến trình '$FileName' bị treo ($($timedOutState.Reason)) - đã tự động dừng để tránh kẹt!"
+                $script:lastCliRun = [PSCustomObject]@{
+                    FileName  = $FileName
+                    Arguments = $Arguments
+                    ExitCode  = -3
+                    StdOut    = if ($null -ne $pump) { $pump.GetStdOut() } else { "" }
+                    StdErr    = if ($null -ne $pump) { $pump.GetStdErr() } else { "" }
+                    TimedOut  = $true
+                }
+                if ($ReturnResult) { return $script:lastCliRun }
+                return -3
+            }
+
             if (-not $script:isWindowClosing) {
                 try { [void]$p.WaitForExit(3000) } catch {}
                 try { [System.Windows.Forms.Application]::DoEvents() } catch {}
@@ -235,27 +318,33 @@ function Run-CliStream {
             $stdOutText = ""
             $stdErrText = ""
             if ($CaptureOutput) {
-                if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $stdOutText = [string]$readTask.Result
-                }
-                if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                    $stdErrText = [string]$errTask.Result
-                }
-                if (-not [string]::IsNullOrWhiteSpace($stdOutText)) {
-                    foreach ($rawOutLine in ($stdOutText -split "`n")) {
-                        $cleanLine = ($rawOutLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '')
-                        if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
-                        $cleanLine = $cleanLine.Trim()
-                        if ([string]::IsNullOrWhiteSpace($cleanLine)) { continue }
-                        if ($cleanLine -match '^[-\\|/]+$' -or $cleanLine -match '^\s*\d+(\.\d+)?\s*(KB|MB|GB)\s*/\s*\d+') { continue }
-                        Log-Text "   $cleanLine"
+                if ($null -ne $pump) {
+                    & $drainPumpLive
+                    $stdOutText = $pump.GetStdOut()
+                    $stdErrText = $pump.GetStdErr()
+                } else {
+                    if ($null -ne $readTask -and $readTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        $stdOutText = [string]$readTask.Result
                     }
-                }
-                if (-not [string]::IsNullOrWhiteSpace($stdErrText)) {
-                    foreach ($rawErrLine in ($stdErrText -split "`n")) {
-                        $cleanErr = ($rawErrLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '').Trim()
-                        if (-not [string]::IsNullOrWhiteSpace($cleanErr)) {
-                            Log-Text "   [stderr] $cleanErr"
+                    if ($null -ne $errTask -and $errTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                        $stdErrText = [string]$errTask.Result
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($stdOutText)) {
+                        foreach ($rawOutLine in ($stdOutText -split "`n")) {
+                            $cleanLine = ($rawOutLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '')
+                            if ($cleanLine.Contains("`r")) { $cleanLine = ($cleanLine -split "`r")[-1] }
+                            $cleanLine = $cleanLine.Trim()
+                            if ([string]::IsNullOrWhiteSpace($cleanLine)) { continue }
+                            if ($cleanLine -match '^[-\\|/]+$' -or $cleanLine -match '^\s*\d+(\.\d+)?\s*(KB|MB|GB)\s*/\s*\d+') { continue }
+                            Log-Text "   $cleanLine"
+                        }
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace($stdErrText)) {
+                        foreach ($rawErrLine in ($stdErrText -split "`n")) {
+                            $cleanErr = ($rawErrLine -replace '\x1B\[[0-9;?]*[A-Za-z]', '').Trim()
+                            if (-not [string]::IsNullOrWhiteSpace($cleanErr)) {
+                                Log-Text "   [stderr] $cleanErr"
+                            }
                         }
                     }
                 }
@@ -267,6 +356,7 @@ function Run-CliStream {
                 ExitCode  = $exitCode
                 StdOut    = $stdOutText
                 StdErr    = $stdErrText
+                TimedOut  = $false
             }
             if ($ReturnResult) { return $script:lastCliRun }
             return $exitCode
