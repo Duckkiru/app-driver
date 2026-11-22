@@ -58,8 +58,25 @@ if (-not $isCompanion -or -not $isAdmin) {
             } catch {}
         }
 
+        $sessionDir = Join-Path $env:LOCALAPPDATA "AppDriver\Session"
+        try {
+            if (-not [System.IO.Directory]::Exists($sessionDir)) {
+                [void][System.IO.Directory]::CreateDirectory($sessionDir)
+            }
+            $cutoff = [DateTime]::UtcNow.AddHours(-12)
+            foreach ($oldF in [System.IO.Directory]::GetFiles($sessionDir, "App-Driver-Session*.ps1")) {
+                try {
+                    if ([System.IO.File]::GetLastWriteTimeUtc($oldF) -lt $cutoff) {
+                        [System.IO.File]::Delete($oldF)
+                    }
+                } catch {}
+            }
+        } catch {
+            $sessionDir = $env:TEMP
+        }
+
         if (-not [string]::IsNullOrWhiteSpace($sbStr) -and $sbStr.Length -gt 1000) {
-            $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
+            $cacheScript = Join-Path $sessionDir "App-Driver-Session-$PID.ps1"
             try {
                 [System.IO.File]::WriteAllText($cacheScript, $sbStr, [System.Text.UTF8Encoding]::new($true))
                 $scriptTarget = $cacheScript
@@ -68,17 +85,17 @@ if (-not $isCompanion -or -not $isAdmin) {
                 try {
                     [System.IO.File]::WriteAllText($altCache, $sbStr, [System.Text.UTF8Encoding]::new($true))
                     $scriptTarget = $altCache
-                } catch {
-                    if (Test-Path -LiteralPath $cacheScript) {
-                        $scriptTarget = $cacheScript
-                    }
-                }
+                } catch {}
             }
         }
     } else {
         $resolvedLocal = (Resolve-Path -LiteralPath $PSCommandPath).Path
-        $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
+        $sessionDir = Join-Path $env:LOCALAPPDATA "AppDriver\Session"
         try {
+            if (-not [System.IO.Directory]::Exists($sessionDir)) {
+                [void][System.IO.Directory]::CreateDirectory($sessionDir)
+            }
+            $cacheScript = Join-Path $sessionDir "App-Driver-Session-$PID.ps1"
             $localText = [System.IO.File]::ReadAllText($resolvedLocal, [System.Text.Encoding]::UTF8)
             [System.IO.File]::WriteAllText($cacheScript, $localText, [System.Text.UTF8Encoding]::new($true))
             $scriptTarget = $cacheScript

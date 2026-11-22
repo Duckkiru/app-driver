@@ -1,4 +1,4 @@
-Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
+﻿Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
 
 if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
     try {

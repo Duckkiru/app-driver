@@ -1,4 +1,4 @@
-if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
+﻿if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
     Add-Type -AssemblyName PresentationCore -ErrorAction SilentlyContinue
 }
 

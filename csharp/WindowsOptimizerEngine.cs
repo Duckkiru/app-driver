@@ -541,9 +541,13 @@ namespace DuckUtil {
                 psi.RedirectStandardError = true;
                 using (Process p = Process.Start(psi)) {
                     if (p == null) return "";
-                    string txt = p.StandardOutput.ReadToEnd();
-                    p.WaitForExit(timeoutMs);
-                    return txt ?? "";
+                    Task<string> tOut = p.StandardOutput.ReadToEndAsync();
+                    Task<string> tErr = p.StandardError.ReadToEndAsync();
+                    if (!p.WaitForExit(timeoutMs)) {
+                        try { p.Kill(); } catch {}
+                        return "";
+                    }
+                    return tOut.Wait(500) ? (tOut.Result ?? "") : "";
                 }
             } catch {
                 return "";
@@ -608,6 +612,8 @@ namespace DuckUtil {
             if (string.Equals(kind, "UltimatePerf", StringComparison.OrdinalIgnoreCase)) {
                 bool isUlt = !string.IsNullOrEmpty(activePowerScheme) &&
                              (activePowerScheme.IndexOf("Ultimate Performance", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("Hi\u1EC7u su\u1EA5t t\u1ED1i \u0111a", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("Hi\u1EC7u n\u0103ng t\u1ED1i \u0111a", StringComparison.OrdinalIgnoreCase) >= 0 ||
                               activePowerScheme.IndexOf("e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase) >= 0);
                 return new TweakProbeResult { Id = req.Id, State = isUlt ? "Applied" : "Default", Detail = "" };
             }

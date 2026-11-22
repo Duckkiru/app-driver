@@ -163,7 +163,8 @@ namespace DuckUtil {
             RegexOptions.IgnoreCase);
 
         private static readonly Regex RxSystemProtection = new Regex(
-            @"(?:securityhealth|sechealth|windows\s*defender|microsoft\s*defender|msascuil|\bctfmon\b)",
+            @"(?:securityhealth|sechealth|windows\s*defender|microsoft\s*defender|msascuil|\bctfmon\b|" +
+            @"kaspersky|bitdefender|malwarebytes|avast|\bavg\b|\beset\b|\bekrn\b|norton|mcafee|sophos|trendmicro|crowdstrike|sentinel)",
             RegexOptions.IgnoreCase);
 
         private static readonly Regex RxOemProtection = new Regex(
@@ -2101,6 +2102,16 @@ namespace DuckUtil {
             }
         }
 
+        private static void PopulateAccessDeniedResult(StartupOpResult res, string fallbackMsg) {
+            if (IsCurrentProcessAdmin()) {
+                res.RequiresAdminError = false;
+                res.Message = "M\u1EE5c n\u00E0y \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng) n\u00EAn Windows t\u1EEB ch\u1ED1i thay \u0111\u1ED5i.";
+            } else {
+                res.RequiresAdminError = true;
+                res.Message = fallbackMsg;
+            }
+        }
+
         private static StartupOpResult SetServiceStartupEnabled(StartupEntry entry, bool enable) {
             var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
             if (string.IsNullOrWhiteSpace(entry.ServiceName)) {
@@ -2113,15 +2124,15 @@ namespace DuckUtil {
                 scm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT);
                 if (scm == IntPtr.Zero) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "OpenSCManagerFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "OpenSCManagerFailed:5");
+                    else res.Message = "OpenSCManagerFailed:" + err;
                     return res;
                 }
                 svc = OpenServiceW(scm, entry.ServiceName, SERVICE_CHANGE_CONFIG | SERVICE_QUERY_CONFIG);
                 if (svc == IntPtr.Zero) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "OpenServiceFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "OpenServiceFailed:5");
+                    else res.Message = "OpenServiceFailed:" + err;
                     return res;
                 }
                 uint targetStart = enable ? SERVICE_AUTO_START : SERVICE_DEMAND_START;
@@ -2139,8 +2150,8 @@ namespace DuckUtil {
                     null);
                 if (!ok) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "ChangeServiceConfigFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "ChangeServiceConfigFailed:5");
+                    else res.Message = "ChangeServiceConfigFailed:" + err;
                     return res;
                 }
 

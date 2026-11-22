@@ -1,4 +1,4 @@
-function Find-FaultyPnpDevices {
+﻿function Find-FaultyPnpDevices {
     try {
         return @(Get-PnpDevice -ErrorAction Stop | Where-Object {
             $_.Present -eq $true -and ($_.Status -ne 'OK' -or ($null -ne $_.ConfigManagerErrorCode -and $_.ConfigManagerErrorCode -ne 0))
@@ -33,14 +33,19 @@ function Invoke-PnpDriverStoreCleanup {
         $p = [System.Diagnostics.Process]::Start($pinfo)
         $outTask = $p.StandardOutput.ReadToEndAsync()
         $errTask = $p.StandardError.ReadToEndAsync()
-        if (-not $p.WaitForExit(15000)) {
-            try { $p.Kill() } catch {}
-            Log-Text "[!] Hết thời gian liệt kê DriverStore (pnputil /enum-drivers)."
-            return
+        $hasForms = ($null -ne ('System.Windows.Forms.Application' -as [type]))
+        $enumDeadline = [DateTime]::UtcNow.AddSeconds(15)
+        while (-not $p.WaitForExit(120)) {
+            if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
+            if ($script:isWindowClosing -or $script:cancelRequested -or [DateTime]::UtcNow -ge $enumDeadline) {
+                try { $p.Kill() } catch {}
+                Log-Text "[!] Hết thời gian hoặc đã hủy liệt kê DriverStore (pnputil /enum-drivers)."
+                return
+            }
         }
         $raw = if ($outTask.Wait(1000)) { $outTask.Result } else { "" }
 
-        $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?i)(?:Published Name|Tên đã phát hành):\s*(oem\d+\.inf)')
+        $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?im)^\s*[^:\r\n]+:\s*(oem\d+\.inf)\b')
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {

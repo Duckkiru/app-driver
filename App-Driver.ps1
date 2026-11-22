@@ -58,8 +58,25 @@ if (-not $isCompanion -or -not $isAdmin) {
             } catch {}
         }
 
+        $sessionDir = Join-Path $env:LOCALAPPDATA "AppDriver\Session"
+        try {
+            if (-not [System.IO.Directory]::Exists($sessionDir)) {
+                [void][System.IO.Directory]::CreateDirectory($sessionDir)
+            }
+            $cutoff = [DateTime]::UtcNow.AddHours(-12)
+            foreach ($oldF in [System.IO.Directory]::GetFiles($sessionDir, "App-Driver-Session*.ps1")) {
+                try {
+                    if ([System.IO.File]::GetLastWriteTimeUtc($oldF) -lt $cutoff) {
+                        [System.IO.File]::Delete($oldF)
+                    }
+                } catch {}
+            }
+        } catch {
+            $sessionDir = $env:TEMP
+        }
+
         if (-not [string]::IsNullOrWhiteSpace($sbStr) -and $sbStr.Length -gt 1000) {
-            $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
+            $cacheScript = Join-Path $sessionDir "App-Driver-Session-$PID.ps1"
             try {
                 [System.IO.File]::WriteAllText($cacheScript, $sbStr, [System.Text.UTF8Encoding]::new($true))
                 $scriptTarget = $cacheScript
@@ -68,17 +85,17 @@ if (-not $isCompanion -or -not $isAdmin) {
                 try {
                     [System.IO.File]::WriteAllText($altCache, $sbStr, [System.Text.UTF8Encoding]::new($true))
                     $scriptTarget = $altCache
-                } catch {
-                    if (Test-Path -LiteralPath $cacheScript) {
-                        $scriptTarget = $cacheScript
-                    }
-                }
+                } catch {}
             }
         }
     } else {
         $resolvedLocal = (Resolve-Path -LiteralPath $PSCommandPath).Path
-        $cacheScript = Join-Path $env:TEMP "App-Driver-Session.ps1"
+        $sessionDir = Join-Path $env:LOCALAPPDATA "AppDriver\Session"
         try {
+            if (-not [System.IO.Directory]::Exists($sessionDir)) {
+                [void][System.IO.Directory]::CreateDirectory($sessionDir)
+            }
+            $cacheScript = Join-Path $sessionDir "App-Driver-Session-$PID.ps1"
             $localText = [System.IO.File]::ReadAllText($resolvedLocal, [System.Text.Encoding]::UTF8)
             [System.IO.File]::WriteAllText($cacheScript, $localText, [System.Text.UTF8Encoding]::new($true))
             $scriptTarget = $cacheScript
@@ -24130,9 +24147,13 @@ namespace DuckUtil {
                 psi.RedirectStandardError = true;
                 using (Process p = Process.Start(psi)) {
                     if (p == null) return "";
-                    string txt = p.StandardOutput.ReadToEnd();
-                    p.WaitForExit(timeoutMs);
-                    return txt ?? "";
+                    Task<string> tOut = p.StandardOutput.ReadToEndAsync();
+                    Task<string> tErr = p.StandardError.ReadToEndAsync();
+                    if (!p.WaitForExit(timeoutMs)) {
+                        try { p.Kill(); } catch {}
+                        return "";
+                    }
+                    return tOut.Wait(500) ? (tOut.Result ?? "") : "";
                 }
             } catch {
                 return "";
@@ -24197,6 +24218,8 @@ namespace DuckUtil {
             if (string.Equals(kind, "UltimatePerf", StringComparison.OrdinalIgnoreCase)) {
                 bool isUlt = !string.IsNullOrEmpty(activePowerScheme) &&
                              (activePowerScheme.IndexOf("Ultimate Performance", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("Hi\u1EC7u su\u1EA5t t\u1ED1i \u0111a", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("Hi\u1EC7u n\u0103ng t\u1ED1i \u0111a", StringComparison.OrdinalIgnoreCase) >= 0 ||
                               activePowerScheme.IndexOf("e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase) >= 0);
                 return new TweakProbeResult { Id = req.Id, State = isUlt ? "Applied" : "Default", Detail = "" };
             }
@@ -25023,7 +25046,8 @@ namespace DuckUtil {
             RegexOptions.IgnoreCase);
 
         private static readonly Regex RxSystemProtection = new Regex(
-            @"(?:securityhealth|sechealth|windows\s*defender|microsoft\s*defender|msascuil|\bctfmon\b)",
+            @"(?:securityhealth|sechealth|windows\s*defender|microsoft\s*defender|msascuil|\bctfmon\b|" +
+            @"kaspersky|bitdefender|malwarebytes|avast|\bavg\b|\beset\b|\bekrn\b|norton|mcafee|sophos|trendmicro|crowdstrike|sentinel)",
             RegexOptions.IgnoreCase);
 
         private static readonly Regex RxOemProtection = new Regex(
@@ -26961,6 +26985,16 @@ namespace DuckUtil {
             }
         }
 
+        private static void PopulateAccessDeniedResult(StartupOpResult res, string fallbackMsg) {
+            if (IsCurrentProcessAdmin()) {
+                res.RequiresAdminError = false;
+                res.Message = "M\u1EE5c n\u00E0y \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng) n\u00EAn Windows t\u1EEB ch\u1ED1i thay \u0111\u1ED5i.";
+            } else {
+                res.RequiresAdminError = true;
+                res.Message = fallbackMsg;
+            }
+        }
+
         private static StartupOpResult SetServiceStartupEnabled(StartupEntry entry, bool enable) {
             var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
             if (string.IsNullOrWhiteSpace(entry.ServiceName)) {
@@ -26973,15 +27007,15 @@ namespace DuckUtil {
                 scm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT);
                 if (scm == IntPtr.Zero) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "OpenSCManagerFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "OpenSCManagerFailed:5");
+                    else res.Message = "OpenSCManagerFailed:" + err;
                     return res;
                 }
                 svc = OpenServiceW(scm, entry.ServiceName, SERVICE_CHANGE_CONFIG | SERVICE_QUERY_CONFIG);
                 if (svc == IntPtr.Zero) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "OpenServiceFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "OpenServiceFailed:5");
+                    else res.Message = "OpenServiceFailed:" + err;
                     return res;
                 }
                 uint targetStart = enable ? SERVICE_AUTO_START : SERVICE_DEMAND_START;
@@ -26999,8 +27033,8 @@ namespace DuckUtil {
                     null);
                 if (!ok) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "ChangeServiceConfigFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "ChangeServiceConfigFailed:5");
+                    else res.Message = "ChangeServiceConfigFailed:" + err;
                     return res;
                 }
 
@@ -43146,9 +43180,13 @@ namespace DuckUtil {
                 psi.RedirectStandardError = true;
                 using (Process p = Process.Start(psi)) {
                     if (p == null) return "";
-                    string txt = p.StandardOutput.ReadToEnd();
-                    p.WaitForExit(timeoutMs);
-                    return txt ?? "";
+                    Task<string> tOut = p.StandardOutput.ReadToEndAsync();
+                    Task<string> tErr = p.StandardError.ReadToEndAsync();
+                    if (!p.WaitForExit(timeoutMs)) {
+                        try { p.Kill(); } catch {}
+                        return "";
+                    }
+                    return tOut.Wait(500) ? (tOut.Result ?? "") : "";
                 }
             } catch {
                 return "";
@@ -43213,6 +43251,8 @@ namespace DuckUtil {
             if (string.Equals(kind, "UltimatePerf", StringComparison.OrdinalIgnoreCase)) {
                 bool isUlt = !string.IsNullOrEmpty(activePowerScheme) &&
                              (activePowerScheme.IndexOf("Ultimate Performance", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("Hi\u1EC7u su\u1EA5t t\u1ED1i \u0111a", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                              activePowerScheme.IndexOf("Hi\u1EC7u n\u0103ng t\u1ED1i \u0111a", StringComparison.OrdinalIgnoreCase) >= 0 ||
                               activePowerScheme.IndexOf("e9a42b02-d5df-448d-aa00-03f14749eb61", StringComparison.OrdinalIgnoreCase) >= 0);
                 return new TweakProbeResult { Id = req.Id, State = isUlt ? "Applied" : "Default", Detail = "" };
             }
@@ -44063,7 +44103,8 @@ namespace DuckUtil {
             RegexOptions.IgnoreCase);
 
         private static readonly Regex RxSystemProtection = new Regex(
-            @"(?:securityhealth|sechealth|windows\s*defender|microsoft\s*defender|msascuil|\bctfmon\b)",
+            @"(?:securityhealth|sechealth|windows\s*defender|microsoft\s*defender|msascuil|\bctfmon\b|" +
+            @"kaspersky|bitdefender|malwarebytes|avast|\bavg\b|\beset\b|\bekrn\b|norton|mcafee|sophos|trendmicro|crowdstrike|sentinel)",
             RegexOptions.IgnoreCase);
 
         private static readonly Regex RxOemProtection = new Regex(
@@ -46001,6 +46042,16 @@ namespace DuckUtil {
             }
         }
 
+        private static void PopulateAccessDeniedResult(StartupOpResult res, string fallbackMsg) {
+            if (IsCurrentProcessAdmin()) {
+                res.RequiresAdminError = false;
+                res.Message = "M\u1EE5c n\u00E0y \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng) n\u00EAn Windows t\u1EEB ch\u1ED1i thay \u0111\u1ED5i.";
+            } else {
+                res.RequiresAdminError = true;
+                res.Message = fallbackMsg;
+            }
+        }
+
         private static StartupOpResult SetServiceStartupEnabled(StartupEntry entry, bool enable) {
             var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
             if (string.IsNullOrWhiteSpace(entry.ServiceName)) {
@@ -46013,15 +46064,15 @@ namespace DuckUtil {
                 scm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT);
                 if (scm == IntPtr.Zero) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "OpenSCManagerFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "OpenSCManagerFailed:5");
+                    else res.Message = "OpenSCManagerFailed:" + err;
                     return res;
                 }
                 svc = OpenServiceW(scm, entry.ServiceName, SERVICE_CHANGE_CONFIG | SERVICE_QUERY_CONFIG);
                 if (svc == IntPtr.Zero) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "OpenServiceFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "OpenServiceFailed:5");
+                    else res.Message = "OpenServiceFailed:" + err;
                     return res;
                 }
                 uint targetStart = enable ? SERVICE_AUTO_START : SERVICE_DEMAND_START;
@@ -46039,8 +46090,8 @@ namespace DuckUtil {
                     null);
                 if (!ok) {
                     int err = Marshal.GetLastWin32Error();
-                    res.RequiresAdminError = (err == 5);
-                    res.Message = "ChangeServiceConfigFailed:" + err;
+                    if (err == 5) PopulateAccessDeniedResult(res, "ChangeServiceConfigFailed:5");
+                    else res.Message = "ChangeServiceConfigFailed:" + err;
                     return res;
                 }
 
@@ -51989,14 +52040,19 @@ function Invoke-PnpDriverStoreCleanup {
         $p = [System.Diagnostics.Process]::Start($pinfo)
         $outTask = $p.StandardOutput.ReadToEndAsync()
         $errTask = $p.StandardError.ReadToEndAsync()
-        if (-not $p.WaitForExit(15000)) {
-            try { $p.Kill() } catch {}
-            Log-Text "[!] H$([char]0x1EBF)t th$([char]0x1EDD)i gian li$([char]0x1EC7)t k$([char]0x00EA) DriverStore (pnputil /enum-drivers)."
-            return
+        $hasForms = ($null -ne ('System.Windows.Forms.Application' -as [type]))
+        $enumDeadline = [DateTime]::UtcNow.AddSeconds(15)
+        while (-not $p.WaitForExit(120)) {
+            if ($hasForms) { try { [System.Windows.Forms.Application]::DoEvents() } catch {} }
+            if ($script:isWindowClosing -or $script:cancelRequested -or [DateTime]::UtcNow -ge $enumDeadline) {
+                try { $p.Kill() } catch {}
+                Log-Text "[!] H$([char]0x1EBF)t th$([char]0x1EDD)i gian ho$([char]0x1EB7)c $([char]0x0111)$([char]0x00E3) h$([char]0x1EE7)y li$([char]0x1EC7)t k$([char]0x00EA) DriverStore (pnputil /enum-drivers)."
+                return
+            }
         }
         $raw = if ($outTask.Wait(1000)) { $outTask.Result } else { "" }
 
-        $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, "(?i)(?:Published Name|T$([char]0x00EA)n $([char]0x0111)$([char]0x00E3) ph$([char]0x00E1)t h$([char]0x00E0)nh):\s*(oem\d+\.inf)")
+        $matches = [System.Text.RegularExpressions.Regex]::Matches($raw, '(?im)^\s*[^:\r\n]+:\s*(oem\d+\.inf)\b')
         $oemList = @($matches | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() } | Select-Object -Unique)
 
         if ($oemList.Count -eq 0) {
@@ -53247,6 +53303,7 @@ function Invoke-OptimizerSpecialAction {
             foreach ($dir in @($env:TEMP, (Join-Path $env:SystemRoot "Temp"))) {
                 if ([string]::IsNullOrWhiteSpace($dir) -or -not (Test-Path -LiteralPath $dir)) { continue }
                 Get-ChildItem -LiteralPath $dir -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                    if (($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { return }
                     try {
                         Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
                         $removed++
@@ -53284,7 +53341,7 @@ function Invoke-OptimizerSpecialAction {
             $listRun = Run-CliStream "powercfg.exe" "/list" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
             $listOut = if ($listRun) { [string]$listRun.StdOut } else { "" }
             $ultGuid = ""
-            if ($listOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s*\([^)]*Ultimate Performance[^)]*\)') {
+            if ($listOut -match "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s*\([^)]*(?:Ultimate Performance|Hi$([char]0x1EC7)u su$([char]0x1EA5)t t$([char]0x1ED1)i $([char]0x0111)a|Hi$([char]0x1EC7)u n$([char]0x0103)ng t$([char]0x1ED1)i $([char]0x0111)a)[^)]*\)") {
                 $ultGuid = $Matches[1]
             } else {
                 $dupRun = Run-CliStream "powercfg.exe" "-duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10

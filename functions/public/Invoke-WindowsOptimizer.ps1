@@ -584,6 +584,7 @@ function Invoke-OptimizerSpecialAction {
             foreach ($dir in @($env:TEMP, (Join-Path $env:SystemRoot "Temp"))) {
                 if ([string]::IsNullOrWhiteSpace($dir) -or -not (Test-Path -LiteralPath $dir)) { continue }
                 Get-ChildItem -LiteralPath $dir -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                    if (($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { return }
                     try {
                         Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop
                         $removed++
@@ -621,7 +622,7 @@ function Invoke-OptimizerSpecialAction {
             $listRun = Run-CliStream "powercfg.exe" "/list" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
             $listOut = if ($listRun) { [string]$listRun.StdOut } else { "" }
             $ultGuid = ""
-            if ($listOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s*\([^)]*Ultimate Performance[^)]*\)') {
+            if ($listOut -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s*\([^)]*(?:Ultimate Performance|Hiệu suất tối đa|Hiệu năng tối đa)[^)]*\)') {
                 $ultGuid = $Matches[1]
             } else {
                 $dupRun = Run-CliStream "powercfg.exe" "-duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61" -IsolateStdin -AllowCancel -CaptureOutput -ReturnResult -TimeoutSeconds 15 -IdleTimeoutSeconds 10
