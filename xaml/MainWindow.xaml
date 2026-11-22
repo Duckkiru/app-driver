@@ -871,6 +871,8 @@
                                     Padding="14,7" FontSize="12" BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                             <Button Name="optSubBtnResources" Content="Tài nguyên" Style="{StaticResource NavTabButton}"
                                     Padding="14,7" FontSize="12"/>
+                            <Button Name="optSubBtnStartup" Content="Khởi chạy" Style="{StaticResource NavTabButton}"
+                                    Padding="14,7" FontSize="12"/>
                         </StackPanel>
                         <Border Background="#101827" BorderBrush="#293B56" BorderThickness="1" CornerRadius="3"
                                 Padding="10,3" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -929,6 +931,7 @@
                     </Grid>
 
                     <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <Grid Name="OptPageStartup" Visibility="Collapsed" IsHitTestVisible="False"/>
                 </Grid>
             </Grid>
         </Grid>

@@ -7948,6 +7948,8 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     Padding="14,7" FontSize="12" BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                             <Button Name="optSubBtnResources" Content="T&#x00E0;i nguy&#x00EA;n" Style="{StaticResource NavTabButton}"
                                     Padding="14,7" FontSize="12"/>
+                            <Button Name="optSubBtnStartup" Content="Kh&#x1EDF;i ch&#x1EA1;y" Style="{StaticResource NavTabButton}"
+                                    Padding="14,7" FontSize="12"/>
                         </StackPanel>
                         <Border Background="#101827" BorderBrush="#293B56" BorderThickness="1" CornerRadius="3"
                                 Padding="10,3" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -8006,6 +8008,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                     </Grid>
 
                     <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <Grid Name="OptPageStartup" Visibility="Collapsed" IsHitTestVisible="False"/>
                 </Grid>
             </Grid>
         </Grid>
@@ -49759,11 +49762,13 @@ $window.Add_Closed({
     Stop-AllBackgroundWork
 })
 
-#region Optimizer Tab (TabPage4: Customize & Resources)
+#region Optimizer Tab (TabPage4: Customize, Resources & Startup)
 $script:optSubBtnCustomize  = $window.FindName("optSubBtnCustomize")
 $script:optSubBtnResources  = $window.FindName("optSubBtnResources")
+$script:optSubBtnStartup    = $window.FindName("optSubBtnStartup")
 $script:optPageCustomize    = $window.FindName("OptPageCustomize")
 $script:optPageResources    = $window.FindName("OptPageResources")
+$script:optPageStartup      = $window.FindName("OptPageStartup")
 $script:txtOptHardwareInfo  = $window.FindName("txtOptHardwareInfo")
 $script:btnOptApply         = $window.FindName("btnOptApply")
 $script:btnOptUndo          = $window.FindName("btnOptUndo")
@@ -49848,6 +49853,10 @@ function Set-OptimizerSubTab {
         $script:optPageResources.Visibility = if ($SubIndex -eq 1) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         $script:optPageResources.IsHitTestVisible = ($SubIndex -eq 1)
     }
+    if ($script:optPageStartup) {
+        $script:optPageStartup.Visibility = if ($SubIndex -eq 2) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $script:optPageStartup.IsHitTestVisible = ($SubIndex -eq 2)
+    }
     if ($script:optSubBtnCustomize) {
         $script:optSubBtnCustomize.Foreground = if ($SubIndex -eq 0) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnCustomize.BorderBrush = if ($SubIndex -eq 0) { $script:brushNavActive } else { $script:brushTransparent }
@@ -49855,6 +49864,10 @@ function Set-OptimizerSubTab {
     if ($script:optSubBtnResources) {
         $script:optSubBtnResources.Foreground = if ($SubIndex -eq 1) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnResources.BorderBrush = if ($SubIndex -eq 1) { $script:brushNavActive } else { $script:brushTransparent }
+    }
+    if ($script:optSubBtnStartup) {
+        $script:optSubBtnStartup.Foreground = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushNavInactive }
+        $script:optSubBtnStartup.BorderBrush = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushTransparent }
     }
     Update-OptimizerSelectionCount
 }
@@ -50291,6 +50304,7 @@ function Initialize-OptimizerTabIfNeeded {
 
 if ($script:optSubBtnCustomize) { $script:optSubBtnCustomize.Add_Click({ Set-OptimizerSubTab 0 }) }
 if ($script:optSubBtnResources) { $script:optSubBtnResources.Add_Click({ Set-OptimizerSubTab 1 }) }
+if ($script:optSubBtnStartup)   { $script:optSubBtnStartup.Add_Click({ Set-OptimizerSubTab 2 }) }
 
 if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({

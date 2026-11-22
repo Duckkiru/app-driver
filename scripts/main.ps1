@@ -8164,11 +8164,13 @@ $window.Add_Closed({
     Stop-AllBackgroundWork
 })
 
-#region Optimizer Tab (TabPage4: Customize & Resources)
+#region Optimizer Tab (TabPage4: Customize, Resources & Startup)
 $script:optSubBtnCustomize  = $window.FindName("optSubBtnCustomize")
 $script:optSubBtnResources  = $window.FindName("optSubBtnResources")
+$script:optSubBtnStartup    = $window.FindName("optSubBtnStartup")
 $script:optPageCustomize    = $window.FindName("OptPageCustomize")
 $script:optPageResources    = $window.FindName("OptPageResources")
+$script:optPageStartup      = $window.FindName("OptPageStartup")
 $script:txtOptHardwareInfo  = $window.FindName("txtOptHardwareInfo")
 $script:btnOptApply         = $window.FindName("btnOptApply")
 $script:btnOptUndo          = $window.FindName("btnOptUndo")
@@ -8253,6 +8255,10 @@ function Set-OptimizerSubTab {
         $script:optPageResources.Visibility = if ($SubIndex -eq 1) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         $script:optPageResources.IsHitTestVisible = ($SubIndex -eq 1)
     }
+    if ($script:optPageStartup) {
+        $script:optPageStartup.Visibility = if ($SubIndex -eq 2) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $script:optPageStartup.IsHitTestVisible = ($SubIndex -eq 2)
+    }
     if ($script:optSubBtnCustomize) {
         $script:optSubBtnCustomize.Foreground = if ($SubIndex -eq 0) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnCustomize.BorderBrush = if ($SubIndex -eq 0) { $script:brushNavActive } else { $script:brushTransparent }
@@ -8260,6 +8266,10 @@ function Set-OptimizerSubTab {
     if ($script:optSubBtnResources) {
         $script:optSubBtnResources.Foreground = if ($SubIndex -eq 1) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnResources.BorderBrush = if ($SubIndex -eq 1) { $script:brushNavActive } else { $script:brushTransparent }
+    }
+    if ($script:optSubBtnStartup) {
+        $script:optSubBtnStartup.Foreground = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushNavInactive }
+        $script:optSubBtnStartup.BorderBrush = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushTransparent }
     }
     Update-OptimizerSelectionCount
 }
@@ -8696,6 +8706,7 @@ function Initialize-OptimizerTabIfNeeded {
 
 if ($script:optSubBtnCustomize) { $script:optSubBtnCustomize.Add_Click({ Set-OptimizerSubTab 0 }) }
 if ($script:optSubBtnResources) { $script:optSubBtnResources.Add_Click({ Set-OptimizerSubTab 1 }) }
+if ($script:optSubBtnStartup)   { $script:optSubBtnStartup.Add_Click({ Set-OptimizerSubTab 2 }) }
 
 if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({
