@@ -2896,7 +2896,7 @@ namespace DuckUtil {
             if (entry.IsOrphanApprovedGhost) {
                 rowBorder.Visibility = Visibility.Collapsed;
             }
-            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 450);
+            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 5000);
             System.Windows.Controls.ToolTipService.SetShowDuration(rowBorder, 12000);
             rowBorder.ToolTip = "";
 
@@ -2919,6 +2919,7 @@ namespace DuckUtil {
             if (!canTgl) {
                 toggle.Opacity = 0.35;
                 System.Windows.Controls.ToolTipService.SetShowOnDisabled(toggle, true);
+                System.Windows.Controls.ToolTipService.SetInitialShowDelay(toggle, 5000);
                 string lk = entry.LockKind ?? "";
                 if (lk == "Msix") {
                     toggle.ToolTip = "D\u1ECBch v\u1EE5 \u0111\u00F3ng g\u00F3i MSIX (AppXSvc) - Windows kh\u00F3a kh\u00F4ng cho t\u1EAFt tr\u1EF1c ti\u1EBFp. H\u00E3y \u0111i\u1EC1u ch\u1EC9nh \u1EDF m\u1EE5c Store ho\u1EB7c g\u1EE1 \u1EE9ng d\u1EE5ng.";

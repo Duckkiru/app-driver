@@ -1233,31 +1233,31 @@
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnResScan" Content="Quét lại" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                            ToolTip="Phân tích lại tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Phân tích lại tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResClean" Content="Dọn mục đã chọn" Style="{StaticResource ActionButton}"
                                             Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
-                                            ToolTip="Dọn các hạng mục đang được chọn để giải phóng dung lượng ổ đĩa." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Dọn các hạng mục đang được chọn để giải phóng dung lượng ổ đĩa." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResSelectSafe" Content="Chọn An toàn" Style="{StaticResource SecondaryButton}"
                                             Foreground="#34D399" BorderBrush="#1E5640"
-                                            ToolTip="Chỉ chọn các hạng mục ở mức An toàn." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Chỉ chọn các hạng mục ở mức An toàn." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResClearSel" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}"
-                                            ToolTip="Bỏ chọn toàn bộ hạng mục." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Bỏ chọn toàn bộ hạng mục." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResAddFolder" Content="+ Chọn thư mục" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
-                                            ToolTip="Thêm thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng và tệp tải lỗi." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Thêm thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng và tệp tải lỗi." ToolTipService.InitialShowDelay="5000"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                    <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Name="txtResSummary" Text="Đang phân tích..." Margin="0,0,10,0"
+                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Name="txtResDiskInfo" Text="C: đang kiểm tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <TextBlock Name="txtResDiskInfo" Text="C: đang kiểm tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" ToolTipService.InitialShowDelay="5000"/>
                                             <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
                                                 <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
                                             </Border>
                                         </StackPanel>
                                     </Border>
-                                    <TextBlock Name="txtResSummary" Text="Đang phân tích..."
-                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -1326,16 +1326,16 @@
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Name="btnStartRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#38BDF8" BorderBrush="#29527D"
-                                                ToolTip="Quét lại toàn bộ mục khởi chạy (Registry, Thư mục, Store, Task Scheduler, Dịch vụ chạy nền &amp; rác StartupApproved)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Quét lại toàn bộ mục khởi chạy (Registry, Thư mục, Store, Task Scheduler, Dịch vụ chạy nền &amp; rác StartupApproved)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnStartCleanOrphans" Content="Dọn mục lỗi" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#FBBF24" BorderBrush="#614F27"
-                                                ToolTip="Xóa các mục trỏ tới tệp không còn tồn tại, dịch vụ lỗi và khóa rác StartupApproved (tự sao lưu StartupGuard)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Xóa các mục trỏ tới tệp không còn tồn tại, dịch vụ lỗi và khóa rác StartupApproved (tự sao lưu StartupGuard)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnStartRestoreBackup" Content="Khôi phục đã xóa" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#34D399" BorderBrush="#1E5640"
-                                                ToolTip="Khôi phục nguyên lô mục khởi chạy vừa xóa gần nhất theo cơ chế ngăn xếp (LIFO)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Khôi phục nguyên lô mục khởi chạy vừa xóa gần nhất theo cơ chế ngăn xếp (LIFO)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnStartAddApp" Content="+ Thêm ứng dụng" Style="{StaticResource ActionButton}"
                                                 Background="#0284C7" Foreground="#FFFFFF" Padding="12,7" Margin="0"
-                                                ToolTip="Chọn tệp thực thi (.exe, .lnk, .bat, .cmd, .vbs) để thêm vào danh sách khởi chạy cùng Windows." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Chọn tệp thực thi (.exe, .lnk, .bat, .cmd, .vbs) để thêm vào danh sách khởi chạy cùng Windows." ToolTipService.InitialShowDelay="5000"/>
                                     </StackPanel>
 
                                     <Border Grid.Column="2" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
@@ -1364,9 +1364,9 @@
                                             </TextBlock>
                                             <TextBox Grid.Column="1" Name="txtStartSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="Tìm theo tên ứng dụng, nhà phát hành hoặc đường dẫn..." ToolTipService.InitialShowDelay="500"/>
+                                                     ToolTip="Tìm theo tên ứng dụng, nhà phát hành hoặc đường dẫn..." ToolTipService.InitialShowDelay="5000"/>
                                             <Button Grid.Column="2" Name="btnClearStartSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
-                                                    ToolTip="Xóa từ khóa tìm kiếm" ToolTipService.InitialShowDelay="500">
+                                                    ToolTip="Xóa từ khóa tìm kiếm" ToolTipService.InitialShowDelay="5000">
                                                 <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                                       StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
                                             </Button>

@@ -594,7 +594,7 @@ namespace DuckUtil {
                 int rf = 0;
                 int rd = 0;
                 MeasureDirectoryRecursive(r, patterns, topLevelOnly, ct, ref rb, ref rf, ref rd, 0);
-                if (rf > 0 || rd > 0) {
+                if (rf > 0 || rb > 0) {
                     validRoots.Add(r);
                     totalB += rb;
                     totalF += rf;
@@ -617,7 +617,7 @@ namespace DuckUtil {
             cat.TotalBytes = totalB;
             cat.ItemCount = totalF;
             cat.FolderCount = totalD;
-            if (totalB == 0 && totalF == 0 && totalD == 0) {
+            if (totalB == 0 && totalF == 0) {
                 cat.Selected = false;
             }
         }
@@ -1345,18 +1345,18 @@ namespace DuckUtil {
                 if (list[i].Id != "t4_empty_folders") sumFiles += list[i].ItemCount;
             }
 
-            // Smart sort: items with findings on top (Safe first, then Caution/Advanced by size desc), clean 0 B items at bottom
+            // Smart sort: heaviest items first (by TotalBytes desc), empty folders next, greyed 0 B clean items at the very bottom
             list.Sort(delegate(ResourceCleanCategory a, ResourceCleanCategory b) {
-                bool aHas = (a.TotalBytes > 0 || a.ItemCount > 0 || a.FolderCount > 0);
-                bool bHas = (b.TotalBytes > 0 || b.ItemCount > 0 || b.FolderCount > 0);
+                bool aHas = (a.Id == "t4_empty_folders") ? (a.FolderCount > 0 || a.ItemCount > 0) : (a.TotalBytes > 0 || a.ItemCount > 0);
+                bool bHas = (b.Id == "t4_empty_folders") ? (b.FolderCount > 0 || b.ItemCount > 0) : (b.TotalBytes > 0 || b.ItemCount > 0);
                 if (aHas != bHas) return aHas ? -1 : 1;
-                int aRisk = a.RiskLevel == "Safe" ? 0 : (a.RiskLevel == "Caution" ? 1 : 2);
-                int bRisk = b.RiskLevel == "Safe" ? 0 : (b.RiskLevel == "Caution" ? 1 : 2);
-                if (aRisk != bRisk) return aRisk.CompareTo(bRisk);
                 int cmpSz = b.TotalBytes.CompareTo(a.TotalBytes);
                 if (cmpSz != 0) return cmpSz;
                 int cmpCnt = (b.FolderCount + b.ItemCount).CompareTo(a.FolderCount + a.ItemCount);
                 if (cmpCnt != 0) return cmpCnt;
+                int aRisk = a.RiskLevel == "Safe" ? 0 : (a.RiskLevel == "Caution" ? 1 : 2);
+                int bRisk = b.RiskLevel == "Safe" ? 0 : (b.RiskLevel == "Caution" ? 1 : 2);
+                if (aRisk != bRisk) return aRisk.CompareTo(bRisk);
                 return a.Tier.CompareTo(b.Tier);
             });
 
@@ -1780,12 +1780,13 @@ namespace DuckUtil {
             grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(136) });
 
             // Col 0: CheckBox
+            bool hasActionable = (cat.Id == "t4_empty_folders") ? (cat.FolderCount > 0 || cat.ItemCount > 0) : (cat.TotalBytes > 0 || cat.ItemCount > 0);
             var cb = new System.Windows.Controls.CheckBox();
             if (checkStyle != null) cb.Style = checkStyle;
             cb.HorizontalAlignment = HorizontalAlignment.Center;
             cb.VerticalAlignment = VerticalAlignment.Center;
-            cb.IsChecked = cat.Selected;
-            cb.IsEnabled = !cat.SkippedBecauseRebootPending && (cat.ItemCount > 0 || cat.FolderCount > 0 || cat.TotalBytes > 0);
+            cb.IsChecked = hasActionable && cat.Selected;
+            cb.IsEnabled = !cat.SkippedBecauseRebootPending && hasActionable;
             cb.Tag = vis;
             System.Windows.Controls.Grid.SetColumn(cb, 0);
             grid.Children.Add(cb);
@@ -1989,6 +1990,7 @@ namespace DuckUtil {
                 ptb.Foreground = BrMuted;
                 ptb.TextTrimming = TextTrimming.CharacterEllipsis;
                 ptb.ToolTip = it.Path;
+                System.Windows.Controls.ToolTipService.SetInitialShowDelay(ptb, 5000);
                 pathSp.Children.Add(ptb);
 
                 if (it.IsOneDrive) {

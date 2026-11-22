@@ -8326,31 +8326,31 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnResScan" Content="Qu&#x00E9;t l&#x1EA1;i" Style="{StaticResource ActionButton}"
                                             Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                            ToolTip="Ph&#x00E2;n t&#x00ED;ch l&#x1EA1;i t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Ph&#x00E2;n t&#x00ED;ch l&#x1EA1;i t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResClean" Content="D&#x1ECD;n m&#x1EE5;c &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
                                             Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
-                                            ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n &#x0111;&#x1EC3; gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; &#x0111;&#x0129;a." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n &#x0111;&#x1EC3; gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; &#x0111;&#x0129;a." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResSelectSafe" Content="Ch&#x1ECD;n An to&#x00E0;n" Style="{StaticResource SecondaryButton}"
                                             Foreground="#34D399" BorderBrush="#1E5640"
-                                            ToolTip="Ch&#x1EC9; ch&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x1EDF; m&#x1EE9;c An to&#x00E0;n." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Ch&#x1EC9; ch&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x1EDF; m&#x1EE9;c An to&#x00E0;n." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResClearSel" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
-                                            ToolTip="B&#x1ECF; ch&#x1ECD;n to&#x00E0;n b&#x1ED9; h&#x1EA1;ng m&#x1EE5;c." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="B&#x1ECF; ch&#x1ECD;n to&#x00E0;n b&#x1ED9; h&#x1EA1;ng m&#x1EE5;c." ToolTipService.InitialShowDelay="5000"/>
                                     <Button Name="btnResAddFolder" Content="+ Ch&#x1ECD;n th&#x01B0; m&#x1EE5;c" Style="{StaticResource SecondaryButton}"
                                             Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
-                                            ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c ho&#x1EB7;c &#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i." ToolTipService.InitialShowDelay="500"/>
+                                            ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c ho&#x1EB7;c &#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i." ToolTipService.InitialShowDelay="5000"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                    <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Name="txtResSummary" Text="&#x0110;ang ph&#x00E2;n t&#x00ED;ch..." Margin="0,0,10,0"
+                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Name="txtResDiskInfo" Text="C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <TextBlock Name="txtResDiskInfo" Text="C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" ToolTipService.InitialShowDelay="5000"/>
                                             <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
                                                 <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
                                             </Border>
                                         </StackPanel>
                                     </Border>
-                                    <TextBlock Name="txtResSummary" Text="&#x0110;ang ph&#x00E2;n t&#x00ED;ch..."
-                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -8419,16 +8419,16 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                         <Button Name="btnStartRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#38BDF8" BorderBrush="#29527D"
-                                                ToolTip="Qu&#x00E9;t l&#x1EA1;i to&#x00E0;n b&#x1ED9; m&#x1EE5;c kh&#x1EDF;i ch&#x1EA1;y (Registry, Th&#x01B0; m&#x1EE5;c, Store, Task Scheduler, D&#x1ECB;ch v&#x1EE5; ch&#x1EA1;y n&#x1EC1;n &amp; r&#x00E1;c StartupApproved)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Qu&#x00E9;t l&#x1EA1;i to&#x00E0;n b&#x1ED9; m&#x1EE5;c kh&#x1EDF;i ch&#x1EA1;y (Registry, Th&#x01B0; m&#x1EE5;c, Store, Task Scheduler, D&#x1ECB;ch v&#x1EE5; ch&#x1EA1;y n&#x1EC1;n &amp; r&#x00E1;c StartupApproved)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnStartCleanOrphans" Content="D&#x1ECD;n m&#x1EE5;c l&#x1ED7;i" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#FBBF24" BorderBrush="#614F27"
-                                                ToolTip="X&#x00F3;a c&#x00E1;c m&#x1EE5;c tr&#x1ECF; t&#x1EDB;i t&#x1EC7;p kh&#x00F4;ng c&#x00F2;n t&#x1ED3;n t&#x1EA1;i, d&#x1ECB;ch v&#x1EE5; l&#x1ED7;i v&#x00E0; kh&#x00F3;a r&#x00E1;c StartupApproved (t&#x1EF1; sao l&#x01B0;u StartupGuard)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="X&#x00F3;a c&#x00E1;c m&#x1EE5;c tr&#x1ECF; t&#x1EDB;i t&#x1EC7;p kh&#x00F4;ng c&#x00F2;n t&#x1ED3;n t&#x1EA1;i, d&#x1ECB;ch v&#x1EE5; l&#x1ED7;i v&#x00E0; kh&#x00F3;a r&#x00E1;c StartupApproved (t&#x1EF1; sao l&#x01B0;u StartupGuard)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnStartRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c &#x0111;&#x00E3; x&#x00F3;a" Style="{StaticResource SecondaryButton}"
                                                 Foreground="#34D399" BorderBrush="#1E5640"
-                                                ToolTip="Kh&#x00F4;i ph&#x1EE5;c nguy&#x00EA;n l&#x00F4; m&#x1EE5;c kh&#x1EDF;i ch&#x1EA1;y v&#x1EEB;a x&#x00F3;a g&#x1EA7;n nh&#x1EA5;t theo c&#x01A1; ch&#x1EBF; ng&#x0103;n x&#x1EBF;p (LIFO)." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Kh&#x00F4;i ph&#x1EE5;c nguy&#x00EA;n l&#x00F4; m&#x1EE5;c kh&#x1EDF;i ch&#x1EA1;y v&#x1EEB;a x&#x00F3;a g&#x1EA7;n nh&#x1EA5;t theo c&#x01A1; ch&#x1EBF; ng&#x0103;n x&#x1EBF;p (LIFO)." ToolTipService.InitialShowDelay="5000"/>
                                         <Button Name="btnStartAddApp" Content="+ Th&#x00EA;m &#x1EE9;ng d&#x1EE5;ng" Style="{StaticResource ActionButton}"
                                                 Background="#0284C7" Foreground="#FFFFFF" Padding="12,7" Margin="0"
-                                                ToolTip="Ch&#x1ECD;n t&#x1EC7;p th&#x1EF1;c thi (.exe, .lnk, .bat, .cmd, .vbs) &#x0111;&#x1EC3; th&#x00EA;m v&#x00E0;o danh s&#x00E1;ch kh&#x1EDF;i ch&#x1EA1;y c&#x00F9;ng Windows." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Ch&#x1ECD;n t&#x1EC7;p th&#x1EF1;c thi (.exe, .lnk, .bat, .cmd, .vbs) &#x0111;&#x1EC3; th&#x00EA;m v&#x00E0;o danh s&#x00E1;ch kh&#x1EDF;i ch&#x1EA1;y c&#x00F9;ng Windows." ToolTipService.InitialShowDelay="5000"/>
                                     </StackPanel>
 
                                     <Border Grid.Column="2" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
@@ -8457,9 +8457,9 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                             </TextBlock>
                                             <TextBox Grid.Column="1" Name="txtStartSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
-                                                     ToolTip="T&#x00EC;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c &#x0111;&#x01B0;&#x1EDD;ng d&#x1EAB;n..." ToolTipService.InitialShowDelay="500"/>
+                                                     ToolTip="T&#x00EC;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c &#x0111;&#x01B0;&#x1EDD;ng d&#x1EAB;n..." ToolTipService.InitialShowDelay="5000"/>
                                             <Button Grid.Column="2" Name="btnClearStartSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
-                                                    ToolTip="X&#x00F3;a t&#x1EEB; kh&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="500">
+                                                    ToolTip="X&#x00F3;a t&#x1EEB; kh&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="5000">
                                                 <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                                       StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
                                             </Button>
@@ -27952,7 +27952,7 @@ namespace DuckUtil {
             if (entry.IsOrphanApprovedGhost) {
                 rowBorder.Visibility = Visibility.Collapsed;
             }
-            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 450);
+            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 5000);
             System.Windows.Controls.ToolTipService.SetShowDuration(rowBorder, 12000);
             rowBorder.ToolTip = "";
 
@@ -27975,6 +27975,7 @@ namespace DuckUtil {
             if (!canTgl) {
                 toggle.Opacity = 0.35;
                 System.Windows.Controls.ToolTipService.SetShowOnDisabled(toggle, true);
+                System.Windows.Controls.ToolTipService.SetInitialShowDelay(toggle, 5000);
                 string lk = entry.LockKind ?? "";
                 if (lk == "Msix") {
                     toggle.ToolTip = "D\u1ECBch v\u1EE5 \u0111\u00F3ng g\u00F3i MSIX (AppXSvc) - Windows kh\u00F3a kh\u00F4ng cho t\u1EAFt tr\u1EF1c ti\u1EBFp. H\u00E3y \u0111i\u1EC1u ch\u1EC9nh \u1EDF m\u1EE5c Store ho\u1EB7c g\u1EE1 \u1EE9ng d\u1EE5ng.";
@@ -28791,7 +28792,7 @@ namespace DuckUtil {
                 int rf = 0;
                 int rd = 0;
                 MeasureDirectoryRecursive(r, patterns, topLevelOnly, ct, ref rb, ref rf, ref rd, 0);
-                if (rf > 0 || rd > 0) {
+                if (rf > 0 || rb > 0) {
                     validRoots.Add(r);
                     totalB += rb;
                     totalF += rf;
@@ -28814,7 +28815,7 @@ namespace DuckUtil {
             cat.TotalBytes = totalB;
             cat.ItemCount = totalF;
             cat.FolderCount = totalD;
-            if (totalB == 0 && totalF == 0 && totalD == 0) {
+            if (totalB == 0 && totalF == 0) {
                 cat.Selected = false;
             }
         }
@@ -29542,18 +29543,18 @@ namespace DuckUtil {
                 if (list[i].Id != "t4_empty_folders") sumFiles += list[i].ItemCount;
             }
 
-            // Smart sort: items with findings on top (Safe first, then Caution/Advanced by size desc), clean 0 B items at bottom
+            // Smart sort: heaviest items first (by TotalBytes desc), empty folders next, greyed 0 B clean items at the very bottom
             list.Sort(delegate(ResourceCleanCategory a, ResourceCleanCategory b) {
-                bool aHas = (a.TotalBytes > 0 || a.ItemCount > 0 || a.FolderCount > 0);
-                bool bHas = (b.TotalBytes > 0 || b.ItemCount > 0 || b.FolderCount > 0);
+                bool aHas = (a.Id == "t4_empty_folders") ? (a.FolderCount > 0 || a.ItemCount > 0) : (a.TotalBytes > 0 || a.ItemCount > 0);
+                bool bHas = (b.Id == "t4_empty_folders") ? (b.FolderCount > 0 || b.ItemCount > 0) : (b.TotalBytes > 0 || b.ItemCount > 0);
                 if (aHas != bHas) return aHas ? -1 : 1;
-                int aRisk = a.RiskLevel == "Safe" ? 0 : (a.RiskLevel == "Caution" ? 1 : 2);
-                int bRisk = b.RiskLevel == "Safe" ? 0 : (b.RiskLevel == "Caution" ? 1 : 2);
-                if (aRisk != bRisk) return aRisk.CompareTo(bRisk);
                 int cmpSz = b.TotalBytes.CompareTo(a.TotalBytes);
                 if (cmpSz != 0) return cmpSz;
                 int cmpCnt = (b.FolderCount + b.ItemCount).CompareTo(a.FolderCount + a.ItemCount);
                 if (cmpCnt != 0) return cmpCnt;
+                int aRisk = a.RiskLevel == "Safe" ? 0 : (a.RiskLevel == "Caution" ? 1 : 2);
+                int bRisk = b.RiskLevel == "Safe" ? 0 : (b.RiskLevel == "Caution" ? 1 : 2);
+                if (aRisk != bRisk) return aRisk.CompareTo(bRisk);
                 return a.Tier.CompareTo(b.Tier);
             });
 
@@ -29977,12 +29978,13 @@ namespace DuckUtil {
             grid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(136) });
 
             // Col 0: CheckBox
+            bool hasActionable = (cat.Id == "t4_empty_folders") ? (cat.FolderCount > 0 || cat.ItemCount > 0) : (cat.TotalBytes > 0 || cat.ItemCount > 0);
             var cb = new System.Windows.Controls.CheckBox();
             if (checkStyle != null) cb.Style = checkStyle;
             cb.HorizontalAlignment = HorizontalAlignment.Center;
             cb.VerticalAlignment = VerticalAlignment.Center;
-            cb.IsChecked = cat.Selected;
-            cb.IsEnabled = !cat.SkippedBecauseRebootPending && (cat.ItemCount > 0 || cat.FolderCount > 0 || cat.TotalBytes > 0);
+            cb.IsChecked = hasActionable && cat.Selected;
+            cb.IsEnabled = !cat.SkippedBecauseRebootPending && hasActionable;
             cb.Tag = vis;
             System.Windows.Controls.Grid.SetColumn(cb, 0);
             grid.Children.Add(cb);
@@ -30186,6 +30188,7 @@ namespace DuckUtil {
                 ptb.Foreground = BrMuted;
                 ptb.TextTrimming = TextTrimming.CharacterEllipsis;
                 ptb.ToolTip = it.Path;
+                System.Windows.Controls.ToolTipService.SetInitialShowDelay(ptb, 5000);
                 pathSp.Children.Add(ptb);
 
                 if (it.IsOneDrive) {
@@ -47530,7 +47533,7 @@ function Update-ResourcesSummary {
         $totBytes += [long]$c.TotalBytes
         if ($c.Id -eq "t4_empty_folders") { $totEmpty += [int]$c.FolderCount } else { $totItems += [int]$c.ItemCount }
         if ($c.Selected) {
-            $hasActionable = ($c.ItemCount -gt 0 -or $c.FolderCount -gt 0 -or $c.TotalBytes -gt 0) -and (-not $c.SkippedBecauseRebootPending)
+            $hasActionable = (if ($c.Id -eq "t4_empty_folders") { $c.FolderCount -gt 0 -or $c.ItemCount -gt 0 } else { $c.ItemCount -gt 0 -or $c.TotalBytes -gt 0 }) -and (-not $c.SkippedBecauseRebootPending)
             if ($hasActionable) {
                 $selCats++
                 if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {

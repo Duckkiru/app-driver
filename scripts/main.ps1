@@ -10066,7 +10066,7 @@ function Update-ResourcesSummary {
         $totBytes += [long]$c.TotalBytes
         if ($c.Id -eq "t4_empty_folders") { $totEmpty += [int]$c.FolderCount } else { $totItems += [int]$c.ItemCount }
         if ($c.Selected) {
-            $hasActionable = ($c.ItemCount -gt 0 -or $c.FolderCount -gt 0 -or $c.TotalBytes -gt 0) -and (-not $c.SkippedBecauseRebootPending)
+            $hasActionable = (if ($c.Id -eq "t4_empty_folders") { $c.FolderCount -gt 0 -or $c.ItemCount -gt 0 } else { $c.ItemCount -gt 0 -or $c.TotalBytes -gt 0 }) -and (-not $c.SkippedBecauseRebootPending)
             if ($hasActionable) {
                 $selCats++
                 if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
