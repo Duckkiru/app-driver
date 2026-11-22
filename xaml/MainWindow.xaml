@@ -7,7 +7,7 @@
     WindowStartupLocation="CenterScreen"
     Background="#0C1018"
     Foreground="#E2E8F0"
-    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    FontFamily="Segoe UI"
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType"
     UseLayoutRounding="True"
@@ -351,9 +351,235 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="RowActionButton" TargetType="{x:Type Button}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="actBdr" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="actBdr" Property="Opacity" Value="0.88"/>
+                                <Setter TargetName="actBdr" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="actBdr" Property="Opacity" Value="0.72"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="actBdr" Property="Opacity" Value="0.42"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ClearSearchButton" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="clrBdr" Background="{TemplateBinding Background}" CornerRadius="2" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="clrBdr" Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="#E2E8F0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="clrBdr" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="SelectionBrush" Value="#0284C7"/>
+            <Setter Property="SelectionOpacity" Value="0.45"/>
+            <Setter Property="CaretBrush" Value="#38BDF8"/>
+        </Style>
+
+        <Style TargetType="{x:Type ToolTip}">
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="#F1F5F9"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="MaxWidth" Value="440"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToolTip}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter>
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ContextMenu}">
+            <Setter Property="Background" Value="#0F1623"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#2B3D57"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ContextMenu}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3" Padding="3" SnapsToDevicePixels="True">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type MenuItem}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="miBdr" Background="{TemplateBinding Background}" CornerRadius="2"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="miBdr" Property="Background" Value="#1C2A40"/>
+                                <Setter Property="Foreground" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                        <Border x:Name="cbItemBdr" Background="{TemplateBinding Background}" CornerRadius="2"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="cbItemBdr" Property="Background" Value="#1C2A40"/>
+                                <Setter Property="Foreground" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="cbItemBdr" Property="Background" Value="#152942"/>
+                                <Setter Property="Foreground" Value="#38BDF8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#2E3D55"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="7,2,22,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleBtn" Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border x:Name="cbBdr" Background="#111827" BorderBrush="#2E3D55" BorderThickness="1" CornerRadius="2" SnapsToDevicePixels="True">
+                                            <Path Width="8" Height="5" Margin="0,0,7,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                  Data="M 0.5,0.8 L 4,4.2 L 7.5,0.8" Stroke="#94A3B8" StrokeThickness="1.3"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="cbBdr" Property="BorderBrush" Value="#38BDF8"/>
+                                                <Setter TargetName="cbBdr" Property="Background" Value="#162033"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="cbBdr" Property="BorderBrush" Value="#38BDF8"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Margin="{TemplateBinding Padding}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                                <Border MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Margin="0,2,0,0" Background="#0F1623" BorderBrush="#2B3D57" BorderThickness="1" CornerRadius="3" Padding="2" SnapsToDevicePixels="True">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="#0C1018">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> 
             <RowDefinition Height="*"/>    
@@ -362,18 +588,36 @@
 
         <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#27344A" BorderThickness="0,0,0,1">
             <Grid>
-                <StackPanel Orientation="Horizontal">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="Ứng dụng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                     <Button Name="navBtnUninstaller" Content="Gỡ cài đặt" Style="{StaticResource NavTabButton}"/>
                     <Button Name="navBtnOptimize" Content="Tối ưu" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnRepair" Content="&#x1F512; Gỡ lỗi &amp; Hệ thống (Đang khóa)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
-                    <Button Name="navBtnDrivers" Content="&#x1F512; Quản lý Driver (Đang khóa)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
+                    <Button Name="navBtnRepair" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="Tính năng Gỡ lỗi &amp; Hệ thống đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="10" Height="11" Margin="0,0,6,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#94A3B8" StrokeThickness="1.35" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="Gỡ lỗi &amp; Hệ thống (Đang khóa)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Name="navBtnDrivers" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="Tính năng Quản lý Driver đang được tạm khóa." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="10" Height="11" Margin="0,0,6,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#94A3B8" StrokeThickness="1.35" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="Quản lý Driver (Đang khóa)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
-                <TextBlock Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
+                <TextBlock Grid.Column="1" Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="8,0,4,0"/>
             </Grid>
         </Border>
 
@@ -435,9 +679,11 @@
                                         <TextBox Grid.Column="1" Name="txtCatalogSearch" Background="Transparent" Foreground="#F8FAFC"
                                                  BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                  ToolTip="Tìm nhanh ứng dụng (không dấu, gần đúng, tên gói WinGet/ID)..." ToolTipService.InitialShowDelay="3000"/>
-                                        <Button Grid.Column="2" Name="btnClearCatalogSearch" Content="✕" Background="Transparent" Foreground="#64748B"
-                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                ToolTip="Xóa tìm kiếm" ToolTipService.InitialShowDelay="3000"/>
+                                        <Button Grid.Column="2" Name="btnClearCatalogSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
+                                                ToolTip="Xóa tìm kiếm" ToolTipService.InitialShowDelay="3000">
+                                            <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                  StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
 
@@ -506,7 +752,12 @@
                                                 <Border Name="btnGroupBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
                                                         Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay lại xem tất cả danh mục">
-                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Path Width="8" Height="8" Margin="0,1,4,0" VerticalAlignment="Center" Stretch="Uniform"
+                                                              Stroke="#94A3B8" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                              Data="M 4.5,1 L 1,4 L 4.5,7 M 1.5,4 L 7.5,4"/>
+                                                        <TextBlock Text="Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                             <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
@@ -556,7 +807,12 @@
                                                 <Border Name="btnSingleCatBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
                                                         Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay lại xem tất cả danh mục">
-                                                    <TextBlock Text="← Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Path Width="8" Height="8" Margin="0,1,4,0" VerticalAlignment="Center" Stretch="Uniform"
+                                                              Stroke="#94A3B8" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                              Data="M 4.5,1 L 1,4 L 4.5,7 M 1.5,4 L 7.5,4"/>
+                                                        <TextBlock Text="Tất cả" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                             <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
@@ -645,9 +901,11 @@
                                         <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
                                                  BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                  ToolTip="Tìm kiếm theo tên ứng dụng, nhà phát hành hoặc phiên bản..." ToolTipService.InitialShowDelay="5000"/>
-                                        <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="✕" Background="Transparent" Foreground="#64748B"
-                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                ToolTip="Xóa bộ lọc" ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Grid.Column="2" Name="btnClearUninstallSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
+                                                ToolTip="Xóa bộ lọc" ToolTipService.InitialShowDelay="5000">
+                                            <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                  StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
 
@@ -727,7 +985,10 @@
             <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <Path Width="11" Height="12" Margin="0,0,7,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#FBBF24" StrokeThickness="1.4" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Gỡ lỗi &amp; Hệ thống hiện đang được khóa để tập trung ổn định trình cài đặt và cập nhật ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
@@ -802,7 +1063,10 @@
             <DockPanel Name="TabPage3" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#x1F512; TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <Path Width="11" Height="12" Margin="0,0,7,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#FBBF24" StrokeThickness="1.4" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="TÍNH NĂNG ĐANG TẠM KHÓA" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Quản lý Driver hiện đang được khóa để đảm bảo an toàn hệ thống và tập trung quản lý ứng dụng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
@@ -891,35 +1155,43 @@
 
                         <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                             <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnOptApply" Content="Lưu" Style="{StaticResource ActionButton}"
-                                            Background="#059669" Padding="16,7"
-                                            ToolTip="Áp dụng và lưu các tùy chỉnh đã chọn hoặc cần gạt thay đổi (tự chụp sao lưu OptimizerGuard trước khi thay đổi)." ToolTipService.InitialShowDelay="5000"/>
-                                    <Button Name="btnOptUndo" Content="Đặt về mặc định" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#FBBF24" BorderBrush="#614F27"
-                                            ToolTip="Đặt các tùy chỉnh đã chọn về mặc định Windows (nếu chưa chọn mục nào sẽ hỏi đặt toàn bộ mục đang bật về mặc định)." ToolTipService.InitialShowDelay="5000"/>
-                                    <Button Name="btnOptRestoreBackup" Content="Khôi phục sao lưu" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
-                                    <Button Name="btnOptRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"/>
-                                </StackPanel>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,10,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Mặc định" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Đang bật" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Nâng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtOptSummary" Text="71 tùy chỉnh sẵn sàng"
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="btnOptApply" Content="Lưu" Style="{StaticResource ActionButton}"
+                                                Background="#059669" Padding="16,7"
+                                                ToolTip="Áp dụng và lưu các tùy chỉnh đã chọn hoặc cần gạt thay đổi (tự chụp sao lưu OptimizerGuard trước khi thay đổi)." ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Name="btnOptUndo" Content="Đặt về mặc định" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#FBBF24" BorderBrush="#614F27"
+                                                ToolTip="Đặt các tùy chỉnh đã chọn về mặc định Windows (nếu chưa chọn mục nào sẽ hỏi đặt toàn bộ mục đang bật về mặc định)." ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Name="btnOptRestoreBackup" Content="Khôi phục sao lưu" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D"/>
+                                        <Button Name="btnOptRefresh" Content="Làm mới" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2" Name="txtOptSummary" Text="71 tùy chỉnh sẵn sàng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Trạng thái:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Mặc định" FontSize="11" Foreground="#CBD5E1" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đang bật" FontSize="11" Foreground="#34D399" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Nâng cao" FontSize="11" Foreground="#FCA5A5" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -994,9 +1266,11 @@
                                             <TextBox Grid.Column="1" Name="txtStartSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                      ToolTip="Tìm theo tên ứng dụng, nhà phát hành hoặc đường dẫn..." ToolTipService.InitialShowDelay="500"/>
-                                            <Button Grid.Column="2" Name="btnClearStartSearch" Content="✕" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                    ToolTip="Xóa từ khóa tìm kiếm" ToolTipService.InitialShowDelay="500"/>
+                                            <Button Grid.Column="2" Name="btnClearStartSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
+                                                    ToolTip="Xóa từ khóa tìm kiếm" ToolTipService.InitialShowDelay="500">
+                                                <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </Grid>
@@ -1026,31 +1300,34 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Row="1" Background="#090D14" Height="32" Margin="14,8,14,0"
-                                BorderBrush="#27344A" BorderThickness="1,1,1,0" CornerRadius="3,3,0,0" SnapsToDevicePixels="True">
-                            <Grid Margin="10,0">
+                        <Border Grid.Row="1" Name="StartHeaderBorder" Background="#090D14" Height="34"
+                                Margin="16,8,0,0" HorizontalAlignment="Left"
+                                Width="{Binding ActualWidth, ElementName=StartRowsHost}"
+                                BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="2,2,0,0" SnapsToDevicePixels="True">
+                            <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="52"/>
-                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="64"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="96"/>
-                                    <ColumnDefinition Width="96"/>
-                                    <ColumnDefinition Width="126"/>
+                                    <ColumnDefinition Width="98"/>
+                                    <ColumnDefinition Width="104"/>
+                                    <ColumnDefinition Width="128"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Bật/Tắt" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="Ứng dụng khởi chạy &amp; Nhà phát hành" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="3" Text="Nguồn" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="4" Text="Ảnh hưởng" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="5" Text="Thao tác" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="BẬT/TẮT" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="1" Text="ỨNG DỤNG KHỞI CHẠY &amp; NHÀ PHÁT HÀNH" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="2" Text="NGUỒN" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="3" Text="ẢNH HƯỞNG" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="4" Text="THAO TÁC" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
 
-                        <Border Grid.Row="2" Margin="14,0,14,10" Background="#0F1522" BorderBrush="#27344A" BorderThickness="1" CornerRadius="0,0,3,3">
-                            <ScrollViewer Name="StartScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                                          CanContentScroll="False" PanningMode="VerticalOnly">
-                                <StackPanel Name="StartRowsHost"/>
-                            </ScrollViewer>
-                        </Border>
+                        <ScrollViewer Grid.Row="2" Name="StartScrollViewer" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                            <StackPanel Name="StartRowsHost" Margin="16,0,16,12" UseLayoutRounding="True" SnapsToDevicePixels="True"/>
+                        </ScrollViewer>
                     </Grid>
                 </Grid>
             </Grid>
@@ -1072,15 +1349,10 @@
                     <TextBlock Name="txtStatus" Text="Sẵn sàng"
                                Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <Button Name="btnCancelAction" Content="Dừng tác vụ" Visibility="Collapsed"
+                            Style="{StaticResource RowActionButton}"
                             Background="#281317" Foreground="#FCA5A5" BorderBrush="#991B1B" BorderThickness="1"
                             FontSize="10.5" FontWeight="SemiBold" Height="22" Padding="9,0,9,1" Margin="12,0,0,0"
-                            VerticalAlignment="Center" VerticalContentAlignment="Center" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="3"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">

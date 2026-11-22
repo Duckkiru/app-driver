@@ -7084,7 +7084,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
     WindowStartupLocation="CenterScreen"
     Background="#0C1018"
     Foreground="#E2E8F0"
-    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    FontFamily="Segoe UI"
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType"
     UseLayoutRounding="True"
@@ -7428,9 +7428,235 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="RowActionButton" TargetType="{x:Type Button}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="actBdr" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="actBdr" Property="Opacity" Value="0.88"/>
+                                <Setter TargetName="actBdr" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="actBdr" Property="Opacity" Value="0.72"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="actBdr" Property="Opacity" Value="0.42"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ClearSearchButton" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="clrBdr" Background="{TemplateBinding Background}" CornerRadius="2" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="clrBdr" Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="#E2E8F0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="clrBdr" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="SelectionBrush" Value="#0284C7"/>
+            <Setter Property="SelectionOpacity" Value="0.45"/>
+            <Setter Property="CaretBrush" Value="#38BDF8"/>
+        </Style>
+
+        <Style TargetType="{x:Type ToolTip}">
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="#F1F5F9"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="MaxWidth" Value="440"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToolTip}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter>
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ContextMenu}">
+            <Setter Property="Background" Value="#0F1623"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#2B3D57"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ContextMenu}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3" Padding="3" SnapsToDevicePixels="True">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type MenuItem}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="miBdr" Background="{TemplateBinding Background}" CornerRadius="2"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="miBdr" Property="Background" Value="#1C2A40"/>
+                                <Setter Property="Foreground" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                        <Border x:Name="cbItemBdr" Background="{TemplateBinding Background}" CornerRadius="2"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="cbItemBdr" Property="Background" Value="#1C2A40"/>
+                                <Setter Property="Foreground" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="cbItemBdr" Property="Background" Value="#152942"/>
+                                <Setter Property="Foreground" Value="#38BDF8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="BorderBrush" Value="#2E3D55"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="7,2,22,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleBtn" Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <Border x:Name="cbBdr" Background="#111827" BorderBrush="#2E3D55" BorderThickness="1" CornerRadius="2" SnapsToDevicePixels="True">
+                                            <Path Width="8" Height="5" Margin="0,0,7,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                  Data="M 0.5,0.8 L 4,4.2 L 7.5,0.8" Stroke="#94A3B8" StrokeThickness="1.3"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="cbBdr" Property="BorderBrush" Value="#38BDF8"/>
+                                                <Setter TargetName="cbBdr" Property="Background" Value="#162033"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="cbBdr" Property="BorderBrush" Value="#38BDF8"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Margin="{TemplateBinding Padding}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                                <Border MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Margin="0,2,0,0" Background="#0F1623" BorderBrush="#2B3D57" BorderThickness="1" CornerRadius="3" Padding="2" SnapsToDevicePixels="True">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="#0C1018">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> 
             <RowDefinition Height="*"/>    
@@ -7439,18 +7665,36 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
 
         <Border Grid.Row="0" Background="#0A0E15" Padding="14,0" BorderBrush="#27344A" BorderThickness="0,0,0,1">
             <Grid>
-                <StackPanel Orientation="Horizontal">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Name="navBtnApps" Content="&#x1EE8;ng d&#x1EE5;ng" Style="{StaticResource NavTabButton}"
                             BorderBrush="#38BDF8" Foreground="#38BDF8"/>
                     <Button Name="navBtnUninstaller" Content="G&#x1EE1; c&#x00E0;i &#x0111;&#x1EB7;t" Style="{StaticResource NavTabButton}"/>
                     <Button Name="navBtnOptimize" Content="T&#x1ED1;i &#x01B0;u" Style="{StaticResource NavTabButton}"/>
-                    <Button Name="navBtnRepair" Content="&#x1F512; G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng (&#x0110;ang kh&#x00F3;a)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
-                    <Button Name="navBtnDrivers" Content="&#x1F512; Qu&#x1EA3;n l&#x00FD; Driver (&#x0110;ang kh&#x00F3;a)" Style="{StaticResource NavTabButton}"
-                            IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng Qu&#x1EA3;n l&#x00FD; Driver &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000"/>
+                    <Button Name="navBtnRepair" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="10" Height="11" Margin="0,0,6,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#94A3B8" StrokeThickness="1.35" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng (&#x0110;ang kh&#x00F3;a)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Name="navBtnDrivers" Style="{StaticResource NavTabButton}"
+                            IsEnabled="False" ToolTip="T&#x00ED;nh n&#x0103;ng Qu&#x1EA3;n l&#x00FD; Driver &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c t&#x1EA1;m kh&#x00F3;a." ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="5000">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="10" Height="11" Margin="0,0,6,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#94A3B8" StrokeThickness="1.35" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="Qu&#x1EA3;n l&#x00FD; Driver (&#x0110;ang kh&#x00F3;a)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
-                <TextBlock Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,4,0"/>
+                <TextBlock Grid.Column="1" Text="App-Driver" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="#475569" FontSize="11.5" FontWeight="SemiBold" Margin="8,0,4,0"/>
             </Grid>
         </Border>
 
@@ -7512,9 +7756,11 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                         <TextBox Grid.Column="1" Name="txtCatalogSearch" Background="Transparent" Foreground="#F8FAFC"
                                                  BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                  ToolTip="T&#x00EC;m nhanh &#x1EE9;ng d&#x1EE5;ng (kh&#x00F4;ng d&#x1EA5;u, g&#x1EA7;n &#x0111;&#x00FA;ng, t&#x00EA;n g&#x00F3;i WinGet/ID)..." ToolTipService.InitialShowDelay="3000"/>
-                                        <Button Grid.Column="2" Name="btnClearCatalogSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
-                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="3000"/>
+                                        <Button Grid.Column="2" Name="btnClearCatalogSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
+                                                ToolTip="X&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="3000">
+                                            <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                  StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
 
@@ -7583,7 +7829,12 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                                 <Border Name="btnGroupBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
                                                         Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay l&#x1EA1;i xem t&#x1EA5;t c&#x1EA3; danh m&#x1EE5;c">
-                                                    <TextBlock Text="&#x2190; T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Path Width="8" Height="8" Margin="0,1,4,0" VerticalAlignment="Center" Stretch="Uniform"
+                                                              Stroke="#94A3B8" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                              Data="M 4.5,1 L 1,4 L 4.5,7 M 1.5,4 L 7.5,4"/>
+                                                        <TextBlock Text="T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                             <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
@@ -7633,7 +7884,12 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                                 <Border Name="btnSingleCatBack" Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="2"
                                                         Height="22" Padding="8,0,8,1" Margin="10,0,0,0" Cursor="Hand" VerticalAlignment="Center"
                                                         ToolTip="Quay l&#x1EA1;i xem t&#x1EA5;t c&#x1EA3; danh m&#x1EE5;c">
-                                                    <TextBlock Text="&#x2190; T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Path Width="8" Height="8" Margin="0,1,4,0" VerticalAlignment="Center" Stretch="Uniform"
+                                                              Stroke="#94A3B8" StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                              Data="M 4.5,1 L 1,4 L 4.5,7 M 1.5,4 L 7.5,4"/>
+                                                        <TextBlock Text="T&#x1EA5;t c&#x1EA3;" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                    </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                             <Border Background="#182234" BorderBrush="#2B394F" BorderThickness="1" CornerRadius="1" Height="22" Padding="8,0,8,1"
@@ -7722,9 +7978,11 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                         <TextBox Grid.Column="1" Name="txtUninstallSearch" Background="Transparent" Foreground="#F8FAFC"
                                                  BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                  ToolTip="T&#x00EC;m ki&#x1EBF;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c phi&#x00EA;n b&#x1EA3;n..." ToolTipService.InitialShowDelay="5000"/>
-                                        <Button Grid.Column="2" Name="btnClearUninstallSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
-                                                BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                ToolTip="X&#x00F3;a b&#x1ED9; l&#x1ECD;c" ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Grid.Column="2" Name="btnClearUninstallSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
+                                                ToolTip="X&#x00F3;a b&#x1ED9; l&#x1ECD;c" ToolTipService.InitialShowDelay="5000">
+                                            <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                  StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
 
@@ -7804,7 +8062,10 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
             <DockPanel Name="TabPage2" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#x1F512; T&#x00CD;NH N&#x0102;NG &#x0110;ANG T&#x1EA0;M KH&#x00D3;A" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <Path Width="11" Height="12" Margin="0,0,7,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#FBBF24" StrokeThickness="1.4" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="T&#x00CD;NH N&#x0102;NG &#x0110;ANG T&#x1EA0;M KH&#x00D3;A" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module G&#x1EE1; l&#x1ED7;i &amp; H&#x1EC7; th&#x1ED1;ng hi&#x1EC7;n &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c kh&#x00F3;a &#x0111;&#x1EC3; t&#x1EAD;p trung &#x1ED5;n &#x0111;&#x1ECB;nh tr&#x00EC;nh c&#x00E0;i &#x0111;&#x1EB7;t v&#x00E0; c&#x1EAD;p nh&#x1EAD;t &#x1EE9;ng d&#x1EE5;ng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
@@ -7879,7 +8140,10 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
             <DockPanel Name="TabPage3" Visibility="Collapsed" IsHitTestVisible="False">
                     <Border DockPanel.Dock="Top" Background="#1A1512" BorderBrush="#B45309" BorderThickness="1" CornerRadius="2" Margin="16,14,16,0" Padding="14,10">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="&#x1F512; T&#x00CD;NH N&#x0102;NG &#x0110;ANG T&#x1EA0;M KH&#x00D3;A" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <Path Width="11" Height="12" Margin="0,0,7,0" VerticalAlignment="Center" Stretch="Uniform"
+                                  Stroke="#FBBF24" StrokeThickness="1.4" StrokeLineJoin="Round"
+                                  Data="M 2.5,5 L 2.5,3.2 A 2.5,2.5 0 0 1 7.5,3.2 L 7.5,5 M 1.2,5 L 8.8,5 L 8.8,10.2 L 1.2,10.2 Z"/>
+                            <TextBlock Text="T&#x00CD;NH N&#x0102;NG &#x0110;ANG T&#x1EA0;M KH&#x00D3;A" Foreground="#FBBF24" FontWeight="Bold" FontSize="11.5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Module Qu&#x1EA3;n l&#x00FD; Driver hi&#x1EC7;n &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c kh&#x00F3;a &#x0111;&#x1EC3; &#x0111;&#x1EA3;m b&#x1EA3;o an to&#x00E0;n h&#x1EC7; th&#x1ED1;ng v&#x00E0; t&#x1EAD;p trung qu&#x1EA3;n l&#x00FD; &#x1EE9;ng d&#x1EE5;ng." Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
@@ -7968,35 +8232,43 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
 
                         <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                             <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnOptApply" Content="L&#x01B0;u" Style="{StaticResource ActionButton}"
-                                            Background="#059669" Padding="16,7"
-                                            ToolTip="&#x00C1;p d&#x1EE5;ng v&#x00E0; l&#x01B0;u c&#x00E1;c t&#x00F9;y ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n ho&#x1EB7;c c&#x1EA7;n g&#x1EA1;t thay &#x0111;&#x1ED5;i (t&#x1EF1; ch&#x1EE5;p sao l&#x01B0;u OptimizerGuard tr&#x01B0;&#x1EDB;c khi thay &#x0111;&#x1ED5;i)." ToolTipService.InitialShowDelay="5000"/>
-                                    <Button Name="btnOptUndo" Content="&#x0110;&#x1EB7;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#FBBF24" BorderBrush="#614F27"
-                                            ToolTip="&#x0110;&#x1EB7;t c&#x00E1;c t&#x00F9;y ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh Windows (n&#x1EBF;u ch&#x01B0;a ch&#x1ECD;n m&#x1EE5;c n&#x00E0;o s&#x1EBD; h&#x1ECF;i &#x0111;&#x1EB7;t to&#x00E0;n b&#x1ED9; m&#x1EE5;c &#x0111;ang b&#x1EAD;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh)." ToolTipService.InitialShowDelay="5000"/>
-                                    <Button Name="btnOptRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c sao l&#x01B0;u" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#38BDF8" BorderBrush="#29527D"/>
-                                    <Button Name="btnOptRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
-                                            Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"/>
-                                </StackPanel>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,10,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="M&#x1EB7;c &#x0111;&#x1ECB;nh" FontSize="11" Foreground="#CBD5E1" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtOptSummary" Text="71 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="btnOptApply" Content="L&#x01B0;u" Style="{StaticResource ActionButton}"
+                                                Background="#059669" Padding="16,7"
+                                                ToolTip="&#x00C1;p d&#x1EE5;ng v&#x00E0; l&#x01B0;u c&#x00E1;c t&#x00F9;y ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n ho&#x1EB7;c c&#x1EA7;n g&#x1EA1;t thay &#x0111;&#x1ED5;i (t&#x1EF1; ch&#x1EE5;p sao l&#x01B0;u OptimizerGuard tr&#x01B0;&#x1EDB;c khi thay &#x0111;&#x1ED5;i)." ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Name="btnOptUndo" Content="&#x0110;&#x1EB7;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#FBBF24" BorderBrush="#614F27"
+                                                ToolTip="&#x0110;&#x1EB7;t c&#x00E1;c t&#x00F9;y ch&#x1EC9;nh &#x0111;&#x00E3; ch&#x1ECD;n v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh Windows (n&#x1EBF;u ch&#x01B0;a ch&#x1ECD;n m&#x1EE5;c n&#x00E0;o s&#x1EBD; h&#x1ECF;i &#x0111;&#x1EB7;t to&#x00E0;n b&#x1ED9; m&#x1EE5;c &#x0111;ang b&#x1EAD;t v&#x1EC1; m&#x1EB7;c &#x0111;&#x1ECB;nh)." ToolTipService.InitialShowDelay="5000"/>
+                                        <Button Name="btnOptRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c sao l&#x01B0;u" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D"/>
+                                        <Button Name="btnOptRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2" Name="txtOptSummary" Text="71 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="1,7,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Tr&#x1EA1;ng th&#x00E1;i:" FontSize="11" Foreground="#FFFFFF" Margin="0,0,12,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#CBD5E1" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="M&#x1EB7;c &#x0111;&#x1ECB;nh" FontSize="11" Foreground="#CBD5E1" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#34D399" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                                    <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -8071,9 +8343,11 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                             <TextBox Grid.Column="1" Name="txtStartSearch" Background="Transparent" Foreground="#F8FAFC"
                                                      BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
                                                      ToolTip="T&#x00EC;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c &#x0111;&#x01B0;&#x1EDD;ng d&#x1EAB;n..." ToolTipService.InitialShowDelay="500"/>
-                                            <Button Grid.Column="2" Name="btnClearStartSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
-                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
-                                                    ToolTip="X&#x00F3;a t&#x1EEB; kh&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="500"/>
+                                            <Button Grid.Column="2" Name="btnClearStartSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center"
+                                                    ToolTip="X&#x00F3;a t&#x1EEB; kh&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="500">
+                                                <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                      StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
+                                            </Button>
                                         </Grid>
                                     </Border>
                                 </Grid>
@@ -8103,31 +8377,34 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                             </Grid>
                         </Border>
 
-                        <Border Grid.Row="1" Background="#090D14" Height="32" Margin="14,8,14,0"
-                                BorderBrush="#27344A" BorderThickness="1,1,1,0" CornerRadius="3,3,0,0" SnapsToDevicePixels="True">
-                            <Grid Margin="10,0">
+                        <Border Grid.Row="1" Name="StartHeaderBorder" Background="#090D14" Height="34"
+                                Margin="16,8,0,0" HorizontalAlignment="Left"
+                                Width="{Binding ActualWidth, ElementName=StartRowsHost}"
+                                BorderBrush="#2CFFFFFF" BorderThickness="1" CornerRadius="2,2,0,0" SnapsToDevicePixels="True">
+                            <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="52"/>
-                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="64"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="96"/>
-                                    <ColumnDefinition Width="96"/>
-                                    <ColumnDefinition Width="126"/>
+                                    <ColumnDefinition Width="98"/>
+                                    <ColumnDefinition Width="104"/>
+                                    <ColumnDefinition Width="128"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="B&#x1EAD;t/T&#x1EAF;t" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="&#x1EE8;ng d&#x1EE5;ng kh&#x1EDF;i ch&#x1EA1;y &amp; Nh&#x00E0; ph&#x00E1;t h&#x00E0;nh" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="3" Text="Ngu&#x1ED3;n" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="4" Text="&#x1EA2;nh h&#x01B0;&#x1EDF;ng" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="5" Text="Thao t&#x00E1;c" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="B&#x1EAC;T/T&#x1EAE;T" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="0" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="1" Text="&#x1EE8;NG D&#x1EE4;NG KH&#x1EDE;I CH&#x1EA0;Y &amp; NH&#x00C0; PH&#x00C1;T H&#x00C0;NH" Foreground="#38BDF8" FontSize="10.5" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                                <Border Grid.Column="1" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="2" Text="NGU&#x1ED2;N" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="3" Text="&#x1EA2;NH H&#x01AF;&#x1EDE;NG" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="3" Width="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="#24FFFFFF" SnapsToDevicePixels="True" IsHitTestVisible="False"/>
+                                <TextBlock Grid.Column="4" Text="THAO T&#x00C1;C" Foreground="#FFFFFF" FontSize="10.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
 
-                        <Border Grid.Row="2" Margin="14,0,14,10" Background="#0F1522" BorderBrush="#27344A" BorderThickness="1" CornerRadius="0,0,3,3">
-                            <ScrollViewer Name="StartScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                                          CanContentScroll="False" PanningMode="VerticalOnly">
-                                <StackPanel Name="StartRowsHost"/>
-                            </ScrollViewer>
-                        </Border>
+                        <ScrollViewer Grid.Row="2" Name="StartScrollViewer" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="VerticalOnly">
+                            <StackPanel Name="StartRowsHost" Margin="16,0,16,12" UseLayoutRounding="True" SnapsToDevicePixels="True"/>
+                        </ScrollViewer>
                     </Grid>
                 </Grid>
             </Grid>
@@ -8149,15 +8426,10 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                     <TextBlock Name="txtStatus" Text="S&#x1EB5;n s&#x00E0;ng"
                                Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <Button Name="btnCancelAction" Content="D&#x1EEB;ng t&#x00E1;c v&#x1EE5;" Visibility="Collapsed"
+                            Style="{StaticResource RowActionButton}"
                             Background="#281317" Foreground="#FCA5A5" BorderBrush="#991B1B" BorderThickness="1"
                             FontSize="10.5" FontWeight="SemiBold" Height="22" Padding="9,0,9,1" Margin="12,0,0,0"
-                            VerticalAlignment="Center" VerticalContentAlignment="Center" Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="3"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
+                            VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
@@ -8289,6 +8561,15 @@ namespace DuckUtil {
         private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDPIAware();
+        [DllImport("shcore.dll")]
+        private static extern int SetProcessDpiAwareness(int awareness);
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public static void DisableQuickEdit() {
             IntPtr h = GetStdHandle(-10);
             if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
@@ -8297,6 +8578,28 @@ namespace DuckUtil {
                 uint next = (mode & ~0x0040u) | 0x0080u;
                 if (next != mode) SetConsoleMode(h, next);
             }
+        }
+
+        public static void EnablePerMonitorDpi() {
+            try {
+                if (SetProcessDpiAwarenessContext(new IntPtr(-4))) return;
+            } catch {}
+            try {
+                if (SetProcessDpiAwareness(2) == 0) return;
+            } catch {}
+            try {
+                SetProcessDPIAware();
+            } catch {}
+        }
+
+        public static void EnableDarkTitleBar(IntPtr hwnd) {
+            if (hwnd == IntPtr.Zero) return;
+            try {
+                int useDark = 1;
+                if (DwmSetWindowAttribute(hwnd, 20, ref useDark, sizeof(int)) != 0) {
+                    DwmSetWindowAttribute(hwnd, 19, ref useDark, sizeof(int));
+                }
+            } catch {}
         }
     }
 
@@ -9058,6 +9361,40 @@ namespace DuckUtil {
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
         private static readonly CornerRadius _cPill = new CornerRadius(3);
+        private static Geometry _folderGeom;
+        private static System.Windows.Media.Brush _folderStroke;
+        private static System.Windows.Media.Brush _folderFill;
+
+        internal static System.Windows.Shapes.Path CreateFolderVectorIcon() {
+            if (_folderGeom == null) {
+                var g = Geometry.Parse("M 1,2.2 L 4.7,2.2 L 5.9,3.6 L 11,3.6 L 11,9.8 L 1,9.8 Z");
+                g.Freeze();
+                _folderGeom = g;
+            }
+            if (_folderStroke == null) {
+                var s = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF5, 0x9E, 0x0B));
+                s.Freeze();
+                _folderStroke = s;
+            }
+            if (_folderFill == null) {
+                var f = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x45, 0xFB, 0xBF, 0x24));
+                f.Freeze();
+                _folderFill = f;
+            }
+            return new System.Windows.Shapes.Path {
+                Data = _folderGeom,
+                Width = 12,
+                Height = 11,
+                Stretch = Stretch.Uniform,
+                Stroke = _folderStroke,
+                StrokeThickness = 1.2,
+                StrokeLineJoin = PenLineJoin.Round,
+                Fill = _folderFill,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                SnapsToDevicePixels = true
+            };
+        }
 
         internal static TextBlock CreateCenteredBadgeLabel(string text, double fontSize, FontWeight weight, System.Windows.Media.Brush fg) {
             var tb = new TextBlock();
@@ -9254,12 +9591,7 @@ namespace DuckUtil {
             folderBtn.HorizontalAlignment = HorizontalAlignment.Center;
             folderBtn.VerticalAlignment = VerticalAlignment.Center;
 
-            var folderIcon = new TextBlock();
-            folderIcon.Text = folderGlyph ?? "";
-            folderIcon.FontSize = 10.5;
-            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
-            folderIcon.VerticalAlignment = VerticalAlignment.Center;
-            folderBtn.Child = folderIcon;
+            folderBtn.Child = CreateFolderVectorIcon();
 
             if (!string.IsNullOrWhiteSpace(targetFolder)) {
                 folderBtn.Cursor = Cursors.Hand;
@@ -11162,12 +11494,7 @@ namespace DuckUtil {
             folderBtn.ToolTip = "";
             ToolTipService.SetInitialShowDelay(folderBtn, 5000);
 
-            var folderIcon = new TextBlock();
-            folderIcon.Text = _folderGlyph;
-            folderIcon.FontSize = 10.5;
-            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
-            folderIcon.VerticalAlignment = VerticalAlignment.Center;
-            folderBtn.Child = folderIcon;
+            folderBtn.Child = UiAssetPipeline.CreateFolderVectorIcon();
             Grid.SetColumn(folderBtn, 6);
             rowGrid.Children.Add(folderBtn);
 
@@ -23170,6 +23497,15 @@ namespace DuckUtil {
         private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDPIAware();
+        [DllImport("shcore.dll")]
+        private static extern int SetProcessDpiAwareness(int awareness);
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public static void DisableQuickEdit() {
             IntPtr h = GetStdHandle(-10);
             if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
@@ -23178,6 +23514,28 @@ namespace DuckUtil {
                 uint next = (mode & ~0x0040u) | 0x0080u;
                 if (next != mode) SetConsoleMode(h, next);
             }
+        }
+
+        public static void EnablePerMonitorDpi() {
+            try {
+                if (SetProcessDpiAwarenessContext(new IntPtr(-4))) return;
+            } catch {}
+            try {
+                if (SetProcessDpiAwareness(2) == 0) return;
+            } catch {}
+            try {
+                SetProcessDPIAware();
+            } catch {}
+        }
+
+        public static void EnableDarkTitleBar(IntPtr hwnd) {
+            if (hwnd == IntPtr.Zero) return;
+            try {
+                int useDark = 1;
+                if (DwmSetWindowAttribute(hwnd, 20, ref useDark, sizeof(int)) != 0) {
+                    DwmSetWindowAttribute(hwnd, 19, ref useDark, sizeof(int));
+                }
+            } catch {}
         }
     }
 
@@ -23939,6 +24297,40 @@ namespace DuckUtil {
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
         private static readonly CornerRadius _cPill = new CornerRadius(3);
+        private static Geometry _folderGeom;
+        private static System.Windows.Media.Brush _folderStroke;
+        private static System.Windows.Media.Brush _folderFill;
+
+        internal static System.Windows.Shapes.Path CreateFolderVectorIcon() {
+            if (_folderGeom == null) {
+                var g = Geometry.Parse("M 1,2.2 L 4.7,2.2 L 5.9,3.6 L 11,3.6 L 11,9.8 L 1,9.8 Z");
+                g.Freeze();
+                _folderGeom = g;
+            }
+            if (_folderStroke == null) {
+                var s = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF5, 0x9E, 0x0B));
+                s.Freeze();
+                _folderStroke = s;
+            }
+            if (_folderFill == null) {
+                var f = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x45, 0xFB, 0xBF, 0x24));
+                f.Freeze();
+                _folderFill = f;
+            }
+            return new System.Windows.Shapes.Path {
+                Data = _folderGeom,
+                Width = 12,
+                Height = 11,
+                Stretch = Stretch.Uniform,
+                Stroke = _folderStroke,
+                StrokeThickness = 1.2,
+                StrokeLineJoin = PenLineJoin.Round,
+                Fill = _folderFill,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                SnapsToDevicePixels = true
+            };
+        }
 
         internal static TextBlock CreateCenteredBadgeLabel(string text, double fontSize, FontWeight weight, System.Windows.Media.Brush fg) {
             var tb = new TextBlock();
@@ -24135,12 +24527,7 @@ namespace DuckUtil {
             folderBtn.HorizontalAlignment = HorizontalAlignment.Center;
             folderBtn.VerticalAlignment = VerticalAlignment.Center;
 
-            var folderIcon = new TextBlock();
-            folderIcon.Text = folderGlyph ?? "";
-            folderIcon.FontSize = 10.5;
-            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
-            folderIcon.VerticalAlignment = VerticalAlignment.Center;
-            folderBtn.Child = folderIcon;
+            folderBtn.Child = CreateFolderVectorIcon();
 
             if (!string.IsNullOrWhiteSpace(targetFolder)) {
                 folderBtn.Cursor = Cursors.Hand;
@@ -26043,12 +26430,7 @@ namespace DuckUtil {
             folderBtn.ToolTip = "";
             ToolTipService.SetInitialShowDelay(folderBtn, 5000);
 
-            var folderIcon = new TextBlock();
-            folderIcon.Text = _folderGlyph;
-            folderIcon.FontSize = 10.5;
-            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
-            folderIcon.VerticalAlignment = VerticalAlignment.Center;
-            folderBtn.Child = folderIcon;
+            folderBtn.Child = UiAssetPipeline.CreateFolderVectorIcon();
             Grid.SetColumn(folderBtn, 6);
             rowGrid.Children.Add(folderBtn);
 
@@ -42264,12 +42646,20 @@ function Show-LeftoverReviewDialog {
 
     $dialog.Background = $pal.Bg
     $dialog.Foreground = $pal.Fg
-    $dialog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif")
+    $dialog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
     [System.Windows.Media.TextOptions]::SetTextFormattingMode($dialog, [System.Windows.Media.TextFormattingMode]::Display)
     [System.Windows.Media.TextOptions]::SetTextRenderingMode($dialog, [System.Windows.Media.TextRenderingMode]::ClearType)
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
+    $dialog.Add_SourceInitialized({
+        if ('DuckUtil.ConsoleHelper' -as [type]) {
+            try {
+                $hDlg = (New-Object System.Windows.Interop.WindowInteropHelper($dialog)).Handle
+                [DuckUtil.ConsoleHelper]::EnableDarkTitleBar($hDlg)
+            } catch {}
+        }
+    })
 
     try {
         if (-not $script:loDialogResources) {
@@ -44995,6 +45385,10 @@ function Invoke-OptimizerBatch {
 }
 
 Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+if ('DuckUtil.ConsoleHelper' -as [type]) {
+    try { [DuckUtil.ConsoleHelper]::EnablePerMonitorDpi() } catch {}
+    try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {}
+}
 if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
     Start-WingetBackgroundPreScan
 }
@@ -45002,10 +45396,20 @@ if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
+$window.Add_SourceInitialized({
+    if ('DuckUtil.ConsoleHelper' -as [type]) {
+        try {
+            $hwndMain = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
+            [DuckUtil.ConsoleHelper]::EnableDarkTitleBar($hwndMain)
+        } catch {}
+    }
+})
+
 try {
     $wa = [System.Windows.SystemParameters]::WorkArea
     if ($wa.Width -gt 0 -and $window.Width -gt ($wa.Width - 24)) {
-        $window.Width = [math]::Max($window.MinWidth, $wa.Width - 24)
+        $window.Width = [math]::Max(860, $wa.Width - 24)
+        $window.MinWidth = [math]::Min($window.MinWidth, $window.Width)
     }
     if ($wa.Height -gt 0 -and $window.Height -gt ($wa.Height - 24)) {
         $window.Height = [math]::Max(560, $wa.Height - 24)
@@ -45042,8 +45446,8 @@ $script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushRowBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3E)); $script:brushRowBorder.Freeze()
 $script:brushRowHoverBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x35, 0x50, 0x75)); $script:brushRowHoverBdr.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
-$script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
-$script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Arial")
+$script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Segoe UI")
+$script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI")
 
 $script:brushLinkBtnBg        = [System.Windows.Media.Brushes]::Transparent
 $script:brushLinkBtnBorder    = [System.Windows.Media.Brushes]::Transparent
@@ -45663,7 +46067,7 @@ function Show-OwnedMessageBox {
     ShowInTaskbar="False"
     Background="#0C1018"
     Foreground="#E2E8F0"
-    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    FontFamily="Segoe UI"
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType"
     UseLayoutRounding="True"
@@ -45890,7 +46294,10 @@ function Show-OwnedMessageBox {
                         <TextBlock Name="dlgIconGlyph" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Name="dlgTitleText" Grid.Column="1" Foreground="#F1F5F9" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <Button Name="dlgBtnCloseX" Grid.Column="2" Content="&#x2715;" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center"/>
+                    <Button Name="dlgBtnCloseX" Grid.Column="2" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center">
+                        <Path Width="9" Height="9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 8,8 M 8,1 L 1,8"/>
+                    </Button>
                 </Grid>
             </Border>
 
@@ -53906,8 +54313,10 @@ $script:btnStartFilterOn      = $window.FindName("btnStartFilterOn")
 $script:btnStartFilterOff     = $window.FindName("btnStartFilterOff")
 $script:btnStartFilterOrphan  = $window.FindName("btnStartFilterOrphan")
 $script:txtStartSummary       = $window.FindName("txtStartSummary")
+$script:startHeaderBorder     = $window.FindName("StartHeaderBorder")
 $script:startScrollViewer     = $window.FindName("StartScrollViewer")
 $script:startRowsHost         = $window.FindName("StartRowsHost")
+$script:styleRowActionBtn     = $window.FindResource("RowActionButton")
 
 $script:startInitialized         = $false
 $script:startScanVersion         = 0
@@ -53938,6 +54347,22 @@ $script:brushStartErrBdr     = [System.Windows.Media.SolidColorBrush]::new([Syst
 $script:brushStartFilterActBg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x2A, 0x40)); $script:brushStartFilterActBg.Freeze()
 $script:brushStartFilterActBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(153, 0x38, 0xBD, 0xF8)); $script:brushStartFilterActBdr.Freeze()
 $script:brushStartFilterInactFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushStartFilterInactFg.Freeze()
+$script:brushStartRowBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0E, 0x13, 0x1D)); $script:brushStartRowBg.Freeze()
+$script:brushStartRowHover     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushStartRowHover.Freeze()
+$script:brushStartRowBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x20, 0xFF, 0xFF, 0xFF)); $script:brushStartRowBorder.Freeze()
+$script:brushStartColDivider   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x1C, 0xFF, 0xFF, 0xFF)); $script:brushStartColDivider.Freeze()
+
+$script:styleStartRow = [System.Windows.Style]::new([System.Windows.Controls.Border])
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, $script:brushStartRowBg))
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushStartRowBorder))
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderThicknessProperty, [System.Windows.Thickness]::new(1, 0, 1, 1)))
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::SnapsToDevicePixelsProperty, $true))
+$startRowHoverTrig = [System.Windows.Trigger]::new()
+$startRowHoverTrig.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$startRowHoverTrig.Value = $true
+[void]$startRowHoverTrig.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, $script:brushStartRowHover))
+[void]$script:styleStartRow.Triggers.Add($startRowHoverTrig)
+$script:styleStartRow.Seal()
 
 function Update-StartupFooterSummary {
     if ($script:isWindowClosing) { return }
@@ -54122,47 +54547,58 @@ function Invoke-StartupDeleteSingleRow {
 function New-StartupRowElement {
     param($Entry)
     $rowBorder = [System.Windows.Controls.Border]::new()
-    $rowBorder.Style = $script:styleOptListRow
-    $rowBorder.Padding = [System.Windows.Thickness]::new(10, 6, 10, 6)
-    $rowBorder.MinHeight = 44
+    $rowBorder.Style = $script:styleStartRow
+    $rowBorder.Padding = $thicknessZero
+    $rowBorder.Margin = $thicknessZero
+    $rowBorder.MinHeight = 46
+    $rowBorder.UseLayoutRounding = $true
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 500)
     [System.Windows.Controls.ToolTipService]::SetShowDuration($rowBorder, 10000)
 
     $g = [System.Windows.Controls.Grid]::new()
-    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(52)
-    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(36)
-    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = [System.Windows.GridLength]::new(96)
-    $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = [System.Windows.GridLength]::new(96)
-    $c5 = [System.Windows.Controls.ColumnDefinition]::new(); $c5.Width = [System.Windows.GridLength]::new(126)
-    foreach ($cd in @($c0, $c1, $c2, $c3, $c4, $c5)) { [void]$g.ColumnDefinitions.Add($cd) }
+    $g.UseLayoutRounding = $true
+    $g.SnapsToDevicePixels = $true
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(64)
+    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::new(98)
+    $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = [System.Windows.GridLength]::new(104)
+    $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = [System.Windows.GridLength]::new(128)
+    foreach ($cd in @($c0, $c1, $c2, $c3, $c4)) { [void]$g.ColumnDefinitions.Add($cd) }
 
     $toggle = [System.Windows.Controls.Primitives.ToggleButton]::new()
     if ($script:styleOptToggleSwitch) { $toggle.Style = $script:styleOptToggleSwitch }
-    $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $toggle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $toggle.IsChecked = [bool]$Entry.Enabled
     $toggle.IsEnabled = (-not [bool]$Entry.IsPolicyLocked)
     [System.Windows.Controls.Grid]::SetColumn($toggle, 0)
     [void]$g.Children.Add($toggle)
 
+    $appCellGrid = [System.Windows.Controls.Grid]::new()
+    $appCellGrid.Margin = [System.Windows.Thickness]::new(10, 6, 10, 6)
+    $appCellGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $ac0 = [System.Windows.Controls.ColumnDefinition]::new(); $ac0.Width = [System.Windows.GridLength]::new(28)
+    $ac1 = [System.Windows.Controls.ColumnDefinition]::new(); $ac1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$appCellGrid.ColumnDefinitions.Add($ac0)
+    [void]$appCellGrid.ColumnDefinitions.Add($ac1)
+
     $iconBorder = [System.Windows.Controls.Border]::new()
     $iconBorder.Width = 28; $iconBorder.Height = 28
     $iconBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
     $iconBorder.Background = $script:brushStartPillBg
-    $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $iconBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $iconImg = [System.Windows.Controls.Image]::new()
     $iconImg.Width = 20; $iconImg.Height = 20
     $iconImg.Stretch = [System.Windows.Media.Stretch]::Uniform
     [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($iconImg, [System.Windows.Media.BitmapScalingMode]::HighQuality)
     $iconBorder.Child = $iconImg
-    [System.Windows.Controls.Grid]::SetColumn($iconBorder, 1)
-    [void]$g.Children.Add($iconBorder)
+    [System.Windows.Controls.Grid]::SetColumn($iconBorder, 0)
+    [void]$appCellGrid.Children.Add($iconBorder)
 
     $infoStack = [System.Windows.Controls.StackPanel]::new()
     $infoStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $infoStack.Margin = [System.Windows.Thickness]::new(2, 0, 10, 0)
+    $infoStack.Margin = [System.Windows.Thickness]::new(9, 0, 0, 0)
 
     $line1 = [System.Windows.Controls.StackPanel]::new()
     $line1.Orientation = [System.Windows.Controls.Orientation]::Horizontal
@@ -54186,15 +54622,18 @@ function New-StartupRowElement {
     $subTb.Margin = [System.Windows.Thickness]::new(0, 1, 0, 0)
     [void]$infoStack.Children.Add($subTb)
 
-    [System.Windows.Controls.Grid]::SetColumn($infoStack, 2)
-    [void]$g.Children.Add($infoStack)
+    [System.Windows.Controls.Grid]::SetColumn($infoStack, 1)
+    [void]$appCellGrid.Children.Add($infoStack)
+
+    [System.Windows.Controls.Grid]::SetColumn($appCellGrid, 1)
+    [void]$g.Children.Add($appCellGrid)
 
     $srcPill = [System.Windows.Controls.Border]::new()
     $srcPill.Background = $script:brushStartPillBg
     $srcPill.BorderBrush = $script:brushStartPillBdr
     $srcPill.BorderThickness = $thicknessOne
     $srcPill.CornerRadius = [System.Windows.CornerRadius]::new(3)
-    $srcPill.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+    $srcPill.Padding = [System.Windows.Thickness]::new(8, 2, 8, 2)
     $srcPill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $srcPill.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $srcTb = [System.Windows.Controls.TextBlock]::new()
@@ -54203,7 +54642,7 @@ function New-StartupRowElement {
     $srcTb.FontWeight = [System.Windows.FontWeights]::SemiBold
     $srcTb.Foreground = $script:brushNavInactive
     $srcPill.Child = $srcTb
-    [System.Windows.Controls.Grid]::SetColumn($srcPill, 3)
+    [System.Windows.Controls.Grid]::SetColumn($srcPill, 2)
     [void]$g.Children.Add($srcPill)
 
     $impTb = [System.Windows.Controls.TextBlock]::new()
@@ -54211,7 +54650,7 @@ function New-StartupRowElement {
     $impTb.FontWeight = [System.Windows.FontWeights]::SemiBold
     $impTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $impTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($impTb, 4)
+    [System.Windows.Controls.Grid]::SetColumn($impTb, 3)
     [void]$g.Children.Add($impTb)
 
     $actPanel = [System.Windows.Controls.StackPanel]::new()
@@ -54220,33 +54659,47 @@ function New-StartupRowElement {
     $actPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $btnOpen = [System.Windows.Controls.Button]::new()
+    if ($script:styleRowActionBtn) { $btnOpen.Style = $script:styleRowActionBtn }
     $btnOpen.Content = "M$([char]0x1EDF) t$([char]0x1EC7)p"
     $btnOpen.FontSize = 10.5
-    $btnOpen.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+    $btnOpen.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $btnOpen.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
     $btnOpen.Background = $script:brushStartPillBg
     $btnOpen.Foreground = $script:brushNavActive
     $btnOpen.BorderBrush = $script:brushStartPillBdr
     $btnOpen.BorderThickness = $thicknessOne
-    $btnOpen.Cursor = [System.Windows.Input.Cursors]::Hand
     [void]$actPanel.Children.Add($btnOpen)
 
     $btnDel = $null
     if ($Entry.CanDelete) {
         $btnDel = [System.Windows.Controls.Button]::new()
+        if ($script:styleRowActionBtn) { $btnDel.Style = $script:styleRowActionBtn }
         $btnDel.Content = "X$([char]0x00F3)a"
         $btnDel.FontSize = 10.5
-        $btnDel.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+        $btnDel.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $btnDel.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
         $btnDel.Margin = [System.Windows.Thickness]::new(5, 0, 0, 0)
         $btnDel.Background = $script:brushStartErrBg
         $btnDel.Foreground = $script:brushOptRiskCautFg
         $btnDel.BorderBrush = $script:brushStartErrBdr
         $btnDel.BorderThickness = $thicknessOne
-        $btnDel.Cursor = [System.Windows.Input.Cursors]::Hand
         [void]$actPanel.Children.Add($btnDel)
     }
 
-    [System.Windows.Controls.Grid]::SetColumn($actPanel, 5)
+    [System.Windows.Controls.Grid]::SetColumn($actPanel, 4)
     [void]$g.Children.Add($actPanel)
+
+    for ($divCol = 0; $divCol -lt 4; $divCol++) {
+        $colDiv = [System.Windows.Controls.Border]::new()
+        $colDiv.Width = 1
+        $colDiv.Background = $script:brushStartColDivider
+        $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+        $colDiv.SnapsToDevicePixels = $true
+        $colDiv.IsHitTestVisible = $false
+        [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
+        [void]$g.Children.Add($colDiv)
+    }
 
     $rowBorder.Child = $g
 

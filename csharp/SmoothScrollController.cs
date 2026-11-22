@@ -30,6 +30,15 @@ namespace DuckUtil {
         private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+        [DllImport("user32.dll")]
+        private static extern bool SetProcessDPIAware();
+        [DllImport("shcore.dll")]
+        private static extern int SetProcessDpiAwareness(int awareness);
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public static void DisableQuickEdit() {
             IntPtr h = GetStdHandle(-10);
             if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
@@ -38,6 +47,28 @@ namespace DuckUtil {
                 uint next = (mode & ~0x0040u) | 0x0080u;
                 if (next != mode) SetConsoleMode(h, next);
             }
+        }
+
+        public static void EnablePerMonitorDpi() {
+            try {
+                if (SetProcessDpiAwarenessContext(new IntPtr(-4))) return;
+            } catch {}
+            try {
+                if (SetProcessDpiAwareness(2) == 0) return;
+            } catch {}
+            try {
+                SetProcessDPIAware();
+            } catch {}
+        }
+
+        public static void EnableDarkTitleBar(IntPtr hwnd) {
+            if (hwnd == IntPtr.Zero) return;
+            try {
+                int useDark = 1;
+                if (DwmSetWindowAttribute(hwnd, 20, ref useDark, sizeof(int)) != 0) {
+                    DwmSetWindowAttribute(hwnd, 19, ref useDark, sizeof(int));
+                }
+            } catch {}
         }
     }
 
@@ -799,6 +830,40 @@ namespace DuckUtil {
         private static readonly CornerRadius _cRow = new CornerRadius(0);
         private static readonly CornerRadius _cFour = new CornerRadius(1);
         private static readonly CornerRadius _cPill = new CornerRadius(3);
+        private static Geometry _folderGeom;
+        private static System.Windows.Media.Brush _folderStroke;
+        private static System.Windows.Media.Brush _folderFill;
+
+        internal static System.Windows.Shapes.Path CreateFolderVectorIcon() {
+            if (_folderGeom == null) {
+                var g = Geometry.Parse("M 1,2.2 L 4.7,2.2 L 5.9,3.6 L 11,3.6 L 11,9.8 L 1,9.8 Z");
+                g.Freeze();
+                _folderGeom = g;
+            }
+            if (_folderStroke == null) {
+                var s = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF5, 0x9E, 0x0B));
+                s.Freeze();
+                _folderStroke = s;
+            }
+            if (_folderFill == null) {
+                var f = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x45, 0xFB, 0xBF, 0x24));
+                f.Freeze();
+                _folderFill = f;
+            }
+            return new System.Windows.Shapes.Path {
+                Data = _folderGeom,
+                Width = 12,
+                Height = 11,
+                Stretch = Stretch.Uniform,
+                Stroke = _folderStroke,
+                StrokeThickness = 1.2,
+                StrokeLineJoin = PenLineJoin.Round,
+                Fill = _folderFill,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                SnapsToDevicePixels = true
+            };
+        }
 
         internal static TextBlock CreateCenteredBadgeLabel(string text, double fontSize, FontWeight weight, System.Windows.Media.Brush fg) {
             var tb = new TextBlock();
@@ -995,12 +1060,7 @@ namespace DuckUtil {
             folderBtn.HorizontalAlignment = HorizontalAlignment.Center;
             folderBtn.VerticalAlignment = VerticalAlignment.Center;
 
-            var folderIcon = new TextBlock();
-            folderIcon.Text = folderGlyph ?? "";
-            folderIcon.FontSize = 10.5;
-            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
-            folderIcon.VerticalAlignment = VerticalAlignment.Center;
-            folderBtn.Child = folderIcon;
+            folderBtn.Child = CreateFolderVectorIcon();
 
             if (!string.IsNullOrWhiteSpace(targetFolder)) {
                 folderBtn.Cursor = Cursors.Hand;
@@ -2903,12 +2963,7 @@ namespace DuckUtil {
             folderBtn.ToolTip = "";
             ToolTipService.SetInitialShowDelay(folderBtn, 5000);
 
-            var folderIcon = new TextBlock();
-            folderIcon.Text = _folderGlyph;
-            folderIcon.FontSize = 10.5;
-            folderIcon.HorizontalAlignment = HorizontalAlignment.Center;
-            folderIcon.VerticalAlignment = VerticalAlignment.Center;
-            folderBtn.Child = folderIcon;
+            folderBtn.Child = UiAssetPipeline.CreateFolderVectorIcon();
             Grid.SetColumn(folderBtn, 6);
             rowGrid.Children.Add(folderBtn);
 

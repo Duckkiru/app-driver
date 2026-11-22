@@ -1,4 +1,8 @@
 ﻿Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+if ('DuckUtil.ConsoleHelper' -as [type]) {
+    try { [DuckUtil.ConsoleHelper]::EnablePerMonitorDpi() } catch {}
+    try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {}
+}
 if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
     Start-WingetBackgroundPreScan
 }
@@ -6,10 +10,20 @@ if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
 $reader = New-Object System.Xml.XmlNodeReader $XAML
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
+$window.Add_SourceInitialized({
+    if ('DuckUtil.ConsoleHelper' -as [type]) {
+        try {
+            $hwndMain = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
+            [DuckUtil.ConsoleHelper]::EnableDarkTitleBar($hwndMain)
+        } catch {}
+    }
+})
+
 try {
     $wa = [System.Windows.SystemParameters]::WorkArea
     if ($wa.Width -gt 0 -and $window.Width -gt ($wa.Width - 24)) {
-        $window.Width = [math]::Max($window.MinWidth, $wa.Width - 24)
+        $window.Width = [math]::Max(860, $wa.Width - 24)
+        $window.MinWidth = [math]::Min($window.MinWidth, $window.Width)
     }
     if ($wa.Height -gt 0 -and $window.Height -gt ($wa.Height - 24)) {
         $window.Height = [math]::Max(560, $wa.Height - 24)
@@ -46,8 +60,8 @@ $script:brushRowHover    = [System.Windows.Media.SolidColorBrush]::new([System.W
 $script:brushRowBorder   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x29, 0x3E)); $script:brushRowBorder.Freeze()
 $script:brushRowHoverBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x35, 0x50, 0x75)); $script:brushRowHoverBdr.Freeze()
 $script:brushTextWhite   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xF1, 0xF5, 0xF9)); $script:brushTextWhite.Freeze()
-$script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Arial")
-$script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI, Arial")
+$script:fontSegoeEmoji   = New-Object System.Windows.Media.FontFamily("Segoe UI Emoji, Segoe UI Symbol, Segoe UI")
+$script:fontSegoeUI      = New-Object System.Windows.Media.FontFamily("Segoe UI")
 
 $script:brushLinkBtnBg        = [System.Windows.Media.Brushes]::Transparent
 $script:brushLinkBtnBorder    = [System.Windows.Media.Brushes]::Transparent
@@ -667,7 +681,7 @@ function Show-OwnedMessageBox {
     ShowInTaskbar="False"
     Background="#0C1018"
     Foreground="#E2E8F0"
-    FontFamily="Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif"
+    FontFamily="Segoe UI"
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType"
     UseLayoutRounding="True"
@@ -894,7 +908,10 @@ function Show-OwnedMessageBox {
                         <TextBlock Name="dlgIconGlyph" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Name="dlgTitleText" Grid.Column="1" Foreground="#F1F5F9" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    <Button Name="dlgBtnCloseX" Grid.Column="2" Content="✕" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center"/>
+                    <Button Name="dlgBtnCloseX" Grid.Column="2" Style="{StaticResource DlgCloseBtn}" VerticalAlignment="Center">
+                        <Path Width="9" Height="9" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 8,8 M 8,1 L 1,8"/>
+                    </Button>
                 </Grid>
             </Border>
 
@@ -8910,8 +8927,10 @@ $script:btnStartFilterOn      = $window.FindName("btnStartFilterOn")
 $script:btnStartFilterOff     = $window.FindName("btnStartFilterOff")
 $script:btnStartFilterOrphan  = $window.FindName("btnStartFilterOrphan")
 $script:txtStartSummary       = $window.FindName("txtStartSummary")
+$script:startHeaderBorder     = $window.FindName("StartHeaderBorder")
 $script:startScrollViewer     = $window.FindName("StartScrollViewer")
 $script:startRowsHost         = $window.FindName("StartRowsHost")
+$script:styleRowActionBtn     = $window.FindResource("RowActionButton")
 
 $script:startInitialized         = $false
 $script:startScanVersion         = 0
@@ -8942,6 +8961,22 @@ $script:brushStartErrBdr     = [System.Windows.Media.SolidColorBrush]::new([Syst
 $script:brushStartFilterActBg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x2A, 0x40)); $script:brushStartFilterActBg.Freeze()
 $script:brushStartFilterActBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(153, 0x38, 0xBD, 0xF8)); $script:brushStartFilterActBdr.Freeze()
 $script:brushStartFilterInactFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushStartFilterInactFg.Freeze()
+$script:brushStartRowBg        = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x0E, 0x13, 0x1D)); $script:brushStartRowBg.Freeze()
+$script:brushStartRowHover     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x20, 0x32)); $script:brushStartRowHover.Freeze()
+$script:brushStartRowBorder    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x20, 0xFF, 0xFF, 0xFF)); $script:brushStartRowBorder.Freeze()
+$script:brushStartColDivider   = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(0x1C, 0xFF, 0xFF, 0xFF)); $script:brushStartColDivider.Freeze()
+
+$script:styleStartRow = [System.Windows.Style]::new([System.Windows.Controls.Border])
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, $script:brushStartRowBg))
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderBrushProperty, $script:brushStartRowBorder))
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BorderThicknessProperty, [System.Windows.Thickness]::new(1, 0, 1, 1)))
+[void]$script:styleStartRow.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::SnapsToDevicePixelsProperty, $true))
+$startRowHoverTrig = [System.Windows.Trigger]::new()
+$startRowHoverTrig.Property = [System.Windows.UIElement]::IsMouseOverProperty
+$startRowHoverTrig.Value = $true
+[void]$startRowHoverTrig.Setters.Add([System.Windows.Setter]::new([System.Windows.Controls.Border]::BackgroundProperty, $script:brushStartRowHover))
+[void]$script:styleStartRow.Triggers.Add($startRowHoverTrig)
+$script:styleStartRow.Seal()
 
 function Update-StartupFooterSummary {
     if ($script:isWindowClosing) { return }
@@ -9126,47 +9161,58 @@ function Invoke-StartupDeleteSingleRow {
 function New-StartupRowElement {
     param($Entry)
     $rowBorder = [System.Windows.Controls.Border]::new()
-    $rowBorder.Style = $script:styleOptListRow
-    $rowBorder.Padding = [System.Windows.Thickness]::new(10, 6, 10, 6)
-    $rowBorder.MinHeight = 44
+    $rowBorder.Style = $script:styleStartRow
+    $rowBorder.Padding = $thicknessZero
+    $rowBorder.Margin = $thicknessZero
+    $rowBorder.MinHeight = 46
+    $rowBorder.UseLayoutRounding = $true
     [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 500)
     [System.Windows.Controls.ToolTipService]::SetShowDuration($rowBorder, 10000)
 
     $g = [System.Windows.Controls.Grid]::new()
-    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(52)
-    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(36)
-    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = [System.Windows.GridLength]::new(96)
-    $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = [System.Windows.GridLength]::new(96)
-    $c5 = [System.Windows.Controls.ColumnDefinition]::new(); $c5.Width = [System.Windows.GridLength]::new(126)
-    foreach ($cd in @($c0, $c1, $c2, $c3, $c4, $c5)) { [void]$g.ColumnDefinitions.Add($cd) }
+    $g.UseLayoutRounding = $true
+    $g.SnapsToDevicePixels = $true
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(64)
+    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::new(98)
+    $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = [System.Windows.GridLength]::new(104)
+    $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = [System.Windows.GridLength]::new(128)
+    foreach ($cd in @($c0, $c1, $c2, $c3, $c4)) { [void]$g.ColumnDefinitions.Add($cd) }
 
     $toggle = [System.Windows.Controls.Primitives.ToggleButton]::new()
     if ($script:styleOptToggleSwitch) { $toggle.Style = $script:styleOptToggleSwitch }
-    $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $toggle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $toggle.IsChecked = [bool]$Entry.Enabled
     $toggle.IsEnabled = (-not [bool]$Entry.IsPolicyLocked)
     [System.Windows.Controls.Grid]::SetColumn($toggle, 0)
     [void]$g.Children.Add($toggle)
 
+    $appCellGrid = [System.Windows.Controls.Grid]::new()
+    $appCellGrid.Margin = [System.Windows.Thickness]::new(10, 6, 10, 6)
+    $appCellGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $ac0 = [System.Windows.Controls.ColumnDefinition]::new(); $ac0.Width = [System.Windows.GridLength]::new(28)
+    $ac1 = [System.Windows.Controls.ColumnDefinition]::new(); $ac1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    [void]$appCellGrid.ColumnDefinitions.Add($ac0)
+    [void]$appCellGrid.ColumnDefinitions.Add($ac1)
+
     $iconBorder = [System.Windows.Controls.Border]::new()
     $iconBorder.Width = 28; $iconBorder.Height = 28
     $iconBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
     $iconBorder.Background = $script:brushStartPillBg
-    $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $iconBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $iconImg = [System.Windows.Controls.Image]::new()
     $iconImg.Width = 20; $iconImg.Height = 20
     $iconImg.Stretch = [System.Windows.Media.Stretch]::Uniform
     [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($iconImg, [System.Windows.Media.BitmapScalingMode]::HighQuality)
     $iconBorder.Child = $iconImg
-    [System.Windows.Controls.Grid]::SetColumn($iconBorder, 1)
-    [void]$g.Children.Add($iconBorder)
+    [System.Windows.Controls.Grid]::SetColumn($iconBorder, 0)
+    [void]$appCellGrid.Children.Add($iconBorder)
 
     $infoStack = [System.Windows.Controls.StackPanel]::new()
     $infoStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $infoStack.Margin = [System.Windows.Thickness]::new(2, 0, 10, 0)
+    $infoStack.Margin = [System.Windows.Thickness]::new(9, 0, 0, 0)
 
     $line1 = [System.Windows.Controls.StackPanel]::new()
     $line1.Orientation = [System.Windows.Controls.Orientation]::Horizontal
@@ -9190,15 +9236,18 @@ function New-StartupRowElement {
     $subTb.Margin = [System.Windows.Thickness]::new(0, 1, 0, 0)
     [void]$infoStack.Children.Add($subTb)
 
-    [System.Windows.Controls.Grid]::SetColumn($infoStack, 2)
-    [void]$g.Children.Add($infoStack)
+    [System.Windows.Controls.Grid]::SetColumn($infoStack, 1)
+    [void]$appCellGrid.Children.Add($infoStack)
+
+    [System.Windows.Controls.Grid]::SetColumn($appCellGrid, 1)
+    [void]$g.Children.Add($appCellGrid)
 
     $srcPill = [System.Windows.Controls.Border]::new()
     $srcPill.Background = $script:brushStartPillBg
     $srcPill.BorderBrush = $script:brushStartPillBdr
     $srcPill.BorderThickness = $thicknessOne
     $srcPill.CornerRadius = [System.Windows.CornerRadius]::new(3)
-    $srcPill.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+    $srcPill.Padding = [System.Windows.Thickness]::new(8, 2, 8, 2)
     $srcPill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $srcPill.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $srcTb = [System.Windows.Controls.TextBlock]::new()
@@ -9207,7 +9256,7 @@ function New-StartupRowElement {
     $srcTb.FontWeight = [System.Windows.FontWeights]::SemiBold
     $srcTb.Foreground = $script:brushNavInactive
     $srcPill.Child = $srcTb
-    [System.Windows.Controls.Grid]::SetColumn($srcPill, 3)
+    [System.Windows.Controls.Grid]::SetColumn($srcPill, 2)
     [void]$g.Children.Add($srcPill)
 
     $impTb = [System.Windows.Controls.TextBlock]::new()
@@ -9215,7 +9264,7 @@ function New-StartupRowElement {
     $impTb.FontWeight = [System.Windows.FontWeights]::SemiBold
     $impTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $impTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($impTb, 4)
+    [System.Windows.Controls.Grid]::SetColumn($impTb, 3)
     [void]$g.Children.Add($impTb)
 
     $actPanel = [System.Windows.Controls.StackPanel]::new()
@@ -9224,33 +9273,47 @@ function New-StartupRowElement {
     $actPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $btnOpen = [System.Windows.Controls.Button]::new()
+    if ($script:styleRowActionBtn) { $btnOpen.Style = $script:styleRowActionBtn }
     $btnOpen.Content = "Mở tệp"
     $btnOpen.FontSize = 10.5
-    $btnOpen.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+    $btnOpen.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $btnOpen.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
     $btnOpen.Background = $script:brushStartPillBg
     $btnOpen.Foreground = $script:brushNavActive
     $btnOpen.BorderBrush = $script:brushStartPillBdr
     $btnOpen.BorderThickness = $thicknessOne
-    $btnOpen.Cursor = [System.Windows.Input.Cursors]::Hand
     [void]$actPanel.Children.Add($btnOpen)
 
     $btnDel = $null
     if ($Entry.CanDelete) {
         $btnDel = [System.Windows.Controls.Button]::new()
+        if ($script:styleRowActionBtn) { $btnDel.Style = $script:styleRowActionBtn }
         $btnDel.Content = "Xóa"
         $btnDel.FontSize = 10.5
-        $btnDel.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+        $btnDel.FontWeight = [System.Windows.FontWeights]::SemiBold
+        $btnDel.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
         $btnDel.Margin = [System.Windows.Thickness]::new(5, 0, 0, 0)
         $btnDel.Background = $script:brushStartErrBg
         $btnDel.Foreground = $script:brushOptRiskCautFg
         $btnDel.BorderBrush = $script:brushStartErrBdr
         $btnDel.BorderThickness = $thicknessOne
-        $btnDel.Cursor = [System.Windows.Input.Cursors]::Hand
         [void]$actPanel.Children.Add($btnDel)
     }
 
-    [System.Windows.Controls.Grid]::SetColumn($actPanel, 5)
+    [System.Windows.Controls.Grid]::SetColumn($actPanel, 4)
     [void]$g.Children.Add($actPanel)
+
+    for ($divCol = 0; $divCol -lt 4; $divCol++) {
+        $colDiv = [System.Windows.Controls.Border]::new()
+        $colDiv.Width = 1
+        $colDiv.Background = $script:brushStartColDivider
+        $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+        $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+        $colDiv.SnapsToDevicePixels = $true
+        $colDiv.IsHitTestVisible = $false
+        [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
+        [void]$g.Children.Add($colDiv)
+    }
 
     $rowBorder.Child = $g
 

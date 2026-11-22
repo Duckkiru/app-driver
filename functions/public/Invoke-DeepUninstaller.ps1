@@ -1633,12 +1633,20 @@ function Show-LeftoverReviewDialog {
 
     $dialog.Background = $pal.Bg
     $dialog.Foreground = $pal.Fg
-    $dialog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif")
+    $dialog.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
     [System.Windows.Media.TextOptions]::SetTextFormattingMode($dialog, [System.Windows.Media.TextFormattingMode]::Display)
     [System.Windows.Media.TextOptions]::SetTextRenderingMode($dialog, [System.Windows.Media.TextRenderingMode]::ClearType)
     $dialog.WindowStyle = [System.Windows.WindowStyle]::SingleBorderWindow
     $dialog.UseLayoutRounding = $true
     $dialog.SnapsToDevicePixels = $true
+    $dialog.Add_SourceInitialized({
+        if ('DuckUtil.ConsoleHelper' -as [type]) {
+            try {
+                $hDlg = (New-Object System.Windows.Interop.WindowInteropHelper($dialog)).Handle
+                [DuckUtil.ConsoleHelper]::EnableDarkTitleBar($hDlg)
+            } catch {}
+        }
+    })
 
     try {
         if (-not $script:loDialogResources) {
