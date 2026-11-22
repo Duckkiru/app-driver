@@ -10069,7 +10069,7 @@ function Update-ResourcesSummary {
             $hasActionable = (if ($c.Id -eq "t4_empty_folders") { $c.FolderCount -gt 0 -or $c.ItemCount -gt 0 } else { $c.ItemCount -gt 0 -or $c.TotalBytes -gt 0 }) -and (-not $c.SkippedBecauseRebootPending)
             if ($hasActionable) {
                 $selCats++
-                if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+                if ($c.DetailItems -and $c.DetailItems.Count -gt 0) {
                     $subSel = 0L; $subEmpty = 0
                     foreach ($it in $c.DetailItems) {
                         if ($it.Selected) {
@@ -10206,7 +10206,7 @@ $script:resRowCheckHandler = [System.Windows.RoutedEventHandler]{
     if ($rVis -and $rVis.Category) {
         $isChk = ($s.IsChecked -eq $true)
         $rVis.Category.Selected = $isChk
-        if ($rVis.Category.CleanMode -eq "ItemsList" -and $rVis.Category.DetailItems) {
+        if ($rVis.Category.DetailItems -and $rVis.Category.DetailItems.Count -gt 0) {
             foreach ($it in $rVis.Category.DetailItems) { $it.Selected = $isChk }
             if ($rVis.DetailsHost -and $rVis.DetailsPopulated) {
                 $script:resSyncingChecks = $true
@@ -10398,7 +10398,7 @@ if ($script:btnResClean) {
         $estBytes = 0L
         foreach ($c in $selectedCats) {
             if ($c.RiskLevel -ne "Safe") { $hasWarn = $true }
-            if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+            if ($c.DetailItems -and $c.DetailItems.Count -gt 0) {
                 foreach ($it in $c.DetailItems) {
                     if ($it.Selected) {
                         $estBytes += [long]$it.SizeBytes
@@ -10459,6 +10459,14 @@ if ($script:btnResSelectSafe) {
                 $want = ($c.RiskLevel -eq "Safe" -and -not $c.SkippedBecauseRebootPending -and ($c.ItemCount -gt 0 -or $c.TotalBytes -gt 0))
                 $c.Selected = $want
                 if ($r.CheckBox) { $r.CheckBox.IsChecked = $want }
+                if ($c.DetailItems) { foreach ($it in $c.DetailItems) { $it.Selected = $want } }
+                if ($r.DetailsHost -and $r.DetailsPopulated) {
+                    foreach ($child in $r.DetailsHost.Children) {
+                        if ($child -is [System.Windows.Controls.Grid] -and $child.Children.Count -gt 0 -and $child.Children[0] -is [System.Windows.Controls.CheckBox]) {
+                            $child.Children[0].IsChecked = $want
+                        }
+                    }
+                }
             }
         } finally { $script:resSyncingChecks = $false }
         Update-ResourcesSummary
@@ -10473,6 +10481,14 @@ if ($script:btnResClearSel) {
             foreach ($r in $script:resRows) {
                 $r.Category.Selected = $false
                 if ($r.CheckBox) { $r.CheckBox.IsChecked = $false }
+                if ($r.Category.DetailItems) { foreach ($it in $r.Category.DetailItems) { $it.Selected = $false } }
+                if ($r.DetailsHost -and $r.DetailsPopulated) {
+                    foreach ($child in $r.DetailsHost.Children) {
+                        if ($child -is [System.Windows.Controls.Grid] -and $child.Children.Count -gt 0 -and $child.Children[0] -is [System.Windows.Controls.CheckBox]) {
+                            $child.Children[0].IsChecked = $false
+                        }
+                    }
+                }
             }
         } finally { $script:resSyncingChecks = $false }
         Update-ResourcesSummary

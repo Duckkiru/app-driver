@@ -606,7 +606,7 @@ namespace DuckUtil {
                         NestedCount = rf,
                         IsDirectory = true,
                         IsOneDrive = IsPathInsideOneDrive(r),
-                        Selected = true,
+                        Selected = false,
                         Kind = "CacheRoot",
                         Note = string.Format("{0} t\u1EC7p", rf)
                     });
@@ -1757,7 +1757,14 @@ namespace DuckUtil {
                 } else if (cat.CleanMode == "ContentsOnly" || cat.CleanMode == "FilePattern") {
                     bool topOnly = (cat.CleanMode == "FilePattern");
                     if (cat.IsDeliveryOptimization) report.NeedsDeliveryOptCmdlet = true;
-                    if (cat.RootPaths != null) {
+                    if (cat.DetailItems != null && cat.DetailItems.Count > 0) {
+                        for (int d = 0; d < cat.DetailItems.Count; d++) {
+                            if (ct.IsCancellationRequested) break;
+                            var it = cat.DetailItems[d];
+                            if (it == null || !it.Selected || string.IsNullOrWhiteSpace(it.Path)) continue;
+                            DeleteDirectoryContentsWin32(it.Path, cat.FilePatterns, topOnly, false, ct, ref cf, ref cdf, ref cdd, ref clk, ref ccld, 0);
+                        }
+                    } else if (cat.RootPaths != null) {
                         for (int r = 0; r < cat.RootPaths.Length; r++) {
                             if (ct.IsCancellationRequested) break;
                             DeleteDirectoryContentsWin32(cat.RootPaths[r], cat.FilePatterns, topOnly, false, ct, ref cf, ref cdf, ref cdd, ref clk, ref ccld, 0);
@@ -2067,19 +2074,17 @@ namespace DuckUtil {
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
 
-                if (cat.CleanMode == "ItemsList") {
-                    var dcb = new System.Windows.Controls.CheckBox();
-                    if (checkStyle != null) dcb.Style = checkStyle;
-                    dcb.IsChecked = it.Selected;
-                    dcb.VerticalAlignment = VerticalAlignment.Center;
-                    dcb.Tag = new object[] { vis, it };
-                    if (onDetailCheckChanged != null) {
-                        dcb.Checked += onDetailCheckChanged;
-                        dcb.Unchecked += onDetailCheckChanged;
-                    }
-                    System.Windows.Controls.Grid.SetColumn(dcb, 0);
-                    row.Children.Add(dcb);
+                var dcb = new System.Windows.Controls.CheckBox();
+                if (checkStyle != null) dcb.Style = checkStyle;
+                dcb.IsChecked = it.Selected;
+                dcb.VerticalAlignment = VerticalAlignment.Center;
+                dcb.Tag = new object[] { vis, it };
+                if (onDetailCheckChanged != null) {
+                    dcb.Checked += onDetailCheckChanged;
+                    dcb.Unchecked += onDetailCheckChanged;
                 }
+                System.Windows.Controls.Grid.SetColumn(dcb, 0);
+                row.Children.Add(dcb);
 
                 var pathSp = new System.Windows.Controls.StackPanel();
                 pathSp.Orientation = System.Windows.Controls.Orientation.Horizontal;

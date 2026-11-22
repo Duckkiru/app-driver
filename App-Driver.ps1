@@ -28810,7 +28810,7 @@ namespace DuckUtil {
                         NestedCount = rf,
                         IsDirectory = true,
                         IsOneDrive = IsPathInsideOneDrive(r),
-                        Selected = true,
+                        Selected = false,
                         Kind = "CacheRoot",
                         Note = string.Format("{0} t\u1EC7p", rf)
                     });
@@ -29961,7 +29961,14 @@ namespace DuckUtil {
                 } else if (cat.CleanMode == "ContentsOnly" || cat.CleanMode == "FilePattern") {
                     bool topOnly = (cat.CleanMode == "FilePattern");
                     if (cat.IsDeliveryOptimization) report.NeedsDeliveryOptCmdlet = true;
-                    if (cat.RootPaths != null) {
+                    if (cat.DetailItems != null && cat.DetailItems.Count > 0) {
+                        for (int d = 0; d < cat.DetailItems.Count; d++) {
+                            if (ct.IsCancellationRequested) break;
+                            var it = cat.DetailItems[d];
+                            if (it == null || !it.Selected || string.IsNullOrWhiteSpace(it.Path)) continue;
+                            DeleteDirectoryContentsWin32(it.Path, cat.FilePatterns, topOnly, false, ct, ref cf, ref cdf, ref cdd, ref clk, ref ccld, 0);
+                        }
+                    } else if (cat.RootPaths != null) {
                         for (int r = 0; r < cat.RootPaths.Length; r++) {
                             if (ct.IsCancellationRequested) break;
                             DeleteDirectoryContentsWin32(cat.RootPaths[r], cat.FilePatterns, topOnly, false, ct, ref cf, ref cdf, ref cdd, ref clk, ref ccld, 0);
@@ -30271,19 +30278,17 @@ namespace DuckUtil {
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
 
-                if (cat.CleanMode == "ItemsList") {
-                    var dcb = new System.Windows.Controls.CheckBox();
-                    if (checkStyle != null) dcb.Style = checkStyle;
-                    dcb.IsChecked = it.Selected;
-                    dcb.VerticalAlignment = VerticalAlignment.Center;
-                    dcb.Tag = new object[] { vis, it };
-                    if (onDetailCheckChanged != null) {
-                        dcb.Checked += onDetailCheckChanged;
-                        dcb.Unchecked += onDetailCheckChanged;
-                    }
-                    System.Windows.Controls.Grid.SetColumn(dcb, 0);
-                    row.Children.Add(dcb);
+                var dcb = new System.Windows.Controls.CheckBox();
+                if (checkStyle != null) dcb.Style = checkStyle;
+                dcb.IsChecked = it.Selected;
+                dcb.VerticalAlignment = VerticalAlignment.Center;
+                dcb.Tag = new object[] { vis, it };
+                if (onDetailCheckChanged != null) {
+                    dcb.Checked += onDetailCheckChanged;
+                    dcb.Unchecked += onDetailCheckChanged;
                 }
+                System.Windows.Controls.Grid.SetColumn(dcb, 0);
+                row.Children.Add(dcb);
 
                 var pathSp = new System.Windows.Controls.StackPanel();
                 pathSp.Orientation = System.Windows.Controls.Orientation.Horizontal;
@@ -47643,7 +47648,7 @@ function Update-ResourcesSummary {
             $hasActionable = (if ($c.Id -eq "t4_empty_folders") { $c.FolderCount -gt 0 -or $c.ItemCount -gt 0 } else { $c.ItemCount -gt 0 -or $c.TotalBytes -gt 0 }) -and (-not $c.SkippedBecauseRebootPending)
             if ($hasActionable) {
                 $selCats++
-                if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+                if ($c.DetailItems -and $c.DetailItems.Count -gt 0) {
                     $subSel = 0L; $subEmpty = 0
                     foreach ($it in $c.DetailItems) {
                         if ($it.Selected) {
@@ -47780,7 +47785,7 @@ $script:resRowCheckHandler = [System.Windows.RoutedEventHandler]{
     if ($rVis -and $rVis.Category) {
         $isChk = ($s.IsChecked -eq $true)
         $rVis.Category.Selected = $isChk
-        if ($rVis.Category.CleanMode -eq "ItemsList" -and $rVis.Category.DetailItems) {
+        if ($rVis.Category.DetailItems -and $rVis.Category.DetailItems.Count -gt 0) {
             foreach ($it in $rVis.Category.DetailItems) { $it.Selected = $isChk }
             if ($rVis.DetailsHost -and $rVis.DetailsPopulated) {
                 $script:resSyncingChecks = $true
@@ -47972,7 +47977,7 @@ if ($script:btnResClean) {
         $estBytes = 0L
         foreach ($c in $selectedCats) {
             if ($c.RiskLevel -ne "Safe") { $hasWarn = $true }
-            if ($c.CleanMode -eq "ItemsList" -and $c.DetailItems) {
+            if ($c.DetailItems -and $c.DetailItems.Count -gt 0) {
                 foreach ($it in $c.DetailItems) {
                     if ($it.Selected) {
                         $estBytes += [long]$it.SizeBytes
@@ -48033,6 +48038,14 @@ if ($script:btnResSelectSafe) {
                 $want = ($c.RiskLevel -eq "Safe" -and -not $c.SkippedBecauseRebootPending -and ($c.ItemCount -gt 0 -or $c.TotalBytes -gt 0))
                 $c.Selected = $want
                 if ($r.CheckBox) { $r.CheckBox.IsChecked = $want }
+                if ($c.DetailItems) { foreach ($it in $c.DetailItems) { $it.Selected = $want } }
+                if ($r.DetailsHost -and $r.DetailsPopulated) {
+                    foreach ($child in $r.DetailsHost.Children) {
+                        if ($child -is [System.Windows.Controls.Grid] -and $child.Children.Count -gt 0 -and $child.Children[0] -is [System.Windows.Controls.CheckBox]) {
+                            $child.Children[0].IsChecked = $want
+                        }
+                    }
+                }
             }
         } finally { $script:resSyncingChecks = $false }
         Update-ResourcesSummary
@@ -48047,6 +48060,14 @@ if ($script:btnResClearSel) {
             foreach ($r in $script:resRows) {
                 $r.Category.Selected = $false
                 if ($r.CheckBox) { $r.CheckBox.IsChecked = $false }
+                if ($r.Category.DetailItems) { foreach ($it in $r.Category.DetailItems) { $it.Selected = $false } }
+                if ($r.DetailsHost -and $r.DetailsPopulated) {
+                    foreach ($child in $r.DetailsHost.Children) {
+                        if ($child -is [System.Windows.Controls.Grid] -and $child.Children.Count -gt 0 -and $child.Children[0] -is [System.Windows.Controls.CheckBox]) {
+                            $child.Children[0].IsChecked = $false
+                        }
+                    }
+                }
             }
         } finally { $script:resSyncingChecks = $false }
         Update-ResourcesSummary
