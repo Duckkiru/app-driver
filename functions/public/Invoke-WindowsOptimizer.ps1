@@ -251,6 +251,137 @@ function Restore-OptimizerGuardSnapshot {
     }
 }
 
+function Repair-OemPowerAndLegionThermalMode {
+    try {
+        $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        if (Test-Path -LiteralPath $bgPath) {
+            Set-ItemProperty -LiteralPath $bgPath -Name "GlobalUserDisabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+        }
+        $apPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"
+        if (Test-Path -LiteralPath $apPath) {
+            Remove-ItemProperty -LiteralPath $apPath -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue
+        }
+        $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+        try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+        $psRoot = "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
+        if (Test-Path -LiteralPath $psRoot) {
+            $curOv = (Get-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
+            if ($curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a") {
+                Set-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -Value "00000000-0000-0000-0000-000000000000" -ErrorAction SilentlyContinue
+            }
+        }
+        $hasLegion = (Test-Path -LiteralPath "HKLM:\SOFTWARE\Lenovo\VantageService") -or ($null -ne (Get-Service -Name "LenovoVantageService" -ErrorAction SilentlyContinue))
+        if ($hasLegion) {
+            try {
+                $wmiOther = Get-CimInstance -Namespace "root\WMI" -ClassName "LENOVO_OTHER_METHOD" -ErrorAction SilentlyContinue
+                if ($wmiOther) {
+                    [void](Invoke-CimMethod -InputObject $wmiOther -MethodName "SetFeatureValue" -Arguments @{ IDs = [int]1048576; value = [int]1 } -ErrorAction SilentlyContinue)
+                }
+            } catch {}
+            foreach ($svcName in @("LenovoFnAndFunctionKeys", "LenovoVantageService")) {
+                $sv = Get-Service -Name $svcName -ErrorAction SilentlyContinue
+                if ($sv) {
+                    try { Set-Service -Name $svcName -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
+                    try { Restart-Service -Name $svcName -Force -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+            Log-Text "[SUCC] Đã đồng bộ lại dịch vụ Lenovo Vantage & bật lại chế độ Custom trong vòng lặp Fn+Q."
+        }
+    } catch {}
+}
+
+function Restore-AllOptimizerGuardSnapshots {
+    param([string[]]$FilterTweakIds = $null)
+    if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return $false }
+    $dir = Get-OptimizerBackupDirectory
+    if (-not [System.IO.Directory]::Exists($dir)) {
+        Repair-OemPowerAndLegionThermalMode
+        return $true
+    }
+    $files = @(Get-ChildItem -LiteralPath $dir -Filter "snapshot_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
+    if ($files.Count -eq 0) {
+        Repair-OemPowerAndLegionThermalMode
+        return $true
+    }
+
+    $earliestReg = @{}
+    $earliestSvc = @{}
+    $allTasks = [System.Collections.Generic.List[string]]::new()
+    $needsExplorer = $false
+
+    foreach ($f in $files) {
+        try {
+            $raw = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
+            $obj = ConvertFrom-Json $raw
+            if (-not $obj) { continue }
+            if ($FilterTweakIds -and $FilterTweakIds.Count -gt 0 -and $obj.TweakIds) {
+                $hasMatch = $false
+                foreach ($tid in @($obj.TweakIds)) {
+                    if ($FilterTweakIds -contains [string]$tid) { $hasMatch = $true; break }
+                }
+                if (-not $hasMatch) { continue }
+            }
+            if ($obj.NeedsExplorerRestart) { $needsExplorer = $true }
+            if ($obj.Tasks) {
+                foreach ($tk in @($obj.Tasks)) {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$tk) -and -not $allTasks.Contains([string]$tk)) {
+                        [void]$allTasks.Add([string]$tk)
+                    }
+                }
+            }
+            if ($obj.Registry) {
+                foreach ($r in @($obj.Registry)) {
+                    $dedup = "$($r.Hive)|$($r.Path)|$($r.Name)"
+                    if (-not $earliestReg.ContainsKey($dedup)) {
+                        $e = [DuckUtil.RegistrySnapshotEntry]::new()
+                        $e.Hive = [string]$r.Hive
+                        $e.Path = [string]$r.Path
+                        $e.Name = [string]$r.Name
+                        $e.Existed = [bool]$r.Existed
+                        $e.KeyExisted = [bool]$r.KeyExisted
+                        $e.Kind = [string]$r.Kind
+                        $e.ValueData = [string]$r.ValueData
+                        $earliestReg[$dedup] = $e
+                    }
+                }
+            }
+            if ($obj.Services) {
+                foreach ($s in @($obj.Services)) {
+                    $sn = [string]$s.Name
+                    if (-not $earliestSvc.ContainsKey($sn)) {
+                        $e = [DuckUtil.ServiceSnapshotEntry]::new()
+                        $e.Name = $sn
+                        $e.Existed = [bool]$s.Existed
+                        $e.OriginalStart = [int]$s.OriginalStart
+                        $earliestSvc[$sn] = $e
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    $regArr = [System.Collections.Generic.List[DuckUtil.RegistrySnapshotEntry]]::new()
+    foreach ($v in $earliestReg.Values) { [void]$regArr.Add($v) }
+    $regRestored = if ($regArr.Count -gt 0) { [DuckUtil.WindowsOptimizerEngine]::RestoreRegistrySnapshots($regArr.ToArray()) } else { 0 }
+
+    $svcArr = [System.Collections.Generic.List[DuckUtil.ServiceSnapshotEntry]]::new()
+    foreach ($v in $earliestSvc.Values) { [void]$svcArr.Add($v) }
+    $svcRestored = if ($svcArr.Count -gt 0) { [DuckUtil.WindowsOptimizerEngine]::RestoreServiceSnapshots($svcArr.ToArray()) } else { 0 }
+
+    foreach ($tk in $allTasks) {
+        try { & schtasks.exe /Change /TN "$tk" /Enable 2>$null | Out-Null } catch {}
+    }
+
+    Repair-OemPowerAndLegionThermalMode
+
+    if ($needsExplorer) {
+        Restart-ExplorerSoft
+    }
+
+    Log-Text "[SUCC] OptimizerGuard: Đã khôi phục hoàn chỉnh trạng thái gốc ban đầu ($regRestored Registry, $svcRestored Service, $($allTasks.Count) Task) từ $($files.Count) bản lưu."
+    return $true
+}
+
 function Restart-ExplorerSoft {
     try {
         Log-Text "[*] Đang khởi động lại nhanh Windows Explorer để áp dụng thay đổi giao diện..."
@@ -307,8 +438,11 @@ function Invoke-OptimizerSpecialAction {
         }
         "UltimatePerf" {
             if ($isUndo) {
-                $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-                [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
+                $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
+                if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
+                    $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+                    [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
+                }
                 return $true
             }
             $listOut = (& powercfg.exe /list 2>$null) -join "`n"

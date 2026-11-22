@@ -8821,6 +8821,7 @@ if ($script:btnOptUndo) {
 
         Invoke-GuardedAction "Đặt tối ưu về mặc định" {
             $twObjs = @($targets | ForEach-Object { $_.Tweak })
+            $twIds = @($twObjs | ForEach-Object { [string]$_.Id })
             Log-Text "=========================================================="
             Log-Text "[OPTIMIZER] ĐẶT $($twObjs.Count) TINH CHỈNH VỀ MẶC ĐỊNH"
             Log-Text "=========================================================="
@@ -8828,6 +8829,9 @@ if ($script:btnOptUndo) {
                 param($cur, $tot, $nm)
                 if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] Đang đặt về mặc định: $nm..." }
+            }
+            if (Get-Command "Restore-AllOptimizerGuardSnapshots" -ErrorAction SilentlyContinue) {
+                [void](Restore-AllOptimizerGuardSnapshots -FilterTweakIds $twIds)
             }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "Đã đặt về mặc định ($($res.Applied) thành công)" }
@@ -8840,21 +8844,23 @@ if ($script:btnOptUndo) {
 if ($script:btnOptRestoreBackup) {
     $script:btnOptRestoreBackup.Add_Click({
         $bkps = @(Get-OptimizerBackupsList)
-        if ($bkps.Count -eq 0) {
-            [void](Show-OwnedMessageBox -Text "Chưa có bản sao lưu OptimizerGuard nào.`nMỗi khi bạn bấm 'Áp dụng đã chọn', hệ thống sẽ tự động chụp bản sao lưu trạng thái gốc trước khi thay đổi." -Caption "Chưa có bản sao lưu" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
-            return
+        $oldestDesc = if ($bkps.Count -gt 0) {
+            $oldest = $bkps[$bkps.Count - 1]
+            $newest = $bkps[0]
+            "Tổng số bản sao lưu: $($bkps.Count)`nBản gốc đầu tiên: $($oldest.CreatedAt)`nBản gần nhất: $($newest.CreatedAt)"
+        } else {
+            "Khôi phục lại cấu hình nguồn OEM, ứng dụng nền và dịch vụ Lenovo Vantage / Fn+Q"
         }
-        $latest = $bkps[0]
         $ans = Show-OwnedMessageBox `
-            -Text "Khôi phục chính xác trạng thái hệ thống từ bản sao lưu gần nhất?`n`nThời điểm: $($latest.CreatedAt)`nSố tinh chỉnh: $($latest.TweakCount) ($($latest.RegCount) Registry, $($latest.SvcCount) Service)`nTệp: $($latest.FileName)" `
+            -Text "Khôi phục toàn bộ trạng thái hệ thống về bản sao lưu gốc ban đầu trước khi tối ưu (đồng thời đồng bộ lại dịch vụ nguồn & Fn+Q)?`n`n$oldestDesc" `
             -Caption "Khôi phục bản sao lưu OptimizerGuard" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        Invoke-GuardedAction "Khôi phục bản sao lưu OptimizerGuard" {
-            [void](Restore-OptimizerGuardSnapshot -SnapshotPath $latest.Path)
-            if ($txtStatus) { $txtStatus.Text = "Đã khôi phục bản sao lưu OptimizerGuard" }
+        Invoke-GuardedAction "Khôi phục toàn bộ bản sao lưu OptimizerGuard" {
+            [void](Restore-AllOptimizerGuardSnapshots)
+            if ($txtStatus) { $txtStatus.Text = "Đã khôi phục toàn bộ bản sao lưu gốc OptimizerGuard" }
             Refresh-OptimizerLiveState
         }
     })

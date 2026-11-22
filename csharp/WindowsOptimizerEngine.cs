@@ -803,6 +803,16 @@ namespace DuckUtil {
                 if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
                 string targetVal = undo ? s.UndoValue : s.ApplyValue;
                 string targetType = s.ValueType ?? "DWord";
+                if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
+                    try {
+                        MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                        mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                        if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                            ulong kb = mem.ullTotalPhys / 1024UL;
+                            targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                        }
+                    } catch {}
+                }
                 if (undo && string.Equals(targetType, "DeleteKey", StringComparison.OrdinalIgnoreCase)) {
                     if (string.Equals(targetVal, "__CREATE_KEY__", StringComparison.OrdinalIgnoreCase)) {
                         try {

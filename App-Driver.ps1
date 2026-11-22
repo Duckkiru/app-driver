@@ -21390,6 +21390,16 @@ namespace DuckUtil {
                 if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
                 string targetVal = undo ? s.UndoValue : s.ApplyValue;
                 string targetType = s.ValueType ?? "DWord";
+                if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
+                    try {
+                        MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                        mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                        if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                            ulong kb = mem.ullTotalPhys / 1024UL;
+                            targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                        }
+                    } catch {}
+                }
                 if (undo && string.Equals(targetType, "DeleteKey", StringComparison.OrdinalIgnoreCase)) {
                     if (string.Equals(targetVal, "__CREATE_KEY__", StringComparison.OrdinalIgnoreCase)) {
                         try {
@@ -34761,6 +34771,16 @@ namespace DuckUtil {
                 if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
                 string targetVal = undo ? s.UndoValue : s.ApplyValue;
                 string targetType = s.ValueType ?? "DWord";
+                if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
+                    try {
+                        MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
+                        mem.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+                        if (GlobalMemoryStatusEx(ref mem) && mem.ullTotalPhys > 0) {
+                            ulong kb = mem.ullTotalPhys / 1024UL;
+                            targetVal = kb.ToString(CultureInfo.InvariantCulture);
+                        }
+                    } catch {}
+                }
                 if (undo && string.Equals(targetType, "DeleteKey", StringComparison.OrdinalIgnoreCase)) {
                     if (string.Equals(targetVal, "__CREATE_KEY__", StringComparison.OrdinalIgnoreCase)) {
                         try {
@@ -40841,6 +40861,137 @@ function Restore-OptimizerGuardSnapshot {
     }
 }
 
+function Repair-OemPowerAndLegionThermalMode {
+    try {
+        $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        if (Test-Path -LiteralPath $bgPath) {
+            Set-ItemProperty -LiteralPath $bgPath -Name "GlobalUserDisabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+        }
+        $apPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"
+        if (Test-Path -LiteralPath $apPath) {
+            Remove-ItemProperty -LiteralPath $apPath -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue
+        }
+        $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+        try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+        $psRoot = "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
+        if (Test-Path -LiteralPath $psRoot) {
+            $curOv = (Get-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
+            if ($curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a") {
+                Set-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -Value "00000000-0000-0000-0000-000000000000" -ErrorAction SilentlyContinue
+            }
+        }
+        $hasLegion = (Test-Path -LiteralPath "HKLM:\SOFTWARE\Lenovo\VantageService") -or ($null -ne (Get-Service -Name "LenovoVantageService" -ErrorAction SilentlyContinue))
+        if ($hasLegion) {
+            try {
+                $wmiOther = Get-CimInstance -Namespace "root\WMI" -ClassName "LENOVO_OTHER_METHOD" -ErrorAction SilentlyContinue
+                if ($wmiOther) {
+                    [void](Invoke-CimMethod -InputObject $wmiOther -MethodName "SetFeatureValue" -Arguments @{ IDs = [int]1048576; value = [int]1 } -ErrorAction SilentlyContinue)
+                }
+            } catch {}
+            foreach ($svcName in @("LenovoFnAndFunctionKeys", "LenovoVantageService")) {
+                $sv = Get-Service -Name $svcName -ErrorAction SilentlyContinue
+                if ($sv) {
+                    try { Set-Service -Name $svcName -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
+                    try { Restart-Service -Name $svcName -Force -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Lenovo Vantage & b$([char]0x1EAD)t l$([char]0x1EA1)i ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Custom trong v$([char]0x00F2)ng l$([char]0x1EB7)p Fn+Q."
+        }
+    } catch {}
+}
+
+function Restore-AllOptimizerGuardSnapshots {
+    param([string[]]$FilterTweakIds = $null)
+    if (-not ("DuckUtil.WindowsOptimizerEngine" -as [type])) { return $false }
+    $dir = Get-OptimizerBackupDirectory
+    if (-not [System.IO.Directory]::Exists($dir)) {
+        Repair-OemPowerAndLegionThermalMode
+        return $true
+    }
+    $files = @(Get-ChildItem -LiteralPath $dir -Filter "snapshot_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
+    if ($files.Count -eq 0) {
+        Repair-OemPowerAndLegionThermalMode
+        return $true
+    }
+
+    $earliestReg = @{}
+    $earliestSvc = @{}
+    $allTasks = [System.Collections.Generic.List[string]]::new()
+    $needsExplorer = $false
+
+    foreach ($f in $files) {
+        try {
+            $raw = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
+            $obj = ConvertFrom-Json $raw
+            if (-not $obj) { continue }
+            if ($FilterTweakIds -and $FilterTweakIds.Count -gt 0 -and $obj.TweakIds) {
+                $hasMatch = $false
+                foreach ($tid in @($obj.TweakIds)) {
+                    if ($FilterTweakIds -contains [string]$tid) { $hasMatch = $true; break }
+                }
+                if (-not $hasMatch) { continue }
+            }
+            if ($obj.NeedsExplorerRestart) { $needsExplorer = $true }
+            if ($obj.Tasks) {
+                foreach ($tk in @($obj.Tasks)) {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$tk) -and -not $allTasks.Contains([string]$tk)) {
+                        [void]$allTasks.Add([string]$tk)
+                    }
+                }
+            }
+            if ($obj.Registry) {
+                foreach ($r in @($obj.Registry)) {
+                    $dedup = "$($r.Hive)|$($r.Path)|$($r.Name)"
+                    if (-not $earliestReg.ContainsKey($dedup)) {
+                        $e = [DuckUtil.RegistrySnapshotEntry]::new()
+                        $e.Hive = [string]$r.Hive
+                        $e.Path = [string]$r.Path
+                        $e.Name = [string]$r.Name
+                        $e.Existed = [bool]$r.Existed
+                        $e.KeyExisted = [bool]$r.KeyExisted
+                        $e.Kind = [string]$r.Kind
+                        $e.ValueData = [string]$r.ValueData
+                        $earliestReg[$dedup] = $e
+                    }
+                }
+            }
+            if ($obj.Services) {
+                foreach ($s in @($obj.Services)) {
+                    $sn = [string]$s.Name
+                    if (-not $earliestSvc.ContainsKey($sn)) {
+                        $e = [DuckUtil.ServiceSnapshotEntry]::new()
+                        $e.Name = $sn
+                        $e.Existed = [bool]$s.Existed
+                        $e.OriginalStart = [int]$s.OriginalStart
+                        $earliestSvc[$sn] = $e
+                    }
+                }
+            }
+        } catch {}
+    }
+
+    $regArr = [System.Collections.Generic.List[DuckUtil.RegistrySnapshotEntry]]::new()
+    foreach ($v in $earliestReg.Values) { [void]$regArr.Add($v) }
+    $regRestored = if ($regArr.Count -gt 0) { [DuckUtil.WindowsOptimizerEngine]::RestoreRegistrySnapshots($regArr.ToArray()) } else { 0 }
+
+    $svcArr = [System.Collections.Generic.List[DuckUtil.ServiceSnapshotEntry]]::new()
+    foreach ($v in $earliestSvc.Values) { [void]$svcArr.Add($v) }
+    $svcRestored = if ($svcArr.Count -gt 0) { [DuckUtil.WindowsOptimizerEngine]::RestoreServiceSnapshots($svcArr.ToArray()) } else { 0 }
+
+    foreach ($tk in $allTasks) {
+        try { & schtasks.exe /Change /TN "$tk" /Enable 2>$null | Out-Null } catch {}
+    }
+
+    Repair-OemPowerAndLegionThermalMode
+
+    if ($needsExplorer) {
+        Restart-ExplorerSoft
+    }
+
+    Log-Text "[SUCC] OptimizerGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c ho$([char]0x00E0)n ch$([char]0x1EC9)nh tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c ban $([char]0x0111)$([char]0x1EA7)u ($regRestored Registry, $svcRestored Service, $($allTasks.Count) Task) t$([char]0x1EEB) $($files.Count) b$([char]0x1EA3)n l$([char]0x01B0)u."
+    return $true
+}
+
 function Restart-ExplorerSoft {
     try {
         Log-Text "[*] $([char]0x0110)ang kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i nhanh Windows Explorer $([char]0x0111)$([char]0x1EC3) $([char]0x00E1)p d$([char]0x1EE5)ng thay $([char]0x0111)$([char]0x1ED5)i giao di$([char]0x1EC7)n..."
@@ -40897,8 +41048,11 @@ function Invoke-OptimizerSpecialAction {
         }
         "UltimatePerf" {
             if ($isUndo) {
-                $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-                [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
+                $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
+                if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
+                    $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+                    [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
+                }
                 return $true
             }
             $listOut = (& powercfg.exe /list 2>$null) -join "`n"
@@ -50024,6 +50178,7 @@ if ($script:btnOptUndo) {
 
         Invoke-GuardedAction "$([char]0x0110)$([char]0x1EB7)t t$([char]0x1ED1)i $([char]0x01B0)u v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh" {
             $twObjs = @($targets | ForEach-Object { $_.Tweak })
+            $twIds = @($twObjs | ForEach-Object { [string]$_.Id })
             Log-Text "=========================================================="
             Log-Text "[OPTIMIZER] $([char]0x0110)$([char]0x1EB6)T $($twObjs.Count) TINH CH$([char]0x1EC8)NH V$([char]0x1EC0) M$([char]0x1EB6)C $([char]0x0110)$([char]0x1ECA)NH"
             Log-Text "=========================================================="
@@ -50031,6 +50186,9 @@ if ($script:btnOptUndo) {
                 param($cur, $tot, $nm)
                 if ($progressBar) { $progressBar.Value = [math]::Round(($cur / $tot) * 100) }
                 if ($txtStatus) { $txtStatus.Text = "[$cur/$tot] $([char]0x0110)ang $([char]0x0111)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh: $nm..." }
+            }
+            if (Get-Command "Restore-AllOptimizerGuardSnapshots" -ErrorAction SilentlyContinue) {
+                [void](Restore-AllOptimizerGuardSnapshots -FilterTweakIds $twIds)
             }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t v$([char]0x1EC1) m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh ($($res.Applied) th$([char]0x00E0)nh c$([char]0x00F4)ng)" }
@@ -50043,21 +50201,23 @@ if ($script:btnOptUndo) {
 if ($script:btnOptRestoreBackup) {
     $script:btnOptRestoreBackup.Add_Click({
         $bkps = @(Get-OptimizerBackupsList)
-        if ($bkps.Count -eq 0) {
-            [void](Show-OwnedMessageBox -Text "Ch$([char]0x01B0)a c$([char]0x00F3) b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard n$([char]0x00E0)o.`nM$([char]0x1ED7)i khi b$([char]0x1EA1)n b$([char]0x1EA5)m '$([char]0x00C1)p d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n', h$([char]0x1EC7) th$([char]0x1ED1)ng s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng ch$([char]0x1EE5)p b$([char]0x1EA3)n sao l$([char]0x01B0)u tr$([char]0x1EA1)ng th$([char]0x00E1)i g$([char]0x1ED1)c tr$([char]0x01B0)$([char]0x1EDB)c khi thay $([char]0x0111)$([char]0x1ED5)i." -Caption "Ch$([char]0x01B0)a c$([char]0x00F3) b$([char]0x1EA3)n sao l$([char]0x01B0)u" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
-            return
+        $oldestDesc = if ($bkps.Count -gt 0) {
+            $oldest = $bkps[$bkps.Count - 1]
+            $newest = $bkps[0]
+            "T$([char]0x1ED5)ng s$([char]0x1ED1) b$([char]0x1EA3)n sao l$([char]0x01B0)u: $($bkps.Count)`nB$([char]0x1EA3)n g$([char]0x1ED1)c $([char]0x0111)$([char]0x1EA7)u ti$([char]0x00EA)n: $($oldest.CreatedAt)`nB$([char]0x1EA3)n g$([char]0x1EA7)n nh$([char]0x1EA5)t: $($newest.CreatedAt)"
+        } else {
+            "Kh$([char]0x00F4)i ph$([char]0x1EE5)c l$([char]0x1EA1)i c$([char]0x1EA5)u h$([char]0x00EC)nh ngu$([char]0x1ED3)n OEM, $([char]0x1EE9)ng d$([char]0x1EE5)ng n$([char]0x1EC1)n v$([char]0x00E0) d$([char]0x1ECB)ch v$([char]0x1EE5) Lenovo Vantage / Fn+Q"
         }
-        $latest = $bkps[0]
         $ans = Show-OwnedMessageBox `
-            -Text "Kh$([char]0x00F4)i ph$([char]0x1EE5)c ch$([char]0x00ED)nh x$([char]0x00E1)c tr$([char]0x1EA1)ng th$([char]0x00E1)i h$([char]0x1EC7) th$([char]0x1ED1)ng t$([char]0x1EEB) b$([char]0x1EA3)n sao l$([char]0x01B0)u g$([char]0x1EA7)n nh$([char]0x1EA5)t?`n`nTh$([char]0x1EDD)i $([char]0x0111)i$([char]0x1EC3)m: $($latest.CreatedAt)`nS$([char]0x1ED1) tinh ch$([char]0x1EC9)nh: $($latest.TweakCount) ($($latest.RegCount) Registry, $($latest.SvcCount) Service)`nT$([char]0x1EC7)p: $($latest.FileName)" `
+            -Text "Kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) tr$([char]0x1EA1)ng th$([char]0x00E1)i h$([char]0x1EC7) th$([char]0x1ED1)ng v$([char]0x1EC1) b$([char]0x1EA3)n sao l$([char]0x01B0)u g$([char]0x1ED1)c ban $([char]0x0111)$([char]0x1EA7)u tr$([char]0x01B0)$([char]0x1EDB)c khi t$([char]0x1ED1)i $([char]0x01B0)u ($([char]0x0111)$([char]0x1ED3)ng th$([char]0x1EDD)i $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) ngu$([char]0x1ED3)n & Fn+Q)?`n`n$oldestDesc" `
             -Caption "Kh$([char]0x00F4)i ph$([char]0x1EE5)c b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" `
             -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
             -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
         if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
-        Invoke-GuardedAction "Kh$([char]0x00F4)i ph$([char]0x1EE5)c b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" {
-            [void](Restore-OptimizerGuardSnapshot -SnapshotPath $latest.Path)
-            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" }
+        Invoke-GuardedAction "Kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) b$([char]0x1EA3)n sao l$([char]0x01B0)u OptimizerGuard" {
+            [void](Restore-AllOptimizerGuardSnapshots)
+            if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) b$([char]0x1EA3)n sao l$([char]0x01B0)u g$([char]0x1ED1)c OptimizerGuard" }
             Refresh-OptimizerLiveState
         }
     })
