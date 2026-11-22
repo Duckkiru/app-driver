@@ -430,44 +430,6 @@
     "Tasks": []
   },
   {
-    "Id": "opt_delete_temp",
-    "Category": "Cơ bản",
-    "Name": "Dọn sạch tệp rác tạm (%TEMP% & Windows\\Temp)",
-    "Description": "Xóa toàn bộ tệp tạm không còn sử dụng trong thư mục Temp của người dùng và Windows.",
-    "Risk": "Safe",
-    "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
-    "ProbeKind": "Action",
-    "Action": "DeleteTempFiles",
-    "NeedsExplorerRestart": false,
-    "NeedsReboot": false,
-    "Registry": [],
-    "Services": [],
-    "Tasks": []
-  },
-  {
-    "Id": "opt_disk_cleanup",
-    "Category": "Cơ bản",
-    "Name": "Chạy Disk Cleanup dọn ổ C",
-    "Description": "Khởi chạy cleanmgr tự động dọn cache hệ thống và gói Windows Update cũ.",
-    "Risk": "Safe",
-    "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": [],
-    "ProbeKind": "Action",
-    "Action": "DiskCleanup",
-    "NeedsExplorerRestart": false,
-    "NeedsReboot": false,
-    "Registry": [],
-    "Services": [],
-    "Tasks": []
-  },
-  {
     "Id": "opt_bitlocker",
     "Category": "Cơ bản",
     "Name": "Tắt mã hóa ổ đĩa BitLocker (giải mã ổ C)",

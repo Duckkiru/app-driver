@@ -5099,44 +5099,6 @@ $tweaksRawJson = @'
     "Tasks": []
   },
   {
-    "Id": "opt_delete_temp",
-    "Category": "C\u01A1 b\u1EA3n",
-    "Name": "D\u1ECDn s\u1EA1ch t\u1EC7p r\u00E1c t\u1EA1m (%TEMP% & Windows\\Temp)",
-    "Description": "X\u00F3a to\u00E0n b\u1ED9 t\u1EC7p t\u1EA1m kh\u00F4ng c\u00F2n s\u1EED d\u1EE5ng trong th\u01B0 m\u1EE5c Temp c\u1EE7a ng\u01B0\u1EDDi d\u00F9ng v\u00E0 Windows.",
-    "Risk": "Safe",
-    "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
-    "ProbeKind": "Action",
-    "Action": "DeleteTempFiles",
-    "NeedsExplorerRestart": false,
-    "NeedsReboot": false,
-    "Registry": [],
-    "Services": [],
-    "Tasks": []
-  },
-  {
-    "Id": "opt_disk_cleanup",
-    "Category": "C\u01A1 b\u1EA3n",
-    "Name": "Ch\u1EA1y Disk Cleanup d\u1ECDn \u1ED5 C",
-    "Description": "Kh\u1EDFi ch\u1EA1y cleanmgr t\u1EF1 \u0111\u1ED9ng d\u1ECDn cache h\u1EC7 th\u1ED1ng v\u00E0 g\u00F3i Windows Update c\u0169.",
-    "Risk": "Safe",
-    "HardwareHint": "",
-    "ControlType": "Checkbox",
-    "Presets": [],
-    "ProbeKind": "Action",
-    "Action": "DiskCleanup",
-    "NeedsExplorerRestart": false,
-    "NeedsReboot": false,
-    "Registry": [],
-    "Services": [],
-    "Tasks": []
-  },
-  {
     "Id": "opt_bitlocker",
     "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt m\u00E3 h\u00F3a \u1ED5 \u0111\u0129a BitLocker (gi\u1EA3i m\u00E3 \u1ED5 C)",
@@ -8031,7 +7993,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtOptSummary" Text="73 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
+                                    <TextBlock Name="txtOptSummary" Text="71 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
