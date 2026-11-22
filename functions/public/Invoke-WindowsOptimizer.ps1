@@ -251,18 +251,87 @@ function Restore-OptimizerGuardSnapshot {
     }
 }
 
+function Invoke-SafeBackgroundAppsTweak {
+    param([ValidateSet("Apply", "Undo")][string]$Mode = "Apply")
+    try {
+        $isUndo = ($Mode -eq "Undo")
+        $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        if (-not (Test-Path -LiteralPath $bgPath)) {
+            [void](New-Item -Path $bgPath -Force -ErrorAction SilentlyContinue)
+        }
+        Set-ItemProperty -LiteralPath $bgPath -Name "GlobalUserDisabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+        if ($isUndo) {
+            Remove-ItemProperty -LiteralPath $bgPath -Name "AppDriverSafeBgFilter" -ErrorAction SilentlyContinue
+        } else {
+            Set-ItemProperty -LiteralPath $bgPath -Name "AppDriverSafeBgFilter" -Value 1 -Type DWord -ErrorAction SilentlyContinue
+        }
+
+        $apPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"
+        if (Test-Path -LiteralPath $apPath) {
+            Remove-ItemProperty -LiteralPath $apPath -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue
+        }
+
+        $oemAndSystemRegex = 'Lenovo|Vantage|Legion|ThinkPad|IdeaPad|ASUS|Armoury|ROG|MyASUS|ATK|Acer|Nitro|Predator|MSI|Dragon|MicroStar|Dell|Alienware|HP|OMEN|Victus|Gigabyte|AORUS|Razer|Logitech|Corsair|SteelSeries|Samsung|LG|Huawei|Xiaomi|Surface|NVIDIA|AMD|Radeon|Intel|Thunderbolt|Realtek|Dolby|Nahimic|DTS|Waves|SoundResearch|Synaptics|ELAN|Wacom|SecHealth|WindowsDefender|WindowsStore|DesktopAppInstaller|WindowsTerminal|ShellExperience|StartMenuExperience|Client\.CBS|LockApp|AAD\.Broker'
+        $bloatAppRegex = 'BingNews|BingWeather|BingFinance|BingSports|Solitaire|FeedbackHub|WindowsMaps|ZuneVideo|ZuneMusic|People|GetHelp|Getstarted|Clipchamp|SkypeApp|MixedReality|3DViewer|MicrosoftOfficeHub|Cortana|549981C3F5F10'
+
+        foreach ($sub in @(Get-ChildItem -LiteralPath $bgPath -ErrorAction SilentlyContinue)) {
+            $pkgName = [string]$sub.PSChildName
+            if ($pkgName -match $oemAndSystemRegex) {
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "Disabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "DisabledByUser" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            } elseif ($pkgName -match $bloatAppRegex) {
+                $targetVal = if ($isUndo) { 0 } else { 1 }
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "Disabled" -Value $targetVal -Type DWord -ErrorAction SilentlyContinue
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "DisabledByUser" -Value $targetVal -Type DWord -ErrorAction SilentlyContinue
+            }
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Repair-OemPowerAndLegionThermalMode {
+    param([switch]$Silent)
     try {
         $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
         if (Test-Path -LiteralPath $bgPath) {
             Set-ItemProperty -LiteralPath $bgPath -Name "GlobalUserDisabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            $oemAndSystemRegex = 'Lenovo|Vantage|Legion|ThinkPad|IdeaPad|ASUS|Armoury|ROG|MyASUS|ATK|Acer|Nitro|Predator|MSI|Dragon|MicroStar|Dell|Alienware|HP|OMEN|Victus|Gigabyte|AORUS|Razer|Logitech|Corsair|SteelSeries|Samsung|LG|Huawei|Xiaomi|Surface|NVIDIA|AMD|Radeon|Intel|Thunderbolt|Realtek|Dolby|Nahimic|DTS|Waves|SoundResearch|Synaptics|ELAN|Wacom|SecHealth|WindowsDefender|WindowsStore|DesktopAppInstaller|WindowsTerminal|ShellExperience|StartMenuExperience|Client\.CBS|LockApp|AAD\.Broker'
+            foreach ($sub in @(Get-ChildItem -LiteralPath $bgPath -ErrorAction SilentlyContinue)) {
+                if ([string]$sub.PSChildName -match $oemAndSystemRegex) {
+                    Set-ItemProperty -LiteralPath $sub.PSPath -Name "Disabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+                    Set-ItemProperty -LiteralPath $sub.PSPath -Name "DisabledByUser" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+                }
+            }
         }
         $apPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"
         if (Test-Path -LiteralPath $apPath) {
             Remove-ItemProperty -LiteralPath $apPath -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue
         }
-        $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-        try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+
+        $smPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+        if (Test-Path -LiteralPath $smPath) {
+            Remove-ItemProperty -LiteralPath $smPath -Name "DisableWpbtExecution" -ErrorAction SilentlyContinue
+        }
+
+        $ctrlPath = "HKLM:\SYSTEM\CurrentControlSet\Control"
+        if (Test-Path -LiteralPath $ctrlPath) {
+            $curSplit = (Get-ItemProperty -LiteralPath $ctrlPath -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
+            if ($curSplit -eq 3670016 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+                $hw = [DuckUtil.WindowsOptimizerEngine]::DetectHardwareProfile()
+                if ($hw -and $hw.TotalRamGb -gt 4) {
+                    $ramKb = [int]($hw.TotalRamGb * 1048576)
+                    Set-ItemProperty -LiteralPath $ctrlPath -Name "SvcHostSplitThresholdInKB" -Value $ramKb -Type DWord -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
+        if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
+            $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+            try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+        }
         $psRoot = "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
         if (Test-Path -LiteralPath $psRoot) {
             $curOv = (Get-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
@@ -270,6 +339,45 @@ function Repair-OemPowerAndLegionThermalMode {
                 Set-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -Value "00000000-0000-0000-0000-000000000000" -ErrorAction SilentlyContinue
             }
         }
+
+        $coreAutoServices = @("WpnService", "ShellHWDetection", "CDPSvc", "DPS", "FontCache", "iphlpsvc", "PcaSvc", "SysMain", "TrkWks")
+        foreach ($sn in $coreAutoServices) {
+            $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$sn"
+            if (Test-Path -LiteralPath $svcReg) {
+                $curSt = (Get-ItemProperty -LiteralPath $svcReg -Name "Start" -ErrorAction SilentlyContinue).Start
+                if ($curSt -eq 3 -or $curSt -eq 4) {
+                    Set-ItemProperty -LiteralPath $svcReg -Name "Start" -Value 2 -Type DWord -ErrorAction SilentlyContinue
+                }
+                if ($sn -in @("WpnService", "ShellHWDetection", "SysMain", "PcaSvc")) {
+                    try { Start-Service -Name $sn -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+        }
+        foreach ($sn in @("HidServ", "MsKeyboardFilter", "DialogBlockingService", "AppVClient", "tzautoupdate")) {
+            $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$sn"
+            if (Test-Path -LiteralPath $svcReg) {
+                $curSt = (Get-ItemProperty -LiteralPath $svcReg -Name "Start" -ErrorAction SilentlyContinue).Start
+                if ($curSt -eq 4) {
+                    Set-ItemProperty -LiteralPath $svcReg -Name "Start" -Value 3 -Type DWord -ErrorAction SilentlyContinue
+                }
+                if ($sn -eq "HidServ") {
+                    try { Start-Service -Name $sn -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+        }
+
+        $oemPattern = '^(Lenovo|Legion|ImController|IBMPMSVC|LITSSVC|TPHK|LZService|ASUS|Armoury|ROG|Aura|ATK|LightingService|AsHidSrv|AsSysCtrlService|MSI|Micro Star|DragonCenter|Mystic_Light|Acer|Nitro|Predator|PSService|PSAgent|accSvc|QAAdminAgent|Dell|Alienware|AWCC|DPMService|DDV|HP|Omen|Gigabyte|Aorus|GCC|GvBios|Razer|RzAction|NVDisplay|NvContainer|AMD|AmdPpkgSvc|RtkAudio|Dolby|DAX3|Nahimic)'
+        foreach ($sv in @(Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $oemPattern })) {
+            $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sv.Name)"
+            $curSt = (Get-ItemProperty -LiteralPath $svcReg -Name "Start" -ErrorAction SilentlyContinue).Start
+            if ($curSt -eq 4) {
+                Set-ItemProperty -LiteralPath $svcReg -Name "Start" -Value 2 -Type DWord -ErrorAction SilentlyContinue
+            }
+            if ($sv.Status -ne 'Running' -and ($curSt -eq 2 -or $sv.Name -match 'LenovoFn|LenovoVantage|Armoury|AsusSystemControl|ATKGFNEX|MSI_Center|NitroSense|PredatorSense|AWCC|HPOmenCap')) {
+                try { Start-Service -Name $sv.Name -ErrorAction SilentlyContinue } catch {}
+            }
+        }
+
         $hasLegion = (Test-Path -LiteralPath "HKLM:\SOFTWARE\Lenovo\VantageService") -or ($null -ne (Get-Service -Name "LenovoVantageService" -ErrorAction SilentlyContinue))
         if ($hasLegion) {
             try {
@@ -282,10 +390,33 @@ function Repair-OemPowerAndLegionThermalMode {
                 $sv = Get-Service -Name $svcName -ErrorAction SilentlyContinue
                 if ($sv) {
                     try { Set-Service -Name $svcName -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
-                    try { Restart-Service -Name $svcName -Force -ErrorAction SilentlyContinue } catch {}
+                    try {
+                        if (-not $Silent) {
+                            Restart-Service -Name $svcName -Force -ErrorAction SilentlyContinue
+                        } elseif ($sv.Status -ne 'Running') {
+                            Start-Service -Name $svcName -ErrorAction SilentlyContinue
+                        }
+                    } catch {}
                 }
             }
-            Log-Text "[SUCC] Đã đồng bộ lại dịch vụ Lenovo Vantage & bật lại chế độ Custom trong vòng lặp Fn+Q."
+            if (-not $Silent) {
+                Log-Text "[SUCC] Đã đồng bộ lại dịch vụ phím nóng hãng & bật lại chế độ Custom trong vòng lặp Fn+Q."
+            }
+        }
+    } catch {}
+}
+
+function Invoke-OemAndCriticalServiceSelfHeal {
+    try {
+        $bgUser = (Get-ItemProperty -LiteralPath "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -ErrorAction SilentlyContinue).GlobalUserDisabled
+        $bgPol = (Get-ItemProperty -LiteralPath "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue).LetAppsRunInBackground
+        $curSplit = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
+        $curOv = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
+        $sysMainSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\SysMain" -Name "Start" -ErrorAction SilentlyContinue).Start
+        $kbFiltSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\MsKeyboardFilter" -Name "Start" -ErrorAction SilentlyContinue).Start
+
+        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4) {
+            Repair-OemPowerAndLegionThermalMode -Silent
         }
     } catch {}
 }
@@ -436,6 +567,9 @@ function Invoke-OptimizerSpecialAction {
             $code = Run-CliStream "powercfg.exe" $arg -IsolateStdin -AllowCancel
             return ($code -eq 0)
         }
+        "SafeDisableBgApps" {
+            return (Invoke-SafeBackgroundAppsTweak -Mode $Mode)
+        }
         "UltimatePerf" {
             if ($isUndo) {
                 $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
@@ -443,6 +577,7 @@ function Invoke-OptimizerSpecialAction {
                     $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
                     [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
                 }
+                Repair-OemPowerAndLegionThermalMode -Silent
                 return $true
             }
             $listOut = (& powercfg.exe /list 2>$null) -join "`n"

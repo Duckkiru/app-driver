@@ -795,6 +795,49 @@ namespace DuckUtil {
             }
         }
 
+        private static readonly string[] ExactProtectedServices = new string[] {
+            "Power", "PlugPlay", "SystemEventsBroker", "TimeBrokerSvc", "BrokerInfrastructure",
+            "WpnService", "ShellHWDetection", "HidServ", "AudioSrv", "AudioEndpointBuilder",
+            "MMCSS", "CDPSvc", "DPS", "FontCache", "iphlpsvc", "PcaSvc", "SysMain", "TrkWks",
+            "BthAvctpSvc", "bthserv", "WlanSvc", "Dhcp", "Dnscache", "NlaSvc", "netprofm",
+            "nsi", "RpcSs", "DcomLaunch", "LSM", "SamSs", "Schedule", "EventLog", "Winmgmt",
+            "ProfSvc", "UserManager", "StateRepository", "AppXSvc", "ClipSVC", "LicenseManager",
+            "MsKeyboardFilter", "DialogBlockingService", "IBMPMSVC", "LITSSVC", "LightingService",
+            "AcPowerNotification", "AsHidSrv", "AsSysCtrlService", "accSvc", "QAAdminAgent",
+            "DPMService", "FvSvc", "esifsvc"
+        };
+
+        private static readonly string[] ProtectedServicePrefixes = new string[] {
+            "Lenovo", "Legion", "ImController", "TPHK", "LZService", "PcManager",
+            "ASUS", "Armoury", "ROG", "Aura", "ATK",
+            "MSI", "Micro Star", "DragonCenter", "Mystic_Light", "NTIOLib", "SCM",
+            "Acer", "Nitro", "Predator", "PSService", "PSAgent", "UePM", "DtsApo",
+            "Dell", "Alienware", "AWCC", "DDV", "SupportAssist",
+            "HP", "Omen", "HpTouchpoint",
+            "Gigabyte", "Aorus", "GCC", "GvBios", "SmartManager",
+            "Razer", "RzAction", "Logi", "LGHUB", "Corsair", "iCUE", "SteelSeries",
+            "Samsung", "LG", "Huawei", "MBAE", "Xiaomi", "Surface",
+            "NVDisplay", "NVIDIA", "NvContainer", "AMD", "Ati", "Intel", "igfx", "dptf", "ipf",
+            "Rtk", "Realtek", "Dolby", "DAX3", "Nahimic", "Waves", "DTS", "SynTP", "ETD", "ELAN",
+            "WpnUserService", "CDPUserSvc"
+        };
+
+        public static bool IsProtectedCriticalOrOemService(string serviceName) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return false;
+            string sn = serviceName.Trim();
+            for (int i = 0; i < ExactProtectedServices.Length; i++) {
+                if (string.Equals(sn, ExactProtectedServices[i], StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            for (int i = 0; i < ProtectedServicePrefixes.Length; i++) {
+                if (sn.StartsWith(ProtectedServicePrefixes[i], StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
             if (specs == null || specs.Length == 0) return 0;
             int okCount = 0;
@@ -803,6 +846,18 @@ namespace DuckUtil {
                 if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
                 string targetVal = undo ? s.UndoValue : s.ApplyValue;
                 string targetType = s.ValueType ?? "DWord";
+                if (!undo) {
+                    if (string.Equals(s.Name, "GlobalUserDisabled", StringComparison.OrdinalIgnoreCase) &&
+                        s.Path.IndexOf("BackgroundAccessApplications", StringComparison.OrdinalIgnoreCase) >= 0) {
+                        targetVal = "0";
+                    }
+                    if (string.Equals(s.Name, "LetAppsRunInBackground", StringComparison.OrdinalIgnoreCase) &&
+                        s.Path.IndexOf("AppPrivacy", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        string.Equals(targetVal, "2", StringComparison.OrdinalIgnoreCase)) {
+                        okCount++;
+                        continue;
+                    }
+                }
                 if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
                     try {
                         MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
@@ -863,6 +918,9 @@ namespace DuckUtil {
                 for (int i = 0; i < specs.Length; i++) {
                     ServiceTweakSpec s = specs[i];
                     if (s == null || string.IsNullOrWhiteSpace(s.Name)) continue;
+                    if (!undo && IsProtectedCriticalOrOemService(s.Name)) {
+                        continue;
+                    }
                     int targetStart = undo ? s.UndoStart : s.ApplyStart;
                     if (targetStart < 2 || targetStart > 4) continue;
                     try {

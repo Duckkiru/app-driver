@@ -4694,7 +4694,7 @@ $tweaksRawJson = @'
     "Id": "opt_services_manual",
     "Category": "C\u01A1 b\u1EA3n",
     "Name": "Chuy\u1EC3n d\u1ECBch v\u1EE5 n\u1EC1n kh\u00F4ng c\u1EA7n thi\u1EBFt sang Manual",
-    "Description": "Chuy\u1EC3n ~60 d\u1ECBch v\u1EE5 Windows \u00EDt d\u00F9ng sang kh\u1EDFi \u0111\u1ED9ng theo y\u00EAu c\u1EA7u; gi\u1EEF nguy\u00EAn Audio, Wi-Fi, Bluetooth, Print & Xbox Auth.",
+    "Description": "Ch\u1EC9 chuy\u1EC3n c\u00E1c d\u1ECBch v\u1EE5 \u00EDt d\u00F9ng (MapsBroker, RetailDemo, EdgeUpdate) sang Manual; b\u1EA3o v\u1EC7 tuy\u1EC7t \u0111\u1ED1i d\u1ECBch v\u1EE5 ph\u00EDm n\u00F3ng h\u00E3ng, th\u00F4ng b\u00E1o, ph\u1EA7n c\u1EE9ng, m\u1EA1ng & \u00E2m thanh.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -4710,37 +4710,7 @@ $tweaksRawJson = @'
     "Registry": [],
     "Services": [
       {
-        "Name": "AppVClient",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "CDPSvc",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "DialogBlockingService",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "DPS",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
         "Name": "edgeupdate",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "FontCache",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "iphlpsvc",
         "ApplyStart": 3,
         "UndoStart": 2
       },
@@ -4750,44 +4720,9 @@ $tweaksRawJson = @'
         "UndoStart": 2
       },
       {
-        "Name": "MsKeyboardFilter",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "PcaSvc",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
         "Name": "RetailDemo",
         "ApplyStart": 4,
         "UndoStart": 3
-      },
-      {
-        "Name": "ShellHWDetection",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "SysMain",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "TrkWks",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "tzautoupdate",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WpnService",
-        "ApplyStart": 3,
-        "UndoStart": 2
       }
     ],
     "Tasks": []
@@ -5293,8 +5228,8 @@ $tweaksRawJson = @'
   {
     "Id": "opt_wpbt",
     "Category": "C\u01A1 b\u1EA3n",
-    "Name": "T\u1EAFt Windows Platform Binary Table (WPBT)",
-    "Description": "Ch\u1EB7n h\u00E3ng s\u1EA3n xu\u1EA5t m\u00E1y t\u00EDnh t\u1EF1 nh\u00FAng v\u00E0 ch\u1EA1y ph\u1EA7n m\u1EC1m ng\u1EA7m t\u1EEB BIOS l\u00FAc kh\u1EDFi \u0111\u1ED9ng Windows.",
+    "Name": "T\u1EAFt b\u00E1o c\u00E1o l\u1ED7i t\u1EF1 \u0111\u1ED9ng Windows Error Reporting (WER)",
+    "Description": "Ng\u0103n Windows t\u1EF1 \u0111\u1ED9ng \u0111\u00F3ng g\u00F3i v\u00E0 g\u1EEDi t\u1EC7p dump b\u00E1o c\u00E1o s\u1EF1 c\u1ED1 \u1EE9ng d\u1EE5ng v\u1EC1 m\u00E1y ch\u1EE7 Microsoft (b\u1EA3o to\u00E0n 100% b\u1EA3ng BIOS h\u00E3ng).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -5309,8 +5244,8 @@ $tweaksRawJson = @'
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager",
-        "Name": "DisableWpbtExecution",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting",
+        "Name": "Disabled",
         "ValueType": "DWord",
         "ApplyValue": "1",
         "UndoValue": "__DELETE__"
@@ -5349,7 +5284,7 @@ $tweaksRawJson = @'
     "Id": "opt_ultimate_perf",
     "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "K\u00EDch ho\u1EA1t g\u00F3i ngu\u1ED3n Ultimate Performance",
-    "Description": "M\u1EDF kh\u00F3a v\u00E0 b\u1EADt g\u00F3i ngu\u1ED3n hi\u1EC7u n\u0103ng t\u1ED1i \u0111a cho CPU/PCIe. Khuy\u00EAn d\u00F9ng cho PC b\u00E0n (hao pin tr\u00EAn Laptop).",
+    "Description": "M\u1EDF kh\u00F3a v\u00E0 b\u1EADt g\u00F3i ngu\u1ED3n hi\u1EC7u n\u0103ng t\u1ED1i \u0111a cho PC b\u00E0n (tr\u00EAn Laptop t\u1EF1 \u0111\u1ED9ng b\u1EA3o to\u00E0n ph\u00EDm n\u00F3ng Fn+Q / Armoury Crate / NitroSense c\u1EE7a h\u00E3ng).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Toggle",
@@ -5726,8 +5661,8 @@ $tweaksRawJson = @'
   {
     "Id": "opt_disable_bg_apps",
     "Category": "Hi\u1EC7u n\u0103ng",
-    "Name": "T\u1EAFt to\u00E0n b\u1ED9 App Store ch\u1EA1y ng\u1EA7m (Background Apps)",
-    "Description": "Ng\u0103n c\u00E1c \u1EE9ng d\u1EE5ng UWP/Microsoft Store t\u1EF1 \u0111\u00E1nh th\u1EE9c v\u00E0 \u0103n RAM/CPU trong n\u1EC1n.",
+    "Name": "T\u1EAFt App qu\u1EA3ng c\u00E1o/gi\u1EA3i tr\u00ED ch\u1EA1y ng\u1EA7m (Gi\u1EEF App h\u00E3ng & Ph\u00EDm n\u00F3ng)",
+    "Description": "Ch\u1EC9 t\u1EAFt ch\u1EA1y ng\u1EA7m c\u00E1c app gi\u1EA3i tr\u00ED/tin t\u1EE9c (Bing, Xbox, Solitaire, Skype, Clipchamp...); gi\u1EEF nguy\u00EAn 100% ph\u1EA7n m\u1EC1m h\u00E3ng (Lenovo, ASUS, MSI, Acer, Dell, HP, GPU, Audio) v\u00E0 ph\u00EDm n\u00F3ng hi\u1EC7u n\u0103ng.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
@@ -5737,24 +5672,16 @@ $tweaksRawJson = @'
       "Gaming"
     ],
     "ProbeKind": "",
-    "Action": "",
+    "Action": "SafeDisableBgApps",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
       {
         "Hive": "HKCU",
         "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications",
-        "Name": "GlobalUserDisabled",
+        "Name": "AppDriverSafeBgFilter",
         "ValueType": "DWord",
         "ApplyValue": "1",
-        "UndoValue": "0"
-      },
-      {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\AppPrivacy",
-        "Name": "LetAppsRunInBackground",
-        "ValueType": "DWord",
-        "ApplyValue": "2",
         "UndoValue": "__DELETE__"
       }
     ],
@@ -21382,6 +21309,49 @@ namespace DuckUtil {
             }
         }
 
+        private static readonly string[] ExactProtectedServices = new string[] {
+            "Power", "PlugPlay", "SystemEventsBroker", "TimeBrokerSvc", "BrokerInfrastructure",
+            "WpnService", "ShellHWDetection", "HidServ", "AudioSrv", "AudioEndpointBuilder",
+            "MMCSS", "CDPSvc", "DPS", "FontCache", "iphlpsvc", "PcaSvc", "SysMain", "TrkWks",
+            "BthAvctpSvc", "bthserv", "WlanSvc", "Dhcp", "Dnscache", "NlaSvc", "netprofm",
+            "nsi", "RpcSs", "DcomLaunch", "LSM", "SamSs", "Schedule", "EventLog", "Winmgmt",
+            "ProfSvc", "UserManager", "StateRepository", "AppXSvc", "ClipSVC", "LicenseManager",
+            "MsKeyboardFilter", "DialogBlockingService", "IBMPMSVC", "LITSSVC", "LightingService",
+            "AcPowerNotification", "AsHidSrv", "AsSysCtrlService", "accSvc", "QAAdminAgent",
+            "DPMService", "FvSvc", "esifsvc"
+        };
+
+        private static readonly string[] ProtectedServicePrefixes = new string[] {
+            "Lenovo", "Legion", "ImController", "TPHK", "LZService", "PcManager",
+            "ASUS", "Armoury", "ROG", "Aura", "ATK",
+            "MSI", "Micro Star", "DragonCenter", "Mystic_Light", "NTIOLib", "SCM",
+            "Acer", "Nitro", "Predator", "PSService", "PSAgent", "UePM", "DtsApo",
+            "Dell", "Alienware", "AWCC", "DDV", "SupportAssist",
+            "HP", "Omen", "HpTouchpoint",
+            "Gigabyte", "Aorus", "GCC", "GvBios", "SmartManager",
+            "Razer", "RzAction", "Logi", "LGHUB", "Corsair", "iCUE", "SteelSeries",
+            "Samsung", "LG", "Huawei", "MBAE", "Xiaomi", "Surface",
+            "NVDisplay", "NVIDIA", "NvContainer", "AMD", "Ati", "Intel", "igfx", "dptf", "ipf",
+            "Rtk", "Realtek", "Dolby", "DAX3", "Nahimic", "Waves", "DTS", "SynTP", "ETD", "ELAN",
+            "WpnUserService", "CDPUserSvc"
+        };
+
+        public static bool IsProtectedCriticalOrOemService(string serviceName) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return false;
+            string sn = serviceName.Trim();
+            for (int i = 0; i < ExactProtectedServices.Length; i++) {
+                if (string.Equals(sn, ExactProtectedServices[i], StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            for (int i = 0; i < ProtectedServicePrefixes.Length; i++) {
+                if (sn.StartsWith(ProtectedServicePrefixes[i], StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
             if (specs == null || specs.Length == 0) return 0;
             int okCount = 0;
@@ -21390,6 +21360,18 @@ namespace DuckUtil {
                 if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
                 string targetVal = undo ? s.UndoValue : s.ApplyValue;
                 string targetType = s.ValueType ?? "DWord";
+                if (!undo) {
+                    if (string.Equals(s.Name, "GlobalUserDisabled", StringComparison.OrdinalIgnoreCase) &&
+                        s.Path.IndexOf("BackgroundAccessApplications", StringComparison.OrdinalIgnoreCase) >= 0) {
+                        targetVal = "0";
+                    }
+                    if (string.Equals(s.Name, "LetAppsRunInBackground", StringComparison.OrdinalIgnoreCase) &&
+                        s.Path.IndexOf("AppPrivacy", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        string.Equals(targetVal, "2", StringComparison.OrdinalIgnoreCase)) {
+                        okCount++;
+                        continue;
+                    }
+                }
                 if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
                     try {
                         MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
@@ -21450,6 +21432,9 @@ namespace DuckUtil {
                 for (int i = 0; i < specs.Length; i++) {
                     ServiceTweakSpec s = specs[i];
                     if (s == null || string.IsNullOrWhiteSpace(s.Name)) continue;
+                    if (!undo && IsProtectedCriticalOrOemService(s.Name)) {
+                        continue;
+                    }
                     int targetStart = undo ? s.UndoStart : s.ApplyStart;
                     if (targetStart < 2 || targetStart > 4) continue;
                     try {
@@ -34763,6 +34748,49 @@ namespace DuckUtil {
             }
         }
 
+        private static readonly string[] ExactProtectedServices = new string[] {
+            "Power", "PlugPlay", "SystemEventsBroker", "TimeBrokerSvc", "BrokerInfrastructure",
+            "WpnService", "ShellHWDetection", "HidServ", "AudioSrv", "AudioEndpointBuilder",
+            "MMCSS", "CDPSvc", "DPS", "FontCache", "iphlpsvc", "PcaSvc", "SysMain", "TrkWks",
+            "BthAvctpSvc", "bthserv", "WlanSvc", "Dhcp", "Dnscache", "NlaSvc", "netprofm",
+            "nsi", "RpcSs", "DcomLaunch", "LSM", "SamSs", "Schedule", "EventLog", "Winmgmt",
+            "ProfSvc", "UserManager", "StateRepository", "AppXSvc", "ClipSVC", "LicenseManager",
+            "MsKeyboardFilter", "DialogBlockingService", "IBMPMSVC", "LITSSVC", "LightingService",
+            "AcPowerNotification", "AsHidSrv", "AsSysCtrlService", "accSvc", "QAAdminAgent",
+            "DPMService", "FvSvc", "esifsvc"
+        };
+
+        private static readonly string[] ProtectedServicePrefixes = new string[] {
+            "Lenovo", "Legion", "ImController", "TPHK", "LZService", "PcManager",
+            "ASUS", "Armoury", "ROG", "Aura", "ATK",
+            "MSI", "Micro Star", "DragonCenter", "Mystic_Light", "NTIOLib", "SCM",
+            "Acer", "Nitro", "Predator", "PSService", "PSAgent", "UePM", "DtsApo",
+            "Dell", "Alienware", "AWCC", "DDV", "SupportAssist",
+            "HP", "Omen", "HpTouchpoint",
+            "Gigabyte", "Aorus", "GCC", "GvBios", "SmartManager",
+            "Razer", "RzAction", "Logi", "LGHUB", "Corsair", "iCUE", "SteelSeries",
+            "Samsung", "LG", "Huawei", "MBAE", "Xiaomi", "Surface",
+            "NVDisplay", "NVIDIA", "NvContainer", "AMD", "Ati", "Intel", "igfx", "dptf", "ipf",
+            "Rtk", "Realtek", "Dolby", "DAX3", "Nahimic", "Waves", "DTS", "SynTP", "ETD", "ELAN",
+            "WpnUserService", "CDPUserSvc"
+        };
+
+        public static bool IsProtectedCriticalOrOemService(string serviceName) {
+            if (string.IsNullOrWhiteSpace(serviceName)) return false;
+            string sn = serviceName.Trim();
+            for (int i = 0; i < ExactProtectedServices.Length; i++) {
+                if (string.Equals(sn, ExactProtectedServices[i], StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            for (int i = 0; i < ProtectedServicePrefixes.Length; i++) {
+                if (sn.StartsWith(ProtectedServicePrefixes[i], StringComparison.OrdinalIgnoreCase)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static int ApplyRegistrySpecs(RegTweakSpec[] specs, bool undo) {
             if (specs == null || specs.Length == 0) return 0;
             int okCount = 0;
@@ -34771,6 +34799,18 @@ namespace DuckUtil {
                 if (s == null || string.IsNullOrWhiteSpace(s.Path)) continue;
                 string targetVal = undo ? s.UndoValue : s.ApplyValue;
                 string targetType = s.ValueType ?? "DWord";
+                if (!undo) {
+                    if (string.Equals(s.Name, "GlobalUserDisabled", StringComparison.OrdinalIgnoreCase) &&
+                        s.Path.IndexOf("BackgroundAccessApplications", StringComparison.OrdinalIgnoreCase) >= 0) {
+                        targetVal = "0";
+                    }
+                    if (string.Equals(s.Name, "LetAppsRunInBackground", StringComparison.OrdinalIgnoreCase) &&
+                        s.Path.IndexOf("AppPrivacy", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        string.Equals(targetVal, "2", StringComparison.OrdinalIgnoreCase)) {
+                        okCount++;
+                        continue;
+                    }
+                }
                 if (undo && string.Equals(s.Name, "SvcHostSplitThresholdInKB", StringComparison.OrdinalIgnoreCase)) {
                     try {
                         MEMORYSTATUSEX mem = new MEMORYSTATUSEX();
@@ -34831,6 +34871,9 @@ namespace DuckUtil {
                 for (int i = 0; i < specs.Length; i++) {
                     ServiceTweakSpec s = specs[i];
                     if (s == null || string.IsNullOrWhiteSpace(s.Name)) continue;
+                    if (!undo && IsProtectedCriticalOrOemService(s.Name)) {
+                        continue;
+                    }
                     int targetStart = undo ? s.UndoStart : s.ApplyStart;
                     if (targetStart < 2 || targetStart > 4) continue;
                     try {
@@ -40861,18 +40904,87 @@ function Restore-OptimizerGuardSnapshot {
     }
 }
 
+function Invoke-SafeBackgroundAppsTweak {
+    param([ValidateSet("Apply", "Undo")][string]$Mode = "Apply")
+    try {
+        $isUndo = ($Mode -eq "Undo")
+        $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        if (-not (Test-Path -LiteralPath $bgPath)) {
+            [void](New-Item -Path $bgPath -Force -ErrorAction SilentlyContinue)
+        }
+        Set-ItemProperty -LiteralPath $bgPath -Name "GlobalUserDisabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+        if ($isUndo) {
+            Remove-ItemProperty -LiteralPath $bgPath -Name "AppDriverSafeBgFilter" -ErrorAction SilentlyContinue
+        } else {
+            Set-ItemProperty -LiteralPath $bgPath -Name "AppDriverSafeBgFilter" -Value 1 -Type DWord -ErrorAction SilentlyContinue
+        }
+
+        $apPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"
+        if (Test-Path -LiteralPath $apPath) {
+            Remove-ItemProperty -LiteralPath $apPath -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue
+        }
+
+        $oemAndSystemRegex = 'Lenovo|Vantage|Legion|ThinkPad|IdeaPad|ASUS|Armoury|ROG|MyASUS|ATK|Acer|Nitro|Predator|MSI|Dragon|MicroStar|Dell|Alienware|HP|OMEN|Victus|Gigabyte|AORUS|Razer|Logitech|Corsair|SteelSeries|Samsung|LG|Huawei|Xiaomi|Surface|NVIDIA|AMD|Radeon|Intel|Thunderbolt|Realtek|Dolby|Nahimic|DTS|Waves|SoundResearch|Synaptics|ELAN|Wacom|SecHealth|WindowsDefender|WindowsStore|DesktopAppInstaller|WindowsTerminal|ShellExperience|StartMenuExperience|Client\.CBS|LockApp|AAD\.Broker'
+        $bloatAppRegex = 'BingNews|BingWeather|BingFinance|BingSports|Solitaire|FeedbackHub|WindowsMaps|ZuneVideo|ZuneMusic|People|GetHelp|Getstarted|Clipchamp|SkypeApp|MixedReality|3DViewer|MicrosoftOfficeHub|Cortana|549981C3F5F10'
+
+        foreach ($sub in @(Get-ChildItem -LiteralPath $bgPath -ErrorAction SilentlyContinue)) {
+            $pkgName = [string]$sub.PSChildName
+            if ($pkgName -match $oemAndSystemRegex) {
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "Disabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "DisabledByUser" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            } elseif ($pkgName -match $bloatAppRegex) {
+                $targetVal = if ($isUndo) { 0 } else { 1 }
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "Disabled" -Value $targetVal -Type DWord -ErrorAction SilentlyContinue
+                Set-ItemProperty -LiteralPath $sub.PSPath -Name "DisabledByUser" -Value $targetVal -Type DWord -ErrorAction SilentlyContinue
+            }
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Repair-OemPowerAndLegionThermalMode {
+    param([switch]$Silent)
     try {
         $bgPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
         if (Test-Path -LiteralPath $bgPath) {
             Set-ItemProperty -LiteralPath $bgPath -Name "GlobalUserDisabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            $oemAndSystemRegex = 'Lenovo|Vantage|Legion|ThinkPad|IdeaPad|ASUS|Armoury|ROG|MyASUS|ATK|Acer|Nitro|Predator|MSI|Dragon|MicroStar|Dell|Alienware|HP|OMEN|Victus|Gigabyte|AORUS|Razer|Logitech|Corsair|SteelSeries|Samsung|LG|Huawei|Xiaomi|Surface|NVIDIA|AMD|Radeon|Intel|Thunderbolt|Realtek|Dolby|Nahimic|DTS|Waves|SoundResearch|Synaptics|ELAN|Wacom|SecHealth|WindowsDefender|WindowsStore|DesktopAppInstaller|WindowsTerminal|ShellExperience|StartMenuExperience|Client\.CBS|LockApp|AAD\.Broker'
+            foreach ($sub in @(Get-ChildItem -LiteralPath $bgPath -ErrorAction SilentlyContinue)) {
+                if ([string]$sub.PSChildName -match $oemAndSystemRegex) {
+                    Set-ItemProperty -LiteralPath $sub.PSPath -Name "Disabled" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+                    Set-ItemProperty -LiteralPath $sub.PSPath -Name "DisabledByUser" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+                }
+            }
         }
         $apPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"
         if (Test-Path -LiteralPath $apPath) {
             Remove-ItemProperty -LiteralPath $apPath -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue
         }
-        $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
-        try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+
+        $smPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
+        if (Test-Path -LiteralPath $smPath) {
+            Remove-ItemProperty -LiteralPath $smPath -Name "DisableWpbtExecution" -ErrorAction SilentlyContinue
+        }
+
+        $ctrlPath = "HKLM:\SYSTEM\CurrentControlSet\Control"
+        if (Test-Path -LiteralPath $ctrlPath) {
+            $curSplit = (Get-ItemProperty -LiteralPath $ctrlPath -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
+            if ($curSplit -eq 3670016 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+                $hw = [DuckUtil.WindowsOptimizerEngine]::DetectHardwareProfile()
+                if ($hw -and $hw.TotalRamGb -gt 4) {
+                    $ramKb = [int]($hw.TotalRamGb * 1048576)
+                    Set-ItemProperty -LiteralPath $ctrlPath -Name "SvcHostSplitThresholdInKB" -Value $ramKb -Type DWord -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
+        if ($curScheme -match 'Ultimate Performance|e9a42b02-d5df-448d-aa00-03f14749eb61') {
+            $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
+            try { & powercfg.exe /setactive $balGuid 2>$null | Out-Null } catch {}
+        }
         $psRoot = "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
         if (Test-Path -LiteralPath $psRoot) {
             $curOv = (Get-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
@@ -40880,6 +40992,45 @@ function Repair-OemPowerAndLegionThermalMode {
                 Set-ItemProperty -LiteralPath $psRoot -Name "ActiveOverlayAcPowerScheme" -Value "00000000-0000-0000-0000-000000000000" -ErrorAction SilentlyContinue
             }
         }
+
+        $coreAutoServices = @("WpnService", "ShellHWDetection", "CDPSvc", "DPS", "FontCache", "iphlpsvc", "PcaSvc", "SysMain", "TrkWks")
+        foreach ($sn in $coreAutoServices) {
+            $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$sn"
+            if (Test-Path -LiteralPath $svcReg) {
+                $curSt = (Get-ItemProperty -LiteralPath $svcReg -Name "Start" -ErrorAction SilentlyContinue).Start
+                if ($curSt -eq 3 -or $curSt -eq 4) {
+                    Set-ItemProperty -LiteralPath $svcReg -Name "Start" -Value 2 -Type DWord -ErrorAction SilentlyContinue
+                }
+                if ($sn -in @("WpnService", "ShellHWDetection", "SysMain", "PcaSvc")) {
+                    try { Start-Service -Name $sn -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+        }
+        foreach ($sn in @("HidServ", "MsKeyboardFilter", "DialogBlockingService", "AppVClient", "tzautoupdate")) {
+            $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$sn"
+            if (Test-Path -LiteralPath $svcReg) {
+                $curSt = (Get-ItemProperty -LiteralPath $svcReg -Name "Start" -ErrorAction SilentlyContinue).Start
+                if ($curSt -eq 4) {
+                    Set-ItemProperty -LiteralPath $svcReg -Name "Start" -Value 3 -Type DWord -ErrorAction SilentlyContinue
+                }
+                if ($sn -eq "HidServ") {
+                    try { Start-Service -Name $sn -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+        }
+
+        $oemPattern = '^(Lenovo|Legion|ImController|IBMPMSVC|LITSSVC|TPHK|LZService|ASUS|Armoury|ROG|Aura|ATK|LightingService|AsHidSrv|AsSysCtrlService|MSI|Micro Star|DragonCenter|Mystic_Light|Acer|Nitro|Predator|PSService|PSAgent|accSvc|QAAdminAgent|Dell|Alienware|AWCC|DPMService|DDV|HP|Omen|Gigabyte|Aorus|GCC|GvBios|Razer|RzAction|NVDisplay|NvContainer|AMD|AmdPpkgSvc|RtkAudio|Dolby|DAX3|Nahimic)'
+        foreach ($sv in @(Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $oemPattern })) {
+            $svcReg = "HKLM:\SYSTEM\CurrentControlSet\Services\$($sv.Name)"
+            $curSt = (Get-ItemProperty -LiteralPath $svcReg -Name "Start" -ErrorAction SilentlyContinue).Start
+            if ($curSt -eq 4) {
+                Set-ItemProperty -LiteralPath $svcReg -Name "Start" -Value 2 -Type DWord -ErrorAction SilentlyContinue
+            }
+            if ($sv.Status -ne 'Running' -and ($curSt -eq 2 -or $sv.Name -match 'LenovoFn|LenovoVantage|Armoury|AsusSystemControl|ATKGFNEX|MSI_Center|NitroSense|PredatorSense|AWCC|HPOmenCap')) {
+                try { Start-Service -Name $sv.Name -ErrorAction SilentlyContinue } catch {}
+            }
+        }
+
         $hasLegion = (Test-Path -LiteralPath "HKLM:\SOFTWARE\Lenovo\VantageService") -or ($null -ne (Get-Service -Name "LenovoVantageService" -ErrorAction SilentlyContinue))
         if ($hasLegion) {
             try {
@@ -40892,10 +41043,33 @@ function Repair-OemPowerAndLegionThermalMode {
                 $sv = Get-Service -Name $svcName -ErrorAction SilentlyContinue
                 if ($sv) {
                     try { Set-Service -Name $svcName -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
-                    try { Restart-Service -Name $svcName -Force -ErrorAction SilentlyContinue } catch {}
+                    try {
+                        if (-not $Silent) {
+                            Restart-Service -Name $svcName -Force -ErrorAction SilentlyContinue
+                        } elseif ($sv.Status -ne 'Running') {
+                            Start-Service -Name $svcName -ErrorAction SilentlyContinue
+                        }
+                    } catch {}
                 }
             }
-            Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) Lenovo Vantage & b$([char]0x1EAD)t l$([char]0x1EA1)i ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Custom trong v$([char]0x00F2)ng l$([char]0x1EB7)p Fn+Q."
+            if (-not $Silent) {
+                Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x1EA1)i d$([char]0x1ECB)ch v$([char]0x1EE5) ph$([char]0x00ED)m n$([char]0x00F3)ng h$([char]0x00E3)ng & b$([char]0x1EAD)t l$([char]0x1EA1)i ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Custom trong v$([char]0x00F2)ng l$([char]0x1EB7)p Fn+Q."
+            }
+        }
+    } catch {}
+}
+
+function Invoke-OemAndCriticalServiceSelfHeal {
+    try {
+        $bgUser = (Get-ItemProperty -LiteralPath "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -ErrorAction SilentlyContinue).GlobalUserDisabled
+        $bgPol = (Get-ItemProperty -LiteralPath "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy" -Name "LetAppsRunInBackground" -ErrorAction SilentlyContinue).LetAppsRunInBackground
+        $curSplit = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
+        $curOv = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
+        $sysMainSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\SysMain" -Name "Start" -ErrorAction SilentlyContinue).Start
+        $kbFiltSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\MsKeyboardFilter" -Name "Start" -ErrorAction SilentlyContinue).Start
+
+        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4) {
+            Repair-OemPowerAndLegionThermalMode -Silent
         }
     } catch {}
 }
@@ -41046,6 +41220,9 @@ function Invoke-OptimizerSpecialAction {
             $code = Run-CliStream "powercfg.exe" $arg -IsolateStdin -AllowCancel
             return ($code -eq 0)
         }
+        "SafeDisableBgApps" {
+            return (Invoke-SafeBackgroundAppsTweak -Mode $Mode)
+        }
         "UltimatePerf" {
             if ($isUndo) {
                 $curScheme = (& powercfg.exe /getactivescheme 2>$null) -join " "
@@ -41053,6 +41230,7 @@ function Invoke-OptimizerSpecialAction {
                     $balGuid = "381b4222-f694-41f0-9685-ff5bb260df2e"
                     [void](Run-CliStream "powercfg.exe" "/setactive $balGuid" -IsolateStdin -AllowCancel)
                 }
+                Repair-OemPowerAndLegionThermalMode -Silent
                 return $true
             }
             $listOut = (& powercfg.exe /list 2>$null) -join "`n"
@@ -50041,6 +50219,7 @@ function Initialize-OptimizerTabIfNeeded {
         })
     }
 
+    Invoke-OemAndCriticalServiceSelfHeal
     Refresh-OptimizerLiveState
     Update-OptimizerSelectionCount
     if ($script:optLanesGrid) {

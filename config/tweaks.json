@@ -25,7 +25,7 @@
     "Id": "opt_services_manual",
     "Category": "Cơ bản",
     "Name": "Chuyển dịch vụ nền không cần thiết sang Manual",
-    "Description": "Chuyển ~60 dịch vụ Windows ít dùng sang khởi động theo yêu cầu; giữ nguyên Audio, Wi-Fi, Bluetooth, Print & Xbox Auth.",
+    "Description": "Chỉ chuyển các dịch vụ ít dùng (MapsBroker, RetailDemo, EdgeUpdate) sang Manual; bảo vệ tuyệt đối dịch vụ phím nóng hãng, thông báo, phần cứng, mạng & âm thanh.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -41,37 +41,7 @@
     "Registry": [],
     "Services": [
       {
-        "Name": "AppVClient",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "CDPSvc",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "DialogBlockingService",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "DPS",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
         "Name": "edgeupdate",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "FontCache",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "iphlpsvc",
         "ApplyStart": 3,
         "UndoStart": 2
       },
@@ -81,44 +51,9 @@
         "UndoStart": 2
       },
       {
-        "Name": "MsKeyboardFilter",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "PcaSvc",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
         "Name": "RetailDemo",
         "ApplyStart": 4,
         "UndoStart": 3
-      },
-      {
-        "Name": "ShellHWDetection",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "SysMain",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "TrkWks",
-        "ApplyStart": 3,
-        "UndoStart": 2
-      },
-      {
-        "Name": "tzautoupdate",
-        "ApplyStart": 4,
-        "UndoStart": 3
-      },
-      {
-        "Name": "WpnService",
-        "ApplyStart": 3,
-        "UndoStart": 2
       }
     ],
     "Tasks": []
@@ -624,8 +559,8 @@
   {
     "Id": "opt_wpbt",
     "Category": "Cơ bản",
-    "Name": "Tắt Windows Platform Binary Table (WPBT)",
-    "Description": "Chặn hãng sản xuất máy tính tự nhúng và chạy phần mềm ngầm từ BIOS lúc khởi động Windows.",
+    "Name": "Tắt báo cáo lỗi tự động Windows Error Reporting (WER)",
+    "Description": "Ngăn Windows tự động đóng gói và gửi tệp dump báo cáo sự cố ứng dụng về máy chủ Microsoft (bảo toàn 100% bảng BIOS hãng).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -640,8 +575,8 @@
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager",
-        "Name": "DisableWpbtExecution",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Error Reporting",
+        "Name": "Disabled",
         "ValueType": "DWord",
         "ApplyValue": "1",
         "UndoValue": "__DELETE__"
@@ -680,7 +615,7 @@
     "Id": "opt_ultimate_perf",
     "Category": "Hiệu năng",
     "Name": "Kích hoạt gói nguồn Ultimate Performance",
-    "Description": "Mở khóa và bật gói nguồn hiệu năng tối đa cho CPU/PCIe. Khuyên dùng cho PC bàn (hao pin trên Laptop).",
+    "Description": "Mở khóa và bật gói nguồn hiệu năng tối đa cho PC bàn (trên Laptop tự động bảo toàn phím nóng Fn+Q / Armoury Crate / NitroSense của hãng).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Toggle",
@@ -1057,8 +992,8 @@
   {
     "Id": "opt_disable_bg_apps",
     "Category": "Hiệu năng",
-    "Name": "Tắt toàn bộ App Store chạy ngầm (Background Apps)",
-    "Description": "Ngăn các ứng dụng UWP/Microsoft Store tự đánh thức và ăn RAM/CPU trong nền.",
+    "Name": "Tắt App quảng cáo/giải trí chạy ngầm (Giữ App hãng & Phím nóng)",
+    "Description": "Chỉ tắt chạy ngầm các app giải trí/tin tức (Bing, Xbox, Solitaire, Skype, Clipchamp...); giữ nguyên 100% phần mềm hãng (Lenovo, ASUS, MSI, Acer, Dell, HP, GPU, Audio) và phím nóng hiệu năng.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
@@ -1068,24 +1003,16 @@
       "Gaming"
     ],
     "ProbeKind": "",
-    "Action": "",
+    "Action": "SafeDisableBgApps",
     "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
       {
         "Hive": "HKCU",
         "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications",
-        "Name": "GlobalUserDisabled",
+        "Name": "AppDriverSafeBgFilter",
         "ValueType": "DWord",
         "ApplyValue": "1",
-        "UndoValue": "0"
-      },
-      {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\AppPrivacy",
-        "Name": "LetAppsRunInBackground",
-        "ValueType": "DWord",
-        "ApplyValue": "2",
         "UndoValue": "__DELETE__"
       }
     ],

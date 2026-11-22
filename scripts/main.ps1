@@ -8684,6 +8684,7 @@ function Initialize-OptimizerTabIfNeeded {
         })
     }
 
+    Invoke-OemAndCriticalServiceSelfHeal
     Refresh-OptimizerLiveState
     Update-OptimizerSelectionCount
     if ($script:optLanesGrid) {
