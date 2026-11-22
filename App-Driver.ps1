@@ -8008,7 +8008,127 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                     </Grid>
 
                     <Grid Name="OptPageResources" Visibility="Collapsed" IsHitTestVisible="False"/>
-                    <Grid Name="OptPageStartup" Visibility="Collapsed" IsHitTestVisible="False"/>
+                    <Grid Name="OptPageStartup" Visibility="Collapsed" IsHitTestVisible="False">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Name="btnStartRefresh" Content="L&#x00E0;m m&#x1EDB;i" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#38BDF8" BorderBrush="#29527D"
+                                                ToolTip="Qu&#x00E9;t l&#x1EA1;i to&#x00E0;n b&#x1ED9; m&#x1EE5;c kh&#x1EDF;i ch&#x1EA1;y (Registry, Th&#x01B0; m&#x1EE5;c, Store, Task Scheduler)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnStartCleanOrphans" Content="D&#x1ECD;n m&#x1EE5;c l&#x1ED7;i" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#FBBF24" BorderBrush="#614F27"
+                                                ToolTip="X&#x00F3;a c&#x00E1;c m&#x1EE5;c tr&#x1ECF; t&#x1EDB;i t&#x1EC7;p kh&#x00F4;ng c&#x00F2;n t&#x1ED3;n t&#x1EA1;i v&#x00E0; d&#x1ECD;n r&#x00E1;c StartupApproved c&#x1EE7;a app &#x0111;&#x00E3; g&#x1EE1; (t&#x1EF1; sao l&#x01B0;u StartupGuard)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnStartRestoreBackup" Content="Kh&#x00F4;i ph&#x1EE5;c &#x0111;&#x00E3; x&#x00F3;a" Style="{StaticResource SecondaryButton}"
+                                                Foreground="#34D399" BorderBrush="#1E5640"
+                                                ToolTip="Kh&#x00F4;i ph&#x1EE5;c nguy&#x00EA;n l&#x00F4; m&#x1EE5;c kh&#x1EDF;i ch&#x1EA1;y v&#x1EEB;a x&#x00F3;a g&#x1EA7;n nh&#x1EA5;t theo c&#x01A1; ch&#x1EBF; ng&#x0103;n x&#x1EBF;p (LIFO)." ToolTipService.InitialShowDelay="500"/>
+                                        <Button Name="btnStartAddApp" Content="+ Th&#x00EA;m &#x1EE9;ng d&#x1EE5;ng" Style="{StaticResource ActionButton}"
+                                                Background="#0284C7" Foreground="#FFFFFF" Padding="12,7" Margin="0"
+                                                ToolTip="Ch&#x1ECD;n t&#x1EC7;p th&#x1EF1;c thi (.exe) b&#x1EA5;t k&#x1EF3; &#x0111;&#x1EC3; th&#x00EA;m v&#x00E0;o danh s&#x00E1;ch kh&#x1EDF;i ch&#x1EA1;y c&#x00F9;ng Windows." ToolTipService.InitialShowDelay="500"/>
+                                    </StackPanel>
+
+                                    <Border Grid.Column="2" Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
+                                            Padding="8,0" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                                        <Grid Width="240">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
+                                                  Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                  Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
+                                            <TextBlock Grid.Column="1" Text="T&#x00EC;m &#x1EE9;ng d&#x1EE5;ng kh&#x1EDF;i ch&#x1EA1;y..." Foreground="#475569" FontSize="11.5"
+                                                       VerticalAlignment="Center" IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Text, ElementName=txtStartSearch}" Value="">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBox Grid.Column="1" Name="txtStartSearch" Background="Transparent" Foreground="#F8FAFC"
+                                                     BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"
+                                                     ToolTip="T&#x00EC;m theo t&#x00EA;n &#x1EE9;ng d&#x1EE5;ng, nh&#x00E0; ph&#x00E1;t h&#x00E0;nh ho&#x1EB7;c &#x0111;&#x01B0;&#x1EDD;ng d&#x1EAB;n..." ToolTipService.InitialShowDelay="500"/>
+                                            <Button Grid.Column="2" Name="btnClearStartSearch" Content="&#x2715;" Background="Transparent" Foreground="#64748B"
+                                                    BorderThickness="0" FontSize="10" Cursor="Hand" Padding="2,0" VerticalAlignment="Center"
+                                                    ToolTip="X&#x00F3;a t&#x1EEB; kh&#x00F3;a t&#x00EC;m ki&#x1EBF;m" ToolTipService.InitialShowDelay="500"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+
+                                <Grid Grid.Row="1" Margin="1,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Name="btnStartFilterAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
+                                                        Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
+                                                <Button Name="btnStartFilterOn" Content="&#x0110;ang b&#x1EAD;t" Style="{StaticResource FilterTabButton}"/>
+                                                <Button Name="btnStartFilterOff" Content="&#x0110;ang t&#x1EAF;t" Style="{StaticResource FilterTabButton}"/>
+                                                <Button Name="btnStartFilterOrphan" Content="M&#x1EE5;c l&#x1ED7;i" Style="{StaticResource FilterTabButton}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2" Name="txtStartSummary" Text="S&#x1EB5;n s&#x00E0;ng qu&#x00E9;t danh s&#x00E1;ch kh&#x1EDF;i ch&#x1EA1;y..."
+                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Background="#090D14" Height="32" Margin="14,8,14,0"
+                                BorderBrush="#27344A" BorderThickness="1,1,1,0" CornerRadius="3,3,0,0" SnapsToDevicePixels="True">
+                            <Grid Margin="10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="126"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="B&#x1EAD;t/T&#x1EAF;t" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="&#x1EE8;ng d&#x1EE5;ng kh&#x1EDF;i ch&#x1EA1;y &amp; Nh&#x00E0; ph&#x00E1;t h&#x00E0;nh" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="Ngu&#x1ED3;n" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="&#x1EA2;nh h&#x01B0;&#x1EDF;ng" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="5" Text="Thao t&#x00E1;c" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="2" Margin="14,0,14,10" Background="#0F1522" BorderBrush="#27344A" BorderThickness="1" CornerRadius="0,0,3,3">
+                            <ScrollViewer Name="StartScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                          CanContentScroll="False" PanningMode="VerticalOnly">
+                                <StackPanel Name="StartRowsHost"/>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </Grid>
             </Grid>
         </Grid>
@@ -8129,7 +8249,7 @@ $resolveCoreRefs = {
     return $wpfSmoothRefs
 }
 
-if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not ("DuckUtil.StartupManagerEngine" -as [type])) {
     try {
         $duckCoreCs = @'
 using Microsoft.Win32;
@@ -21568,6 +21688,1445 @@ namespace DuckUtil {
                 }
             }
             return restored;
+        }
+    }
+}
+
+
+namespace DuckUtil {
+    public sealed class StartupEntry {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string Publisher { get; set; }
+        public string RawCommand { get; set; }
+        public string ResolvedExePath { get; set; }
+        public string SourceKind { get; set; }
+        public string RegistryHive { get; set; }
+        public string RegistryPath { get; set; }
+        public string RegistryValueName { get; set; }
+        public string ApprovedHive { get; set; }
+        public string ApprovedPath { get; set; }
+        public string ApprovedValueName { get; set; }
+        public string FolderFilePath { get; set; }
+        public string PackageFamilyName { get; set; }
+        public string PackageFullName { get; set; }
+        public string TaskId { get; set; }
+        public int UwpState { get; set; }
+        public string ScheduledTaskPath { get; set; }
+        public string LogoPath { get; set; }
+        public bool Enabled { get; set; }
+        public bool IsPolicyLocked { get; set; }
+        public bool IsOrphan { get; set; }
+        public string ProtectionKind { get; set; }
+        public string ImpactLevel { get; set; }
+        public bool RequiresAdmin { get; set; }
+        public bool CanDelete { get; set; }
+        public bool MetadataHydrated { get; set; }
+    }
+
+    public sealed class StartupOpResult {
+        public bool Success { get; set; }
+        public bool RequiresAdminError { get; set; }
+        public string Message { get; set; }
+    }
+
+    public sealed class StartupOrphanCleanupResult {
+        public int RemovedCount { get; set; }
+        public int SkippedAdminCount { get; set; }
+        public string[] RemovedKeys { get; set; }
+    }
+
+    public sealed class StartupHydratedPatch {
+        public string Id { get; set; }
+        public string DisplayName { get; set; }
+        public string Publisher { get; set; }
+        public string ProtectionKind { get; set; }
+        public string ImpactLevel { get; set; }
+        public BitmapSource IconBitmap { get; set; }
+    }
+
+    public static class StartupManagerEngine {
+        private const string RegRunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string RegRunWow32Path = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
+        private const string RegApprovedRunPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+        private const string RegApprovedRun32Path = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
+        private const string RegApprovedFolderPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder";
+        private const string RegSystemAppDataPath = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData";
+        private const string RegRepoPackagesPath = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages";
+
+        private static readonly ConcurrentDictionary<string, BitmapSource> _iconCache =
+            new ConcurrentDictionary<string, BitmapSource>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly string[] ValidStartupExtensions = new string[] {
+            ".lnk", ".exe", ".bat", ".cmd", ".vbs", ".ps1"
+        };
+
+        private static readonly string[] CommandExecExtensions = new string[] {
+            ".exe", ".com", ".bat", ".cmd", ".vbs", ".msc", ".ps1", ".scr"
+        };
+
+        private static readonly Regex RxStartupTask = new Regex(
+            @"<(?:\w+:)?StartupTask\b[^>]*\bTaskId\s*=\s*[""']([^""']+)[""']",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RxDisplayName = new Regex(
+            @"<DisplayName>\s*([^<]+?)\s*</DisplayName>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RxPublisherName = new Regex(
+            @"<PublisherDisplayName>\s*([^<]+?)\s*</PublisherDisplayName>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RxLogo = new Regex(
+            @"(?:Square44x44Logo|Square150x150Logo)\s*=\s*[""']([^""']+)[""']|<Logo>\s*([^<]+?)\s*</Logo>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly string[] HighImpactPatterns = new string[] {
+            "docker", "discord", "slack", "teams", "ms-teams", "spotify", "figma", "notion",
+            "vscode", "code.exe", "steam", "epicgames", "riot", "vanguard", "battle.net",
+            "ea desktop", "eadesktop", "ubisoft", "wargaming", "curseforge", "overwolf",
+            "onedrive", "googledrive", "dropbox", "creative cloud", "ccxprocess", "adobe",
+            "wallpaper32", "wallpaper64", "wallpaperengine", "blitz", "porofessor", "medal",
+            "obs64", "streamlabs", "icue", "lghub"
+        };
+
+        private static readonly string[] MediumImpactPatterns = new string[] {
+            "msedge", "chrome", "brave", "firefox", "opera", "zalo", "telegram", "viber",
+            "messenger", "whatsapp", "cloudflare", "warp", "proton", "radmin", "tailscale",
+            "zerotier", "nordvpn", "surfshark", "vantage", "legion", "armoury", "myasus",
+            "msicenter", "dragoncenter", "nitrosense", "predatorsense", "awcc", "alienware",
+            "omen", "synapse", "razer", "nvidia", "amd", "radeon", "yourphone", "crossdevice",
+            "pcmanager", "windowsmaster", "codex", "freedownloadmanager", "fdm", "idm",
+            "qbittorrent", "utorrent", "java", "jusched"
+        };
+
+        private static readonly string[] SystemProtectionPatterns = new string[] {
+            "securityhealth", "windows defender", "windowsdefender", "ctfmon", "sechealth"
+        };
+
+        private static readonly string[] OemProtectionPatterns = new string[] {
+            "rtkaud", "realtek", "dolby", "nahimic", "waves", "dtsx", "dtsaudio",
+            "lenovo", "vantage", "legion", "thinkpad", "asus", "armoury", "myasus", "atkex",
+            "msicenter", "dragoncenter", "nitrosense", "predatorsense", "acer",
+            "alienware", "awcc", "dellpower", "hpomen", "hpsystemevent", "gigabyte", "aorus",
+            "nvdisplay", "nvcontainer", "amdnoise", "amdrsserv", "radeon", "igfx", "intel",
+            "syntpenh", "synaptics", "etdctrl", "elan", "fxsound"
+        };
+
+        [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport("shlwapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true, ThrowOnUnmappableChar = true)]
+        private static extern int SHLoadIndirectString(string pszSource, StringBuilder pszOutBuf, int cchOutBuf, IntPtr ppvReserved);
+
+        [ComImport]
+        [Guid("00021401-0000-0000-C000-000000000046")]
+        private class ShellLinkCoClass {
+        }
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("000214F9-0000-0000-C000-000000000046")]
+        private interface IShellLinkW {
+            void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);
+            void GetIDList(out IntPtr ppidl);
+            void SetIDList(IntPtr pidl);
+            void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);
+            void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);
+            void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+            void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);
+            void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
+            void GetHotkey(out ushort pwHotkey);
+            void SetHotkey(ushort wHotkey);
+            void GetShowCmd(out int piShowCmd);
+            void SetShowCmd(int iShowCmd);
+            void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);
+            void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);
+            void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);
+            void Resolve(IntPtr hwnd, uint fFlags);
+            void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
+        }
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("0000010b-0000-0000-C000-000000000046")]
+        private interface IPersistFile {
+            void GetClassID(out Guid pClassID);
+            [PreserveSig]
+            int IsDirty();
+            void Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);
+            void Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, [MarshalAs(UnmanagedType.Bool)] bool fRemember);
+            void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
+            void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);
+        }
+
+        private static RegistryKey OpenBase64(string hive) {
+            if (string.Equals(hive, "HKCU", StringComparison.OrdinalIgnoreCase)) {
+                return RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+            }
+            return RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+        }
+
+        public static bool IsCurrentProcessAdmin() {
+            try {
+                using (var id = System.Security.Principal.WindowsIdentity.GetCurrent()) {
+                    var pr = new System.Security.Principal.WindowsPrincipal(id);
+                    return pr.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static bool IsEnabledFromApprovedBytes(byte[] data) {
+            if (data == null || data.Length == 0) return true;
+            return (data[0] & 1) == 0;
+        }
+
+        private static byte[] BuildApprovedBytes(bool enable) {
+            byte[] buf = new byte[12];
+            if (enable) {
+                buf[0] = 0x02;
+                return buf;
+            }
+            buf[0] = 0x03;
+            byte[] ft = BitConverter.GetBytes(DateTime.UtcNow.ToFileTimeUtc());
+            Buffer.BlockCopy(ft, 0, buf, 4, 8);
+            return buf;
+        }
+
+        private static Dictionary<string, byte[]> ReadApprovedMap(string hive, string subPath) {
+            var map = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey k = baseKey.OpenSubKey(subPath, false)) {
+                    if (k == null) return map;
+                    string[] names = k.GetValueNames();
+                    for (int i = 0; i < names.Length; i++) {
+                        string vn = names[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        byte[] val = k.GetValue(vn) as byte[];
+                        if (val != null && val.Length > 0) {
+                            map[vn] = val;
+                        }
+                    }
+                }
+            } catch {}
+            return map;
+        }
+
+        private static bool HasCommandExecExtension(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string ext = "";
+            try { ext = Path.GetExtension(path); } catch { return false; }
+            for (int i = 0; i < CommandExecExtensions.Length; i++) {
+                if (string.Equals(ext, CommandExecExtensions[i], StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
+        private static string TryFindInSystemPaths(string fileName) {
+            if (string.IsNullOrWhiteSpace(fileName)) return "";
+            string fn = fileName.Trim().Trim('"');
+            if (string.IsNullOrEmpty(fn)) return "";
+
+            string[] candidates = HasCommandExecExtension(fn)
+                ? new string[] { fn }
+                : new string[] { fn, fn + ".exe", fn + ".cmd", fn + ".bat" };
+
+            var dirs = new List<string>();
+            try { dirs.Add(Environment.GetFolderPath(Environment.SpecialFolder.System)); } catch {}
+            try { dirs.Add(Environment.GetFolderPath(Environment.SpecialFolder.SystemX86)); } catch {}
+            try { dirs.Add(Environment.GetFolderPath(Environment.SpecialFolder.Windows)); } catch {}
+
+            string envPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+            if (!string.IsNullOrEmpty(envPath)) {
+                string[] parts = envPath.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < parts.Length; i++) {
+                    string d = parts[i].Trim().Trim('"');
+                    if (!string.IsNullOrEmpty(d)) dirs.Add(d);
+                }
+            }
+
+            for (int dIdx = 0; dIdx < dirs.Count; dIdx++) {
+                string dir = dirs[dIdx];
+                for (int cIdx = 0; cIdx < candidates.Length; cIdx++) {
+                    try {
+                        string full = Path.Combine(dir, candidates[cIdx]);
+                        if (File.Exists(full)) return full;
+                    } catch {}
+                }
+            }
+
+            try {
+                using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)) {
+                    for (int cIdx = 0; cIdx < candidates.Length; cIdx++) {
+                        using (RegistryKey ap = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + candidates[cIdx], false)) {
+                            if (ap != null) {
+                                string p = Convert.ToString(ap.GetValue(""), CultureInfo.InvariantCulture) ?? "";
+                                p = Environment.ExpandEnvironmentVariables(p).Trim().Trim('"');
+                                if (!string.IsNullOrEmpty(p) && File.Exists(p)) return p;
+                            }
+                        }
+                    }
+                }
+            } catch {}
+
+            return "";
+        }
+
+        public static string ResolveExecutablePath(string rawCommand, out bool isExplicitMissingFile) {
+            isExplicitMissingFile = false;
+            if (string.IsNullOrWhiteSpace(rawCommand)) return "";
+
+            string expanded = Environment.ExpandEnvironmentVariables(rawCommand).Trim();
+            if (string.IsNullOrEmpty(expanded)) return "";
+
+            if (expanded.StartsWith("\"", StringComparison.Ordinal)) {
+                int endQ = expanded.IndexOf('"', 1);
+                if (endQ > 1) {
+                    string quoted = expanded.Substring(1, endQ - 1).Trim();
+                    if (File.Exists(quoted)) return quoted;
+                    if (!quoted.Contains("\\") && !quoted.Contains("/")) {
+                        string found = TryFindInSystemPaths(quoted);
+                        if (!string.IsNullOrEmpty(found)) return found;
+                    }
+                    if (Path.IsPathRooted(quoted)) {
+                        isExplicitMissingFile = true;
+                        return quoted;
+                    }
+                }
+            }
+
+            if (File.Exists(expanded)) return expanded;
+
+            int argc;
+            IntPtr argvPtr = CommandLineToArgvW(expanded, out argc);
+            string firstArg = "";
+            string[] argv = new string[0];
+            if (argvPtr != IntPtr.Zero) {
+                try {
+                    if (argc > 0) {
+                        argv = new string[argc];
+                        for (int i = 0; i < argc; i++) {
+                            IntPtr pStr = Marshal.ReadIntPtr(argvPtr, i * IntPtr.Size);
+                            argv[i] = Marshal.PtrToStringUni(pStr) ?? "";
+                        }
+                        firstArg = argv[0].Trim();
+                    }
+                } finally {
+                    LocalFree(argvPtr);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(firstArg)) {
+                if (File.Exists(firstArg)) return firstArg;
+                if (!firstArg.Contains("\\") && !firstArg.Contains("/")) {
+                    string foundInPath = TryFindInSystemPaths(firstArg);
+                    if (!string.IsNullOrEmpty(foundInPath)) return foundInPath;
+                }
+            }
+
+            if (argv.Length > 1 && Path.IsPathRooted(firstArg)) {
+                var sb = new StringBuilder(firstArg);
+                string bestRootedExec = HasCommandExecExtension(firstArg) ? firstArg : "";
+                for (int i = 1; i < argv.Length; i++) {
+                    sb.Append(' ').Append(argv[i]);
+                    string candidate = sb.ToString();
+                    if (File.Exists(candidate)) return candidate;
+                    if (string.IsNullOrEmpty(bestRootedExec) && HasCommandExecExtension(candidate)) {
+                        bestRootedExec = candidate;
+                    }
+                }
+                if (!string.IsNullOrEmpty(bestRootedExec)) {
+                    isExplicitMissingFile = !File.Exists(bestRootedExec);
+                    return bestRootedExec;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(firstArg) && Path.IsPathRooted(firstArg)) {
+                if (!HasCommandExecExtension(firstArg) && File.Exists(firstArg + ".exe")) {
+                    return firstArg + ".exe";
+                }
+                isExplicitMissingFile = true;
+                return firstArg;
+            }
+
+            return firstArg;
+        }
+
+        private static void ResolveShortcutLnk(string lnkPath, out string targetPath, out string arguments, out bool isNonFileTarget) {
+            targetPath = "";
+            arguments = "";
+            isNonFileTarget = false;
+            IShellLinkW link = null;
+            try {
+                link = (IShellLinkW)new ShellLinkCoClass();
+                IPersistFile pf = (IPersistFile)link;
+                pf.Load(lnkPath, 0);
+
+                var pathBuf = new StringBuilder(1024);
+                link.GetPath(pathBuf, pathBuf.Capacity, IntPtr.Zero, 0);
+                string p = pathBuf.ToString().Trim();
+
+                var argsBuf = new StringBuilder(1024);
+                link.GetArguments(argsBuf, argsBuf.Capacity);
+                arguments = argsBuf.ToString().Trim();
+
+                if (string.IsNullOrEmpty(p)) {
+                    isNonFileTarget = true;
+                } else {
+                    targetPath = Environment.ExpandEnvironmentVariables(p);
+                }
+            } catch {
+                isNonFileTarget = true;
+            } finally {
+                if (link != null) {
+                    try { Marshal.ReleaseComObject(link); } catch {}
+                }
+            }
+        }
+
+        public static string IsProtectedOemOrSystemStartup(string name, string command, string publisher) {
+            string hay = ((name ?? "") + " " + (command ?? "") + " " + (publisher ?? "")).ToLowerInvariant();
+            for (int i = 0; i < SystemProtectionPatterns.Length; i++) {
+                if (hay.Contains(SystemProtectionPatterns[i])) return "System";
+            }
+            for (int i = 0; i < OemProtectionPatterns.Length; i++) {
+                if (hay.Contains(OemProtectionPatterns[i])) return "Oem";
+            }
+            return "";
+        }
+
+        public static string EstimateImpact(string name, string command, string publisher) {
+            string hay = ((name ?? "") + " " + (command ?? "") + " " + (publisher ?? "")).ToLowerInvariant();
+            for (int i = 0; i < HighImpactPatterns.Length; i++) {
+                if (hay.Contains(HighImpactPatterns[i])) return "High";
+            }
+            for (int i = 0; i < MediumImpactPatterns.Length; i++) {
+                if (hay.Contains(MediumImpactPatterns[i])) return "Medium";
+            }
+            return "Low";
+        }
+
+        private static string MakeFriendlyName(string rawName, string exePath) {
+            string n = (rawName ?? "").Trim();
+            if (n.StartsWith("MicrosoftEdgeAutoLaunch_", StringComparison.OrdinalIgnoreCase)) {
+                return "Microsoft Edge";
+            }
+            if (n.StartsWith("electron.app.", StringComparison.OrdinalIgnoreCase)) {
+                return n.Substring("electron.app.".Length);
+            }
+            if (n.StartsWith("com.squirrel.", StringComparison.OrdinalIgnoreCase)) {
+                string[] parts = n.Split('.');
+                if (parts.Length >= 3) return parts[parts.Length - 1];
+            }
+            if (string.IsNullOrEmpty(n) && !string.IsNullOrEmpty(exePath)) {
+                try { return Path.GetFileNameWithoutExtension(exePath); } catch {}
+            }
+            return n;
+        }
+
+        private static void ScanRegistryRunKey(
+            List<StartupEntry> list,
+            string hive,
+            string runPath,
+            string approvedPath,
+            string sourceKind,
+            bool requiresAdmin) {
+            Dictionary<string, byte[]> approvedMap = ReadApprovedMap(hive, approvedPath);
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey k = baseKey.OpenSubKey(runPath, false)) {
+                    if (k == null) return;
+                    string[] names = k.GetValueNames();
+                    for (int i = 0; i < names.Length; i++) {
+                        string vn = names[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        string rawCmd = Convert.ToString(k.GetValue(vn), CultureInfo.InvariantCulture) ?? "";
+                        if (string.IsNullOrWhiteSpace(rawCmd)) continue;
+
+                        bool isMissing;
+                        string exePath = ResolveExecutablePath(rawCmd, out isMissing);
+                        byte[] apBytes;
+                        bool enabled = !approvedMap.TryGetValue(vn, out apBytes) || IsEnabledFromApprovedBytes(apBytes);
+
+                        var entry = new StartupEntry();
+                        entry.Id = sourceKind + "|" + vn;
+                        entry.Name = vn;
+                        entry.DisplayName = MakeFriendlyName(vn, exePath);
+                        entry.Publisher = "";
+                        entry.RawCommand = rawCmd;
+                        entry.ResolvedExePath = exePath;
+                        entry.SourceKind = sourceKind;
+                        entry.RegistryHive = hive;
+                        entry.RegistryPath = runPath;
+                        entry.RegistryValueName = vn;
+                        entry.ApprovedHive = hive;
+                        entry.ApprovedPath = approvedPath;
+                        entry.ApprovedValueName = vn;
+                        entry.Enabled = enabled;
+                        entry.IsPolicyLocked = false;
+                        entry.IsOrphan = isMissing;
+                        entry.ProtectionKind = IsProtectedOemOrSystemStartup(entry.DisplayName, rawCmd, "");
+                        entry.ImpactLevel = EstimateImpact(entry.DisplayName, rawCmd, "");
+                        entry.RequiresAdmin = requiresAdmin;
+                        entry.CanDelete = true;
+                        entry.MetadataHydrated = false;
+                        list.Add(entry);
+                    }
+                }
+            } catch {}
+        }
+
+        private static void ScanStartupFolder(
+            List<StartupEntry> list,
+            string folderPath,
+            string approvedHive,
+            string sourceKind,
+            bool requiresAdmin) {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return;
+            Dictionary<string, byte[]> approvedMap = ReadApprovedMap(approvedHive, RegApprovedFolderPath);
+            try {
+                string[] files = Directory.GetFiles(folderPath);
+                for (int i = 0; i < files.Length; i++) {
+                    string fp = files[i];
+                    string fileName = Path.GetFileName(fp);
+                    if (string.IsNullOrEmpty(fileName)) continue;
+                    if (string.Equals(fileName, "desktop.ini", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(fileName, "thumbs.db", StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+                    try {
+                        FileAttributes attrs = File.GetAttributes(fp);
+                        if ((attrs & FileAttributes.System) != 0) continue;
+                    } catch {}
+
+                    string ext = Path.GetExtension(fp) ?? "";
+                    bool validExt = false;
+                    for (int eIdx = 0; eIdx < ValidStartupExtensions.Length; eIdx++) {
+                        if (string.Equals(ext, ValidStartupExtensions[eIdx], StringComparison.OrdinalIgnoreCase)) {
+                            validExt = true;
+                            break;
+                        }
+                    }
+                    if (!validExt) continue;
+
+                    string exePath = fp;
+                    string rawCmd = fp;
+                    bool isOrphan = false;
+
+                    if (string.Equals(ext, ".lnk", StringComparison.OrdinalIgnoreCase)) {
+                        string lnkTarget;
+                        string lnkArgs;
+                        bool isNonFile;
+                        ResolveShortcutLnk(fp, out lnkTarget, out lnkArgs, out isNonFile);
+                        if (isNonFile) {
+                            exePath = fp;
+                            rawCmd = fp;
+                            isOrphan = false;
+                        } else {
+                            exePath = lnkTarget;
+                            rawCmd = string.IsNullOrEmpty(lnkArgs) ? lnkTarget : ("\"" + lnkTarget + "\" " + lnkArgs);
+                            isOrphan = !string.IsNullOrEmpty(lnkTarget) && Path.IsPathRooted(lnkTarget) && !File.Exists(lnkTarget);
+                        }
+                    }
+
+                    byte[] apBytes;
+                    bool enabled = !approvedMap.TryGetValue(fileName, out apBytes) || IsEnabledFromApprovedBytes(apBytes);
+                    string disp = Path.GetFileNameWithoutExtension(fileName);
+
+                    var entry = new StartupEntry();
+                    entry.Id = sourceKind + "|" + fileName;
+                    entry.Name = fileName;
+                    entry.DisplayName = disp;
+                    entry.Publisher = "";
+                    entry.RawCommand = rawCmd;
+                    entry.ResolvedExePath = exePath;
+                    entry.SourceKind = sourceKind;
+                    entry.ApprovedHive = approvedHive;
+                    entry.ApprovedPath = RegApprovedFolderPath;
+                    entry.ApprovedValueName = fileName;
+                    entry.FolderFilePath = fp;
+                    entry.Enabled = enabled;
+                    entry.IsPolicyLocked = false;
+                    entry.IsOrphan = isOrphan;
+                    entry.ProtectionKind = IsProtectedOemOrSystemStartup(disp, rawCmd, "");
+                    entry.ImpactLevel = EstimateImpact(disp, rawCmd, "");
+                    entry.RequiresAdmin = requiresAdmin;
+                    entry.CanDelete = true;
+                    entry.MetadataHydrated = false;
+                    list.Add(entry);
+                }
+            } catch {}
+        }
+
+        public static StartupEntry[] ScanFastCore() {
+            var list = new List<StartupEntry>(32);
+            ScanRegistryRunKey(list, "HKCU", RegRunPath, RegApprovedRunPath, "RegUser", false);
+            ScanRegistryRunKey(list, "HKLM", RegRunPath, RegApprovedRunPath, "RegSystem", true);
+            ScanRegistryRunKey(list, "HKLM", RegRunWow32Path, RegApprovedRun32Path, "RegWow32", true);
+
+            try {
+                string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                ScanStartupFolder(list, userFolder, "HKCU", "FolderUser", false);
+            } catch {}
+            try {
+                string commonFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                ScanStartupFolder(list, commonFolder, "HKLM", "FolderAll", true);
+            } catch {}
+
+            return list.ToArray();
+        }
+
+        public static Task<StartupEntry[]> ScanFastCoreAsync() {
+            return Task.Run(delegate() { return ScanFastCore(); });
+        }
+
+        private sealed class PackageRepoInfo {
+            public string PackageFullName;
+            public string PackageRootFolder;
+        }
+
+        private static string ExtractPackageFamilyFromFullName(string fullName) {
+            if (string.IsNullOrEmpty(fullName)) return "";
+            int firstUs = fullName.IndexOf('_');
+            int lastDoubleUs = fullName.LastIndexOf("__", StringComparison.Ordinal);
+            if (firstUs <= 0 || lastDoubleUs <= firstUs || lastDoubleUs + 2 >= fullName.Length) return "";
+            return fullName.Substring(0, firstUs) + "_" + fullName.Substring(lastDoubleUs + 2);
+        }
+
+        private static Dictionary<string, PackageRepoInfo> BuildUwpFamilyMap() {
+            var map = new Dictionary<string, PackageRepoInfo>(StringComparer.OrdinalIgnoreCase);
+            try {
+                using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (RegistryKey pkgs = hkcu.OpenSubKey(RegRepoPackagesPath, false)) {
+                    if (pkgs == null) return map;
+                    string[] subNames = pkgs.GetSubKeyNames();
+                    for (int i = 0; i < subNames.Length; i++) {
+                        string fullName = subNames[i];
+                        string family = ExtractPackageFamilyFromFullName(fullName);
+                        if (string.IsNullOrEmpty(family)) continue;
+                        try {
+                            using (RegistryKey pk = pkgs.OpenSubKey(fullName, false)) {
+                                if (pk == null) continue;
+                                string root = Convert.ToString(pk.GetValue("PackageRootFolder"), CultureInfo.InvariantCulture) ?? "";
+                                if (string.IsNullOrEmpty(root)) continue;
+                                string manifestPath = Path.Combine(root, "AppxManifest.xml");
+                                if (!File.Exists(manifestPath)) continue;
+                                PackageRepoInfo existing;
+                                if (!map.TryGetValue(family, out existing) ||
+                                    string.CompareOrdinal(fullName, existing.PackageFullName) > 0) {
+                                    map[family] = new PackageRepoInfo {
+                                        PackageFullName = fullName,
+                                        PackageRootFolder = root
+                                    };
+                                }
+                            }
+                        } catch {}
+                    }
+                }
+            } catch {}
+            return map;
+        }
+
+        private static string ResolveIndirectResource(string packageFullName, string rawValue, string fallbackName) {
+            if (string.IsNullOrWhiteSpace(rawValue)) return fallbackName;
+            string v = rawValue.Trim();
+            if (!v.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase)) {
+                return v;
+            }
+            try {
+                string normalized = v;
+                if (!normalized.StartsWith("ms-resource://", StringComparison.OrdinalIgnoreCase)) {
+                    string tail = normalized.Substring("ms-resource:".Length).TrimStart('/');
+                    if (tail.StartsWith("Resources/", StringComparison.OrdinalIgnoreCase)) {
+                        normalized = "ms-resource:///" + tail;
+                    } else {
+                        normalized = "ms-resource:///Resources/" + tail;
+                    }
+                }
+                string query = "@{" + packageFullName + "?" + normalized + "}";
+                var sb = new StringBuilder(512);
+                int hr = SHLoadIndirectString(query, sb, sb.Capacity, IntPtr.Zero);
+                if (hr == 0 && sb.Length > 0) {
+                    string resolved = sb.ToString().Trim();
+                    if (!string.IsNullOrEmpty(resolved)) return resolved;
+                }
+                if (v.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase) &&
+                    !v.StartsWith("ms-resource://", StringComparison.OrdinalIgnoreCase)) {
+                    string query2 = "@{" + packageFullName + "?" + v + "}";
+                    var sb2 = new StringBuilder(512);
+                    if (SHLoadIndirectString(query2, sb2, sb2.Capacity, IntPtr.Zero) == 0 && sb2.Length > 0) {
+                        string resolved2 = sb2.ToString().Trim();
+                        if (!string.IsNullOrEmpty(resolved2)) return resolved2;
+                    }
+                }
+            } catch {}
+            return fallbackName;
+        }
+
+        private static string ResolveUwpLogoPath(string packageRoot, string manifestLogoRel) {
+            if (string.IsNullOrWhiteSpace(packageRoot) || string.IsNullOrWhiteSpace(manifestLogoRel)) return "";
+            try {
+                string rel = manifestLogoRel.Trim().Replace('/', '\\').TrimStart('\\');
+                string direct = Path.Combine(packageRoot, rel);
+                string dir = Path.GetDirectoryName(direct);
+                string stem = Path.GetFileNameWithoutExtension(direct);
+                string ext = Path.GetExtension(direct);
+                if (string.IsNullOrEmpty(ext)) ext = ".png";
+
+                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir) && !string.IsNullOrEmpty(stem)) {
+                    string[] preferred = new string[] {
+                        stem + ".targetsize-32_altform-unplated" + ext,
+                        stem + ".targetsize-32" + ext,
+                        stem + ".targetsize-24_altform-unplated" + ext,
+                        stem + ".targetsize-24" + ext,
+                        stem + ".scale-100" + ext,
+                        stem + ".scale-125" + ext,
+                        stem + ".scale-150" + ext,
+                        stem + ".scale-200" + ext,
+                        stem + ext
+                    };
+                    for (int i = 0; i < preferred.Length; i++) {
+                        string cand = Path.Combine(dir, preferred[i]);
+                        if (File.Exists(cand)) return cand;
+                    }
+                    string[] matches = Directory.GetFiles(dir, stem + ".*" + ext);
+                    if (matches != null && matches.Length > 0) return matches[0];
+                }
+                if (File.Exists(direct)) return direct;
+            } catch {}
+            return "";
+        }
+
+        private static string FriendlyFamilyFallback(string packageFamilyName) {
+            if (string.IsNullOrEmpty(packageFamilyName)) return "";
+            int us = packageFamilyName.LastIndexOf('_');
+            string core = us > 0 ? packageFamilyName.Substring(0, us) : packageFamilyName;
+            int dot = core.LastIndexOf('.');
+            if (dot > 0 && dot + 1 < core.Length) {
+                string tail = core.Substring(dot + 1);
+                if (tail.Length >= 3) return tail;
+            }
+            return core;
+        }
+
+        private static void ScanUwpStartupTasks(List<StartupEntry> list) {
+            Dictionary<string, PackageRepoInfo> familyMap = BuildUwpFamilyMap();
+            if (familyMap.Count == 0) return;
+
+            try {
+                using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (RegistryKey appDataRoot = hkcu.OpenSubKey(RegSystemAppDataPath, false)) {
+                    if (appDataRoot == null) return;
+                    string[] families = appDataRoot.GetSubKeyNames();
+                    for (int fIdx = 0; fIdx < families.Length; fIdx++) {
+                        string family = families[fIdx];
+                        PackageRepoInfo repo;
+                        if (!familyMap.TryGetValue(family, out repo)) continue;
+
+                        string manifestPath = Path.Combine(repo.PackageRootFolder, "AppxManifest.xml");
+                        string manifestXml = "";
+                        try { manifestXml = File.ReadAllText(manifestPath, Encoding.UTF8); } catch { continue; }
+                        if (string.IsNullOrEmpty(manifestXml)) continue;
+
+                        var validTaskIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        MatchCollection taskMatches = RxStartupTask.Matches(manifestXml);
+                        for (int t = 0; t < taskMatches.Count; t++) {
+                            string tid = taskMatches[t].Groups[1].Value.Trim();
+                            if (!string.IsNullOrEmpty(tid)) validTaskIds.Add(tid);
+                        }
+                        if (validTaskIds.Count == 0) continue;
+
+                        string fallbackName = FriendlyFamilyFallback(family);
+                        Match mDisp = RxDisplayName.Match(manifestXml);
+                        string dispRaw = mDisp.Success ? mDisp.Groups[1].Value.Trim() : "";
+                        string dispName = ResolveIndirectResource(repo.PackageFullName, dispRaw, fallbackName);
+
+                        Match mPub = RxPublisherName.Match(manifestXml);
+                        string pubRaw = mPub.Success ? mPub.Groups[1].Value.Trim() : "";
+                        string publisher = ResolveIndirectResource(repo.PackageFullName, pubRaw, "");
+
+                        Match mLogo = RxLogo.Match(manifestXml);
+                        string logoRel = "";
+                        if (mLogo.Success) {
+                            logoRel = !string.IsNullOrEmpty(mLogo.Groups[1].Value) ? mLogo.Groups[1].Value : mLogo.Groups[2].Value;
+                        }
+                        string logoPath = ResolveUwpLogoPath(repo.PackageRootFolder, logoRel);
+
+                        try {
+                            using (RegistryKey famKey = appDataRoot.OpenSubKey(family, false)) {
+                                if (famKey == null) continue;
+                                string[] subNames = famKey.GetSubKeyNames();
+                                for (int sIdx = 0; sIdx < subNames.Length; sIdx++) {
+                                    string taskId = subNames[sIdx];
+                                    if (!validTaskIds.Contains(taskId)) continue;
+                                    try {
+                                        using (RegistryKey tk = famKey.OpenSubKey(taskId, false)) {
+                                            if (tk == null) continue;
+                                            object stObj = tk.GetValue("State");
+                                            if (stObj == null) continue;
+                                            int state = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
+                                            bool enabled = (state == 2 || state == 4);
+                                            bool policyLocked = (state == 3 || state == 4);
+
+                                            var entry = new StartupEntry();
+                                            entry.Id = "Store|" + family + "|" + taskId;
+                                            entry.Name = taskId;
+                                            entry.DisplayName = dispName;
+                                            entry.Publisher = publisher;
+                                            entry.RawCommand = family + " (" + taskId + ")";
+                                            entry.ResolvedExePath = repo.PackageRootFolder;
+                                            entry.SourceKind = "Store";
+                                            entry.PackageFamilyName = family;
+                                            entry.PackageFullName = repo.PackageFullName;
+                                            entry.TaskId = taskId;
+                                            entry.UwpState = state;
+                                            entry.LogoPath = logoPath;
+                                            entry.Enabled = enabled;
+                                            entry.IsPolicyLocked = policyLocked;
+                                            entry.IsOrphan = false;
+                                            entry.ProtectionKind = IsProtectedOemOrSystemStartup(dispName, family + " " + taskId, publisher);
+                                            entry.ImpactLevel = EstimateImpact(dispName, family + " " + taskId, publisher);
+                                            entry.RequiresAdmin = false;
+                                            entry.CanDelete = false;
+                                            entry.MetadataHydrated = true;
+                                            list.Add(entry);
+                                        }
+                                    } catch {}
+                                }
+                            }
+                        } catch {}
+                    }
+                }
+            } catch {}
+        }
+
+        private static object ComGet(object target, string propName) {
+            return target.GetType().InvokeMember(propName, BindingFlags.GetProperty, null, target, null);
+        }
+
+        private static void ComSet(object target, string propName, object value) {
+            target.GetType().InvokeMember(propName, BindingFlags.SetProperty, null, target, new object[] { value });
+        }
+
+        private static object ComCall(object target, string methodName, params object[] args) {
+            return target.GetType().InvokeMember(methodName, BindingFlags.InvokeMethod, null, target, args);
+        }
+
+        private static object ConnectTaskService() {
+            Type t = Type.GetTypeFromProgID("Schedule.Service");
+            if (t == null) return null;
+            object svc = Activator.CreateInstance(t);
+            ComCall(svc, "Connect", Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            return svc;
+        }
+
+        private static void TraverseScheduledTaskFolder(object folder, List<StartupEntry> list) {
+            string folderPath = "";
+            try { folderPath = Convert.ToString(ComGet(folder, "Path"), CultureInfo.InvariantCulture) ?? ""; } catch { return; }
+
+            if (folderPath.Equals(@"\Microsoft\Windows", StringComparison.OrdinalIgnoreCase) ||
+                folderPath.StartsWith(@"\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase) ||
+                folderPath.Equals(@"\Microsoft\Office", StringComparison.OrdinalIgnoreCase) ||
+                folderPath.StartsWith(@"\Microsoft\Office\", StringComparison.OrdinalIgnoreCase)) {
+                return;
+            }
+
+            try {
+                object tasksCol = ComCall(folder, "GetTasks", 1);
+                int count = Convert.ToInt32(ComGet(tasksCol, "Count"), CultureInfo.InvariantCulture);
+                for (int i = 1; i <= count; i++) {
+                    object task = null;
+                    try {
+                        task = ComGet(tasksCol, "Item");
+                    } catch {
+                        try { task = tasksCol.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, tasksCol, new object[] { i }); } catch { task = null; }
+                    }
+                    if (task == null) {
+                        try { task = ComCall(tasksCol, "Item", i); } catch { continue; }
+                    }
+                    try {
+                        string taskName = Convert.ToString(ComGet(task, "Name"), CultureInfo.InvariantCulture) ?? "";
+                        string taskFullPath = Convert.ToString(ComGet(task, "Path"), CultureInfo.InvariantCulture) ?? "";
+                        if (string.IsNullOrEmpty(taskFullPath)) continue;
+                        if (taskFullPath.StartsWith(@"\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        bool enabled = Convert.ToBoolean(ComGet(task, "Enabled"), CultureInfo.InvariantCulture);
+                        object def = ComGet(task, "Definition");
+                        if (def == null) continue;
+
+                        bool hasStartupTrigger = false;
+                        object triggers = ComGet(def, "Triggers");
+                        if (triggers != null) {
+                            int tCount = Convert.ToInt32(ComGet(triggers, "Count"), CultureInfo.InvariantCulture);
+                            for (int ti = 1; ti <= tCount; ti++) {
+                                try {
+                                    object trig = triggers.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, triggers, new object[] { ti });
+                                    int trigType = Convert.ToInt32(ComGet(trig, "Type"), CultureInfo.InvariantCulture);
+                                    if (trigType == 9 || trigType == 8) {
+                                        hasStartupTrigger = true;
+                                        break;
+                                    }
+                                } catch {}
+                            }
+                        }
+                        if (!hasStartupTrigger) continue;
+
+                        string execPath = "";
+                        string execArgs = "";
+                        object actions = ComGet(def, "Actions");
+                        if (actions != null) {
+                            int aCount = Convert.ToInt32(ComGet(actions, "Count"), CultureInfo.InvariantCulture);
+                            for (int ai = 1; ai <= aCount; ai++) {
+                                try {
+                                    object act = actions.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, actions, new object[] { ai });
+                                    int actType = Convert.ToInt32(ComGet(act, "Type"), CultureInfo.InvariantCulture);
+                                    if (actType == 0) {
+                                        execPath = Convert.ToString(ComGet(act, "Path"), CultureInfo.InvariantCulture) ?? "";
+                                        execArgs = Convert.ToString(ComGet(act, "Arguments"), CultureInfo.InvariantCulture) ?? "";
+                                        break;
+                                    }
+                                } catch {}
+                            }
+                        }
+                        if (string.IsNullOrWhiteSpace(execPath)) continue;
+
+                        string rawCmd = string.IsNullOrWhiteSpace(execArgs) ? execPath : (execPath + " " + execArgs);
+                        bool isMissing;
+                        string resolvedExe = ResolveExecutablePath(execPath, out isMissing);
+                        string author = "";
+                        try {
+                            object regInfo = ComGet(def, "RegistrationInfo");
+                            if (regInfo != null) author = Convert.ToString(ComGet(regInfo, "Author"), CultureInfo.InvariantCulture) ?? "";
+                        } catch {}
+
+                        var entry = new StartupEntry();
+                        entry.Id = "Task|" + taskFullPath;
+                        entry.Name = taskName;
+                        entry.DisplayName = MakeFriendlyName(taskName, resolvedExe);
+                        entry.Publisher = author;
+                        entry.RawCommand = rawCmd;
+                        entry.ResolvedExePath = resolvedExe;
+                        entry.SourceKind = "Task";
+                        entry.ScheduledTaskPath = taskFullPath;
+                        entry.Enabled = enabled;
+                        entry.IsPolicyLocked = false;
+                        entry.IsOrphan = isMissing;
+                        entry.ProtectionKind = IsProtectedOemOrSystemStartup(entry.DisplayName, rawCmd, author);
+                        entry.ImpactLevel = EstimateImpact(entry.DisplayName, rawCmd, author);
+                        entry.RequiresAdmin = true;
+                        entry.CanDelete = true;
+                        entry.MetadataHydrated = false;
+                        list.Add(entry);
+                    } catch {}
+                }
+            } catch {}
+
+            try {
+                object subFolders = ComCall(folder, "GetFolders", 0);
+                int fCount = Convert.ToInt32(ComGet(subFolders, "Count"), CultureInfo.InvariantCulture);
+                for (int fi = 1; fi <= fCount; fi++) {
+                    try {
+                        object sf = subFolders.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, subFolders, new object[] { fi });
+                        if (sf != null) TraverseScheduledTaskFolder(sf, list);
+                    } catch {}
+                }
+            } catch {}
+        }
+
+        private static void ScanScheduledTasks(List<StartupEntry> list) {
+            object svc = null;
+            try {
+                svc = ConnectTaskService();
+                if (svc == null) return;
+                object root = ComCall(svc, "GetFolder", @"\");
+                if (root != null) {
+                    TraverseScheduledTaskFolder(root, list);
+                }
+            } catch {
+            } finally {
+                if (svc != null) {
+                    try { Marshal.ReleaseComObject(svc); } catch {}
+                }
+            }
+        }
+
+        public static StartupEntry[] ScanExtended() {
+            var list = new List<StartupEntry>(32);
+            ScanUwpStartupTasks(list);
+            ScanScheduledTasks(list);
+            return list.ToArray();
+        }
+
+        public static Task<StartupEntry[]> ScanExtendedAsync() {
+            return Task.Run(delegate() { return ScanExtended(); });
+        }
+
+        public static BitmapSource ExtractStartupIcon(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            BitmapSource cached;
+            if (_iconCache.TryGetValue(path, out cached)) return cached;
+            if (!File.Exists(path)) return null;
+
+            BitmapSource res = null;
+            try {
+                string ext = Path.GetExtension(path) ?? "";
+                if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".bmp", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = File.ReadAllBytes(path);
+                    using (var ms = new MemoryStream(bytes)) {
+                        var bi = new BitmapImage();
+                        bi.BeginInit();
+                        bi.CacheOption = BitmapCacheOption.OnLoad;
+                        bi.DecodePixelWidth = 32;
+                        bi.StreamSource = ms;
+                        bi.EndInit();
+                        bi.Freeze();
+                        res = bi;
+                    }
+                } else {
+                    using (Icon assoc = Icon.ExtractAssociatedIcon(path)) {
+                        if (assoc != null) {
+                            BitmapSource bs = Imaging.CreateBitmapSourceFromHIcon(
+                                assoc.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bs.Freeze();
+                            res = bs;
+                        }
+                    }
+                }
+            } catch {}
+
+            if (res != null) {
+                _iconCache[path] = res;
+            }
+            return res;
+        }
+
+        public static StartupHydratedPatch[] HydrateEntriesAndIcons(StartupEntry[] entries) {
+            if (entries == null || entries.Length == 0) return new StartupHydratedPatch[0];
+            var patches = new List<StartupHydratedPatch>(entries.Length);
+            for (int i = 0; i < entries.Length; i++) {
+                StartupEntry e = entries[i];
+                if (e == null) continue;
+                string disp = e.DisplayName ?? "";
+                string pub = e.Publisher ?? "";
+                if (!e.MetadataHydrated && !string.IsNullOrWhiteSpace(e.ResolvedExePath) && File.Exists(e.ResolvedExePath)) {
+                    try {
+                        string ext = Path.GetExtension(e.ResolvedExePath) ?? "";
+                        if (ext.Equals(".exe", StringComparison.OrdinalIgnoreCase) || ext.Equals(".dll", StringComparison.OrdinalIgnoreCase)) {
+                            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(e.ResolvedExePath);
+                            if (fvi != null) {
+                                string fd = (fvi.FileDescription ?? "").Trim();
+                                string pn = (fvi.ProductName ?? "").Trim();
+                                string cn = (fvi.CompanyName ?? "").Trim();
+                                if (!string.IsNullOrEmpty(cn) && string.IsNullOrEmpty(pub)) pub = cn;
+                                if (!string.IsNullOrEmpty(fd) && fd.Length >= 3 && fd.Length <= 64 &&
+                                    (string.IsNullOrEmpty(disp) || disp.IndexOf("AutoLaunch", StringComparison.OrdinalIgnoreCase) >= 0 || disp.Equals(Path.GetFileNameWithoutExtension(e.ResolvedExePath), StringComparison.OrdinalIgnoreCase))) {
+                                    disp = fd;
+                                } else if (!string.IsNullOrEmpty(pn) && pn.Length >= 3 && pn.Length <= 64 &&
+                                    (string.IsNullOrEmpty(disp) || disp.IndexOf("AutoLaunch", StringComparison.OrdinalIgnoreCase) >= 0)) {
+                                    disp = pn;
+                                }
+                            }
+                        }
+                    } catch {}
+                }
+
+                string iconSource = !string.IsNullOrWhiteSpace(e.LogoPath) ? e.LogoPath : e.ResolvedExePath;
+                if (string.IsNullOrWhiteSpace(iconSource) || !File.Exists(iconSource)) {
+                    if (!string.IsNullOrWhiteSpace(e.FolderFilePath) && File.Exists(e.FolderFilePath)) {
+                        iconSource = e.FolderFilePath;
+                    }
+                }
+                BitmapSource bmp = ExtractStartupIcon(iconSource);
+
+                var patch = new StartupHydratedPatch();
+                patch.Id = e.Id;
+                patch.DisplayName = disp;
+                patch.Publisher = pub;
+                patch.ProtectionKind = IsProtectedOemOrSystemStartup(disp + " " + e.Name, e.RawCommand, pub);
+                patch.ImpactLevel = EstimateImpact(disp + " " + e.Name, e.RawCommand, pub);
+                patch.IconBitmap = bmp;
+                patches.Add(patch);
+            }
+            return patches.ToArray();
+        }
+
+        public static Task<StartupHydratedPatch[]> HydrateEntriesAndIconsAsync(StartupEntry[] entries) {
+            return Task.Run(delegate() { return HydrateEntriesAndIcons(entries); });
+        }
+
+        public static byte[] ReadStartupApprovedBytes(StartupEntry entry) {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.ApprovedPath) || string.IsNullOrWhiteSpace(entry.ApprovedValueName)) {
+                return null;
+            }
+            try {
+                using (RegistryKey baseKey = OpenBase64(entry.ApprovedHive))
+                using (RegistryKey k = baseKey.OpenSubKey(entry.ApprovedPath, false)) {
+                    if (k == null) return null;
+                    return k.GetValue(entry.ApprovedValueName) as byte[];
+                }
+            } catch {
+                return null;
+            }
+        }
+
+        public static bool WriteStartupApprovedBytes(string hive, string path, string valueName, byte[] data) {
+            if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(valueName)) return false;
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive)) {
+                    if (data == null || data.Length == 0) {
+                        using (RegistryKey k = baseKey.OpenSubKey(path, true)) {
+                            if (k != null) k.DeleteValue(valueName, false);
+                        }
+                        return true;
+                    }
+                    using (RegistryKey k = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                        if (k == null) return false;
+                        k.SetValue(valueName, data, RegistryValueKind.Binary);
+                        return true;
+                    }
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static StartupOpResult SetStartupEnabled(StartupEntry entry, bool enable) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (entry == null) { res.Message = "Invalid entry"; return res; }
+            if (entry.IsPolicyLocked) {
+                res.Message = "PolicyLocked";
+                return res;
+            }
+
+            if (string.Equals(entry.SourceKind, "Store", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    string subPath = RegSystemAppDataPath + @"\" + entry.PackageFamilyName + @"\" + entry.TaskId;
+                    using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                    using (RegistryKey k = hkcu.OpenSubKey(subPath, true)) {
+                        if (k == null) { res.Message = "KeyNotFound"; return res; }
+                        int targetState = enable ? 2 : 1;
+                        k.SetValue("State", targetState, RegistryValueKind.DWord);
+                        entry.UwpState = targetState;
+                        entry.Enabled = enable;
+                        res.Success = true;
+                        return res;
+                    }
+                } catch (Exception ex) {
+                    res.Message = ex.Message;
+                    return res;
+                }
+            }
+
+            if (string.Equals(entry.SourceKind, "Task", StringComparison.OrdinalIgnoreCase)) {
+                object svc = null;
+                try {
+                    svc = ConnectTaskService();
+                    if (svc == null) { res.Message = "TaskServiceUnavailable"; return res; }
+                    string tp = entry.ScheduledTaskPath ?? "";
+                    int lastSlash = tp.LastIndexOf('\\');
+                    string folderPath = lastSlash > 0 ? tp.Substring(0, lastSlash) : @"\";
+                    string taskName = lastSlash >= 0 ? tp.Substring(lastSlash + 1) : tp;
+                    object folder = ComCall(svc, "GetFolder", folderPath);
+                    object task = ComCall(folder, "GetTask", taskName);
+                    ComSet(task, "Enabled", enable);
+                    entry.Enabled = enable;
+                    res.Success = true;
+                    return res;
+                } catch (UnauthorizedAccessException) {
+                    res.RequiresAdminError = true;
+                    res.Message = "AccessDenied";
+                    return res;
+                } catch (Exception ex) {
+                    if (ex.InnerException is UnauthorizedAccessException ||
+                        (ex.Message != null && ex.Message.IndexOf("Access", StringComparison.OrdinalIgnoreCase) >= 0)) {
+                        res.RequiresAdminError = true;
+                    }
+                    res.Message = ex.Message;
+                    return res;
+                } finally {
+                    if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+                }
+            }
+
+            try {
+                byte[] bytes = BuildApprovedBytes(enable);
+                using (RegistryKey baseKey = OpenBase64(entry.ApprovedHive))
+                using (RegistryKey k = baseKey.CreateSubKey(entry.ApprovedPath, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                    if (k == null) { res.RequiresAdminError = entry.RequiresAdmin; res.Message = "CannotOpenApprovedKey"; return res; }
+                    k.SetValue(entry.ApprovedValueName, bytes, RegistryValueKind.Binary);
+                    entry.Enabled = enable;
+                    res.Success = true;
+                    return res;
+                }
+            } catch (UnauthorizedAccessException) {
+                res.RequiresAdminError = true;
+                res.Message = "AccessDenied";
+                return res;
+            } catch (Exception ex) {
+                res.RequiresAdminError = entry.RequiresAdmin;
+                res.Message = ex.Message;
+                return res;
+            }
+        }
+
+        public static string GetScheduledTaskXml(string taskFullPath) {
+            if (string.IsNullOrWhiteSpace(taskFullPath)) return "";
+            object svc = null;
+            try {
+                svc = ConnectTaskService();
+                if (svc == null) return "";
+                int lastSlash = taskFullPath.LastIndexOf('\\');
+                string folderPath = lastSlash > 0 ? taskFullPath.Substring(0, lastSlash) : @"\";
+                string taskName = lastSlash >= 0 ? taskFullPath.Substring(lastSlash + 1) : taskFullPath;
+                object folder = ComCall(svc, "GetFolder", folderPath);
+                object task = ComCall(folder, "GetTask", taskName);
+                return Convert.ToString(ComGet(task, "Xml"), CultureInfo.InvariantCulture) ?? "";
+            } catch {
+                return "";
+            } finally {
+                if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+            }
+        }
+
+        public static StartupOpResult RegisterScheduledTaskFromXml(string taskFullPath, string xml) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (string.IsNullOrWhiteSpace(taskFullPath) || string.IsNullOrWhiteSpace(xml)) {
+                res.Message = "InvalidXml";
+                return res;
+            }
+            object svc = null;
+            try {
+                svc = ConnectTaskService();
+                if (svc == null) { res.Message = "TaskServiceUnavailable"; return res; }
+                int lastSlash = taskFullPath.LastIndexOf('\\');
+                string folderPath = lastSlash > 0 ? taskFullPath.Substring(0, lastSlash) : @"\";
+                string taskName = lastSlash >= 0 ? taskFullPath.Substring(lastSlash + 1) : taskFullPath;
+                object folder = ComCall(svc, "GetFolder", folderPath);
+                ComCall(folder, "RegisterTask", taskName, xml, 6, null, null, 3, null);
+                res.Success = true;
+                return res;
+            } catch (Exception ex) {
+                res.Message = (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+                return res;
+            } finally {
+                if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+            }
+        }
+
+        public static StartupOpResult DeleteStartupEntry(StartupEntry entry) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (entry == null) { res.Message = "InvalidEntry"; return res; }
+            if (!entry.CanDelete || string.Equals(entry.SourceKind, "Store", StringComparison.OrdinalIgnoreCase)) {
+                res.Message = "DeleteNotAllowed";
+                return res;
+            }
+
+            if (string.Equals(entry.SourceKind, "Task", StringComparison.OrdinalIgnoreCase)) {
+                object svc = null;
+                try {
+                    svc = ConnectTaskService();
+                    if (svc == null) { res.Message = "TaskServiceUnavailable"; return res; }
+                    string tp = entry.ScheduledTaskPath ?? "";
+                    int lastSlash = tp.LastIndexOf('\\');
+                    string folderPath = lastSlash > 0 ? tp.Substring(0, lastSlash) : @"\";
+                    string taskName = lastSlash >= 0 ? tp.Substring(lastSlash + 1) : tp;
+                    object folder = ComCall(svc, "GetFolder", folderPath);
+                    ComCall(folder, "DeleteTask", taskName, 0);
+                    res.Success = true;
+                    return res;
+                } catch (UnauthorizedAccessException) {
+                    res.RequiresAdminError = true;
+                    res.Message = "AccessDenied";
+                    return res;
+                } catch (Exception ex) {
+                    if (ex.InnerException is UnauthorizedAccessException) res.RequiresAdminError = true;
+                    res.Message = (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+                    return res;
+                } finally {
+                    if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+                }
+            }
+
+            if (string.Equals(entry.SourceKind, "FolderUser", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(entry.SourceKind, "FolderAll", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    if (!string.IsNullOrWhiteSpace(entry.FolderFilePath) && File.Exists(entry.FolderFilePath)) {
+                        File.Delete(entry.FolderFilePath);
+                    }
+                    WriteStartupApprovedBytes(entry.ApprovedHive, entry.ApprovedPath, entry.ApprovedValueName, null);
+                    res.Success = true;
+                    return res;
+                } catch (UnauthorizedAccessException) {
+                    res.RequiresAdminError = true;
+                    res.Message = "AccessDenied";
+                    return res;
+                } catch (Exception ex) {
+                    res.RequiresAdminError = entry.RequiresAdmin;
+                    res.Message = ex.Message;
+                    return res;
+                }
+            }
+
+            try {
+                using (RegistryKey baseKey = OpenBase64(entry.RegistryHive))
+                using (RegistryKey k = baseKey.OpenSubKey(entry.RegistryPath, true)) {
+                    if (k != null) {
+                        k.DeleteValue(entry.RegistryValueName, false);
+                    }
+                }
+                WriteStartupApprovedBytes(entry.ApprovedHive, entry.ApprovedPath, entry.ApprovedValueName, null);
+                res.Success = true;
+                return res;
+            } catch (UnauthorizedAccessException) {
+                res.RequiresAdminError = true;
+                res.Message = "AccessDenied";
+                return res;
+            } catch (Exception ex) {
+                res.RequiresAdminError = entry.RequiresAdmin;
+                res.Message = ex.Message;
+                return res;
+            }
+        }
+
+        public static StartupOpResult AddStartupEntry(string name, string exePath, string args) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(exePath)) {
+                res.Message = "InvalidInput";
+                return res;
+            }
+            try {
+                string cleanName = name.Trim();
+                string cleanExe = exePath.Trim().Trim('"');
+                string cmd = "\"" + cleanExe + "\"" + (string.IsNullOrWhiteSpace(args) ? "" : (" " + args.Trim()));
+                using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)) {
+                    using (RegistryKey runKey = hkcu.CreateSubKey(RegRunPath, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                        if (runKey == null) { res.Message = "CannotOpenRunKey"; return res; }
+                        runKey.SetValue(cleanName, cmd, RegistryValueKind.String);
+                    }
+                    using (RegistryKey apKey = hkcu.CreateSubKey(RegApprovedRunPath, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                        if (apKey != null) {
+                            apKey.SetValue(cleanName, BuildApprovedBytes(true), RegistryValueKind.Binary);
+                        }
+                    }
+                }
+                res.Success = true;
+                return res;
+            } catch (Exception ex) {
+                res.Message = ex.Message;
+                return res;
+            }
+        }
+
+        private static HashSet<string> GetRegValueNameSet(string hive, string path) {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey k = baseKey.OpenSubKey(path, false)) {
+                    if (k == null) return set;
+                    string[] names = k.GetValueNames();
+                    for (int i = 0; i < names.Length; i++) {
+                        if (!string.IsNullOrEmpty(names[i])) set.Add(names[i]);
+                    }
+                }
+            } catch {}
+            return set;
+        }
+
+        private static HashSet<string> GetFolderFileNameSet(string folderPath) {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try {
+                if (!string.IsNullOrWhiteSpace(folderPath) && Directory.Exists(folderPath)) {
+                    string[] files = Directory.GetFiles(folderPath);
+                    for (int i = 0; i < files.Length; i++) {
+                        string fn = Path.GetFileName(files[i]);
+                        if (!string.IsNullOrEmpty(fn)) set.Add(fn);
+                    }
+                }
+            } catch {}
+            return set;
+        }
+
+        private static void ProcessOrphanApprovedPair(
+            string hive,
+            string approvedPath,
+            HashSet<string> liveNames,
+            bool deleteOrphans,
+            List<string> foundOrRemoved,
+            ref int skippedAdmin) {
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey apKey = baseKey.OpenSubKey(approvedPath, deleteOrphans)) {
+                    if (apKey == null) return;
+                    string[] apNames = apKey.GetValueNames();
+                    for (int i = 0; i < apNames.Length; i++) {
+                        string vn = apNames[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        if (!liveNames.Contains(vn)) {
+                            if (deleteOrphans) {
+                                try {
+                                    apKey.DeleteValue(vn, false);
+                                    foundOrRemoved.Add(hive + @"\" + approvedPath + " [" + vn + "]");
+                                } catch (UnauthorizedAccessException) {
+                                    skippedAdmin++;
+                                } catch {}
+                            } else {
+                                foundOrRemoved.Add(hive + @"\" + approvedPath + " [" + vn + "]");
+                            }
+                        }
+                    }
+                }
+            } catch (UnauthorizedAccessException) {
+                skippedAdmin++;
+            } catch {}
+        }
+
+        public static int CountOrphanApprovedEntries() {
+            var found = new List<string>();
+            int skipped = 0;
+            ProcessOrphanApprovedPair("HKCU", RegApprovedRunPath, GetRegValueNameSet("HKCU", RegRunPath), false, found, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRunPath, GetRegValueNameSet("HKLM", RegRunPath), false, found, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRun32Path, GetRegValueNameSet("HKLM", RegRunWow32Path), false, found, ref skipped);
+            try {
+                string uDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                ProcessOrphanApprovedPair("HKCU", RegApprovedFolderPath, GetFolderFileNameSet(uDir), false, found, ref skipped);
+            } catch {}
+            try {
+                string cDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                ProcessOrphanApprovedPair("HKLM", RegApprovedFolderPath, GetFolderFileNameSet(cDir), false, found, ref skipped);
+            } catch {}
+            return found.Count;
+        }
+
+        public static StartupOrphanCleanupResult CleanupOrphanApprovedEntries() {
+            var removed = new List<string>();
+            int skipped = 0;
+            ProcessOrphanApprovedPair("HKCU", RegApprovedRunPath, GetRegValueNameSet("HKCU", RegRunPath), true, removed, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRunPath, GetRegValueNameSet("HKLM", RegRunPath), true, removed, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRun32Path, GetRegValueNameSet("HKLM", RegRunWow32Path), true, removed, ref skipped);
+            try {
+                string uDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                ProcessOrphanApprovedPair("HKCU", RegApprovedFolderPath, GetFolderFileNameSet(uDir), true, removed, ref skipped);
+            } catch {}
+            try {
+                string cDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                ProcessOrphanApprovedPair("HKLM", RegApprovedFolderPath, GetFolderFileNameSet(cDir), true, removed, ref skipped);
+            } catch {}
+            return new StartupOrphanCleanupResult {
+                RemovedCount = removed.Count,
+                SkippedAdminCount = skipped,
+                RemovedKeys = removed.ToArray()
+            };
         }
     }
 }
@@ -35075,6 +36634,1468 @@ namespace DuckUtil {
     } catch {}
 }
 
+if (-not ("DuckUtil.StartupManagerEngine" -as [type])) {
+    try {
+        $startupMgrCs = @'
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
+
+namespace DuckUtil {
+    public sealed class StartupEntry {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string Publisher { get; set; }
+        public string RawCommand { get; set; }
+        public string ResolvedExePath { get; set; }
+        public string SourceKind { get; set; }
+        public string RegistryHive { get; set; }
+        public string RegistryPath { get; set; }
+        public string RegistryValueName { get; set; }
+        public string ApprovedHive { get; set; }
+        public string ApprovedPath { get; set; }
+        public string ApprovedValueName { get; set; }
+        public string FolderFilePath { get; set; }
+        public string PackageFamilyName { get; set; }
+        public string PackageFullName { get; set; }
+        public string TaskId { get; set; }
+        public int UwpState { get; set; }
+        public string ScheduledTaskPath { get; set; }
+        public string LogoPath { get; set; }
+        public bool Enabled { get; set; }
+        public bool IsPolicyLocked { get; set; }
+        public bool IsOrphan { get; set; }
+        public string ProtectionKind { get; set; }
+        public string ImpactLevel { get; set; }
+        public bool RequiresAdmin { get; set; }
+        public bool CanDelete { get; set; }
+        public bool MetadataHydrated { get; set; }
+    }
+
+    public sealed class StartupOpResult {
+        public bool Success { get; set; }
+        public bool RequiresAdminError { get; set; }
+        public string Message { get; set; }
+    }
+
+    public sealed class StartupOrphanCleanupResult {
+        public int RemovedCount { get; set; }
+        public int SkippedAdminCount { get; set; }
+        public string[] RemovedKeys { get; set; }
+    }
+
+    public sealed class StartupHydratedPatch {
+        public string Id { get; set; }
+        public string DisplayName { get; set; }
+        public string Publisher { get; set; }
+        public string ProtectionKind { get; set; }
+        public string ImpactLevel { get; set; }
+        public BitmapSource IconBitmap { get; set; }
+    }
+
+    public static class StartupManagerEngine {
+        private const string RegRunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string RegRunWow32Path = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
+        private const string RegApprovedRunPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+        private const string RegApprovedRun32Path = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32";
+        private const string RegApprovedFolderPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder";
+        private const string RegSystemAppDataPath = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData";
+        private const string RegRepoPackagesPath = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages";
+
+        private static readonly ConcurrentDictionary<string, BitmapSource> _iconCache =
+            new ConcurrentDictionary<string, BitmapSource>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly string[] ValidStartupExtensions = new string[] {
+            ".lnk", ".exe", ".bat", ".cmd", ".vbs", ".ps1"
+        };
+
+        private static readonly string[] CommandExecExtensions = new string[] {
+            ".exe", ".com", ".bat", ".cmd", ".vbs", ".msc", ".ps1", ".scr"
+        };
+
+        private static readonly Regex RxStartupTask = new Regex(
+            @"<(?:\w+:)?StartupTask\b[^>]*\bTaskId\s*=\s*[""']([^""']+)[""']",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RxDisplayName = new Regex(
+            @"<DisplayName>\s*([^<]+?)\s*</DisplayName>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RxPublisherName = new Regex(
+            @"<PublisherDisplayName>\s*([^<]+?)\s*</PublisherDisplayName>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RxLogo = new Regex(
+            @"(?:Square44x44Logo|Square150x150Logo)\s*=\s*[""']([^""']+)[""']|<Logo>\s*([^<]+?)\s*</Logo>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly string[] HighImpactPatterns = new string[] {
+            "docker", "discord", "slack", "teams", "ms-teams", "spotify", "figma", "notion",
+            "vscode", "code.exe", "steam", "epicgames", "riot", "vanguard", "battle.net",
+            "ea desktop", "eadesktop", "ubisoft", "wargaming", "curseforge", "overwolf",
+            "onedrive", "googledrive", "dropbox", "creative cloud", "ccxprocess", "adobe",
+            "wallpaper32", "wallpaper64", "wallpaperengine", "blitz", "porofessor", "medal",
+            "obs64", "streamlabs", "icue", "lghub"
+        };
+
+        private static readonly string[] MediumImpactPatterns = new string[] {
+            "msedge", "chrome", "brave", "firefox", "opera", "zalo", "telegram", "viber",
+            "messenger", "whatsapp", "cloudflare", "warp", "proton", "radmin", "tailscale",
+            "zerotier", "nordvpn", "surfshark", "vantage", "legion", "armoury", "myasus",
+            "msicenter", "dragoncenter", "nitrosense", "predatorsense", "awcc", "alienware",
+            "omen", "synapse", "razer", "nvidia", "amd", "radeon", "yourphone", "crossdevice",
+            "pcmanager", "windowsmaster", "codex", "freedownloadmanager", "fdm", "idm",
+            "qbittorrent", "utorrent", "java", "jusched"
+        };
+
+        private static readonly string[] SystemProtectionPatterns = new string[] {
+            "securityhealth", "windows defender", "windowsdefender", "ctfmon", "sechealth"
+        };
+
+        private static readonly string[] OemProtectionPatterns = new string[] {
+            "rtkaud", "realtek", "dolby", "nahimic", "waves", "dtsx", "dtsaudio",
+            "lenovo", "vantage", "legion", "thinkpad", "asus", "armoury", "myasus", "atkex",
+            "msicenter", "dragoncenter", "nitrosense", "predatorsense", "acer",
+            "alienware", "awcc", "dellpower", "hpomen", "hpsystemevent", "gigabyte", "aorus",
+            "nvdisplay", "nvcontainer", "amdnoise", "amdrsserv", "radeon", "igfx", "intel",
+            "syntpenh", "synaptics", "etdctrl", "elan", "fxsound"
+        };
+
+        [DllImport("shell32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr CommandLineToArgvW(string lpCmdLine, out int pNumArgs);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport("shlwapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true, ThrowOnUnmappableChar = true)]
+        private static extern int SHLoadIndirectString(string pszSource, StringBuilder pszOutBuf, int cchOutBuf, IntPtr ppvReserved);
+
+        [ComImport]
+        [Guid("00021401-0000-0000-C000-000000000046")]
+        private class ShellLinkCoClass {
+        }
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("000214F9-0000-0000-C000-000000000046")]
+        private interface IShellLinkW {
+            void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);
+            void GetIDList(out IntPtr ppidl);
+            void SetIDList(IntPtr pidl);
+            void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);
+            void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);
+            void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+            void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);
+            void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
+            void GetHotkey(out ushort pwHotkey);
+            void SetHotkey(ushort wHotkey);
+            void GetShowCmd(out int piShowCmd);
+            void SetShowCmd(int iShowCmd);
+            void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);
+            void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);
+            void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);
+            void Resolve(IntPtr hwnd, uint fFlags);
+            void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
+        }
+
+        [ComImport]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [Guid("0000010b-0000-0000-C000-000000000046")]
+        private interface IPersistFile {
+            void GetClassID(out Guid pClassID);
+            [PreserveSig]
+            int IsDirty();
+            void Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);
+            void Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, [MarshalAs(UnmanagedType.Bool)] bool fRemember);
+            void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
+            void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);
+        }
+
+        private static RegistryKey OpenBase64(string hive) {
+            if (string.Equals(hive, "HKCU", StringComparison.OrdinalIgnoreCase)) {
+                return RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64);
+            }
+            return RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+        }
+
+        public static bool IsCurrentProcessAdmin() {
+            try {
+                using (var id = System.Security.Principal.WindowsIdentity.GetCurrent()) {
+                    var pr = new System.Security.Principal.WindowsPrincipal(id);
+                    return pr.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static bool IsEnabledFromApprovedBytes(byte[] data) {
+            if (data == null || data.Length == 0) return true;
+            return (data[0] & 1) == 0;
+        }
+
+        private static byte[] BuildApprovedBytes(bool enable) {
+            byte[] buf = new byte[12];
+            if (enable) {
+                buf[0] = 0x02;
+                return buf;
+            }
+            buf[0] = 0x03;
+            byte[] ft = BitConverter.GetBytes(DateTime.UtcNow.ToFileTimeUtc());
+            Buffer.BlockCopy(ft, 0, buf, 4, 8);
+            return buf;
+        }
+
+        private static Dictionary<string, byte[]> ReadApprovedMap(string hive, string subPath) {
+            var map = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey k = baseKey.OpenSubKey(subPath, false)) {
+                    if (k == null) return map;
+                    string[] names = k.GetValueNames();
+                    for (int i = 0; i < names.Length; i++) {
+                        string vn = names[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        byte[] val = k.GetValue(vn) as byte[];
+                        if (val != null && val.Length > 0) {
+                            map[vn] = val;
+                        }
+                    }
+                }
+            } catch {}
+            return map;
+        }
+
+        private static bool HasCommandExecExtension(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string ext = "";
+            try { ext = Path.GetExtension(path); } catch { return false; }
+            for (int i = 0; i < CommandExecExtensions.Length; i++) {
+                if (string.Equals(ext, CommandExecExtensions[i], StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
+        private static string TryFindInSystemPaths(string fileName) {
+            if (string.IsNullOrWhiteSpace(fileName)) return "";
+            string fn = fileName.Trim().Trim('"');
+            if (string.IsNullOrEmpty(fn)) return "";
+
+            string[] candidates = HasCommandExecExtension(fn)
+                ? new string[] { fn }
+                : new string[] { fn, fn + ".exe", fn + ".cmd", fn + ".bat" };
+
+            var dirs = new List<string>();
+            try { dirs.Add(Environment.GetFolderPath(Environment.SpecialFolder.System)); } catch {}
+            try { dirs.Add(Environment.GetFolderPath(Environment.SpecialFolder.SystemX86)); } catch {}
+            try { dirs.Add(Environment.GetFolderPath(Environment.SpecialFolder.Windows)); } catch {}
+
+            string envPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+            if (!string.IsNullOrEmpty(envPath)) {
+                string[] parts = envPath.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < parts.Length; i++) {
+                    string d = parts[i].Trim().Trim('"');
+                    if (!string.IsNullOrEmpty(d)) dirs.Add(d);
+                }
+            }
+
+            for (int dIdx = 0; dIdx < dirs.Count; dIdx++) {
+                string dir = dirs[dIdx];
+                for (int cIdx = 0; cIdx < candidates.Length; cIdx++) {
+                    try {
+                        string full = Path.Combine(dir, candidates[cIdx]);
+                        if (File.Exists(full)) return full;
+                    } catch {}
+                }
+            }
+
+            try {
+                using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)) {
+                    for (int cIdx = 0; cIdx < candidates.Length; cIdx++) {
+                        using (RegistryKey ap = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + candidates[cIdx], false)) {
+                            if (ap != null) {
+                                string p = Convert.ToString(ap.GetValue(""), CultureInfo.InvariantCulture) ?? "";
+                                p = Environment.ExpandEnvironmentVariables(p).Trim().Trim('"');
+                                if (!string.IsNullOrEmpty(p) && File.Exists(p)) return p;
+                            }
+                        }
+                    }
+                }
+            } catch {}
+
+            return "";
+        }
+
+        public static string ResolveExecutablePath(string rawCommand, out bool isExplicitMissingFile) {
+            isExplicitMissingFile = false;
+            if (string.IsNullOrWhiteSpace(rawCommand)) return "";
+
+            string expanded = Environment.ExpandEnvironmentVariables(rawCommand).Trim();
+            if (string.IsNullOrEmpty(expanded)) return "";
+
+            if (expanded.StartsWith("\"", StringComparison.Ordinal)) {
+                int endQ = expanded.IndexOf('"', 1);
+                if (endQ > 1) {
+                    string quoted = expanded.Substring(1, endQ - 1).Trim();
+                    if (File.Exists(quoted)) return quoted;
+                    if (!quoted.Contains("\\") && !quoted.Contains("/")) {
+                        string found = TryFindInSystemPaths(quoted);
+                        if (!string.IsNullOrEmpty(found)) return found;
+                    }
+                    if (Path.IsPathRooted(quoted)) {
+                        isExplicitMissingFile = true;
+                        return quoted;
+                    }
+                }
+            }
+
+            if (File.Exists(expanded)) return expanded;
+
+            int argc;
+            IntPtr argvPtr = CommandLineToArgvW(expanded, out argc);
+            string firstArg = "";
+            string[] argv = new string[0];
+            if (argvPtr != IntPtr.Zero) {
+                try {
+                    if (argc > 0) {
+                        argv = new string[argc];
+                        for (int i = 0; i < argc; i++) {
+                            IntPtr pStr = Marshal.ReadIntPtr(argvPtr, i * IntPtr.Size);
+                            argv[i] = Marshal.PtrToStringUni(pStr) ?? "";
+                        }
+                        firstArg = argv[0].Trim();
+                    }
+                } finally {
+                    LocalFree(argvPtr);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(firstArg)) {
+                if (File.Exists(firstArg)) return firstArg;
+                if (!firstArg.Contains("\\") && !firstArg.Contains("/")) {
+                    string foundInPath = TryFindInSystemPaths(firstArg);
+                    if (!string.IsNullOrEmpty(foundInPath)) return foundInPath;
+                }
+            }
+
+            if (argv.Length > 1 && Path.IsPathRooted(firstArg)) {
+                var sb = new StringBuilder(firstArg);
+                string bestRootedExec = HasCommandExecExtension(firstArg) ? firstArg : "";
+                for (int i = 1; i < argv.Length; i++) {
+                    sb.Append(' ').Append(argv[i]);
+                    string candidate = sb.ToString();
+                    if (File.Exists(candidate)) return candidate;
+                    if (string.IsNullOrEmpty(bestRootedExec) && HasCommandExecExtension(candidate)) {
+                        bestRootedExec = candidate;
+                    }
+                }
+                if (!string.IsNullOrEmpty(bestRootedExec)) {
+                    isExplicitMissingFile = !File.Exists(bestRootedExec);
+                    return bestRootedExec;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(firstArg) && Path.IsPathRooted(firstArg)) {
+                if (!HasCommandExecExtension(firstArg) && File.Exists(firstArg + ".exe")) {
+                    return firstArg + ".exe";
+                }
+                isExplicitMissingFile = true;
+                return firstArg;
+            }
+
+            return firstArg;
+        }
+
+        private static void ResolveShortcutLnk(string lnkPath, out string targetPath, out string arguments, out bool isNonFileTarget) {
+            targetPath = "";
+            arguments = "";
+            isNonFileTarget = false;
+            IShellLinkW link = null;
+            try {
+                link = (IShellLinkW)new ShellLinkCoClass();
+                IPersistFile pf = (IPersistFile)link;
+                pf.Load(lnkPath, 0);
+
+                var pathBuf = new StringBuilder(1024);
+                link.GetPath(pathBuf, pathBuf.Capacity, IntPtr.Zero, 0);
+                string p = pathBuf.ToString().Trim();
+
+                var argsBuf = new StringBuilder(1024);
+                link.GetArguments(argsBuf, argsBuf.Capacity);
+                arguments = argsBuf.ToString().Trim();
+
+                if (string.IsNullOrEmpty(p)) {
+                    isNonFileTarget = true;
+                } else {
+                    targetPath = Environment.ExpandEnvironmentVariables(p);
+                }
+            } catch {
+                isNonFileTarget = true;
+            } finally {
+                if (link != null) {
+                    try { Marshal.ReleaseComObject(link); } catch {}
+                }
+            }
+        }
+
+        public static string IsProtectedOemOrSystemStartup(string name, string command, string publisher) {
+            string hay = ((name ?? "") + " " + (command ?? "") + " " + (publisher ?? "")).ToLowerInvariant();
+            for (int i = 0; i < SystemProtectionPatterns.Length; i++) {
+                if (hay.Contains(SystemProtectionPatterns[i])) return "System";
+            }
+            for (int i = 0; i < OemProtectionPatterns.Length; i++) {
+                if (hay.Contains(OemProtectionPatterns[i])) return "Oem";
+            }
+            return "";
+        }
+
+        public static string EstimateImpact(string name, string command, string publisher) {
+            string hay = ((name ?? "") + " " + (command ?? "") + " " + (publisher ?? "")).ToLowerInvariant();
+            for (int i = 0; i < HighImpactPatterns.Length; i++) {
+                if (hay.Contains(HighImpactPatterns[i])) return "High";
+            }
+            for (int i = 0; i < MediumImpactPatterns.Length; i++) {
+                if (hay.Contains(MediumImpactPatterns[i])) return "Medium";
+            }
+            return "Low";
+        }
+
+        private static string MakeFriendlyName(string rawName, string exePath) {
+            string n = (rawName ?? "").Trim();
+            if (n.StartsWith("MicrosoftEdgeAutoLaunch_", StringComparison.OrdinalIgnoreCase)) {
+                return "Microsoft Edge";
+            }
+            if (n.StartsWith("electron.app.", StringComparison.OrdinalIgnoreCase)) {
+                return n.Substring("electron.app.".Length);
+            }
+            if (n.StartsWith("com.squirrel.", StringComparison.OrdinalIgnoreCase)) {
+                string[] parts = n.Split('.');
+                if (parts.Length >= 3) return parts[parts.Length - 1];
+            }
+            if (string.IsNullOrEmpty(n) && !string.IsNullOrEmpty(exePath)) {
+                try { return Path.GetFileNameWithoutExtension(exePath); } catch {}
+            }
+            return n;
+        }
+
+        private static void ScanRegistryRunKey(
+            List<StartupEntry> list,
+            string hive,
+            string runPath,
+            string approvedPath,
+            string sourceKind,
+            bool requiresAdmin) {
+            Dictionary<string, byte[]> approvedMap = ReadApprovedMap(hive, approvedPath);
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey k = baseKey.OpenSubKey(runPath, false)) {
+                    if (k == null) return;
+                    string[] names = k.GetValueNames();
+                    for (int i = 0; i < names.Length; i++) {
+                        string vn = names[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        string rawCmd = Convert.ToString(k.GetValue(vn), CultureInfo.InvariantCulture) ?? "";
+                        if (string.IsNullOrWhiteSpace(rawCmd)) continue;
+
+                        bool isMissing;
+                        string exePath = ResolveExecutablePath(rawCmd, out isMissing);
+                        byte[] apBytes;
+                        bool enabled = !approvedMap.TryGetValue(vn, out apBytes) || IsEnabledFromApprovedBytes(apBytes);
+
+                        var entry = new StartupEntry();
+                        entry.Id = sourceKind + "|" + vn;
+                        entry.Name = vn;
+                        entry.DisplayName = MakeFriendlyName(vn, exePath);
+                        entry.Publisher = "";
+                        entry.RawCommand = rawCmd;
+                        entry.ResolvedExePath = exePath;
+                        entry.SourceKind = sourceKind;
+                        entry.RegistryHive = hive;
+                        entry.RegistryPath = runPath;
+                        entry.RegistryValueName = vn;
+                        entry.ApprovedHive = hive;
+                        entry.ApprovedPath = approvedPath;
+                        entry.ApprovedValueName = vn;
+                        entry.Enabled = enabled;
+                        entry.IsPolicyLocked = false;
+                        entry.IsOrphan = isMissing;
+                        entry.ProtectionKind = IsProtectedOemOrSystemStartup(entry.DisplayName, rawCmd, "");
+                        entry.ImpactLevel = EstimateImpact(entry.DisplayName, rawCmd, "");
+                        entry.RequiresAdmin = requiresAdmin;
+                        entry.CanDelete = true;
+                        entry.MetadataHydrated = false;
+                        list.Add(entry);
+                    }
+                }
+            } catch {}
+        }
+
+        private static void ScanStartupFolder(
+            List<StartupEntry> list,
+            string folderPath,
+            string approvedHive,
+            string sourceKind,
+            bool requiresAdmin) {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath)) return;
+            Dictionary<string, byte[]> approvedMap = ReadApprovedMap(approvedHive, RegApprovedFolderPath);
+            try {
+                string[] files = Directory.GetFiles(folderPath);
+                for (int i = 0; i < files.Length; i++) {
+                    string fp = files[i];
+                    string fileName = Path.GetFileName(fp);
+                    if (string.IsNullOrEmpty(fileName)) continue;
+                    if (string.Equals(fileName, "desktop.ini", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(fileName, "thumbs.db", StringComparison.OrdinalIgnoreCase)) {
+                        continue;
+                    }
+                    try {
+                        FileAttributes attrs = File.GetAttributes(fp);
+                        if ((attrs & FileAttributes.System) != 0) continue;
+                    } catch {}
+
+                    string ext = Path.GetExtension(fp) ?? "";
+                    bool validExt = false;
+                    for (int eIdx = 0; eIdx < ValidStartupExtensions.Length; eIdx++) {
+                        if (string.Equals(ext, ValidStartupExtensions[eIdx], StringComparison.OrdinalIgnoreCase)) {
+                            validExt = true;
+                            break;
+                        }
+                    }
+                    if (!validExt) continue;
+
+                    string exePath = fp;
+                    string rawCmd = fp;
+                    bool isOrphan = false;
+
+                    if (string.Equals(ext, ".lnk", StringComparison.OrdinalIgnoreCase)) {
+                        string lnkTarget;
+                        string lnkArgs;
+                        bool isNonFile;
+                        ResolveShortcutLnk(fp, out lnkTarget, out lnkArgs, out isNonFile);
+                        if (isNonFile) {
+                            exePath = fp;
+                            rawCmd = fp;
+                            isOrphan = false;
+                        } else {
+                            exePath = lnkTarget;
+                            rawCmd = string.IsNullOrEmpty(lnkArgs) ? lnkTarget : ("\"" + lnkTarget + "\" " + lnkArgs);
+                            isOrphan = !string.IsNullOrEmpty(lnkTarget) && Path.IsPathRooted(lnkTarget) && !File.Exists(lnkTarget);
+                        }
+                    }
+
+                    byte[] apBytes;
+                    bool enabled = !approvedMap.TryGetValue(fileName, out apBytes) || IsEnabledFromApprovedBytes(apBytes);
+                    string disp = Path.GetFileNameWithoutExtension(fileName);
+
+                    var entry = new StartupEntry();
+                    entry.Id = sourceKind + "|" + fileName;
+                    entry.Name = fileName;
+                    entry.DisplayName = disp;
+                    entry.Publisher = "";
+                    entry.RawCommand = rawCmd;
+                    entry.ResolvedExePath = exePath;
+                    entry.SourceKind = sourceKind;
+                    entry.ApprovedHive = approvedHive;
+                    entry.ApprovedPath = RegApprovedFolderPath;
+                    entry.ApprovedValueName = fileName;
+                    entry.FolderFilePath = fp;
+                    entry.Enabled = enabled;
+                    entry.IsPolicyLocked = false;
+                    entry.IsOrphan = isOrphan;
+                    entry.ProtectionKind = IsProtectedOemOrSystemStartup(disp, rawCmd, "");
+                    entry.ImpactLevel = EstimateImpact(disp, rawCmd, "");
+                    entry.RequiresAdmin = requiresAdmin;
+                    entry.CanDelete = true;
+                    entry.MetadataHydrated = false;
+                    list.Add(entry);
+                }
+            } catch {}
+        }
+
+        public static StartupEntry[] ScanFastCore() {
+            var list = new List<StartupEntry>(32);
+            ScanRegistryRunKey(list, "HKCU", RegRunPath, RegApprovedRunPath, "RegUser", false);
+            ScanRegistryRunKey(list, "HKLM", RegRunPath, RegApprovedRunPath, "RegSystem", true);
+            ScanRegistryRunKey(list, "HKLM", RegRunWow32Path, RegApprovedRun32Path, "RegWow32", true);
+
+            try {
+                string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                ScanStartupFolder(list, userFolder, "HKCU", "FolderUser", false);
+            } catch {}
+            try {
+                string commonFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                ScanStartupFolder(list, commonFolder, "HKLM", "FolderAll", true);
+            } catch {}
+
+            return list.ToArray();
+        }
+
+        public static Task<StartupEntry[]> ScanFastCoreAsync() {
+            return Task.Run(delegate() { return ScanFastCore(); });
+        }
+
+        private sealed class PackageRepoInfo {
+            public string PackageFullName;
+            public string PackageRootFolder;
+        }
+
+        private static string ExtractPackageFamilyFromFullName(string fullName) {
+            if (string.IsNullOrEmpty(fullName)) return "";
+            int firstUs = fullName.IndexOf('_');
+            int lastDoubleUs = fullName.LastIndexOf("__", StringComparison.Ordinal);
+            if (firstUs <= 0 || lastDoubleUs <= firstUs || lastDoubleUs + 2 >= fullName.Length) return "";
+            return fullName.Substring(0, firstUs) + "_" + fullName.Substring(lastDoubleUs + 2);
+        }
+
+        private static Dictionary<string, PackageRepoInfo> BuildUwpFamilyMap() {
+            var map = new Dictionary<string, PackageRepoInfo>(StringComparer.OrdinalIgnoreCase);
+            try {
+                using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (RegistryKey pkgs = hkcu.OpenSubKey(RegRepoPackagesPath, false)) {
+                    if (pkgs == null) return map;
+                    string[] subNames = pkgs.GetSubKeyNames();
+                    for (int i = 0; i < subNames.Length; i++) {
+                        string fullName = subNames[i];
+                        string family = ExtractPackageFamilyFromFullName(fullName);
+                        if (string.IsNullOrEmpty(family)) continue;
+                        try {
+                            using (RegistryKey pk = pkgs.OpenSubKey(fullName, false)) {
+                                if (pk == null) continue;
+                                string root = Convert.ToString(pk.GetValue("PackageRootFolder"), CultureInfo.InvariantCulture) ?? "";
+                                if (string.IsNullOrEmpty(root)) continue;
+                                string manifestPath = Path.Combine(root, "AppxManifest.xml");
+                                if (!File.Exists(manifestPath)) continue;
+                                PackageRepoInfo existing;
+                                if (!map.TryGetValue(family, out existing) ||
+                                    string.CompareOrdinal(fullName, existing.PackageFullName) > 0) {
+                                    map[family] = new PackageRepoInfo {
+                                        PackageFullName = fullName,
+                                        PackageRootFolder = root
+                                    };
+                                }
+                            }
+                        } catch {}
+                    }
+                }
+            } catch {}
+            return map;
+        }
+
+        private static string ResolveIndirectResource(string packageFullName, string rawValue, string fallbackName) {
+            if (string.IsNullOrWhiteSpace(rawValue)) return fallbackName;
+            string v = rawValue.Trim();
+            if (!v.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase)) {
+                return v;
+            }
+            try {
+                string normalized = v;
+                if (!normalized.StartsWith("ms-resource://", StringComparison.OrdinalIgnoreCase)) {
+                    string tail = normalized.Substring("ms-resource:".Length).TrimStart('/');
+                    if (tail.StartsWith("Resources/", StringComparison.OrdinalIgnoreCase)) {
+                        normalized = "ms-resource:///" + tail;
+                    } else {
+                        normalized = "ms-resource:///Resources/" + tail;
+                    }
+                }
+                string query = "@{" + packageFullName + "?" + normalized + "}";
+                var sb = new StringBuilder(512);
+                int hr = SHLoadIndirectString(query, sb, sb.Capacity, IntPtr.Zero);
+                if (hr == 0 && sb.Length > 0) {
+                    string resolved = sb.ToString().Trim();
+                    if (!string.IsNullOrEmpty(resolved)) return resolved;
+                }
+                if (v.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase) &&
+                    !v.StartsWith("ms-resource://", StringComparison.OrdinalIgnoreCase)) {
+                    string query2 = "@{" + packageFullName + "?" + v + "}";
+                    var sb2 = new StringBuilder(512);
+                    if (SHLoadIndirectString(query2, sb2, sb2.Capacity, IntPtr.Zero) == 0 && sb2.Length > 0) {
+                        string resolved2 = sb2.ToString().Trim();
+                        if (!string.IsNullOrEmpty(resolved2)) return resolved2;
+                    }
+                }
+            } catch {}
+            return fallbackName;
+        }
+
+        private static string ResolveUwpLogoPath(string packageRoot, string manifestLogoRel) {
+            if (string.IsNullOrWhiteSpace(packageRoot) || string.IsNullOrWhiteSpace(manifestLogoRel)) return "";
+            try {
+                string rel = manifestLogoRel.Trim().Replace('/', '\\').TrimStart('\\');
+                string direct = Path.Combine(packageRoot, rel);
+                string dir = Path.GetDirectoryName(direct);
+                string stem = Path.GetFileNameWithoutExtension(direct);
+                string ext = Path.GetExtension(direct);
+                if (string.IsNullOrEmpty(ext)) ext = ".png";
+
+                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir) && !string.IsNullOrEmpty(stem)) {
+                    string[] preferred = new string[] {
+                        stem + ".targetsize-32_altform-unplated" + ext,
+                        stem + ".targetsize-32" + ext,
+                        stem + ".targetsize-24_altform-unplated" + ext,
+                        stem + ".targetsize-24" + ext,
+                        stem + ".scale-100" + ext,
+                        stem + ".scale-125" + ext,
+                        stem + ".scale-150" + ext,
+                        stem + ".scale-200" + ext,
+                        stem + ext
+                    };
+                    for (int i = 0; i < preferred.Length; i++) {
+                        string cand = Path.Combine(dir, preferred[i]);
+                        if (File.Exists(cand)) return cand;
+                    }
+                    string[] matches = Directory.GetFiles(dir, stem + ".*" + ext);
+                    if (matches != null && matches.Length > 0) return matches[0];
+                }
+                if (File.Exists(direct)) return direct;
+            } catch {}
+            return "";
+        }
+
+        private static string FriendlyFamilyFallback(string packageFamilyName) {
+            if (string.IsNullOrEmpty(packageFamilyName)) return "";
+            int us = packageFamilyName.LastIndexOf('_');
+            string core = us > 0 ? packageFamilyName.Substring(0, us) : packageFamilyName;
+            int dot = core.LastIndexOf('.');
+            if (dot > 0 && dot + 1 < core.Length) {
+                string tail = core.Substring(dot + 1);
+                if (tail.Length >= 3) return tail;
+            }
+            return core;
+        }
+
+        private static void ScanUwpStartupTasks(List<StartupEntry> list) {
+            Dictionary<string, PackageRepoInfo> familyMap = BuildUwpFamilyMap();
+            if (familyMap.Count == 0) return;
+
+            try {
+                using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                using (RegistryKey appDataRoot = hkcu.OpenSubKey(RegSystemAppDataPath, false)) {
+                    if (appDataRoot == null) return;
+                    string[] families = appDataRoot.GetSubKeyNames();
+                    for (int fIdx = 0; fIdx < families.Length; fIdx++) {
+                        string family = families[fIdx];
+                        PackageRepoInfo repo;
+                        if (!familyMap.TryGetValue(family, out repo)) continue;
+
+                        string manifestPath = Path.Combine(repo.PackageRootFolder, "AppxManifest.xml");
+                        string manifestXml = "";
+                        try { manifestXml = File.ReadAllText(manifestPath, Encoding.UTF8); } catch { continue; }
+                        if (string.IsNullOrEmpty(manifestXml)) continue;
+
+                        var validTaskIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        MatchCollection taskMatches = RxStartupTask.Matches(manifestXml);
+                        for (int t = 0; t < taskMatches.Count; t++) {
+                            string tid = taskMatches[t].Groups[1].Value.Trim();
+                            if (!string.IsNullOrEmpty(tid)) validTaskIds.Add(tid);
+                        }
+                        if (validTaskIds.Count == 0) continue;
+
+                        string fallbackName = FriendlyFamilyFallback(family);
+                        Match mDisp = RxDisplayName.Match(manifestXml);
+                        string dispRaw = mDisp.Success ? mDisp.Groups[1].Value.Trim() : "";
+                        string dispName = ResolveIndirectResource(repo.PackageFullName, dispRaw, fallbackName);
+
+                        Match mPub = RxPublisherName.Match(manifestXml);
+                        string pubRaw = mPub.Success ? mPub.Groups[1].Value.Trim() : "";
+                        string publisher = ResolveIndirectResource(repo.PackageFullName, pubRaw, "");
+
+                        Match mLogo = RxLogo.Match(manifestXml);
+                        string logoRel = "";
+                        if (mLogo.Success) {
+                            logoRel = !string.IsNullOrEmpty(mLogo.Groups[1].Value) ? mLogo.Groups[1].Value : mLogo.Groups[2].Value;
+                        }
+                        string logoPath = ResolveUwpLogoPath(repo.PackageRootFolder, logoRel);
+
+                        try {
+                            using (RegistryKey famKey = appDataRoot.OpenSubKey(family, false)) {
+                                if (famKey == null) continue;
+                                string[] subNames = famKey.GetSubKeyNames();
+                                for (int sIdx = 0; sIdx < subNames.Length; sIdx++) {
+                                    string taskId = subNames[sIdx];
+                                    if (!validTaskIds.Contains(taskId)) continue;
+                                    try {
+                                        using (RegistryKey tk = famKey.OpenSubKey(taskId, false)) {
+                                            if (tk == null) continue;
+                                            object stObj = tk.GetValue("State");
+                                            if (stObj == null) continue;
+                                            int state = Convert.ToInt32(stObj, CultureInfo.InvariantCulture);
+                                            bool enabled = (state == 2 || state == 4);
+                                            bool policyLocked = (state == 3 || state == 4);
+
+                                            var entry = new StartupEntry();
+                                            entry.Id = "Store|" + family + "|" + taskId;
+                                            entry.Name = taskId;
+                                            entry.DisplayName = dispName;
+                                            entry.Publisher = publisher;
+                                            entry.RawCommand = family + " (" + taskId + ")";
+                                            entry.ResolvedExePath = repo.PackageRootFolder;
+                                            entry.SourceKind = "Store";
+                                            entry.PackageFamilyName = family;
+                                            entry.PackageFullName = repo.PackageFullName;
+                                            entry.TaskId = taskId;
+                                            entry.UwpState = state;
+                                            entry.LogoPath = logoPath;
+                                            entry.Enabled = enabled;
+                                            entry.IsPolicyLocked = policyLocked;
+                                            entry.IsOrphan = false;
+                                            entry.ProtectionKind = IsProtectedOemOrSystemStartup(dispName, family + " " + taskId, publisher);
+                                            entry.ImpactLevel = EstimateImpact(dispName, family + " " + taskId, publisher);
+                                            entry.RequiresAdmin = false;
+                                            entry.CanDelete = false;
+                                            entry.MetadataHydrated = true;
+                                            list.Add(entry);
+                                        }
+                                    } catch {}
+                                }
+                            }
+                        } catch {}
+                    }
+                }
+            } catch {}
+        }
+
+        private static object ComGet(object target, string propName) {
+            return target.GetType().InvokeMember(propName, BindingFlags.GetProperty, null, target, null);
+        }
+
+        private static void ComSet(object target, string propName, object value) {
+            target.GetType().InvokeMember(propName, BindingFlags.SetProperty, null, target, new object[] { value });
+        }
+
+        private static object ComCall(object target, string methodName, params object[] args) {
+            return target.GetType().InvokeMember(methodName, BindingFlags.InvokeMethod, null, target, args);
+        }
+
+        private static object ConnectTaskService() {
+            Type t = Type.GetTypeFromProgID("Schedule.Service");
+            if (t == null) return null;
+            object svc = Activator.CreateInstance(t);
+            ComCall(svc, "Connect", Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            return svc;
+        }
+
+        private static void TraverseScheduledTaskFolder(object folder, List<StartupEntry> list) {
+            string folderPath = "";
+            try { folderPath = Convert.ToString(ComGet(folder, "Path"), CultureInfo.InvariantCulture) ?? ""; } catch { return; }
+
+            if (folderPath.Equals(@"\Microsoft\Windows", StringComparison.OrdinalIgnoreCase) ||
+                folderPath.StartsWith(@"\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase) ||
+                folderPath.Equals(@"\Microsoft\Office", StringComparison.OrdinalIgnoreCase) ||
+                folderPath.StartsWith(@"\Microsoft\Office\", StringComparison.OrdinalIgnoreCase)) {
+                return;
+            }
+
+            try {
+                object tasksCol = ComCall(folder, "GetTasks", 1);
+                int count = Convert.ToInt32(ComGet(tasksCol, "Count"), CultureInfo.InvariantCulture);
+                for (int i = 1; i <= count; i++) {
+                    object task = null;
+                    try {
+                        task = ComGet(tasksCol, "Item");
+                    } catch {
+                        try { task = tasksCol.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, tasksCol, new object[] { i }); } catch { task = null; }
+                    }
+                    if (task == null) {
+                        try { task = ComCall(tasksCol, "Item", i); } catch { continue; }
+                    }
+                    try {
+                        string taskName = Convert.ToString(ComGet(task, "Name"), CultureInfo.InvariantCulture) ?? "";
+                        string taskFullPath = Convert.ToString(ComGet(task, "Path"), CultureInfo.InvariantCulture) ?? "";
+                        if (string.IsNullOrEmpty(taskFullPath)) continue;
+                        if (taskFullPath.StartsWith(@"\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        bool enabled = Convert.ToBoolean(ComGet(task, "Enabled"), CultureInfo.InvariantCulture);
+                        object def = ComGet(task, "Definition");
+                        if (def == null) continue;
+
+                        bool hasStartupTrigger = false;
+                        object triggers = ComGet(def, "Triggers");
+                        if (triggers != null) {
+                            int tCount = Convert.ToInt32(ComGet(triggers, "Count"), CultureInfo.InvariantCulture);
+                            for (int ti = 1; ti <= tCount; ti++) {
+                                try {
+                                    object trig = triggers.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, triggers, new object[] { ti });
+                                    int trigType = Convert.ToInt32(ComGet(trig, "Type"), CultureInfo.InvariantCulture);
+                                    if (trigType == 9 || trigType == 8) {
+                                        hasStartupTrigger = true;
+                                        break;
+                                    }
+                                } catch {}
+                            }
+                        }
+                        if (!hasStartupTrigger) continue;
+
+                        string execPath = "";
+                        string execArgs = "";
+                        object actions = ComGet(def, "Actions");
+                        if (actions != null) {
+                            int aCount = Convert.ToInt32(ComGet(actions, "Count"), CultureInfo.InvariantCulture);
+                            for (int ai = 1; ai <= aCount; ai++) {
+                                try {
+                                    object act = actions.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, actions, new object[] { ai });
+                                    int actType = Convert.ToInt32(ComGet(act, "Type"), CultureInfo.InvariantCulture);
+                                    if (actType == 0) {
+                                        execPath = Convert.ToString(ComGet(act, "Path"), CultureInfo.InvariantCulture) ?? "";
+                                        execArgs = Convert.ToString(ComGet(act, "Arguments"), CultureInfo.InvariantCulture) ?? "";
+                                        break;
+                                    }
+                                } catch {}
+                            }
+                        }
+                        if (string.IsNullOrWhiteSpace(execPath)) continue;
+
+                        string rawCmd = string.IsNullOrWhiteSpace(execArgs) ? execPath : (execPath + " " + execArgs);
+                        bool isMissing;
+                        string resolvedExe = ResolveExecutablePath(execPath, out isMissing);
+                        string author = "";
+                        try {
+                            object regInfo = ComGet(def, "RegistrationInfo");
+                            if (regInfo != null) author = Convert.ToString(ComGet(regInfo, "Author"), CultureInfo.InvariantCulture) ?? "";
+                        } catch {}
+
+                        var entry = new StartupEntry();
+                        entry.Id = "Task|" + taskFullPath;
+                        entry.Name = taskName;
+                        entry.DisplayName = MakeFriendlyName(taskName, resolvedExe);
+                        entry.Publisher = author;
+                        entry.RawCommand = rawCmd;
+                        entry.ResolvedExePath = resolvedExe;
+                        entry.SourceKind = "Task";
+                        entry.ScheduledTaskPath = taskFullPath;
+                        entry.Enabled = enabled;
+                        entry.IsPolicyLocked = false;
+                        entry.IsOrphan = isMissing;
+                        entry.ProtectionKind = IsProtectedOemOrSystemStartup(entry.DisplayName, rawCmd, author);
+                        entry.ImpactLevel = EstimateImpact(entry.DisplayName, rawCmd, author);
+                        entry.RequiresAdmin = true;
+                        entry.CanDelete = true;
+                        entry.MetadataHydrated = false;
+                        list.Add(entry);
+                    } catch {}
+                }
+            } catch {}
+
+            try {
+                object subFolders = ComCall(folder, "GetFolders", 0);
+                int fCount = Convert.ToInt32(ComGet(subFolders, "Count"), CultureInfo.InvariantCulture);
+                for (int fi = 1; fi <= fCount; fi++) {
+                    try {
+                        object sf = subFolders.GetType().InvokeMember("Item", BindingFlags.GetProperty, null, subFolders, new object[] { fi });
+                        if (sf != null) TraverseScheduledTaskFolder(sf, list);
+                    } catch {}
+                }
+            } catch {}
+        }
+
+        private static void ScanScheduledTasks(List<StartupEntry> list) {
+            object svc = null;
+            try {
+                svc = ConnectTaskService();
+                if (svc == null) return;
+                object root = ComCall(svc, "GetFolder", @"\");
+                if (root != null) {
+                    TraverseScheduledTaskFolder(root, list);
+                }
+            } catch {
+            } finally {
+                if (svc != null) {
+                    try { Marshal.ReleaseComObject(svc); } catch {}
+                }
+            }
+        }
+
+        public static StartupEntry[] ScanExtended() {
+            var list = new List<StartupEntry>(32);
+            ScanUwpStartupTasks(list);
+            ScanScheduledTasks(list);
+            return list.ToArray();
+        }
+
+        public static Task<StartupEntry[]> ScanExtendedAsync() {
+            return Task.Run(delegate() { return ScanExtended(); });
+        }
+
+        public static BitmapSource ExtractStartupIcon(string path) {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            BitmapSource cached;
+            if (_iconCache.TryGetValue(path, out cached)) return cached;
+            if (!File.Exists(path)) return null;
+
+            BitmapSource res = null;
+            try {
+                string ext = Path.GetExtension(path) ?? "";
+                if (ext.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                    ext.Equals(".bmp", StringComparison.OrdinalIgnoreCase)) {
+                    byte[] bytes = File.ReadAllBytes(path);
+                    using (var ms = new MemoryStream(bytes)) {
+                        var bi = new BitmapImage();
+                        bi.BeginInit();
+                        bi.CacheOption = BitmapCacheOption.OnLoad;
+                        bi.DecodePixelWidth = 32;
+                        bi.StreamSource = ms;
+                        bi.EndInit();
+                        bi.Freeze();
+                        res = bi;
+                    }
+                } else {
+                    using (Icon assoc = Icon.ExtractAssociatedIcon(path)) {
+                        if (assoc != null) {
+                            BitmapSource bs = Imaging.CreateBitmapSourceFromHIcon(
+                                assoc.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                            bs.Freeze();
+                            res = bs;
+                        }
+                    }
+                }
+            } catch {}
+
+            if (res != null) {
+                _iconCache[path] = res;
+            }
+            return res;
+        }
+
+        public static StartupHydratedPatch[] HydrateEntriesAndIcons(StartupEntry[] entries) {
+            if (entries == null || entries.Length == 0) return new StartupHydratedPatch[0];
+            var patches = new List<StartupHydratedPatch>(entries.Length);
+            for (int i = 0; i < entries.Length; i++) {
+                StartupEntry e = entries[i];
+                if (e == null) continue;
+                string disp = e.DisplayName ?? "";
+                string pub = e.Publisher ?? "";
+                if (!e.MetadataHydrated && !string.IsNullOrWhiteSpace(e.ResolvedExePath) && File.Exists(e.ResolvedExePath)) {
+                    try {
+                        string ext = Path.GetExtension(e.ResolvedExePath) ?? "";
+                        if (ext.Equals(".exe", StringComparison.OrdinalIgnoreCase) || ext.Equals(".dll", StringComparison.OrdinalIgnoreCase)) {
+                            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(e.ResolvedExePath);
+                            if (fvi != null) {
+                                string fd = (fvi.FileDescription ?? "").Trim();
+                                string pn = (fvi.ProductName ?? "").Trim();
+                                string cn = (fvi.CompanyName ?? "").Trim();
+                                if (!string.IsNullOrEmpty(cn) && string.IsNullOrEmpty(pub)) pub = cn;
+                                if (!string.IsNullOrEmpty(fd) && fd.Length >= 3 && fd.Length <= 64 &&
+                                    (string.IsNullOrEmpty(disp) || disp.IndexOf("AutoLaunch", StringComparison.OrdinalIgnoreCase) >= 0 || disp.Equals(Path.GetFileNameWithoutExtension(e.ResolvedExePath), StringComparison.OrdinalIgnoreCase))) {
+                                    disp = fd;
+                                } else if (!string.IsNullOrEmpty(pn) && pn.Length >= 3 && pn.Length <= 64 &&
+                                    (string.IsNullOrEmpty(disp) || disp.IndexOf("AutoLaunch", StringComparison.OrdinalIgnoreCase) >= 0)) {
+                                    disp = pn;
+                                }
+                            }
+                        }
+                    } catch {}
+                }
+
+                string iconSource = !string.IsNullOrWhiteSpace(e.LogoPath) ? e.LogoPath : e.ResolvedExePath;
+                if (string.IsNullOrWhiteSpace(iconSource) || !File.Exists(iconSource)) {
+                    if (!string.IsNullOrWhiteSpace(e.FolderFilePath) && File.Exists(e.FolderFilePath)) {
+                        iconSource = e.FolderFilePath;
+                    }
+                }
+                BitmapSource bmp = ExtractStartupIcon(iconSource);
+
+                var patch = new StartupHydratedPatch();
+                patch.Id = e.Id;
+                patch.DisplayName = disp;
+                patch.Publisher = pub;
+                patch.ProtectionKind = IsProtectedOemOrSystemStartup(disp + " " + e.Name, e.RawCommand, pub);
+                patch.ImpactLevel = EstimateImpact(disp + " " + e.Name, e.RawCommand, pub);
+                patch.IconBitmap = bmp;
+                patches.Add(patch);
+            }
+            return patches.ToArray();
+        }
+
+        public static Task<StartupHydratedPatch[]> HydrateEntriesAndIconsAsync(StartupEntry[] entries) {
+            return Task.Run(delegate() { return HydrateEntriesAndIcons(entries); });
+        }
+
+        public static byte[] ReadStartupApprovedBytes(StartupEntry entry) {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.ApprovedPath) || string.IsNullOrWhiteSpace(entry.ApprovedValueName)) {
+                return null;
+            }
+            try {
+                using (RegistryKey baseKey = OpenBase64(entry.ApprovedHive))
+                using (RegistryKey k = baseKey.OpenSubKey(entry.ApprovedPath, false)) {
+                    if (k == null) return null;
+                    return k.GetValue(entry.ApprovedValueName) as byte[];
+                }
+            } catch {
+                return null;
+            }
+        }
+
+        public static bool WriteStartupApprovedBytes(string hive, string path, string valueName, byte[] data) {
+            if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(valueName)) return false;
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive)) {
+                    if (data == null || data.Length == 0) {
+                        using (RegistryKey k = baseKey.OpenSubKey(path, true)) {
+                            if (k != null) k.DeleteValue(valueName, false);
+                        }
+                        return true;
+                    }
+                    using (RegistryKey k = baseKey.CreateSubKey(path, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                        if (k == null) return false;
+                        k.SetValue(valueName, data, RegistryValueKind.Binary);
+                        return true;
+                    }
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        public static StartupOpResult SetStartupEnabled(StartupEntry entry, bool enable) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (entry == null) { res.Message = "Invalid entry"; return res; }
+            if (entry.IsPolicyLocked) {
+                res.Message = "PolicyLocked";
+                return res;
+            }
+
+            if (string.Equals(entry.SourceKind, "Store", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    string subPath = RegSystemAppDataPath + @"\" + entry.PackageFamilyName + @"\" + entry.TaskId;
+                    using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                    using (RegistryKey k = hkcu.OpenSubKey(subPath, true)) {
+                        if (k == null) { res.Message = "KeyNotFound"; return res; }
+                        int targetState = enable ? 2 : 1;
+                        k.SetValue("State", targetState, RegistryValueKind.DWord);
+                        entry.UwpState = targetState;
+                        entry.Enabled = enable;
+                        res.Success = true;
+                        return res;
+                    }
+                } catch (Exception ex) {
+                    res.Message = ex.Message;
+                    return res;
+                }
+            }
+
+            if (string.Equals(entry.SourceKind, "Task", StringComparison.OrdinalIgnoreCase)) {
+                object svc = null;
+                try {
+                    svc = ConnectTaskService();
+                    if (svc == null) { res.Message = "TaskServiceUnavailable"; return res; }
+                    string tp = entry.ScheduledTaskPath ?? "";
+                    int lastSlash = tp.LastIndexOf('\\');
+                    string folderPath = lastSlash > 0 ? tp.Substring(0, lastSlash) : @"\";
+                    string taskName = lastSlash >= 0 ? tp.Substring(lastSlash + 1) : tp;
+                    object folder = ComCall(svc, "GetFolder", folderPath);
+                    object task = ComCall(folder, "GetTask", taskName);
+                    ComSet(task, "Enabled", enable);
+                    entry.Enabled = enable;
+                    res.Success = true;
+                    return res;
+                } catch (UnauthorizedAccessException) {
+                    res.RequiresAdminError = true;
+                    res.Message = "AccessDenied";
+                    return res;
+                } catch (Exception ex) {
+                    if (ex.InnerException is UnauthorizedAccessException ||
+                        (ex.Message != null && ex.Message.IndexOf("Access", StringComparison.OrdinalIgnoreCase) >= 0)) {
+                        res.RequiresAdminError = true;
+                    }
+                    res.Message = ex.Message;
+                    return res;
+                } finally {
+                    if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+                }
+            }
+
+            try {
+                byte[] bytes = BuildApprovedBytes(enable);
+                using (RegistryKey baseKey = OpenBase64(entry.ApprovedHive))
+                using (RegistryKey k = baseKey.CreateSubKey(entry.ApprovedPath, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                    if (k == null) { res.RequiresAdminError = entry.RequiresAdmin; res.Message = "CannotOpenApprovedKey"; return res; }
+                    k.SetValue(entry.ApprovedValueName, bytes, RegistryValueKind.Binary);
+                    entry.Enabled = enable;
+                    res.Success = true;
+                    return res;
+                }
+            } catch (UnauthorizedAccessException) {
+                res.RequiresAdminError = true;
+                res.Message = "AccessDenied";
+                return res;
+            } catch (Exception ex) {
+                res.RequiresAdminError = entry.RequiresAdmin;
+                res.Message = ex.Message;
+                return res;
+            }
+        }
+
+        public static string GetScheduledTaskXml(string taskFullPath) {
+            if (string.IsNullOrWhiteSpace(taskFullPath)) return "";
+            object svc = null;
+            try {
+                svc = ConnectTaskService();
+                if (svc == null) return "";
+                int lastSlash = taskFullPath.LastIndexOf('\\');
+                string folderPath = lastSlash > 0 ? taskFullPath.Substring(0, lastSlash) : @"\";
+                string taskName = lastSlash >= 0 ? taskFullPath.Substring(lastSlash + 1) : taskFullPath;
+                object folder = ComCall(svc, "GetFolder", folderPath);
+                object task = ComCall(folder, "GetTask", taskName);
+                return Convert.ToString(ComGet(task, "Xml"), CultureInfo.InvariantCulture) ?? "";
+            } catch {
+                return "";
+            } finally {
+                if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+            }
+        }
+
+        public static StartupOpResult RegisterScheduledTaskFromXml(string taskFullPath, string xml) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (string.IsNullOrWhiteSpace(taskFullPath) || string.IsNullOrWhiteSpace(xml)) {
+                res.Message = "InvalidXml";
+                return res;
+            }
+            object svc = null;
+            try {
+                svc = ConnectTaskService();
+                if (svc == null) { res.Message = "TaskServiceUnavailable"; return res; }
+                int lastSlash = taskFullPath.LastIndexOf('\\');
+                string folderPath = lastSlash > 0 ? taskFullPath.Substring(0, lastSlash) : @"\";
+                string taskName = lastSlash >= 0 ? taskFullPath.Substring(lastSlash + 1) : taskFullPath;
+                object folder = ComCall(svc, "GetFolder", folderPath);
+                ComCall(folder, "RegisterTask", taskName, xml, 6, null, null, 3, null);
+                res.Success = true;
+                return res;
+            } catch (Exception ex) {
+                res.Message = (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+                return res;
+            } finally {
+                if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+            }
+        }
+
+        public static StartupOpResult DeleteStartupEntry(StartupEntry entry) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (entry == null) { res.Message = "InvalidEntry"; return res; }
+            if (!entry.CanDelete || string.Equals(entry.SourceKind, "Store", StringComparison.OrdinalIgnoreCase)) {
+                res.Message = "DeleteNotAllowed";
+                return res;
+            }
+
+            if (string.Equals(entry.SourceKind, "Task", StringComparison.OrdinalIgnoreCase)) {
+                object svc = null;
+                try {
+                    svc = ConnectTaskService();
+                    if (svc == null) { res.Message = "TaskServiceUnavailable"; return res; }
+                    string tp = entry.ScheduledTaskPath ?? "";
+                    int lastSlash = tp.LastIndexOf('\\');
+                    string folderPath = lastSlash > 0 ? tp.Substring(0, lastSlash) : @"\";
+                    string taskName = lastSlash >= 0 ? tp.Substring(lastSlash + 1) : tp;
+                    object folder = ComCall(svc, "GetFolder", folderPath);
+                    ComCall(folder, "DeleteTask", taskName, 0);
+                    res.Success = true;
+                    return res;
+                } catch (UnauthorizedAccessException) {
+                    res.RequiresAdminError = true;
+                    res.Message = "AccessDenied";
+                    return res;
+                } catch (Exception ex) {
+                    if (ex.InnerException is UnauthorizedAccessException) res.RequiresAdminError = true;
+                    res.Message = (ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+                    return res;
+                } finally {
+                    if (svc != null) { try { Marshal.ReleaseComObject(svc); } catch {} }
+                }
+            }
+
+            if (string.Equals(entry.SourceKind, "FolderUser", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(entry.SourceKind, "FolderAll", StringComparison.OrdinalIgnoreCase)) {
+                try {
+                    if (!string.IsNullOrWhiteSpace(entry.FolderFilePath) && File.Exists(entry.FolderFilePath)) {
+                        File.Delete(entry.FolderFilePath);
+                    }
+                    WriteStartupApprovedBytes(entry.ApprovedHive, entry.ApprovedPath, entry.ApprovedValueName, null);
+                    res.Success = true;
+                    return res;
+                } catch (UnauthorizedAccessException) {
+                    res.RequiresAdminError = true;
+                    res.Message = "AccessDenied";
+                    return res;
+                } catch (Exception ex) {
+                    res.RequiresAdminError = entry.RequiresAdmin;
+                    res.Message = ex.Message;
+                    return res;
+                }
+            }
+
+            try {
+                using (RegistryKey baseKey = OpenBase64(entry.RegistryHive))
+                using (RegistryKey k = baseKey.OpenSubKey(entry.RegistryPath, true)) {
+                    if (k != null) {
+                        k.DeleteValue(entry.RegistryValueName, false);
+                    }
+                }
+                WriteStartupApprovedBytes(entry.ApprovedHive, entry.ApprovedPath, entry.ApprovedValueName, null);
+                res.Success = true;
+                return res;
+            } catch (UnauthorizedAccessException) {
+                res.RequiresAdminError = true;
+                res.Message = "AccessDenied";
+                return res;
+            } catch (Exception ex) {
+                res.RequiresAdminError = entry.RequiresAdmin;
+                res.Message = ex.Message;
+                return res;
+            }
+        }
+
+        public static StartupOpResult AddStartupEntry(string name, string exePath, string args) {
+            var res = new StartupOpResult { Success = false, RequiresAdminError = false, Message = "" };
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(exePath)) {
+                res.Message = "InvalidInput";
+                return res;
+            }
+            try {
+                string cleanName = name.Trim();
+                string cleanExe = exePath.Trim().Trim('"');
+                string cmd = "\"" + cleanExe + "\"" + (string.IsNullOrWhiteSpace(args) ? "" : (" " + args.Trim()));
+                using (RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)) {
+                    using (RegistryKey runKey = hkcu.CreateSubKey(RegRunPath, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                        if (runKey == null) { res.Message = "CannotOpenRunKey"; return res; }
+                        runKey.SetValue(cleanName, cmd, RegistryValueKind.String);
+                    }
+                    using (RegistryKey apKey = hkcu.CreateSubKey(RegApprovedRunPath, RegistryKeyPermissionCheck.ReadWriteSubTree)) {
+                        if (apKey != null) {
+                            apKey.SetValue(cleanName, BuildApprovedBytes(true), RegistryValueKind.Binary);
+                        }
+                    }
+                }
+                res.Success = true;
+                return res;
+            } catch (Exception ex) {
+                res.Message = ex.Message;
+                return res;
+            }
+        }
+
+        private static HashSet<string> GetRegValueNameSet(string hive, string path) {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey k = baseKey.OpenSubKey(path, false)) {
+                    if (k == null) return set;
+                    string[] names = k.GetValueNames();
+                    for (int i = 0; i < names.Length; i++) {
+                        if (!string.IsNullOrEmpty(names[i])) set.Add(names[i]);
+                    }
+                }
+            } catch {}
+            return set;
+        }
+
+        private static HashSet<string> GetFolderFileNameSet(string folderPath) {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try {
+                if (!string.IsNullOrWhiteSpace(folderPath) && Directory.Exists(folderPath)) {
+                    string[] files = Directory.GetFiles(folderPath);
+                    for (int i = 0; i < files.Length; i++) {
+                        string fn = Path.GetFileName(files[i]);
+                        if (!string.IsNullOrEmpty(fn)) set.Add(fn);
+                    }
+                }
+            } catch {}
+            return set;
+        }
+
+        private static void ProcessOrphanApprovedPair(
+            string hive,
+            string approvedPath,
+            HashSet<string> liveNames,
+            bool deleteOrphans,
+            List<string> foundOrRemoved,
+            ref int skippedAdmin) {
+            try {
+                using (RegistryKey baseKey = OpenBase64(hive))
+                using (RegistryKey apKey = baseKey.OpenSubKey(approvedPath, deleteOrphans)) {
+                    if (apKey == null) return;
+                    string[] apNames = apKey.GetValueNames();
+                    for (int i = 0; i < apNames.Length; i++) {
+                        string vn = apNames[i];
+                        if (string.IsNullOrEmpty(vn)) continue;
+                        if (!liveNames.Contains(vn)) {
+                            if (deleteOrphans) {
+                                try {
+                                    apKey.DeleteValue(vn, false);
+                                    foundOrRemoved.Add(hive + @"\" + approvedPath + " [" + vn + "]");
+                                } catch (UnauthorizedAccessException) {
+                                    skippedAdmin++;
+                                } catch {}
+                            } else {
+                                foundOrRemoved.Add(hive + @"\" + approvedPath + " [" + vn + "]");
+                            }
+                        }
+                    }
+                }
+            } catch (UnauthorizedAccessException) {
+                skippedAdmin++;
+            } catch {}
+        }
+
+        public static int CountOrphanApprovedEntries() {
+            var found = new List<string>();
+            int skipped = 0;
+            ProcessOrphanApprovedPair("HKCU", RegApprovedRunPath, GetRegValueNameSet("HKCU", RegRunPath), false, found, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRunPath, GetRegValueNameSet("HKLM", RegRunPath), false, found, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRun32Path, GetRegValueNameSet("HKLM", RegRunWow32Path), false, found, ref skipped);
+            try {
+                string uDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                ProcessOrphanApprovedPair("HKCU", RegApprovedFolderPath, GetFolderFileNameSet(uDir), false, found, ref skipped);
+            } catch {}
+            try {
+                string cDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                ProcessOrphanApprovedPair("HKLM", RegApprovedFolderPath, GetFolderFileNameSet(cDir), false, found, ref skipped);
+            } catch {}
+            return found.Count;
+        }
+
+        public static StartupOrphanCleanupResult CleanupOrphanApprovedEntries() {
+            var removed = new List<string>();
+            int skipped = 0;
+            ProcessOrphanApprovedPair("HKCU", RegApprovedRunPath, GetRegValueNameSet("HKCU", RegRunPath), true, removed, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRunPath, GetRegValueNameSet("HKLM", RegRunPath), true, removed, ref skipped);
+            ProcessOrphanApprovedPair("HKLM", RegApprovedRun32Path, GetRegValueNameSet("HKLM", RegRunWow32Path), true, removed, ref skipped);
+            try {
+                string uDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                ProcessOrphanApprovedPair("HKCU", RegApprovedFolderPath, GetFolderFileNameSet(uDir), true, removed, ref skipped);
+            } catch {}
+            try {
+                string cDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                ProcessOrphanApprovedPair("HKLM", RegApprovedFolderPath, GetFolderFileNameSet(cDir), true, removed, ref skipped);
+            } catch {}
+            return new StartupOrphanCleanupResult {
+                RemovedCount = removed.Count,
+                SkippedAdminCount = skipped,
+                RemovedKeys = removed.ToArray()
+            };
+        }
+    }
+}
+'@
+        Import-CachedCSharpType -TypeName "DuckUtil.StartupManagerEngine" -SourceCode $startupMgrCs -Prefix "DuckStart" -RequiredMethod "ScanFastCoreAsync" -RefsResolver $resolveCoreRefs
+    } catch {}
+}
+
 $script:activeChildProcess   = $null
 $script:activeChildProcesses = [System.Collections.Generic.List[object]]::new()
 $script:isWindowClosing      = $false
@@ -40628,6 +43649,263 @@ function Export-SystemDriversBackup {
             Log-Text "[!] Sao l$([char]0x01B0)u driver qua pnputil.exe th$([char]0x1EA5)t b$([char]0x1EA1)i (ExitCode: $exitCode)."
             return $false
         }
+    }
+}
+
+function Get-StartupBackupDirectory {
+    return (Join-Path $env:LOCALAPPDATA "AppDriver\StartupBackups")
+}
+
+function Get-StartupBackupsList {
+    $dir = Get-StartupBackupDirectory
+    if (-not [System.IO.Directory]::Exists($dir)) { return @() }
+    return @(Get-ChildItem -LiteralPath $dir -Filter "batch_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+}
+
+function Save-StartupGuardBatchBackup {
+    param([Parameter(Mandatory = $true)]$Entries)
+    $entryArr = @($Entries | Where-Object { $_ -and $_.CanDelete })
+    if ($entryArr.Count -eq 0) { return "" }
+
+    $dir = Get-StartupBackupDirectory
+    if (-not [System.IO.Directory]::Exists($dir)) {
+        [void][System.IO.Directory]::CreateDirectory($dir)
+    }
+
+    $items = [System.Collections.Generic.List[object]]::new()
+    foreach ($e in $entryArr) {
+        $apB64 = ""
+        try {
+            $apBytes = [DuckUtil.StartupManagerEngine]::ReadStartupApprovedBytes($e)
+            if ($apBytes -and $apBytes.Length -gt 0) {
+                $apB64 = [Convert]::ToBase64String($apBytes)
+            }
+        } catch {}
+
+        $fileB64 = ""
+        if (($e.SourceKind -eq "FolderUser" -or $e.SourceKind -eq "FolderAll") -and
+            -not [string]::IsNullOrWhiteSpace([string]$e.FolderFilePath) -and
+            (Test-Path -LiteralPath $e.FolderFilePath)) {
+            try {
+                $rawBytes = [System.IO.File]::ReadAllBytes($e.FolderFilePath)
+                $fileB64 = [Convert]::ToBase64String($rawBytes)
+            } catch {}
+        }
+
+        $taskXml = ""
+        if ($e.SourceKind -eq "Task" -and -not [string]::IsNullOrWhiteSpace([string]$e.ScheduledTaskPath)) {
+            try {
+                $taskXml = [DuckUtil.StartupManagerEngine]::GetScheduledTaskXml([string]$e.ScheduledTaskPath)
+            } catch {}
+        }
+
+        [void]$items.Add([PSCustomObject]@{
+            Id                = [string]$e.Id
+            Name              = [string]$e.Name
+            DisplayName       = [string]$e.DisplayName
+            SourceKind        = [string]$e.SourceKind
+            RegistryHive      = [string]$e.RegistryHive
+            RegistryPath      = [string]$e.RegistryPath
+            RegistryValueName = [string]$e.RegistryValueName
+            RawCommand        = [string]$e.RawCommand
+            ApprovedHive      = [string]$e.ApprovedHive
+            ApprovedPath      = [string]$e.ApprovedPath
+            ApprovedValueName = [string]$e.ApprovedValueName
+            ApprovedBase64    = $apB64
+            FolderFilePath    = [string]$e.FolderFilePath
+            FileContentBase64 = $fileB64
+            ScheduledTaskPath = [string]$e.ScheduledTaskPath
+            ScheduledTaskXml  = $taskXml
+        })
+    }
+
+    $stamp = Get-Date -Format "yyyyMMdd_HHmmss_fff"
+    $uid = [Guid]::NewGuid().ToString("N").Substring(0, 8)
+    $path = Join-Path $dir "batch_${stamp}_${uid}.json"
+
+    $payload = [PSCustomObject]@{
+        CreatedAt = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        Count     = $items.Count
+        Items     = @($items)
+    }
+
+    $json = $payload | ConvertTo-Json -Depth 6
+    [System.IO.File]::WriteAllText($path, $json, [System.Text.UTF8Encoding]::new($false))
+    Log-Text "[OK] StartupGuard: $([char]0x0110)$([char]0x00E3) sao l$([char]0x01B0)u l$([char]0x00F4) $($items.Count) m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y -> $([System.IO.Path]::GetFileName($path))"
+    return $path
+}
+
+function Restore-LastStartupGuardBatch {
+    $files = @(Get-StartupBackupsList)
+    if ($files.Count -eq 0) {
+        return [PSCustomObject]@{ Success = $false; Restored = 0; Failed = 0; Message = "Kh$([char]0x00F4)ng c$([char]0x00F3) b$([char]0x1EA3)n sao l$([char]0x01B0)u m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a n$([char]0x00E0)o." }
+    }
+    $latest = $files[0]
+    $restored = 0
+    $failed = 0
+
+    try {
+        $raw = [System.IO.File]::ReadAllText($latest.FullName, [System.Text.Encoding]::UTF8)
+        $obj = ConvertFrom-Json $raw
+        if (-not $obj -or -not $obj.Items) {
+            return [PSCustomObject]@{ Success = $false; Restored = 0; Failed = 1; Message = "T$([char]0x1EC7)p sao l$([char]0x01B0)u kh$([char]0x00F4)ng h$([char]0x1EE3)p l$([char]0x1EC7)." }
+        }
+
+        foreach ($it in @($obj.Items)) {
+            $ok = $false
+            $sk = [string]$it.SourceKind
+            if ($sk -eq "RegUser" -or $sk -eq "RegSystem" -or $sk -eq "RegWow32") {
+                try {
+                    $hiveEnum = if ($it.RegistryHive -eq "HKCU") { [Microsoft.Win32.RegistryHive]::CurrentUser } else { [Microsoft.Win32.RegistryHive]::LocalMachine }
+                    $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hiveEnum, [Microsoft.Win32.RegistryView]::Registry64)
+                    try {
+                        $subKey = $baseKey.CreateSubKey([string]$it.RegistryPath, [Microsoft.Win32.RegistryKeyPermissionCheck]::ReadWriteSubTree)
+                        if ($subKey) {
+                            try {
+                                $subKey.SetValue([string]$it.RegistryValueName, [string]$it.RawCommand, [Microsoft.Win32.RegistryValueKind]::String)
+                                $ok = $true
+                            } finally { $subKey.Dispose() }
+                        }
+                    } finally { $baseKey.Dispose() }
+
+                    if ($ok -and -not [string]::IsNullOrWhiteSpace([string]$it.ApprovedBase64)) {
+                        $apBytes = [Convert]::FromBase64String([string]$it.ApprovedBase64)
+                        [void][DuckUtil.StartupManagerEngine]::WriteStartupApprovedBytes([string]$it.ApprovedHive, [string]$it.ApprovedPath, [string]$it.ApprovedValueName, $apBytes)
+                    }
+                } catch {
+                    Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x00F4)i ph$([char]0x1EE5)c m$([char]0x1EE5)c Registry '$($it.DisplayName)': $($_.Exception.Message)"
+                }
+            } elseif ($sk -eq "FolderUser" -or $sk -eq "FolderAll") {
+                try {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$it.FolderFilePath) -and -not [string]::IsNullOrWhiteSpace([string]$it.FileContentBase64)) {
+                        $parent = Split-Path -Path $it.FolderFilePath -Parent
+                        if (-not [System.IO.Directory]::Exists($parent)) {
+                            [void][System.IO.Directory]::CreateDirectory($parent)
+                        }
+                        $bytes = [Convert]::FromBase64String([string]$it.FileContentBase64)
+                        [System.IO.File]::WriteAllBytes([string]$it.FolderFilePath, $bytes)
+                        $ok = $true
+                        if (-not [string]::IsNullOrWhiteSpace([string]$it.ApprovedBase64)) {
+                            $apBytes = [Convert]::FromBase64String([string]$it.ApprovedBase64)
+                            [void][DuckUtil.StartupManagerEngine]::WriteStartupApprovedBytes([string]$it.ApprovedHive, [string]$it.ApprovedPath, [string]$it.ApprovedValueName, $apBytes)
+                        }
+                    }
+                } catch {
+                    Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x00F4)i ph$([char]0x1EE5)c t$([char]0x1EC7)p Startup '$($it.DisplayName)': $($_.Exception.Message)"
+                }
+            } elseif ($sk -eq "Task") {
+                try {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$it.ScheduledTaskXml)) {
+                        $regRes = [DuckUtil.StartupManagerEngine]::RegisterScheduledTaskFromXml([string]$it.ScheduledTaskPath, [string]$it.ScheduledTaskXml)
+                        if ($regRes.Success) {
+                            $ok = $true
+                        } else {
+                            Log-Text "[WARN] Kh$([char]0x00F4)ng th$([char]0x1EC3) kh$([char]0x00F4)i ph$([char]0x1EE5)c t$([char]0x00E1)c v$([char]0x1EE5) '$($it.DisplayName)' (c$([char]0x00F3) th$([char]0x1EC3) y$([char]0x00EA)u c$([char]0x1EA7)u m$([char]0x1EAD)t kh$([char]0x1EA9)u t$([char]0x00E0)i kho$([char]0x1EA3)n TASK_LOGON_PASSWORD): $($regRes.Message)"
+                        }
+                    }
+                } catch {
+                    Log-Text "[WARN] L$([char]0x1ED7)i kh$([char]0x00F4)i ph$([char]0x1EE5)c t$([char]0x00E1)c v$([char]0x1EE5) '$($it.DisplayName)': $($_.Exception.Message)"
+                }
+            }
+
+            if ($ok) { $restored++ } else { $failed++ }
+        }
+
+        $restoredDir = Join-Path (Get-StartupBackupDirectory) "Restored"
+        if (-not [System.IO.Directory]::Exists($restoredDir)) {
+            [void][System.IO.Directory]::CreateDirectory($restoredDir)
+        }
+        $destFile = Join-Path $restoredDir $latest.Name
+        try {
+            if (Test-Path -LiteralPath $destFile) { Remove-Item -LiteralPath $destFile -Force -ErrorAction SilentlyContinue }
+            Move-Item -LiteralPath $latest.FullName -Destination $destFile -Force -ErrorAction SilentlyContinue
+        } catch {}
+
+        Log-Text "[OK] StartupGuard: $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restored m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y t$([char]0x1EEB) b$([char]0x1EA3)n l$([char]0x01B0)u $($obj.CreatedAt) ($failed l$([char]0x1ED7)i)."
+        return [PSCustomObject]@{ Success = ($restored -gt 0); Restored = $restored; Failed = $failed; Message = "$([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c $restored m$([char]0x1EE5)c ($failed l$([char]0x1ED7)i)." }
+    } catch {
+        Log-Text "[ERR] L$([char]0x1ED7)i kh$([char]0x00F4)i ph$([char]0x1EE5)c StartupGuard: $($_.Exception.Message)"
+        return [PSCustomObject]@{ Success = $false; Restored = $restored; Failed = ($failed + 1); Message = $_.Exception.Message }
+    }
+}
+
+function Get-StartupSourceLabel {
+    param([string]$SourceKind)
+    switch ($SourceKind) {
+        "RegUser"    { return "Registry" }
+        "RegSystem"  { return "Registry" }
+        "RegWow32"   { return "Registry" }
+        "FolderUser" { return "Th$([char]0x01B0) m$([char]0x1EE5)c" }
+        "FolderAll"  { return "Th$([char]0x01B0) m$([char]0x1EE5)c" }
+        "Store"      { return "Store" }
+        "Task"       { return "Task" }
+        default      { return "Kh$([char]0x00E1)c" }
+    }
+}
+
+function Get-StartupSourceDetail {
+    param([string]$SourceKind)
+    switch ($SourceKind) {
+        "RegUser"    { return "Registry User (HKCU\Run)" }
+        "RegSystem"  { return "Registry System (HKLM\Run)" }
+        "RegWow32"   { return "Registry System 32-bit (WOW6432Node\Run)" }
+        "FolderUser" { return "Th$([char]0x01B0) m$([char]0x1EE5)c Startup (User)" }
+        "FolderAll"  { return "Th$([char]0x01B0) m$([char]0x1EE5)c Startup (All Users)" }
+        "Store"      { return "$([char]0x1EE8)ng d$([char]0x1EE5)ng Microsoft Store (UWP)" }
+        "Task"       { return "Task Scheduler (@Logon / @Boot)" }
+        default      { return "Kh$([char]0x1EDF)i ch$([char]0x1EA1)y Windows" }
+    }
+}
+
+function Get-StartupImpactLabel {
+    param([string]$ImpactLevel)
+    switch ($ImpactLevel) {
+        "High"   { return "N$([char]0x1EB7)ng" }
+        "Medium" { return "Trung b$([char]0x00EC)nh" }
+        default  { return "Nh$([char]0x1EB9)" }
+    }
+}
+
+function Open-StartupEntryLocation {
+    param($Entry)
+    if (-not $Entry) { return }
+    try {
+        $target = [string]$Entry.ResolvedExePath
+        if ([string]::IsNullOrWhiteSpace($target) -or (-not (Test-Path -LiteralPath $target))) {
+            $target = [string]$Entry.FolderFilePath
+        }
+        if ([string]::IsNullOrWhiteSpace($target) -or (-not (Test-Path -LiteralPath $target))) {
+            Log-Text "[WARN] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y $([char]0x0111)$([char]0x01B0)$([char]0x1EDD)ng d$([char]0x1EAB)n t$([char]0x1EC7)p tr$([char]0x00EA)n $([char]0x1ED5) $([char]0x0111)$([char]0x0129)a $([char]0x0111)$([char]0x1EC3) m$([char]0x1EDF)."
+            return
+        }
+        if (Test-Path -LiteralPath $target -PathType Container) {
+            Start-Process "explorer.exe" -ArgumentList "`"$target`""
+        } else {
+            Start-Process "explorer.exe" -ArgumentList "/select,`"$target`""
+        }
+    } catch {
+        Log-Text "[ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) th$([char]0x01B0) m$([char]0x1EE5)c t$([char]0x1EC7)p: $($_.Exception.Message)"
+    }
+}
+
+function Open-StartupEntryRegistry {
+    param($Entry)
+    if (-not $Entry) { return }
+    $regFull = ""
+    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.RegistryPath)) {
+        $rootName = if ($Entry.RegistryHive -eq "HKCU") { "HKEY_CURRENT_USER" } else { "HKEY_LOCAL_MACHINE" }
+        $regFull = "Computer\$rootName\$($Entry.RegistryPath)"
+    } elseif ($Entry.SourceKind -eq "Store" -and -not [string]::IsNullOrWhiteSpace([string]$Entry.PackageFamilyName)) {
+        $regFull = "Computer\HKEY_CURRENT_USER\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\$($Entry.PackageFamilyName)\$($Entry.TaskId)"
+    }
+    if ([string]::IsNullOrWhiteSpace($regFull)) { return }
+    try {
+        $rePath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit"
+        if (-not (Test-Path -LiteralPath $rePath)) { [void](New-Item -Path $rePath -Force) }
+        Set-ItemProperty -LiteralPath $rePath -Name "LastKey" -Value $regFull -Type String -ErrorAction SilentlyContinue
+        Start-Process "regedit.exe" -ArgumentList "-m"
+    } catch {
+        Log-Text "[ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) m$([char]0x1EDF) Registry Editor: $($_.Exception.Message)"
     }
 }
 
@@ -49570,6 +52848,8 @@ function Stop-AllBackgroundWork {
     try { if ($script:uninstSearchDebounceTimer) { $script:uninstSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:catalogSearchDebounceTimer) { $script:catalogSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:optSearchDebounceTimer) { $script:optSearchDebounceTimer.Stop() } } catch {}
+    try { if ($script:startPollTimer) { $script:startPollTimer.Stop() } } catch {}
+    try { if ($script:startSearchDebounceTimer) { $script:startSearchDebounceTimer.Stop() } } catch {}
     try { if ($script:activePrefetchCts) { $script:activePrefetchCts.Cancel() } } catch {}
     try { if ($script:activeDirectDlCts) { $script:activeDirectDlCts.Cancel() } } catch {}
     try { if ($script:uninstallerVirtualView) { $script:uninstallerVirtualView.Stop() } } catch {}
@@ -49993,6 +53273,9 @@ function Set-OptimizerSubTab {
         $script:optSubBtnStartup.Foreground = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushNavInactive }
         $script:optSubBtnStartup.BorderBrush = if ($SubIndex -eq 2) { $script:brushNavActive } else { $script:brushTransparent }
     }
+    if ($SubIndex -eq 2 -and (Get-Command "Initialize-StartupTabIfNeeded" -ErrorAction SilentlyContinue)) {
+        Initialize-StartupTabIfNeeded
+    }
     Update-OptimizerSelectionCount
 }
 
@@ -50000,6 +53283,14 @@ function Update-OptimizerSelectionCount {
     if ($script:isWindowClosing) { return }
     $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
     if (-not $isTab4Visible -or -not $txtSelectionCount) { return }
+    if ($script:optSubTabIndex -eq 2) {
+        if (Get-Command "Update-StartupFooterSummary" -ErrorAction SilentlyContinue) {
+            Update-StartupFooterSummary
+        } else {
+            $txtSelectionCount.Text = ""
+        }
+        return
+    }
     if ($script:optSubTabIndex -ne 0) {
         $txtSelectionCount.Text = ""
         return
@@ -50598,6 +53889,715 @@ if ($script:btnOptRestoreBackup) {
             [void](Restore-AllOptimizerGuardSnapshots)
             if ($txtStatus) { $txtStatus.Text = "$([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c to$([char]0x00E0)n b$([char]0x1ED9) b$([char]0x1EA3)n sao l$([char]0x01B0)u g$([char]0x1ED1)c OptimizerGuard" }
             Refresh-OptimizerLiveState
+        }
+    })
+}
+#endregion
+
+#region Startup Manager Tab (OptPageStartup)
+$script:btnStartRefresh       = $window.FindName("btnStartRefresh")
+$script:btnStartCleanOrphans  = $window.FindName("btnStartCleanOrphans")
+$script:btnStartRestoreBackup = $window.FindName("btnStartRestoreBackup")
+$script:btnStartAddApp        = $window.FindName("btnStartAddApp")
+$script:txtStartSearch        = $window.FindName("txtStartSearch")
+$script:btnClearStartSearch   = $window.FindName("btnClearStartSearch")
+$script:btnStartFilterAll     = $window.FindName("btnStartFilterAll")
+$script:btnStartFilterOn      = $window.FindName("btnStartFilterOn")
+$script:btnStartFilterOff     = $window.FindName("btnStartFilterOff")
+$script:btnStartFilterOrphan  = $window.FindName("btnStartFilterOrphan")
+$script:txtStartSummary       = $window.FindName("txtStartSummary")
+$script:startScrollViewer     = $window.FindName("StartScrollViewer")
+$script:startRowsHost         = $window.FindName("StartRowsHost")
+
+$script:startInitialized         = $false
+$script:startScanVersion         = 0
+$script:startFilterMode          = "All"
+$script:startRows                = [System.Collections.Generic.List[object]]::new()
+$script:startRowById             = @{}
+$script:startSyncingToggle       = $false
+$script:startOrphanApprovedCount = 0
+$script:startPollTimer           = $null
+$script:startSearchDebounceTimer = $null
+$script:startPhase2ExtTask       = $null
+$script:startPhase2Hydrate1Task  = $null
+$script:startPhase2Hydrate2Task  = $null
+$script:startPhase2OrphanCntTask = $null
+$script:startPhase2Ver           = 0
+
+$script:brushStartDisabledFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushStartDisabledFg.Freeze()
+$script:brushStartSubFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x64, 0x74, 0x8B)); $script:brushStartSubFg.Freeze()
+$script:brushStartPillBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x16, 0x22, 0x35)); $script:brushStartPillBg.Freeze()
+$script:brushStartPillBdr    = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x2B, 0x3D, 0x57)); $script:brushStartPillBdr.Freeze()
+$script:brushStartSysBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x17, 0x25, 0x54)); $script:brushStartSysBg.Freeze()
+$script:brushStartSysFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x93, 0xC5, 0xFD)); $script:brushStartSysFg.Freeze()
+$script:brushStartOemBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1E, 0x1B, 0x4B)); $script:brushStartOemBg.Freeze()
+$script:brushStartOemFg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0xA5, 0xB4, 0xFC)); $script:brushStartOemFg.Freeze()
+$script:brushStartWarnBg     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x3B, 0x28, 0x06)); $script:brushStartWarnBg.Freeze()
+$script:brushStartErrBg      = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x3B, 0x12, 0x19)); $script:brushStartErrBg.Freeze()
+$script:brushStartErrBdr     = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x7F, 0x1D, 0x1D)); $script:brushStartErrBdr.Freeze()
+$script:brushStartFilterActBg  = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x1C, 0x2A, 0x40)); $script:brushStartFilterActBg.Freeze()
+$script:brushStartFilterActBdr = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(153, 0x38, 0xBD, 0xF8)); $script:brushStartFilterActBdr.Freeze()
+$script:brushStartFilterInactFg = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(255, 0x94, 0xA3, 0xB8)); $script:brushStartFilterInactFg.Freeze()
+
+function Update-StartupFooterSummary {
+    if ($script:isWindowClosing) { return }
+    $total = $script:startRows.Count
+    $onCnt = 0
+    $orphanRows = 0
+    foreach ($r in $script:startRows) {
+        if ($r.Entry.Enabled) { $onCnt++ }
+        if ($r.Entry.IsOrphan) { $orphanRows++ }
+    }
+    $totalOrphans = $orphanRows + $script:startOrphanApprovedCount
+    if ($script:txtStartSummary) {
+        $phaseNote = if ($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) { " ($([char]0x0111)ang qu$([char]0x00E9)t Store & Task...)" } else { "" }
+        $script:txtStartSummary.Text = "T$([char]0x1ED5)ng $total m$([char]0x1EE5)c ($onCnt $([char]0x0111)ang b$([char]0x1EAD)t $([char]0x2022) $totalOrphans m$([char]0x1EE5)c l$([char]0x1ED7)i)$phaseNote"
+    }
+    if ($script:btnStartCleanOrphans) {
+        $script:btnStartCleanOrphans.Content = if ($totalOrphans -gt 0) { "D$([char]0x1ECD)n m$([char]0x1EE5)c l$([char]0x1ED7)i ($totalOrphans)" } else { "D$([char]0x1ECD)n m$([char]0x1EE5)c l$([char]0x1ED7)i" }
+        $script:btnStartCleanOrphans.IsEnabled = ($totalOrphans -gt 0)
+    }
+    if ($script:btnStartRestoreBackup) {
+        $bkpCnt = @(Get-StartupBackupsList).Count
+        $script:btnStartRestoreBackup.Content = if ($bkpCnt -gt 0) { "Kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a ($bkpCnt)" } else { "Kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a" }
+        $script:btnStartRestoreBackup.IsEnabled = ($bkpCnt -gt 0)
+    }
+    $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
+    if ($isTab4Visible -and $script:optSubTabIndex -eq 2 -and $txtSelectionCount) {
+        $txtSelectionCount.Text = "$onCnt $([char]0x0111)ang b$([char]0x1EAD)t / $total m$([char]0x1EE5)c"
+        $txtSelectionCount.Foreground = if ($onCnt -gt 0) { $script:brushSelActive } else { $script:brushNavActive }
+    }
+}
+
+function Set-StartupFilterChipVisuals {
+    $map = @{
+        "All"    = $script:btnStartFilterAll
+        "On"     = $script:btnStartFilterOn
+        "Off"    = $script:btnStartFilterOff
+        "Orphan" = $script:btnStartFilterOrphan
+    }
+    foreach ($k in $map.Keys) {
+        $btn = $map[$k]
+        if (-not $btn) { continue }
+        if ($script:startFilterMode -eq $k) {
+            $btn.Background = $script:brushStartFilterActBg
+            $btn.BorderBrush = $script:brushStartFilterActBdr
+            $btn.Foreground = $script:brushNavActive
+        } else {
+            $btn.Background = $script:brushTransparent
+            $btn.BorderBrush = $script:brushTransparent
+            $btn.Foreground = $script:brushStartFilterInactFg
+        }
+    }
+}
+
+function Apply-StartupFilter {
+    if ($script:isWindowClosing) { return }
+    $q = if ($script:txtStartSearch) { $script:txtStartSearch.Text.Trim().ToLowerInvariant() } else { "" }
+    foreach ($r in $script:startRows) {
+        $e = $r.Entry
+        $matchFilter = switch ($script:startFilterMode) {
+            "On"     { [bool]$e.Enabled }
+            "Off"    { -not [bool]$e.Enabled }
+            "Orphan" { [bool]$e.IsOrphan }
+            default  { $true }
+        }
+        $matchQuery = if ([string]::IsNullOrEmpty($q)) { $true } else { $r.SearchText.Contains($q) }
+        $r.Row.Visibility = if ($matchFilter -and $matchQuery) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+    }
+    Update-StartupFooterSummary
+}
+
+function New-StartupBadgePill {
+    param([string]$Text, $BgBrush, $FgBrush)
+    $bd = [System.Windows.Controls.Border]::new()
+    $bd.Background = $BgBrush
+    $bd.CornerRadius = [System.Windows.CornerRadius]::new(3)
+    $bd.Padding = [System.Windows.Thickness]::new(5, 1, 5, 1)
+    $bd.Margin = [System.Windows.Thickness]::new(6, 0, 0, 0)
+    $bd.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $tb = [System.Windows.Controls.TextBlock]::new()
+    $tb.Text = $Text
+    $tb.FontSize = 9.5
+    $tb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $tb.Foreground = $FgBrush
+    $bd.Child = $tb
+    return $bd
+}
+
+function Build-StartupEntryToolTip {
+    param($Entry)
+    $srcDetail = Get-StartupSourceDetail -SourceKind ([string]$Entry.SourceKind)
+    $stText = if ($Entry.IsPolicyLocked) {
+        if ($Entry.Enabled) { "$([char]0x0110)ang b$([char]0x1EAD)t (Kh$([char]0x00F3)a b$([char]0x1EDF)i Group Policy)" } else { "$([char]0x0110)ang t$([char]0x1EAF)t (Kh$([char]0x00F3)a b$([char]0x1EDF)i Group Policy)" }
+    } elseif ($Entry.Enabled) {
+        "$([char]0x0110)ang b$([char]0x1EAD)t"
+    } else {
+        "$([char]0x0110)ang t$([char]0x1EAF)t"
+    }
+    $pub = if ([string]::IsNullOrWhiteSpace([string]$Entry.Publisher)) { "Kh$([char]0x00F4)ng r$([char]0x00F5)" } else { [string]$Entry.Publisher }
+    $tip = "$($Entry.DisplayName)`nNh$([char]0x00E0) ph$([char]0x00E1)t h$([char]0x00E0)nh: $pub`nNgu$([char]0x1ED3)n: $srcDetail`nTr$([char]0x1EA1)ng th$([char]0x00E1)i: $stText`nL$([char]0x1EC7)nh: $($Entry.RawCommand)"
+    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.ResolvedExePath)) {
+        $tip += "`nT$([char]0x1EC7)p $([char]0x0111)$([char]0x00ED)ch: $($Entry.ResolvedExePath)"
+    }
+    if ($Entry.IsOrphan) {
+        $tip += "`n[!] C$([char]0x1EA3)nh b$([char]0x00E1)o: T$([char]0x1EC7)p $([char]0x0111)$([char]0x00ED)ch kh$([char]0x00F4)ng t$([char]0x1ED3)n t$([char]0x1EA1)i tr$([char]0x00EA)n $([char]0x1ED5) $([char]0x0111)$([char]0x0129)a (c$([char]0x00F3) th$([char]0x1EC3) l$([char]0x00E0) r$([char]0x00E1)c c$([char]0x1EE7)a $([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)$([char]0x00E3) g$([char]0x1EE1))."
+    }
+    return $tip
+}
+
+function Update-StartupRowBadgesAndImpact {
+    param($RowObj)
+    $e = $RowObj.Entry
+    if ($RowObj.BadgePanel) {
+        $RowObj.BadgePanel.Children.Clear()
+        if ($e.ProtectionKind -eq "System") {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "H$([char]0x1EC7) th$([char]0x1ED1)ng" -BgBrush $script:brushStartSysBg -FgBrush $script:brushStartSysFg))
+        } elseif ($e.ProtectionKind -eq "Oem") {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "H$([char]0x00E3)ng" -BgBrush $script:brushStartOemBg -FgBrush $script:brushStartOemFg))
+        }
+        if ($e.IsPolicyLocked) {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Kh$([char]0x00F3)a ch$([char]0x00ED)nh s$([char]0x00E1)ch" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
+        }
+        if ($e.IsOrphan) {
+            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "T$([char]0x1EC7)p kh$([char]0x00F4)ng t$([char]0x1ED3)n t$([char]0x1EA1)i" -BgBrush $script:brushStartErrBg -FgBrush $script:brushOptRiskCautFg))
+        }
+    }
+    if ($RowObj.ImpactText) {
+        $RowObj.ImpactText.Text = Get-StartupImpactLabel -ImpactLevel ([string]$e.ImpactLevel)
+        $RowObj.ImpactText.Foreground = switch ([string]$e.ImpactLevel) {
+            "High"   { $script:brushOptRiskCautFg }
+            "Medium" { $script:brushOptRiskModFg }
+            default  { $script:brushOptRiskSafeFg }
+        }
+    }
+    if ($RowObj.TitleText) {
+        $RowObj.TitleText.Text = [string]$e.DisplayName
+        $RowObj.TitleText.Foreground = if ($e.Enabled) { $script:brushTextWhite } else { $script:brushStartDisabledFg }
+    }
+    if ($RowObj.SubText) {
+        $pubPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.Publisher)) { "$($e.Publisher)  $([char]0x2022)  " } else { "" }
+        $cmdPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.ResolvedExePath)) { [string]$e.ResolvedExePath } else { [string]$e.RawCommand }
+        $RowObj.SubText.Text = "${pubPart}${cmdPart}"
+    }
+    $RowObj.SearchText = ("$($e.DisplayName) $($e.Name) $($e.Publisher) $($e.RawCommand) $($e.ResolvedExePath) $($e.SourceKind)").ToLowerInvariant()
+    if ($RowObj.Row) {
+        $RowObj.Row.ToolTip = Build-StartupEntryToolTip -Entry $e
+    }
+}
+
+function Invoke-StartupDeleteSingleRow {
+    param($RowObj)
+    if (-not $RowObj -or -not $RowObj.Entry -or -not $RowObj.Entry.CanDelete) { return }
+    $e = $RowObj.Entry
+    if ($e.RequiresAdmin -and -not ([DuckUtil.StartupManagerEngine]::IsCurrentProcessAdmin())) {
+        [void](Show-OwnedMessageBox -Text "M$([char]0x1EE5)c '$($e.DisplayName)' thu$([char]0x1ED9)c ph$([char]0x1EA1)m vi h$([char]0x1EC7) th$([char]0x1ED1)ng/All Users/Task Scheduler n$([char]0x00EA)n y$([char]0x00EA)u c$([char]0x1EA7)u ch$([char]0x1EA1)y App-Driver v$([char]0x1EDB)i quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) x$([char]0x00F3)a." -Caption "Y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+        return
+    }
+    $warnExtra = if ($e.ProtectionKind -eq "System" -or $e.ProtectionKind -eq "Oem") { "`n`n[!] C$([char]0x1EA2)NH B$([char]0x00C1)O: $([char]0x0110)$([char]0x00E2)y l$([char]0x00E0) th$([char]0x00E0)nh ph$([char]0x1EA7)n H$([char]0x1EC7) th$([char]0x1ED1)ng / H$([char]0x00E3)ng ($([char]0x00E2)m thanh, b$([char]0x1EA3)o m$([char]0x1EAD)t ho$([char]0x1EB7)c ph$([char]0x00ED)m n$([char]0x00F3)ng). B$([char]0x1EA1)n n$([char]0x00EA)n ch$([char]0x1EC9) g$([char]0x1EA1)t T$([char]0x1EAE)T thay v$([char]0x00EC) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n." } else { "" }
+    $ans = Show-OwnedMessageBox `
+        -Text "X$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n '$($e.DisplayName)' kh$([char]0x1ECF)i danh s$([char]0x00E1)ch Kh$([char]0x1EDF)i ch$([char]0x1EA1)y?`n(StartupGuard s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng sao l$([char]0x01B0)u tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a $([char]0x0111)$([char]0x1EC3) b$([char]0x1EA1)n c$([char]0x00F3) th$([char]0x1EC3) b$([char]0x1EA5)m 'Kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a' n$([char]0x1EBF)u c$([char]0x1EA7)n).$warnExtra" `
+        -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n x$([char]0x00F3)a m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y" `
+        -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+        -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+    if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+
+    [void](Save-StartupGuardBatchBackup -Entries @($e))
+    $res = [DuckUtil.StartupManagerEngine]::DeleteStartupEntry($e)
+    if ($res.Success) {
+        [void]$script:startRows.Remove($RowObj)
+        $script:startRowById.Remove([string]$e.Id)
+        if ($script:startRowsHost -and $RowObj.Row) {
+            [void]$script:startRowsHost.Children.Remove($RowObj.Row)
+        }
+        Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a '$($e.DisplayName)'."
+        Update-StartupFooterSummary
+    } else {
+        $errMsg = if ($res.RequiresAdminError) { "C$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) x$([char]0x00F3)a m$([char]0x1EE5)c n$([char]0x00E0)y ($($res.Message))." } else { "Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x00F3)a m$([char]0x1EE5)c '$($e.DisplayName)': $($res.Message)" }
+        Log-Text "[ERR] $errMsg"
+        [void](Show-OwnedMessageBox -Text $errMsg -Caption "L$([char]0x1ED7)i x$([char]0x00F3)a m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+    }
+}
+
+function New-StartupRowElement {
+    param($Entry)
+    $rowBorder = [System.Windows.Controls.Border]::new()
+    $rowBorder.Style = $script:styleOptListRow
+    $rowBorder.Padding = [System.Windows.Thickness]::new(10, 6, 10, 6)
+    $rowBorder.MinHeight = 44
+    [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 500)
+    [System.Windows.Controls.ToolTipService]::SetShowDuration($rowBorder, 10000)
+
+    $g = [System.Windows.Controls.Grid]::new()
+    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(52)
+    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(36)
+    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = [System.Windows.GridLength]::new(96)
+    $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = [System.Windows.GridLength]::new(96)
+    $c5 = [System.Windows.Controls.ColumnDefinition]::new(); $c5.Width = [System.Windows.GridLength]::new(126)
+    foreach ($cd in @($c0, $c1, $c2, $c3, $c4, $c5)) { [void]$g.ColumnDefinitions.Add($cd) }
+
+    $toggle = [System.Windows.Controls.Primitives.ToggleButton]::new()
+    if ($script:styleOptToggleSwitch) { $toggle.Style = $script:styleOptToggleSwitch }
+    $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $toggle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $toggle.IsChecked = [bool]$Entry.Enabled
+    $toggle.IsEnabled = (-not [bool]$Entry.IsPolicyLocked)
+    [System.Windows.Controls.Grid]::SetColumn($toggle, 0)
+    [void]$g.Children.Add($toggle)
+
+    $iconBorder = [System.Windows.Controls.Border]::new()
+    $iconBorder.Width = 28; $iconBorder.Height = 28
+    $iconBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
+    $iconBorder.Background = $script:brushStartPillBg
+    $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $iconBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $iconImg = [System.Windows.Controls.Image]::new()
+    $iconImg.Width = 20; $iconImg.Height = 20
+    $iconImg.Stretch = [System.Windows.Media.Stretch]::Uniform
+    [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($iconImg, [System.Windows.Media.BitmapScalingMode]::HighQuality)
+    $iconBorder.Child = $iconImg
+    [System.Windows.Controls.Grid]::SetColumn($iconBorder, 1)
+    [void]$g.Children.Add($iconBorder)
+
+    $infoStack = [System.Windows.Controls.StackPanel]::new()
+    $infoStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $infoStack.Margin = [System.Windows.Thickness]::new(2, 0, 10, 0)
+
+    $line1 = [System.Windows.Controls.StackPanel]::new()
+    $line1.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $titleTb = [System.Windows.Controls.TextBlock]::new()
+    $titleTb.FontSize = 12
+    $titleTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $titleTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $titleTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [void]$line1.Children.Add($titleTb)
+
+    $badgePanel = [System.Windows.Controls.StackPanel]::new()
+    $badgePanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $badgePanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [void]$line1.Children.Add($badgePanel)
+    [void]$infoStack.Children.Add($line1)
+
+    $subTb = [System.Windows.Controls.TextBlock]::new()
+    $subTb.FontSize = 10.5
+    $subTb.Foreground = $script:brushStartSubFg
+    $subTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $subTb.Margin = [System.Windows.Thickness]::new(0, 1, 0, 0)
+    [void]$infoStack.Children.Add($subTb)
+
+    [System.Windows.Controls.Grid]::SetColumn($infoStack, 2)
+    [void]$g.Children.Add($infoStack)
+
+    $srcPill = [System.Windows.Controls.Border]::new()
+    $srcPill.Background = $script:brushStartPillBg
+    $srcPill.BorderBrush = $script:brushStartPillBdr
+    $srcPill.BorderThickness = $thicknessOne
+    $srcPill.CornerRadius = [System.Windows.CornerRadius]::new(3)
+    $srcPill.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+    $srcPill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $srcPill.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $srcTb = [System.Windows.Controls.TextBlock]::new()
+    $srcTb.Text = Get-StartupSourceLabel -SourceKind ([string]$Entry.SourceKind)
+    $srcTb.FontSize = 10.5
+    $srcTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $srcTb.Foreground = $script:brushNavInactive
+    $srcPill.Child = $srcTb
+    [System.Windows.Controls.Grid]::SetColumn($srcPill, 3)
+    [void]$g.Children.Add($srcPill)
+
+    $impTb = [System.Windows.Controls.TextBlock]::new()
+    $impTb.FontSize = 11
+    $impTb.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $impTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $impTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($impTb, 4)
+    [void]$g.Children.Add($impTb)
+
+    $actPanel = [System.Windows.Controls.StackPanel]::new()
+    $actPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $actPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $actPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $btnOpen = [System.Windows.Controls.Button]::new()
+    $btnOpen.Content = "M$([char]0x1EDF) t$([char]0x1EC7)p"
+    $btnOpen.FontSize = 10.5
+    $btnOpen.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+    $btnOpen.Background = $script:brushStartPillBg
+    $btnOpen.Foreground = $script:brushNavActive
+    $btnOpen.BorderBrush = $script:brushStartPillBdr
+    $btnOpen.BorderThickness = $thicknessOne
+    $btnOpen.Cursor = [System.Windows.Input.Cursors]::Hand
+    [void]$actPanel.Children.Add($btnOpen)
+
+    $btnDel = $null
+    if ($Entry.CanDelete) {
+        $btnDel = [System.Windows.Controls.Button]::new()
+        $btnDel.Content = "X$([char]0x00F3)a"
+        $btnDel.FontSize = 10.5
+        $btnDel.Padding = [System.Windows.Thickness]::new(7, 2, 7, 2)
+        $btnDel.Margin = [System.Windows.Thickness]::new(5, 0, 0, 0)
+        $btnDel.Background = $script:brushStartErrBg
+        $btnDel.Foreground = $script:brushOptRiskCautFg
+        $btnDel.BorderBrush = $script:brushStartErrBdr
+        $btnDel.BorderThickness = $thicknessOne
+        $btnDel.Cursor = [System.Windows.Input.Cursors]::Hand
+        [void]$actPanel.Children.Add($btnDel)
+    }
+
+    [System.Windows.Controls.Grid]::SetColumn($actPanel, 5)
+    [void]$g.Children.Add($actPanel)
+
+    $rowBorder.Child = $g
+
+    $rowObj = [PSCustomObject]@{
+        Entry      = $Entry
+        Row        = $rowBorder
+        Toggle     = $toggle
+        IconImage  = $iconImg
+        TitleText  = $titleTb
+        BadgePanel = $badgePanel
+        SubText    = $subTb
+        ImpactText = $impTb
+        SearchText = ""
+    }
+    $rowBorder.Tag = $rowObj
+    Update-StartupRowBadgesAndImpact -RowObj $rowObj
+
+    $ctx = [System.Windows.Controls.ContextMenu]::new()
+    $miOpen = [System.Windows.Controls.MenuItem]::new()
+    $miOpen.Header = "M$([char]0x1EDF) th$([char]0x01B0) m$([char]0x1EE5)c ch$([char]0x1EE9)a t$([char]0x1EC7)p"
+    $miOpen.Tag = $rowObj
+    $miOpen.Add_Click({ param($s,$ev) Open-StartupEntryLocation -Entry $s.Tag.Entry })
+    [void]$ctx.Items.Add($miOpen)
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.RegistryPath) -or $Entry.SourceKind -eq "Store") {
+        $miReg = [System.Windows.Controls.MenuItem]::new()
+        $miReg.Header = "M$([char]0x1EDF) v$([char]0x1ECB) tr$([char]0x00ED) trong Registry"
+        $miReg.Tag = $rowObj
+        $miReg.Add_Click({ param($s,$ev) Open-StartupEntryRegistry -Entry $s.Tag.Entry })
+        [void]$ctx.Items.Add($miReg)
+    }
+    if ($Entry.CanDelete) {
+        $miDel = [System.Windows.Controls.MenuItem]::new()
+        $miDel.Header = "X$([char]0x00F3)a kh$([char]0x1ECF)i Kh$([char]0x1EDF)i ch$([char]0x1EA1)y"
+        $miDel.Tag = $rowObj
+        $miDel.Add_Click({ param($s,$ev) Invoke-StartupDeleteSingleRow -RowObj $s.Tag })
+        [void]$ctx.Items.Add($miDel)
+    }
+    $rowBorder.ContextMenu = $ctx
+
+    $btnOpen.Tag = $rowObj
+    $btnOpen.Add_Click({ param($s,$ev) Open-StartupEntryLocation -Entry $s.Tag.Entry })
+    if ($btnDel) {
+        $btnDel.Tag = $rowObj
+        $btnDel.Add_Click({ param($s,$ev) Invoke-StartupDeleteSingleRow -RowObj $s.Tag })
+    }
+
+    $toggle.Tag = $rowObj
+    $onToggleChanged = {
+        param($sender, $ev)
+        if ($script:startSyncingToggle -or $script:isWindowClosing) { return }
+        $rObj = $sender.Tag
+        if (-not $rObj -or -not $rObj.Entry) { return }
+        $ent = $rObj.Entry
+        $wantEnable = ($sender.IsChecked -eq $true)
+        if ($wantEnable -eq [bool]$ent.Enabled) { return }
+
+        $rollback = {
+            $prevS = $script:startSyncingToggle
+            $script:startSyncingToggle = $true
+            try { $sender.IsChecked = [bool]$ent.Enabled } finally { $script:startSyncingToggle = $prevS }
+        }
+
+        if ($ent.IsPolicyLocked) {
+            & $rollback
+            return
+        }
+
+        if ($ent.RequiresAdmin -and -not ([DuckUtil.StartupManagerEngine]::IsCurrentProcessAdmin())) {
+            & $rollback
+            [void](Show-OwnedMessageBox -Text "M$([char]0x1EE5)c '$($ent.DisplayName)' thu$([char]0x1ED9)c ph$([char]0x1EA1)m vi h$([char]0x1EC7) th$([char]0x1ED1)ng/All Users/Task Scheduler n$([char]0x00EA)n c$([char]0x1EA7)n m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) b$([char]0x1EAD)t/t$([char]0x1EAF)t." -Caption "Y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+            return
+        }
+
+        if (-not $wantEnable -and ($ent.ProtectionKind -eq "System" -or $ent.ProtectionKind -eq "Oem")) {
+            $kindTxt = if ($ent.ProtectionKind -eq "System") { "H$([char]0x1EC7) th$([char]0x1ED1)ng / B$([char]0x1EA3)o m$([char]0x1EAD)t Windows" } else { "Ph$([char]0x1EA7)n m$([char]0x1EC1)m H$([char]0x00E3)ng / Driver ph$([char]0x1EA7)n c$([char]0x1EE9)ng ($([char]0x00C2)m thanh, Ph$([char]0x00ED)m n$([char]0x00F3)ng)" }
+            $ans = Show-OwnedMessageBox `
+                -Text "'$($ent.DisplayName)' l$([char]0x00E0) th$([char]0x00E0)nh ph$([char]0x1EA7)n $kindTxt.`nT$([char]0x1EAF)t m$([char]0x1EE5)c n$([char]0x00E0)y c$([char]0x00F3) th$([char]0x1EC3) $([char]0x1EA3)nh h$([char]0x01B0)$([char]0x1EDF)ng $([char]0x0111)$([char]0x1EBF)n $([char]0x00E2)m thanh, b$([char]0x1EA3)o m$([char]0x1EAD)t ho$([char]0x1EB7)c ph$([char]0x00ED)m n$([char]0x00F3)ng hi$([char]0x1EC7)u n$([char]0x0103)ng tr$([char]0x00EA)n m$([char]0x00E1)y.`n`nB$([char]0x1EA1)n v$([char]0x1EAB)n ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n t$([char]0x1EAF)t kh$([char]0x1EDF)i ch$([char]0x1EA1)y m$([char]0x1EE5)c n$([char]0x00E0)y?" `
+                -Caption "C$([char]0x1EA3)nh b$([char]0x00E1)o b$([char]0x1EA3)o v$([char]0x1EC7) H$([char]0x1EC7) th$([char]0x1ED1)ng & H$([char]0x00E3)ng" `
+                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+            if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
+                & $rollback
+                return
+            }
+        }
+
+        $op = [DuckUtil.StartupManagerEngine]::SetStartupEnabled($ent, $wantEnable)
+        if (-not $op.Success) {
+            & $rollback
+            $msg = if ($op.RequiresAdminError) { "C$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) thay $([char]0x0111)$([char]0x1ED5)i '$($ent.DisplayName)'." } else { "Kh$([char]0x00F4)ng th$([char]0x1EC3) c$([char]0x1EAD)p nh$([char]0x1EAD)t '$($ent.DisplayName)': $($op.Message)" }
+            Log-Text "[ERR] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $msg"
+            [void](Show-OwnedMessageBox -Text $msg -Caption "L$([char]0x1ED7)i c$([char]0x1EAD)p nh$([char]0x1EAD)t Kh$([char]0x1EDF)i ch$([char]0x1EA1)y" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+            return
+        }
+
+        $actTxt = if ($wantEnable) { "$([char]0x0110)$([char]0x00E3) b$([char]0x1EAD)t" } else { "$([char]0x0110)$([char]0x00E3) t$([char]0x1EAF)t" }
+        Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $actTxt '$($ent.DisplayName)'."
+        Update-StartupRowBadgesAndImpact -RowObj $rObj
+        Apply-StartupFilter
+    }
+    $toggle.Add_Checked($onToggleChanged)
+    $toggle.Add_Unchecked($onToggleChanged)
+
+    return $rowObj
+}
+
+function Apply-StartupHydratedPatches {
+    param($Patches)
+    foreach ($p in @($Patches)) {
+        if (-not $p -or -not $script:startRowById.ContainsKey([string]$p.Id)) { continue }
+        $rObj = $script:startRowById[[string]$p.Id]
+        $e = $rObj.Entry
+        if (-not [string]::IsNullOrWhiteSpace([string]$p.DisplayName)) { $e.DisplayName = [string]$p.DisplayName }
+        if (-not [string]::IsNullOrWhiteSpace([string]$p.Publisher)) { $e.Publisher = [string]$p.Publisher }
+        $e.ProtectionKind = [string]$p.ProtectionKind
+        $e.ImpactLevel = [string]$p.ImpactLevel
+        $e.MetadataHydrated = $true
+        if ($p.IconBitmap -and $rObj.IconImage) {
+            $rObj.IconImage.Source = $p.IconBitmap
+        }
+        Update-StartupRowBadgesAndImpact -RowObj $rObj
+    }
+}
+
+function Start-StartupManagerRefresh {
+    if ($script:isWindowClosing) { return }
+    if (-not ("DuckUtil.StartupManagerEngine" -as [type])) { return }
+
+    $script:startScanVersion++
+    $ver = $script:startScanVersion
+    $script:startPhase2Ver = $ver
+    $script:startOrphanApprovedCount = 0
+
+    $fastEntries = [DuckUtil.StartupManagerEngine]::ScanFastCore()
+    $script:startRows.Clear()
+    $script:startRowById.Clear()
+    if ($script:startRowsHost) { $script:startRowsHost.Children.Clear() }
+
+    $prevSync = $script:startSyncingToggle
+    $script:startSyncingToggle = $true
+    try {
+        foreach ($ent in @($fastEntries)) {
+            if (-not $ent -or $script:startRowById.ContainsKey([string]$ent.Id)) { continue }
+            $rObj = New-StartupRowElement -Entry $ent
+            [void]$script:startRows.Add($rObj)
+            $script:startRowById[[string]$ent.Id] = $rObj
+            if ($script:startRowsHost) { [void]$script:startRowsHost.Children.Add($rObj.Row) }
+        }
+    } finally {
+        $script:startSyncingToggle = $prevSync
+    }
+
+    $script:startPhase2ExtTask = [DuckUtil.StartupManagerEngine]::ScanExtendedAsync()
+    $script:startPhase2Hydrate1Task = [DuckUtil.StartupManagerEngine]::HydrateEntriesAndIconsAsync($fastEntries)
+    $script:startPhase2Hydrate2Task = $null
+    $script:startPhase2OrphanCntTask = [System.Threading.Tasks.Task[int]]::Run([Func[int]]{ [DuckUtil.StartupManagerEngine]::CountOrphanApprovedEntries() })
+
+    Apply-StartupFilter
+
+    if (-not $script:startPollTimer) {
+        $script:startPollTimer = [System.Windows.Threading.DispatcherTimer]::new()
+        $script:startPollTimer.Interval = [TimeSpan]::FromMilliseconds(45)
+        $script:startPollTimer.Add_Tick({
+            if ($script:isWindowClosing) {
+                $script:startPollTimer.Stop()
+                return
+            }
+            if ($script:startPhase2Ver -ne $script:startScanVersion) {
+                $script:startPollTimer.Stop()
+                return
+            }
+
+            $changed = $false
+            if ($script:startPhase2Hydrate1Task -and $script:startPhase2Hydrate1Task.IsCompleted) {
+                $t1 = $script:startPhase2Hydrate1Task
+                $script:startPhase2Hydrate1Task = $null
+                if ($t1.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $t1.Result) {
+                    Apply-StartupHydratedPatches -Patches $t1.Result
+                    $changed = $true
+                }
+            }
+
+            if ($script:startPhase2ExtTask -and $script:startPhase2ExtTask.IsCompleted) {
+                $tExt = $script:startPhase2ExtTask
+                $script:startPhase2ExtTask = $null
+                if ($tExt.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tExt.Result) {
+                    $extArr = @($tExt.Result)
+                    $addedList = [System.Collections.Generic.List[DuckUtil.StartupEntry]]::new()
+                    $prevS2 = $script:startSyncingToggle
+                    $script:startSyncingToggle = $true
+                    try {
+                        foreach ($ent in $extArr) {
+                            if (-not $ent -or $script:startRowById.ContainsKey([string]$ent.Id)) { continue }
+                            $rObj = New-StartupRowElement -Entry $ent
+                            [void]$script:startRows.Add($rObj)
+                            $script:startRowById[[string]$ent.Id] = $rObj
+                            if ($script:startRowsHost) { [void]$script:startRowsHost.Children.Add($rObj.Row) }
+                            [void]$addedList.Add($ent)
+                        }
+                    } finally {
+                        $script:startSyncingToggle = $prevS2
+                    }
+                    if ($addedList.Count -gt 0) {
+                        $script:startPhase2Hydrate2Task = [DuckUtil.StartupManagerEngine]::HydrateEntriesAndIconsAsync($addedList.ToArray())
+                    }
+                    $changed = $true
+                }
+            }
+
+            if ($script:startPhase2Hydrate2Task -and $script:startPhase2Hydrate2Task.IsCompleted) {
+                $t2 = $script:startPhase2Hydrate2Task
+                $script:startPhase2Hydrate2Task = $null
+                if ($t2.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $t2.Result) {
+                    Apply-StartupHydratedPatches -Patches $t2.Result
+                    $changed = $true
+                }
+            }
+
+            if ($script:startPhase2OrphanCntTask -and $script:startPhase2OrphanCntTask.IsCompleted) {
+                $tOrph = $script:startPhase2OrphanCntTask
+                $script:startPhase2OrphanCntTask = $null
+                if ($tOrph.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                    $script:startOrphanApprovedCount = [int]$tOrph.Result
+                    $changed = $true
+                }
+            }
+
+            if ($changed) { Apply-StartupFilter }
+
+            if (-not $script:startPhase2ExtTask -and -not $script:startPhase2Hydrate1Task -and -not $script:startPhase2Hydrate2Task -and -not $script:startPhase2OrphanCntTask) {
+                $script:startPollTimer.Stop()
+                Update-StartupFooterSummary
+            }
+        })
+    }
+    $script:startPollTimer.Start()
+}
+
+function Initialize-StartupTabIfNeeded {
+    if ($script:startInitialized -or $script:isWindowClosing) { return }
+    $script:startInitialized = $true
+    if ($script:startScrollViewer -and ("DuckUtil.SmoothScrollController" -as [type])) {
+        try { [DuckUtil.SmoothScrollController]::Attach($script:startScrollViewer) } catch {}
+    }
+    Set-StartupFilterChipVisuals
+    Start-StartupManagerRefresh
+}
+
+if ($script:btnStartRefresh) {
+    $script:btnStartRefresh.Add_Click({
+        if (-not $script:isWindowClosing) {
+            Start-StartupManagerRefresh
+            Log-Text "[OK] $([char]0x0110)$([char]0x00E3) l$([char]0x00E0)m m$([char]0x1EDB)i danh s$([char]0x00E1)ch $([char]0x1EE9)ng d$([char]0x1EE5)ng Kh$([char]0x1EDF)i ch$([char]0x1EA1)y."
+        }
+    })
+}
+
+if ($script:btnStartFilterAll)    { $script:btnStartFilterAll.Add_Click({ $script:startFilterMode = "All"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartFilterOn)     { $script:btnStartFilterOn.Add_Click({ $script:startFilterMode = "On"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartFilterOff)    { $script:btnStartFilterOff.Add_Click({ $script:startFilterMode = "Off"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+if ($script:btnStartFilterOrphan) { $script:btnStartFilterOrphan.Add_Click({ $script:startFilterMode = "Orphan"; Set-StartupFilterChipVisuals; Apply-StartupFilter }) }
+
+if ($script:txtStartSearch) {
+    $script:startSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $script:startSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(140)
+    $script:startSearchDebounceTimer.Add_Tick({
+        $script:startSearchDebounceTimer.Stop()
+        Apply-StartupFilter
+    })
+    $script:txtStartSearch.Add_TextChanged({
+        $script:startSearchDebounceTimer.Stop()
+        $script:startSearchDebounceTimer.Start()
+    })
+}
+if ($script:btnClearStartSearch) {
+    $script:btnClearStartSearch.Add_Click({
+        if ($script:txtStartSearch) { $script:txtStartSearch.Text = "" }
+        Apply-StartupFilter
+    })
+}
+
+if ($script:btnStartCleanOrphans) {
+    $script:btnStartCleanOrphans.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $orphanEntries = @($script:startRows | Where-Object { $_.Entry.IsOrphan -and $_.Entry.CanDelete } | ForEach-Object { $_.Entry })
+        $apOrphans = [DuckUtil.StartupManagerEngine]::CountOrphanApprovedEntries()
+        if ($orphanEntries.Count -eq 0 -and $apOrphans -eq 0) {
+            [void](Show-OwnedMessageBox -Text "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y l$([char]0x1ED7)i hay r$([char]0x00E1)c StartupApproved n$([char]0x00E0)o." -Caption "D$([char]0x1ECD)n m$([char]0x1EE5)c l$([char]0x1ED7)i" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+            return
+        }
+        $ans = Show-OwnedMessageBox `
+            -Text "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $($orphanEntries.Count) m$([char]0x1EE5)c tr$([char]0x1ECF) t$([char]0x1EDB)i t$([char]0x1EC7)p kh$([char]0x00F4)ng c$([char]0x00F2)n t$([char]0x1ED3)n t$([char]0x1EA1)i v$([char]0x00E0) $apOrphans kh$([char]0x00F3)a r$([char]0x00E1)c StartupApproved c$([char]0x1EE7)a app $([char]0x0111)$([char]0x00E3) g$([char]0x1EE1).`n`nX$([char]0x00F3)a s$([char]0x1EA1)ch c$([char]0x00E1)c m$([char]0x1EE5)c l$([char]0x1ED7)i n$([char]0x00E0)y? (C$([char]0x00E1)c m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y s$([char]0x1EBD) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c sao l$([char]0x01B0)u nguy$([char]0x00EA)n l$([char]0x00F4) qua StartupGuard tr$([char]0x01B0)$([char]0x1EDB)c khi x$([char]0x00F3)a)." `
+            -Caption "X$([char]0x00E1)c nh$([char]0x1EAD)n d$([char]0x1ECD)n m$([char]0x1EE5)c l$([char]0x1ED7)i Kh$([char]0x1EDF)i ch$([char]0x1EA1)y" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+
+        if ($orphanEntries.Count -gt 0) {
+            [void](Save-StartupGuardBatchBackup -Entries $orphanEntries)
+        }
+        $delOk = 0
+        foreach ($oe in $orphanEntries) {
+            $rDel = [DuckUtil.StartupManagerEngine]::DeleteStartupEntry($oe)
+            if ($rDel.Success) { $delOk++ }
+        }
+        $cleanRes = [DuckUtil.StartupManagerEngine]::CleanupOrphanApprovedEntries()
+        Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n $delOk m$([char]0x1EE5)c t$([char]0x1EC7)p l$([char]0x1ED7)i v$([char]0x00E0) $($cleanRes.RemovedCount) kh$([char]0x00F3)a r$([char]0x00E1)c StartupApproved."
+        Start-StartupManagerRefresh
+    })
+}
+
+if ($script:btnStartRestoreBackup) {
+    $script:btnStartRestoreBackup.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $bkps = @(Get-StartupBackupsList)
+        if ($bkps.Count -eq 0) {
+            [void](Show-OwnedMessageBox -Text "Ch$([char]0x01B0)a c$([char]0x00F3) b$([char]0x1EA3)n sao l$([char]0x01B0)u m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a n$([char]0x00E0)o." -Caption "Kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+            return
+        }
+        $ans = Show-OwnedMessageBox `
+            -Text "Kh$([char]0x00F4)i ph$([char]0x1EE5)c nguy$([char]0x00EA)n l$([char]0x00F4) m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y v$([char]0x1EEB)a x$([char]0x00F3)a g$([char]0x1EA7)n nh$([char]0x1EA5)t?`n(Hi$([char]0x1EC7)n c$([char]0x00F2)n $($bkps.Count) b$([char]0x1EA3)n l$([char]0x01B0)u trong ng$([char]0x0103)n x$([char]0x1EBF)p StartupGuard)." `
+            -Caption "Kh$([char]0x00F4)i ph$([char]0x1EE5)c m$([char]0x1EE5)c kh$([char]0x1EDF)i ch$([char]0x1EA1)y $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
+
+        $res = Restore-LastStartupGuardBatch
+        Start-StartupManagerRefresh
+        [void](Show-OwnedMessageBox -Text $res.Message -Caption "Kh$([char]0x00F4)i ph$([char]0x1EE5)c StartupGuard" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
+    })
+}
+
+if ($script:btnStartAddApp) {
+    $script:btnStartAddApp.Add_Click({
+        if ($script:isWindowClosing) { return }
+        $dlg = [Microsoft.Win32.OpenFileDialog]::new()
+        $dlg.Title = "Ch$([char]0x1ECD)n $([char]0x1EE9)ng d$([char]0x1EE5)ng (.exe) th$([char]0x00EA)m v$([char]0x00E0)o Kh$([char]0x1EDF)i ch$([char]0x1EA1)y c$([char]0x00F9)ng Windows"
+        $dlg.Filter = "$([char]0x1EE8)ng d$([char]0x1EE5)ng (*.exe)|*.exe|T$([char]0x1EA5)t c$([char]0x1EA3) t$([char]0x1EC7)p (*.*)|*.*"
+        $dlg.CheckFileExists = $true
+        if ($dlg.ShowDialog($window) -eq $true -and -not [string]::IsNullOrWhiteSpace($dlg.FileName)) {
+            $exePath = $dlg.FileName
+            $appName = [System.IO.Path]::GetFileNameWithoutExtension($exePath)
+            $op = [DuckUtil.StartupManagerEngine]::AddStartupEntry($appName, $exePath, "")
+            if ($op.Success) {
+                Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $([char]0x0110)$([char]0x00E3) th$([char]0x00EA)m '$appName' ($exePath)."
+                Start-StartupManagerRefresh
+            } else {
+                Log-Text "[ERR] Kh$([char]0x00F4)ng th$([char]0x1EC3) th$([char]0x00EA)m '$appName': $($op.Message)"
+                [void](Show-OwnedMessageBox -Text "Kh$([char]0x00F4)ng th$([char]0x1EC3) th$([char]0x00EA)m $([char]0x1EE9)ng d$([char]0x1EE5)ng: $($op.Message)" -Caption "L$([char]0x1ED7)i th$([char]0x00EA)m $([char]0x1EE9)ng d$([char]0x1EE5)ng" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+            }
         }
     })
 }

@@ -145,7 +145,8 @@ $smoothCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\SmoothS
 $appCatalogCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\AppCatalogEngine.cs")
 $deepCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\DeepUninstallerEngine.cs")
 $optCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\WindowsOptimizerEngine.cs")
-$combinedCoreCsCode = Merge-CSharpCoreSources -Sources @($smoothCsCode, $appCatalogCsCode, $deepCsCode, $optCsCode)
+$startupCsCode = Get-Content -Raw -Encoding utf8 (Join-Path $root "csharp\StartupManagerEngine.cs")
+$combinedCoreCsCode = Merge-CSharpCoreSources -Sources @($smoothCsCode, $appCatalogCsCode, $deepCsCode, $optCsCode, $startupCsCode)
 
 $sb = [System.Text.StringBuilder]::new()
 
@@ -242,7 +243,7 @@ $sb.AppendLine('    }') | Out-Null
 $sb.AppendLine('    return $wpfSmoothRefs') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
-$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.SmoothScrollController" -as [type]) -and -not ("DuckUtil.AppCatalogEngine" -as [type]) -and -not ("DuckUtil.DeepUninstallerEngine" -as [type]) -and -not ("DuckUtil.WindowsOptimizerEngine" -as [type]) -and -not ("DuckUtil.StartupManagerEngine" -as [type])) {') | Out-Null
 $sb.AppendLine('    try {') | Out-Null
 $sb.AppendLine(('        $duckCoreCs = @' + $q)) | Out-Null
 $sb.AppendLine($combinedCoreCsCode.Trim()) | Out-Null
@@ -286,6 +287,15 @@ $sb.AppendLine(('        $winOptCs = @' + $q)) | Out-Null
 $sb.AppendLine($optCsCode.Trim()) | Out-Null
 $sb.AppendLine(($q + '@')) | Out-Null
 $sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.WindowsOptimizerEngine" -SourceCode $winOptCs -Prefix "DuckOpt" -RequiredMethod "ProbeTweaksStateAsync"') | Out-Null
+$sb.AppendLine('    } catch {}') | Out-Null
+$sb.AppendLine('}') | Out-Null
+$sb.AppendLine() | Out-Null
+$sb.AppendLine('if (-not ("DuckUtil.StartupManagerEngine" -as [type])) {') | Out-Null
+$sb.AppendLine('    try {') | Out-Null
+$sb.AppendLine(('        $startupMgrCs = @' + $q)) | Out-Null
+$sb.AppendLine($startupCsCode.Trim()) | Out-Null
+$sb.AppendLine(($q + '@')) | Out-Null
+$sb.AppendLine('        Import-CachedCSharpType -TypeName "DuckUtil.StartupManagerEngine" -SourceCode $startupMgrCs -Prefix "DuckStart" -RequiredMethod "ScanFastCoreAsync" -RefsResolver $resolveCoreRefs') | Out-Null
 $sb.AppendLine('    } catch {}') | Out-Null
 $sb.AppendLine('}') | Out-Null
 $sb.AppendLine() | Out-Null
