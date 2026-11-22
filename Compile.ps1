@@ -113,7 +113,7 @@ function ConvertTo-AsciiPowerShellCode {
 
 $startCode  = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\start.ps1"))
 $appsJson   = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\apps.json"))
-$tweaksJson = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\tweaks.json"))
+$tweaksJson = ConvertTo-AsciiJson (Get-Content -Raw -Encoding utf8 (Join-Path $root "config\customize.json"))
 $xamlCode   = ConvertTo-AsciiXml (Get-Content -Raw -Encoding utf8 (Join-Path $root "xaml\MainWindow.xaml"))
 $mainCode   = ConvertTo-AsciiPowerShellCode (Get-Content -Raw -Encoding utf8 (Join-Path $root "scripts\main.ps1"))
 function Split-CSharpHeaderAndBody {

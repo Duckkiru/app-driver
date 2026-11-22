@@ -8382,7 +8382,7 @@ function Get-OptimizerCatalogItems {
         return @($TweakCatalog)
     }
     try {
-        $jsonPath = Join-Path $PSScriptRoot "..\config\tweaks.json"
+        $jsonPath = Join-Path $PSScriptRoot "..\config\customize.json"
         if (Test-Path -LiteralPath $jsonPath) {
             $loaded = ConvertFrom-Json ([System.IO.File]::ReadAllText($jsonPath, [System.Text.Encoding]::UTF8))
             $script:TweakCatalog = $loaded
