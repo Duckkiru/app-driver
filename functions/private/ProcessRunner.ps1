@@ -62,8 +62,8 @@ function Log-Text {
     $trimmed = $clean.TrimEnd("`r", "`n")
     if ([string]::IsNullOrWhiteSpace($trimmed)) { return }
 
-    $trimmed = $trimmed.Replace("[✓]", "[SUCC]").Replace("[✓ ", "[SUCC - ").Replace("✓", "SUCC")
-    $trimmed = $trimmed.Replace("[OK]", "[SUCC]").Replace("[OK - ", "[SUCC - ").Replace("[SUC]", "[SUCC]").Replace("[SUC - ", "[SUCC - ")
+    $trimmed = $trimmed.Replace("[✓]", "[OK]").Replace("[✓ ", "[OK - ").Replace("✓", "OK")
+    $trimmed = $trimmed.Replace("[SUCC]", "[OK]").Replace("[SUCC - ", "[OK - ").Replace("[SUC]", "[OK]").Replace("[SUC - ", "[OK - ")
     $trimmed = $trimmed.Replace("[❌]", "[ERR]").Replace("[❌ ", "[ERR - ").Replace("❌", "ERR")
     $trimmed = $trimmed.Replace("[ERR - LỖI]", "[ERR]").Replace("[ERR - LỖI ", "[ERR - ").Replace("[ER]", "[ERR]").Replace("[ER - ", "[ERR - ")
     $trimmed = $trimmed.Replace("[⚠️]", "[WARN]").Replace("[⚠️ ", "[WARN - ").Replace("⚠️", "WARN")

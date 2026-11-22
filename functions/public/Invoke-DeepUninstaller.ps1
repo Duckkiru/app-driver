@@ -1,4 +1,4 @@
-﻿Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
+Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
 
 if (-not ("DuckUtil.DeepUninstallerEngine" -as [type])) {
     try {
@@ -1533,7 +1533,7 @@ function Restart-WindowsExplorerForUnlock {
         }
     }
     if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-        Log-Text "[SUCC] Windows Explorer $([char]0x0111)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i; ti$([char]0x1EBF)p t$([char]0x1EE5)c x$([char]0x00F3)a m$([char]0x1EE5)c $([char]0x0111)ang gi$([char]0x1EEF) kh$([char]0x00F3)a..."
+        Log-Text "[OK] Windows Explorer $([char]0x0111)$([char]0x00E3) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i; ti$([char]0x1EBF)p t$([char]0x1EE5)c x$([char]0x00F3)a m$([char]0x1EE5)c $([char]0x0111)ang gi$([char]0x1EEF) kh$([char]0x00F3)a..."
     }
 }
 
@@ -2817,7 +2817,7 @@ function Invoke-DeepAppUninstall {
             }
         } else {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                Log-Text "[SUCC] '$($AppEntry.DisplayName)' $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
+                Log-Text "[OK] '$($AppEntry.DisplayName)' $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
             }
         }
         return
@@ -2832,12 +2832,12 @@ function Invoke-DeepAppUninstall {
         if ($res.Confirmed) {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                 $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
-                Log-Text "[SUCC] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
+                Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
             }
         }
     } else {
         if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-            Log-Text "[SUCC] Tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) $([char]0x0111)$([char]0x00E3) d$([char]0x1ECD)n d$([char]0x1EB9)p s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
+            Log-Text "[OK] Tr$([char]0x00EC)nh g$([char]0x1EE1) b$([char]0x1ECF) $([char]0x0111)$([char]0x00E3) d$([char]0x1ECD)n d$([char]0x1EB9)p s$([char]0x1EA1)ch s$([char]0x1EBD), kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n r$([char]0x00E1)c t$([char]0x1ED3)n d$([char]0x01B0)."
         }
     }
 }

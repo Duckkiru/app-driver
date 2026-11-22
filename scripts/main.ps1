@@ -1,4 +1,4 @@
-﻿Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
+Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
 if (Get-Command "Start-WingetBackgroundPreScan" -ErrorAction SilentlyContinue) {
     Start-WingetBackgroundPreScan
 }
@@ -3086,7 +3086,7 @@ function Start-UninstallQueueExecution {
                 $res = Show-LeftoverReviewDialog -OwnerWindow $window -Items @($dedupLeftovers) -Title $dialogTitle -ForceStopByDefault:$true
                 if ($res.Confirmed) {
                     $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
-                    Log-Text "[SUCC] Đã dọn sạch $($res.RemovedCount) mục tồn dư (~$freedMb MB)."
+                    Log-Text "[OK] Đã dọn sạch $($res.RemovedCount) mục tồn dư (~$freedMb MB)."
                 }
             }
         }
@@ -6054,19 +6054,19 @@ function Complete-UpgradeDataGuardSession {
         if ($restTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $restTask.Result) {
             $rRes = $restTask.Result
             if ($rRes.RestoredLocFiles -gt 0) {
-                Log-Text "[SUCC] UpgradeDataGuard: Đã khôi phục $($rRes.RestoredLocFiles) tệp dữ liệu bị xóa trong thư mục cài đặt."
+                Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $($rRes.RestoredLocFiles) tệp dữ liệu bị xóa trong thư mục cài đặt."
             }
             if ($rRes.RestoredAppDataCounts) {
                 for ($ai = 0; $ai -lt $rRes.RestoredAppDataCounts.Length; $ai++) {
                     if ($rRes.RestoredAppDataCounts[$ai] -gt 0 -and $ai -lt $adSrcArr.Count) {
-                        Log-Text "[SUCC] UpgradeDataGuard: Đã khôi phục $($rRes.RestoredAppDataCounts[$ai]) tệp dữ liệu/profile trong: $($adSrcArr[$ai])"
+                        Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $($rRes.RestoredAppDataCounts[$ai]) tệp dữ liệu/profile trong: $($adSrcArr[$ai])"
                     }
                 }
             }
             if ($rRes.RestoredRegIndices) {
                 foreach ($impIdx in $rRes.RestoredRegIndices) {
                     if ($impIdx -ge 0 -and $impIdx -lt $regFiles.Count) {
-                        Log-Text "[SUCC] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($regFiles[$impIdx].Key)"
+                        Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($regFiles[$impIdx].Key)"
                     }
                 }
             }
@@ -6076,7 +6076,7 @@ function Complete-UpgradeDataGuardSession {
             if ($canSnapshotLoc -and (Test-Path -LiteralPath $locBkp) -and $snapshotType) {
                 $restoredLoc = $snapshotType::RestoreDirectorySnapshot($locBkp, $existingLoc)
                 if ($restoredLoc -gt 0) {
-                    Log-Text "[SUCC] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
+                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $restoredLoc tệp dữ liệu bị xóa trong thư mục cài đặt."
                 }
             }
 
@@ -6085,7 +6085,7 @@ function Complete-UpgradeDataGuardSession {
                     if (Test-Path -LiteralPath $item.Backup) {
                         $resAd = $snapshotType::RestoreDirectorySnapshot($item.Backup, $item.Source)
                         if ($resAd -gt 0) {
-                            Log-Text "[SUCC] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
+                            Log-Text "[OK] UpgradeDataGuard: Đã khôi phục $resAd tệp dữ liệu/profile trong: $($item.Source)"
                         }
                     }
                 }
@@ -6104,7 +6104,7 @@ function Complete-UpgradeDataGuardSession {
                     } finally {
                         if ($pImp) { try { $pImp.Dispose() } catch {} }
                     }
-                    Log-Text "[SUCC] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
+                    Log-Text "[OK] UpgradeDataGuard: Đã khôi phục Registry cấu hình: $($rfItem.Key)"
                 } catch {}
             }
         }
@@ -6631,7 +6631,7 @@ function Invoke-VerifiedDirectPackageInstall {
             return -1
         }
         $dlPath = $dlRes.Substring(3)
-        Log-Text "   [SUCC] [$srcLabel] Xác thực SHA-256 hợp lệ."
+        Log-Text "   [OK] [$srcLabel] Xác thực SHA-256 hợp lệ."
 
         $typeHint = [string]$Candidate.InstallerType
         if ($dlPath -match '\.msi$' -or $typeHint -eq 'msi') {
@@ -7168,7 +7168,7 @@ Register-Click "btnInstall" {
                 if ($progressBar) { $progressBar.Value = [math]::Round(($idx / $total) * 100) }
 
                 if ($tag.Status -eq "LATEST") {
-                    Log-Text "[SUCC] $($app.Name) đã là bản mới nhất, bỏ qua."
+                    Log-Text "[OK] $($app.Name) đã là bản mới nhất, bỏ qua."
                     $alreadyCount++
                     if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     continue
@@ -7180,7 +7180,7 @@ Register-Click "btnInstall" {
                     Log-Text "[$idx/$total] Đang cập nhật: $($app.Name) (ID: $($app.ID))..."
                     $upCode = Invoke-CatalogUpgradeWithFallback -Tag $tag
                     if ($upCode -eq 0) {
-                        Log-Text "   [SUCC - ĐÃ CẬP NHẬT] $($app.Name)"
+                        Log-Text "   [OK - ĐÃ CẬP NHẬT] $($app.Name)"
                         $okCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     } elseif ($upCode -eq 2) {
@@ -7296,7 +7296,7 @@ Register-Click "btnInstall" {
                         $failCount++
                     } else {
                         $okNote = if ($code -eq 3010 -or $code -eq 1641) { " (Cần khởi động lại)" } else { "" }
-                        Log-Text "   [SUCC - HOÀN THÀNH] $($app.Name)$okNote"
+                        Log-Text "   [OK - HOÀN THÀNH] $($app.Name)$okNote"
                         $okCount++
                         if ($tag.CheckBox) { $tag.CheckBox.IsChecked = $false }
                     }
@@ -7466,7 +7466,7 @@ Register-Click "btnUpgradeAll" {
                         if ($script:isWindowClosing -or $script:cancelRequested) { break }
                         $stCode = Invoke-CatalogUpgradeWithFallback -Tag $stRow.Tag -IsBulkUpgrade
                         if ($stCode -eq 0) {
-                            Log-Text "   [SUCC - ĐÃ NÂNG CẤP] $($stRow.Tag.App.Name)"
+                            Log-Text "   [OK - ĐÃ NÂNG CẤP] $($stRow.Tag.App.Name)"
                             $bulkOk++
                             if ($stRow.Tag.CheckBox) { $stRow.Tag.CheckBox.IsChecked = $false }
                         } elseif ($stCode -eq 2) {
@@ -7506,7 +7506,7 @@ Register-Click "btnUpgradeAll" {
                         Log-Text "[$idxOut/$totalOut] Đang nâng cấp an toàn: $($tagOut.App.Name)..."
                         $codeOut = Invoke-CatalogUpgradeWithFallback -Tag $tagOut -IsBulkUpgrade
                         if ($codeOut -eq 0) {
-                            Log-Text "   [SUCC - ĐÃ NÂNG CẤP] $($tagOut.App.Name)"
+                            Log-Text "   [OK - ĐÃ NÂNG CẤP] $($tagOut.App.Name)"
                             $bulkOk++
                             if ($tagOut.CheckBox) { $tagOut.CheckBox.IsChecked = $false }
                         } elseif ($codeOut -eq 2) {
@@ -7545,7 +7545,7 @@ Register-Click "btnUpgradeAll" {
                 Log-Text "[WARN] Nâng cấp kết thúc với $bulkFail lỗi ($bulkOk thành công, $bulkAlready đã mới nhất, $bulkSkip bỏ qua)."
             } else {
                 if ($txtStatus) { $txtStatus.Text = "Nâng cấp hoàn tất!" }
-                Log-Text "[SUCC] Hoàn tất tiến trình nâng cấp phần mềm ($bulkOk thành công, $bulkAlready đã mới nhất, $bulkSkip bỏ qua)."
+                Log-Text "[OK] Hoàn tất tiến trình nâng cấp phần mềm ($bulkOk thành công, $bulkAlready đã mới nhất, $bulkSkip bỏ qua)."
             }
             Wait-SquirrelUpdatersSettle
             if (-not $script:isWindowClosing) {
@@ -7600,7 +7600,7 @@ Register-Click "btnSfcScan" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-SystemFileCheck
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Quét SFC hoàn tất" }
-        Log-Text "[SUCC] Quá trình SFC đã kết thúc."
+        Log-Text "[OK] Quá trình SFC đã kết thúc."
     }
 }
 
@@ -7612,7 +7612,7 @@ Register-Click "btnDismRestore" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-DismRestoreHealth
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "DISM hoàn tất" }
-        Log-Text "[SUCC] DISM RestoreHealth hoàn thành xuất sắc."
+        Log-Text "[OK] DISM RestoreHealth hoàn thành xuất sắc."
     }
 }
 
@@ -7632,7 +7632,7 @@ Register-Click "btnDismCleanup" -LockGroup "Gỡ lỗi & Hệ thống" {
         Invoke-DismComponentCleanup
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn kho linh kiện hoàn tất" }
-        Log-Text "[SUCC] Đã giải phóng dung lượng kho linh kiện."
+        Log-Text "[OK] Đã giải phóng dung lượng kho linh kiện."
     }
 }
 
@@ -7652,7 +7652,7 @@ Register-Click "btnRestartUpdateServices" -LockGroup "Gỡ lỗi & Hệ thống"
         Log-Text "[*] Đang khởi động lại dịch vụ Windows Update & BITS..."
         Restart-Service -Name "wuauserv" -Force -ErrorAction SilentlyContinue
         Restart-Service -Name "bits" -Force -ErrorAction SilentlyContinue
-        Log-Text "[SUCC] Đã khởi động lại dịch vụ cập nhật."
+        Log-Text "[OK] Đã khởi động lại dịch vụ cập nhật."
     }
 }
 
@@ -7667,7 +7667,7 @@ Register-Click "btnFlushDnsWinsock" -LockGroup "Gỡ lỗi & Hệ thống" {
         Log-Text "[*] Đang xóa sạch cache DNS và reset Winsock Catalog..."
         Clear-DnsResolverCache
         Run-CliStream "netsh.exe" "winsock reset"
-        Log-Text "[SUCC] Đã làm mới mạng và DNS cache."
+        Log-Text "[OK] Đã làm mới mạng và DNS cache."
     }
 }
 
@@ -7675,7 +7675,7 @@ Register-Click "btnResetTcpIp" -LockGroup "Gỡ lỗi & Hệ thống" {
     Invoke-GuardedAction "Reset TCP/IP Stack" {
         Log-Text "[*] Đang đặt lại toàn bộ ngăn xếp giao thức mạng TCP/IP..."
         Reset-NetworkInterfaceStack
-        Log-Text "[SUCC] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
+        Log-Text "[OK] Đã reset TCP/IP Stack. Khuyên bạn nên khởi động lại máy."
     }
 }
 
@@ -7687,7 +7687,7 @@ Register-Click "btnClearTemp" -LockGroup "Gỡ lỗi & Hệ thống" {
         Clear-SystemTempFiles
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Dọn tệp tạm hoàn tất" }
-        Log-Text "[SUCC] Dọn dẹp bộ nhớ tạm thành công!"
+        Log-Text "[OK] Dọn dẹp bộ nhớ tạm thành công!"
     }
 }
 
@@ -7717,7 +7717,7 @@ Register-Click "btnRestartExplorer" -LockGroup "Gỡ lỗi & Hệ thống" {
         if (-not (Get-Process -Name "explorer" -ErrorAction SilentlyContinue)) {
             Start-Process "explorer.exe"
         }
-        Log-Text "[SUCC] Đã nạp lại Windows Explorer thành công."
+        Log-Text "[OK] Đã nạp lại Windows Explorer thành công."
     }
 }
 
@@ -7731,7 +7731,7 @@ Register-Click "btnScanFaultyDrivers" -LockGroup "Quản lý Driver" {
         $faulty = Find-FaultyPnpDevices
 
         if ($faulty.Count -eq 0) {
-            Log-Text "[SUCC] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
+            Log-Text "[OK] Tuyệt vời! Không phát hiện thiết bị nào bị lỗi hoặc thiếu driver trên máy bạn."
             if ($txtStatus) { $txtStatus.Text = "Tất cả Driver đều hoạt động tốt" }
         } else {
             Log-Text "[WARN] PHÁT HIỆN $($faulty.Count) THIẾT BỊ ĐANG BỊ LỖI / THIẾU DRIVER:"
@@ -7750,7 +7750,7 @@ Register-Click "btnPnpRescan" -LockGroup "Quản lý Driver" {
     Invoke-GuardedAction "Quét lại thiết bị PnP" {
         Log-Text "[*] Đang gửi lệnh quét phần cứng Plug and Play (pnputil /scan-devices)..."
         Invoke-PnpDeviceRescan
-        Log-Text "[SUCC] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
+        Log-Text "[OK] Windows đã hoàn tất quét và phát hiện lại các thiết bị phần cứng."
     }
 }
 
@@ -7775,7 +7775,7 @@ Register-Click "btnFixDriverUpdate" -LockGroup "Quản lý Driver" {
 
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($txtStatus) { $txtStatus.Text = "Đã gỡ lỗi kẹt driver update" }
-        Log-Text "[SUCC] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
+        Log-Text "[OK] Hoàn thành! Lỗi kẹt tải driver đã được dọn sạch."
     }
 }
 
@@ -7815,7 +7815,7 @@ Register-Click "btnBackupDrivers" -LockGroup "Quản lý Driver" {
         if ($progressBar) { $progressBar.IsIndeterminate = $false }
         if ($res) {
             if ($txtStatus) { $txtStatus.Text = "Sao lưu driver hoàn tất" }
-            Log-Text "[SUCC] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
+            Log-Text "[OK] THÀNH CÔNG! Đã sao lưu toàn bộ driver vào: $dest"
         } else {
             if ($txtStatus) { $txtStatus.Text = "Sao lưu driver thất bại" }
             Log-Text "[ERR] Lỗi trong quá trình sao lưu driver."
@@ -8111,7 +8111,7 @@ $script:autoScannedOnStartup = $false
 $window.Add_ContentRendered({
     if (-not $script:autoScannedOnStartup -and -not $script:isWindowClosing) {
         $script:autoScannedOnStartup = $true
-        Log-Text "[SUCC] Sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
+        Log-Text "[OK] Sẵn sàng ($($allItemBorders.Count) ứng dụng / $($categories.Count) danh mục)."
         if ($script:hasFastCatalogRowBuilder) {
             Sync-Tab0ViewportAssets
             if ($script:hasMasonryPanel) {
@@ -8712,7 +8712,7 @@ if ($script:btnOptRefresh) {
     $script:btnOptRefresh.Add_Click({
         if (-not $script:isWindowClosing -and -not $script:isActionRunning) {
             Refresh-OptimizerLiveState
-            Log-Text "[SUCC] Đã làm mới trạng thái thực tế của $($script:optEntries.Count) tùy chỉnh."
+            Log-Text "[OK] Đã làm mới trạng thái thực tế của $($script:optEntries.Count) tùy chỉnh."
         }
     })
 }
@@ -8789,7 +8789,7 @@ if ($script:btnOptApply) {
             }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "Đã lưu tối ưu ($totalApplied thành công, $totalFailed lỗi)" }
-            Log-Text "[SUCC] Đã lưu cấu hình tối ưu: $totalApplied thành công • $totalFailed lỗi."
+            Log-Text "[OK] Đã lưu cấu hình tối ưu: $totalApplied thành công • $totalFailed lỗi."
             if ($totalFailed -gt 0) {
                 $isAdminNow = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
                 if (-not $isAdminNow) {
@@ -8847,7 +8847,7 @@ if ($script:btnOptUndo) {
             }
             if ($progressBar) { $progressBar.Value = 0 }
             if ($txtStatus) { $txtStatus.Text = "Đã đặt về mặc định ($($res.Applied) thành công)" }
-            Log-Text "[SUCC] Đã đặt $($res.Applied) tùy chỉnh về mặc định ($($res.Failed) lỗi)."
+            Log-Text "[OK] Đã đặt $($res.Applied) tùy chỉnh về mặc định ($($res.Failed) lỗi)."
             Refresh-OptimizerLiveState
         }
     })

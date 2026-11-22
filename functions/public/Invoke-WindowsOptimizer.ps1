@@ -1,4 +1,4 @@
-﻿function Get-OptimizerBackupDirectory {
+function Get-OptimizerBackupDirectory {
     return (Join-Path $env:LOCALAPPDATA "AppDriver\OptimizerBackups")
 }
 
@@ -94,7 +94,7 @@ function New-OptimizerRestorePoint {
         }
         try { Enable-ComputerRestore -Drive ($env:SystemDrive + "\") -ErrorAction SilentlyContinue } catch {}
         Checkpoint-Computer -Description ("App-Driver Optimizer " + (Get-Date -Format "yyyy-MM-dd HH:mm")) -RestorePointType "MODIFY_SETTINGS" -ErrorAction Stop
-        Log-Text "[SUCC] Đã tạo điểm khôi phục hệ thống (System Restore Point)."
+        Log-Text "[OK] Đã tạo điểm khôi phục hệ thống (System Restore Point)."
         return $true
     } catch {
         Log-Text "[WARN] Không thể tạo Restore Point: $($_.Exception.Message)"
@@ -181,7 +181,7 @@ function Save-OptimizerGuardSnapshot {
 
     $json = $payload | ConvertTo-Json -Depth 6
     [System.IO.File]::WriteAllText($snapPath, $json, [System.Text.UTF8Encoding]::new($false))
-    Log-Text "[SUCC] OptimizerGuard: Đã sao lưu trạng thái gốc ($($regSnaps.Length) Registry, $($svcSnaps.Length) Service) -> $([System.IO.Path]::GetFileName($snapPath))"
+    Log-Text "[OK] OptimizerGuard: Đã sao lưu trạng thái gốc ($($regSnaps.Length) Registry, $($svcSnaps.Length) Service) -> $([System.IO.Path]::GetFileName($snapPath))"
     return $snapPath
 }
 
@@ -243,7 +243,7 @@ function Restore-OptimizerGuardSnapshot {
             Restart-ExplorerSoft
         }
 
-        Log-Text "[SUCC] OptimizerGuard: Đã khôi phục hoàn chỉnh ($regRestored Registry, $svcRestored Service) từ bản lưu $($obj.CreatedAt)."
+        Log-Text "[OK] OptimizerGuard: Đã khôi phục hoàn chỉnh ($regRestored Registry, $svcRestored Service) từ bản lưu $($obj.CreatedAt)."
         return $true
     } catch {
         Log-Text "[ERR] Lỗi khôi phục bản sao lưu: $($_.Exception.Message)"
@@ -412,7 +412,7 @@ function Repair-OemPowerAndLegionThermalMode {
                 }
             }
             if (-not $Silent) {
-                Log-Text "[SUCC] Đã đồng bộ lại dịch vụ phím nóng hãng & bật lại chế độ Custom trong vòng lặp Fn+Q."
+                Log-Text "[OK] Đã đồng bộ lại dịch vụ phím nóng hãng & bật lại chế độ Custom trong vòng lặp Fn+Q."
             }
         }
     } catch {}
@@ -523,7 +523,7 @@ function Restore-AllOptimizerGuardSnapshots {
         Restart-ExplorerSoft
     }
 
-    Log-Text "[SUCC] OptimizerGuard: Đã khôi phục hoàn chỉnh trạng thái gốc ban đầu ($regRestored Registry, $svcRestored Service, $($allTasks.Count) Task) từ $($files.Count) bản lưu."
+    Log-Text "[OK] OptimizerGuard: Đã khôi phục hoàn chỉnh trạng thái gốc ban đầu ($regRestored Registry, $svcRestored Service, $($allTasks.Count) Task) từ $($files.Count) bản lưu."
     return $true
 }
 
@@ -562,14 +562,14 @@ function Invoke-OptimizerSpecialAction {
                     } catch {}
                 }
             }
-            Log-Text "[SUCC] Đã dọn $removed mục tệp rác tạm."
+            Log-Text "[OK] Đã dọn $removed mục tệp rác tạm."
             return $true
         }
         "DiskCleanup" {
             if ($isUndo) { return $true }
             try {
                 Start-Process "cleanmgr.exe" -ArgumentList "/d $($env:SystemDrive) /VERYLOWDISK" -WindowStyle Hidden -ErrorAction Stop
-                Log-Text "[SUCC] Đã khởi chạy Disk Cleanup dọn ổ $($env:SystemDrive)."
+                Log-Text "[OK] Đã khởi chạy Disk Cleanup dọn ổ $($env:SystemDrive)."
                 return $true
             } catch {
                 Log-Text "[WARN] Không thể chạy cleanmgr.exe: $($_.Exception.Message)"
@@ -639,7 +639,7 @@ function Invoke-OptimizerSpecialAction {
                     }
                 }
                 & ipconfig.exe /flushdns 2>$null | Out-Null
-                Log-Text "[SUCC] Đã cập nhật DNS ($dnsChoice) và làm mới DNS cache."
+                Log-Text "[OK] Đã cập nhật DNS ($dnsChoice) và làm mới DNS cache."
                 return $true
             } catch {
                 Log-Text "[ERR] Lỗi đổi DNS: $($_.Exception.Message)"
@@ -888,7 +888,7 @@ function Invoke-OptimizerBatch {
             if ($tw.NeedsExplorerRestart) { $needsExplorer = $true }
             if ($tw.NeedsReboot) { $needsReboot = $true }
             $actLabel = if ($isUndo) { "Đã hoàn tác" } else { "Đã áp dụng" }
-            Log-Text "   [SUCC] ${actLabel}: $($tw.Name)"
+            Log-Text "   [OK] ${actLabel}: $($tw.Name)"
         } else {
             $failed++
             Log-Text "   [ERR] Không thể xử lý: $($tw.Name)"

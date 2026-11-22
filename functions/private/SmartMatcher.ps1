@@ -1,4 +1,4 @@
-﻿if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
+if (-not ("System.Windows.Media.SolidColorBrush" -as [type])) {
     Add-Type -AssemblyName PresentationCore -ErrorAction SilentlyContinue
 }
 
@@ -2099,7 +2099,7 @@ function Scan-And-ColorizeApps {
             if (-not $wingetOk -and -not $wingetMissing) {
                 Log-Text "[WARN] $summary"
             } else {
-                Log-Text "[SUCC] $summary"
+                Log-Text "[OK] $summary"
             }
         } elseif ($sigChanged) {
             Log-Text "[AUTO] Làm mới: $($finalStats.Installed) đã cài ($($finalStats.Latest) mới nhất, $($finalStats.Outdated) cần cập nhật)$modeTag"
