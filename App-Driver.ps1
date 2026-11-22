@@ -28847,7 +28847,8 @@ namespace DuckUtil {
                 "DawnCache",
                 "GrShaderCache",
                 "ShaderCache",
-                @"Service Worker\CacheStorage"
+                @"Service Worker\CacheStorage",
+                @"Service Worker\ScriptCache"
             };
 
             var rootList = new List<string>(userDataRoots);
@@ -28977,6 +28978,10 @@ namespace DuckUtil {
                 uint tgAttr;
                 if (DirExistsWin32(tgCache, out tgAttr)) results.Add(tgCache);
 
+                string tgMedia = Path.Combine(roaming, @"Telegram Desktop\tdata\user_data\media_cache");
+                uint tgMediaAttr;
+                if (DirExistsWin32(tgMedia, out tgMediaAttr)) results.Add(tgMedia);
+
                 string zaloRoot = Path.Combine(local, "ZaloPC");
                 uint zAttr;
                 if (DirExistsWin32(zaloRoot, out zAttr)) {
@@ -29009,6 +29014,18 @@ namespace DuckUtil {
                                 if (DirExistsWin32(cand, out cAttr)) results.Add(cand);
                             }
                         }
+                        foreach (string pkg in Directory.GetDirectories(pkgRoot, "MicrosoftWindows.Client.WebExperience_*")) {
+                            string[] wSubs = {
+                                @"LocalState\EBWebView\Default\Cache\Cache_Data",
+                                @"LocalState\EBWebView\Default\Code Cache",
+                                @"LocalState\EBWebView\Default\GPUCache"
+                            };
+                            for (int ws = 0; ws < wSubs.Length; ws++) {
+                                string cand = Path.Combine(pkg, wSubs[ws]);
+                                uint cAttr;
+                                if (DirExistsWin32(cand, out cAttr)) results.Add(cand);
+                            }
+                        }
                     }
                 } catch {}
             }
@@ -29036,6 +29053,9 @@ namespace DuckUtil {
             }
             if (!string.IsNullOrWhiteSpace(prog86)) {
                 results.Add(Path.Combine(prog86, @"Steam\appcache\httpcache"));
+                results.Add(Path.Combine(prog86, @"Steam\package"));
+                results.Add(Path.Combine(prog86, @"Steam\dumps"));
+                results.Add(Path.Combine(prog86, @"Steam\logs"));
             }
             if (!string.IsNullOrWhiteSpace(progData)) {
                 results.Add(Path.Combine(progData, @"Battle.net\Agent\Cache"));
@@ -29062,6 +29082,67 @@ namespace DuckUtil {
             return DeduplicateNormalizedPaths(results.ToArray());
         }
 
+        private static string[] CollectDriverInstallerDirs() {
+            string sysDrive = Environment.GetEnvironmentVariable("SystemDrive");
+            if (string.IsNullOrWhiteSpace(sysDrive)) sysDrive = "C:";
+            string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var results = new List<string>();
+            if (!string.IsNullOrWhiteSpace(progData)) {
+                results.Add(Path.Combine(progData, @"NVIDIA Corporation\Downloader"));
+            }
+            results.Add(sysDrive + @"\NVIDIA");
+            results.Add(sysDrive + @"\AMD");
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        private static string[] CollectMediaEditorCacheDirs() {
+            string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var results = new List<string>();
+            if (!string.IsNullOrWhiteSpace(local)) {
+                results.Add(Path.Combine(local, @"CapCut\User Data\Cache"));
+            }
+            if (!string.IsNullOrWhiteSpace(roaming)) {
+                results.Add(Path.Combine(roaming, @"Adobe\Common\Media Cache"));
+                results.Add(Path.Combine(roaming, @"Adobe\Common\Media Cache Files"));
+                results.Add(Path.Combine(roaming, @"Adobe\Common\Peak Files"));
+            }
+            return DeduplicateNormalizedPaths(results.ToArray());
+        }
+
+        public static string[] GetRunningCacheLockingAppNames() {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+                { "chrome", "Chrome" },
+                { "msedge", "Edge" },
+                { "brave", "Brave" },
+                { "opera", "Opera" },
+                { "firefox", "Firefox" },
+                { "zen", "Zen" },
+                { "vivaldi", "Vivaldi" },
+                { "browser", "C\u1ED1c C\u1ED1c" },
+                { "discord", "Discord" },
+                { "telegram", "Telegram" },
+                { "zalo", "Zalo" },
+                { "capcut", "CapCut" }
+            };
+            var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var list = new List<string>();
+            try {
+                Process[] procs = Process.GetProcesses();
+                for (int i = 0; i < procs.Length; i++) {
+                    try {
+                        string label;
+                        if (map.TryGetValue(procs[i].ProcessName, out label) && found.Add(label)) {
+                            list.Add(label);
+                        }
+                    } catch {}
+                    finally { try { procs[i].Dispose(); } catch {} }
+                }
+            } catch {}
+            list.Sort(StringComparer.OrdinalIgnoreCase);
+            return list.ToArray();
+        }
+
         private static string[] CollectDevCacheDirs() {
             string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string userProf = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -29073,9 +29154,11 @@ namespace DuckUtil {
                 results.Add(Path.Combine(local, @"uv\cache"));
                 results.Add(Path.Combine(local, @"Yarn\Cache"));
                 results.Add(Path.Combine(local, @"pnpm\cache"));
+                results.Add(Path.Combine(local, @"NuGet\v3-cache"));
             }
             if (!string.IsNullOrWhiteSpace(userProf)) {
                 results.Add(Path.Combine(userProf, @".gradle\caches"));
+                results.Add(Path.Combine(userProf, @".nuget\packages"));
             }
             if (!string.IsNullOrWhiteSpace(tempDir)) {
                 results.Add(Path.Combine(tempDir, "WinGet"));
@@ -29358,6 +29441,15 @@ namespace DuckUtil {
             PopulateDirectoryCategory(catDo, new[] { Path.Combine(winDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache") }, null, false, ct);
             list.Add(catDo);
 
+            var catDrvInst = new ResourceCleanCategory {
+                Id = "t1_driver_installers", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Title = "B\u1ED9 c\u00E0i Driver c\u0169 (NVIDIA / AMD)",
+                Description = "T\u1EC7p gi\u1EA3i n\u00E9n c\u00E0i \u0111\u1EB7t c\u0169 trong NVIDIA Downloader, C:\\NVIDIA v\u00E0 C:\\AMD (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver \u0111ang ch\u1EA1y).",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catDrvInst, CollectDriverInstallerDirs(), null, false, ct);
+            list.Add(catDrvInst);
+
             var catGpu = new ResourceCleanCategory {
                 Id = "t1_gpu_shader", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
                 Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m Shader \u0111\u1ED3 h\u1ECDa",
@@ -29433,6 +29525,15 @@ namespace DuckUtil {
             PopulateDirectoryCategory(catGames, CollectGameLauncherCacheDirs(), null, false, ct);
             list.Add(catGames);
 
+            var catMediaEd = new ResourceCleanCategory {
+                Id = "t3_media_editors", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Safe",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m d\u1EF1ng phim (CapCut / Adobe Media Cache)",
+                Description = "Ch\u1EC9 d\u1ECDn b\u1ED9 nh\u1EDB \u0111\u1EC7m t\u1EA1m \u2014 kh\u00F4ng x\u00F3a d\u1EF1 \u00E1n hay video g\u1ED1c.",
+                CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = true, Selected = true
+            };
+            PopulateDirectoryCategory(catMediaEd, CollectMediaEditorCacheDirs(), null, false, ct);
+            list.Add(catMediaEd);
+
             var catSpotOff = new ResourceCleanCategory {
                 Id = "t3_spotify_offline", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Caution",
                 Title = "D\u1EEF li\u1EC7u ngo\u1EA1i tuy\u1EBFn Spotify",
@@ -29445,7 +29546,7 @@ namespace DuckUtil {
 
             var catDev = new ResourceCleanCategory {
                 Id = "t3_dev_caches", Tier = 3, FilterGroup = "AppDev", RiskLevel = "Advanced",
-                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m c\u00F4ng c\u1EE5 l\u1EADp tr\u00ECnh (npm / pip / uv / Yarn / Gradle)",
+                Title = "B\u1ED9 nh\u1EDB \u0111\u1EC7m c\u00F4ng c\u1EE5 l\u1EADp tr\u00ECnh (npm / pip / uv / NuGet / Gradle)",
                 Description = "B\u1ED9 nh\u1EDB \u0111\u1EC7m g\u00F3i th\u01B0 vi\u1EC7n (t\u1EF1 t\u1EA3i l\u1EA1i khi c\u00E0i \u0111\u1EB7t m\u1EDBi).",
                 WarningNote = "C\u00E1c g\u00F3i th\u01B0 vi\u1EC7n s\u1EBD t\u1EA3i l\u1EA1i t\u1EEB m\u1EA1ng khi c\u1EA7n.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
@@ -47625,6 +47726,10 @@ function Apply-ResourcesFilter {
             if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "$([char]0x0110)ang qu$([char]0x00E9)t t$([char]0x1EC7)p t$([char]0x1EA1)m, b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m, th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng v$([char]0x00E0) t$([char]0x1EC7)p dung l$([char]0x01B0)$([char]0x1EE3)ng l$([char]0x1EDB)n." }
         } elseif ($script:resRows.Count -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:resLastReport) {
+                if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "H$([char]0x1EC7) th$([char]0x1ED1)ng $([char]0x0111)$([char]0x00E3) s$([char]0x1EA1)ch s$([char]0x1EBD)" }
+                if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Kh$([char]0x00F4)ng ph$([char]0x00E1)t hi$([char]0x1EC7)n t$([char]0x1EC7)p r$([char]0x00E1)c ho$([char]0x1EB7)c b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m n$([char]0x00E0)o c$([char]0x1EA7)n d$([char]0x1ECD)n." }
+            }
         } elseif ($visibleCount -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
             if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Kh$([char]0x00F4)ng c$([char]0x00F3) h$([char]0x1EA1)ng m$([char]0x1EE5)c n$([char]0x00E0)o kh$([char]0x1EDB)p b$([char]0x1ED9) l$([char]0x1ECD)c" }
@@ -47746,6 +47851,8 @@ function Ensure-ResourcesPollTimer {
                 $script:resSyncingChecks = $true
                 try {
                     foreach ($cat in @($rep.Categories)) {
+                        $hasData = if ($cat.Id -eq "t4_empty_folders") { $cat.FolderCount -gt 0 -or $cat.ItemCount -gt 0 } else { $cat.TotalBytes -gt 0 -or $cat.ItemCount -gt 0 }
+                        if (-not $hasData -and -not $cat.SkippedBecauseRebootPending) { continue }
                         $rv = [DuckUtil.ResourceCleanerEngine]::CreateResourceRowVisual($cat, $script:styleStartRow, $null, $script:styleRowActionBtn)
                         $rv.CheckBox.Add_Checked($script:resRowCheckHandler)
                         $rv.CheckBox.Add_Unchecked($script:resRowCheckHandler)
@@ -47880,6 +47987,15 @@ if ($script:btnResClean) {
         $fmtEst = [DuckUtil.ResourceCleanerEngine]::FormatBytes($estBytes)
         $modeNote = if ($useRb) { "T$([char]0x1EC7)p t$([char]0x1EA1)m & b$([char]0x1ED9) nh$([char]0x1EDB) $([char]0x0111)$([char]0x1EC7)m s$([char]0x1EBD) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c x$([char]0x00F3)a tr$([char]0x1EF1)c ti$([char]0x1EBF)p; th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng v$([char]0x00E0) t$([char]0x1EC7)p l$([char]0x1EDB)n s$([char]0x1EBD) $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c $([char]0x0111)$([char]0x01B0)a v$([char]0x00E0)o Th$([char]0x00F9)ng r$([char]0x00E1)c." } else { "C$([char]0x1EA3)nh b$([char]0x00E1)o: Ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Th$([char]0x00F9)ng r$([char]0x00E1)c $([char]0x0111)ang t$([char]0x1EAF)t $([char]0x2014) to$([char]0x00E0)n b$([char]0x1ED9) m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n s$([char]0x1EBD) b$([char]0x1ECB) x$([char]0x00F3)a v$([char]0x0129)nh vi$([char]0x1EC5)n." }
         $confirmText = "B$([char]0x1EA1)n s$([char]0x1EAF)p d$([char]0x1ECD)n $($selectedCats.Count) h$([char]0x1EA1)ng m$([char]0x1EE5)c ($([char]0x01B0)$([char]0x1EDB)c t$([char]0x00ED)nh gi$([char]0x1EA3)i ph$([char]0x00F3)ng ~$fmtEst).`n`n$([char]0x2022) $modeNote"
+        $hasTier23 = (@($selectedCats | Where-Object { $_.Tier -eq 2 -or $_.Tier -eq 3 }).Count -gt 0)
+        if ($hasTier23) {
+            try {
+                $runningApps = @([DuckUtil.ResourceCleanerEngine]::GetRunningCacheLockingAppNames())
+                if ($runningApps.Count -gt 0) {
+                    $confirmText += "`n$([char]0x2022) $([char]0x0110)ang m$([char]0x1EDF): $($runningApps -join ', ') $([char]0x2014) t$([char]0x1EC7)p cache $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng s$([char]0x1EBD) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng b$([char]0x1ECF) qua."
+                }
+            } catch {}
+        }
         if ($hasWarn) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) bao g$([char]0x1ED3)m h$([char]0x1EA1)ng m$([char]0x1EE5)c m$([char]0x1EE9)c L$([char]0x01B0)u $([char]0x00FD) / N$([char]0x00E2)ng cao." }
         if ($hasOneDrive) { $confirmText += "`n$([char]0x2022) C$([char]0x00F3) t$([char]0x1EC7)p thu$([char]0x1ED9)c OneDrive $([char]0x2014) thao t$([char]0x00E1)c x$([char]0x00F3)a s$([char]0x1EBD) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x00EA)n $([char]0x0111)$([char]0x00E1)m m$([char]0x00E2)y." }
         $confirmText += "`n`nTi$([char]0x1EBF)p t$([char]0x1EE5)c d$([char]0x1ECD)n d$([char]0x1EB9)p?"

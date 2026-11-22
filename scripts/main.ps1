@@ -10152,6 +10152,10 @@ function Apply-ResourcesFilter {
             if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Đang quét tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." }
         } elseif ($script:resRows.Count -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
+            if ($script:resLastReport) {
+                if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Hệ thống đã sạch sẽ" }
+                if ($script:txtResEmptySub) { $script:txtResEmptySub.Text = "Không phát hiện tệp rác hoặc bộ nhớ đệm nào cần dọn." }
+            }
         } elseif ($visibleCount -eq 0) {
             $script:resEmptyState.Visibility = [System.Windows.Visibility]::Visible
             if ($script:txtResEmptyTitle) { $script:txtResEmptyTitle.Text = "Không có hạng mục nào khớp bộ lọc" }
@@ -10273,6 +10277,8 @@ function Ensure-ResourcesPollTimer {
                 $script:resSyncingChecks = $true
                 try {
                     foreach ($cat in @($rep.Categories)) {
+                        $hasData = if ($cat.Id -eq "t4_empty_folders") { $cat.FolderCount -gt 0 -or $cat.ItemCount -gt 0 } else { $cat.TotalBytes -gt 0 -or $cat.ItemCount -gt 0 }
+                        if (-not $hasData -and -not $cat.SkippedBecauseRebootPending) { continue }
                         $rv = [DuckUtil.ResourceCleanerEngine]::CreateResourceRowVisual($cat, $script:styleStartRow, $null, $script:styleRowActionBtn)
                         $rv.CheckBox.Add_Checked($script:resRowCheckHandler)
                         $rv.CheckBox.Add_Unchecked($script:resRowCheckHandler)
@@ -10407,6 +10413,15 @@ if ($script:btnResClean) {
         $fmtEst = [DuckUtil.ResourceCleanerEngine]::FormatBytes($estBytes)
         $modeNote = if ($useRb) { "Tệp tạm & bộ nhớ đệm sẽ được xóa trực tiếp; thư mục rỗng và tệp lớn sẽ được đưa vào Thùng rác." } else { "Cảnh báo: Chế độ Thùng rác đang tắt — toàn bộ mục đã chọn sẽ bị xóa vĩnh viễn." }
         $confirmText = "Bạn sắp dọn $($selectedCats.Count) hạng mục (ước tính giải phóng ~$fmtEst).`n`n• $modeNote"
+        $hasTier23 = (@($selectedCats | Where-Object { $_.Tier -eq 2 -or $_.Tier -eq 3 }).Count -gt 0)
+        if ($hasTier23) {
+            try {
+                $runningApps = @([DuckUtil.ResourceCleanerEngine]::GetRunningCacheLockingAppNames())
+                if ($runningApps.Count -gt 0) {
+                    $confirmText += "`n• Đang mở: $($runningApps -join ', ') — tệp cache đang sử dụng sẽ tự động bỏ qua."
+                }
+            } catch {}
+        }
         if ($hasWarn) { $confirmText += "`n• Có bao gồm hạng mục mức Lưu ý / Nâng cao." }
         if ($hasOneDrive) { $confirmText += "`n• Có tệp thuộc OneDrive — thao tác xóa sẽ đồng bộ lên đám mây." }
         $confirmText += "`n`nTiếp tục dọn dẹp?"
