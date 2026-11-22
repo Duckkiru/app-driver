@@ -10481,13 +10481,6 @@ if ($script:btnResAddFolder) {
         try { $fbd.Dispose() } catch {}
     })
 }
-
-if ($script:btnResFilterAll)     { $script:btnResFilterAll.Add_Click({ $script:resFilterMode = "All"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterSafe)    { $script:btnResFilterSafe.Add_Click({ $script:resFilterMode = "Safe"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterBrowser) { $script:btnResFilterBrowser.Add_Click({ $script:resFilterMode = "Browser"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterAppDev)  { $script:btnResFilterAppDev.Add_Click({ $script:resFilterMode = "AppDev"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterEmpty)   { $script:btnResFilterEmpty.Add_Click({ $script:resFilterMode = "Empty"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterAdv)     { $script:btnResFilterAdv.Add_Click({ $script:resFilterMode = "Advanced"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
 #endregion
 #endregion
 

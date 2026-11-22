@@ -1224,62 +1224,41 @@
 
                         <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                             <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <Grid Grid.Row="0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Name="btnResScan" Content="Quét lại" Style="{StaticResource ActionButton}"
+                                            Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
+                                            ToolTip="Phân tích lại tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResClean" Content="Dọn mục đã chọn" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
+                                            ToolTip="Dọn các hạng mục đang được chọn để giải phóng dung lượng ổ đĩa." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResSelectSafe" Content="Chọn An toàn" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#34D399" BorderBrush="#1E5640"
+                                            ToolTip="Chỉ chọn các hạng mục ở mức An toàn." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResClearSel" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}"
+                                            ToolTip="Bỏ chọn toàn bộ hạng mục." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResAddFolder" Content="+ Chọn thư mục" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
+                                            ToolTip="Thêm thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng và tệp tải lỗi." ToolTipService.InitialShowDelay="500"/>
+                                </StackPanel>
 
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button Name="btnResScan" Content="Quét lại" Style="{StaticResource ActionButton}"
-                                                Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                                ToolTip="Phân tích lại tệp tạm, bộ nhớ đệm, thư mục rỗng và tệp dung lượng lớn." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResClean" Content="Dọn mục đã chọn" Style="{StaticResource ActionButton}"
-                                                Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
-                                                ToolTip="Dọn các hạng mục đang được chọn để giải phóng dung lượng ổ đĩa." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResSelectSafe" Content="Chọn An toàn" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#34D399" BorderBrush="#1E5640"
-                                                ToolTip="Chỉ chọn các hạng mục ở mức An toàn." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResClearSel" Content="Bỏ chọn" Style="{StaticResource SecondaryButton}"
-                                                ToolTip="Bỏ chọn toàn bộ hạng mục." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResAddFolder" Content="+ Chọn thư mục" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
-                                                ToolTip="Thêm thư mục hoặc ổ đĩa ngoài để quét thư mục rỗng và tệp tải lỗi." ToolTipService.InitialShowDelay="500"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Name="txtResDiskInfo" Text="C: đang kiểm tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
-                                                    <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
-                                                </Border>
-                                            </StackPanel>
-                                        </Border>
-                                        <TextBlock Name="txtResSummary" Text="Đang phân tích..."
-                                                   Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <Grid Grid.Row="1" Margin="1,8,0,0">
-                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Name="btnResFilterAll" Content="Tất cả" Style="{StaticResource FilterTabButton}"
-                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
-                                            <Button Name="btnResFilterSafe" Content="An toàn" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterBrowser" Content="Trình duyệt" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterAppDev" Content="Ứng dụng &amp; Dev" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterEmpty" Content="Thư mục rỗng" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterAdv" Content="Nâng cao" Style="{StaticResource FilterTabButton}"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Name="txtResDiskInfo" Text="C: đang kiểm tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
+                                                <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
+                                            </Border>
                                         </StackPanel>
                                     </Border>
-                                </Grid>
+                                    <TextBlock Name="txtResSummary" Text="Đang phân tích..."
+                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Grid>
                         </Border>
 

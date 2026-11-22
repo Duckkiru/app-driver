@@ -1345,6 +1345,21 @@ namespace DuckUtil {
                 if (list[i].Id != "t4_empty_folders") sumFiles += list[i].ItemCount;
             }
 
+            // Smart sort: items with findings on top (Safe first, then Caution/Advanced by size desc), clean 0 B items at bottom
+            list.Sort(delegate(ResourceCleanCategory a, ResourceCleanCategory b) {
+                bool aHas = (a.TotalBytes > 0 || a.ItemCount > 0 || a.FolderCount > 0);
+                bool bHas = (b.TotalBytes > 0 || b.ItemCount > 0 || b.FolderCount > 0);
+                if (aHas != bHas) return aHas ? -1 : 1;
+                int aRisk = a.RiskLevel == "Safe" ? 0 : (a.RiskLevel == "Caution" ? 1 : 2);
+                int bRisk = b.RiskLevel == "Safe" ? 0 : (b.RiskLevel == "Caution" ? 1 : 2);
+                if (aRisk != bRisk) return aRisk.CompareTo(bRisk);
+                int cmpSz = b.TotalBytes.CompareTo(a.TotalBytes);
+                if (cmpSz != 0) return cmpSz;
+                int cmpCnt = (b.FolderCount + b.ItemCount).CompareTo(a.FolderCount + a.ItemCount);
+                if (cmpCnt != 0) return cmpCnt;
+                return a.Tier.CompareTo(b.Tier);
+            });
+
             sw.Stop();
             return new ResourceScanReport {
                 DiskInfo = GetSystemDiskInfo(),
@@ -1742,6 +1757,8 @@ namespace DuckUtil {
         private static readonly System.Windows.Media.SolidColorBrush BrDivider     = MakeFrozen(0x1C, 0xFF, 0xFF, 0xFF);
         private static readonly System.Windows.Media.SolidColorBrush BrOneDriveBg  = MakeFrozen(255, 0x17, 0x25, 0x54);
         private static readonly System.Windows.Media.SolidColorBrush BrOneDriveFg  = MakeFrozen(255, 0x93, 0xC5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrBtnBg       = MakeFrozen(255, 0x16, 0x22, 0x35);
+        private static readonly System.Windows.Media.SolidColorBrush BrBtnBdr      = MakeFrozen(255, 0x2B, 0x3D, 0x57);
 
         public static ResourceRowVisual CreateResourceRowVisual(ResourceCleanCategory cat, Style rowStyle, Style checkStyle, Style actionBtnStyle) {
             var vis = new ResourceRowVisual();
@@ -1865,17 +1882,29 @@ namespace DuckUtil {
             var btnDetails = new System.Windows.Controls.Button();
             if (actionBtnStyle != null) btnDetails.Style = actionBtnStyle;
             btnDetails.Content = "Chi ti\u1EBFt";
+            btnDetails.Background = BrBtnBg;
+            btnDetails.BorderBrush = BrBtnBdr;
+            btnDetails.Foreground = BrAccent;
+            btnDetails.FontSize = 11;
+            btnDetails.FontWeight = FontWeights.SemiBold;
             btnDetails.Padding = new Thickness(8, 3, 8, 3);
             btnDetails.IsEnabled = (cat.DetailItems != null && cat.DetailItems.Count > 0);
+            if (!btnDetails.IsEnabled) btnDetails.Opacity = 0.35;
             btnDetails.Tag = vis;
             actSp.Children.Add(btnDetails);
 
             var btnOpen = new System.Windows.Controls.Button();
             if (actionBtnStyle != null) btnOpen.Style = actionBtnStyle;
             btnOpen.Content = "M\u1EDF";
+            btnOpen.Background = BrBtnBg;
+            btnOpen.BorderBrush = BrBtnBdr;
+            btnOpen.Foreground = BrAccent;
+            btnOpen.FontSize = 11;
+            btnOpen.FontWeight = FontWeights.SemiBold;
             btnOpen.Padding = new Thickness(8, 3, 8, 3);
             btnOpen.Margin = new Thickness(5, 0, 0, 0);
             btnOpen.IsEnabled = (cat.RootPaths != null && cat.RootPaths.Length > 0);
+            if (!btnOpen.IsEnabled) btnOpen.Opacity = 0.35;
             btnOpen.Tag = vis;
             actSp.Children.Add(btnOpen);
 
@@ -1991,7 +2020,11 @@ namespace DuckUtil {
                 var ob = new System.Windows.Controls.Button();
                 if (actionBtnStyle != null) ob.Style = actionBtnStyle;
                 ob.Content = "M\u1EDF";
-                ob.Padding = new Thickness(6, 1, 6, 1);
+                ob.Background = BrBtnBg;
+                ob.BorderBrush = BrBtnBdr;
+                ob.Foreground = BrAccent;
+                ob.FontWeight = FontWeights.SemiBold;
+                ob.Padding = new Thickness(7, 2, 7, 2);
                 ob.FontSize = 10.5;
                 ob.Tag = it.Path;
                 if (onOpenDetailClick != null) ob.Click += onOpenDetailClick;

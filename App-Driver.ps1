@@ -8317,62 +8317,41 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
 
                         <Border Grid.Row="0" Background="#0E131D" Padding="16,9" BorderBrush="#27344A" BorderThickness="0,0,0,1">
                             <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <Grid Grid.Row="0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Name="btnResScan" Content="Qu&#x00E9;t l&#x1EA1;i" Style="{StaticResource ActionButton}"
+                                            Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
+                                            ToolTip="Ph&#x00E2;n t&#x00ED;ch l&#x1EA1;i t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResClean" Content="D&#x1ECD;n m&#x1EE5;c &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
+                                            Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
+                                            ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n &#x0111;&#x1EC3; gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; &#x0111;&#x0129;a." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResSelectSafe" Content="Ch&#x1ECD;n An to&#x00E0;n" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#34D399" BorderBrush="#1E5640"
+                                            ToolTip="Ch&#x1EC9; ch&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x1EDF; m&#x1EE9;c An to&#x00E0;n." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResClearSel" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
+                                            ToolTip="B&#x1ECF; ch&#x1ECD;n to&#x00E0;n b&#x1ED9; h&#x1EA1;ng m&#x1EE5;c." ToolTipService.InitialShowDelay="500"/>
+                                    <Button Name="btnResAddFolder" Content="+ Ch&#x1ECD;n th&#x01B0; m&#x1EE5;c" Style="{StaticResource SecondaryButton}"
+                                            Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
+                                            ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c ho&#x1EB7;c &#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i." ToolTipService.InitialShowDelay="500"/>
+                                </StackPanel>
 
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button Name="btnResScan" Content="Qu&#x00E9;t l&#x1EA1;i" Style="{StaticResource ActionButton}"
-                                                Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                                ToolTip="Ph&#x00E2;n t&#x00ED;ch l&#x1EA1;i t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResClean" Content="D&#x1ECD;n m&#x1EE5;c &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
-                                                Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
-                                                ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n &#x0111;&#x1EC3; gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; &#x0111;&#x0129;a." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResSelectSafe" Content="Ch&#x1ECD;n An to&#x00E0;n" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#34D399" BorderBrush="#1E5640"
-                                                ToolTip="Ch&#x1EC9; ch&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x1EDF; m&#x1EE9;c An to&#x00E0;n." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResClearSel" Content="B&#x1ECF; ch&#x1ECD;n" Style="{StaticResource SecondaryButton}"
-                                                ToolTip="B&#x1ECF; ch&#x1ECD;n to&#x00E0;n b&#x1ED9; h&#x1EA1;ng m&#x1EE5;c." ToolTipService.InitialShowDelay="500"/>
-                                        <Button Name="btnResAddFolder" Content="+ Ch&#x1ECD;n th&#x01B0; m&#x1EE5;c" Style="{StaticResource SecondaryButton}"
-                                                Foreground="#38BDF8" BorderBrush="#29527D" Margin="0"
-                                                ToolTip="Th&#x00EA;m th&#x01B0; m&#x1EE5;c ho&#x1EB7;c &#x1ED5; &#x0111;&#x0129;a ngo&#x00E0;i &#x0111;&#x1EC3; qu&#x00E9;t th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i." ToolTipService.InitialShowDelay="500"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Name="txtResDiskInfo" Text="C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
-                                                    <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
-                                                </Border>
-                                            </StackPanel>
-                                        </Border>
-                                        <TextBlock Name="txtResSummary" Text="&#x0110;ang ph&#x00E2;n t&#x00ED;ch..."
-                                                   Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <Grid Grid.Row="1" Margin="1,8,0,0">
-                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Name="btnResFilterAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
-                                                    Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
-                                            <Button Name="btnResFilterSafe" Content="An to&#x00E0;n" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterBrowser" Content="Tr&#x00EC;nh duy&#x1EC7;t" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterAppDev" Content="&#x1EE8;ng d&#x1EE5;ng &amp; Dev" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterEmpty" Content="Th&#x01B0; m&#x1EE5;c r&#x1ED7;ng" Style="{StaticResource FilterTabButton}"/>
-                                            <Button Name="btnResFilterAdv" Content="N&#x00E2;ng cao" Style="{StaticResource FilterTabButton}"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Name="txtResDiskInfo" Text="C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
+                                                <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
+                                            </Border>
                                         </StackPanel>
                                     </Border>
-                                </Grid>
+                                    <TextBlock Name="txtResSummary" Text="&#x0110;ang ph&#x00E2;n t&#x00ED;ch..."
+                                               Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -29563,6 +29542,21 @@ namespace DuckUtil {
                 if (list[i].Id != "t4_empty_folders") sumFiles += list[i].ItemCount;
             }
 
+            // Smart sort: items with findings on top (Safe first, then Caution/Advanced by size desc), clean 0 B items at bottom
+            list.Sort(delegate(ResourceCleanCategory a, ResourceCleanCategory b) {
+                bool aHas = (a.TotalBytes > 0 || a.ItemCount > 0 || a.FolderCount > 0);
+                bool bHas = (b.TotalBytes > 0 || b.ItemCount > 0 || b.FolderCount > 0);
+                if (aHas != bHas) return aHas ? -1 : 1;
+                int aRisk = a.RiskLevel == "Safe" ? 0 : (a.RiskLevel == "Caution" ? 1 : 2);
+                int bRisk = b.RiskLevel == "Safe" ? 0 : (b.RiskLevel == "Caution" ? 1 : 2);
+                if (aRisk != bRisk) return aRisk.CompareTo(bRisk);
+                int cmpSz = b.TotalBytes.CompareTo(a.TotalBytes);
+                if (cmpSz != 0) return cmpSz;
+                int cmpCnt = (b.FolderCount + b.ItemCount).CompareTo(a.FolderCount + a.ItemCount);
+                if (cmpCnt != 0) return cmpCnt;
+                return a.Tier.CompareTo(b.Tier);
+            });
+
             sw.Stop();
             return new ResourceScanReport {
                 DiskInfo = GetSystemDiskInfo(),
@@ -29960,6 +29954,8 @@ namespace DuckUtil {
         private static readonly System.Windows.Media.SolidColorBrush BrDivider     = MakeFrozen(0x1C, 0xFF, 0xFF, 0xFF);
         private static readonly System.Windows.Media.SolidColorBrush BrOneDriveBg  = MakeFrozen(255, 0x17, 0x25, 0x54);
         private static readonly System.Windows.Media.SolidColorBrush BrOneDriveFg  = MakeFrozen(255, 0x93, 0xC5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrBtnBg       = MakeFrozen(255, 0x16, 0x22, 0x35);
+        private static readonly System.Windows.Media.SolidColorBrush BrBtnBdr      = MakeFrozen(255, 0x2B, 0x3D, 0x57);
 
         public static ResourceRowVisual CreateResourceRowVisual(ResourceCleanCategory cat, Style rowStyle, Style checkStyle, Style actionBtnStyle) {
             var vis = new ResourceRowVisual();
@@ -30083,17 +30079,29 @@ namespace DuckUtil {
             var btnDetails = new System.Windows.Controls.Button();
             if (actionBtnStyle != null) btnDetails.Style = actionBtnStyle;
             btnDetails.Content = "Chi ti\u1EBFt";
+            btnDetails.Background = BrBtnBg;
+            btnDetails.BorderBrush = BrBtnBdr;
+            btnDetails.Foreground = BrAccent;
+            btnDetails.FontSize = 11;
+            btnDetails.FontWeight = FontWeights.SemiBold;
             btnDetails.Padding = new Thickness(8, 3, 8, 3);
             btnDetails.IsEnabled = (cat.DetailItems != null && cat.DetailItems.Count > 0);
+            if (!btnDetails.IsEnabled) btnDetails.Opacity = 0.35;
             btnDetails.Tag = vis;
             actSp.Children.Add(btnDetails);
 
             var btnOpen = new System.Windows.Controls.Button();
             if (actionBtnStyle != null) btnOpen.Style = actionBtnStyle;
             btnOpen.Content = "M\u1EDF";
+            btnOpen.Background = BrBtnBg;
+            btnOpen.BorderBrush = BrBtnBdr;
+            btnOpen.Foreground = BrAccent;
+            btnOpen.FontSize = 11;
+            btnOpen.FontWeight = FontWeights.SemiBold;
             btnOpen.Padding = new Thickness(8, 3, 8, 3);
             btnOpen.Margin = new Thickness(5, 0, 0, 0);
             btnOpen.IsEnabled = (cat.RootPaths != null && cat.RootPaths.Length > 0);
+            if (!btnOpen.IsEnabled) btnOpen.Opacity = 0.35;
             btnOpen.Tag = vis;
             actSp.Children.Add(btnOpen);
 
@@ -30209,7 +30217,11 @@ namespace DuckUtil {
                 var ob = new System.Windows.Controls.Button();
                 if (actionBtnStyle != null) ob.Style = actionBtnStyle;
                 ob.Content = "M\u1EDF";
-                ob.Padding = new Thickness(6, 1, 6, 1);
+                ob.Background = BrBtnBg;
+                ob.BorderBrush = BrBtnBdr;
+                ob.Foreground = BrAccent;
+                ob.FontWeight = FontWeights.SemiBold;
+                ob.Padding = new Thickness(7, 2, 7, 2);
                 ob.FontSize = 10.5;
                 ob.Tag = it.Path;
                 if (onOpenDetailClick != null) ob.Click += onOpenDetailClick;
@@ -47933,13 +47945,6 @@ if ($script:btnResAddFolder) {
         try { $fbd.Dispose() } catch {}
     })
 }
-
-if ($script:btnResFilterAll)     { $script:btnResFilterAll.Add_Click({ $script:resFilterMode = "All"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterSafe)    { $script:btnResFilterSafe.Add_Click({ $script:resFilterMode = "Safe"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterBrowser) { $script:btnResFilterBrowser.Add_Click({ $script:resFilterMode = "Browser"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterAppDev)  { $script:btnResFilterAppDev.Add_Click({ $script:resFilterMode = "AppDev"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterEmpty)   { $script:btnResFilterEmpty.Add_Click({ $script:resFilterMode = "Empty"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-if ($script:btnResFilterAdv)     { $script:btnResFilterAdv.Add_Click({ $script:resFilterMode = "Advanced"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
 #endregion
 #endregion
 
