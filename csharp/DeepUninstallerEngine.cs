@@ -6270,6 +6270,7 @@ namespace DuckUtil
                                     }
                                 }
                                 if (isExcluded) continue;
+                                if (_systemProtectedNames.Contains(dirName) || IsProtectedWindowsDirectory(sd, true)) continue;
 
                                 string sdNorm = sd.Trim().TrimEnd('\\');
                                 string sdPrefix = sdNorm + "\\";
@@ -7004,8 +7005,85 @@ namespace DuckUtil
             "WOW6432Node", "Clients", "ODBC", "DirectX", "Khronos", "Vulkan", "OpenCL", "OpenGL", "Speech", "Squirrel",
             "Accessories", "Administrative Tools", "Maintenance", "Startup", "System Tools", "Accessibility",
             "Windows Accessories", "Windows Administrative Tools", "Windows System", "Windows Ease of Access",
-            "Windows PowerShell", "Edge", "Microsoft Edge", "Start Menu", "Taskbar", "Explorer", "Shell"
+            "Windows PowerShell", "Edge", "Microsoft Edge", "Start Menu", "Taskbar", "Explorer", "Shell",
+            "RUXIM", "ComPlus Applications", "Hyper-V", "IIS", "IIS Express", "AppV", "PCHealth",
+            "Messenger", "NetMeeting", "Online Services", "Outlook Express", "Movie Maker", "DVD Maker",
+            "Xerox", "Windows Journal", "Unified Messaging", "Zero G Registry", "Tablet PC",
+            "Ease of Access", "WUDownloadCache", "DeliveryOptimization", "System Volume Information",
+            "PerfLogs", "Recovery", "MSOCache", "Config.Msi"
         };
+
+        private const string TRUSTED_INSTALLER_SID = "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464";
+        private const string LOCAL_SYSTEM_SID = "S-1-5-18";
+
+        public static bool HasWindowsSystemDesktopIni(string dirPath)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return false;
+            try
+            {
+                string ini = Path.Combine(dirPath, "desktop.ini");
+                if (!File.Exists(ini)) return false;
+                var fi = new FileInfo(ini);
+                if (fi.Length <= 0 || fi.Length > 32768) return false;
+                string txt = File.ReadAllText(ini);
+                return txt.IndexOf("%SystemRoot%", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       txt.IndexOf("%windir%", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       txt.IndexOf("shell32.dll", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       txt.IndexOf("imageres.dll", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       txt.IndexOf("LocalizedResourceName=@", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsProtectedWindowsDirectory(string dirPath, bool blockLocalSystemOwner)
+        {
+            if (string.IsNullOrWhiteSpace(dirPath)) return true;
+            try
+            {
+                uint rawAttr = GetFileAttributesW(ToLongPath(dirPath));
+                if (rawAttr == W32_INVALID_FILE_ATTRIBUTES) return true;
+                // Hidden (0x2), System (0x4), or ReparsePoint (0x400) -> never treat as empty orphan app folder
+                if ((rawAttr & (0x2u | 0x4u | W32_FILE_ATTRIBUTE_REPARSE_POINT)) != 0)
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return true;
+            }
+
+            if (HasWindowsSystemDesktopIni(dirPath)) return true;
+
+            try
+            {
+                var di = new DirectoryInfo(dirPath);
+                DirectorySecurity sec = di.GetAccessControl(AccessControlSections.Owner);
+                IdentityReference ownerRef = sec.GetOwner(typeof(SecurityIdentifier));
+                if (ownerRef != null)
+                {
+                    string sid = ownerRef.Value ?? "";
+                    if (string.Equals(sid, TRUSTED_INSTALLER_SID, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    if (blockLocalSystemOwner && string.Equals(sid, LOCAL_SYSTEM_SID, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
+            }
+            catch {}
+
+            return false;
+        }
 
         private static readonly HashSet<string> _genericPathSegments = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -7931,6 +8009,7 @@ namespace DuckUtil
                             string sd = subDirs[s];
                             string dirName = Path.GetFileName(sd) ?? "";
                             if (IsSystemStartMenuFolder(dirName)) continue;
+                            if (IsProtectedWindowsDirectory(sd, true)) continue;
                             if (fp.IsTokenClaimed(dirName)) continue;
                             List<string> allFiles = EnumerateFilesSafe(sd, "*", 3);
                             bool allDead = true;
@@ -7997,6 +8076,7 @@ namespace DuckUtil
                             if (_systemProtectedNames.Contains(dirName)) continue;
                             if (dirName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) ||
                                 dirName.StartsWith("Windows", StringComparison.OrdinalIgnoreCase)) continue;
+                            if (IsProtectedWindowsDirectory(sd, false)) continue;
                             if (fp.IsDirectoryActive(sd)) continue;
                             if (fp.IsTokenClaimed(dirName)) continue;
                             candidates.Add(sd);
@@ -8011,23 +8091,26 @@ namespace DuckUtil
                     string dirName = Path.GetFileName(sd) ?? sd;
                     try
                     {
-                        // 1) Hollow/empty folder (0 EXEs/DLLs/SYSs)
-                        long hSize = GetHollowDirectorySize(sd, 4, 52428800L);
-                        if (hSize >= 0L)
+                        // 1) Hollow/empty folder (0 EXEs/DLLs/SYSs) - extra guard: skip SYSTEM-owned empty OS folders!
+                        if (!IsProtectedWindowsDirectory(sd, true))
                         {
-                            progDirsBag.Add(new DeepResidualArtifact
+                            long hSize = GetHollowDirectorySize(sd, 4, 52428800L);
+                            if (hSize >= 0L)
                             {
-                                ArtifactKind = "HollowDir",
-                                AppName = dirName,
-                                Path = sd,
-                                RegistryValueName = "",
-                                SizeBytes = hSize,
-                                IsRegistry = false,
-                                ConfidenceTier = "Safe100",
-                                Details = "Th\u01B0 m\u1EE5c r\u1ED7ng c\u00F2n s\u00F3t trong Program Files"
-                            });
-                            ghostEvidenceBag.Add(new KeyValuePair<string, string>(dirName, dirName));
-                            return;
+                                progDirsBag.Add(new DeepResidualArtifact
+                                {
+                                    ArtifactKind = "HollowDir",
+                                    AppName = dirName,
+                                    Path = sd,
+                                    RegistryValueName = "",
+                                    SizeBytes = hSize,
+                                    IsRegistry = false,
+                                    ConfidenceTier = "Safe100",
+                                    Details = "Th\u01B0 m\u1EE5c r\u1ED7ng c\u00F2n s\u00F3t trong Program Files"
+                                });
+                                ghostEvidenceBag.Add(new KeyValuePair<string, string>(dirName, dirName));
+                                return;
+                            }
                         }
 
                         // 2) Residual uninstaller/helper-only folder (e.g. Overwolf 300MB with OWUninstallMenu.exe & no main Overwolf.exe)
