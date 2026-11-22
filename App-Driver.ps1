@@ -8330,9 +8330,9 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button Name="btnResScan" Content="Qu&#x00E9;t ngay" Style="{StaticResource ActionButton}"
+                                        <Button Name="btnResScan" Content="Qu&#x00E9;t l&#x1EA1;i" Style="{StaticResource ActionButton}"
                                                 Background="#0284C7" Foreground="#FFFFFF" Padding="14,7"
-                                                ToolTip="Ph&#x00E2;n t&#x00ED;ch t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="500"/>
+                                                ToolTip="Ph&#x00E2;n t&#x00ED;ch l&#x1EA1;i t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n." ToolTipService.InitialShowDelay="500"/>
                                         <Button Name="btnResClean" Content="D&#x1ECD;n m&#x1EE5;c &#x0111;&#x00E3; ch&#x1ECD;n" Style="{StaticResource ActionButton}"
                                                 Background="#059669" Foreground="#FFFFFF" Padding="14,7" IsEnabled="False"
                                                 ToolTip="D&#x1ECD;n c&#x00E1;c h&#x1EA1;ng m&#x1EE5;c &#x0111;ang &#x0111;&#x01B0;&#x1EE3;c ch&#x1ECD;n &#x0111;&#x1EC3; gi&#x1EA3;i ph&#x00F3;ng dung l&#x01B0;&#x1EE3;ng &#x1ED5; &#x0111;&#x0129;a." ToolTipService.InitialShowDelay="500"/>
@@ -8347,52 +8347,21 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                        <CheckBox Name="chkResRecycleTier45" Content="&#x0110;&#x01B0;a v&#x00E0;o Th&#x00F9;ng r&#x00E1;c" IsChecked="True"
-                                                  Foreground="#CBD5E1" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,10,0"
-                                                  ToolTip="&#x0110;&#x01B0;a th&#x01B0; m&#x1EE5;c r&#x1ED7;ng, t&#x1EC7;p t&#x1EA3;i l&#x1ED7;i v&#x00E0; t&#x1EC7;p l&#x1EDB;n v&#x00E0;o Th&#x00F9;ng r&#x00E1;c thay v&#x00EC; x&#x00F3;a v&#x0129;nh vi&#x1EC5;n." ToolTipService.InitialShowDelay="300"/>
-                                        <Border Background="#101520" CornerRadius="2" BorderBrush="#2E3D55" BorderThickness="1"
-                                                Padding="8,0" VerticalAlignment="Stretch" Height="30">
-                                            <Grid Width="195">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Path Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"
-                                                      Stroke="#64748B" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                                      Data="M 7.7,7.7 L 11,11 M 8.8,5 A 3.8,3.8 0 1 1 1.2,5 A 3.8,3.8 0 1 1 8.8,5 Z"/>
-                                                <TextBlock Grid.Column="1" Text="T&#x00EC;m h&#x1EA1;ng m&#x1EE5;c..." Foreground="#475569" FontSize="11.5"
-                                                           VerticalAlignment="Center" IsHitTestVisible="False">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Text, ElementName=txtResSearch}" Value="">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                                <TextBox Grid.Column="1" Name="txtResSearch" Background="Transparent" Foreground="#F8FAFC"
-                                                         BorderThickness="0" FontSize="12" VerticalAlignment="Center" CaretBrush="#38BDF8"/>
-                                                <Button Grid.Column="2" Name="btnClearResSearch" Style="{StaticResource ClearSearchButton}" VerticalAlignment="Center">
-                                                    <Path Width="8" Height="8" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                                          StrokeThickness="1.35" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 1,1 L 7,7 M 7,1 L 1,7"/>
-                                                </Button>
-                                            </Grid>
+                                        <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Name="txtResDiskInfo" Text="C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                <Border Width="48" Height="5" Background="#1E293B" CornerRadius="2.5" Margin="7,0,0,0" VerticalAlignment="Center">
+                                                    <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="2.5"/>
+                                                </Border>
+                                            </StackPanel>
                                         </Border>
+                                        <TextBlock Name="txtResSummary" Text="&#x0110;ang ph&#x00E2;n t&#x00ED;ch..."
+                                                   Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
 
                                 <Grid Grid.Row="1" Margin="1,8,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <Border Grid.Column="0" Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" VerticalAlignment="Center">
+                                    <Border Background="#0B1019" BorderBrush="#263348" BorderThickness="1" CornerRadius="4" Padding="2" HorizontalAlignment="Left" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Name="btnResFilterAll" Content="T&#x1EA5;t c&#x1EA3;" Style="{StaticResource FilterTabButton}"
                                                     Background="#1C2A40" BorderBrush="#9938BDF8" Foreground="#38BDF8"/>
@@ -8403,19 +8372,6 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                             <Button Name="btnResFilterAdv" Content="N&#x00E2;ng cao" Style="{StaticResource FilterTabButton}"/>
                                         </StackPanel>
                                     </Border>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Background="#101827" BorderBrush="#263348" BorderThickness="1" CornerRadius="3" Padding="8,3" Margin="0,0,10,0" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Name="txtResDiskInfo" Text="&#x1ED4; C: &#x0111;ang ki&#x1EC3;m tra..." Foreground="#CBD5E1" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                <Border Width="68" Height="6" Background="#1E293B" CornerRadius="3" Margin="8,0,0,0" VerticalAlignment="Center">
-                                                    <Border Name="resDiskBarFill" Width="0" HorizontalAlignment="Left" Background="#38BDF8" CornerRadius="3"/>
-                                                </Border>
-                                            </StackPanel>
-                                        </Border>
-                                        <TextBlock Name="txtResSummary" Text="S&#x1EB5;n s&#x00E0;ng ph&#x00E2;n t&#x00ED;ch dung l&#x01B0;&#x1EE3;ng"
-                                                   Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
                                 </Grid>
                             </Grid>
                         </Border>
@@ -8452,9 +8408,9 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                             <Border Name="ResEmptyState" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Center"
                                     Background="#0E131D" BorderBrush="#263348" BorderThickness="1" CornerRadius="6" Padding="26,20" IsHitTestVisible="False">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Name="txtResEmptyTitle" Text="S&#x1EB5;n s&#x00E0;ng d&#x1ECD;n d&#x1EB9;p h&#x1EC7; th&#x1ED1;ng"
+                                    <TextBlock Name="txtResEmptyTitle" Text="&#x0110;ang ph&#x00E2;n t&#x00ED;ch h&#x1EC7; th&#x1ED1;ng..."
                                                Foreground="#E2E8F0" FontSize="13.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                    <TextBlock Name="txtResEmptySub" Text="Nh&#x1EA5;n 'Qu&#x00E9;t ngay' &#x0111;&#x1EC3; ph&#x00E2;n t&#x00ED;ch t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n."
+                                    <TextBlock Name="txtResEmptySub" Text="&#x0110;ang qu&#x00E9;t t&#x1EC7;p t&#x1EA1;m, b&#x1ED9; nh&#x1EDB; &#x0111;&#x1EC7;m, th&#x01B0; m&#x1EE5;c r&#x1ED7;ng v&#x00E0; t&#x1EC7;p dung l&#x01B0;&#x1EE3;ng l&#x1EDB;n."
                                                Foreground="#64748B" FontSize="11.5" Margin="0,5,0,0" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="520" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
@@ -28661,8 +28617,8 @@ namespace DuckUtil {
                     info.FreeBytes = di.AvailableFreeSpace;
                     info.UsedBytes = Math.Max(0L, di.TotalSize - di.AvailableFreeSpace);
                     info.UsedPercent = di.TotalSize > 0 ? Math.Round(((double)info.UsedBytes / (double)di.TotalSize) * 100.0, 1) : 0.0;
-                    info.SummaryText = string.Format("\u1ED4 {0} tr\u1ED1ng {1} / {2} ({3:0}% \u0111\u00E3 d\u00F9ng)",
-                        sysRoot, FormatBytes(info.FreeBytes), FormatBytes(info.TotalBytes), info.UsedPercent);
+                    info.SummaryText = string.Format("{0} tr\u1ED1ng {1} ({2:0}%)",
+                        sysRoot, FormatBytes(info.FreeBytes), info.UsedPercent);
                     return info;
                 }
             } catch {}
@@ -47515,10 +47471,13 @@ function Update-ResourcesDiskBar {
     if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) { return }
     try {
         $di = [DuckUtil.ResourceCleanerEngine]::GetSystemDiskInfo()
-        if ($script:txtResDiskInfo) { $script:txtResDiskInfo.Text = $di.SummaryText }
+        if ($script:txtResDiskInfo) {
+            $script:txtResDiskInfo.Text = $di.SummaryText
+            $script:txtResDiskInfo.ToolTip = "$([char]0x1ED4) $($di.DriveName) tr$([char]0x1ED1)ng $([DuckUtil.ResourceCleanerEngine]::FormatBytes($di.FreeBytes)) / $([DuckUtil.ResourceCleanerEngine]::FormatBytes($di.TotalBytes)) ($($di.UsedPercent)% $([char]0x0111)$([char]0x00E3) d$([char]0x00F9)ng)"
+        }
         if ($script:resDiskBarFill) {
             $pct = [Math]::Max(0.0, [Math]::Min(100.0, [double]$di.UsedPercent))
-            $script:resDiskBarFill.Width = [Math]::Round(68.0 * ($pct / 100.0), 1)
+            $script:resDiskBarFill.Width = [Math]::Round(48.0 * ($pct / 100.0), 1)
             if ($pct -ge 90.0) { $script:resDiskBarFill.Background = $script:brushResDiskRed }
             elseif ($pct -ge 75.0) { $script:resDiskBarFill.Background = $script:brushResDiskAmber }
             else { $script:resDiskBarFill.Background = $script:brushResDiskGreen }
@@ -47587,7 +47546,7 @@ function Update-ResourcesSummary {
         if ($script:resIsCleaning) {
             $script:btnResClean.Content = "$([char]0x0110)ang d$([char]0x1ECD)n..."
         } elseif ($selCats -gt 0) {
-            $script:btnResClean.Content = "D$([char]0x1ECD)n $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n ($fmtSel)"
+            $script:btnResClean.Content = "D$([char]0x1ECD)n ($fmtSel)"
         } else {
             $script:btnResClean.Content = "D$([char]0x1ECD)n m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n"
         }
@@ -47598,7 +47557,7 @@ function Update-ResourcesSummary {
             $script:btnResScan.Content = "D$([char]0x1EEB)ng qu$([char]0x00E9)t"
             $script:btnResScan.Background = $script:brushResStopAmber
         } else {
-            $script:btnResScan.Content = "Qu$([char]0x00E9)t ngay"
+            $script:btnResScan.Content = "Qu$([char]0x00E9)t l$([char]0x1EA1)i"
             $script:btnResScan.Background = $script:brushResScanBlue
         }
     }
@@ -47607,8 +47566,8 @@ function Update-ResourcesSummary {
     if ($script:btnResAddFolder)  { $script:btnResAddFolder.IsEnabled  = (-not $script:resIsScanning -and -not $script:resIsCleaning) }
 
     if ($script:txtResSummary -and -not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resLastReport) {
-        $extraTag = if ($script:resExtraFolders.Count -gt 0) { " $([char]0x00B7) +$($script:resExtraFolders.Count) th$([char]0x01B0) m$([char]0x1EE5)c ngo$([char]0x00E0)i" } else { "" }
-        $script:txtResSummary.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $fmtTot ($totEmpty th$([char]0x01B0) m$([char]0x1EE5)c r$([char]0x1ED7)ng) $([char]0x00B7) $([char]0x0110)$([char]0x00E3) ch$([char]0x1ECD)n $fmtSel$extraTag"
+        $emptyPart = if ($totEmpty -gt 0) { " $([char]0x00B7) $totEmpty r$([char]0x1ED7)ng" } else { "" }
+        $script:txtResSummary.Text = "Ph$([char]0x00E1)t hi$([char]0x1EC7)n $fmtTot$emptyPart"
     }
     $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
     if ($isTab4Visible -and $script:optSubTabIndex -eq 1 -and $txtSelectionCount) {
@@ -47848,7 +47807,17 @@ function Initialize-ResourcesTabIfNeeded {
     }
     Set-ResourcesFilterChipVisuals
     Update-ResourcesDiskBar
+    if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang ph$([char]0x00E2)n t$([char]0x00ED)ch..." }
     Update-ResourcesSummary
+    if ($window -and $window.Dispatcher) {
+        [void]$window.Dispatcher.BeginInvoke([Action]{
+            if (-not $script:isWindowClosing -and -not $script:resIsScanning -and -not $script:resIsCleaning) {
+                Start-ResourcesDeepScan
+            }
+        }, [System.Windows.Threading.DispatcherPriority]::Loaded)
+    } else {
+        Start-ResourcesDeepScan
+    }
 }
 
 if ($script:btnResScan) {
@@ -47869,7 +47838,7 @@ if ($script:btnResClean) {
         $selectedCats = @($script:resRows | Where-Object { $_.Category.Selected -and -not $_.Category.SkippedBecauseRebootPending -and ($_.Category.ItemCount -gt 0 -or $_.Category.FolderCount -gt 0 -or $_.Category.TotalBytes -gt 0) } | ForEach-Object { $_.Category })
         if ($selectedCats.Count -eq 0) { return }
 
-        $useRb = ($script:chkResRecycleTier45 -and $script:chkResRecycleTier45.IsChecked -eq $true)
+        $useRb = $true
         $hasWarn = $false
         $hasOneDrive = $false
         $estBytes = 0L
@@ -47971,25 +47940,6 @@ if ($script:btnResFilterBrowser) { $script:btnResFilterBrowser.Add_Click({ $scri
 if ($script:btnResFilterAppDev)  { $script:btnResFilterAppDev.Add_Click({ $script:resFilterMode = "AppDev"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
 if ($script:btnResFilterEmpty)   { $script:btnResFilterEmpty.Add_Click({ $script:resFilterMode = "Empty"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
 if ($script:btnResFilterAdv)     { $script:btnResFilterAdv.Add_Click({ $script:resFilterMode = "Advanced"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-
-if ($script:txtResSearch) {
-    $script:resSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new()
-    $script:resSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(140)
-    $script:resSearchDebounceTimer.Add_Tick({
-        $script:resSearchDebounceTimer.Stop()
-        Apply-ResourcesFilter
-    })
-    $script:txtResSearch.Add_TextChanged({
-        $script:resSearchDebounceTimer.Stop()
-        $script:resSearchDebounceTimer.Start()
-    })
-}
-if ($script:btnClearResSearch) {
-    $script:btnClearResSearch.Add_Click({
-        if ($script:txtResSearch) { $script:txtResSearch.Text = "" }
-        Apply-ResourcesFilter
-    })
-}
 #endregion
 #endregion
 

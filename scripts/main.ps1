@@ -10019,10 +10019,13 @@ function Update-ResourcesDiskBar {
     if (-not ("DuckUtil.ResourceCleanerEngine" -as [type])) { return }
     try {
         $di = [DuckUtil.ResourceCleanerEngine]::GetSystemDiskInfo()
-        if ($script:txtResDiskInfo) { $script:txtResDiskInfo.Text = $di.SummaryText }
+        if ($script:txtResDiskInfo) {
+            $script:txtResDiskInfo.Text = $di.SummaryText
+            $script:txtResDiskInfo.ToolTip = "Ổ $($di.DriveName) trống $([DuckUtil.ResourceCleanerEngine]::FormatBytes($di.FreeBytes)) / $([DuckUtil.ResourceCleanerEngine]::FormatBytes($di.TotalBytes)) ($($di.UsedPercent)% đã dùng)"
+        }
         if ($script:resDiskBarFill) {
             $pct = [Math]::Max(0.0, [Math]::Min(100.0, [double]$di.UsedPercent))
-            $script:resDiskBarFill.Width = [Math]::Round(68.0 * ($pct / 100.0), 1)
+            $script:resDiskBarFill.Width = [Math]::Round(48.0 * ($pct / 100.0), 1)
             if ($pct -ge 90.0) { $script:resDiskBarFill.Background = $script:brushResDiskRed }
             elseif ($pct -ge 75.0) { $script:resDiskBarFill.Background = $script:brushResDiskAmber }
             else { $script:resDiskBarFill.Background = $script:brushResDiskGreen }
@@ -10091,7 +10094,7 @@ function Update-ResourcesSummary {
         if ($script:resIsCleaning) {
             $script:btnResClean.Content = "Đang dọn..."
         } elseif ($selCats -gt 0) {
-            $script:btnResClean.Content = "Dọn đã chọn ($fmtSel)"
+            $script:btnResClean.Content = "Dọn ($fmtSel)"
         } else {
             $script:btnResClean.Content = "Dọn mục đã chọn"
         }
@@ -10102,7 +10105,7 @@ function Update-ResourcesSummary {
             $script:btnResScan.Content = "Dừng quét"
             $script:btnResScan.Background = $script:brushResStopAmber
         } else {
-            $script:btnResScan.Content = "Quét ngay"
+            $script:btnResScan.Content = "Quét lại"
             $script:btnResScan.Background = $script:brushResScanBlue
         }
     }
@@ -10111,8 +10114,8 @@ function Update-ResourcesSummary {
     if ($script:btnResAddFolder)  { $script:btnResAddFolder.IsEnabled  = (-not $script:resIsScanning -and -not $script:resIsCleaning) }
 
     if ($script:txtResSummary -and -not $script:resIsScanning -and -not $script:resIsCleaning -and $script:resLastReport) {
-        $extraTag = if ($script:resExtraFolders.Count -gt 0) { " · +$($script:resExtraFolders.Count) thư mục ngoài" } else { "" }
-        $script:txtResSummary.Text = "Phát hiện $fmtTot ($totEmpty thư mục rỗng) · Đã chọn $fmtSel$extraTag"
+        $emptyPart = if ($totEmpty -gt 0) { " · $totEmpty rỗng" } else { "" }
+        $script:txtResSummary.Text = "Phát hiện $fmtTot$emptyPart"
     }
     $isTab4Visible = $script:tabPages -and $script:tabPages.Count -gt 4 -and $script:tabPages[4] -and $script:tabPages[4].Visibility -eq [System.Windows.Visibility]::Visible
     if ($isTab4Visible -and $script:optSubTabIndex -eq 1 -and $txtSelectionCount) {
@@ -10352,7 +10355,17 @@ function Initialize-ResourcesTabIfNeeded {
     }
     Set-ResourcesFilterChipVisuals
     Update-ResourcesDiskBar
+    if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang phân tích..." }
     Update-ResourcesSummary
+    if ($window -and $window.Dispatcher) {
+        [void]$window.Dispatcher.BeginInvoke([Action]{
+            if (-not $script:isWindowClosing -and -not $script:resIsScanning -and -not $script:resIsCleaning) {
+                Start-ResourcesDeepScan
+            }
+        }, [System.Windows.Threading.DispatcherPriority]::Loaded)
+    } else {
+        Start-ResourcesDeepScan
+    }
 }
 
 if ($script:btnResScan) {
@@ -10373,7 +10386,7 @@ if ($script:btnResClean) {
         $selectedCats = @($script:resRows | Where-Object { $_.Category.Selected -and -not $_.Category.SkippedBecauseRebootPending -and ($_.Category.ItemCount -gt 0 -or $_.Category.FolderCount -gt 0 -or $_.Category.TotalBytes -gt 0) } | ForEach-Object { $_.Category })
         if ($selectedCats.Count -eq 0) { return }
 
-        $useRb = ($script:chkResRecycleTier45 -and $script:chkResRecycleTier45.IsChecked -eq $true)
+        $useRb = $true
         $hasWarn = $false
         $hasOneDrive = $false
         $estBytes = 0L
@@ -10475,25 +10488,6 @@ if ($script:btnResFilterBrowser) { $script:btnResFilterBrowser.Add_Click({ $scri
 if ($script:btnResFilterAppDev)  { $script:btnResFilterAppDev.Add_Click({ $script:resFilterMode = "AppDev"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
 if ($script:btnResFilterEmpty)   { $script:btnResFilterEmpty.Add_Click({ $script:resFilterMode = "Empty"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
 if ($script:btnResFilterAdv)     { $script:btnResFilterAdv.Add_Click({ $script:resFilterMode = "Advanced"; Set-ResourcesFilterChipVisuals; Apply-ResourcesFilter }) }
-
-if ($script:txtResSearch) {
-    $script:resSearchDebounceTimer = [System.Windows.Threading.DispatcherTimer]::new()
-    $script:resSearchDebounceTimer.Interval = [TimeSpan]::FromMilliseconds(140)
-    $script:resSearchDebounceTimer.Add_Tick({
-        $script:resSearchDebounceTimer.Stop()
-        Apply-ResourcesFilter
-    })
-    $script:txtResSearch.Add_TextChanged({
-        $script:resSearchDebounceTimer.Stop()
-        $script:resSearchDebounceTimer.Start()
-    })
-}
-if ($script:btnClearResSearch) {
-    $script:btnClearResSearch.Add_Click({
-        if ($script:txtResSearch) { $script:txtResSearch.Text = "" }
-        Apply-ResourcesFilter
-    })
-}
 #endregion
 #endregion
 

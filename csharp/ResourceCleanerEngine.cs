@@ -399,8 +399,8 @@ namespace DuckUtil {
                     info.FreeBytes = di.AvailableFreeSpace;
                     info.UsedBytes = Math.Max(0L, di.TotalSize - di.AvailableFreeSpace);
                     info.UsedPercent = di.TotalSize > 0 ? Math.Round(((double)info.UsedBytes / (double)di.TotalSize) * 100.0, 1) : 0.0;
-                    info.SummaryText = string.Format("\u1ED4 {0} tr\u1ED1ng {1} / {2} ({3:0}% \u0111\u00E3 d\u00F9ng)",
-                        sysRoot, FormatBytes(info.FreeBytes), FormatBytes(info.TotalBytes), info.UsedPercent);
+                    info.SummaryText = string.Format("{0} tr\u1ED1ng {1} ({2:0}%)",
+                        sysRoot, FormatBytes(info.FreeBytes), info.UsedPercent);
                     return info;
                 }
             } catch {}
