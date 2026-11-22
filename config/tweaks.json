@@ -2043,6 +2043,48 @@
     "Tasks": []
   },
   {
+    "Id": "opt_wu_disable_all",
+    "Category": "Windows Update",
+    "Name": "Tắt hoàn toàn Windows Update (Giữ nguyên Microsoft Store)",
+    "Description": "Ngừng hoàn toàn tự động quét, tải và cài đặt Windows Update vĩnh viễn (khóa NoAutoUpdate & dừng tới năm 2099) mà vẫn dùng Microsoft Store bình thường.",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "ControlType": "Checkbox",
+    "Presets": [],
+    "ProbeKind": "",
+    "Action": "DisableWindowsUpdateAll",
+    "NeedsExplorerRestart": false,
+    "NeedsReboot": false,
+    "Registry": [
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU",
+        "Name": "NoAutoUpdate",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "DisableOSUpgrade",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings",
+        "Name": "FlightSettingsMaxPauseDays",
+        "ValueType": "DWord",
+        "ApplyValue": "36500",
+        "UndoValue": "__DELETE__"
+      }
+    ],
+    "Services": [],
+    "Tasks": []
+  },
+  {
     "Id": "opt_wu_default",
     "Category": "Windows Update",
     "Name": "Khôi phục Windows Update về mặc định",

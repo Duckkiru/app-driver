@@ -780,6 +780,29 @@ function Invoke-OptimizerSpecialAction {
                 return $false
             }
         }
+        "DisableWindowsUpdateAll" {
+            $uxPath = "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"
+            try {
+                if (-not (Test-Path -LiteralPath $uxPath)) { New-Item -Path $uxPath -Force | Out-Null }
+                if ($isUndo) {
+                    foreach ($vn in @("FlightSettingsMaxPauseDays","PauseFeatureUpdatesStartTime","PauseFeatureUpdatesEndTime","PauseQualityUpdatesStartTime","PauseQualityUpdatesEndTime","PauseUpdatesExpiryTime")) {
+                        Remove-ItemProperty -LiteralPath $uxPath -Name $vn -ErrorAction SilentlyContinue
+                    }
+                    return $true
+                }
+                $nowIso = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+                $endIso = "2099-12-31T23:59:59Z"
+                Set-ItemProperty -LiteralPath $uxPath -Name "FlightSettingsMaxPauseDays" -Value 36500 -Type DWord -ErrorAction SilentlyContinue
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseFeatureUpdatesStartTime" -Value $nowIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseFeatureUpdatesEndTime" -Value $endIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseQualityUpdatesStartTime" -Value $nowIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseQualityUpdatesEndTime" -Value $endIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseUpdatesExpiryTime" -Value $endIso -Type String
+                return $true
+            } catch {
+                return $false
+            }
+        }
         "ResetWindowsUpdateDefault" {
             try {
                 $wuPol = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
@@ -788,7 +811,7 @@ function Invoke-OptimizerSpecialAction {
                 }
                 $uxPath = "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"
                 if (Test-Path -LiteralPath $uxPath) {
-                    foreach ($vn in @("PauseFeatureUpdatesStartTime","PauseFeatureUpdatesEndTime","PauseQualityUpdatesStartTime","PauseQualityUpdatesEndTime","PauseUpdatesExpiryTime")) {
+                    foreach ($vn in @("FlightSettingsMaxPauseDays","PauseFeatureUpdatesStartTime","PauseFeatureUpdatesEndTime","PauseQualityUpdatesStartTime","PauseQualityUpdatesEndTime","PauseUpdatesExpiryTime")) {
                         Remove-ItemProperty -LiteralPath $uxPath -Name $vn -ErrorAction SilentlyContinue
                     }
                 }

@@ -6712,6 +6712,48 @@ $tweaksRawJson = @'
     "Tasks": []
   },
   {
+    "Id": "opt_wu_disable_all",
+    "Category": "Windows Update",
+    "Name": "T\u1EAFt ho\u00E0n to\u00E0n Windows Update (Gi\u1EEF nguy\u00EAn Microsoft Store)",
+    "Description": "Ng\u1EEBng ho\u00E0n to\u00E0n t\u1EF1 \u0111\u1ED9ng qu\u00E9t, t\u1EA3i v\u00E0 c\u00E0i \u0111\u1EB7t Windows Update v\u0129nh vi\u1EC5n (kh\u00F3a NoAutoUpdate & d\u1EEBng t\u1EDBi n\u0103m 2099) m\u00E0 v\u1EABn d\u00F9ng Microsoft Store b\u00ECnh th\u01B0\u1EDDng.",
+    "Risk": "Caution",
+    "HardwareHint": "",
+    "ControlType": "Checkbox",
+    "Presets": [],
+    "ProbeKind": "",
+    "Action": "DisableWindowsUpdateAll",
+    "NeedsExplorerRestart": false,
+    "NeedsReboot": false,
+    "Registry": [
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU",
+        "Name": "NoAutoUpdate",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate",
+        "Name": "DisableOSUpgrade",
+        "ValueType": "DWord",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKLM",
+        "Path": "SOFTWARE\\Microsoft\\WindowsUpdate\\UX\\Settings",
+        "Name": "FlightSettingsMaxPauseDays",
+        "ValueType": "DWord",
+        "ApplyValue": "36500",
+        "UndoValue": "__DELETE__"
+      }
+    ],
+    "Services": [],
+    "Tasks": []
+  },
+  {
     "Id": "opt_wu_default",
     "Category": "Windows Update",
     "Name": "Kh\u00F4i ph\u1EE5c Windows Update v\u1EC1 m\u1EB7c \u0111\u1ECBnh",
@@ -7989,7 +8031,7 @@ $TweakCatalog = ConvertFrom-Json $tweaksRawJson
                                     <TextBlock Text="&#x0110;ang b&#x1EAD;t" FontSize="11" Foreground="#34D399" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <Ellipse Width="7" Height="7" Fill="#FCA5A5" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="N&#x00E2;ng cao" FontSize="11" Foreground="#FCA5A5" Margin="0,0,16,0" VerticalAlignment="Center"/>
-                                    <TextBlock Name="txtOptSummary" Text="72 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
+                                    <TextBlock Name="txtOptSummary" Text="73 t&#x00F9;y ch&#x1EC9;nh s&#x1EB5;n s&#x00E0;ng"
                                                Foreground="#E2E8F0" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
@@ -41457,6 +41499,29 @@ function Invoke-OptimizerSpecialAction {
                 return $false
             }
         }
+        "DisableWindowsUpdateAll" {
+            $uxPath = "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"
+            try {
+                if (-not (Test-Path -LiteralPath $uxPath)) { New-Item -Path $uxPath -Force | Out-Null }
+                if ($isUndo) {
+                    foreach ($vn in @("FlightSettingsMaxPauseDays","PauseFeatureUpdatesStartTime","PauseFeatureUpdatesEndTime","PauseQualityUpdatesStartTime","PauseQualityUpdatesEndTime","PauseUpdatesExpiryTime")) {
+                        Remove-ItemProperty -LiteralPath $uxPath -Name $vn -ErrorAction SilentlyContinue
+                    }
+                    return $true
+                }
+                $nowIso = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+                $endIso = "2099-12-31T23:59:59Z"
+                Set-ItemProperty -LiteralPath $uxPath -Name "FlightSettingsMaxPauseDays" -Value 36500 -Type DWord -ErrorAction SilentlyContinue
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseFeatureUpdatesStartTime" -Value $nowIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseFeatureUpdatesEndTime" -Value $endIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseQualityUpdatesStartTime" -Value $nowIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseQualityUpdatesEndTime" -Value $endIso -Type String
+                Set-ItemProperty -LiteralPath $uxPath -Name "PauseUpdatesExpiryTime" -Value $endIso -Type String
+                return $true
+            } catch {
+                return $false
+            }
+        }
         "ResetWindowsUpdateDefault" {
             try {
                 $wuPol = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
@@ -41465,7 +41530,7 @@ function Invoke-OptimizerSpecialAction {
                 }
                 $uxPath = "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"
                 if (Test-Path -LiteralPath $uxPath) {
-                    foreach ($vn in @("PauseFeatureUpdatesStartTime","PauseFeatureUpdatesEndTime","PauseQualityUpdatesStartTime","PauseQualityUpdatesEndTime","PauseUpdatesExpiryTime")) {
+                    foreach ($vn in @("FlightSettingsMaxPauseDays","PauseFeatureUpdatesStartTime","PauseFeatureUpdatesEndTime","PauseQualityUpdatesStartTime","PauseQualityUpdatesEndTime","PauseUpdatesExpiryTime")) {
                         Remove-ItemProperty -LiteralPath $uxPath -Name $vn -ErrorAction SilentlyContinue
                     }
                 }
