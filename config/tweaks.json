@@ -62,7 +62,7 @@
     "Id": "opt_telemetry",
     "Category": "Cơ bản",
     "Name": "Tắt Telemetry & Chẩn đoán Microsoft",
-    "Description": "Ngừng thu thập dữ liệu sử dụng (DiagTrack) và tắt các tác vụ chẩn đoán nền CEIP.",
+    "Description": "Ngừng thu thập dữ liệu sử dụng (DiagTrack) và tắt các tác vụ chẩn đoán nền CEIP chuẩn WinUtil.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -79,14 +79,6 @@
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
-        "Name": "AllowTelemetry",
-        "ValueType": "DWord",
-        "ApplyValue": "0",
-        "UndoValue": "__DELETE__"
-      },
-      {
-        "Hive": "HKLM",
         "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
         "Name": "AllowTelemetry",
         "ValueType": "DWord",
@@ -95,8 +87,8 @@
       },
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
-        "Name": "DoNotShowFeedbackNotifications",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+        "Name": "MaxTelemetryAllowed",
         "ValueType": "DWord",
         "ApplyValue": "1",
         "UndoValue": "__DELETE__"
@@ -126,7 +118,7 @@
       },
       {
         "Name": "dmwappushservice",
-        "ApplyStart": 4,
+        "ApplyStart": 3,
         "UndoStart": 3
       }
     ],
@@ -190,7 +182,7 @@
     "Id": "opt_location",
     "Category": "Cơ bản",
     "Name": "Tắt theo dõi vị trí (Location Tracking)",
-    "Description": "Ngừng dịch vụ định vị hệ thống và quyền truy cập vị trí nền của Windows.",
+    "Description": "Tắt quyền truy cập vị trí nền mặc định (không khóa cứng Group Policy để bạn vẫn tự bật được khi cần bản đồ).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -219,14 +211,6 @@
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "1"
-      },
-      {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\LocationAndSensors",
-        "Name": "DisableLocation",
-        "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -367,8 +351,8 @@
   {
     "Id": "opt_widgets",
     "Category": "Cơ bản",
-    "Name": "Tắt & Gỡ bảng Widgets Taskbar",
-    "Description": "Ẩn nút Widgets tin tức trên Taskbar và tắt tiến trình WebExperience chạy ngầm.",
+    "Name": "Tắt bảng Widgets tin tức trên Taskbar",
+    "Description": "Vô hiệu hóa tiến trình Widgets chạy ngầm chuẩn WinUtil (giữ nguyên gói WebExperience hệ thống để bật lại bất cứ lúc nào).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -378,7 +362,7 @@
       "Gaming"
     ],
     "ProbeKind": "",
-    "Action": "RemoveWidgets",
+    "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
@@ -428,8 +412,8 @@
   {
     "Id": "opt_hibernation",
     "Category": "Cơ bản",
-    "Name": "Tắt chế độ ngủ đông (Hibernation)",
-    "Description": "Xóa tệp hiberfil.sys để giải phóng 6-16 GB ổ C. Khuyên dùng cho PC bàn (Laptop nên giữ).",
+    "Name": "Tắt chế độ ngủ đông Hibernation (Chỉ dùng cho PC bàn)",
+    "Description": "Xóa tệp hiberfil.sys để giải phóng 6-16 GB ổ C trên máy bàn (Laptop nên để mặc định để không mất pin khi gập máy).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Checkbox",
@@ -529,8 +513,8 @@
   {
     "Id": "opt_device_companion",
     "Category": "Cơ bản",
-    "Name": "Chặn tự tải App đi kèm thiết bị",
-    "Description": "Ngăn Windows tự tải phần mềm quảng cáo/hãng khi cắm màn hình hoặc thiết bị ngoại vi mới.",
+    "Name": "Chặn tự tải App rác đi kèm OEM (PreInstalledApps)",
+    "Description": "Ngăn Windows ContentDeliveryManager tự tải phần mềm quảng cáo đi kèm máy (vẫn giữ nguyên biểu tượng & thông tin thiết bị ngoại vi).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -545,12 +529,28 @@
     "NeedsReboot": false,
     "Registry": [
       {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Device Metadata",
-        "Name": "PreventDeviceMetadataFromNetwork",
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "OemPreInstalledAppsEnabled",
         "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "PreInstalledAppsEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "PreInstalledAppsEverEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
       }
     ],
     "Services": [],
@@ -814,7 +814,7 @@
     "Id": "opt_net_throttling",
     "Category": "Hiệu năng",
     "Name": "Tắt Network Throttling Index (Bỏ giới hạn gói mạng)",
-    "Description": "Loại bỏ giới hạn 10 packets/ms của Windows Multimedia Class Scheduler để giảm giật lag mạng.",
+    "Description": "Loại bỏ giới hạn 10 packets/ms của MMCSS và đặt mức phản hồi tối ưu (10%) không làm nghẹt âm thanh nền hay Discord.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
@@ -839,7 +839,7 @@
         "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
         "Name": "SystemResponsiveness",
         "ValueType": "DWord",
-        "ApplyValue": "0",
+        "ApplyValue": "10",
         "UndoValue": "20"
       }
     ],
@@ -868,8 +868,8 @@
   {
     "Id": "opt_power_throttling",
     "Category": "Hiệu năng",
-    "Name": "Tắt CPU Power Throttling (Giữ xung tối đa)",
-    "Description": "Ngăn Windows bóp xung CPU các ứng dụng chạy nền hoặc cửa sổ phụ. Hợp cho PC bàn.",
+    "Name": "Tắt CPU Power Throttling (Chỉ dùng cho PC bàn)",
+    "Description": "Giữ xung nhịp tối đa cho tiến trình nền trên PC bàn (Laptop hoặc CPU Intel Gen 12+ nên tắt để máy mát và ưu tiên nhân P-core).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Toggle",
@@ -887,7 +887,7 @@
         "Name": "PowerThrottlingOff",
         "ValueType": "DWord",
         "ApplyValue": "1",
-        "UndoValue": "0"
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -943,7 +943,7 @@
         "Name": "VisualFXSetting",
         "ValueType": "DWord",
         "ApplyValue": "3",
-        "UndoValue": "0"
+        "UndoValue": "__DELETE__"
       },
       {
         "Hive": "HKCU",
@@ -1212,9 +1212,9 @@
   {
     "Id": "opt_start_recommendations",
     "Category": "Giao diện & Tiện ích",
-    "Name": "Ẩn mục Đề xuất (Recommendations) trong Start Menu",
-    "Description": "Làm gọn Start Menu (lưu ý: tùy chọn này cũng tắt Windows Spotlight trên Lock Screen).",
-    "Risk": "Moderate",
+    "Name": "Tắt gợi ý quảng cáo & mẹo trong Start Menu",
+    "Description": "Tắt mục gợi ý ứng dụng/tệp mở gần đây trong Start Menu mà vẫn giữ nguyên hình nền Windows Spotlight ở màn hình khóa.",
+    "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
     "Presets": [],
@@ -1224,17 +1224,25 @@
     "NeedsReboot": false,
     "Registry": [
       {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer",
-        "Name": "HideRecommendedSection",
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "Start_IrisRecommendations",
         "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
+        "ApplyValue": "0",
+        "UndoValue": "1"
       },
       {
         "Hive": "HKCU",
         "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
-        "Name": "Start_IrisRecommendations",
+        "Name": "Start_TrackDocs",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "Start_AccountNotifications",
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "1"
@@ -1808,7 +1816,7 @@
     "Id": "opt_block_razer",
     "Category": "Mạng & Trình duyệt",
     "Name": "Chặn tự bật cài Razer Synapse khi cắm thiết bị",
-    "Description": "Ngăn trình cài đặt Razer Installer tự động tải và bật popup lúc cắm chuột/phím Razer mới.",
+    "Description": "Chỉ chặn trình cài đặt Razer Installer tự động bật popup lúc cắm chuột/phím Razer (không ảnh hưởng driver thiết bị USB khác).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
@@ -1820,15 +1828,15 @@
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DriverSearching",
-        "Name": "DontPromptForWindowsUpdate",
+        "Path": "SOFTWARE\\Razer\\Synapse3",
+        "Name": "DisableAutoInstall",
         "ValueType": "DWord",
         "ApplyValue": "1",
         "UndoValue": "__DELETE__"
       },
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Razer\\Synapse3",
+        "Path": "SOFTWARE\\WOW6432Node\\Razer\\Synapse3",
         "Name": "DisableAutoInstall",
         "ValueType": "DWord",
         "ApplyValue": "1",
@@ -2198,24 +2206,40 @@
   {
     "Id": "opt_svchost_split",
     "Category": "Nâng cao",
-    "Name": "Tắt tách tiến trình svchost.exe (Máy <= 12 GB RAM)",
-    "Description": "Gộp các tiến trình svchost để tiết kiệm vài trăm MB RAM trên máy yếu (có thể ảnh hưởng Xbox Services).",
-    "Risk": "Caution",
-    "HardwareHint": "LowRamOnly",
+    "Name": "Tăng tốc tắt máy & tự đóng ứng dụng treo (AutoEndTasks)",
+    "Description": "Rút ngắn thời gian chờ đóng dịch vụ/ứng dụng bị treo xuống 2 giây khi tắt hoặc khởi động lại Windows chuẩn WinUtil.",
+    "Risk": "Safe",
+    "HardwareHint": "",
     "ControlType": "Checkbox",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
-    "NeedsReboot": true,
+    "NeedsReboot": false,
     "Registry": [
       {
-        "Hive": "HKLM",
-        "Path": "SYSTEM\\CurrentControlSet\\Control",
-        "Name": "SvcHostSplitThresholdInKB",
-        "ValueType": "DWord",
-        "ApplyValue": "380000000",
-        "UndoValue": "3670016"
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "AutoEndTasks",
+        "ValueType": "String",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "HungAppTimeout",
+        "ValueType": "String",
+        "ApplyValue": "2000",
+        "UndoValue": "5000"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "WaitToKillAppTimeout",
+        "ValueType": "String",
+        "ApplyValue": "2000",
+        "UndoValue": "20000"
       }
     ],
     "Services": [],
@@ -2247,25 +2271,17 @@
   {
     "Id": "opt_disable_notifications",
     "Category": "Nâng cao",
-    "Name": "Tắt toàn bộ Thông báo & Lịch khay hệ thống",
-    "Description": "Ẩn hoàn toàn Action Center, thông báo Toast và cả khung Lịch khi bấm vào đồng hồ Taskbar.",
-    "Risk": "Caution",
+    "Name": "Tắt thông báo nổi làm phiền (Giữ nguyên Lịch Taskbar)",
+    "Description": "Tắt các bảng thông báo Toast nhảy góc màn hình nhưng vẫn giữ nguyên khung Lịch và Quick Settings khi bấm vào đồng hồ Taskbar.",
+    "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
-    "NeedsExplorerRestart": true,
+    "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      {
-        "Hive": "HKCU",
-        "Path": "Software\\Policies\\Microsoft\\Windows\\Explorer",
-        "Name": "DisableNotificationCenter",
-        "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
-      },
       {
         "Hive": "HKCU",
         "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications",
@@ -2273,6 +2289,14 @@
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings",
+        "Name": "NOC_GLOBAL_SETTING_TOASTS_ENABLED",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],

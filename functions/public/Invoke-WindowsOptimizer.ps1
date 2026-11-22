@@ -315,10 +315,22 @@ function Repair-OemPowerAndLegionThermalMode {
             Remove-ItemProperty -LiteralPath $smPath -Name "DisableWpbtExecution" -ErrorAction SilentlyContinue
         }
 
+        foreach ($legacyPol in @(
+            @{ Path = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"; Name = "DisableNotificationCenter" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"; Name = "HideRecommendedSection" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors"; Name = "DisableLocation" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching"; Name = "DontPromptForWindowsUpdate" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata"; Name = "PreventDeviceMetadataFromNetwork" }
+        )) {
+            if (Test-Path -LiteralPath $legacyPol.Path) {
+                Remove-ItemProperty -LiteralPath $legacyPol.Path -Name $legacyPol.Name -ErrorAction SilentlyContinue
+            }
+        }
+
         $ctrlPath = "HKLM:\SYSTEM\CurrentControlSet\Control"
         if (Test-Path -LiteralPath $ctrlPath) {
             $curSplit = (Get-ItemProperty -LiteralPath $ctrlPath -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
-            if ($curSplit -eq 3670016 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+            if (($curSplit -eq 3670016 -or $curSplit -eq 380000000) -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
                 $hw = [DuckUtil.WindowsOptimizerEngine]::DetectHardwareProfile()
                 if ($hw -and $hw.TotalRamGb -gt 4) {
                     $ramKb = [int]($hw.TotalRamGb * 1048576)
@@ -414,8 +426,10 @@ function Invoke-OemAndCriticalServiceSelfHeal {
         $curOv = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
         $sysMainSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\SysMain" -Name "Start" -ErrorAction SilentlyContinue).Start
         $kbFiltSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\MsKeyboardFilter" -Name "Start" -ErrorAction SilentlyContinue).Start
+        $notifPol = (Get-ItemProperty -LiteralPath "HKCU:\Software\Policies\Microsoft\Windows\Explorer" -Name "DisableNotificationCenter" -ErrorAction SilentlyContinue).DisableNotificationCenter
+        $drvPol = (Get-ItemProperty -LiteralPath "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching" -Name "DontPromptForWindowsUpdate" -ErrorAction SilentlyContinue).DontPromptForWindowsUpdate
 
-        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4) {
+        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curSplit -eq 380000000 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4 -or $notifPol -eq 1 -or $drvPol -eq 1) {
             Repair-OemPowerAndLegionThermalMode -Silent
         }
     } catch {}
@@ -658,11 +672,6 @@ function Invoke-OptimizerSpecialAction {
             }
         }
         "RemoveWidgets" {
-            if (-not $isUndo) {
-                try {
-                    Get-AppxPackage -Name "*WebExperience*" -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
-                } catch {}
-            }
             return $true
         }
         "RemoveOneDrive" {

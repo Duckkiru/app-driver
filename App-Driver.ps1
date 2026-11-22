@@ -4731,7 +4731,7 @@ $tweaksRawJson = @'
     "Id": "opt_telemetry",
     "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt Telemetry & Ch\u1EA9n \u0111o\u00E1n Microsoft",
-    "Description": "Ng\u1EEBng thu th\u1EADp d\u1EEF li\u1EC7u s\u1EED d\u1EE5ng (DiagTrack) v\u00E0 t\u1EAFt c\u00E1c t\u00E1c v\u1EE5 ch\u1EA9n \u0111o\u00E1n n\u1EC1n CEIP.",
+    "Description": "Ng\u1EEBng thu th\u1EADp d\u1EEF li\u1EC7u s\u1EED d\u1EE5ng (DiagTrack) v\u00E0 t\u1EAFt c\u00E1c t\u00E1c v\u1EE5 ch\u1EA9n \u0111o\u00E1n n\u1EC1n CEIP chu\u1EA9n WinUtil.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -4748,14 +4748,6 @@ $tweaksRawJson = @'
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
-        "Name": "AllowTelemetry",
-        "ValueType": "DWord",
-        "ApplyValue": "0",
-        "UndoValue": "__DELETE__"
-      },
-      {
-        "Hive": "HKLM",
         "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
         "Name": "AllowTelemetry",
         "ValueType": "DWord",
@@ -4764,8 +4756,8 @@ $tweaksRawJson = @'
       },
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
-        "Name": "DoNotShowFeedbackNotifications",
+        "Path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+        "Name": "MaxTelemetryAllowed",
         "ValueType": "DWord",
         "ApplyValue": "1",
         "UndoValue": "__DELETE__"
@@ -4795,7 +4787,7 @@ $tweaksRawJson = @'
       },
       {
         "Name": "dmwappushservice",
-        "ApplyStart": 4,
+        "ApplyStart": 3,
         "UndoStart": 3
       }
     ],
@@ -4859,7 +4851,7 @@ $tweaksRawJson = @'
     "Id": "opt_location",
     "Category": "C\u01A1 b\u1EA3n",
     "Name": "T\u1EAFt theo d\u00F5i v\u1ECB tr\u00ED (Location Tracking)",
-    "Description": "Ng\u1EEBng d\u1ECBch v\u1EE5 \u0111\u1ECBnh v\u1ECB h\u1EC7 th\u1ED1ng v\u00E0 quy\u1EC1n truy c\u1EADp v\u1ECB tr\u00ED n\u1EC1n c\u1EE7a Windows.",
+    "Description": "T\u1EAFt quy\u1EC1n truy c\u1EADp v\u1ECB tr\u00ED n\u1EC1n m\u1EB7c \u0111\u1ECBnh (kh\u00F4ng kh\u00F3a c\u1EE9ng Group Policy \u0111\u1EC3 b\u1EA1n v\u1EABn t\u1EF1 b\u1EADt \u0111\u01B0\u1EE3c khi c\u1EA7n b\u1EA3n \u0111\u1ED3).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -4888,14 +4880,6 @@ $tweaksRawJson = @'
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "1"
-      },
-      {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\LocationAndSensors",
-        "Name": "DisableLocation",
-        "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -5036,8 +5020,8 @@ $tweaksRawJson = @'
   {
     "Id": "opt_widgets",
     "Category": "C\u01A1 b\u1EA3n",
-    "Name": "T\u1EAFt & G\u1EE1 b\u1EA3ng Widgets Taskbar",
-    "Description": "\u1EA8n n\u00FAt Widgets tin t\u1EE9c tr\u00EAn Taskbar v\u00E0 t\u1EAFt ti\u1EBFn tr\u00ECnh WebExperience ch\u1EA1y ng\u1EA7m.",
+    "Name": "T\u1EAFt b\u1EA3ng Widgets tin t\u1EE9c tr\u00EAn Taskbar",
+    "Description": "V\u00F4 hi\u1EC7u h\u00F3a ti\u1EBFn tr\u00ECnh Widgets ch\u1EA1y ng\u1EA7m chu\u1EA9n WinUtil (gi\u1EEF nguy\u00EAn g\u00F3i WebExperience h\u1EC7 th\u1ED1ng \u0111\u1EC3 b\u1EADt l\u1EA1i b\u1EA5t c\u1EE9 l\u00FAc n\u00E0o).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -5047,7 +5031,7 @@ $tweaksRawJson = @'
       "Gaming"
     ],
     "ProbeKind": "",
-    "Action": "RemoveWidgets",
+    "Action": "",
     "NeedsExplorerRestart": true,
     "NeedsReboot": false,
     "Registry": [
@@ -5097,8 +5081,8 @@ $tweaksRawJson = @'
   {
     "Id": "opt_hibernation",
     "Category": "C\u01A1 b\u1EA3n",
-    "Name": "T\u1EAFt ch\u1EBF \u0111\u1ED9 ng\u1EE7 \u0111\u00F4ng (Hibernation)",
-    "Description": "X\u00F3a t\u1EC7p hiberfil.sys \u0111\u1EC3 gi\u1EA3i ph\u00F3ng 6-16 GB \u1ED5 C. Khuy\u00EAn d\u00F9ng cho PC b\u00E0n (Laptop n\u00EAn gi\u1EEF).",
+    "Name": "T\u1EAFt ch\u1EBF \u0111\u1ED9 ng\u1EE7 \u0111\u00F4ng Hibernation (Ch\u1EC9 d\u00F9ng cho PC b\u00E0n)",
+    "Description": "X\u00F3a t\u1EC7p hiberfil.sys \u0111\u1EC3 gi\u1EA3i ph\u00F3ng 6-16 GB \u1ED5 C tr\u00EAn m\u00E1y b\u00E0n (Laptop n\u00EAn \u0111\u1EC3 m\u1EB7c \u0111\u1ECBnh \u0111\u1EC3 kh\u00F4ng m\u1EA5t pin khi g\u1EADp m\u00E1y).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Checkbox",
@@ -5198,8 +5182,8 @@ $tweaksRawJson = @'
   {
     "Id": "opt_device_companion",
     "Category": "C\u01A1 b\u1EA3n",
-    "Name": "Ch\u1EB7n t\u1EF1 t\u1EA3i App \u0111i k\u00E8m thi\u1EBFt b\u1ECB",
-    "Description": "Ng\u0103n Windows t\u1EF1 t\u1EA3i ph\u1EA7n m\u1EC1m qu\u1EA3ng c\u00E1o/h\u00E3ng khi c\u1EAFm m\u00E0n h\u00ECnh ho\u1EB7c thi\u1EBFt b\u1ECB ngo\u1EA1i vi m\u1EDBi.",
+    "Name": "Ch\u1EB7n t\u1EF1 t\u1EA3i App r\u00E1c \u0111i k\u00E8m OEM (PreInstalledApps)",
+    "Description": "Ng\u0103n Windows ContentDeliveryManager t\u1EF1 t\u1EA3i ph\u1EA7n m\u1EC1m qu\u1EA3ng c\u00E1o \u0111i k\u00E8m m\u00E1y (v\u1EABn gi\u1EEF nguy\u00EAn bi\u1EC3u t\u01B0\u1EE3ng & th\u00F4ng tin thi\u1EBFt b\u1ECB ngo\u1EA1i vi).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
@@ -5214,12 +5198,28 @@ $tweaksRawJson = @'
     "NeedsReboot": false,
     "Registry": [
       {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Device Metadata",
-        "Name": "PreventDeviceMetadataFromNetwork",
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "OemPreInstalledAppsEnabled",
         "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "PreInstalledAppsEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+        "Name": "PreInstalledAppsEverEnabled",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
       }
     ],
     "Services": [],
@@ -5483,7 +5483,7 @@ $tweaksRawJson = @'
     "Id": "opt_net_throttling",
     "Category": "Hi\u1EC7u n\u0103ng",
     "Name": "T\u1EAFt Network Throttling Index (B\u1ECF gi\u1EDBi h\u1EA1n g\u00F3i m\u1EA1ng)",
-    "Description": "Lo\u1EA1i b\u1ECF gi\u1EDBi h\u1EA1n 10 packets/ms c\u1EE7a Windows Multimedia Class Scheduler \u0111\u1EC3 gi\u1EA3m gi\u1EADt lag m\u1EA1ng.",
+    "Description": "Lo\u1EA1i b\u1ECF gi\u1EDBi h\u1EA1n 10 packets/ms c\u1EE7a MMCSS v\u00E0 \u0111\u1EB7t m\u1EE9c ph\u1EA3n h\u1ED3i t\u1ED1i \u01B0u (10%) kh\u00F4ng l\u00E0m ngh\u1EB9t \u00E2m thanh n\u1EC1n hay Discord.",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
@@ -5508,7 +5508,7 @@ $tweaksRawJson = @'
         "Path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
         "Name": "SystemResponsiveness",
         "ValueType": "DWord",
-        "ApplyValue": "0",
+        "ApplyValue": "10",
         "UndoValue": "20"
       }
     ],
@@ -5537,8 +5537,8 @@ $tweaksRawJson = @'
   {
     "Id": "opt_power_throttling",
     "Category": "Hi\u1EC7u n\u0103ng",
-    "Name": "T\u1EAFt CPU Power Throttling (Gi\u1EEF xung t\u1ED1i \u0111a)",
-    "Description": "Ng\u0103n Windows b\u00F3p xung CPU c\u00E1c \u1EE9ng d\u1EE5ng ch\u1EA1y n\u1EC1n ho\u1EB7c c\u1EEDa s\u1ED5 ph\u1EE5. H\u1EE3p cho PC b\u00E0n.",
+    "Name": "T\u1EAFt CPU Power Throttling (Ch\u1EC9 d\u00F9ng cho PC b\u00E0n)",
+    "Description": "Gi\u1EEF xung nh\u1ECBp t\u1ED1i \u0111a cho ti\u1EBFn tr\u00ECnh n\u1EC1n tr\u00EAn PC b\u00E0n (Laptop ho\u1EB7c CPU Intel Gen 12+ n\u00EAn t\u1EAFt \u0111\u1EC3 m\u00E1y m\u00E1t v\u00E0 \u01B0u ti\u00EAn nh\u00E2n P-core).",
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Toggle",
@@ -5556,7 +5556,7 @@ $tweaksRawJson = @'
         "Name": "PowerThrottlingOff",
         "ValueType": "DWord",
         "ApplyValue": "1",
-        "UndoValue": "0"
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -5612,7 +5612,7 @@ $tweaksRawJson = @'
         "Name": "VisualFXSetting",
         "ValueType": "DWord",
         "ApplyValue": "3",
-        "UndoValue": "0"
+        "UndoValue": "__DELETE__"
       },
       {
         "Hive": "HKCU",
@@ -5881,9 +5881,9 @@ $tweaksRawJson = @'
   {
     "Id": "opt_start_recommendations",
     "Category": "Giao di\u1EC7n & Ti\u1EC7n \u00EDch",
-    "Name": "\u1EA8n m\u1EE5c \u0110\u1EC1 xu\u1EA5t (Recommendations) trong Start Menu",
-    "Description": "L\u00E0m g\u1ECDn Start Menu (l\u01B0u \u00FD: t\u00F9y ch\u1ECDn n\u00E0y c\u0169ng t\u1EAFt Windows Spotlight tr\u00EAn Lock Screen).",
-    "Risk": "Moderate",
+    "Name": "T\u1EAFt g\u1EE3i \u00FD qu\u1EA3ng c\u00E1o & m\u1EB9o trong Start Menu",
+    "Description": "T\u1EAFt m\u1EE5c g\u1EE3i \u00FD \u1EE9ng d\u1EE5ng/t\u1EC7p m\u1EDF g\u1EA7n \u0111\u00E2y trong Start Menu m\u00E0 v\u1EABn gi\u1EEF nguy\u00EAn h\u00ECnh n\u1EC1n Windows Spotlight \u1EDF m\u00E0n h\u00ECnh kh\u00F3a.",
+    "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
     "Presets": [],
@@ -5893,17 +5893,25 @@ $tweaksRawJson = @'
     "NeedsReboot": false,
     "Registry": [
       {
-        "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer",
-        "Name": "HideRecommendedSection",
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "Start_IrisRecommendations",
         "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
+        "ApplyValue": "0",
+        "UndoValue": "1"
       },
       {
         "Hive": "HKCU",
         "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
-        "Name": "Start_IrisRecommendations",
+        "Name": "Start_TrackDocs",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+        "Name": "Start_AccountNotifications",
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "1"
@@ -6477,7 +6485,7 @@ $tweaksRawJson = @'
     "Id": "opt_block_razer",
     "Category": "M\u1EA1ng & Tr\u00ECnh duy\u1EC7t",
     "Name": "Ch\u1EB7n t\u1EF1 b\u1EADt c\u00E0i Razer Synapse khi c\u1EAFm thi\u1EBFt b\u1ECB",
-    "Description": "Ng\u0103n tr\u00ECnh c\u00E0i \u0111\u1EB7t Razer Installer t\u1EF1 \u0111\u1ED9ng t\u1EA3i v\u00E0 b\u1EADt popup l\u00FAc c\u1EAFm chu\u1ED9t/ph\u00EDm Razer m\u1EDBi.",
+    "Description": "Ch\u1EC9 ch\u1EB7n tr\u00ECnh c\u00E0i \u0111\u1EB7t Razer Installer t\u1EF1 \u0111\u1ED9ng b\u1EADt popup l\u00FAc c\u1EAFm chu\u1ED9t/ph\u00EDm Razer (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver thi\u1EBFt b\u1ECB USB kh\u00E1c).",
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
@@ -6489,15 +6497,15 @@ $tweaksRawJson = @'
     "Registry": [
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DriverSearching",
-        "Name": "DontPromptForWindowsUpdate",
+        "Path": "SOFTWARE\\Razer\\Synapse3",
+        "Name": "DisableAutoInstall",
         "ValueType": "DWord",
         "ApplyValue": "1",
         "UndoValue": "__DELETE__"
       },
       {
         "Hive": "HKLM",
-        "Path": "SOFTWARE\\Razer\\Synapse3",
+        "Path": "SOFTWARE\\WOW6432Node\\Razer\\Synapse3",
         "Name": "DisableAutoInstall",
         "ValueType": "DWord",
         "ApplyValue": "1",
@@ -6867,24 +6875,40 @@ $tweaksRawJson = @'
   {
     "Id": "opt_svchost_split",
     "Category": "N\u00E2ng cao",
-    "Name": "T\u1EAFt t\u00E1ch ti\u1EBFn tr\u00ECnh svchost.exe (M\u00E1y <= 12 GB RAM)",
-    "Description": "G\u1ED9p c\u00E1c ti\u1EBFn tr\u00ECnh svchost \u0111\u1EC3 ti\u1EBFt ki\u1EC7m v\u00E0i tr\u0103m MB RAM tr\u00EAn m\u00E1y y\u1EBFu (c\u00F3 th\u1EC3 \u1EA3nh h\u01B0\u1EDFng Xbox Services).",
-    "Risk": "Caution",
-    "HardwareHint": "LowRamOnly",
+    "Name": "T\u0103ng t\u1ED1c t\u1EAFt m\u00E1y & t\u1EF1 \u0111\u00F3ng \u1EE9ng d\u1EE5ng treo (AutoEndTasks)",
+    "Description": "R\u00FAt ng\u1EAFn th\u1EDDi gian ch\u1EDD \u0111\u00F3ng d\u1ECBch v\u1EE5/\u1EE9ng d\u1EE5ng b\u1ECB treo xu\u1ED1ng 2 gi\u00E2y khi t\u1EAFt ho\u1EB7c kh\u1EDFi \u0111\u1ED9ng l\u1EA1i Windows chu\u1EA9n WinUtil.",
+    "Risk": "Safe",
+    "HardwareHint": "",
     "ControlType": "Checkbox",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
-    "NeedsReboot": true,
+    "NeedsReboot": false,
     "Registry": [
       {
-        "Hive": "HKLM",
-        "Path": "SYSTEM\\CurrentControlSet\\Control",
-        "Name": "SvcHostSplitThresholdInKB",
-        "ValueType": "DWord",
-        "ApplyValue": "380000000",
-        "UndoValue": "3670016"
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "AutoEndTasks",
+        "ValueType": "String",
+        "ApplyValue": "1",
+        "UndoValue": "__DELETE__"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "HungAppTimeout",
+        "ValueType": "String",
+        "ApplyValue": "2000",
+        "UndoValue": "5000"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Control Panel\\Desktop",
+        "Name": "WaitToKillAppTimeout",
+        "ValueType": "String",
+        "ApplyValue": "2000",
+        "UndoValue": "20000"
       }
     ],
     "Services": [],
@@ -6916,25 +6940,17 @@ $tweaksRawJson = @'
   {
     "Id": "opt_disable_notifications",
     "Category": "N\u00E2ng cao",
-    "Name": "T\u1EAFt to\u00E0n b\u1ED9 Th\u00F4ng b\u00E1o & L\u1ECBch khay h\u1EC7 th\u1ED1ng",
-    "Description": "\u1EA8n ho\u00E0n to\u00E0n Action Center, th\u00F4ng b\u00E1o Toast v\u00E0 c\u1EA3 khung L\u1ECBch khi b\u1EA5m v\u00E0o \u0111\u1ED3ng h\u1ED3 Taskbar.",
-    "Risk": "Caution",
+    "Name": "T\u1EAFt th\u00F4ng b\u00E1o n\u1ED5i l\u00E0m phi\u1EC1n (Gi\u1EEF nguy\u00EAn L\u1ECBch Taskbar)",
+    "Description": "T\u1EAFt c\u00E1c b\u1EA3ng th\u00F4ng b\u00E1o Toast nh\u1EA3y g\u00F3c m\u00E0n h\u00ECnh nh\u01B0ng v\u1EABn gi\u1EEF nguy\u00EAn khung L\u1ECBch v\u00E0 Quick Settings khi b\u1EA5m v\u00E0o \u0111\u1ED3ng h\u1ED3 Taskbar.",
+    "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
     "Presets": [],
     "ProbeKind": "",
     "Action": "",
-    "NeedsExplorerRestart": true,
+    "NeedsExplorerRestart": false,
     "NeedsReboot": false,
     "Registry": [
-      {
-        "Hive": "HKCU",
-        "Path": "Software\\Policies\\Microsoft\\Windows\\Explorer",
-        "Name": "DisableNotificationCenter",
-        "ValueType": "DWord",
-        "ApplyValue": "1",
-        "UndoValue": "__DELETE__"
-      },
       {
         "Hive": "HKCU",
         "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\PushNotifications",
@@ -6942,6 +6958,14 @@ $tweaksRawJson = @'
         "ValueType": "DWord",
         "ApplyValue": "0",
         "UndoValue": "1"
+      },
+      {
+        "Hive": "HKCU",
+        "Path": "Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings",
+        "Name": "NOC_GLOBAL_SETTING_TOASTS_ENABLED",
+        "ValueType": "DWord",
+        "ApplyValue": "0",
+        "UndoValue": "__DELETE__"
       }
     ],
     "Services": [],
@@ -40968,10 +40992,22 @@ function Repair-OemPowerAndLegionThermalMode {
             Remove-ItemProperty -LiteralPath $smPath -Name "DisableWpbtExecution" -ErrorAction SilentlyContinue
         }
 
+        foreach ($legacyPol in @(
+            @{ Path = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"; Name = "DisableNotificationCenter" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"; Name = "HideRecommendedSection" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors"; Name = "DisableLocation" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching"; Name = "DontPromptForWindowsUpdate" },
+            @{ Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Device Metadata"; Name = "PreventDeviceMetadataFromNetwork" }
+        )) {
+            if (Test-Path -LiteralPath $legacyPol.Path) {
+                Remove-ItemProperty -LiteralPath $legacyPol.Path -Name $legacyPol.Name -ErrorAction SilentlyContinue
+            }
+        }
+
         $ctrlPath = "HKLM:\SYSTEM\CurrentControlSet\Control"
         if (Test-Path -LiteralPath $ctrlPath) {
             $curSplit = (Get-ItemProperty -LiteralPath $ctrlPath -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
-            if ($curSplit -eq 3670016 -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
+            if (($curSplit -eq 3670016 -or $curSplit -eq 380000000) -and ("DuckUtil.WindowsOptimizerEngine" -as [type])) {
                 $hw = [DuckUtil.WindowsOptimizerEngine]::DetectHardwareProfile()
                 if ($hw -and $hw.TotalRamGb -gt 4) {
                     $ramKb = [int]($hw.TotalRamGb * 1048576)
@@ -41067,8 +41103,10 @@ function Invoke-OemAndCriticalServiceSelfHeal {
         $curOv = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" -Name "ActiveOverlayAcPowerScheme" -ErrorAction SilentlyContinue).ActiveOverlayAcPowerScheme
         $sysMainSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\SysMain" -Name "Start" -ErrorAction SilentlyContinue).Start
         $kbFiltSt = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\MsKeyboardFilter" -Name "Start" -ErrorAction SilentlyContinue).Start
+        $notifPol = (Get-ItemProperty -LiteralPath "HKCU:\Software\Policies\Microsoft\Windows\Explorer" -Name "DisableNotificationCenter" -ErrorAction SilentlyContinue).DisableNotificationCenter
+        $drvPol = (Get-ItemProperty -LiteralPath "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DriverSearching" -Name "DontPromptForWindowsUpdate" -ErrorAction SilentlyContinue).DontPromptForWindowsUpdate
 
-        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4) {
+        if ($bgUser -eq 1 -or $bgPol -eq 2 -or $curSplit -eq 3670016 -or $curSplit -eq 380000000 -or $curOv -eq "961cc777-2547-4f9d-8174-7d86181b8a7a" -or $sysMainSt -eq 4 -or $kbFiltSt -eq 4 -or $notifPol -eq 1 -or $drvPol -eq 1) {
             Repair-OemPowerAndLegionThermalMode -Silent
         }
     } catch {}
@@ -41311,11 +41349,6 @@ function Invoke-OptimizerSpecialAction {
             }
         }
         "RemoveWidgets" {
-            if (-not $isUndo) {
-                try {
-                    Get-AppxPackage -Name "*WebExperience*" -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue
-                } catch {}
-            }
             return $true
         }
         "RemoveOneDrive" {
