@@ -79,6 +79,20 @@ namespace DuckUtil {
         public BitmapSource IconBitmap { get; set; }
     }
 
+    public sealed class StartupRowVisual {
+        public StartupEntry Entry { get; set; }
+        public System.Windows.Controls.Border Row { get; set; }
+        public System.Windows.Controls.Primitives.ToggleButton Toggle { get; set; }
+        public System.Windows.Controls.Image IconImage { get; set; }
+        public System.Windows.Controls.TextBlock TitleText { get; set; }
+        public System.Windows.Controls.StackPanel BadgePanel { get; set; }
+        public System.Windows.Controls.TextBlock SubText { get; set; }
+        public System.Windows.Controls.TextBlock ImpactText { get; set; }
+        public System.Windows.Controls.Button OpenButton { get; set; }
+        public System.Windows.Controls.Button DeleteButton { get; set; }
+        public string SearchText { get; set; }
+    }
+
     public static class StartupManagerEngine {
         private const string RegRunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string RegRunWow32Path = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
@@ -2706,6 +2720,419 @@ namespace DuckUtil {
                 SkippedAdminCount = skipped,
                 RemovedKeys = removed.ToArray()
             };
+        }
+
+        private static System.Windows.Media.SolidColorBrush MakeFrozenBrush(byte a, byte r, byte g, byte b) {
+            var br = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(a, r, g, b));
+            br.Freeze();
+            return br;
+        }
+
+        private static readonly System.Windows.Media.SolidColorBrush BrTextWhite     = MakeFrozenBrush(255, 0xF8, 0xFA, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrDisabledFg    = MakeFrozenBrush(255, 0x94, 0xA3, 0xB8);
+        private static readonly System.Windows.Media.SolidColorBrush BrSubFg         = MakeFrozenBrush(255, 0x64, 0x74, 0x8B);
+        private static readonly System.Windows.Media.SolidColorBrush BrNavActive     = MakeFrozenBrush(255, 0x38, 0xBD, 0xF8);
+        private static readonly System.Windows.Media.SolidColorBrush BrNavInactive   = MakeFrozenBrush(255, 0xCB, 0xD5, 0xE1);
+        private static readonly System.Windows.Media.SolidColorBrush BrPillBg        = MakeFrozenBrush(255, 0x16, 0x22, 0x35);
+        private static readonly System.Windows.Media.SolidColorBrush BrPillBdr       = MakeFrozenBrush(255, 0x2B, 0x3D, 0x57);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderBg   = MakeFrozenBrush(255, 0x0F, 0x29, 0x2E);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderBdr  = MakeFrozenBrush(255, 0x1D, 0x4D, 0x57);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderFg   = MakeFrozenBrush(255, 0x5E, 0xEA, 0xD4);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreBg    = MakeFrozenBrush(255, 0x1A, 0x1E, 0x3B);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreBdr   = MakeFrozenBrush(255, 0x37, 0x3E, 0x73);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreFg    = MakeFrozenBrush(255, 0xA5, 0xB4, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskBg     = MakeFrozenBrush(255, 0x2B, 0x21, 0x10);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskBdr    = MakeFrozenBrush(255, 0x5A, 0x44, 0x1F);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskFg     = MakeFrozenBrush(255, 0xFC, 0xD3, 0x4D);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcBg      = MakeFrozenBrush(255, 0x23, 0x19, 0x38);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcBdr     = MakeFrozenBrush(255, 0x49, 0x34, 0x73);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcFg      = MakeFrozenBrush(255, 0xC4, 0xB5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostBg    = MakeFrozenBrush(255, 0x33, 0x15, 0x1B);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostBdr   = MakeFrozenBrush(255, 0x6E, 0x27, 0x34);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostFg    = MakeFrozenBrush(255, 0xFD, 0xA4, 0xAF);
+        private static readonly System.Windows.Media.SolidColorBrush BrSysBg         = MakeFrozenBrush(255, 0x17, 0x25, 0x54);
+        private static readonly System.Windows.Media.SolidColorBrush BrSysFg         = MakeFrozenBrush(255, 0x93, 0xC5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrOemBg         = MakeFrozenBrush(255, 0x1E, 0x1B, 0x4B);
+        private static readonly System.Windows.Media.SolidColorBrush BrOemFg         = MakeFrozenBrush(255, 0xA5, 0xB4, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrWarnBg        = MakeFrozenBrush(255, 0x3B, 0x28, 0x06);
+        private static readonly System.Windows.Media.SolidColorBrush BrErrBg         = MakeFrozenBrush(255, 0x3B, 0x12, 0x19);
+        private static readonly System.Windows.Media.SolidColorBrush BrErrBdr        = MakeFrozenBrush(255, 0x7F, 0x1D, 0x1D);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskSafeFg    = MakeFrozenBrush(255, 0x34, 0xD3, 0x99);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskModFg     = MakeFrozenBrush(255, 0xFB, 0xBF, 0x24);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskCautFg    = MakeFrozenBrush(255, 0xF8, 0x71, 0x71);
+        private static readonly System.Windows.Media.SolidColorBrush BrColDivider    = MakeFrozenBrush(0x1C, 0xFF, 0xFF, 0xFF);
+
+        private static readonly Thickness ThkZero     = new Thickness(0);
+        private static readonly Thickness ThkOne      = new Thickness(1);
+        private static readonly Thickness ThkBadgePad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness ThkBadgeMgn = new Thickness(6, 0, 0, 0);
+        private static readonly Thickness ThkAppMgn   = new Thickness(10, 6, 10, 6);
+        private static readonly Thickness ThkInfoMgn  = new Thickness(9, 0, 0, 0);
+        private static readonly Thickness ThkSubMgn   = new Thickness(0, 1, 0, 0);
+        private static readonly Thickness ThkSrcPad   = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness ThkBtnPad   = new Thickness(8, 3, 8, 3);
+        private static readonly Thickness ThkDelMgn   = new Thickness(5, 0, 0, 0);
+        private static readonly CornerRadius Cr3      = new CornerRadius(3);
+        private static readonly CornerRadius Cr4      = new CornerRadius(4);
+
+        private static System.Windows.Controls.Border MakeBadgePill(string text, System.Windows.Media.Brush bg, System.Windows.Media.Brush fg) {
+            var bd = new System.Windows.Controls.Border();
+            bd.Background = bg;
+            bd.CornerRadius = Cr3;
+            bd.Padding = ThkBadgePad;
+            bd.Margin = ThkBadgeMgn;
+            bd.VerticalAlignment = VerticalAlignment.Center;
+            var tb = new System.Windows.Controls.TextBlock();
+            tb.Text = text;
+            tb.FontSize = 9.5;
+            tb.FontWeight = FontWeights.SemiBold;
+            tb.Foreground = fg;
+            bd.Child = tb;
+            return bd;
+        }
+
+        private static string GetSourceLabelFast(string sourceKind) {
+            if (string.IsNullOrEmpty(sourceKind)) return "Kh\u00E1c";
+            switch (sourceKind) {
+                case "RegUser":
+                case "RegUser32":
+                case "RegSystem":
+                case "RegWow32":       return "Registry";
+                case "RegRunOnce":     return "RunOnce";
+                case "RegPolicy":      return "Policy";
+                case "FolderUser":
+                case "FolderAll":      return "Th\u01B0 m\u1EE5c";
+                case "Store":          return "Store";
+                case "Task":           return "Task";
+                case "Service":        return "D\u1ECBch v\u1EE5";
+                case "OrphanApproved": return "R\u00E1c Reg";
+                default:               return "Kh\u00E1c";
+            }
+        }
+
+        public static void UpdateRowVisual(StartupRowVisual v) {
+            if (v == null || v.Entry == null) return;
+            StartupEntry e = v.Entry;
+
+            if (v.BadgePanel != null) {
+                v.BadgePanel.Children.Clear();
+                if (e.ProtectionKind == "System") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("H\u1EC7 th\u1ED1ng", BrSysBg, BrSysFg));
+                } else if (e.ProtectionKind == "Oem") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("H\u00E3ng", BrOemBg, BrOemFg));
+                }
+                string lk = e.LockKind ?? "";
+                if (e.IsPolicyLocked || lk == "Policy") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a ch\u00EDnh s\u00E1ch", BrWarnBg, BrRiskModFg));
+                } else if (lk == "Msix") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a MSIX", BrWarnBg, BrRiskModFg));
+                } else if (lk == "Protected") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a b\u1EA3o v\u1EC7", BrWarnBg, BrRiskModFg));
+                }
+                if (e.SourceKind == "RegRunOnce") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Ch\u1EA1y 1 l\u1EA7n", BrWarnBg, BrRiskModFg));
+                }
+                if (e.IsOrphanApprovedGhost) {
+                    v.BadgePanel.Children.Add(MakeBadgePill("R\u00E1c Approved", BrErrBg, BrRiskCautFg));
+                } else if (e.IsOrphan) {
+                    string errLbl = (e.SourceKind == "Service") ? "D\u1ECBch v\u1EE5 l\u1ED7i" : "T\u1EC7p kh\u00F4ng t\u1ED3n t\u1EA1i";
+                    v.BadgePanel.Children.Add(MakeBadgePill(errLbl, BrErrBg, BrRiskCautFg));
+                }
+            }
+
+            if (v.ImpactText != null) {
+                if (e.IsOrphanApprovedGhost) {
+                    v.ImpactText.Text = "R\u00E1c";
+                    v.ImpactText.Foreground = BrRiskCautFg;
+                } else if (e.ImpactLevel == "High") {
+                    v.ImpactText.Text = "N\u1EB7ng";
+                    v.ImpactText.Foreground = BrRiskCautFg;
+                } else if (e.ImpactLevel == "Medium") {
+                    v.ImpactText.Text = "Trung b\u00ECnh";
+                    v.ImpactText.Foreground = BrRiskModFg;
+                } else {
+                    v.ImpactText.Text = "Nh\u1EB9";
+                    v.ImpactText.Foreground = BrRiskSafeFg;
+                }
+            }
+
+            if (v.TitleText != null) {
+                v.TitleText.Text = e.DisplayName ?? "";
+                v.TitleText.Foreground = e.Enabled ? BrTextWhite : BrDisabledFg;
+            }
+
+            if (v.SubText != null) {
+                if (e.IsOrphanApprovedGhost) {
+                    v.SubText.Text = (e.TriggerInfo ?? "") + "  \u2022  " + (e.RawCommand ?? "");
+                } else {
+                    string pubPart = !string.IsNullOrWhiteSpace(e.Publisher) ? (e.Publisher + "  \u2022  ") : "";
+                    string cmdPart = !string.IsNullOrWhiteSpace(e.SecondaryTargetPath)
+                        ? e.SecondaryTargetPath
+                        : (!string.IsNullOrWhiteSpace(e.ResolvedExePath) ? e.ResolvedExePath : (e.RawCommand ?? ""));
+                    v.SubText.Text = pubPart + cmdPart;
+                }
+            }
+
+            v.SearchText = (
+                (e.DisplayName ?? "") + " " +
+                (e.Name ?? "") + " " +
+                (e.Publisher ?? "") + " " +
+                (e.RawCommand ?? "") + " " +
+                (e.ResolvedExePath ?? "") + " " +
+                (e.SecondaryTargetPath ?? "") + " " +
+                (e.SourceKind ?? "") + " " +
+                (e.TriggerInfo ?? "") + " " +
+                (e.OrphanReason ?? "")
+            ).ToLowerInvariant();
+        }
+
+        public static StartupRowVisual CreateRowVisual(StartupEntry entry, Style rowStyle, Style toggleStyle, Style actionBtnStyle) {
+            var rowBorder = new System.Windows.Controls.Border();
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.Padding = ThkZero;
+            rowBorder.Margin = ThkZero;
+            rowBorder.MinHeight = 46;
+            rowBorder.UseLayoutRounding = true;
+            if (entry.IsOrphanApprovedGhost) {
+                rowBorder.Visibility = Visibility.Collapsed;
+            }
+            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 450);
+            System.Windows.Controls.ToolTipService.SetShowDuration(rowBorder, 12000);
+            rowBorder.ToolTip = "";
+
+            var g = new System.Windows.Controls.Grid();
+            g.UseLayoutRounding = true;
+            g.SnapsToDevicePixels = true;
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(64) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(98) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(104) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(128) });
+
+            var toggle = new System.Windows.Controls.Primitives.ToggleButton();
+            if (toggleStyle != null) toggle.Style = toggleStyle;
+            toggle.HorizontalAlignment = HorizontalAlignment.Center;
+            toggle.VerticalAlignment = VerticalAlignment.Center;
+            toggle.IsChecked = entry.Enabled;
+            bool canTgl = entry.CanToggle && !entry.IsPolicyLocked;
+            toggle.IsEnabled = canTgl;
+            if (!canTgl) {
+                toggle.Opacity = 0.35;
+                System.Windows.Controls.ToolTipService.SetShowOnDisabled(toggle, true);
+                string lk = entry.LockKind ?? "";
+                if (lk == "Msix") {
+                    toggle.ToolTip = "D\u1ECBch v\u1EE5 \u0111\u00F3ng g\u00F3i MSIX (AppXSvc) - Windows kh\u00F3a kh\u00F4ng cho t\u1EAFt tr\u1EF1c ti\u1EBFp. H\u00E3y \u0111i\u1EC1u ch\u1EC9nh \u1EDF m\u1EE5c Store ho\u1EB7c g\u1EE1 \u1EE9ng d\u1EE5ng.";
+                } else if (lk == "Protected") {
+                    toggle.ToolTip = "D\u1ECBch v\u1EE5 c\u00F3 b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng) - kh\u00F4ng th\u1EC3 g\u1EA1t t\u1EAFt.";
+                } else if (lk == "Policy" || entry.IsPolicyLocked) {
+                    toggle.ToolTip = "M\u1EE5c n\u00E0y \u0111ang b\u1ECB kh\u00F3a b\u1EDFi Group Policy.";
+                } else {
+                    toggle.ToolTip = "Kh\u00F4ng h\u1ED7 tr\u1EE3 b\u1EADt/t\u1EAFt tr\u1EF1c ti\u1EBFp m\u1EE5c n\u00E0y.";
+                }
+            }
+            System.Windows.Controls.Grid.SetColumn(toggle, 0);
+            g.Children.Add(toggle);
+
+            var appCellGrid = new System.Windows.Controls.Grid();
+            appCellGrid.Margin = ThkAppMgn;
+            appCellGrid.VerticalAlignment = VerticalAlignment.Center;
+            appCellGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(28) });
+            appCellGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var iconBorder = new System.Windows.Controls.Border();
+            iconBorder.Width = 28;
+            iconBorder.Height = 28;
+            iconBorder.CornerRadius = Cr4;
+            iconBorder.Background = entry.IsOrphanApprovedGhost ? BrSrcGhostBg : BrPillBg;
+            iconBorder.HorizontalAlignment = HorizontalAlignment.Center;
+            iconBorder.VerticalAlignment = VerticalAlignment.Center;
+            var iconImg = new System.Windows.Controls.Image();
+            iconImg.Width = 20;
+            iconImg.Height = 20;
+            iconImg.Stretch = System.Windows.Media.Stretch.Uniform;
+            System.Windows.Media.RenderOptions.SetBitmapScalingMode(iconImg, System.Windows.Media.BitmapScalingMode.HighQuality);
+            iconBorder.Child = iconImg;
+            System.Windows.Controls.Grid.SetColumn(iconBorder, 0);
+            appCellGrid.Children.Add(iconBorder);
+
+            var infoStack = new System.Windows.Controls.StackPanel();
+            infoStack.VerticalAlignment = VerticalAlignment.Center;
+            infoStack.Margin = ThkInfoMgn;
+
+            var line1 = new System.Windows.Controls.StackPanel();
+            line1.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            var titleTb = new System.Windows.Controls.TextBlock();
+            titleTb.FontSize = 12;
+            titleTb.FontWeight = FontWeights.SemiBold;
+            titleTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            titleTb.VerticalAlignment = VerticalAlignment.Center;
+            line1.Children.Add(titleTb);
+
+            var badgePanel = new System.Windows.Controls.StackPanel();
+            badgePanel.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            badgePanel.VerticalAlignment = VerticalAlignment.Center;
+            line1.Children.Add(badgePanel);
+            infoStack.Children.Add(line1);
+
+            var subTb = new System.Windows.Controls.TextBlock();
+            subTb.FontSize = 10.5;
+            subTb.Foreground = BrSubFg;
+            subTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            subTb.Margin = ThkSubMgn;
+            infoStack.Children.Add(subTb);
+
+            System.Windows.Controls.Grid.SetColumn(infoStack, 1);
+            appCellGrid.Children.Add(infoStack);
+
+            System.Windows.Controls.Grid.SetColumn(appCellGrid, 1);
+            g.Children.Add(appCellGrid);
+
+            System.Windows.Media.Brush srcBg = BrPillBg;
+            System.Windows.Media.Brush srcBdr = BrPillBdr;
+            System.Windows.Media.Brush srcFg = BrNavInactive;
+            string sk = entry.SourceKind ?? "";
+            if (sk == "FolderUser" || sk == "FolderAll") {
+                srcBg = BrSrcFolderBg; srcBdr = BrSrcFolderBdr; srcFg = BrSrcFolderFg;
+            } else if (sk == "Store") {
+                srcBg = BrSrcStoreBg; srcBdr = BrSrcStoreBdr; srcFg = BrSrcStoreFg;
+            } else if (sk == "Task") {
+                srcBg = BrSrcTaskBg; srcBdr = BrSrcTaskBdr; srcFg = BrSrcTaskFg;
+            } else if (sk == "Service") {
+                srcBg = BrSrcSvcBg; srcBdr = BrSrcSvcBdr; srcFg = BrSrcSvcFg;
+            } else if (sk == "OrphanApproved") {
+                srcBg = BrSrcGhostBg; srcBdr = BrSrcGhostBdr; srcFg = BrSrcGhostFg;
+            }
+
+            var srcPill = new System.Windows.Controls.Border();
+            srcPill.Background = srcBg;
+            srcPill.BorderBrush = srcBdr;
+            srcPill.BorderThickness = ThkOne;
+            srcPill.CornerRadius = Cr3;
+            srcPill.Padding = ThkSrcPad;
+            srcPill.HorizontalAlignment = HorizontalAlignment.Center;
+            srcPill.VerticalAlignment = VerticalAlignment.Center;
+            var srcTb = new System.Windows.Controls.TextBlock();
+            srcTb.Text = GetSourceLabelFast(sk);
+            srcTb.FontSize = 10.5;
+            srcTb.FontWeight = FontWeights.SemiBold;
+            srcTb.Foreground = srcFg;
+            srcPill.Child = srcTb;
+            System.Windows.Controls.Grid.SetColumn(srcPill, 2);
+            g.Children.Add(srcPill);
+
+            var impTb = new System.Windows.Controls.TextBlock();
+            impTb.FontSize = 11;
+            impTb.FontWeight = FontWeights.SemiBold;
+            impTb.HorizontalAlignment = HorizontalAlignment.Center;
+            impTb.VerticalAlignment = VerticalAlignment.Center;
+            System.Windows.Controls.Grid.SetColumn(impTb, 3);
+            g.Children.Add(impTb);
+
+            var actPanel = new System.Windows.Controls.StackPanel();
+            actPanel.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            actPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            actPanel.VerticalAlignment = VerticalAlignment.Center;
+
+            var btnOpen = new System.Windows.Controls.Button();
+            if (actionBtnStyle != null) btnOpen.Style = actionBtnStyle;
+            btnOpen.Content = entry.IsOrphanApprovedGhost ? "Registry" : "M\u1EDF t\u1EC7p";
+            btnOpen.FontSize = 10.5;
+            btnOpen.FontWeight = FontWeights.SemiBold;
+            btnOpen.Padding = ThkBtnPad;
+            btnOpen.Background = BrPillBg;
+            btnOpen.Foreground = BrNavActive;
+            btnOpen.BorderBrush = BrPillBdr;
+            btnOpen.BorderThickness = ThkOne;
+            actPanel.Children.Add(btnOpen);
+
+            System.Windows.Controls.Button btnDel = null;
+            if (entry.CanDelete) {
+                btnDel = new System.Windows.Controls.Button();
+                if (actionBtnStyle != null) btnDel.Style = actionBtnStyle;
+                btnDel.Content = "X\u00F3a";
+                btnDel.FontSize = 10.5;
+                btnDel.FontWeight = FontWeights.SemiBold;
+                btnDel.Padding = ThkBtnPad;
+                btnDel.Margin = ThkDelMgn;
+                btnDel.Background = BrErrBg;
+                btnDel.Foreground = BrRiskCautFg;
+                btnDel.BorderBrush = BrErrBdr;
+                btnDel.BorderThickness = ThkOne;
+                actPanel.Children.Add(btnDel);
+            }
+
+            System.Windows.Controls.Grid.SetColumn(actPanel, 4);
+            g.Children.Add(actPanel);
+
+            for (int divCol = 0; divCol < 4; divCol++) {
+                var colDiv = new System.Windows.Controls.Border();
+                colDiv.Width = 1;
+                colDiv.Background = BrColDivider;
+                colDiv.HorizontalAlignment = HorizontalAlignment.Right;
+                colDiv.VerticalAlignment = VerticalAlignment.Stretch;
+                colDiv.SnapsToDevicePixels = true;
+                colDiv.IsHitTestVisible = false;
+                System.Windows.Controls.Grid.SetColumn(colDiv, divCol);
+                g.Children.Add(colDiv);
+            }
+
+            rowBorder.Child = g;
+
+            var vis = new StartupRowVisual {
+                Entry = entry,
+                Row = rowBorder,
+                Toggle = toggle,
+                IconImage = iconImg,
+                TitleText = titleTb,
+                BadgePanel = badgePanel,
+                SubText = subTb,
+                ImpactText = impTb,
+                OpenButton = btnOpen,
+                DeleteButton = btnDel,
+                SearchText = ""
+            };
+            rowBorder.Tag = vis;
+            toggle.Tag = vis;
+            btnOpen.Tag = vis;
+            if (btnDel != null) btnDel.Tag = vis;
+
+            UpdateRowVisual(vis);
+            return vis;
+        }
+
+        private static int GetImpactRank(string level) {
+            if (level == "High") return 0;
+            if (level == "Medium") return 1;
+            return 2;
+        }
+
+        public static int CompareStartupEntries(StartupEntry a, StartupEntry b) {
+            if (ReferenceEquals(a, b)) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+            int gA = a.IsOrphanApprovedGhost ? 2 : (a.IsOrphan ? 1 : 0);
+            int gB = b.IsOrphanApprovedGhost ? 2 : (b.IsOrphan ? 1 : 0);
+            if (gA != gB) return gA.CompareTo(gB);
+            int eA = a.Enabled ? 0 : 1;
+            int eB = b.Enabled ? 0 : 1;
+            if (eA != eB) return eA.CompareTo(eB);
+            int tA = a.CanToggle ? 0 : 1;
+            int tB = b.CanToggle ? 0 : 1;
+            if (tA != tB) return tA.CompareTo(tB);
+            int iA = GetImpactRank(a.ImpactLevel);
+            int iB = GetImpactRank(b.ImpactLevel);
+            if (iA != iB) return iA.CompareTo(iB);
+            return string.Compare(a.DisplayName ?? "", b.DisplayName ?? "", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static StartupRowVisual[] SortRowVisuals(StartupRowVisual[] rows) {
+            if (rows == null || rows.Length <= 1) return rows ?? new StartupRowVisual[0];
+            var copy = new StartupRowVisual[rows.Length];
+            Array.Copy(rows, copy, rows.Length);
+            Array.Sort(copy, delegate(StartupRowVisual x, StartupRowVisual y) {
+                return CompareStartupEntries(x != null ? x.Entry : null, y != null ? y.Entry : null);
+            });
+            return copy;
         }
     }
 }

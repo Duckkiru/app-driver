@@ -24962,6 +24962,20 @@ namespace DuckUtil {
         public BitmapSource IconBitmap { get; set; }
     }
 
+    public sealed class StartupRowVisual {
+        public StartupEntry Entry { get; set; }
+        public System.Windows.Controls.Border Row { get; set; }
+        public System.Windows.Controls.Primitives.ToggleButton Toggle { get; set; }
+        public System.Windows.Controls.Image IconImage { get; set; }
+        public System.Windows.Controls.TextBlock TitleText { get; set; }
+        public System.Windows.Controls.StackPanel BadgePanel { get; set; }
+        public System.Windows.Controls.TextBlock SubText { get; set; }
+        public System.Windows.Controls.TextBlock ImpactText { get; set; }
+        public System.Windows.Controls.Button OpenButton { get; set; }
+        public System.Windows.Controls.Button DeleteButton { get; set; }
+        public string SearchText { get; set; }
+    }
+
     public static class StartupManagerEngine {
         private const string RegRunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string RegRunWow32Path = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
@@ -27589,6 +27603,419 @@ namespace DuckUtil {
                 SkippedAdminCount = skipped,
                 RemovedKeys = removed.ToArray()
             };
+        }
+
+        private static System.Windows.Media.SolidColorBrush MakeFrozenBrush(byte a, byte r, byte g, byte b) {
+            var br = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(a, r, g, b));
+            br.Freeze();
+            return br;
+        }
+
+        private static readonly System.Windows.Media.SolidColorBrush BrTextWhite     = MakeFrozenBrush(255, 0xF8, 0xFA, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrDisabledFg    = MakeFrozenBrush(255, 0x94, 0xA3, 0xB8);
+        private static readonly System.Windows.Media.SolidColorBrush BrSubFg         = MakeFrozenBrush(255, 0x64, 0x74, 0x8B);
+        private static readonly System.Windows.Media.SolidColorBrush BrNavActive     = MakeFrozenBrush(255, 0x38, 0xBD, 0xF8);
+        private static readonly System.Windows.Media.SolidColorBrush BrNavInactive   = MakeFrozenBrush(255, 0xCB, 0xD5, 0xE1);
+        private static readonly System.Windows.Media.SolidColorBrush BrPillBg        = MakeFrozenBrush(255, 0x16, 0x22, 0x35);
+        private static readonly System.Windows.Media.SolidColorBrush BrPillBdr       = MakeFrozenBrush(255, 0x2B, 0x3D, 0x57);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderBg   = MakeFrozenBrush(255, 0x0F, 0x29, 0x2E);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderBdr  = MakeFrozenBrush(255, 0x1D, 0x4D, 0x57);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderFg   = MakeFrozenBrush(255, 0x5E, 0xEA, 0xD4);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreBg    = MakeFrozenBrush(255, 0x1A, 0x1E, 0x3B);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreBdr   = MakeFrozenBrush(255, 0x37, 0x3E, 0x73);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreFg    = MakeFrozenBrush(255, 0xA5, 0xB4, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskBg     = MakeFrozenBrush(255, 0x2B, 0x21, 0x10);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskBdr    = MakeFrozenBrush(255, 0x5A, 0x44, 0x1F);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskFg     = MakeFrozenBrush(255, 0xFC, 0xD3, 0x4D);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcBg      = MakeFrozenBrush(255, 0x23, 0x19, 0x38);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcBdr     = MakeFrozenBrush(255, 0x49, 0x34, 0x73);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcFg      = MakeFrozenBrush(255, 0xC4, 0xB5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostBg    = MakeFrozenBrush(255, 0x33, 0x15, 0x1B);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostBdr   = MakeFrozenBrush(255, 0x6E, 0x27, 0x34);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostFg    = MakeFrozenBrush(255, 0xFD, 0xA4, 0xAF);
+        private static readonly System.Windows.Media.SolidColorBrush BrSysBg         = MakeFrozenBrush(255, 0x17, 0x25, 0x54);
+        private static readonly System.Windows.Media.SolidColorBrush BrSysFg         = MakeFrozenBrush(255, 0x93, 0xC5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrOemBg         = MakeFrozenBrush(255, 0x1E, 0x1B, 0x4B);
+        private static readonly System.Windows.Media.SolidColorBrush BrOemFg         = MakeFrozenBrush(255, 0xA5, 0xB4, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrWarnBg        = MakeFrozenBrush(255, 0x3B, 0x28, 0x06);
+        private static readonly System.Windows.Media.SolidColorBrush BrErrBg         = MakeFrozenBrush(255, 0x3B, 0x12, 0x19);
+        private static readonly System.Windows.Media.SolidColorBrush BrErrBdr        = MakeFrozenBrush(255, 0x7F, 0x1D, 0x1D);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskSafeFg    = MakeFrozenBrush(255, 0x34, 0xD3, 0x99);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskModFg     = MakeFrozenBrush(255, 0xFB, 0xBF, 0x24);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskCautFg    = MakeFrozenBrush(255, 0xF8, 0x71, 0x71);
+        private static readonly System.Windows.Media.SolidColorBrush BrColDivider    = MakeFrozenBrush(0x1C, 0xFF, 0xFF, 0xFF);
+
+        private static readonly Thickness ThkZero     = new Thickness(0);
+        private static readonly Thickness ThkOne      = new Thickness(1);
+        private static readonly Thickness ThkBadgePad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness ThkBadgeMgn = new Thickness(6, 0, 0, 0);
+        private static readonly Thickness ThkAppMgn   = new Thickness(10, 6, 10, 6);
+        private static readonly Thickness ThkInfoMgn  = new Thickness(9, 0, 0, 0);
+        private static readonly Thickness ThkSubMgn   = new Thickness(0, 1, 0, 0);
+        private static readonly Thickness ThkSrcPad   = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness ThkBtnPad   = new Thickness(8, 3, 8, 3);
+        private static readonly Thickness ThkDelMgn   = new Thickness(5, 0, 0, 0);
+        private static readonly CornerRadius Cr3      = new CornerRadius(3);
+        private static readonly CornerRadius Cr4      = new CornerRadius(4);
+
+        private static System.Windows.Controls.Border MakeBadgePill(string text, System.Windows.Media.Brush bg, System.Windows.Media.Brush fg) {
+            var bd = new System.Windows.Controls.Border();
+            bd.Background = bg;
+            bd.CornerRadius = Cr3;
+            bd.Padding = ThkBadgePad;
+            bd.Margin = ThkBadgeMgn;
+            bd.VerticalAlignment = VerticalAlignment.Center;
+            var tb = new System.Windows.Controls.TextBlock();
+            tb.Text = text;
+            tb.FontSize = 9.5;
+            tb.FontWeight = FontWeights.SemiBold;
+            tb.Foreground = fg;
+            bd.Child = tb;
+            return bd;
+        }
+
+        private static string GetSourceLabelFast(string sourceKind) {
+            if (string.IsNullOrEmpty(sourceKind)) return "Kh\u00E1c";
+            switch (sourceKind) {
+                case "RegUser":
+                case "RegUser32":
+                case "RegSystem":
+                case "RegWow32":       return "Registry";
+                case "RegRunOnce":     return "RunOnce";
+                case "RegPolicy":      return "Policy";
+                case "FolderUser":
+                case "FolderAll":      return "Th\u01B0 m\u1EE5c";
+                case "Store":          return "Store";
+                case "Task":           return "Task";
+                case "Service":        return "D\u1ECBch v\u1EE5";
+                case "OrphanApproved": return "R\u00E1c Reg";
+                default:               return "Kh\u00E1c";
+            }
+        }
+
+        public static void UpdateRowVisual(StartupRowVisual v) {
+            if (v == null || v.Entry == null) return;
+            StartupEntry e = v.Entry;
+
+            if (v.BadgePanel != null) {
+                v.BadgePanel.Children.Clear();
+                if (e.ProtectionKind == "System") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("H\u1EC7 th\u1ED1ng", BrSysBg, BrSysFg));
+                } else if (e.ProtectionKind == "Oem") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("H\u00E3ng", BrOemBg, BrOemFg));
+                }
+                string lk = e.LockKind ?? "";
+                if (e.IsPolicyLocked || lk == "Policy") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a ch\u00EDnh s\u00E1ch", BrWarnBg, BrRiskModFg));
+                } else if (lk == "Msix") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a MSIX", BrWarnBg, BrRiskModFg));
+                } else if (lk == "Protected") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a b\u1EA3o v\u1EC7", BrWarnBg, BrRiskModFg));
+                }
+                if (e.SourceKind == "RegRunOnce") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Ch\u1EA1y 1 l\u1EA7n", BrWarnBg, BrRiskModFg));
+                }
+                if (e.IsOrphanApprovedGhost) {
+                    v.BadgePanel.Children.Add(MakeBadgePill("R\u00E1c Approved", BrErrBg, BrRiskCautFg));
+                } else if (e.IsOrphan) {
+                    string errLbl = (e.SourceKind == "Service") ? "D\u1ECBch v\u1EE5 l\u1ED7i" : "T\u1EC7p kh\u00F4ng t\u1ED3n t\u1EA1i";
+                    v.BadgePanel.Children.Add(MakeBadgePill(errLbl, BrErrBg, BrRiskCautFg));
+                }
+            }
+
+            if (v.ImpactText != null) {
+                if (e.IsOrphanApprovedGhost) {
+                    v.ImpactText.Text = "R\u00E1c";
+                    v.ImpactText.Foreground = BrRiskCautFg;
+                } else if (e.ImpactLevel == "High") {
+                    v.ImpactText.Text = "N\u1EB7ng";
+                    v.ImpactText.Foreground = BrRiskCautFg;
+                } else if (e.ImpactLevel == "Medium") {
+                    v.ImpactText.Text = "Trung b\u00ECnh";
+                    v.ImpactText.Foreground = BrRiskModFg;
+                } else {
+                    v.ImpactText.Text = "Nh\u1EB9";
+                    v.ImpactText.Foreground = BrRiskSafeFg;
+                }
+            }
+
+            if (v.TitleText != null) {
+                v.TitleText.Text = e.DisplayName ?? "";
+                v.TitleText.Foreground = e.Enabled ? BrTextWhite : BrDisabledFg;
+            }
+
+            if (v.SubText != null) {
+                if (e.IsOrphanApprovedGhost) {
+                    v.SubText.Text = (e.TriggerInfo ?? "") + "  \u2022  " + (e.RawCommand ?? "");
+                } else {
+                    string pubPart = !string.IsNullOrWhiteSpace(e.Publisher) ? (e.Publisher + "  \u2022  ") : "";
+                    string cmdPart = !string.IsNullOrWhiteSpace(e.SecondaryTargetPath)
+                        ? e.SecondaryTargetPath
+                        : (!string.IsNullOrWhiteSpace(e.ResolvedExePath) ? e.ResolvedExePath : (e.RawCommand ?? ""));
+                    v.SubText.Text = pubPart + cmdPart;
+                }
+            }
+
+            v.SearchText = (
+                (e.DisplayName ?? "") + " " +
+                (e.Name ?? "") + " " +
+                (e.Publisher ?? "") + " " +
+                (e.RawCommand ?? "") + " " +
+                (e.ResolvedExePath ?? "") + " " +
+                (e.SecondaryTargetPath ?? "") + " " +
+                (e.SourceKind ?? "") + " " +
+                (e.TriggerInfo ?? "") + " " +
+                (e.OrphanReason ?? "")
+            ).ToLowerInvariant();
+        }
+
+        public static StartupRowVisual CreateRowVisual(StartupEntry entry, Style rowStyle, Style toggleStyle, Style actionBtnStyle) {
+            var rowBorder = new System.Windows.Controls.Border();
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.Padding = ThkZero;
+            rowBorder.Margin = ThkZero;
+            rowBorder.MinHeight = 46;
+            rowBorder.UseLayoutRounding = true;
+            if (entry.IsOrphanApprovedGhost) {
+                rowBorder.Visibility = Visibility.Collapsed;
+            }
+            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 450);
+            System.Windows.Controls.ToolTipService.SetShowDuration(rowBorder, 12000);
+            rowBorder.ToolTip = "";
+
+            var g = new System.Windows.Controls.Grid();
+            g.UseLayoutRounding = true;
+            g.SnapsToDevicePixels = true;
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(64) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(98) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(104) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(128) });
+
+            var toggle = new System.Windows.Controls.Primitives.ToggleButton();
+            if (toggleStyle != null) toggle.Style = toggleStyle;
+            toggle.HorizontalAlignment = HorizontalAlignment.Center;
+            toggle.VerticalAlignment = VerticalAlignment.Center;
+            toggle.IsChecked = entry.Enabled;
+            bool canTgl = entry.CanToggle && !entry.IsPolicyLocked;
+            toggle.IsEnabled = canTgl;
+            if (!canTgl) {
+                toggle.Opacity = 0.35;
+                System.Windows.Controls.ToolTipService.SetShowOnDisabled(toggle, true);
+                string lk = entry.LockKind ?? "";
+                if (lk == "Msix") {
+                    toggle.ToolTip = "D\u1ECBch v\u1EE5 \u0111\u00F3ng g\u00F3i MSIX (AppXSvc) - Windows kh\u00F3a kh\u00F4ng cho t\u1EAFt tr\u1EF1c ti\u1EBFp. H\u00E3y \u0111i\u1EC1u ch\u1EC9nh \u1EDF m\u1EE5c Store ho\u1EB7c g\u1EE1 \u1EE9ng d\u1EE5ng.";
+                } else if (lk == "Protected") {
+                    toggle.ToolTip = "D\u1ECBch v\u1EE5 c\u00F3 b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng) - kh\u00F4ng th\u1EC3 g\u1EA1t t\u1EAFt.";
+                } else if (lk == "Policy" || entry.IsPolicyLocked) {
+                    toggle.ToolTip = "M\u1EE5c n\u00E0y \u0111ang b\u1ECB kh\u00F3a b\u1EDFi Group Policy.";
+                } else {
+                    toggle.ToolTip = "Kh\u00F4ng h\u1ED7 tr\u1EE3 b\u1EADt/t\u1EAFt tr\u1EF1c ti\u1EBFp m\u1EE5c n\u00E0y.";
+                }
+            }
+            System.Windows.Controls.Grid.SetColumn(toggle, 0);
+            g.Children.Add(toggle);
+
+            var appCellGrid = new System.Windows.Controls.Grid();
+            appCellGrid.Margin = ThkAppMgn;
+            appCellGrid.VerticalAlignment = VerticalAlignment.Center;
+            appCellGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(28) });
+            appCellGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var iconBorder = new System.Windows.Controls.Border();
+            iconBorder.Width = 28;
+            iconBorder.Height = 28;
+            iconBorder.CornerRadius = Cr4;
+            iconBorder.Background = entry.IsOrphanApprovedGhost ? BrSrcGhostBg : BrPillBg;
+            iconBorder.HorizontalAlignment = HorizontalAlignment.Center;
+            iconBorder.VerticalAlignment = VerticalAlignment.Center;
+            var iconImg = new System.Windows.Controls.Image();
+            iconImg.Width = 20;
+            iconImg.Height = 20;
+            iconImg.Stretch = System.Windows.Media.Stretch.Uniform;
+            System.Windows.Media.RenderOptions.SetBitmapScalingMode(iconImg, System.Windows.Media.BitmapScalingMode.HighQuality);
+            iconBorder.Child = iconImg;
+            System.Windows.Controls.Grid.SetColumn(iconBorder, 0);
+            appCellGrid.Children.Add(iconBorder);
+
+            var infoStack = new System.Windows.Controls.StackPanel();
+            infoStack.VerticalAlignment = VerticalAlignment.Center;
+            infoStack.Margin = ThkInfoMgn;
+
+            var line1 = new System.Windows.Controls.StackPanel();
+            line1.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            var titleTb = new System.Windows.Controls.TextBlock();
+            titleTb.FontSize = 12;
+            titleTb.FontWeight = FontWeights.SemiBold;
+            titleTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            titleTb.VerticalAlignment = VerticalAlignment.Center;
+            line1.Children.Add(titleTb);
+
+            var badgePanel = new System.Windows.Controls.StackPanel();
+            badgePanel.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            badgePanel.VerticalAlignment = VerticalAlignment.Center;
+            line1.Children.Add(badgePanel);
+            infoStack.Children.Add(line1);
+
+            var subTb = new System.Windows.Controls.TextBlock();
+            subTb.FontSize = 10.5;
+            subTb.Foreground = BrSubFg;
+            subTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            subTb.Margin = ThkSubMgn;
+            infoStack.Children.Add(subTb);
+
+            System.Windows.Controls.Grid.SetColumn(infoStack, 1);
+            appCellGrid.Children.Add(infoStack);
+
+            System.Windows.Controls.Grid.SetColumn(appCellGrid, 1);
+            g.Children.Add(appCellGrid);
+
+            System.Windows.Media.Brush srcBg = BrPillBg;
+            System.Windows.Media.Brush srcBdr = BrPillBdr;
+            System.Windows.Media.Brush srcFg = BrNavInactive;
+            string sk = entry.SourceKind ?? "";
+            if (sk == "FolderUser" || sk == "FolderAll") {
+                srcBg = BrSrcFolderBg; srcBdr = BrSrcFolderBdr; srcFg = BrSrcFolderFg;
+            } else if (sk == "Store") {
+                srcBg = BrSrcStoreBg; srcBdr = BrSrcStoreBdr; srcFg = BrSrcStoreFg;
+            } else if (sk == "Task") {
+                srcBg = BrSrcTaskBg; srcBdr = BrSrcTaskBdr; srcFg = BrSrcTaskFg;
+            } else if (sk == "Service") {
+                srcBg = BrSrcSvcBg; srcBdr = BrSrcSvcBdr; srcFg = BrSrcSvcFg;
+            } else if (sk == "OrphanApproved") {
+                srcBg = BrSrcGhostBg; srcBdr = BrSrcGhostBdr; srcFg = BrSrcGhostFg;
+            }
+
+            var srcPill = new System.Windows.Controls.Border();
+            srcPill.Background = srcBg;
+            srcPill.BorderBrush = srcBdr;
+            srcPill.BorderThickness = ThkOne;
+            srcPill.CornerRadius = Cr3;
+            srcPill.Padding = ThkSrcPad;
+            srcPill.HorizontalAlignment = HorizontalAlignment.Center;
+            srcPill.VerticalAlignment = VerticalAlignment.Center;
+            var srcTb = new System.Windows.Controls.TextBlock();
+            srcTb.Text = GetSourceLabelFast(sk);
+            srcTb.FontSize = 10.5;
+            srcTb.FontWeight = FontWeights.SemiBold;
+            srcTb.Foreground = srcFg;
+            srcPill.Child = srcTb;
+            System.Windows.Controls.Grid.SetColumn(srcPill, 2);
+            g.Children.Add(srcPill);
+
+            var impTb = new System.Windows.Controls.TextBlock();
+            impTb.FontSize = 11;
+            impTb.FontWeight = FontWeights.SemiBold;
+            impTb.HorizontalAlignment = HorizontalAlignment.Center;
+            impTb.VerticalAlignment = VerticalAlignment.Center;
+            System.Windows.Controls.Grid.SetColumn(impTb, 3);
+            g.Children.Add(impTb);
+
+            var actPanel = new System.Windows.Controls.StackPanel();
+            actPanel.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            actPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            actPanel.VerticalAlignment = VerticalAlignment.Center;
+
+            var btnOpen = new System.Windows.Controls.Button();
+            if (actionBtnStyle != null) btnOpen.Style = actionBtnStyle;
+            btnOpen.Content = entry.IsOrphanApprovedGhost ? "Registry" : "M\u1EDF t\u1EC7p";
+            btnOpen.FontSize = 10.5;
+            btnOpen.FontWeight = FontWeights.SemiBold;
+            btnOpen.Padding = ThkBtnPad;
+            btnOpen.Background = BrPillBg;
+            btnOpen.Foreground = BrNavActive;
+            btnOpen.BorderBrush = BrPillBdr;
+            btnOpen.BorderThickness = ThkOne;
+            actPanel.Children.Add(btnOpen);
+
+            System.Windows.Controls.Button btnDel = null;
+            if (entry.CanDelete) {
+                btnDel = new System.Windows.Controls.Button();
+                if (actionBtnStyle != null) btnDel.Style = actionBtnStyle;
+                btnDel.Content = "X\u00F3a";
+                btnDel.FontSize = 10.5;
+                btnDel.FontWeight = FontWeights.SemiBold;
+                btnDel.Padding = ThkBtnPad;
+                btnDel.Margin = ThkDelMgn;
+                btnDel.Background = BrErrBg;
+                btnDel.Foreground = BrRiskCautFg;
+                btnDel.BorderBrush = BrErrBdr;
+                btnDel.BorderThickness = ThkOne;
+                actPanel.Children.Add(btnDel);
+            }
+
+            System.Windows.Controls.Grid.SetColumn(actPanel, 4);
+            g.Children.Add(actPanel);
+
+            for (int divCol = 0; divCol < 4; divCol++) {
+                var colDiv = new System.Windows.Controls.Border();
+                colDiv.Width = 1;
+                colDiv.Background = BrColDivider;
+                colDiv.HorizontalAlignment = HorizontalAlignment.Right;
+                colDiv.VerticalAlignment = VerticalAlignment.Stretch;
+                colDiv.SnapsToDevicePixels = true;
+                colDiv.IsHitTestVisible = false;
+                System.Windows.Controls.Grid.SetColumn(colDiv, divCol);
+                g.Children.Add(colDiv);
+            }
+
+            rowBorder.Child = g;
+
+            var vis = new StartupRowVisual {
+                Entry = entry,
+                Row = rowBorder,
+                Toggle = toggle,
+                IconImage = iconImg,
+                TitleText = titleTb,
+                BadgePanel = badgePanel,
+                SubText = subTb,
+                ImpactText = impTb,
+                OpenButton = btnOpen,
+                DeleteButton = btnDel,
+                SearchText = ""
+            };
+            rowBorder.Tag = vis;
+            toggle.Tag = vis;
+            btnOpen.Tag = vis;
+            if (btnDel != null) btnDel.Tag = vis;
+
+            UpdateRowVisual(vis);
+            return vis;
+        }
+
+        private static int GetImpactRank(string level) {
+            if (level == "High") return 0;
+            if (level == "Medium") return 1;
+            return 2;
+        }
+
+        public static int CompareStartupEntries(StartupEntry a, StartupEntry b) {
+            if (ReferenceEquals(a, b)) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+            int gA = a.IsOrphanApprovedGhost ? 2 : (a.IsOrphan ? 1 : 0);
+            int gB = b.IsOrphanApprovedGhost ? 2 : (b.IsOrphan ? 1 : 0);
+            if (gA != gB) return gA.CompareTo(gB);
+            int eA = a.Enabled ? 0 : 1;
+            int eB = b.Enabled ? 0 : 1;
+            if (eA != eB) return eA.CompareTo(eB);
+            int tA = a.CanToggle ? 0 : 1;
+            int tB = b.CanToggle ? 0 : 1;
+            if (tA != tB) return tA.CompareTo(tB);
+            int iA = GetImpactRank(a.ImpactLevel);
+            int iB = GetImpactRank(b.ImpactLevel);
+            if (iA != iB) return iA.CompareTo(iB);
+            return string.Compare(a.DisplayName ?? "", b.DisplayName ?? "", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static StartupRowVisual[] SortRowVisuals(StartupRowVisual[] rows) {
+            if (rows == null || rows.Length <= 1) return rows ?? new StartupRowVisual[0];
+            var copy = new StartupRowVisual[rows.Length];
+            Array.Copy(rows, copy, rows.Length);
+            Array.Sort(copy, delegate(StartupRowVisual x, StartupRowVisual y) {
+                return CompareStartupEntries(x != null ? x.Entry : null, y != null ? y.Entry : null);
+            });
+            return copy;
         }
     }
 }
@@ -44066,6 +44493,20 @@ namespace DuckUtil {
         public BitmapSource IconBitmap { get; set; }
     }
 
+    public sealed class StartupRowVisual {
+        public StartupEntry Entry { get; set; }
+        public System.Windows.Controls.Border Row { get; set; }
+        public System.Windows.Controls.Primitives.ToggleButton Toggle { get; set; }
+        public System.Windows.Controls.Image IconImage { get; set; }
+        public System.Windows.Controls.TextBlock TitleText { get; set; }
+        public System.Windows.Controls.StackPanel BadgePanel { get; set; }
+        public System.Windows.Controls.TextBlock SubText { get; set; }
+        public System.Windows.Controls.TextBlock ImpactText { get; set; }
+        public System.Windows.Controls.Button OpenButton { get; set; }
+        public System.Windows.Controls.Button DeleteButton { get; set; }
+        public string SearchText { get; set; }
+    }
+
     public static class StartupManagerEngine {
         private const string RegRunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string RegRunWow32Path = @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
@@ -46693,6 +47134,419 @@ namespace DuckUtil {
                 SkippedAdminCount = skipped,
                 RemovedKeys = removed.ToArray()
             };
+        }
+
+        private static System.Windows.Media.SolidColorBrush MakeFrozenBrush(byte a, byte r, byte g, byte b) {
+            var br = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(a, r, g, b));
+            br.Freeze();
+            return br;
+        }
+
+        private static readonly System.Windows.Media.SolidColorBrush BrTextWhite     = MakeFrozenBrush(255, 0xF8, 0xFA, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrDisabledFg    = MakeFrozenBrush(255, 0x94, 0xA3, 0xB8);
+        private static readonly System.Windows.Media.SolidColorBrush BrSubFg         = MakeFrozenBrush(255, 0x64, 0x74, 0x8B);
+        private static readonly System.Windows.Media.SolidColorBrush BrNavActive     = MakeFrozenBrush(255, 0x38, 0xBD, 0xF8);
+        private static readonly System.Windows.Media.SolidColorBrush BrNavInactive   = MakeFrozenBrush(255, 0xCB, 0xD5, 0xE1);
+        private static readonly System.Windows.Media.SolidColorBrush BrPillBg        = MakeFrozenBrush(255, 0x16, 0x22, 0x35);
+        private static readonly System.Windows.Media.SolidColorBrush BrPillBdr       = MakeFrozenBrush(255, 0x2B, 0x3D, 0x57);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderBg   = MakeFrozenBrush(255, 0x0F, 0x29, 0x2E);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderBdr  = MakeFrozenBrush(255, 0x1D, 0x4D, 0x57);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcFolderFg   = MakeFrozenBrush(255, 0x5E, 0xEA, 0xD4);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreBg    = MakeFrozenBrush(255, 0x1A, 0x1E, 0x3B);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreBdr   = MakeFrozenBrush(255, 0x37, 0x3E, 0x73);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcStoreFg    = MakeFrozenBrush(255, 0xA5, 0xB4, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskBg     = MakeFrozenBrush(255, 0x2B, 0x21, 0x10);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskBdr    = MakeFrozenBrush(255, 0x5A, 0x44, 0x1F);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcTaskFg     = MakeFrozenBrush(255, 0xFC, 0xD3, 0x4D);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcBg      = MakeFrozenBrush(255, 0x23, 0x19, 0x38);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcBdr     = MakeFrozenBrush(255, 0x49, 0x34, 0x73);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcSvcFg      = MakeFrozenBrush(255, 0xC4, 0xB5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostBg    = MakeFrozenBrush(255, 0x33, 0x15, 0x1B);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostBdr   = MakeFrozenBrush(255, 0x6E, 0x27, 0x34);
+        private static readonly System.Windows.Media.SolidColorBrush BrSrcGhostFg    = MakeFrozenBrush(255, 0xFD, 0xA4, 0xAF);
+        private static readonly System.Windows.Media.SolidColorBrush BrSysBg         = MakeFrozenBrush(255, 0x17, 0x25, 0x54);
+        private static readonly System.Windows.Media.SolidColorBrush BrSysFg         = MakeFrozenBrush(255, 0x93, 0xC5, 0xFD);
+        private static readonly System.Windows.Media.SolidColorBrush BrOemBg         = MakeFrozenBrush(255, 0x1E, 0x1B, 0x4B);
+        private static readonly System.Windows.Media.SolidColorBrush BrOemFg         = MakeFrozenBrush(255, 0xA5, 0xB4, 0xFC);
+        private static readonly System.Windows.Media.SolidColorBrush BrWarnBg        = MakeFrozenBrush(255, 0x3B, 0x28, 0x06);
+        private static readonly System.Windows.Media.SolidColorBrush BrErrBg         = MakeFrozenBrush(255, 0x3B, 0x12, 0x19);
+        private static readonly System.Windows.Media.SolidColorBrush BrErrBdr        = MakeFrozenBrush(255, 0x7F, 0x1D, 0x1D);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskSafeFg    = MakeFrozenBrush(255, 0x34, 0xD3, 0x99);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskModFg     = MakeFrozenBrush(255, 0xFB, 0xBF, 0x24);
+        private static readonly System.Windows.Media.SolidColorBrush BrRiskCautFg    = MakeFrozenBrush(255, 0xF8, 0x71, 0x71);
+        private static readonly System.Windows.Media.SolidColorBrush BrColDivider    = MakeFrozenBrush(0x1C, 0xFF, 0xFF, 0xFF);
+
+        private static readonly Thickness ThkZero     = new Thickness(0);
+        private static readonly Thickness ThkOne      = new Thickness(1);
+        private static readonly Thickness ThkBadgePad = new Thickness(5, 1, 5, 1);
+        private static readonly Thickness ThkBadgeMgn = new Thickness(6, 0, 0, 0);
+        private static readonly Thickness ThkAppMgn   = new Thickness(10, 6, 10, 6);
+        private static readonly Thickness ThkInfoMgn  = new Thickness(9, 0, 0, 0);
+        private static readonly Thickness ThkSubMgn   = new Thickness(0, 1, 0, 0);
+        private static readonly Thickness ThkSrcPad   = new Thickness(8, 2, 8, 2);
+        private static readonly Thickness ThkBtnPad   = new Thickness(8, 3, 8, 3);
+        private static readonly Thickness ThkDelMgn   = new Thickness(5, 0, 0, 0);
+        private static readonly CornerRadius Cr3      = new CornerRadius(3);
+        private static readonly CornerRadius Cr4      = new CornerRadius(4);
+
+        private static System.Windows.Controls.Border MakeBadgePill(string text, System.Windows.Media.Brush bg, System.Windows.Media.Brush fg) {
+            var bd = new System.Windows.Controls.Border();
+            bd.Background = bg;
+            bd.CornerRadius = Cr3;
+            bd.Padding = ThkBadgePad;
+            bd.Margin = ThkBadgeMgn;
+            bd.VerticalAlignment = VerticalAlignment.Center;
+            var tb = new System.Windows.Controls.TextBlock();
+            tb.Text = text;
+            tb.FontSize = 9.5;
+            tb.FontWeight = FontWeights.SemiBold;
+            tb.Foreground = fg;
+            bd.Child = tb;
+            return bd;
+        }
+
+        private static string GetSourceLabelFast(string sourceKind) {
+            if (string.IsNullOrEmpty(sourceKind)) return "Kh\u00E1c";
+            switch (sourceKind) {
+                case "RegUser":
+                case "RegUser32":
+                case "RegSystem":
+                case "RegWow32":       return "Registry";
+                case "RegRunOnce":     return "RunOnce";
+                case "RegPolicy":      return "Policy";
+                case "FolderUser":
+                case "FolderAll":      return "Th\u01B0 m\u1EE5c";
+                case "Store":          return "Store";
+                case "Task":           return "Task";
+                case "Service":        return "D\u1ECBch v\u1EE5";
+                case "OrphanApproved": return "R\u00E1c Reg";
+                default:               return "Kh\u00E1c";
+            }
+        }
+
+        public static void UpdateRowVisual(StartupRowVisual v) {
+            if (v == null || v.Entry == null) return;
+            StartupEntry e = v.Entry;
+
+            if (v.BadgePanel != null) {
+                v.BadgePanel.Children.Clear();
+                if (e.ProtectionKind == "System") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("H\u1EC7 th\u1ED1ng", BrSysBg, BrSysFg));
+                } else if (e.ProtectionKind == "Oem") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("H\u00E3ng", BrOemBg, BrOemFg));
+                }
+                string lk = e.LockKind ?? "";
+                if (e.IsPolicyLocked || lk == "Policy") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a ch\u00EDnh s\u00E1ch", BrWarnBg, BrRiskModFg));
+                } else if (lk == "Msix") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a MSIX", BrWarnBg, BrRiskModFg));
+                } else if (lk == "Protected") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Kh\u00F3a b\u1EA3o v\u1EC7", BrWarnBg, BrRiskModFg));
+                }
+                if (e.SourceKind == "RegRunOnce") {
+                    v.BadgePanel.Children.Add(MakeBadgePill("Ch\u1EA1y 1 l\u1EA7n", BrWarnBg, BrRiskModFg));
+                }
+                if (e.IsOrphanApprovedGhost) {
+                    v.BadgePanel.Children.Add(MakeBadgePill("R\u00E1c Approved", BrErrBg, BrRiskCautFg));
+                } else if (e.IsOrphan) {
+                    string errLbl = (e.SourceKind == "Service") ? "D\u1ECBch v\u1EE5 l\u1ED7i" : "T\u1EC7p kh\u00F4ng t\u1ED3n t\u1EA1i";
+                    v.BadgePanel.Children.Add(MakeBadgePill(errLbl, BrErrBg, BrRiskCautFg));
+                }
+            }
+
+            if (v.ImpactText != null) {
+                if (e.IsOrphanApprovedGhost) {
+                    v.ImpactText.Text = "R\u00E1c";
+                    v.ImpactText.Foreground = BrRiskCautFg;
+                } else if (e.ImpactLevel == "High") {
+                    v.ImpactText.Text = "N\u1EB7ng";
+                    v.ImpactText.Foreground = BrRiskCautFg;
+                } else if (e.ImpactLevel == "Medium") {
+                    v.ImpactText.Text = "Trung b\u00ECnh";
+                    v.ImpactText.Foreground = BrRiskModFg;
+                } else {
+                    v.ImpactText.Text = "Nh\u1EB9";
+                    v.ImpactText.Foreground = BrRiskSafeFg;
+                }
+            }
+
+            if (v.TitleText != null) {
+                v.TitleText.Text = e.DisplayName ?? "";
+                v.TitleText.Foreground = e.Enabled ? BrTextWhite : BrDisabledFg;
+            }
+
+            if (v.SubText != null) {
+                if (e.IsOrphanApprovedGhost) {
+                    v.SubText.Text = (e.TriggerInfo ?? "") + "  \u2022  " + (e.RawCommand ?? "");
+                } else {
+                    string pubPart = !string.IsNullOrWhiteSpace(e.Publisher) ? (e.Publisher + "  \u2022  ") : "";
+                    string cmdPart = !string.IsNullOrWhiteSpace(e.SecondaryTargetPath)
+                        ? e.SecondaryTargetPath
+                        : (!string.IsNullOrWhiteSpace(e.ResolvedExePath) ? e.ResolvedExePath : (e.RawCommand ?? ""));
+                    v.SubText.Text = pubPart + cmdPart;
+                }
+            }
+
+            v.SearchText = (
+                (e.DisplayName ?? "") + " " +
+                (e.Name ?? "") + " " +
+                (e.Publisher ?? "") + " " +
+                (e.RawCommand ?? "") + " " +
+                (e.ResolvedExePath ?? "") + " " +
+                (e.SecondaryTargetPath ?? "") + " " +
+                (e.SourceKind ?? "") + " " +
+                (e.TriggerInfo ?? "") + " " +
+                (e.OrphanReason ?? "")
+            ).ToLowerInvariant();
+        }
+
+        public static StartupRowVisual CreateRowVisual(StartupEntry entry, Style rowStyle, Style toggleStyle, Style actionBtnStyle) {
+            var rowBorder = new System.Windows.Controls.Border();
+            if (rowStyle != null) rowBorder.Style = rowStyle;
+            rowBorder.Padding = ThkZero;
+            rowBorder.Margin = ThkZero;
+            rowBorder.MinHeight = 46;
+            rowBorder.UseLayoutRounding = true;
+            if (entry.IsOrphanApprovedGhost) {
+                rowBorder.Visibility = Visibility.Collapsed;
+            }
+            System.Windows.Controls.ToolTipService.SetInitialShowDelay(rowBorder, 450);
+            System.Windows.Controls.ToolTipService.SetShowDuration(rowBorder, 12000);
+            rowBorder.ToolTip = "";
+
+            var g = new System.Windows.Controls.Grid();
+            g.UseLayoutRounding = true;
+            g.SnapsToDevicePixels = true;
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(64) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(98) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(104) });
+            g.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(128) });
+
+            var toggle = new System.Windows.Controls.Primitives.ToggleButton();
+            if (toggleStyle != null) toggle.Style = toggleStyle;
+            toggle.HorizontalAlignment = HorizontalAlignment.Center;
+            toggle.VerticalAlignment = VerticalAlignment.Center;
+            toggle.IsChecked = entry.Enabled;
+            bool canTgl = entry.CanToggle && !entry.IsPolicyLocked;
+            toggle.IsEnabled = canTgl;
+            if (!canTgl) {
+                toggle.Opacity = 0.35;
+                System.Windows.Controls.ToolTipService.SetShowOnDisabled(toggle, true);
+                string lk = entry.LockKind ?? "";
+                if (lk == "Msix") {
+                    toggle.ToolTip = "D\u1ECBch v\u1EE5 \u0111\u00F3ng g\u00F3i MSIX (AppXSvc) - Windows kh\u00F3a kh\u00F4ng cho t\u1EAFt tr\u1EF1c ti\u1EBFp. H\u00E3y \u0111i\u1EC1u ch\u1EC9nh \u1EDF m\u1EE5c Store ho\u1EB7c g\u1EE1 \u1EE9ng d\u1EE5ng.";
+                } else if (lk == "Protected") {
+                    toggle.ToolTip = "D\u1ECBch v\u1EE5 c\u00F3 b\u1EA3o v\u1EC7 ch\u1ED1ng can thi\u1EC7p (Self-Defense / H\u1EC7 th\u1ED1ng) - kh\u00F4ng th\u1EC3 g\u1EA1t t\u1EAFt.";
+                } else if (lk == "Policy" || entry.IsPolicyLocked) {
+                    toggle.ToolTip = "M\u1EE5c n\u00E0y \u0111ang b\u1ECB kh\u00F3a b\u1EDFi Group Policy.";
+                } else {
+                    toggle.ToolTip = "Kh\u00F4ng h\u1ED7 tr\u1EE3 b\u1EADt/t\u1EAFt tr\u1EF1c ti\u1EBFp m\u1EE5c n\u00E0y.";
+                }
+            }
+            System.Windows.Controls.Grid.SetColumn(toggle, 0);
+            g.Children.Add(toggle);
+
+            var appCellGrid = new System.Windows.Controls.Grid();
+            appCellGrid.Margin = ThkAppMgn;
+            appCellGrid.VerticalAlignment = VerticalAlignment.Center;
+            appCellGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(28) });
+            appCellGrid.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var iconBorder = new System.Windows.Controls.Border();
+            iconBorder.Width = 28;
+            iconBorder.Height = 28;
+            iconBorder.CornerRadius = Cr4;
+            iconBorder.Background = entry.IsOrphanApprovedGhost ? BrSrcGhostBg : BrPillBg;
+            iconBorder.HorizontalAlignment = HorizontalAlignment.Center;
+            iconBorder.VerticalAlignment = VerticalAlignment.Center;
+            var iconImg = new System.Windows.Controls.Image();
+            iconImg.Width = 20;
+            iconImg.Height = 20;
+            iconImg.Stretch = System.Windows.Media.Stretch.Uniform;
+            System.Windows.Media.RenderOptions.SetBitmapScalingMode(iconImg, System.Windows.Media.BitmapScalingMode.HighQuality);
+            iconBorder.Child = iconImg;
+            System.Windows.Controls.Grid.SetColumn(iconBorder, 0);
+            appCellGrid.Children.Add(iconBorder);
+
+            var infoStack = new System.Windows.Controls.StackPanel();
+            infoStack.VerticalAlignment = VerticalAlignment.Center;
+            infoStack.Margin = ThkInfoMgn;
+
+            var line1 = new System.Windows.Controls.StackPanel();
+            line1.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            var titleTb = new System.Windows.Controls.TextBlock();
+            titleTb.FontSize = 12;
+            titleTb.FontWeight = FontWeights.SemiBold;
+            titleTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            titleTb.VerticalAlignment = VerticalAlignment.Center;
+            line1.Children.Add(titleTb);
+
+            var badgePanel = new System.Windows.Controls.StackPanel();
+            badgePanel.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            badgePanel.VerticalAlignment = VerticalAlignment.Center;
+            line1.Children.Add(badgePanel);
+            infoStack.Children.Add(line1);
+
+            var subTb = new System.Windows.Controls.TextBlock();
+            subTb.FontSize = 10.5;
+            subTb.Foreground = BrSubFg;
+            subTb.TextTrimming = TextTrimming.CharacterEllipsis;
+            subTb.Margin = ThkSubMgn;
+            infoStack.Children.Add(subTb);
+
+            System.Windows.Controls.Grid.SetColumn(infoStack, 1);
+            appCellGrid.Children.Add(infoStack);
+
+            System.Windows.Controls.Grid.SetColumn(appCellGrid, 1);
+            g.Children.Add(appCellGrid);
+
+            System.Windows.Media.Brush srcBg = BrPillBg;
+            System.Windows.Media.Brush srcBdr = BrPillBdr;
+            System.Windows.Media.Brush srcFg = BrNavInactive;
+            string sk = entry.SourceKind ?? "";
+            if (sk == "FolderUser" || sk == "FolderAll") {
+                srcBg = BrSrcFolderBg; srcBdr = BrSrcFolderBdr; srcFg = BrSrcFolderFg;
+            } else if (sk == "Store") {
+                srcBg = BrSrcStoreBg; srcBdr = BrSrcStoreBdr; srcFg = BrSrcStoreFg;
+            } else if (sk == "Task") {
+                srcBg = BrSrcTaskBg; srcBdr = BrSrcTaskBdr; srcFg = BrSrcTaskFg;
+            } else if (sk == "Service") {
+                srcBg = BrSrcSvcBg; srcBdr = BrSrcSvcBdr; srcFg = BrSrcSvcFg;
+            } else if (sk == "OrphanApproved") {
+                srcBg = BrSrcGhostBg; srcBdr = BrSrcGhostBdr; srcFg = BrSrcGhostFg;
+            }
+
+            var srcPill = new System.Windows.Controls.Border();
+            srcPill.Background = srcBg;
+            srcPill.BorderBrush = srcBdr;
+            srcPill.BorderThickness = ThkOne;
+            srcPill.CornerRadius = Cr3;
+            srcPill.Padding = ThkSrcPad;
+            srcPill.HorizontalAlignment = HorizontalAlignment.Center;
+            srcPill.VerticalAlignment = VerticalAlignment.Center;
+            var srcTb = new System.Windows.Controls.TextBlock();
+            srcTb.Text = GetSourceLabelFast(sk);
+            srcTb.FontSize = 10.5;
+            srcTb.FontWeight = FontWeights.SemiBold;
+            srcTb.Foreground = srcFg;
+            srcPill.Child = srcTb;
+            System.Windows.Controls.Grid.SetColumn(srcPill, 2);
+            g.Children.Add(srcPill);
+
+            var impTb = new System.Windows.Controls.TextBlock();
+            impTb.FontSize = 11;
+            impTb.FontWeight = FontWeights.SemiBold;
+            impTb.HorizontalAlignment = HorizontalAlignment.Center;
+            impTb.VerticalAlignment = VerticalAlignment.Center;
+            System.Windows.Controls.Grid.SetColumn(impTb, 3);
+            g.Children.Add(impTb);
+
+            var actPanel = new System.Windows.Controls.StackPanel();
+            actPanel.Orientation = System.Windows.Controls.Orientation.Horizontal;
+            actPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            actPanel.VerticalAlignment = VerticalAlignment.Center;
+
+            var btnOpen = new System.Windows.Controls.Button();
+            if (actionBtnStyle != null) btnOpen.Style = actionBtnStyle;
+            btnOpen.Content = entry.IsOrphanApprovedGhost ? "Registry" : "M\u1EDF t\u1EC7p";
+            btnOpen.FontSize = 10.5;
+            btnOpen.FontWeight = FontWeights.SemiBold;
+            btnOpen.Padding = ThkBtnPad;
+            btnOpen.Background = BrPillBg;
+            btnOpen.Foreground = BrNavActive;
+            btnOpen.BorderBrush = BrPillBdr;
+            btnOpen.BorderThickness = ThkOne;
+            actPanel.Children.Add(btnOpen);
+
+            System.Windows.Controls.Button btnDel = null;
+            if (entry.CanDelete) {
+                btnDel = new System.Windows.Controls.Button();
+                if (actionBtnStyle != null) btnDel.Style = actionBtnStyle;
+                btnDel.Content = "X\u00F3a";
+                btnDel.FontSize = 10.5;
+                btnDel.FontWeight = FontWeights.SemiBold;
+                btnDel.Padding = ThkBtnPad;
+                btnDel.Margin = ThkDelMgn;
+                btnDel.Background = BrErrBg;
+                btnDel.Foreground = BrRiskCautFg;
+                btnDel.BorderBrush = BrErrBdr;
+                btnDel.BorderThickness = ThkOne;
+                actPanel.Children.Add(btnDel);
+            }
+
+            System.Windows.Controls.Grid.SetColumn(actPanel, 4);
+            g.Children.Add(actPanel);
+
+            for (int divCol = 0; divCol < 4; divCol++) {
+                var colDiv = new System.Windows.Controls.Border();
+                colDiv.Width = 1;
+                colDiv.Background = BrColDivider;
+                colDiv.HorizontalAlignment = HorizontalAlignment.Right;
+                colDiv.VerticalAlignment = VerticalAlignment.Stretch;
+                colDiv.SnapsToDevicePixels = true;
+                colDiv.IsHitTestVisible = false;
+                System.Windows.Controls.Grid.SetColumn(colDiv, divCol);
+                g.Children.Add(colDiv);
+            }
+
+            rowBorder.Child = g;
+
+            var vis = new StartupRowVisual {
+                Entry = entry,
+                Row = rowBorder,
+                Toggle = toggle,
+                IconImage = iconImg,
+                TitleText = titleTb,
+                BadgePanel = badgePanel,
+                SubText = subTb,
+                ImpactText = impTb,
+                OpenButton = btnOpen,
+                DeleteButton = btnDel,
+                SearchText = ""
+            };
+            rowBorder.Tag = vis;
+            toggle.Tag = vis;
+            btnOpen.Tag = vis;
+            if (btnDel != null) btnDel.Tag = vis;
+
+            UpdateRowVisual(vis);
+            return vis;
+        }
+
+        private static int GetImpactRank(string level) {
+            if (level == "High") return 0;
+            if (level == "Medium") return 1;
+            return 2;
+        }
+
+        public static int CompareStartupEntries(StartupEntry a, StartupEntry b) {
+            if (ReferenceEquals(a, b)) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+            int gA = a.IsOrphanApprovedGhost ? 2 : (a.IsOrphan ? 1 : 0);
+            int gB = b.IsOrphanApprovedGhost ? 2 : (b.IsOrphan ? 1 : 0);
+            if (gA != gB) return gA.CompareTo(gB);
+            int eA = a.Enabled ? 0 : 1;
+            int eB = b.Enabled ? 0 : 1;
+            if (eA != eB) return eA.CompareTo(eB);
+            int tA = a.CanToggle ? 0 : 1;
+            int tB = b.CanToggle ? 0 : 1;
+            if (tA != tB) return tA.CompareTo(tB);
+            int iA = GetImpactRank(a.ImpactLevel);
+            int iB = GetImpactRank(b.ImpactLevel);
+            if (iA != iB) return iA.CompareTo(iB);
+            return string.Compare(a.DisplayName ?? "", b.DisplayName ?? "", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static StartupRowVisual[] SortRowVisuals(StartupRowVisual[] rows) {
+            if (rows == null || rows.Length <= 1) return rows ?? new StartupRowVisual[0];
+            var copy = new StartupRowVisual[rows.Length];
+            Array.Copy(rows, copy, rows.Length);
+            Array.Sort(copy, delegate(StartupRowVisual x, StartupRowVisual y) {
+                return CompareStartupEntries(x != null ? x.Entry : null, y != null ? y.Entry : null);
+            });
+            return copy;
         }
     }
 }
@@ -63106,8 +63960,10 @@ $script:startSourceMode          = "All"
 $script:startRows                = [System.Collections.Generic.List[object]]::new()
 $script:startRowById             = @{}
 $script:startSyncingToggle       = $false
+$script:startBackupCountCache    = -1
 $script:startPollTimer           = $null
 $script:startSearchDebounceTimer = $null
+$script:startPhase1FastTask      = $null
 $script:startPhase2ExtTask       = $null
 $script:startPhase2Hydrate1Task  = $null
 $script:startPhase2Hydrate2Task  = $null
@@ -63173,14 +64029,23 @@ function Test-StartupRowMatchesSourceMode {
     }
 }
 
+function Refresh-StartupBackupCountCache {
+    try { $script:startBackupCountCache = @(Get-StartupBackupsList).Count } catch { $script:startBackupCountCache = 0 }
+}
+
 function Sort-StartupRowsHost {
     if ($script:isWindowClosing -or -not $script:startRowsHost -or $script:startRows.Count -le 1) { return }
-    $ordered = @($script:startRows | Sort-Object `
-        @{ Expression = { if ($_.Entry.IsOrphanApprovedGhost) { 2 } elseif ($_.Entry.IsOrphan) { 1 } else { 0 } } },
-        @{ Expression = { if ($_.Entry.Enabled) { 0 } else { 1 } } },
-        @{ Expression = { if ($_.Entry.CanToggle) { 0 } else { 1 } } },
-        @{ Expression = { switch ([string]$_.Entry.ImpactLevel) { "High" { 0 } "Medium" { 1 } default { 2 } } } },
-        @{ Expression = { ([string]$_.Entry.DisplayName).ToLowerInvariant() } })
+    $arr = [DuckUtil.StartupRowVisual[]]::new($script:startRows.Count)
+    for ($i = 0; $i -lt $script:startRows.Count; $i++) { $arr[$i] = $script:startRows[$i] }
+    $ordered = [DuckUtil.StartupManagerEngine]::SortRowVisuals($arr)
+    $orderChanged = $false
+    for ($i = 0; $i -lt $ordered.Length; $i++) {
+        if (-not [object]::ReferenceEquals($script:startRows[$i], $ordered[$i])) {
+            $orderChanged = $true
+            break
+        }
+    }
+    if (-not $orderChanged) { return }
     $script:startRows.Clear()
     $script:startRowsHost.Children.Clear()
     foreach ($ro in $ordered) {
@@ -63208,8 +64073,11 @@ function Update-StartupFooterSummary {
     if ($script:btnStartFilterOff)    { $script:btnStartFilterOff.Content    = "$([char]0x0110)ang t$([char]0x1EAF)t ($offCnt)" }
     if ($script:btnStartFilterOrphan) { $script:btnStartFilterOrphan.Content = "M$([char]0x1EE5)c l$([char]0x1ED7)i ($totalOrphans)" }
 
+    $isScanning = ($script:startPhase1FastTask -and -not $script:startPhase1FastTask.IsCompleted) -or
+                  ($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) -or
+                  ($script:startPhase2OrphanTask -and -not $script:startPhase2OrphanTask.IsCompleted)
     if ($script:txtStartSummary) {
-        $phaseNote = if (($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) -or ($script:startPhase2OrphanTask -and -not $script:startPhase2OrphanTask.IsCompleted)) { " ($([char]0x0111)ang qu$([char]0x00E9)t s$([char]0x00E2)u...)" } else { "" }
+        $phaseNote = if ($isScanning) { " ($([char]0x0111)ang qu$([char]0x00E9)t s$([char]0x00E2)u...)" } else { "" }
         $script:txtStartSummary.Text = "T$([char]0x1ED5)ng $liveTotal m$([char]0x1EE5)c ($onCnt b$([char]0x1EAD)t $([char]0x2022) $totalOrphans l$([char]0x1ED7)i)$phaseNote"
     }
     if ($script:btnStartCleanOrphans) {
@@ -63217,7 +64085,8 @@ function Update-StartupFooterSummary {
         $script:btnStartCleanOrphans.IsEnabled = ($totalOrphans -gt 0)
     }
     if ($script:btnStartRestoreBackup) {
-        $bkpCnt = @(Get-StartupBackupsList).Count
+        if ($script:startBackupCountCache -lt 0) { Refresh-StartupBackupCountCache }
+        $bkpCnt = $script:startBackupCountCache
         $script:btnStartRestoreBackup.Content = if ($bkpCnt -gt 0) { "Kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a ($bkpCnt)" } else { "Kh$([char]0x00F4)i ph$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a" }
         $script:btnStartRestoreBackup.IsEnabled = ($bkpCnt -gt 0)
     }
@@ -63289,7 +64158,9 @@ function Apply-StartupFilter {
         if ($isVis) { $visibleCount++ }
     }
     if ($script:startEmptyState) {
-        $isScanning = ($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) -or ($script:startPhase2OrphanTask -and -not $script:startPhase2OrphanTask.IsCompleted)
+        $isScanning = ($script:startPhase1FastTask -and -not $script:startPhase1FastTask.IsCompleted) -or
+                      ($script:startPhase2ExtTask -and -not $script:startPhase2ExtTask.IsCompleted) -or
+                      ($script:startPhase2OrphanTask -and -not $script:startPhase2OrphanTask.IsCompleted)
         if ($visibleCount -eq 0 -and -not $isScanning) {
             if ($script:txtStartEmptyTitle -and $script:txtStartEmptySub) {
                 if ($script:startFilterMode -eq "Orphan" -and [string]::IsNullOrEmpty($q)) {
@@ -63366,61 +64237,8 @@ function Build-StartupEntryToolTip {
 
 function Update-StartupRowBadgesAndImpact {
     param($RowObj)
-    $e = $RowObj.Entry
-    if ($RowObj.BadgePanel) {
-        $RowObj.BadgePanel.Children.Clear()
-        if ($e.ProtectionKind -eq "System") {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "H$([char]0x1EC7) th$([char]0x1ED1)ng" -BgBrush $script:brushStartSysBg -FgBrush $script:brushStartSysFg))
-        } elseif ($e.ProtectionKind -eq "Oem") {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "H$([char]0x00E3)ng" -BgBrush $script:brushStartOemBg -FgBrush $script:brushStartOemFg))
-        }
-        $lk = [string]$e.LockKind
-        if ($e.IsPolicyLocked -or $lk -eq "Policy") {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Kh$([char]0x00F3)a ch$([char]0x00ED)nh s$([char]0x00E1)ch" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
-        } elseif ($lk -eq "Msix") {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Kh$([char]0x00F3)a MSIX" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
-        } elseif ($lk -eq "Protected") {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Kh$([char]0x00F3)a b$([char]0x1EA3)o v$([char]0x1EC7)" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
-        }
-        if ($e.SourceKind -eq "RegRunOnce") {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "Ch$([char]0x1EA1)y 1 l$([char]0x1EA7)n" -BgBrush $script:brushStartWarnBg -FgBrush $script:brushOptRiskModFg))
-        }
-        if ($e.IsOrphanApprovedGhost) {
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text "R$([char]0x00E1)c Approved" -BgBrush $script:brushStartErrBg -FgBrush $script:brushOptRiskCautFg))
-        } elseif ($e.IsOrphan) {
-            $errLbl = if ($e.SourceKind -eq "Service") { "D$([char]0x1ECB)ch v$([char]0x1EE5) l$([char]0x1ED7)i" } else { "T$([char]0x1EC7)p kh$([char]0x00F4)ng t$([char]0x1ED3)n t$([char]0x1EA1)i" }
-            [void]$RowObj.BadgePanel.Children.Add((New-StartupBadgePill -Text $errLbl -BgBrush $script:brushStartErrBg -FgBrush $script:brushOptRiskCautFg))
-        }
-    }
-    if ($RowObj.ImpactText) {
-        if ($e.IsOrphanApprovedGhost) {
-            $RowObj.ImpactText.Text = "R$([char]0x00E1)c"
-            $RowObj.ImpactText.Foreground = $script:brushOptRiskCautFg
-        } else {
-            $RowObj.ImpactText.Text = Get-StartupImpactLabel -ImpactLevel ([string]$e.ImpactLevel)
-            $RowObj.ImpactText.Foreground = switch ([string]$e.ImpactLevel) {
-                "High"   { $script:brushOptRiskCautFg }
-                "Medium" { $script:brushOptRiskModFg }
-                default  { $script:brushOptRiskSafeFg }
-            }
-        }
-    }
-    if ($RowObj.TitleText) {
-        $RowObj.TitleText.Text = [string]$e.DisplayName
-        $RowObj.TitleText.Foreground = if ($e.Enabled) { $script:brushTextWhite } else { $script:brushStartDisabledFg }
-    }
-    if ($RowObj.SubText) {
-        if ($e.IsOrphanApprovedGhost) {
-            $RowObj.SubText.Text = "$($e.TriggerInfo)  $([char]0x2022)  $($e.RawCommand)"
-        } else {
-            $pubPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.Publisher)) { "$($e.Publisher)  $([char]0x2022)  " } else { "" }
-            $cmdPart = if (-not [string]::IsNullOrWhiteSpace([string]$e.SecondaryTargetPath)) { [string]$e.SecondaryTargetPath } elseif (-not [string]::IsNullOrWhiteSpace([string]$e.ResolvedExePath)) { [string]$e.ResolvedExePath } else { [string]$e.RawCommand }
-            $RowObj.SubText.Text = "${pubPart}${cmdPart}"
-        }
-    }
-    $RowObj.SearchText = ("$($e.DisplayName) $($e.Name) $($e.Publisher) $($e.RawCommand) $($e.ResolvedExePath) $($e.SecondaryTargetPath) $($e.SourceKind) $($e.TriggerInfo) $($e.OrphanReason)").ToLowerInvariant()
-    if ($RowObj.Row) {
-        $RowObj.Row.ToolTip = Build-StartupEntryToolTip -Entry $e
+    if ($RowObj) {
+        [DuckUtil.StartupManagerEngine]::UpdateRowVisual($RowObj)
     }
 }
 
@@ -63441,6 +64259,7 @@ function Invoke-StartupDeleteSingleRow {
     if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) { return }
 
     [void](Save-StartupGuardBatchBackup -Entries @($e))
+    Refresh-StartupBackupCountCache
     $res = [DuckUtil.StartupManagerEngine]::DeleteStartupEntry($e)
     if ($res.Success) {
         [void]$script:startRows.Remove($RowObj)
@@ -63457,308 +64276,130 @@ function Invoke-StartupDeleteSingleRow {
     }
 }
 
-function New-StartupRowElement {
-    param($Entry)
-    $rowBorder = [System.Windows.Controls.Border]::new()
-    $rowBorder.Style = $script:styleStartRow
-    $rowBorder.Padding = $thicknessZero
-    $rowBorder.Margin = $thicknessZero
-    $rowBorder.MinHeight = 46
-    $rowBorder.UseLayoutRounding = $true
-    [System.Windows.Controls.ToolTipService]::SetInitialShowDelay($rowBorder, 450)
-    [System.Windows.Controls.ToolTipService]::SetShowDuration($rowBorder, 12000)
-
-    $g = [System.Windows.Controls.Grid]::new()
-    $g.UseLayoutRounding = $true
-    $g.SnapsToDevicePixels = $true
-    $c0 = [System.Windows.Controls.ColumnDefinition]::new(); $c0.Width = [System.Windows.GridLength]::new(64)
-    $c1 = [System.Windows.Controls.ColumnDefinition]::new(); $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    $c2 = [System.Windows.Controls.ColumnDefinition]::new(); $c2.Width = [System.Windows.GridLength]::new(98)
-    $c3 = [System.Windows.Controls.ColumnDefinition]::new(); $c3.Width = [System.Windows.GridLength]::new(104)
-    $c4 = [System.Windows.Controls.ColumnDefinition]::new(); $c4.Width = [System.Windows.GridLength]::new(128)
-    foreach ($cd in @($c0, $c1, $c2, $c3, $c4)) { [void]$g.ColumnDefinitions.Add($cd) }
-
-    $toggle = [System.Windows.Controls.Primitives.ToggleButton]::new()
-    if ($script:styleOptToggleSwitch) { $toggle.Style = $script:styleOptToggleSwitch }
-    $toggle.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $toggle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $toggle.IsChecked = [bool]$Entry.Enabled
-    $canTgl = ([bool]$Entry.CanToggle -and -not [bool]$Entry.IsPolicyLocked)
-    $toggle.IsEnabled = $canTgl
-    if (-not $canTgl) {
-        $toggle.Opacity = 0.35
-        [System.Windows.Controls.ToolTipService]::SetShowOnDisabled($toggle, $true)
-        $toggle.ToolTip = switch ([string]$Entry.LockKind) {
-            "Msix"      { "D$([char]0x1ECB)ch v$([char]0x1EE5) $([char]0x0111)$([char]0x00F3)ng g$([char]0x00F3)i MSIX (AppXSvc) - Windows kh$([char]0x00F3)a kh$([char]0x00F4)ng cho t$([char]0x1EAF)t tr$([char]0x1EF1)c ti$([char]0x1EBF)p. H$([char]0x00E3)y $([char]0x0111)i$([char]0x1EC1)u ch$([char]0x1EC9)nh $([char]0x1EDF) m$([char]0x1EE5)c Store ho$([char]0x1EB7)c g$([char]0x1EE1) $([char]0x1EE9)ng d$([char]0x1EE5)ng." }
-            "Protected" { "D$([char]0x1ECB)ch v$([char]0x1EE5) c$([char]0x00F3) b$([char]0x1EA3)o v$([char]0x1EC7) ch$([char]0x1ED1)ng can thi$([char]0x1EC7)p (Self-Defense / H$([char]0x1EC7) th$([char]0x1ED1)ng) - kh$([char]0x00F4)ng th$([char]0x1EC3) g$([char]0x1EA1)t t$([char]0x1EAF)t." }
-            "Policy"    { "M$([char]0x1EE5)c n$([char]0x00E0)y $([char]0x0111)ang b$([char]0x1ECB) kh$([char]0x00F3)a b$([char]0x1EDF)i Group Policy." }
-            default     { "Kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) b$([char]0x1EAD)t/t$([char]0x1EAF)t tr$([char]0x1EF1)c ti$([char]0x1EBF)p m$([char]0x1EE5)c n$([char]0x00E0)y." }
-        }
+$script:startOpenBtnHandler = { param($s,$ev) if ($s.Tag -and $s.Tag.Entry) { Open-StartupEntryLocation -Entry $s.Tag.Entry } }
+$script:startDelBtnHandler  = { param($s,$ev) if ($s.Tag) { Invoke-StartupDeleteSingleRow -RowObj $s.Tag } }
+$script:startRowToolTipOpeningHandler = {
+    param($s, $ev)
+    if ($s.Tag -and $s.Tag.Entry) {
+        $s.ToolTip = Build-StartupEntryToolTip -Entry $s.Tag.Entry
     }
-    [System.Windows.Controls.Grid]::SetColumn($toggle, 0)
-    [void]$g.Children.Add($toggle)
+}
 
-    $appCellGrid = [System.Windows.Controls.Grid]::new()
-    $appCellGrid.Margin = [System.Windows.Thickness]::new(10, 6, 10, 6)
-    $appCellGrid.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $ac0 = [System.Windows.Controls.ColumnDefinition]::new(); $ac0.Width = [System.Windows.GridLength]::new(28)
-    $ac1 = [System.Windows.Controls.ColumnDefinition]::new(); $ac1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
-    [void]$appCellGrid.ColumnDefinitions.Add($ac0)
-    [void]$appCellGrid.ColumnDefinitions.Add($ac1)
-
-    $iconBorder = [System.Windows.Controls.Border]::new()
-    $iconBorder.Width = 28; $iconBorder.Height = 28
-    $iconBorder.CornerRadius = [System.Windows.CornerRadius]::new(4)
-    $iconBorder.Background = if ($Entry.IsOrphanApprovedGhost) { $script:brushStartSrcGhostBg } else { $script:brushStartPillBg }
-    $iconBorder.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $iconBorder.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $iconImg = [System.Windows.Controls.Image]::new()
-    $iconImg.Width = 20; $iconImg.Height = 20
-    $iconImg.Stretch = [System.Windows.Media.Stretch]::Uniform
-    [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($iconImg, [System.Windows.Media.BitmapScalingMode]::HighQuality)
-    $iconBorder.Child = $iconImg
-    [System.Windows.Controls.Grid]::SetColumn($iconBorder, 0)
-    [void]$appCellGrid.Children.Add($iconBorder)
-
-    $infoStack = [System.Windows.Controls.StackPanel]::new()
-    $infoStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $infoStack.Margin = [System.Windows.Thickness]::new(9, 0, 0, 0)
-
-    $line1 = [System.Windows.Controls.StackPanel]::new()
-    $line1.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    $titleTb = [System.Windows.Controls.TextBlock]::new()
-    $titleTb.FontSize = 12
-    $titleTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $titleTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-    $titleTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [void]$line1.Children.Add($titleTb)
-
-    $badgePanel = [System.Windows.Controls.StackPanel]::new()
-    $badgePanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    $badgePanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [void]$line1.Children.Add($badgePanel)
-    [void]$infoStack.Children.Add($line1)
-
-    $subTb = [System.Windows.Controls.TextBlock]::new()
-    $subTb.FontSize = 10.5
-    $subTb.Foreground = $script:brushStartSubFg
-    $subTb.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-    $subTb.Margin = [System.Windows.Thickness]::new(0, 1, 0, 0)
-    [void]$infoStack.Children.Add($subTb)
-
-    [System.Windows.Controls.Grid]::SetColumn($infoStack, 1)
-    [void]$appCellGrid.Children.Add($infoStack)
-
-    [System.Windows.Controls.Grid]::SetColumn($appCellGrid, 1)
-    [void]$g.Children.Add($appCellGrid)
-
-    $srcBg = $script:brushStartPillBg; $srcBdr = $script:brushStartPillBdr; $srcFg = $script:brushNavInactive
-    switch ([string]$Entry.SourceKind) {
-        "FolderUser"     { $srcBg = $script:brushStartSrcFolderBg; $srcBdr = $script:brushStartSrcFolderBdr; $srcFg = $script:brushStartSrcFolderFg }
-        "FolderAll"      { $srcBg = $script:brushStartSrcFolderBg; $srcBdr = $script:brushStartSrcFolderBdr; $srcFg = $script:brushStartSrcFolderFg }
-        "Store"          { $srcBg = $script:brushStartSrcStoreBg;  $srcBdr = $script:brushStartSrcStoreBdr;  $srcFg = $script:brushStartSrcStoreFg }
-        "Task"           { $srcBg = $script:brushStartSrcTaskBg;   $srcBdr = $script:brushStartSrcTaskBdr;   $srcFg = $script:brushStartSrcTaskFg }
-        "Service"        { $srcBg = $script:brushStartSrcSvcBg;    $srcBdr = $script:brushStartSrcSvcBdr;    $srcFg = $script:brushStartSrcSvcFg }
-        "OrphanApproved" { $srcBg = $script:brushStartSrcGhostBg;  $srcBdr = $script:brushStartSrcGhostBdr;  $srcFg = $script:brushStartSrcGhostFg }
-    }
-
-    $srcPill = [System.Windows.Controls.Border]::new()
-    $srcPill.Background = $srcBg
-    $srcPill.BorderBrush = $srcBdr
-    $srcPill.BorderThickness = $thicknessOne
-    $srcPill.CornerRadius = [System.Windows.CornerRadius]::new(3)
-    $srcPill.Padding = [System.Windows.Thickness]::new(8, 2, 8, 2)
-    $srcPill.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $srcPill.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $srcTb = [System.Windows.Controls.TextBlock]::new()
-    $srcTb.Text = Get-StartupSourceLabel -SourceKind ([string]$Entry.SourceKind)
-    $srcTb.FontSize = 10.5
-    $srcTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $srcTb.Foreground = $srcFg
-    $srcPill.Child = $srcTb
-    [System.Windows.Controls.Grid]::SetColumn($srcPill, 2)
-    [void]$g.Children.Add($srcPill)
-
-    $impTb = [System.Windows.Controls.TextBlock]::new()
-    $impTb.FontSize = 11
-    $impTb.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $impTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $impTb.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($impTb, 3)
-    [void]$g.Children.Add($impTb)
-
-    $actPanel = [System.Windows.Controls.StackPanel]::new()
-    $actPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    $actPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $actPanel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-    $btnOpen = [System.Windows.Controls.Button]::new()
-    if ($script:styleRowActionBtn) { $btnOpen.Style = $script:styleRowActionBtn }
-    $btnOpen.Content = if ($Entry.IsOrphanApprovedGhost) { "Registry" } else { "M$([char]0x1EDF) t$([char]0x1EC7)p" }
-    $btnOpen.FontSize = 10.5
-    $btnOpen.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $btnOpen.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
-    $btnOpen.Background = $script:brushStartPillBg
-    $btnOpen.Foreground = $script:brushNavActive
-    $btnOpen.BorderBrush = $script:brushStartPillBdr
-    $btnOpen.BorderThickness = $thicknessOne
-    [void]$actPanel.Children.Add($btnOpen)
-
-    $btnDel = $null
-    if ($Entry.CanDelete) {
-        $btnDel = [System.Windows.Controls.Button]::new()
-        if ($script:styleRowActionBtn) { $btnDel.Style = $script:styleRowActionBtn }
-        $btnDel.Content = "X$([char]0x00F3)a"
-        $btnDel.FontSize = 10.5
-        $btnDel.FontWeight = [System.Windows.FontWeights]::SemiBold
-        $btnDel.Padding = [System.Windows.Thickness]::new(8, 3, 8, 3)
-        $btnDel.Margin = [System.Windows.Thickness]::new(5, 0, 0, 0)
-        $btnDel.Background = $script:brushStartErrBg
-        $btnDel.Foreground = $script:brushOptRiskCautFg
-        $btnDel.BorderBrush = $script:brushStartErrBdr
-        $btnDel.BorderThickness = $thicknessOne
-        [void]$actPanel.Children.Add($btnDel)
-    }
-
-    [System.Windows.Controls.Grid]::SetColumn($actPanel, 4)
-    [void]$g.Children.Add($actPanel)
-
-    for ($divCol = 0; $divCol -lt 4; $divCol++) {
-        $colDiv = [System.Windows.Controls.Border]::new()
-        $colDiv.Width = 1
-        $colDiv.Background = $script:brushStartColDivider
-        $colDiv.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-        $colDiv.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
-        $colDiv.SnapsToDevicePixels = $true
-        $colDiv.IsHitTestVisible = $false
-        [System.Windows.Controls.Grid]::SetColumn($colDiv, $divCol)
-        [void]$g.Children.Add($colDiv)
-    }
-
-    $rowBorder.Child = $g
-
-    $rowObj = [PSCustomObject]@{
-        Entry      = $Entry
-        Row        = $rowBorder
-        Toggle     = $toggle
-        IconImage  = $iconImg
-        TitleText  = $titleTb
-        BadgePanel = $badgePanel
-        SubText    = $subTb
-        ImpactText = $impTb
-        SearchText = ""
-    }
-    $rowBorder.Tag = $rowObj
-    Update-StartupRowBadgesAndImpact -RowObj $rowObj
-
-    $ctx = [System.Windows.Controls.ContextMenu]::new()
-    if (-not $Entry.IsOrphanApprovedGhost) {
+$script:startSharedContextMenu = [System.Windows.Controls.ContextMenu]::new()
+$script:startSharedContextMenu.Add_Opened({
+    param($cm, $ev)
+    $cm.Items.Clear()
+    $targetBorder = $cm.PlacementTarget
+    $rObj = if ($targetBorder) { $targetBorder.Tag } else { $null }
+    if (-not $rObj -or -not $rObj.Entry) { return }
+    $ent = $rObj.Entry
+    if (-not $ent.IsOrphanApprovedGhost) {
         $miOpen = [System.Windows.Controls.MenuItem]::new()
         $miOpen.Header = "M$([char]0x1EDF) th$([char]0x01B0) m$([char]0x1EE5)c ch$([char]0x1EE9)a t$([char]0x1EC7)p"
-        $miOpen.Tag = $rowObj
-        $miOpen.Add_Click({ param($s,$ev) Open-StartupEntryLocation -Entry $s.Tag.Entry })
-        [void]$ctx.Items.Add($miOpen)
+        $miOpen.Tag = $rObj
+        $miOpen.Add_Click($script:startOpenBtnHandler)
+        [void]$cm.Items.Add($miOpen)
     }
-
-    if (-not [string]::IsNullOrWhiteSpace([string]$Entry.RegistryPath) -or $Entry.SourceKind -eq "Store" -or $Entry.SourceKind -eq "Service" -or $Entry.SourceKind -eq "OrphanApproved") {
+    if (-not [string]::IsNullOrWhiteSpace([string]$ent.RegistryPath) -or $ent.SourceKind -eq "Store" -or $ent.SourceKind -eq "Service" -or $ent.SourceKind -eq "OrphanApproved") {
         $miReg = [System.Windows.Controls.MenuItem]::new()
         $miReg.Header = "M$([char]0x1EDF) v$([char]0x1ECB) tr$([char]0x00ED) trong Registry"
-        $miReg.Tag = $rowObj
-        $miReg.Add_Click({ param($s,$ev) Open-StartupEntryRegistry -Entry $s.Tag.Entry })
-        [void]$ctx.Items.Add($miReg)
+        $miReg.Tag = $rObj
+        $miReg.Add_Click({ param($s,$e2) if ($s.Tag -and $s.Tag.Entry) { Open-StartupEntryRegistry -Entry $s.Tag.Entry } })
+        [void]$cm.Items.Add($miReg)
     }
-    if ($Entry.SourceKind -eq "Task") {
+    if ($ent.SourceKind -eq "Task") {
         $miTask = [System.Windows.Controls.MenuItem]::new()
         $miTask.Header = "M$([char]0x1EDF) Task Scheduler (taskschd.msc)"
         $miTask.Add_Click({ try { Start-Process "taskschd.msc" } catch {} })
-        [void]$ctx.Items.Add($miTask)
+        [void]$cm.Items.Add($miTask)
     }
-    if ($Entry.SourceKind -eq "Service") {
+    if ($ent.SourceKind -eq "Service") {
         $miSvc = [System.Windows.Controls.MenuItem]::new()
         $miSvc.Header = "M$([char]0x1EDF) Services (services.msc)"
         $miSvc.Add_Click({ try { Start-Process "services.msc" } catch {} })
-        [void]$ctx.Items.Add($miSvc)
+        [void]$cm.Items.Add($miSvc)
     }
-    if ($Entry.CanDelete) {
+    if ($ent.CanDelete) {
         $miDel = [System.Windows.Controls.MenuItem]::new()
         $miDel.Header = "X$([char]0x00F3)a kh$([char]0x1ECF)i Kh$([char]0x1EDF)i ch$([char]0x1EA1)y"
-        $miDel.Tag = $rowObj
-        $miDel.Add_Click({ param($s,$ev) Invoke-StartupDeleteSingleRow -RowObj $s.Tag })
-        [void]$ctx.Items.Add($miDel)
+        $miDel.Tag = $rObj
+        $miDel.Add_Click($script:startDelBtnHandler)
+        [void]$cm.Items.Add($miDel)
     }
-    $rowBorder.ContextMenu = $ctx
+})
 
-    $btnOpen.Tag = $rowObj
-    $btnOpen.Add_Click({ param($s,$ev) Open-StartupEntryLocation -Entry $s.Tag.Entry })
-    if ($btnDel) {
-        $btnDel.Tag = $rowObj
-        $btnDel.Add_Click({ param($s,$ev) Invoke-StartupDeleteSingleRow -RowObj $s.Tag })
+$script:startToggleChangedHandler = {
+    param($sender, $ev)
+    if ($script:startSyncingToggle -or $script:isWindowClosing) { return }
+    $rObj = $sender.Tag
+    if (-not $rObj -or -not $rObj.Entry) { return }
+    $ent = $rObj.Entry
+    $wantEnable = ($sender.IsChecked -eq $true)
+    if ($wantEnable -eq [bool]$ent.Enabled) { return }
+
+    $rollback = {
+        $prevS = $script:startSyncingToggle
+        $script:startSyncingToggle = $true
+        try { $sender.IsChecked = [bool]$ent.Enabled } finally { $script:startSyncingToggle = $prevS }
     }
 
-    $toggle.Tag = $rowObj
-    $onToggleChanged = {
-        param($sender, $ev)
-        if ($script:startSyncingToggle -or $script:isWindowClosing) { return }
-        $rObj = $sender.Tag
-        if (-not $rObj -or -not $rObj.Entry) { return }
-        $ent = $rObj.Entry
-        $wantEnable = ($sender.IsChecked -eq $true)
-        if ($wantEnable -eq [bool]$ent.Enabled) { return }
+    if ($ent.IsPolicyLocked -or -not $ent.CanToggle) {
+        & $rollback
+        return
+    }
 
-        $rollback = {
-            $prevS = $script:startSyncingToggle
-            $script:startSyncingToggle = $true
-            try { $sender.IsChecked = [bool]$ent.Enabled } finally { $script:startSyncingToggle = $prevS }
-        }
+    if ($ent.RequiresAdmin -and -not ([DuckUtil.StartupManagerEngine]::IsCurrentProcessAdmin())) {
+        & $rollback
+        [void](Show-OwnedMessageBox -Text "M$([char]0x1EE5)c '$($ent.DisplayName)' thu$([char]0x1ED9)c ph$([char]0x1EA1)m vi h$([char]0x1EC7) th$([char]0x1ED1)ng/All Users/Task Scheduler/D$([char]0x1ECB)ch v$([char]0x1EE5) n$([char]0x00EA)n c$([char]0x1EA7)n m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) b$([char]0x1EAD)t/t$([char]0x1EAF)t." -Caption "Y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
+        return
+    }
 
-        if ($ent.IsPolicyLocked -or -not $ent.CanToggle) {
+    if (-not $wantEnable -and ($ent.ProtectionKind -eq "System" -or $ent.ProtectionKind -eq "Oem")) {
+        $kindTxt = if ($ent.ProtectionKind -eq "System") { "H$([char]0x1EC7) th$([char]0x1ED1)ng / B$([char]0x1EA3)o m$([char]0x1EAD)t Windows" } else { "Ph$([char]0x1EA7)n m$([char]0x1EC1)m H$([char]0x00E3)ng / Driver ph$([char]0x1EA7)n c$([char]0x1EE9)ng ($([char]0x00C2)m thanh, $([char]0x0110)$([char]0x1ED3) h$([char]0x1ECD)a, Ph$([char]0x00ED)m n$([char]0x00F3)ng)" }
+        $svcHint = if ($ent.SourceKind -eq "Service") { "`n(D$([char]0x1ECB)ch v$([char]0x1EE5) s$([char]0x1EBD) chuy$([char]0x1EC3)n v$([char]0x1EC1) ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Th$([char]0x1EE7) c$([char]0x00F4)ng Manual $([char]0x0111)$([char]0x1EC3) kh$([char]0x00F4)ng t$([char]0x1EF1) ch$([char]0x1EA1)y khi kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng)." } else { "" }
+        $ans = Show-OwnedMessageBox `
+            -Text "'$($ent.DisplayName)' l$([char]0x00E0) th$([char]0x00E0)nh ph$([char]0x1EA7)n $kindTxt.`nT$([char]0x1EAF)t m$([char]0x1EE5)c n$([char]0x00E0)y c$([char]0x00F3) th$([char]0x1EC3) $([char]0x1EA3)nh h$([char]0x01B0)$([char]0x1EDF)ng $([char]0x0111)$([char]0x1EBF)n $([char]0x00E2)m thanh, $([char]0x0111)$([char]0x1ED3) h$([char]0x1ECD)a, b$([char]0x1EA3)o m$([char]0x1EAD)t ho$([char]0x1EB7)c ph$([char]0x00ED)m n$([char]0x00F3)ng tr$([char]0x00EA)n m$([char]0x00E1)y.$svcHint`n`nB$([char]0x1EA1)n v$([char]0x1EAB)n ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n t$([char]0x1EAF)t kh$([char]0x1EDF)i ch$([char]0x1EA1)y m$([char]0x1EE5)c n$([char]0x00E0)y?" `
+            -Caption "C$([char]0x1EA3)nh b$([char]0x00E1)o b$([char]0x1EA3)o v$([char]0x1EC7) H$([char]0x1EC7) th$([char]0x1ED1)ng & H$([char]0x00E3)ng" `
+            -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
+            -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
+        if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
             & $rollback
             return
         }
-
-        if ($ent.RequiresAdmin -and -not ([DuckUtil.StartupManagerEngine]::IsCurrentProcessAdmin())) {
-            & $rollback
-            [void](Show-OwnedMessageBox -Text "M$([char]0x1EE5)c '$($ent.DisplayName)' thu$([char]0x1ED9)c ph$([char]0x1EA1)m vi h$([char]0x1EC7) th$([char]0x1ED1)ng/All Users/Task Scheduler/D$([char]0x1ECB)ch v$([char]0x1EE5) n$([char]0x00EA)n c$([char]0x1EA7)n m$([char]0x1EDF) App-Driver b$([char]0x1EB1)ng quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) b$([char]0x1EAD)t/t$([char]0x1EAF)t." -Caption "Y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n Administrator" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning))
-            return
-        }
-
-        if (-not $wantEnable -and ($ent.ProtectionKind -eq "System" -or $ent.ProtectionKind -eq "Oem")) {
-            $kindTxt = if ($ent.ProtectionKind -eq "System") { "H$([char]0x1EC7) th$([char]0x1ED1)ng / B$([char]0x1EA3)o m$([char]0x1EAD)t Windows" } else { "Ph$([char]0x1EA7)n m$([char]0x1EC1)m H$([char]0x00E3)ng / Driver ph$([char]0x1EA7)n c$([char]0x1EE9)ng ($([char]0x00C2)m thanh, $([char]0x0110)$([char]0x1ED3) h$([char]0x1ECD)a, Ph$([char]0x00ED)m n$([char]0x00F3)ng)" }
-            $svcHint = if ($ent.SourceKind -eq "Service") { "`n(D$([char]0x1ECB)ch v$([char]0x1EE5) s$([char]0x1EBD) chuy$([char]0x1EC3)n v$([char]0x1EC1) ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) Th$([char]0x1EE7) c$([char]0x00F4)ng Manual $([char]0x0111)$([char]0x1EC3) kh$([char]0x00F4)ng t$([char]0x1EF1) ch$([char]0x1EA1)y khi kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng)." } else { "" }
-            $ans = Show-OwnedMessageBox `
-                -Text "'$($ent.DisplayName)' l$([char]0x00E0) th$([char]0x00E0)nh ph$([char]0x1EA7)n $kindTxt.`nT$([char]0x1EAF)t m$([char]0x1EE5)c n$([char]0x00E0)y c$([char]0x00F3) th$([char]0x1EC3) $([char]0x1EA3)nh h$([char]0x01B0)$([char]0x1EDF)ng $([char]0x0111)$([char]0x1EBF)n $([char]0x00E2)m thanh, $([char]0x0111)$([char]0x1ED3) h$([char]0x1ECD)a, b$([char]0x1EA3)o m$([char]0x1EAD)t ho$([char]0x1EB7)c ph$([char]0x00ED)m n$([char]0x00F3)ng tr$([char]0x00EA)n m$([char]0x00E1)y.$svcHint`n`nB$([char]0x1EA1)n v$([char]0x1EAB)n ch$([char]0x1EAF)c ch$([char]0x1EAF)n mu$([char]0x1ED1)n t$([char]0x1EAF)t kh$([char]0x1EDF)i ch$([char]0x1EA1)y m$([char]0x1EE5)c n$([char]0x00E0)y?" `
-                -Caption "C$([char]0x1EA3)nh b$([char]0x00E1)o b$([char]0x1EA3)o v$([char]0x1EC7) H$([char]0x1EC7) th$([char]0x1ED1)ng & H$([char]0x00E3)ng" `
-                -Buttons ([System.Windows.Forms.MessageBoxButtons]::YesNo) `
-                -Icon ([System.Windows.Forms.MessageBoxIcon]::Warning)
-            if ($ans -ne [System.Windows.Forms.DialogResult]::Yes -or $script:isWindowClosing) {
-                & $rollback
-                return
-            }
-        }
-
-        $op = [DuckUtil.StartupManagerEngine]::SetStartupEnabled($ent, $wantEnable)
-        if (-not $op.Success) {
-            & $rollback
-            $msg = if ($op.RequiresAdminError) { "C$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) thay $([char]0x0111)$([char]0x1ED5)i '$($ent.DisplayName)'." } else { "Kh$([char]0x00F4)ng th$([char]0x1EC3) c$([char]0x1EAD)p nh$([char]0x1EAD)t '$($ent.DisplayName)': $($op.Message)" }
-            Log-Text "[ERR] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $msg"
-            [void](Show-OwnedMessageBox -Text $msg -Caption "L$([char]0x1ED7)i c$([char]0x1EAD)p nh$([char]0x1EAD)t Kh$([char]0x1EDF)i ch$([char]0x1EA1)y" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
-            return
-        }
-
-        if ($ent.SourceKind -eq "Service") {
-            $actSvc = if ($wantEnable) { "$([char]0x0110)$([char]0x00E3) b$([char]0x1EAD)t t$([char]0x1EF1) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng (Auto) cho d$([char]0x1ECB)ch v$([char]0x1EE5)" } else { "$([char]0x0110)$([char]0x00E3) chuy$([char]0x1EC3)n d$([char]0x1ECB)ch v$([char]0x1EE5) sang Th$([char]0x1EE7) c$([char]0x00F4)ng (Manual)" }
-            Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $actSvc '$($ent.DisplayName)'."
-        } else {
-            $actTxt = if ($wantEnable) { "$([char]0x0110)$([char]0x00E3) b$([char]0x1EAD)t" } else { "$([char]0x0110)$([char]0x00E3) t$([char]0x1EAF)t" }
-            Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $actTxt '$($ent.DisplayName)'."
-        }
-        Update-StartupRowBadgesAndImpact -RowObj $rObj
-        Apply-StartupFilter
     }
-    $toggle.Add_Checked($onToggleChanged)
-    $toggle.Add_Unchecked($onToggleChanged)
 
-    return $rowObj
+    $op = [DuckUtil.StartupManagerEngine]::SetStartupEnabled($ent, $wantEnable)
+    if (-not $op.Success) {
+        & $rollback
+        $msg = if ($op.RequiresAdminError) { "C$([char]0x1EA7)n quy$([char]0x1EC1)n Administrator $([char]0x0111)$([char]0x1EC3) thay $([char]0x0111)$([char]0x1ED5)i '$($ent.DisplayName)'." } else { "Kh$([char]0x00F4)ng th$([char]0x1EC3) c$([char]0x1EAD)p nh$([char]0x1EAD)t '$($ent.DisplayName)': $($op.Message)" }
+        Log-Text "[ERR] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $msg"
+        [void](Show-OwnedMessageBox -Text $msg -Caption "L$([char]0x1ED7)i c$([char]0x1EAD)p nh$([char]0x1EAD)t Kh$([char]0x1EDF)i ch$([char]0x1EA1)y" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Error))
+        return
+    }
+
+    if ($ent.SourceKind -eq "Service") {
+        $actSvc = if ($wantEnable) { "$([char]0x0110)$([char]0x00E3) b$([char]0x1EAD)t t$([char]0x1EF1) kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng (Auto) cho d$([char]0x1ECB)ch v$([char]0x1EE5)" } else { "$([char]0x0110)$([char]0x00E3) chuy$([char]0x1EC3)n d$([char]0x1ECB)ch v$([char]0x1EE5) sang Th$([char]0x1EE7) c$([char]0x00F4)ng (Manual)" }
+        Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $actSvc '$($ent.DisplayName)'."
+    } else {
+        $actTxt = if ($wantEnable) { "$([char]0x0110)$([char]0x00E3) b$([char]0x1EAD)t" } else { "$([char]0x0110)$([char]0x00E3) t$([char]0x1EAF)t" }
+        Log-Text "[OK] Kh$([char]0x1EDF)i ch$([char]0x1EA1)y: $actTxt '$($ent.DisplayName)'."
+    }
+    Update-StartupRowBadgesAndImpact -RowObj $rObj
+    Apply-StartupFilter
+}
+
+function New-StartupRowElement {
+    param($Entry)
+    $vis = [DuckUtil.StartupManagerEngine]::CreateRowVisual($Entry, $script:styleStartRow, $script:styleOptToggleSwitch, $script:styleRowActionBtn)
+    $vis.Row.ContextMenu = $script:startSharedContextMenu
+    $vis.Row.Add_ToolTipOpening($script:startRowToolTipOpeningHandler)
+    $vis.OpenButton.Add_Click($script:startOpenBtnHandler)
+    if ($vis.DeleteButton) {
+        $vis.DeleteButton.Add_Click($script:startDelBtnHandler)
+    }
+    $vis.Toggle.Add_Checked($script:startToggleChangedHandler)
+    $vis.Toggle.Add_Unchecked($script:startToggleChangedHandler)
+    return $vis
 }
 
 function Apply-StartupHydratedPatches {
@@ -63775,7 +64416,7 @@ function Apply-StartupHydratedPatches {
         if ($p.IconBitmap -and $rObj.IconImage) {
             $rObj.IconImage.Source = $p.IconBitmap
         }
-        Update-StartupRowBadgesAndImpact -RowObj $rObj
+        [DuckUtil.StartupManagerEngine]::UpdateRowVisual($rObj)
     }
 }
 
@@ -63786,37 +64427,23 @@ function Start-StartupManagerRefresh {
     $script:startScanVersion++
     $ver = $script:startScanVersion
     $script:startPhase2Ver = $ver
+    Refresh-StartupBackupCountCache
 
-    $fastEntries = [DuckUtil.StartupManagerEngine]::ScanFastCore()
     $script:startRows.Clear()
     $script:startRowById.Clear()
     if ($script:startRowsHost) { $script:startRowsHost.Children.Clear() }
 
-    $prevSync = $script:startSyncingToggle
-    $script:startSyncingToggle = $true
-    try {
-        foreach ($ent in @($fastEntries)) {
-            if (-not $ent -or $script:startRowById.ContainsKey([string]$ent.Id)) { continue }
-            $rObj = New-StartupRowElement -Entry $ent
-            [void]$script:startRows.Add($rObj)
-            $script:startRowById[[string]$ent.Id] = $rObj
-            if ($script:startRowsHost) { [void]$script:startRowsHost.Children.Add($rObj.Row) }
-        }
-    } finally {
-        $script:startSyncingToggle = $prevSync
-    }
-    Sort-StartupRowsHost
-
-    $script:startPhase2ExtTask = [DuckUtil.StartupManagerEngine]::ScanExtendedAsync()
-    $script:startPhase2Hydrate1Task = [DuckUtil.StartupManagerEngine]::HydrateEntriesAndIconsAsync($fastEntries)
+    $script:startPhase1FastTask    = [DuckUtil.StartupManagerEngine]::ScanFastCoreAsync()
+    $script:startPhase2ExtTask     = [DuckUtil.StartupManagerEngine]::ScanExtendedAsync()
+    $script:startPhase2Hydrate1Task = $null
     $script:startPhase2Hydrate2Task = $null
-    $script:startPhase2OrphanTask = [DuckUtil.StartupManagerEngine]::ScanOrphanApprovedEntriesAsync()
+    $script:startPhase2OrphanTask  = [DuckUtil.StartupManagerEngine]::ScanOrphanApprovedEntriesAsync()
 
     Apply-StartupFilter
 
     if (-not $script:startPollTimer) {
         $script:startPollTimer = [System.Windows.Threading.DispatcherTimer]::new()
-        $script:startPollTimer.Interval = [TimeSpan]::FromMilliseconds(45)
+        $script:startPollTimer.Interval = [TimeSpan]::FromMilliseconds(30)
         $script:startPollTimer.Add_Tick({
             if ($script:isWindowClosing) {
                 $script:startPollTimer.Stop()
@@ -63828,6 +64455,34 @@ function Start-StartupManagerRefresh {
             }
 
             $changed = $false
+            if ($script:startPhase1FastTask -and $script:startPhase1FastTask.IsCompleted) {
+                $tFast = $script:startPhase1FastTask
+                $script:startPhase1FastTask = $null
+                if ($tFast.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tFast.Result) {
+                    $fastArr = @($tFast.Result)
+                    $addedFast = [System.Collections.Generic.List[DuckUtil.StartupEntry]]::new()
+                    $prevS1 = $script:startSyncingToggle
+                    $script:startSyncingToggle = $true
+                    try {
+                        foreach ($ent in $fastArr) {
+                            if (-not $ent -or $script:startRowById.ContainsKey([string]$ent.Id)) { continue }
+                            $rObj = New-StartupRowElement -Entry $ent
+                            [void]$script:startRows.Add($rObj)
+                            $script:startRowById[[string]$ent.Id] = $rObj
+                            if ($script:startRowsHost) { [void]$script:startRowsHost.Children.Add($rObj.Row) }
+                            [void]$addedFast.Add($ent)
+                        }
+                    } finally {
+                        $script:startSyncingToggle = $prevS1
+                    }
+                    if ($addedFast.Count -gt 0) {
+                        $script:startPhase2Hydrate1Task = [DuckUtil.StartupManagerEngine]::HydrateEntriesAndIconsAsync($addedFast.ToArray())
+                    }
+                    Sort-StartupRowsHost
+                    $changed = $true
+                }
+            }
+
             if ($script:startPhase2Hydrate1Task -and $script:startPhase2Hydrate1Task.IsCompleted) {
                 $t1 = $script:startPhase2Hydrate1Task
                 $script:startPhase2Hydrate1Task = $null
@@ -63894,7 +64549,7 @@ function Start-StartupManagerRefresh {
                 }
             }
 
-            $allDone = (-not $script:startPhase2ExtTask -and -not $script:startPhase2Hydrate1Task -and -not $script:startPhase2Hydrate2Task -and -not $script:startPhase2OrphanTask)
+            $allDone = (-not $script:startPhase1FastTask -and -not $script:startPhase2ExtTask -and -not $script:startPhase2Hydrate1Task -and -not $script:startPhase2Hydrate2Task -and -not $script:startPhase2OrphanTask)
             if ($allDone) {
                 Sort-StartupRowsHost
                 $script:startPollTimer.Stop()
@@ -63914,7 +64569,16 @@ function Initialize-StartupTabIfNeeded {
         try { [DuckUtil.SmoothScrollController]::Attach($script:startScrollViewer) } catch {}
     }
     Set-StartupFilterChipVisuals
-    Start-StartupManagerRefresh
+    if ($script:txtStartSummary) {
+        $script:txtStartSummary.Text = "$([char]0x0110)ang qu$([char]0x00E9)t danh s$([char]0x00E1)ch kh$([char]0x1EDF)i ch$([char]0x1EA1)y..."
+    }
+    if ($window -and $window.Dispatcher) {
+        [void]$window.Dispatcher.BeginInvoke([Action]{
+            if (-not $script:isWindowClosing) { Start-StartupManagerRefresh }
+        }, [System.Windows.Threading.DispatcherPriority]::Loaded)
+    } else {
+        Start-StartupManagerRefresh
+    }
 }
 
 if ($script:btnStartRefresh) {
