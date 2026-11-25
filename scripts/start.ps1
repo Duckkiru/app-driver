@@ -11,7 +11,14 @@ if (-not $isCompanion -or -not $isAdmin) {
     $psExe = if ($PSVersionTable.PSEdition -eq 'Core') {
         "pwsh.exe"
     } else {
-        "powershell.exe"
+        $pwshCmd = Get-Command -Name 'pwsh.exe' -CommandType Application -ErrorAction SilentlyContinue
+        if ($pwshCmd -and $pwshCmd.Source -and (Test-Path -LiteralPath $pwshCmd.Source)) {
+            $pwshCmd.Source
+        } elseif (Test-Path -LiteralPath (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe")) {
+            Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe"
+        } else {
+            "powershell.exe"
+        }
     }
 
     $isWebSource = [string]::IsNullOrWhiteSpace($PSCommandPath) -or -not (Test-Path -LiteralPath $PSCommandPath)

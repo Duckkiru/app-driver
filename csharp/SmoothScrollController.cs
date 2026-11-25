@@ -1866,6 +1866,92 @@ namespace DuckUtil {
             return cand;
         }
 
+        public static async Task<string> FetchHttpsTextAsync(string url, int timeoutMs, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            int limitMs = timeoutMs > 0 ? timeoutMs : 12000;
+            CancellationTokenSource linkedCts = null;
+            try {
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                linkedCts.CancelAfter(limitMs);
+                using (var req = new HttpRequestMessage(HttpMethod.Get, url.Trim())) {
+                    req.Headers.TryAddWithoutValidation("User-Agent", "DuckUtil");
+                    using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token).ConfigureAwait(false)) {
+                        if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                            return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                        }
+                        string body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        return "OK|" + (body ?? "");
+                    }
+                }
+            } catch (OperationCanceledException) {
+                return ct.IsCancellationRequested ? "ERR|canceled" : "ERR|timeout";
+            } catch (Exception ex) {
+                return "ERR|" + (ex.Message ?? "unknown");
+            } finally {
+                if (linkedCts != null) { try { linkedCts.Dispose(); } catch {} }
+            }
+        }
+
+        public static async Task<string> DownloadHttpsFileSimpleAsync(string url, string destFile, int timeoutMs, CancellationToken ct) {
+            if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                return "ERR|invalid-url";
+            }
+            if (string.IsNullOrWhiteSpace(destFile)) {
+                return "ERR|invalid-dest";
+            }
+            const long MaxInstallerBytes = 2147483648L;
+            int limitMs = timeoutMs > 0 ? timeoutMs : 120000;
+            CancellationTokenSource linkedCts = null;
+            try {
+                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                linkedCts.CancelAfter(limitMs);
+                string dir = Path.GetDirectoryName(destFile);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                long totalBytes = 0L;
+                using (var req = new HttpRequestMessage(HttpMethod.Get, url.Trim())) {
+                    req.Headers.TryAddWithoutValidation("User-Agent", "DuckUtil");
+                    using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token).ConfigureAwait(false)) {
+                        if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                            return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                        }
+                        if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                            !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                            return "ERR|insecure-redirect";
+                        }
+                        using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
+                            byte[] buf = new byte[81920];
+                            int r;
+                            while ((r = await src.ReadAsync(buf, 0, buf.Length, linkedCts.Token).ConfigureAwait(false)) > 0) {
+                                totalBytes += r;
+                                if (totalBytes > MaxInstallerBytes) {
+                                    try { dst.Close(); } catch {}
+                                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                                    return "ERR|file-too-large";
+                                }
+                                await dst.WriteAsync(buf, 0, r, linkedCts.Token).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                if (totalBytes <= 0L) {
+                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    return "ERR|empty-file";
+                }
+                return "OK|" + destFile;
+            } catch (OperationCanceledException) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return ct.IsCancellationRequested ? "ERR|canceled" : "ERR|timeout";
+            } catch (Exception ex) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|" + (ex.Message ?? "unknown");
+            } finally {
+                if (linkedCts != null) { try { linkedCts.Dispose(); } catch {} }
+            }
+        }
+
         public static async Task<string> DownloadFileWithSha256Async(string url, string destFile, string expectedSha256, CancellationToken ct) {
             if (string.IsNullOrWhiteSpace(url) || !url.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
                 return "ERR|invalid-url";

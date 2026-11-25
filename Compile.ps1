@@ -7,13 +7,35 @@ function ConvertTo-AsciiJson {
     param([string]$JsonText)
     if ([string]::IsNullOrEmpty($JsonText)) { return "" }
     $clean = $JsonText.Replace(([char]0xFEFF).ToString(), "")
-    $sb = [System.Text.StringBuilder]::new($clean.Length + 256)
+    $sb = [System.Text.StringBuilder]::new($clean.Length)
+    $inStr = $false
+    $esc = $false
     foreach ($ch in $clean.ToCharArray()) {
         $code = [int]$ch
-        if ($code -gt 127) {
-            [void]$sb.AppendFormat("\u{0:X4}", $code)
+        if ($inStr) {
+            if ($code -gt 127) {
+                [void]$sb.AppendFormat("\u{0:X4}", $code)
+            } else {
+                [void]$sb.Append($ch)
+            }
+            if ($esc) {
+                $esc = $false
+            } elseif ($ch -eq '\') {
+                $esc = $true
+            } elseif ($ch -eq '"') {
+                $inStr = $false
+            }
         } else {
-            [void]$sb.Append($ch)
+            if ($ch -eq '"') {
+                $inStr = $true
+                [void]$sb.Append($ch)
+            } elseif ($ch -eq ' ' -or $ch -eq "`t" -or $ch -eq "`r" -or $ch -eq "`n") {
+                continue
+            } elseif ($code -gt 127) {
+                [void]$sb.AppendFormat("\u{0:X4}", $code)
+            } else {
+                [void]$sb.Append($ch)
+            }
         }
     }
     return $sb.ToString()
@@ -23,8 +45,15 @@ function ConvertTo-AsciiXml {
     param([string]$XmlText)
     if ([string]::IsNullOrEmpty($XmlText)) { return "" }
     $clean = $XmlText.Replace(([char]0xFEFF).ToString(), "")
-    $sb = [System.Text.StringBuilder]::new($clean.Length + 512)
-    foreach ($ch in $clean.ToCharArray()) {
+    $clean = [regex]::Replace($clean, '<!--[\s\S]*?-->', '')
+    $trimmedLines = New-Object System.Collections.Generic.List[string]
+    foreach ($ln in ($clean -split "`r?`n")) {
+        $t = $ln.Trim()
+        if ($t.Length -gt 0) { $trimmedLines.Add($t) }
+    }
+    $compact = $trimmedLines -join "`n"
+    $sb = [System.Text.StringBuilder]::new($compact.Length + 256)
+    foreach ($ch in $compact.ToCharArray()) {
         $code = [int]$ch
         if ($code -gt 127) {
             [void]$sb.AppendFormat("&#x{0:X4};", $code)
@@ -123,12 +152,14 @@ function Split-CSharpHeaderAndBody {
     $bodyLines = [System.Collections.Generic.List[string]]::new()
     $inHdr = $true
     foreach ($ln in $lines) {
-        if ($inHdr -and $ln -match '^\s*using\s+[^;]+;\s*$') {
-            $hdrLines.Add($ln.Trim())
-        } elseif ($inHdr -and [string]::IsNullOrWhiteSpace($ln)) {
+        $t = $ln.Trim()
+        if ($inHdr -and $t -match '^using\s+[^;]+;\s*$') {
+            $hdrLines.Add($t)
+        } elseif ($inHdr -and $t.Length -eq 0) {
         } else {
             $inHdr = $false
-            $bodyLines.Add($ln)
+            if ($t.Length -eq 0 -or $t.StartsWith("//")) { continue }
+            $bodyLines.Add($t)
         }
     }
     return [PSCustomObject]@{

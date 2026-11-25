@@ -7,12 +7,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "Action",
     "Action": "RestorePoint",
     "NeedsExplorerRestart": false,
@@ -29,11 +23,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -66,12 +55,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -139,12 +122,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -186,11 +163,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -224,12 +196,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -287,12 +253,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -318,11 +278,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -356,11 +311,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -386,12 +336,6 @@
     "Risk": "Safe",
     "HardwareHint": "Win11Only",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -417,10 +361,6 @@
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Gaming"
-    ],
     "ProbeKind": "Hibernation",
     "Action": "Hibernation",
     "NeedsExplorerRestart": false,
@@ -437,7 +377,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "Action",
     "Action": "DisableBitLocker",
     "NeedsExplorerRestart": false,
@@ -454,7 +393,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -480,11 +418,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -526,10 +459,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -555,7 +484,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -581,9 +509,6 @@
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "UltimatePerf",
     "Action": "UltimatePerf",
     "NeedsExplorerRestart": false,
@@ -600,9 +525,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -636,11 +558,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -682,9 +599,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -710,7 +624,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -736,9 +649,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -780,9 +690,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -816,9 +723,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "NagleDisabled",
     "Action": "NagleDisable",
     "NeedsExplorerRestart": false,
@@ -835,9 +739,6 @@
     "Risk": "Moderate",
     "HardwareHint": "DesktopOnly",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -863,9 +764,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -891,9 +789,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -959,11 +854,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "SafeDisableBgApps",
     "NeedsExplorerRestart": false,
@@ -989,11 +879,6 @@
     "Risk": "Safe",
     "HardwareHint": "Win11Only",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1019,7 +904,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1053,12 +937,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1084,7 +962,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1110,11 +987,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1140,12 +1012,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming",
-      "Minimal"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1179,7 +1045,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1221,10 +1086,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -1266,7 +1127,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1292,7 +1152,6 @@
     "Risk": "Safe",
     "HardwareHint": "Win11Only",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1318,7 +1177,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1344,7 +1202,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1370,7 +1227,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1396,11 +1252,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1426,7 +1277,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1452,7 +1302,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1486,9 +1335,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1514,7 +1360,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1540,7 +1385,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1566,11 +1410,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1636,11 +1475,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1698,7 +1532,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1748,7 +1581,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1782,7 +1614,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1816,7 +1647,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Toggle",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1849,7 +1679,6 @@
       "Quad9 (9.9.9.9)",
       "Mặc định (DHCP)"
     ],
-    "Presets": [],
     "ProbeKind": "DnsCustom",
     "Action": "DnsApply",
     "NeedsExplorerRestart": false,
@@ -1866,10 +1695,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1927,11 +1752,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1957,11 +1777,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Desktop",
-      "Laptop",
-      "Gaming"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -1995,7 +1810,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "WuPaused",
     "Action": "PauseWindowsUpdate35d",
     "NeedsExplorerRestart": false,
@@ -2012,7 +1826,6 @@
     "Risk": "Caution",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "DisableWindowsUpdateAll",
     "NeedsExplorerRestart": false,
@@ -2054,7 +1867,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "Action",
     "Action": "ResetWindowsUpdateDefault",
     "NeedsExplorerRestart": false,
@@ -2071,7 +1883,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -2097,7 +1908,6 @@
     "Risk": "Caution",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": true,
@@ -2155,7 +1965,6 @@
     "Risk": "Caution",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "OneDriveRemoved",
     "Action": "RemoveOneDrive",
     "NeedsExplorerRestart": true,
@@ -2181,7 +1990,6 @@
     "Risk": "Caution",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "EdgeRemoved",
     "Action": "RemoveEdge",
     "NeedsExplorerRestart": false,
@@ -2198,7 +2006,6 @@
     "Risk": "Caution",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "ReservedStorageDisabled",
     "Action": "ReservedStorage",
     "NeedsExplorerRestart": false,
@@ -2215,7 +2022,6 @@
     "Risk": "Safe",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -2257,7 +2063,6 @@
     "Risk": "Caution",
     "HardwareHint": "HddOnly",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -2280,7 +2085,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -2314,7 +2118,6 @@
     "Risk": "Caution",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "AdobeBlocked",
     "Action": "AdobeBlock",
     "NeedsExplorerRestart": false,
@@ -2331,7 +2134,6 @@
     "Risk": "Moderate",
     "HardwareHint": "",
     "ControlType": "Checkbox",
-    "Presets": [],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,
@@ -2365,9 +2167,6 @@
     "Risk": "Moderate",
     "HardwareHint": "LaptopOnly",
     "ControlType": "Checkbox",
-    "Presets": [
-      "Laptop"
-    ],
     "ProbeKind": "",
     "Action": "",
     "NeedsExplorerRestart": false,

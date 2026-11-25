@@ -235,25 +235,6 @@ function Restore-LastStartupGuardBatch {
     }
 }
 
-function Get-StartupSourceLabel {
-    param([string]$SourceKind)
-    switch ($SourceKind) {
-        "RegUser"        { return "Registry" }
-        "RegUser32"      { return "Registry" }
-        "RegSystem"      { return "Registry" }
-        "RegWow32"       { return "Registry" }
-        "RegRunOnce"     { return "RunOnce" }
-        "RegPolicy"      { return "Policy" }
-        "FolderUser"     { return "Thư mục" }
-        "FolderAll"      { return "Thư mục" }
-        "Store"          { return "Store" }
-        "Task"           { return "Task" }
-        "Service"        { return "Dịch vụ" }
-        "OrphanApproved" { return "Rác Reg" }
-        default          { return "Khác" }
-    }
-}
-
 function Get-StartupSourceDetail {
     param([string]$SourceKind, [string]$TriggerInfo = "")
     if (-not [string]::IsNullOrWhiteSpace($TriggerInfo)) {
@@ -273,15 +254,6 @@ function Get-StartupSourceDetail {
         "Service"        { return "Dịch vụ Windows chạy nền (Auto-Start)" }
         "OrphanApproved" { return "Khóa rác StartupApproved" }
         default          { return "Khởi chạy Windows" }
-    }
-}
-
-function Get-StartupImpactLabel {
-    param([string]$ImpactLevel)
-    switch ($ImpactLevel) {
-        "High"   { return "Nặng" }
-        "Medium" { return "Trung bình" }
-        default  { return "Nhẹ" }
     }
 }
 

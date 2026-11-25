@@ -1,5 +1,4 @@
-﻿Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue
-if ('DuckUtil.ConsoleHelper' -as [type]) {
+﻿if ('DuckUtil.ConsoleHelper' -as [type]) {
     try { [DuckUtil.ConsoleHelper]::EnablePerMonitorDpi() } catch {}
     try { [DuckUtil.ConsoleHelper]::DisableQuickEdit() } catch {}
 }
@@ -606,8 +605,6 @@ if (-not (Get-Variable -Name isWindowClosing -Scope Script -ErrorAction Silently
 if (-not (Get-Variable -Name isScanningApps -Scope Script -ErrorAction SilentlyContinue)) {
     $script:isScanningApps = $false
 }
-
-Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
 
 function Get-WpfOwnerWin32Window {
     if (-not $window -or $script:isWindowClosing) { return $null }
@@ -5301,6 +5298,72 @@ function Test-CatalogAppInstalledNow {
     return $null
 }
 
+function Invoke-AsyncHttpText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [int]$TimeoutSeconds = 12
+    )
+    if ($script:cancelRequested -or $script:isWindowClosing) { return $null }
+    $pipeT = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($null -ne $pipeT -and $null -ne $pipeT.GetMethod("FetchHttpsTextAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+        $cts = [System.Threading.CancellationTokenSource]::new()
+        try {
+            $t = [DuckUtil.UiAssetPipeline]::FetchHttpsTextAsync($Url, ($TimeoutSeconds * 1000), $cts.Token)
+            [void](Wait-TaskNonBlocking -Task $t -TimeoutSeconds ($TimeoutSeconds + 3) -CancelCheck { [bool]$script:cancelRequested })
+            if ($script:cancelRequested -or $script:isWindowClosing -or $t.Status -ne [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                try { $cts.Cancel() } catch {}
+                return $null
+            }
+            $res = [string]$t.Result
+            if ($res.StartsWith("OK|")) { return $res.Substring(3) }
+            return $null
+        } finally {
+            try { $cts.Dispose() } catch {}
+        }
+    }
+    try {
+        return [string](Invoke-RestMethod -Uri $Url -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec $TimeoutSeconds)
+    } catch { return $null }
+}
+
+function Invoke-AsyncHttpJson {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [int]$TimeoutSeconds = 12
+    )
+    $txt = Invoke-AsyncHttpText -Url $Url -TimeoutSeconds $TimeoutSeconds
+    if ([string]::IsNullOrWhiteSpace($txt)) { return $null }
+    try { return ($txt | ConvertFrom-Json) } catch { return $null }
+}
+
+function Invoke-AsyncHttpDownload {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [Parameter(Mandatory = $true)][string]$OutFile,
+        [int]$TimeoutSeconds = 120
+    )
+    if ($script:cancelRequested -or $script:isWindowClosing) { return $false }
+    $pipeT = "DuckUtil.UiAssetPipeline" -as [type]
+    if ($null -ne $pipeT -and $null -ne $pipeT.GetMethod("DownloadHttpsFileSimpleAsync") -and (Get-Command "Wait-TaskNonBlocking" -ErrorAction SilentlyContinue)) {
+        $cts = [System.Threading.CancellationTokenSource]::new()
+        try {
+            $t = [DuckUtil.UiAssetPipeline]::DownloadHttpsFileSimpleAsync($Url, $OutFile, ($TimeoutSeconds * 1000), $cts.Token)
+            [void](Wait-TaskNonBlocking -Task $t -TimeoutSeconds ($TimeoutSeconds + 5) -CancelCheck { [bool]$script:cancelRequested })
+            if ($script:cancelRequested -or $script:isWindowClosing -or $t.Status -ne [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                try { $cts.Cancel() } catch {}
+                return $false
+            }
+            return ([string]$t.Result).StartsWith("OK|")
+        } finally {
+            try { $cts.Dispose() } catch {}
+        }
+    }
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec $TimeoutSeconds
+        return $true
+    } catch { return $false }
+}
+
 function Invoke-GitHubAssetInstall {
     param(
         $App,
@@ -5330,7 +5393,12 @@ function Invoke-GitHubAssetInstall {
                 return -1
             }
             Log-Text "   -> Đang tìm bản phát hành mới nhất từ GitHub ($($App.GitHubRepo))..."
-            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 15
+            $rel = Invoke-AsyncHttpJson -Url "https://api.github.com/repos/$($App.GitHubRepo)/releases/latest" -TimeoutSeconds 15
+            if (-not $rel) {
+                if ($script:cancelRequested) { return -2 }
+                Log-Text "   [!] Không lấy được thông tin phát hành từ GitHub."
+                return -1
+            }
             if ($RequireUpgrade -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and $rel -and -not [string]::IsNullOrWhiteSpace([string]$rel.tag_name)) {
                 $ghTagVer = ""
                 if ([string]$rel.tag_name -match '(\d+(?:\.\d+)+)') { $ghTagVer = $Matches[1] }
@@ -5355,7 +5423,12 @@ function Invoke-GitHubAssetInstall {
             [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
             $dlPath = Join-Path $tmpDir $safeName
             Log-Text "   -> Đang tải $safeName..."
-            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $dlPath -UseBasicParsing -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 120
+            $dlOkGh = Invoke-AsyncHttpDownload -Url ([string]$asset.browser_download_url) -OutFile $dlPath -TimeoutSeconds 120
+            if ($script:cancelRequested) { return -2 }
+            if (-not $dlOkGh) {
+                Log-Text "   [!] Tải tệp từ GitHub thất bại hoặc hết thời gian chờ."
+                return -1
+            }
         }
         if ($script:cancelRequested) { return -2 }
         if ($script:isWindowClosing) { return -1 }
@@ -6468,13 +6541,13 @@ function Resolve-VendorDirectInstallerInfo {
         }
         if ($jbMap.ContainsKey($id)) {
             $jbCode = $jbMap[$id]
-            $resp = Invoke-RestMethod -Uri "https://data.services.jetbrains.com/products/releases?code=$jbCode&latest=true&type=release" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
-            $rel = $resp.$jbCode | Select-Object -First 1
+            $resp = Invoke-AsyncHttpJson -Url "https://data.services.jetbrains.com/products/releases?code=$jbCode&latest=true&type=release" -TimeoutSeconds 12
+            $rel = if ($resp) { $resp.$jbCode | Select-Object -First 1 } else { $null }
             if ($rel -and $rel.downloads -and $rel.downloads.windows -and $rel.downloads.windows.link -and $rel.downloads.windows.checksumLink) {
                 $dlUrl = [string]$rel.downloads.windows.link
                 $shaUrl = [string]$rel.downloads.windows.checksumLink
                 if ($dlUrl -match '^https://' -and $shaUrl -match '^https://') {
-                    $shaRaw = [string](Invoke-RestMethod -Uri $shaUrl -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 10)
+                    $shaRaw = [string](Invoke-AsyncHttpText -Url $shaUrl -TimeoutSeconds 10)
                     if ($shaRaw -match '(?i)\b([0-9a-f]{64})\b') {
                         $shaHex = $Matches[1].ToLowerInvariant()
                         $leaf = [System.IO.Path]::GetFileName(($dlUrl -replace '\?.*$', ''))
@@ -6497,7 +6570,7 @@ function Resolve-VendorDirectInstallerInfo {
             $major = $Matches[1]
             $imgType = $Matches[2].ToLowerInvariant()
             $adUrl = "https://api.adoptium.net/v3/assets/latest/$major/hotspot?architecture=x64&os=windows&image_type=$imgType"
-            $assets = Invoke-RestMethod -Uri $adUrl -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            $assets = Invoke-AsyncHttpJson -Url $adUrl -TimeoutSeconds 12
             foreach ($a in @($assets)) {
                 if ($a -and $a.binary -and $a.binary.installer -and $a.binary.installer.link -and $a.binary.installer.checksum) {
                     $dlUrl = [string]$a.binary.installer.link
@@ -6533,7 +6606,7 @@ function Resolve-VendorDirectInstallerInfo {
         # 3. Microsoft Visual Studio Code official Update API
         if ($id -eq "Microsoft.VisualStudioCode") {
             $channel = if ($Scope -eq "machine") { "win32-x64" } else { "win32-x64-user" }
-            $vsc = Invoke-RestMethod -Uri "https://update.code.visualstudio.com/api/update/$channel/stable/latest" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            $vsc = Invoke-AsyncHttpJson -Url "https://update.code.visualstudio.com/api/update/$channel/stable/latest" -TimeoutSeconds 12
             if ($vsc -and $vsc.url -and $vsc.sha256hash) {
                 $dlUrl = [string]$vsc.url
                 $shaHex = ([string]$vsc.sha256hash).Trim().ToLowerInvariant()
@@ -6554,12 +6627,12 @@ function Resolve-VendorDirectInstallerInfo {
 
         # 4. Node.js official LTS JSON + SHASUMS256.txt
         if ($id -eq "OpenJS.NodeJS.LTS") {
-            $idxList = Invoke-RestMethod -Uri "https://nodejs.org/dist/index.json" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12
+            $idxList = Invoke-AsyncHttpJson -Url "https://nodejs.org/dist/index.json" -TimeoutSeconds 12
             $ltsItem = @($idxList) | Where-Object { $_.lts -and $_.lts -ne $false } | Select-Object -First 1
             if ($ltsItem -and $ltsItem.version) {
                 $verTag = [string]$ltsItem.version
                 $msiName = "node-$verTag-x64.msi"
-                $sumsTxt = [string](Invoke-RestMethod -Uri "https://nodejs.org/dist/$verTag/SHASUMS256.txt" -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 12)
+                $sumsTxt = [string](Invoke-AsyncHttpText -Url "https://nodejs.org/dist/$verTag/SHASUMS256.txt" -TimeoutSeconds 12)
                 if ($sumsTxt -match ("(?im)^([0-9a-f]{64})\s+" + [regex]::Escape($msiName) + "\s*$")) {
                     $shaHex = $Matches[1].ToLowerInvariant()
                     return [PSCustomObject]@{
@@ -6707,9 +6780,11 @@ function Resolve-ScoopBucketInstallerInfo {
             foreach ($bucket in @("Main", "Extras")) {
                 $manifestUrl = "https://raw.githubusercontent.com/ScoopInstaller/$bucket/master/bucket/$slug.json"
                 try {
-                    $jsonObj = Invoke-RestMethod -Uri $manifestUrl -Headers @{ "User-Agent" = "DuckUtil" } -TimeoutSec 8
-                    $cand = ConvertFrom-ScoopManifestToCandidate -Manifest $jsonObj -Bucket $bucket -Slug $slug
-                    if ($null -ne $cand) { return $cand }
+                    $jsonObj = Invoke-AsyncHttpJson -Url $manifestUrl -TimeoutSeconds 8
+                    if ($null -ne $jsonObj) {
+                        $cand = ConvertFrom-ScoopManifestToCandidate -Manifest $jsonObj -Bucket $bucket -Slug $slug
+                        if ($null -ne $cand) { return $cand }
+                    }
                 } catch {}
             }
         }
@@ -9531,23 +9606,6 @@ function Apply-StartupFilter {
         }
     }
     Update-StartupFooterSummary
-}
-
-function New-StartupBadgePill {
-    param([string]$Text, $BgBrush, $FgBrush)
-    $bd = [System.Windows.Controls.Border]::new()
-    $bd.Background = $BgBrush
-    $bd.CornerRadius = [System.Windows.CornerRadius]::new(3)
-    $bd.Padding = [System.Windows.Thickness]::new(5, 1, 5, 1)
-    $bd.Margin = [System.Windows.Thickness]::new(6, 0, 0, 0)
-    $bd.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $tb = [System.Windows.Controls.TextBlock]::new()
-    $tb.Text = $Text
-    $tb.FontSize = 9.5
-    $tb.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $tb.Foreground = $FgBrush
-    $bd.Child = $tb
-    return $bd
 }
 
 function Build-StartupEntryToolTip {
