@@ -216,6 +216,7 @@ $sb.AppendLine('            } catch {}') | Out-Null
 $sb.AppendLine('        }') | Out-Null
 $sb.AppendLine('        $resolvedRefs = $ReferencedAssemblies') | Out-Null
 $sb.AppendLine('        if ((-not $resolvedRefs -or $resolvedRefs.Count -eq 0) -and $RefsResolver) { $resolvedRefs = @(& $RefsResolver) }') | Out-Null
+$sb.AppendLine('        try { Write-Host "[*] Dang khoi tao loi tang toc lan dau ($Prefix)..." -ForegroundColor Cyan } catch {}') | Out-Null
 $sb.AppendLine('        $addParams = @{ TypeDefinition = $SourceCode; OutputAssembly = $dllPath; ErrorAction = "Stop" }') | Out-Null
 $sb.AppendLine('        if ($resolvedRefs -and $resolvedRefs.Count -gt 0) { $addParams["ReferencedAssemblies"] = $resolvedRefs }') | Out-Null
 $sb.AppendLine('        Add-Type @addParams | Out-Null') | Out-Null

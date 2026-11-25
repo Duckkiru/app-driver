@@ -3150,22 +3150,26 @@ function Start-UninstallQueueExecution {
 
             if ($script:isWindowClosing -or $script:cancelRequested) { break }
             $completedApps++
-            $removedAnyRow = $false
-            if ($script:uninstallerVirtualView) {
-                $removedAnyRow = [bool]$script:uninstallerVirtualView.MarkRemovedByKey($qItem.Key)
-            } else {
-                foreach ($entry in $script:uninstallerRowEntries) {
-                    if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
-                        $entry.IsRemoved = $true
-                        $entry.IsSelected = $false
-                        $entry.IsQueued = $false
-                        if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
-                        if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
-                        $removedAnyRow = $true
+            $appStillRegistered = ($qItem.App.RegistryPath -and (Test-Path -LiteralPath $qItem.App.RegistryPath))
+            $appStillHasDir = ($qItem.App.InstallLocation -and (Test-Path -LiteralPath $qItem.App.InstallLocation) -and $qItem.App.Id -like 'ORPHAN\*')
+            if (-not $appStillRegistered -and -not $appStillHasDir) {
+                $removedAnyRow = $false
+                if ($script:uninstallerVirtualView) {
+                    $removedAnyRow = [bool]$script:uninstallerVirtualView.MarkRemovedByKey($qItem.Key)
+                } else {
+                    foreach ($entry in $script:uninstallerRowEntries) {
+                        if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
+                            $entry.IsRemoved = $true
+                            $entry.IsSelected = $false
+                            $entry.IsQueued = $false
+                            if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                            if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
+                            $removedAnyRow = $true
+                        }
                     }
                 }
+                if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
             }
-            if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
         }
 
         if (-not $script:isWindowClosing -and -not $script:cancelRequested -and $collectedLeftovers.Count -gt 0) {
@@ -3183,7 +3187,11 @@ function Start-UninstallQueueExecution {
                 $res = Show-LeftoverReviewDialog -OwnerWindow $window -Items @($dedupLeftovers) -Title $dialogTitle -ForceStopByDefault:$true
                 if ($res.Confirmed) {
                     $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
-                    Log-Text "[OK] Đã dọn sạch $($res.RemovedCount) mục tồn dư (~$freedMb MB)."
+                    if ($res.WasCancelled) {
+                        Log-Text "[!] Đã dừng dọn rác sớm: đã dọn $($res.RemovedCount) mục (~$freedMb MB)."
+                    } else {
+                        Log-Text "[OK] Đã dọn sạch $($res.RemovedCount) mục tồn dư (~$freedMb MB)."
+                    }
                 }
             }
         }
@@ -5546,6 +5554,46 @@ function Invoke-WinGetWithMsiRetry {
     return $code
 }
 
+function Format-WinGetExitCodeReason {
+    param([int]$Code)
+    switch ($Code) {
+        -1978335190 { return "ứng dụng đang chạy, hãy đóng rồi thử lại" }
+        -1978335216 { return "không khớp gói cài đặt (scope/kiến trúc)" }
+        -1978335192 { return "lệch mã kiểm tra SHA-256 trên kho WinGet" }
+        -1978335217 { return "lỗi kết nối/mở nguồn WinGet" }
+        -1978335215 { return "dữ liệu nguồn WinGet bị thiếu hoặc hỏng" }
+        -1978335211 { return "chưa cấu hình nguồn WinGet" }
+        -1978335226 { return "chưa chấp nhận thỏa thuận nguồn WinGet" }
+        -1978335189 { return "không tìm thấy bản nâng cấp tương thích" }
+        -1978335188 { return "trình cài đặt không hỗ trợ nâng cấp trực tiếp" }
+        -1978334974 { return "Windows Installer đang bận" }
+        1618        { return "Windows Installer đang bận" }
+        1603        { return "bộ cài báo lỗi 1603 (ứng dụng đang chạy hoặc cần khởi động lại)" }
+        default     { return "Exit Code: $Code" }
+    }
+}
+
+function Repair-WinGetSourceOnce {
+    if ($script:wingetSourceHealedThisSession -or $script:isWindowClosing -or $script:cancelRequested) { return $false }
+    if (-not (Get-Command "winget" -CommandType Application -ErrorAction SilentlyContinue)) { return $false }
+    $script:wingetSourceHealedThisSession = $true
+    Log-Text "[*] Phát hiện nguồn WinGet bị cũ hoặc lỗi — đang tự động đồng bộ lại..."
+    $updCode = Run-CliStream "winget" "source update --disable-interactivity" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 45 -IdleTimeoutSeconds 30
+    if ($updCode -eq 0) {
+        Log-Text "[OK] Đã đồng bộ lại nguồn WinGet thành công."
+        return $true
+    }
+    if (-not $script:isWindowClosing -and -not $script:cancelRequested) {
+        Log-Text "[*] Đang đặt lại nguồn WinGet mặc định (source reset --force)..."
+        $rstCode = Run-CliStream "winget" "source reset --force --disable-interactivity" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 45 -IdleTimeoutSeconds 30
+        if ($rstCode -eq 0) {
+            Log-Text "[OK] Đã khôi phục nguồn WinGet thành công."
+            return $true
+        }
+    }
+    return $false
+}
+
 function Invoke-WinGetSourceAware {
     param(
         [Parameter(Mandatory = $true)][string]$BaseArguments,
@@ -5554,6 +5602,16 @@ function Invoke-WinGetSourceAware {
     )
     $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
     $code = Invoke-WinGetWithMsiRetry -Arguments ($BaseArguments + $srcArg)
+
+    $sourceErrCodes = @(-1978335217, -1978335215, -1978335218, -1978335211, -1978335226)
+    $lastTxt = if ($script:lastCliRun) { "$($script:lastCliRun.StdOut)`n$($script:lastCliRun.StdErr)" } else { "" }
+    $isSourceFailure = ($code -in $sourceErrCodes) -or ($code -ne 0 -and $lastTxt -match '(?i)Failed when searching source|Data required by the source is missing|source agreements|Error attempting to update source')
+    if ($isSourceFailure -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+        if (Repair-WinGetSourceOnce) {
+            $code = Invoke-WinGetWithMsiRetry -Arguments ($BaseArguments + $srcArg)
+        }
+    }
+
     if ($code -eq -1978335212 -and -not [string]::IsNullOrWhiteSpace($srcArg) -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
         $code = Invoke-WinGetWithMsiRetry -Arguments $BaseArguments
     }
@@ -6670,24 +6728,40 @@ function Test-PostUpgradeVerified {
         [int]$ExecCode = 0,
         [string]$SourceLabel = "WinGet"
     )
-    Wait-SquirrelUpdatersSettle
-    try {
-        $postState = Get-WinGetExactPackageState -Id $UpgradeId -App $App
-        if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
-            if ([string]::IsNullOrWhiteSpace($PreVersion) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $PreVersion) -le 0) {
-                Log-Text "   [WARN] $($App.Name): [$SourceLabel] thoát mã $ExecCode nhưng WinGet vẫn ghi nhận phiên bản '$($postState.BestVersion)' (còn bản mới $($postState.BestAvailable))."
-                return 4
+    Wait-SquirrelUpdatersSettle -MaxWaitMs 2500
+    if ($ExecCode -in @(3010, 1641)) {
+        return 0
+    }
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        $warnReason = ""
+        try {
+            $postState = Get-WinGetExactPackageState -Id $UpgradeId -App $App
+            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
+                if ([string]::IsNullOrWhiteSpace($PreVersion) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $PreVersion) -le 0) {
+                    $warnReason = "WinGet vẫn ghi nhận phiên bản '$($postState.BestVersion)' (còn bản mới $($postState.BestAvailable))"
+                }
             }
-        }
-        $postLocal = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $UpgradeId
-        if ($postLocal -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $PreVersion) -le 0) {
-            $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($TargetAvailable) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $TargetAvailable) -lt 0)
-            if ($stillBehindTarget) {
-                Log-Text "   [WARN] $($App.Name): [$SourceLabel] thoát mã $ExecCode nhưng phiên bản trên máy vẫn là '$($postLocal.Version)' (chưa đạt '$TargetAvailable')."
-                return 4
+            if ([string]::IsNullOrEmpty($warnReason)) {
+                $postLocal = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $UpgradeId
+                if ($postLocal -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $PreVersion) -le 0) {
+                    $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($TargetAvailable) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $TargetAvailable) -lt 0)
+                    if ($stillBehindTarget) {
+                        $warnReason = "phiên bản trên máy vẫn là '$($postLocal.Version)' (chưa đạt '$TargetAvailable')"
+                    }
+                }
             }
+        } catch {}
+
+        if ([string]::IsNullOrEmpty($warnReason)) {
+            return 0
         }
-    } catch {}
+        if ($attempt -eq 0 -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(2500)) -TimeoutSeconds 4 -CancelCheck { [bool]$script:cancelRequested })
+            continue
+        }
+        Log-Text "   [WARN] $($App.Name): [$SourceLabel] thoát mã $ExecCode nhưng $warnReason."
+        return 4
+    }
     return 0
 }
 
@@ -6979,8 +7053,17 @@ function Invoke-SmartAppUpgrade {
     if ($code -ne 0 -and $code -ne -3 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         $scopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $scope
         if (-not $scopeSupported) {
-            Log-Text "[!] $($app.Name): Bản đang cài thuộc scope '$scope', nhưng WinGet không có bộ cài cho scope '$scope' (từ chối cài chồng scope khác để tránh trùng 2 bản)."
-            $code = -1978335216
+            $otherScope = if ($scope -eq "machine") { "user" } else { "machine" }
+            $otherScopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $otherScope
+            if (-not $otherScopeSupported) {
+                Log-Text "[*] $($app.Name): Gói WinGet dùng phạm vi mặc định (không phân tách scope), đang thử nâng cấp không kèm --scope..."
+                $scope = ""
+                $scopeSupported = $true
+                $code = Invoke-WinGetSourceAware -BaseArguments $baseUpArgs -App $app -Id $upgradeId
+            } else {
+                Log-Text "[!] $($app.Name): Bản đang cài thuộc scope '$scope', nhưng WinGet không có bộ cài cho scope '$scope' (từ chối cài chồng scope khác để tránh trùng 2 bản)."
+                $code = -1978335216
+            }
         }
     }
 
@@ -7332,7 +7415,8 @@ Register-Click "btnInstall" {
                         Log-Text "   [WARN - HẾT THỜI GIAN CHỜ] $($app.Name) không phản hồi - đã bỏ qua để tiếp tục."
                         $failCount++
                     } else {
-                        Log-Text "   [ERR - CẬP NHẬT] $($app.Name) (Exit Code: $upCode)"
+                        $errHint = Format-WinGetExitCodeReason -Code $upCode
+                        Log-Text "   [ERR - CẬP NHẬT] $($app.Name) ($errHint)"
                         $failCount++
                     }
                     continue
@@ -7603,7 +7687,8 @@ Register-Click "btnUpgradeAll" {
                             Log-Text "   [WARN - HẾT THỜI GIAN CHỜ] $appLabel không phản hồi - đã bỏ qua để tiếp tục ứng dụng kế tiếp."
                             $bulkFail++
                         } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - NÂNG CẤP] $appLabel (Exit Code: $codeOut)"
+                            $errHintOut = Format-WinGetExitCodeReason -Code $codeOut
+                            Log-Text "   [ERR - NÂNG CẤP] $appLabel ($errHintOut)"
                             $bulkFail++
                         }
                     }
@@ -7663,7 +7748,8 @@ Register-Click "btnUpgradeAll" {
                                     Log-Text "   [WARN - HẾT THỜI GIAN CHỜ] $($et.Name) không phản hồi - bỏ qua để tiếp tục."
                                     $bulkFail++
                                 } elseif ($extCode -ne -2 -and -not $script:cancelRequested) {
-                                    Log-Text "   [ERR - NÂNG CẤP] $($et.Name) (Exit Code: $extCode)"
+                                    $errHintExt = Format-WinGetExitCodeReason -Code $extCode
+                                    Log-Text "   [ERR - NÂNG CẤP] $($et.Name) ($errHintExt)"
                                     $bulkFail++
                                 }
                             }
@@ -10090,13 +10176,16 @@ function Update-ResourcesSummary {
     $fmtSel = if ("DuckUtil.ResourceCleanerEngine" -as [type]) { [DuckUtil.ResourceCleanerEngine]::FormatBytes($selBytes) } else { "0 B" }
 
     if ($script:btnResClean) {
-        $script:btnResClean.IsEnabled = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $selCats -gt 0)
         if ($script:resIsCleaning) {
-            $script:btnResClean.Content = "Đang dọn..."
-        } elseif ($selCats -gt 0) {
-            $script:btnResClean.Content = "Dọn ($fmtSel)"
+            $script:btnResClean.IsEnabled = $true
+            $script:btnResClean.Content = "Dừng dọn"
         } else {
-            $script:btnResClean.Content = "Dọn mục đã chọn"
+            $script:btnResClean.IsEnabled = (-not $script:resIsScanning -and $selCats -gt 0)
+            if ($selCats -gt 0) {
+                $script:btnResClean.Content = "Dọn ($fmtSel)"
+            } else {
+                $script:btnResClean.Content = "Dọn mục đã chọn"
+            }
         }
     }
     if ($script:btnResScan) {
@@ -10302,22 +10391,17 @@ function Ensure-ResourcesPollTimer {
             $script:resIsCleaning = $false
             if ($tClean.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tClean.Result) {
                 $cr = $tClean.Result
-                if ($cr.NeedsDeliveryOptCmdlet) {
-                    try {
-                        if (Get-Command "Delete-DeliveryOptimizationCache" -ErrorAction SilentlyContinue) {
-                            Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue | Out-Null
-                        }
-                    } catch {}
-                }
                 foreach ($lg in @($cr.PerCategoryLogs)) { Log-Text "   $lg" }
                 $fmtFreed = [DuckUtil.ResourceCleanerEngine]::FormatBytes($cr.FreedBytes)
+                $cancelNote = if ($cr.WasCancelled) { "`n• Đã dừng dọn sớm theo yêu cầu." } else { "" }
                 $msg = "Đã giải phóng: $fmtFreed`n" +
                        "• Đã xử lý: $($cr.DeletedFiles) tệp, $($cr.DeletedFolders) thư mục (Thùng rác: $($cr.RecycledItems))`n" +
-                       "• Bỏ qua an toàn: $($cr.SkippedLockedCount) đang sử dụng, $($cr.SkippedCloudCount) tệp đồng bộ/liên kết"
+                       "• Bỏ qua an toàn: $($cr.SkippedLockedCount) đang sử dụng, $($cr.SkippedCloudCount) tệp đồng bộ/liên kết" + $cancelNote
                 if ($cr.SkippedRecycleUnsupportedCount -gt 0) {
                     $msg += ", $($cr.SkippedRecycleUnsupportedCount) mục không hỗ trợ Thùng rác"
                 }
-                Log-Text "[OK] Dọn Tài nguyên hoàn tất trong $($cr.ElapsedMs)ms: Giải phóng $fmtFreed."
+                $donePrefix = if ($cr.WasCancelled) { "[!] Dọn Tài nguyên đã dừng sớm" } else { "[OK] Dọn Tài nguyên hoàn tất" }
+                Log-Text "$donePrefix trong $($cr.ElapsedMs)ms: Giải phóng $fmtFreed."
                 Update-ResourcesDiskBar
                 [void](Show-OwnedMessageBox -Text $msg -Caption "Hoàn tất dọn dẹp" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
                 Start-ResourcesDeepScan
@@ -10388,7 +10472,13 @@ if ($script:btnResScan) {
 
 if ($script:btnResClean) {
     $script:btnResClean.Add_Click({
-        if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
+        if ($script:isWindowClosing -or $script:resIsScanning) { return }
+        if ($script:resIsCleaning) {
+            try { if ($script:resCleanCts) { $script:resCleanCts.Cancel() } } catch {}
+            if ($script:txtResSummary) { $script:txtResSummary.Text = "Đang dừng dọn dẹp..." }
+            if ($script:btnResClean) { $script:btnResClean.IsEnabled = $false }
+            return
+        }
         $selectedCats = @($script:resRows | Where-Object { $_.Category.Selected -and -not $_.Category.SkippedBecauseRebootPending -and ($_.Category.ItemCount -gt 0 -or $_.Category.FolderCount -gt 0 -or $_.Category.TotalBytes -gt 0) } | ForEach-Object { $_.Category })
         if ($selectedCats.Count -eq 0) { return }
 

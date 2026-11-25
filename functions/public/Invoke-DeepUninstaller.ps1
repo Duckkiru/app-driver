@@ -1981,14 +1981,25 @@ function Show-LeftoverReviewDialog {
     $btnCancel.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnCancel.Background = $pal.BtnBg
     $btnCancel.Foreground = $pal.BtnFg
-    $btnCancel.Add_Click({ $dialog.Close() })
+    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0; WasCancelled = $false }
+    $dialogBusyState = [PSCustomObject]@{ IsDeleting = $false; CancelRequested = $false }
+    $btnCancel.Add_Click({
+        if ($dialogBusyState.IsDeleting) {
+            $dialogBusyState.CancelRequested = $true
+            $btnCancel.IsEnabled = $false
+            if ($summaryText) {
+                $summaryText.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng d$([char]0x1ECD)n r$([char]0x00E1)c..."
+            }
+            return
+        }
+        $dialog.Close()
+    })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
-    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0 }
-    $dialogBusyState = [PSCustomObject]@{ IsDeleting = $false }
     $dialog.Add_Closing({
         param($s, $e)
         if ($dialogBusyState.IsDeleting -and -not $script:isWindowClosing) {
+            $dialogBusyState.CancelRequested = $true
             $e.Cancel = $true
         }
     })
@@ -2022,8 +2033,13 @@ function Show-LeftoverReviewDialog {
         $accessDeniedTotal = 0
 
         $dialogBusyState.IsDeleting = $true
+        $dialogBusyState.CancelRequested = $false
+        $dlgCancelCb = { [bool]$dialogBusyState.CancelRequested -or [bool]$script:isWindowClosing }
         $btnDelete.IsEnabled = $false
-        if ($btnCancel) { $btnCancel.IsEnabled = $false }
+        if ($btnCancel) {
+            $btnCancel.IsEnabled = $true
+            $btnCancel.Content = "D$([char]0x1EEB)ng d$([char]0x1ECD)n"
+        }
         if ($btnSelectAll) { $btnSelectAll.IsEnabled = $false }
         if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $false }
         try {
@@ -2032,7 +2048,7 @@ function Show-LeftoverReviewDialog {
             if ($deepType -and $canWaitAsync -and $null -ne $deepType.GetMethod("PrewarmElevationCacheAsync")) {
                 try {
                     $pwTaskDlg = $deepType::PrewarmElevationCacheAsync()
-                    [void](Wait-TaskNonBlocking -Task $pwTaskDlg -TimeoutSeconds 4)
+                    [void](Wait-TaskNonBlocking -Task $pwTaskDlg -TimeoutSeconds 4 -CancelCheck $dlgCancelCb)
                 } catch {}
             } elseif ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
                 try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
@@ -2046,7 +2062,7 @@ function Show-LeftoverReviewDialog {
 
             $batchExplorerLock = $false
             $usedBatchForceStop = $false
-            if ($useForceStop) {
+            if ($useForceStop -and -not $dialogBusyState.CancelRequested) {
                 $existingPaths = @($checkedItems | Where-Object { -not $_.IsRegistry -and (Test-Path -LiteralPath $_.Path) } | ForEach-Object { [string]$_.Path } | Select-Object -Unique)
                 if ($existingPaths.Count -gt 0 -and ($hasBatchStopAsync -or $hasBatchStopSync)) {
                     $usedBatchForceStop = $true
@@ -2056,7 +2072,7 @@ function Show-LeftoverReviewDialog {
                     $batchRpt = $null
                     if ($hasBatchStopAsync) {
                         $bTask = $deepType::ForceStopBatchDirectoriesAsync([string[]]$existingPaths, $true)
-                        [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 60)
+                        [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 25 -CancelCheck $dlgCancelCb)
                         if ($bTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $batchRpt = $bTask.Result }
                     } else {
                         $batchRpt = $deepType::ForceStopBatchDirectories([string[]]$existingPaths, $true)
@@ -2083,9 +2099,10 @@ function Show-LeftoverReviewDialog {
             }
 
             $explorerRestartDecision = $null
+            $recycleFailStreak = 0
             $stepIdx = 0
             foreach ($ci in $checkedItems) {
-                if ($script:isWindowClosing) { break }
+                if ($script:isWindowClosing -or $dialogBusyState.CancelRequested) { break }
                 $stepIdx++
                 if ($summaryText) {
                     $summaryText.Text = "$([char]0x0110)ang d$([char]0x1ECD)n $stepIdx / $($checkedItems.Count): $($ci.AppName)"
@@ -2103,7 +2120,7 @@ function Show-LeftoverReviewDialog {
                             $valArr = [string[]]@($ci.RegistryValueNames)
                             if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryValuesAsync")) {
                                 $rvTask = $deepType::ForceDeleteRegistryValuesAsync([string]$ci.Path, $valArr)
-                                [void](Wait-TaskNonBlocking -Task $rvTask -TimeoutSeconds 20)
+                                [void](Wait-TaskNonBlocking -Task $rvTask -TimeoutSeconds 15 -CancelCheck $dlgCancelCb)
                                 if ($rvTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                                     $delValCount = [int]$rvTask.Result
                                 }
@@ -2148,7 +2165,7 @@ function Show-LeftoverReviewDialog {
                                 $svcTargetName = $Matches[1]
                                 if ($hasNeutralizeAsync) {
                                     $nTask = $deepType::NeutralizeSingleServiceOrDriverAsync($svcTargetName)
-                                    [void](Wait-TaskNonBlocking -Task $nTask -TimeoutSeconds 25)
+                                    [void](Wait-TaskNonBlocking -Task $nTask -TimeoutSeconds 15 -CancelCheck $dlgCancelCb)
                                     if ($nTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                                         $neutralizedSvc = [bool]$nTask.Result
                                     }
@@ -2158,38 +2175,41 @@ function Show-LeftoverReviewDialog {
                             }
                             $usedElevatedRegDel = $false
                             if (Test-Path -LiteralPath $psRegPath) {
-                                if ($neutralizedSvc) {
-                                    Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction SilentlyContinue
-                                } else {
-                                    $regErr = $null
-                                    try {
-                                        Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction Stop
-                                    } catch {
-                                        $regErr = $_
+                                $regErr = $null
+                                try {
+                                    Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction Stop
+                                } catch {
+                                    $regErr = $_
+                                }
+                                if ((Test-Path -LiteralPath $psRegPath) -and -not $dialogBusyState.CancelRequested) {
+                                    $elevOk = $false
+                                    if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKeyAsync")) {
+                                        $regTask = $deepType::ForceDeleteRegistryKeyAsync([string]$ci.Path)
+                                        [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15 -CancelCheck $dlgCancelCb)
+                                        if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                            $elevOk = [bool]$regTask.Result
+                                        }
+                                    } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKey")) {
+                                        $elevOk = [bool]$deepType::ForceDeleteRegistryKey([string]$ci.Path)
                                     }
-                                    if ($null -ne $regErr -and (Test-Path -LiteralPath $psRegPath)) {
-                                        $elevOk = $false
-                                        if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKeyAsync")) {
-                                            $regTask = $deepType::ForceDeleteRegistryKeyAsync([string]$ci.Path)
-                                            [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15)
-                                            if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                                                $elevOk = [bool]$regTask.Result
-                                            }
-                                        } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKey")) {
-                                            $elevOk = [bool]$deepType::ForceDeleteRegistryKey([string]$ci.Path)
-                                        }
-                                        if ($elevOk -or -not (Test-Path -LiteralPath $psRegPath)) {
-                                            $usedElevatedRegDel = $true
-                                        } else {
-                                            throw $regErr
-                                        }
+                                    if ($elevOk -or -not (Test-Path -LiteralPath $psRegPath)) {
+                                        $usedElevatedRegDel = $true
+                                    } elseif (-not $neutralizedSvc -and $null -ne $regErr) {
+                                        throw $regErr
                                     }
                                 }
                             }
-                            $removed++
-                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                                $elevTag = if ($usedElevatedRegDel) { " (TrustedInstaller)" } else { "" }
-                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry${elevTag}: $($ci.Path)"
+                            if (-not (Test-Path -LiteralPath $psRegPath)) {
+                                $removed++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    $elevTag = if ($usedElevatedRegDel) { " (TrustedInstaller)" } else { "" }
+                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry${elevTag}: $($ci.Path)"
+                                }
+                            } else {
+                                $accessDeniedTotal++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x00F3)a kh$([char]0x00F3)a Registry (b$([char]0x1ECB) kh$([char]0x00F3)a quy$([char]0x1EC1)n): $($ci.Path)"
+                                }
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
@@ -2228,15 +2248,17 @@ function Show-LeftoverReviewDialog {
                         }
 
                         $deletedOk = $false
-                        if ($useRecycle) {
+                        if ($useRecycle -and $recycleFailStreak -lt 2 -and -not $dialogBusyState.CancelRequested) {
                             if ($hasSilentRecycleAsync) {
                                 $rTask = $deepType::MoveToRecycleBinSilentlyAsync($ci.Path)
-                                [void](Wait-TaskNonBlocking -Task $rTask -TimeoutSeconds 30)
+                                [void](Wait-TaskNonBlocking -Task $rTask -TimeoutSeconds 10 -CancelCheck $dlgCancelCb)
                                 if ($rTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                                     $deletedOk = [bool]$rTask.Result
                                 }
+                                if (-not $deletedOk) { $recycleFailStreak++ } else { $recycleFailStreak = 0 }
                             } elseif ($hasSilentRecycle) {
                                 $deletedOk = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
+                                if (-not $deletedOk) { $recycleFailStreak++ } else { $recycleFailStreak = 0 }
                             } elseif (-not $useForceStop) {
                                 try {
                                     $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
@@ -2246,8 +2268,10 @@ function Show-LeftoverReviewDialog {
                                         [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
                                     }
                                     $deletedOk = $true
+                                    $recycleFailStreak = 0
                                 } catch {
                                     $deletedOk = $false
+                                    $recycleFailStreak++
                                 }
                             }
                         }
@@ -2295,11 +2319,11 @@ function Show-LeftoverReviewDialog {
                             }
                         }
 
-                        if (-not $deletedOk) {
+                        if (-not $deletedOk -and -not $dialogBusyState.CancelRequested) {
                             $rbCount = 0
                             if ($hasForceDelAsync) {
                                 $dTask = $deepType::ForceDeleteDirectoryAsync($ci.Path, (-not $useForceStop))
-                                [void](Wait-TaskNonBlocking -Task $dTask -TimeoutSeconds 60)
+                                [void](Wait-TaskNonBlocking -Task $dTask -TimeoutSeconds 30 -CancelCheck $dlgCancelCb)
                                 if ($dTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $dTask.Result) {
                                     $deletedOk = [bool]$dTask.Result.Deleted
                                     $rbCount = [int]$dTask.Result.RebootScheduledCount
@@ -2315,11 +2339,21 @@ function Show-LeftoverReviewDialog {
                             $rebootTotal += $rbCount
                         }
 
-                        if ($deletedOk) {
+                        $stillPresent = Test-Path -LiteralPath $ci.Path
+                        if (-not $stillPresent) {
                             $removed++
                             $freed += $ci.SizeBytes
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                                 Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch: $($ci.Type) - $($ci.Path)"
+                            }
+                        } elseif ($deletedOk -and $rbCount -gt 0) {
+                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                Log-Text "[CH$([char]0x1EDC) KH$([char]0x1EDE)I $([char]0x0110)$([char]0x1ED8)NG L$([char]0x1EA0)I] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1ECB)ch x$([char]0x00F3)a: $($ci.Path)"
+                            }
+                        } elseif (-not $dialogBusyState.CancelRequested) {
+                            $accessDeniedTotal++
+                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x00F3)a (b$([char]0x1ECB) kh$([char]0x00F3)a ti$([char]0x1EBF)n tr$([char]0x00EC)nh/quy$([char]0x1EC1)n): $($ci.Path)"
                             }
                         }
                     }
@@ -2342,12 +2376,16 @@ function Show-LeftoverReviewDialog {
             $dialogResult.FreedBytes = $freed
             $dialogResult.RebootScheduled = $rebootTotal
             $dialogResult.AccessDeniedCount = $accessDeniedTotal
+            $dialogResult.WasCancelled = [bool]$dialogBusyState.CancelRequested
             $dialogBusyState.IsDeleting = $false
             $dialog.Close()
         } finally {
             $dialogBusyState.IsDeleting = $false
             $btnDelete.IsEnabled = $true
-            if ($btnCancel) { $btnCancel.IsEnabled = $true }
+            if ($btnCancel) {
+                $btnCancel.IsEnabled = $true
+                $btnCancel.Content = "H$([char]0x1EE7)y b$([char]0x1ECF)"
+            }
             if ($btnSelectAll) { $btnSelectAll.IsEnabled = $true }
             if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $true }
         }
@@ -2658,7 +2696,8 @@ function Invoke-DeepAppUninstall {
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if (-not $AppEntry.IsBrokenOrphan) {
-        if ($SkipVendorUninstaller) {
+        $isMsixApp = ($AppEntry.Id -and $AppEntry.Id -like 'MSIX\*')
+        if ($SkipVendorUninstaller -and -not $isMsixApp) {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                 Log-Text "[FORCE] B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) c$([char]0x1EE7)a h$([char]0x00E3)ng ($([char]0x0111)$([char]0x00E3) t$([char]0x1EAF)t service/ti$([char]0x1EBF)n tr$([char]0x00EC)nh) -> qu$([char]0x00E9)t x$([char]0x00F3)a s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
             }

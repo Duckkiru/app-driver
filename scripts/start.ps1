@@ -1,4 +1,5 @@
-﻿$isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion') -or ([Environment]::CommandLine -match '(^|\s)--companion(\s|$)')
+﻿$ProgressPreference = 'SilentlyContinue'
+$isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion') -or ([Environment]::CommandLine -match '(^|\s)--companion(\s|$)')
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
 )
@@ -53,8 +54,10 @@ if (-not $isCompanion -or -not $isAdmin) {
 
         if ([string]::IsNullOrWhiteSpace($sbStr) -or $sbStr.Length -lt 1000) {
             try {
+                Write-Host "[*] Dang tai ban moi nhat cua App-Driver..." -ForegroundColor Cyan
+                $ProgressPreference = 'SilentlyContinue'
                 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-                $sbStr = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -ErrorAction Stop
+                $sbStr = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
             } catch {}
         }
 
@@ -122,7 +125,7 @@ if (-not $isCompanion -or -not $isAdmin) {
             }
         }
     } else {
-        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$env:APP_DRIVER_COMPANION='1'; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
+        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$ProgressPreference='SilentlyContinue'; `$env:APP_DRIVER_COMPANION='1'; [Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -TimeoutSec 30 | Invoke-Expression`""
     }
 
     function Get-WindowsTerminalPath {

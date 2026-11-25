@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 $script:pass = 0
 $script:fail = 0
 
@@ -267,6 +267,20 @@ try {
     $skCloud = $false
     $delLongOk = [DuckUtil.ResourceCleanerEngine]::DeleteFileWin32($longFile, [ref]$skCloud)
     Assert-Check "ResourceWin32LongPathDelete" ($delLongOk -and -not $skCloud -and $longFile.Length -gt 260) "PathLen=$($longFile.Length) Deleted=$delLongOk"
+
+    # ReadOnly + Hidden + System file deletion test + Recycle cancellation guard
+    $rhsFile = Join-Path $resRoot "locked_rhs_test.tmp"
+    [System.IO.File]::WriteAllText($rhsFile, "rhs")
+    [System.IO.File]::SetAttributes($rhsFile, [System.IO.FileAttributes]::ReadOnly -bor [System.IO.FileAttributes]::Hidden -bor [System.IO.FileAttributes]::System)
+    $skCloudRhs = $false
+    $delRhsOk = [DuckUtil.ResourceCleanerEngine]::DeleteFileWin32($rhsFile, [ref]$skCloudRhs)
+    $ctsCanc = [System.Threading.CancellationTokenSource]::new()
+    $ctsCanc.Cancel()
+    $failCanc = ""
+    $cancBlocked = (-not [DuckUtil.ResourceCleanerEngine]::TryRecycleItemStrict($resRoot, $ctsCanc.Token, 5000, [ref]$failCanc)) -and ($failCanc -eq "Cancelled")
+    $ctsCanc.Dispose()
+    $reasonOk = ((Format-WinGetExitCodeReason -Code -1978335190) -match 'đang chạy') -and ((Format-WinGetExitCodeReason -Code -1978335217) -match 'WinGet')
+    Assert-Check "ResourceAttrAndCancelAndWingetReason" ($delRhsOk -and -not $skCloudRhs -and $cancBlocked -and $reasonOk) "RhsDel=$delRhsOk CancBlocked=$cancBlocked ReasonOk=$reasonOk"
 } finally {
     try {
         # Clean up long paths and hidden attributes cleanly via cmd /c rd /s /q on extended path

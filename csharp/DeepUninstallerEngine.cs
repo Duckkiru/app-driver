@@ -3428,9 +3428,18 @@ namespace DuckUtil
         public static bool TryTakeOwnershipAndGrantAdminAccess(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
-            string norm = path.Trim().TrimEnd('\\');
-            bool isDir = Directory.Exists(norm);
-            bool isFile = !isDir && File.Exists(norm);
+            string norm = path.Trim();
+            if (norm.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+            {
+                norm = @"\\" + norm.Substring(8);
+            }
+            else if (norm.StartsWith(@"\\?\", StringComparison.Ordinal))
+            {
+                norm = norm.Substring(4);
+            }
+            norm = norm.TrimEnd('\\');
+            bool isDir = DirectoryExistsLong(norm);
+            bool isFile = !isDir && FileExistsLong(norm);
             if (!isDir && !isFile) return false;
             if (IsReparsePoint(norm)) return false;
 
@@ -5783,6 +5792,16 @@ namespace DuckUtil
 
             try
             {
+                Directory.GetFileSystemEntries(norm);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TryTakeOwnershipAndGrantAdminAccess(norm);
+            }
+            catch {}
+
+            try
+            {
                 foreach (string file in EnumerateFilesSafe(norm, "*", 16))
                 {
                     if (TryDeleteSingleFileAggressively(file, true)) continue;
@@ -5855,12 +5874,31 @@ namespace DuckUtil
                         {
                             try
                             {
-                                foreach (string innerFile in EnumerateFilesSafe(sd, "*", 0))
+                                List<string> innerDirs = EnumerateDirectoriesSafe(sd, 12);
+                                innerDirs.Sort(delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                                foreach (string nestedDir in innerDirs)
+                                {
+                                    if (!IsReparsePoint(nestedDir)) TryTakeOwnershipAndGrantAdminAccess(nestedDir);
+                                }
+                                foreach (string innerFile in EnumerateFilesSafe(sd, "*", 12))
                                 {
                                     if (!TryDeleteSingleFileAggressively(innerFile, false))
                                     {
                                         TryEvacuateLockedFileToGraveyard(innerFile, existingPending, ref rebootScheduledCount);
                                     }
+                                }
+                                foreach (string nestedDir in innerDirs)
+                                {
+                                    try
+                                    {
+                                        string longNd = ToLongPath(nestedDir);
+                                        if (!IsReparsePoint(nestedDir)) SetFileAttributesW(longNd, W32_FILE_ATTRIBUTE_NORMAL);
+                                        if (!RemoveDirectoryW(longNd) && DirectoryExistsLong(nestedDir))
+                                        {
+                                            Directory.Delete(nestedDir, false);
+                                        }
+                                    }
+                                    catch {}
                                 }
                             }
                             catch {}

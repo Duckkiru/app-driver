@@ -1,3 +1,4 @@
+$ProgressPreference = 'SilentlyContinue'
 $isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion') -or ([Environment]::CommandLine -match '(^|\s)--companion(\s|$)')
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -53,8 +54,10 @@ if (-not $isCompanion -or -not $isAdmin) {
 
         if ([string]::IsNullOrWhiteSpace($sbStr) -or $sbStr.Length -lt 1000) {
             try {
+                Write-Host "[*] Dang tai ban moi nhat cua App-Driver..." -ForegroundColor Cyan
+                $ProgressPreference = 'SilentlyContinue'
                 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-                $sbStr = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -ErrorAction Stop
+                $sbStr = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
             } catch {}
         }
 
@@ -122,7 +125,7 @@ if (-not $isCompanion -or -not $isAdmin) {
             }
         }
     } else {
-        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$env:APP_DRIVER_COMPANION='1'; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' | Invoke-Expression`""
+        $psArgs = "-NoProfile -Sta -ExecutionPolicy Bypass -Command `"`$ProgressPreference='SilentlyContinue'; `$env:APP_DRIVER_COMPANION='1'; [Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Duckkiru/app-driver/main/App-Driver.ps1' -UseBasicParsing -TimeoutSec 30 | Invoke-Expression`""
     }
 
     function Get-WindowsTerminalPath {
@@ -8624,6 +8627,7 @@ function Import-CachedCSharpType {
         }
         $resolvedRefs = $ReferencedAssemblies
         if ((-not $resolvedRefs -or $resolvedRefs.Count -eq 0) -and $RefsResolver) { $resolvedRefs = @(& $RefsResolver) }
+        try { Write-Host "[*] Dang khoi tao loi tang toc lan dau ($Prefix)..." -ForegroundColor Cyan } catch {}
         $addParams = @{ TypeDefinition = $SourceCode; OutputAssembly = $dllPath; ErrorAction = "Stop" }
         if ($resolvedRefs -and $resolvedRefs.Count -gt 0) { $addParams["ReferencedAssemblies"] = $resolvedRefs }
         Add-Type @addParams | Out-Null
@@ -18349,9 +18353,18 @@ namespace DuckUtil
         public static bool TryTakeOwnershipAndGrantAdminAccess(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
-            string norm = path.Trim().TrimEnd('\\');
-            bool isDir = Directory.Exists(norm);
-            bool isFile = !isDir && File.Exists(norm);
+            string norm = path.Trim();
+            if (norm.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+            {
+                norm = @"\\" + norm.Substring(8);
+            }
+            else if (norm.StartsWith(@"\\?\", StringComparison.Ordinal))
+            {
+                norm = norm.Substring(4);
+            }
+            norm = norm.TrimEnd('\\');
+            bool isDir = DirectoryExistsLong(norm);
+            bool isFile = !isDir && FileExistsLong(norm);
             if (!isDir && !isFile) return false;
             if (IsReparsePoint(norm)) return false;
 
@@ -20704,6 +20717,16 @@ namespace DuckUtil
 
             try
             {
+                Directory.GetFileSystemEntries(norm);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TryTakeOwnershipAndGrantAdminAccess(norm);
+            }
+            catch {}
+
+            try
+            {
                 foreach (string file in EnumerateFilesSafe(norm, "*", 16))
                 {
                     if (TryDeleteSingleFileAggressively(file, true)) continue;
@@ -20776,12 +20799,31 @@ namespace DuckUtil
                         {
                             try
                             {
-                                foreach (string innerFile in EnumerateFilesSafe(sd, "*", 0))
+                                List<string> innerDirs = EnumerateDirectoriesSafe(sd, 12);
+                                innerDirs.Sort(delegate(string a, string b) { return b.Length.CompareTo(a.Length); });
+                                foreach (string nestedDir in innerDirs)
+                                {
+                                    if (!IsReparsePoint(nestedDir)) TryTakeOwnershipAndGrantAdminAccess(nestedDir);
+                                }
+                                foreach (string innerFile in EnumerateFilesSafe(sd, "*", 12))
                                 {
                                     if (!TryDeleteSingleFileAggressively(innerFile, false))
                                     {
                                         TryEvacuateLockedFileToGraveyard(innerFile, existingPending, ref rebootScheduledCount);
                                     }
+                                }
+                                foreach (string nestedDir in innerDirs)
+                                {
+                                    try
+                                    {
+                                        string longNd = ToLongPath(nestedDir);
+                                        if (!IsReparsePoint(nestedDir)) SetFileAttributesW(longNd, W32_FILE_ATTRIBUTE_NORMAL);
+                                        if (!RemoveDirectoryW(longNd) && DirectoryExistsLong(nestedDir))
+                                        {
+                                            Directory.Delete(nestedDir, false);
+                                        }
+                                    }
+                                    catch {}
                                 }
                             }
                             catch {}
@@ -29683,35 +29725,128 @@ namespace DuckUtil {
             });
         }
 
+        private const uint ERROR_ACCESS_DENIED = 5u;
+
+        private static int _deepUnlockLookupDone = 0;
+        private static System.Reflection.MethodInfo _deepUnlockMethod = null;
+
+        private static bool TryUnlockAclForCleaner(string cleanPath, bool isDir) {
+            if (string.IsNullOrWhiteSpace(cleanPath)) return false;
+            try {
+                if (Interlocked.CompareExchange(ref _deepUnlockLookupDone, 1, 0) == 0) {
+                    Type dt = Type.GetType("DuckUtil.DeepUninstallerEngine");
+                    if (dt == null) {
+                        var asms = AppDomain.CurrentDomain.GetAssemblies();
+                        for (int i = 0; i < asms.Length; i++) {
+                            try {
+                                dt = asms[i].GetType("DuckUtil.DeepUninstallerEngine", false);
+                                if (dt != null) break;
+                            } catch {}
+                        }
+                    }
+                    if (dt != null) {
+                        _deepUnlockMethod = dt.GetMethod("TryTakeOwnershipAndGrantAdminAccess", new Type[] { typeof(string) });
+                    }
+                }
+                if (_deepUnlockMethod != null) {
+                    object res = _deepUnlockMethod.Invoke(null, new object[] { cleanPath });
+                    if (res is bool && (bool)res) return true;
+                }
+            } catch {}
+
+            try {
+                var adminSid = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+                if (isDir) {
+                    var di = new DirectoryInfo(cleanPath);
+                    DirectorySecurity ds = di.GetAccessControl();
+                    ds.AddAccessRule(new FileSystemAccessRule(adminSid, FileSystemRights.FullControl,
+                        InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                        PropagationFlags.None, AccessControlType.Allow));
+                    di.SetAccessControl(ds);
+                    return true;
+                } else {
+                    var fi = new FileInfo(cleanPath);
+                    FileSecurity fs = fi.GetAccessControl();
+                    fs.AddAccessRule(new FileSystemAccessRule(adminSid, FileSystemRights.FullControl, AccessControlType.Allow));
+                    fi.SetAccessControl(fs);
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static void RunDeliveryOptimizationCleanupBounded(CancellationToken ct) {
+            Process p = null;
+            try {
+                var psi = new ProcessStartInfo("powershell.exe", "-NoProfile -NonInteractive -WindowStyle Hidden -Command \"if (Get-Command Delete-DeliveryOptimizationCache -ErrorAction SilentlyContinue) { Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue | Out-Null }\"");
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                p = Process.Start(psi);
+                if (p == null) return;
+                int waited = 0;
+                while (waited < 10000) {
+                    if (p.WaitForExit(200)) return;
+                    waited += 200;
+                    if (ct.IsCancellationRequested) break;
+                }
+                if (!p.HasExited) {
+                    try { p.Kill(); } catch {}
+                }
+            } catch {} finally {
+                if (p != null) { try { p.Dispose(); } catch {} }
+            }
+        }
+
         // Win32 long-path safe delete (works on .NET 4.8 / PS 5.1 for > 260 char paths)
         public static bool DeleteFileWin32(string path, out bool skippedCloud) {
             skippedCloud = false;
-            string ext = ToExtendedPath(path);
+            string clean = StripExtendedPath(path);
+            string ext = ToExtendedPath(clean);
             uint attr = GetFileAttributesW(ext);
             if (attr == INVALID_FILE_ATTRIBUTES) return false;
             if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
                 skippedCloud = true;
                 return false;
             }
-            if ((attr & FILE_ATTRIBUTE_READONLY) != 0) {
+            if ((attr & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) != 0) {
                 SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
             }
-            return DeleteFileW(ext);
+            if (DeleteFileW(ext)) return true;
+
+            int err = Marshal.GetLastWin32Error();
+            if (err == (int)ERROR_ACCESS_DENIED) {
+                if (TryUnlockAclForCleaner(clean, false)) {
+                    SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
+                    if (DeleteFileW(ext)) return true;
+                }
+            }
+            return GetFileAttributesW(ext) == INVALID_FILE_ATTRIBUTES;
         }
 
         public static bool RemoveDirectoryWin32(string path, out bool skippedCloud) {
             skippedCloud = false;
-            string ext = ToExtendedPath(path);
+            string clean = StripExtendedPath(path);
+            string ext = ToExtendedPath(clean);
             uint attr = GetFileAttributesW(ext);
             if (attr == INVALID_FILE_ATTRIBUTES) return false;
             if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
                 skippedCloud = true;
                 return false;
             }
-            if ((attr & FILE_ATTRIBUTE_READONLY) != 0) {
-                SetFileAttributesW(ext, attr & ~FILE_ATTRIBUTE_READONLY);
+            if ((attr & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) != 0) {
+                SetFileAttributesW(ext, attr & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM));
             }
-            return RemoveDirectoryW(ext);
+            if (RemoveDirectoryW(ext)) return true;
+
+            int err = Marshal.GetLastWin32Error();
+            if (err == (int)ERROR_ACCESS_DENIED) {
+                if (TryUnlockAclForCleaner(clean, true)) {
+                    SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
+                    if (RemoveDirectoryW(ext)) return true;
+                }
+            }
+            return GetFileAttributesW(ext) == INVALID_FILE_ATTRIBUTES;
         }
 
         private static void DeleteDirectoryContentsWin32(string rootDir, string[] patterns, bool topLevelOnly, bool deleteSelf, CancellationToken ct, ref long freedBytes, ref int delFiles, ref int delFolders, ref int skippedLocked, ref int skippedCloud, int depth) {
@@ -29727,8 +29862,14 @@ namespace DuckUtil {
             WIN32_FIND_DATAW fd;
             IntPtr h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
             if (h == IntPtr.Zero || h == new IntPtr(-1)) {
-                skippedLocked++;
-                return;
+                int findErr = Marshal.GetLastWin32Error();
+                if (findErr == (int)ERROR_ACCESS_DENIED && depth > 0 && TryUnlockAclForCleaner(norm, true)) {
+                    h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+                }
+                if (h == IntPtr.Zero || h == new IntPtr(-1)) {
+                    skippedLocked++;
+                    return;
+                }
             }
             var subDirs = new List<string>();
             var fileEntries = new List<KeyValuePair<string, long>>();
@@ -29785,7 +29926,15 @@ namespace DuckUtil {
 
         // Strict Recycle Bin via COM IFileOperation + FOFX_RECYCLEONDELETE (never silently permanently deletes!)
         public static bool TryRecycleItemStrict(string rawPath, out string failureReason) {
+            return TryRecycleItemStrict(rawPath, CancellationToken.None, 12000, out failureReason);
+        }
+
+        public static bool TryRecycleItemStrict(string rawPath, CancellationToken ct, int timeoutMs, out string failureReason) {
             failureReason = "";
+            if (ct.IsCancellationRequested) {
+                failureReason = "Cancelled";
+                return false;
+            }
             if (string.IsNullOrWhiteSpace(rawPath)) {
                 failureReason = "EmptyPath";
                 return false;
@@ -29854,7 +30003,18 @@ namespace DuckUtil {
                 sta.IsBackground = true;
                 sta.SetApartmentState(ApartmentState.STA);
                 sta.Start();
-                sta.Join();
+                int limit = timeoutMs > 0 ? timeoutMs : 12000;
+                int elapsed = 0;
+                bool finished = false;
+                while (elapsed < limit) {
+                    if (sta.Join(150)) { finished = true; break; }
+                    elapsed += 150;
+                    if (ct.IsCancellationRequested) break;
+                }
+                if (!finished) {
+                    failureReason = ct.IsCancellationRequested ? "Cancelled" : "RecycleTimeout";
+                    return false;
+                }
             }
 
             if (threadEx != null) {
@@ -29960,7 +30120,9 @@ namespace DuckUtil {
                     logs.Add(string.Format("[OK] {0}: gi\u1EA3i ph\u00F3ng {1}", cat.Title, FormatBytes(cf)));
                 } else if (cat.CleanMode == "ContentsOnly" || cat.CleanMode == "FilePattern") {
                     bool topOnly = (cat.CleanMode == "FilePattern");
-                    if (cat.IsDeliveryOptimization) report.NeedsDeliveryOptCmdlet = true;
+                    if (cat.IsDeliveryOptimization) {
+                        RunDeliveryOptimizationCleanupBounded(ct);
+                    }
                     if (cat.DetailItems != null && cat.DetailItems.Count > 0) {
                         for (int d = 0; d < cat.DetailItems.Count; d++) {
                             if (ct.IsCancellationRequested) break;
@@ -29983,7 +30145,7 @@ namespace DuckUtil {
                         if (it == null || !it.Selected) continue;
                         if (doRecycle) {
                             string failReason;
-                            if (TryRecycleItemStrict(it.Path, out failReason)) {
+                            if (TryRecycleItemStrict(it.Path, ct, 12000, out failReason)) {
                                 crec++;
                                 cf += it.SizeBytes;
                                 if (it.IsDirectory) cdd += Math.Max(1, it.NestedCount);
@@ -35005,14 +35167,25 @@ function Show-LeftoverReviewDialog {
     $btnCancel.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
     $btnCancel.Background = $pal.BtnBg
     $btnCancel.Foreground = $pal.BtnFg
-    $btnCancel.Add_Click({ $dialog.Close() })
+    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0; WasCancelled = $false }
+    $dialogBusyState = [PSCustomObject]@{ IsDeleting = $false; CancelRequested = $false }
+    $btnCancel.Add_Click({
+        if ($dialogBusyState.IsDeleting) {
+            $dialogBusyState.CancelRequested = $true
+            $btnCancel.IsEnabled = $false
+            if ($summaryText) {
+                $summaryText.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng d$([char]0x1ECD)n r$([char]0x00E1)c..."
+            }
+            return
+        }
+        $dialog.Close()
+    })
     $btnStack.Children.Add($btnCancel) | Out-Null
 
-    $dialogResult = [PSCustomObject]@{ Confirmed = $false; RemovedCount = 0; FreedBytes = 0L; RebootScheduled = 0; AccessDeniedCount = 0 }
-    $dialogBusyState = [PSCustomObject]@{ IsDeleting = $false }
     $dialog.Add_Closing({
         param($s, $e)
         if ($dialogBusyState.IsDeleting -and -not $script:isWindowClosing) {
+            $dialogBusyState.CancelRequested = $true
             $e.Cancel = $true
         }
     })
@@ -35046,8 +35219,13 @@ function Show-LeftoverReviewDialog {
         $accessDeniedTotal = 0
 
         $dialogBusyState.IsDeleting = $true
+        $dialogBusyState.CancelRequested = $false
+        $dlgCancelCb = { [bool]$dialogBusyState.CancelRequested -or [bool]$script:isWindowClosing }
         $btnDelete.IsEnabled = $false
-        if ($btnCancel) { $btnCancel.IsEnabled = $false }
+        if ($btnCancel) {
+            $btnCancel.IsEnabled = $true
+            $btnCancel.Content = "D$([char]0x1EEB)ng d$([char]0x1ECD)n"
+        }
         if ($btnSelectAll) { $btnSelectAll.IsEnabled = $false }
         if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $false }
         try {
@@ -35056,7 +35234,7 @@ function Show-LeftoverReviewDialog {
             if ($deepType -and $canWaitAsync -and $null -ne $deepType.GetMethod("PrewarmElevationCacheAsync")) {
                 try {
                     $pwTaskDlg = $deepType::PrewarmElevationCacheAsync()
-                    [void](Wait-TaskNonBlocking -Task $pwTaskDlg -TimeoutSeconds 4)
+                    [void](Wait-TaskNonBlocking -Task $pwTaskDlg -TimeoutSeconds 4 -CancelCheck $dlgCancelCb)
                 } catch {}
             } elseif ($deepType -and $null -ne $deepType.GetMethod("PrewarmElevationCache")) {
                 try { [DuckUtil.DeepUninstallerEngine]::PrewarmElevationCache() } catch {}
@@ -35070,7 +35248,7 @@ function Show-LeftoverReviewDialog {
 
             $batchExplorerLock = $false
             $usedBatchForceStop = $false
-            if ($useForceStop) {
+            if ($useForceStop -and -not $dialogBusyState.CancelRequested) {
                 $existingPaths = @($checkedItems | Where-Object { -not $_.IsRegistry -and (Test-Path -LiteralPath $_.Path) } | ForEach-Object { [string]$_.Path } | Select-Object -Unique)
                 if ($existingPaths.Count -gt 0 -and ($hasBatchStopAsync -or $hasBatchStopSync)) {
                     $usedBatchForceStop = $true
@@ -35080,7 +35258,7 @@ function Show-LeftoverReviewDialog {
                     $batchRpt = $null
                     if ($hasBatchStopAsync) {
                         $bTask = $deepType::ForceStopBatchDirectoriesAsync([string[]]$existingPaths, $true)
-                        [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 60)
+                        [void](Wait-TaskNonBlocking -Task $bTask -TimeoutSeconds 25 -CancelCheck $dlgCancelCb)
                         if ($bTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) { $batchRpt = $bTask.Result }
                     } else {
                         $batchRpt = $deepType::ForceStopBatchDirectories([string[]]$existingPaths, $true)
@@ -35107,9 +35285,10 @@ function Show-LeftoverReviewDialog {
             }
 
             $explorerRestartDecision = $null
+            $recycleFailStreak = 0
             $stepIdx = 0
             foreach ($ci in $checkedItems) {
-                if ($script:isWindowClosing) { break }
+                if ($script:isWindowClosing -or $dialogBusyState.CancelRequested) { break }
                 $stepIdx++
                 if ($summaryText) {
                     $summaryText.Text = "$([char]0x0110)ang d$([char]0x1ECD)n $stepIdx / $($checkedItems.Count): $($ci.AppName)"
@@ -35127,7 +35306,7 @@ function Show-LeftoverReviewDialog {
                             $valArr = [string[]]@($ci.RegistryValueNames)
                             if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryValuesAsync")) {
                                 $rvTask = $deepType::ForceDeleteRegistryValuesAsync([string]$ci.Path, $valArr)
-                                [void](Wait-TaskNonBlocking -Task $rvTask -TimeoutSeconds 20)
+                                [void](Wait-TaskNonBlocking -Task $rvTask -TimeoutSeconds 15 -CancelCheck $dlgCancelCb)
                                 if ($rvTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                                     $delValCount = [int]$rvTask.Result
                                 }
@@ -35172,7 +35351,7 @@ function Show-LeftoverReviewDialog {
                                 $svcTargetName = $Matches[1]
                                 if ($hasNeutralizeAsync) {
                                     $nTask = $deepType::NeutralizeSingleServiceOrDriverAsync($svcTargetName)
-                                    [void](Wait-TaskNonBlocking -Task $nTask -TimeoutSeconds 25)
+                                    [void](Wait-TaskNonBlocking -Task $nTask -TimeoutSeconds 15 -CancelCheck $dlgCancelCb)
                                     if ($nTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                                         $neutralizedSvc = [bool]$nTask.Result
                                     }
@@ -35182,38 +35361,41 @@ function Show-LeftoverReviewDialog {
                             }
                             $usedElevatedRegDel = $false
                             if (Test-Path -LiteralPath $psRegPath) {
-                                if ($neutralizedSvc) {
-                                    Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction SilentlyContinue
-                                } else {
-                                    $regErr = $null
-                                    try {
-                                        Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction Stop
-                                    } catch {
-                                        $regErr = $_
+                                $regErr = $null
+                                try {
+                                    Remove-Item -LiteralPath $psRegPath -Recurse -Force -ErrorAction Stop
+                                } catch {
+                                    $regErr = $_
+                                }
+                                if ((Test-Path -LiteralPath $psRegPath) -and -not $dialogBusyState.CancelRequested) {
+                                    $elevOk = $false
+                                    if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKeyAsync")) {
+                                        $regTask = $deepType::ForceDeleteRegistryKeyAsync([string]$ci.Path)
+                                        [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15 -CancelCheck $dlgCancelCb)
+                                        if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
+                                            $elevOk = [bool]$regTask.Result
+                                        }
+                                    } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKey")) {
+                                        $elevOk = [bool]$deepType::ForceDeleteRegistryKey([string]$ci.Path)
                                     }
-                                    if ($null -ne $regErr -and (Test-Path -LiteralPath $psRegPath)) {
-                                        $elevOk = $false
-                                        if ($canWaitAsync -and $null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKeyAsync")) {
-                                            $regTask = $deepType::ForceDeleteRegistryKeyAsync([string]$ci.Path)
-                                            [void](Wait-TaskNonBlocking -Task $regTask -TimeoutSeconds 15)
-                                            if ($regTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
-                                                $elevOk = [bool]$regTask.Result
-                                            }
-                                        } elseif ($null -ne $deepType -and $null -ne $deepType.GetMethod("ForceDeleteRegistryKey")) {
-                                            $elevOk = [bool]$deepType::ForceDeleteRegistryKey([string]$ci.Path)
-                                        }
-                                        if ($elevOk -or -not (Test-Path -LiteralPath $psRegPath)) {
-                                            $usedElevatedRegDel = $true
-                                        } else {
-                                            throw $regErr
-                                        }
+                                    if ($elevOk -or -not (Test-Path -LiteralPath $psRegPath)) {
+                                        $usedElevatedRegDel = $true
+                                    } elseif (-not $neutralizedSvc -and $null -ne $regErr) {
+                                        throw $regErr
                                     }
                                 }
                             }
-                            $removed++
-                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
-                                $elevTag = if ($usedElevatedRegDel) { " (TrustedInstaller)" } else { "" }
-                                Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry${elevTag}: $($ci.Path)"
+                            if (-not (Test-Path -LiteralPath $psRegPath)) {
+                                $removed++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    $elevTag = if ($usedElevatedRegDel) { " (TrustedInstaller)" } else { "" }
+                                    Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) x$([char]0x00F3)a Registry${elevTag}: $($ci.Path)"
+                                }
+                            } else {
+                                $accessDeniedTotal++
+                                if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                    Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x00F3)a kh$([char]0x00F3)a Registry (b$([char]0x1ECB) kh$([char]0x00F3)a quy$([char]0x1EC1)n): $($ci.Path)"
+                                }
                             }
                         }
                     } elseif (Test-Path -LiteralPath $ci.Path) {
@@ -35252,15 +35434,17 @@ function Show-LeftoverReviewDialog {
                         }
 
                         $deletedOk = $false
-                        if ($useRecycle) {
+                        if ($useRecycle -and $recycleFailStreak -lt 2 -and -not $dialogBusyState.CancelRequested) {
                             if ($hasSilentRecycleAsync) {
                                 $rTask = $deepType::MoveToRecycleBinSilentlyAsync($ci.Path)
-                                [void](Wait-TaskNonBlocking -Task $rTask -TimeoutSeconds 30)
+                                [void](Wait-TaskNonBlocking -Task $rTask -TimeoutSeconds 10 -CancelCheck $dlgCancelCb)
                                 if ($rTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion) {
                                     $deletedOk = [bool]$rTask.Result
                                 }
+                                if (-not $deletedOk) { $recycleFailStreak++ } else { $recycleFailStreak = 0 }
                             } elseif ($hasSilentRecycle) {
                                 $deletedOk = [DuckUtil.DeepUninstallerEngine]::MoveToRecycleBinSilently($ci.Path)
+                                if (-not $deletedOk) { $recycleFailStreak++ } else { $recycleFailStreak = 0 }
                             } elseif (-not $useForceStop) {
                                 try {
                                     $itemObj = Get-Item -LiteralPath $ci.Path -Force -ErrorAction Stop
@@ -35270,8 +35454,10 @@ function Show-LeftoverReviewDialog {
                                         [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($ci.Path, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)
                                     }
                                     $deletedOk = $true
+                                    $recycleFailStreak = 0
                                 } catch {
                                     $deletedOk = $false
+                                    $recycleFailStreak++
                                 }
                             }
                         }
@@ -35319,11 +35505,11 @@ function Show-LeftoverReviewDialog {
                             }
                         }
 
-                        if (-not $deletedOk) {
+                        if (-not $deletedOk -and -not $dialogBusyState.CancelRequested) {
                             $rbCount = 0
                             if ($hasForceDelAsync) {
                                 $dTask = $deepType::ForceDeleteDirectoryAsync($ci.Path, (-not $useForceStop))
-                                [void](Wait-TaskNonBlocking -Task $dTask -TimeoutSeconds 60)
+                                [void](Wait-TaskNonBlocking -Task $dTask -TimeoutSeconds 30 -CancelCheck $dlgCancelCb)
                                 if ($dTask.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $null -ne $dTask.Result) {
                                     $deletedOk = [bool]$dTask.Result.Deleted
                                     $rbCount = [int]$dTask.Result.RebootScheduledCount
@@ -35339,11 +35525,21 @@ function Show-LeftoverReviewDialog {
                             $rebootTotal += $rbCount
                         }
 
-                        if ($deletedOk) {
+                        $stillPresent = Test-Path -LiteralPath $ci.Path
+                        if (-not $stillPresent) {
                             $removed++
                             $freed += $ci.SizeBytes
                             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                                 Log-Text "[D$([char]0x1ECC)N R$([char]0x00C1)C] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch: $($ci.Type) - $($ci.Path)"
+                            }
+                        } elseif ($deletedOk -and $rbCount -gt 0) {
+                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                Log-Text "[CH$([char]0x1EDC) KH$([char]0x1EDE)I $([char]0x0110)$([char]0x1ED8)NG L$([char]0x1EA0)I] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1EB7)t l$([char]0x1ECB)ch x$([char]0x00F3)a: $($ci.Path)"
+                            }
+                        } elseif (-not $dialogBusyState.CancelRequested) {
+                            $accessDeniedTotal++
+                            if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
+                                Log-Text "[!] Kh$([char]0x00F4)ng th$([char]0x1EC3) x$([char]0x00F3)a (b$([char]0x1ECB) kh$([char]0x00F3)a ti$([char]0x1EBF)n tr$([char]0x00EC)nh/quy$([char]0x1EC1)n): $($ci.Path)"
                             }
                         }
                     }
@@ -35366,12 +35562,16 @@ function Show-LeftoverReviewDialog {
             $dialogResult.FreedBytes = $freed
             $dialogResult.RebootScheduled = $rebootTotal
             $dialogResult.AccessDeniedCount = $accessDeniedTotal
+            $dialogResult.WasCancelled = [bool]$dialogBusyState.CancelRequested
             $dialogBusyState.IsDeleting = $false
             $dialog.Close()
         } finally {
             $dialogBusyState.IsDeleting = $false
             $btnDelete.IsEnabled = $true
-            if ($btnCancel) { $btnCancel.IsEnabled = $true }
+            if ($btnCancel) {
+                $btnCancel.IsEnabled = $true
+                $btnCancel.Content = "H$([char]0x1EE7)y b$([char]0x1ECF)"
+            }
             if ($btnSelectAll) { $btnSelectAll.IsEnabled = $true }
             if ($btnDeselectAll) { $btnDeselectAll.IsEnabled = $true }
         }
@@ -35682,7 +35882,8 @@ function Invoke-DeepAppUninstall {
     if ($script:isWindowClosing -or ($AllowCancel -and $script:cancelRequested)) { return }
 
     if (-not $AppEntry.IsBrokenOrphan) {
-        if ($SkipVendorUninstaller) {
+        $isMsixApp = ($AppEntry.Id -and $AppEntry.Id -like 'MSIX\*')
+        if ($SkipVendorUninstaller -and -not $isMsixApp) {
             if (Get-Command Log-Text -ErrorAction SilentlyContinue) {
                 Log-Text "[FORCE] B$([char]0x1ECF) qua tr$([char]0x00EC)nh g$([char]0x1EE1) c$([char]0x1EE7)a h$([char]0x00E3)ng ($([char]0x0111)$([char]0x00E3) t$([char]0x1EAF)t service/ti$([char]0x1EBF)n tr$([char]0x00EC)nh) -> qu$([char]0x00E9)t x$([char]0x00F3)a s$([char]0x1EA1)ch tr$([char]0x1EF1)c ti$([char]0x1EBF)p."
             }
@@ -40729,22 +40930,26 @@ function Start-UninstallQueueExecution {
 
             if ($script:isWindowClosing -or $script:cancelRequested) { break }
             $completedApps++
-            $removedAnyRow = $false
-            if ($script:uninstallerVirtualView) {
-                $removedAnyRow = [bool]$script:uninstallerVirtualView.MarkRemovedByKey($qItem.Key)
-            } else {
-                foreach ($entry in $script:uninstallerRowEntries) {
-                    if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
-                        $entry.IsRemoved = $true
-                        $entry.IsSelected = $false
-                        $entry.IsQueued = $false
-                        if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
-                        if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
-                        $removedAnyRow = $true
+            $appStillRegistered = ($qItem.App.RegistryPath -and (Test-Path -LiteralPath $qItem.App.RegistryPath))
+            $appStillHasDir = ($qItem.App.InstallLocation -and (Test-Path -LiteralPath $qItem.App.InstallLocation) -and $qItem.App.Id -like 'ORPHAN\*')
+            if (-not $appStillRegistered -and -not $appStillHasDir) {
+                $removedAnyRow = $false
+                if ($script:uninstallerVirtualView) {
+                    $removedAnyRow = [bool]$script:uninstallerVirtualView.MarkRemovedByKey($qItem.Key)
+                } else {
+                    foreach ($entry in $script:uninstallerRowEntries) {
+                        if ((Get-UninstallerAppQueueKey $entry.App) -eq $qItem.Key) {
+                            $entry.IsRemoved = $true
+                            $entry.IsSelected = $false
+                            $entry.IsQueued = $false
+                            if ($entry.CheckBox) { $entry.CheckBox.IsChecked = $false }
+                            if ($entry.Row) { $entry.Row.Visibility = [System.Windows.Visibility]::Collapsed }
+                            $removedAnyRow = $true
+                        }
                     }
                 }
+                if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
             }
-            if ($removedAnyRow) { Apply-UninstallerFilter } else { Update-UninstallerSelectionCount }
         }
 
         if (-not $script:isWindowClosing -and -not $script:cancelRequested -and $collectedLeftovers.Count -gt 0) {
@@ -40762,7 +40967,11 @@ function Start-UninstallQueueExecution {
                 $res = Show-LeftoverReviewDialog -OwnerWindow $window -Items @($dedupLeftovers) -Title $dialogTitle -ForceStopByDefault:$true
                 if ($res.Confirmed) {
                     $freedMb = [math]::Round($res.FreedBytes / 1MB, 2)
-                    Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
+                    if ($res.WasCancelled) {
+                        Log-Text "[!] $([char]0x0110)$([char]0x00E3) d$([char]0x1EEB)ng d$([char]0x1ECD)n r$([char]0x00E1)c s$([char]0x1EDB)m: $([char]0x0111)$([char]0x00E3) d$([char]0x1ECD)n $($res.RemovedCount) m$([char]0x1EE5)c (~$freedMb MB)."
+                    } else {
+                        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n s$([char]0x1EA1)ch $($res.RemovedCount) m$([char]0x1EE5)c t$([char]0x1ED3)n d$([char]0x01B0) (~$freedMb MB)."
+                    }
                 }
             }
         }
@@ -43125,6 +43334,46 @@ function Invoke-WinGetWithMsiRetry {
     return $code
 }
 
+function Format-WinGetExitCodeReason {
+    param([int]$Code)
+    switch ($Code) {
+        -1978335190 { return "$([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang ch$([char]0x1EA1)y, h$([char]0x00E3)y $([char]0x0111)$([char]0x00F3)ng r$([char]0x1ED3)i th$([char]0x1EED) l$([char]0x1EA1)i" }
+        -1978335216 { return "kh$([char]0x00F4)ng kh$([char]0x1EDB)p g$([char]0x00F3)i c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t (scope/ki$([char]0x1EBF)n tr$([char]0x00FA)c)" }
+        -1978335192 { return "l$([char]0x1EC7)ch m$([char]0x00E3) ki$([char]0x1EC3)m tra SHA-256 tr$([char]0x00EA)n kho WinGet" }
+        -1978335217 { return "l$([char]0x1ED7)i k$([char]0x1EBF)t n$([char]0x1ED1)i/m$([char]0x1EDF) ngu$([char]0x1ED3)n WinGet" }
+        -1978335215 { return "d$([char]0x1EEF) li$([char]0x1EC7)u ngu$([char]0x1ED3)n WinGet b$([char]0x1ECB) thi$([char]0x1EBF)u ho$([char]0x1EB7)c h$([char]0x1ECF)ng" }
+        -1978335211 { return "ch$([char]0x01B0)a c$([char]0x1EA5)u h$([char]0x00EC)nh ngu$([char]0x1ED3)n WinGet" }
+        -1978335226 { return "ch$([char]0x01B0)a ch$([char]0x1EA5)p nh$([char]0x1EAD)n th$([char]0x1ECF)a thu$([char]0x1EAD)n ngu$([char]0x1ED3)n WinGet" }
+        -1978335189 { return "kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1EA3)n n$([char]0x00E2)ng c$([char]0x1EA5)p t$([char]0x01B0)$([char]0x01A1)ng th$([char]0x00ED)ch" }
+        -1978335188 { return "tr$([char]0x00EC)nh c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) n$([char]0x00E2)ng c$([char]0x1EA5)p tr$([char]0x1EF1)c ti$([char]0x1EBF)p" }
+        -1978334974 { return "Windows Installer $([char]0x0111)ang b$([char]0x1EAD)n" }
+        1618        { return "Windows Installer $([char]0x0111)ang b$([char]0x1EAD)n" }
+        1603        { return "b$([char]0x1ED9) c$([char]0x00E0)i b$([char]0x00E1)o l$([char]0x1ED7)i 1603 ($([char]0x1EE9)ng d$([char]0x1EE5)ng $([char]0x0111)ang ch$([char]0x1EA1)y ho$([char]0x1EB7)c c$([char]0x1EA7)n kh$([char]0x1EDF)i $([char]0x0111)$([char]0x1ED9)ng l$([char]0x1EA1)i)" }
+        default     { return "Exit Code: $Code" }
+    }
+}
+
+function Repair-WinGetSourceOnce {
+    if ($script:wingetSourceHealedThisSession -or $script:isWindowClosing -or $script:cancelRequested) { return $false }
+    if (-not (Get-Command "winget" -CommandType Application -ErrorAction SilentlyContinue)) { return $false }
+    $script:wingetSourceHealedThisSession = $true
+    Log-Text "[*] Ph$([char]0x00E1)t hi$([char]0x1EC7)n ngu$([char]0x1ED3)n WinGet b$([char]0x1ECB) c$([char]0x0169) ho$([char]0x1EB7)c l$([char]0x1ED7)i $([char]0x2014) $([char]0x0111)ang t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x1EA1)i..."
+    $updCode = Run-CliStream "winget" "source update --disable-interactivity" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 45 -IdleTimeoutSeconds 30
+    if ($updCode -eq 0) {
+        Log-Text "[OK] $([char]0x0110)$([char]0x00E3) $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9) l$([char]0x1EA1)i ngu$([char]0x1ED3)n WinGet th$([char]0x00E0)nh c$([char]0x00F4)ng."
+        return $true
+    }
+    if (-not $script:isWindowClosing -and -not $script:cancelRequested) {
+        Log-Text "[*] $([char]0x0110)ang $([char]0x0111)$([char]0x1EB7)t l$([char]0x1EA1)i ngu$([char]0x1ED3)n WinGet m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh (source reset --force)..."
+        $rstCode = Run-CliStream "winget" "source reset --force --disable-interactivity" -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds 45 -IdleTimeoutSeconds 30
+        if ($rstCode -eq 0) {
+            Log-Text "[OK] $([char]0x0110)$([char]0x00E3) kh$([char]0x00F4)i ph$([char]0x1EE5)c ngu$([char]0x1ED3)n WinGet th$([char]0x00E0)nh c$([char]0x00F4)ng."
+            return $true
+        }
+    }
+    return $false
+}
+
 function Invoke-WinGetSourceAware {
     param(
         [Parameter(Mandatory = $true)][string]$BaseArguments,
@@ -43133,6 +43382,16 @@ function Invoke-WinGetSourceAware {
     )
     $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
     $code = Invoke-WinGetWithMsiRetry -Arguments ($BaseArguments + $srcArg)
+
+    $sourceErrCodes = @(-1978335217, -1978335215, -1978335218, -1978335211, -1978335226)
+    $lastTxt = if ($script:lastCliRun) { "$($script:lastCliRun.StdOut)`n$($script:lastCliRun.StdErr)" } else { "" }
+    $isSourceFailure = ($code -in $sourceErrCodes) -or ($code -ne 0 -and $lastTxt -match '(?i)Failed when searching source|Data required by the source is missing|source agreements|Error attempting to update source')
+    if ($isSourceFailure -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+        if (Repair-WinGetSourceOnce) {
+            $code = Invoke-WinGetWithMsiRetry -Arguments ($BaseArguments + $srcArg)
+        }
+    }
+
     if ($code -eq -1978335212 -and -not [string]::IsNullOrWhiteSpace($srcArg) -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
         $code = Invoke-WinGetWithMsiRetry -Arguments $BaseArguments
     }
@@ -44249,24 +44508,40 @@ function Test-PostUpgradeVerified {
         [int]$ExecCode = 0,
         [string]$SourceLabel = "WinGet"
     )
-    Wait-SquirrelUpdatersSettle
-    try {
-        $postState = Get-WinGetExactPackageState -Id $UpgradeId -App $App
-        if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
-            if ([string]::IsNullOrWhiteSpace($PreVersion) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $PreVersion) -le 0) {
-                Log-Text "   [WARN] $($App.Name): [$SourceLabel] tho$([char]0x00E1)t m$([char]0x00E3) $ExecCode nh$([char]0x01B0)ng WinGet v$([char]0x1EAB)n ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))."
-                return 4
+    Wait-SquirrelUpdatersSettle -MaxWaitMs 2500
+    if ($ExecCode -in @(3010, 1641)) {
+        return 0
+    }
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        $warnReason = ""
+        try {
+            $postState = Get-WinGetExactPackageState -Id $UpgradeId -App $App
+            if ($postState.Available -and -not $postState.TimedOut -and $postState.AnyFound -and $postState.AnyOutdated) {
+                if ([string]::IsNullOrWhiteSpace($PreVersion) -or [string]::IsNullOrWhiteSpace($postState.BestVersion) -or (Compare-CatalogVersionsSafe $postState.BestVersion $PreVersion) -le 0) {
+                    $warnReason = "WinGet v$([char]0x1EAB)n ghi nh$([char]0x1EAD)n phi$([char]0x00EA)n b$([char]0x1EA3)n '$($postState.BestVersion)' (c$([char]0x00F2)n b$([char]0x1EA3)n m$([char]0x1EDB)i $($postState.BestAvailable))"
+                }
             }
-        }
-        $postLocal = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $UpgradeId
-        if ($postLocal -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $PreVersion) -le 0) {
-            $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($TargetAvailable) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $TargetAvailable) -lt 0)
-            if ($stillBehindTarget) {
-                Log-Text "   [WARN] $($App.Name): [$SourceLabel] tho$([char]0x00E1)t m$([char]0x00E3) $ExecCode nh$([char]0x01B0)ng phi$([char]0x00EA)n b$([char]0x1EA3)n tr$([char]0x00EA)n m$([char]0x00E1)y v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)' (ch$([char]0x01B0)a $([char]0x0111)$([char]0x1EA1)t '$TargetAvailable')."
-                return 4
+            if ([string]::IsNullOrEmpty($warnReason)) {
+                $postLocal = Test-CatalogAppInstalledNow -App $App -ProbeWingetId $UpgradeId
+                if ($postLocal -and -not [string]::IsNullOrWhiteSpace($PreVersion) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $PreVersion) -le 0) {
+                    $stillBehindTarget = $postLocal.HasUpdate -or (-not [string]::IsNullOrWhiteSpace($TargetAvailable) -and (Compare-CatalogVersionsSafe ([string]$postLocal.Version) $TargetAvailable) -lt 0)
+                    if ($stillBehindTarget) {
+                        $warnReason = "phi$([char]0x00EA)n b$([char]0x1EA3)n tr$([char]0x00EA)n m$([char]0x00E1)y v$([char]0x1EAB)n l$([char]0x00E0) '$($postLocal.Version)' (ch$([char]0x01B0)a $([char]0x0111)$([char]0x1EA1)t '$TargetAvailable')"
+                    }
+                }
             }
+        } catch {}
+
+        if ([string]::IsNullOrEmpty($warnReason)) {
+            return 0
         }
-    } catch {}
+        if ($attempt -eq 0 -and -not $script:isWindowClosing -and -not $script:cancelRequested) {
+            [void](Wait-TaskNonBlocking -Task ([System.Threading.Tasks.Task]::Delay(2500)) -TimeoutSeconds 4 -CancelCheck { [bool]$script:cancelRequested })
+            continue
+        }
+        Log-Text "   [WARN] $($App.Name): [$SourceLabel] tho$([char]0x00E1)t m$([char]0x00E3) $ExecCode nh$([char]0x01B0)ng $warnReason."
+        return 4
+    }
     return 0
 }
 
@@ -44558,8 +44833,17 @@ function Invoke-SmartAppUpgrade {
     if ($code -ne 0 -and $code -ne -3 -and $scope -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
         $scopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $scope
         if (-not $scopeSupported) {
-            Log-Text "[!] $($app.Name): B$([char]0x1EA3)n $([char]0x0111)ang c$([char]0x00E0)i thu$([char]0x1ED9)c scope '$scope', nh$([char]0x01B0)ng WinGet kh$([char]0x00F4)ng c$([char]0x00F3) b$([char]0x1ED9) c$([char]0x00E0)i cho scope '$scope' (t$([char]0x1EEB) ch$([char]0x1ED1)i c$([char]0x00E0)i ch$([char]0x1ED3)ng scope kh$([char]0x00E1)c $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh tr$([char]0x00F9)ng 2 b$([char]0x1EA3)n)."
-            $code = -1978335216
+            $otherScope = if ($scope -eq "machine") { "user" } else { "machine" }
+            $otherScopeSupported = Test-WinGetScopeSupported -Id $upgradeId -App $app -Scope $otherScope
+            if (-not $otherScopeSupported) {
+                Log-Text "[*] $($app.Name): G$([char]0x00F3)i WinGet d$([char]0x00F9)ng ph$([char]0x1EA1)m vi m$([char]0x1EB7)c $([char]0x0111)$([char]0x1ECB)nh (kh$([char]0x00F4)ng ph$([char]0x00E2)n t$([char]0x00E1)ch scope), $([char]0x0111)ang th$([char]0x1EED) n$([char]0x00E2)ng c$([char]0x1EA5)p kh$([char]0x00F4)ng k$([char]0x00E8)m --scope..."
+                $scope = ""
+                $scopeSupported = $true
+                $code = Invoke-WinGetSourceAware -BaseArguments $baseUpArgs -App $app -Id $upgradeId
+            } else {
+                Log-Text "[!] $($app.Name): B$([char]0x1EA3)n $([char]0x0111)ang c$([char]0x00E0)i thu$([char]0x1ED9)c scope '$scope', nh$([char]0x01B0)ng WinGet kh$([char]0x00F4)ng c$([char]0x00F3) b$([char]0x1ED9) c$([char]0x00E0)i cho scope '$scope' (t$([char]0x1EEB) ch$([char]0x1ED1)i c$([char]0x00E0)i ch$([char]0x1ED3)ng scope kh$([char]0x00E1)c $([char]0x0111)$([char]0x1EC3) tr$([char]0x00E1)nh tr$([char]0x00F9)ng 2 b$([char]0x1EA3)n)."
+                $code = -1978335216
+            }
         }
     }
 
@@ -44911,7 +45195,8 @@ Register-Click "btnInstall" {
                         Log-Text "   [WARN - H$([char]0x1EBE)T TH$([char]0x1EDC)I GIAN CH$([char]0x1EDC)] $($app.Name) kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i - $([char]0x0111)$([char]0x00E3) b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ti$([char]0x1EBF)p t$([char]0x1EE5)c."
                         $failCount++
                     } else {
-                        Log-Text "   [ERR - C$([char]0x1EAC)P NH$([char]0x1EAC)T] $($app.Name) (Exit Code: $upCode)"
+                        $errHint = Format-WinGetExitCodeReason -Code $upCode
+                        Log-Text "   [ERR - C$([char]0x1EAC)P NH$([char]0x1EAC)T] $($app.Name) ($errHint)"
                         $failCount++
                     }
                     continue
@@ -45182,7 +45467,8 @@ Register-Click "btnUpgradeAll" {
                             Log-Text "   [WARN - H$([char]0x1EBE)T TH$([char]0x1EDC)I GIAN CH$([char]0x1EDC)] $appLabel kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i - $([char]0x0111)$([char]0x00E3) b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ti$([char]0x1EBF)p t$([char]0x1EE5)c $([char]0x1EE9)ng d$([char]0x1EE5)ng k$([char]0x1EBF) ti$([char]0x1EBF)p."
                             $bulkFail++
                         } elseif ($codeOut -ne -2 -and -not $script:cancelRequested) {
-                            Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $appLabel (Exit Code: $codeOut)"
+                            $errHintOut = Format-WinGetExitCodeReason -Code $codeOut
+                            Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $appLabel ($errHintOut)"
                             $bulkFail++
                         }
                     }
@@ -45242,7 +45528,8 @@ Register-Click "btnUpgradeAll" {
                                     Log-Text "   [WARN - H$([char]0x1EBE)T TH$([char]0x1EDC)I GIAN CH$([char]0x1EDC)] $($et.Name) kh$([char]0x00F4)ng ph$([char]0x1EA3)n h$([char]0x1ED3)i - b$([char]0x1ECF) qua $([char]0x0111)$([char]0x1EC3) ti$([char]0x1EBF)p t$([char]0x1EE5)c."
                                     $bulkFail++
                                 } elseif ($extCode -ne -2 -and -not $script:cancelRequested) {
-                                    Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($et.Name) (Exit Code: $extCode)"
+                                    $errHintExt = Format-WinGetExitCodeReason -Code $extCode
+                                    Log-Text "   [ERR - N$([char]0x00C2)NG C$([char]0x1EA4)P] $($et.Name) ($errHintExt)"
                                     $bulkFail++
                                 }
                             }
@@ -47669,13 +47956,16 @@ function Update-ResourcesSummary {
     $fmtSel = if ("DuckUtil.ResourceCleanerEngine" -as [type]) { [DuckUtil.ResourceCleanerEngine]::FormatBytes($selBytes) } else { "0 B" }
 
     if ($script:btnResClean) {
-        $script:btnResClean.IsEnabled = (-not $script:resIsScanning -and -not $script:resIsCleaning -and $selCats -gt 0)
         if ($script:resIsCleaning) {
-            $script:btnResClean.Content = "$([char]0x0110)ang d$([char]0x1ECD)n..."
-        } elseif ($selCats -gt 0) {
-            $script:btnResClean.Content = "D$([char]0x1ECD)n ($fmtSel)"
+            $script:btnResClean.IsEnabled = $true
+            $script:btnResClean.Content = "D$([char]0x1EEB)ng d$([char]0x1ECD)n"
         } else {
-            $script:btnResClean.Content = "D$([char]0x1ECD)n m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n"
+            $script:btnResClean.IsEnabled = (-not $script:resIsScanning -and $selCats -gt 0)
+            if ($selCats -gt 0) {
+                $script:btnResClean.Content = "D$([char]0x1ECD)n ($fmtSel)"
+            } else {
+                $script:btnResClean.Content = "D$([char]0x1ECD)n m$([char]0x1EE5)c $([char]0x0111)$([char]0x00E3) ch$([char]0x1ECD)n"
+            }
         }
     }
     if ($script:btnResScan) {
@@ -47881,22 +48171,17 @@ function Ensure-ResourcesPollTimer {
             $script:resIsCleaning = $false
             if ($tClean.Status -eq [System.Threading.Tasks.TaskStatus]::RanToCompletion -and $tClean.Result) {
                 $cr = $tClean.Result
-                if ($cr.NeedsDeliveryOptCmdlet) {
-                    try {
-                        if (Get-Command "Delete-DeliveryOptimizationCache" -ErrorAction SilentlyContinue) {
-                            Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue | Out-Null
-                        }
-                    } catch {}
-                }
                 foreach ($lg in @($cr.PerCategoryLogs)) { Log-Text "   $lg" }
                 $fmtFreed = [DuckUtil.ResourceCleanerEngine]::FormatBytes($cr.FreedBytes)
+                $cancelNote = if ($cr.WasCancelled) { "`n$([char]0x2022) $([char]0x0110)$([char]0x00E3) d$([char]0x1EEB)ng d$([char]0x1ECD)n s$([char]0x1EDB)m theo y$([char]0x00EA)u c$([char]0x1EA7)u." } else { "" }
                 $msg = "$([char]0x0110)$([char]0x00E3) gi$([char]0x1EA3)i ph$([char]0x00F3)ng: $fmtFreed`n" +
                        "$([char]0x2022) $([char]0x0110)$([char]0x00E3) x$([char]0x1EED) l$([char]0x00FD): $($cr.DeletedFiles) t$([char]0x1EC7)p, $($cr.DeletedFolders) th$([char]0x01B0) m$([char]0x1EE5)c (Th$([char]0x00F9)ng r$([char]0x00E1)c: $($cr.RecycledItems))`n" +
-                       "$([char]0x2022) B$([char]0x1ECF) qua an to$([char]0x00E0)n: $($cr.SkippedLockedCount) $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng, $($cr.SkippedCloudCount) t$([char]0x1EC7)p $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9)/li$([char]0x00EA)n k$([char]0x1EBF)t"
+                       "$([char]0x2022) B$([char]0x1ECF) qua an to$([char]0x00E0)n: $($cr.SkippedLockedCount) $([char]0x0111)ang s$([char]0x1EED) d$([char]0x1EE5)ng, $($cr.SkippedCloudCount) t$([char]0x1EC7)p $([char]0x0111)$([char]0x1ED3)ng b$([char]0x1ED9)/li$([char]0x00EA)n k$([char]0x1EBF)t" + $cancelNote
                 if ($cr.SkippedRecycleUnsupportedCount -gt 0) {
                     $msg += ", $($cr.SkippedRecycleUnsupportedCount) m$([char]0x1EE5)c kh$([char]0x00F4)ng h$([char]0x1ED7) tr$([char]0x1EE3) Th$([char]0x00F9)ng r$([char]0x00E1)c"
                 }
-                Log-Text "[OK] D$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n ho$([char]0x00E0)n t$([char]0x1EA5)t trong $($cr.ElapsedMs)ms: Gi$([char]0x1EA3)i ph$([char]0x00F3)ng $fmtFreed."
+                $donePrefix = if ($cr.WasCancelled) { "[!] D$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n $([char]0x0111)$([char]0x00E3) d$([char]0x1EEB)ng s$([char]0x1EDB)m" } else { "[OK] D$([char]0x1ECD)n T$([char]0x00E0)i nguy$([char]0x00EA)n ho$([char]0x00E0)n t$([char]0x1EA5)t" }
+                Log-Text "$donePrefix trong $($cr.ElapsedMs)ms: Gi$([char]0x1EA3)i ph$([char]0x00F3)ng $fmtFreed."
                 Update-ResourcesDiskBar
                 [void](Show-OwnedMessageBox -Text $msg -Caption "Ho$([char]0x00E0)n t$([char]0x1EA5)t d$([char]0x1ECD)n d$([char]0x1EB9)p" -Buttons ([System.Windows.Forms.MessageBoxButtons]::OK) -Icon ([System.Windows.Forms.MessageBoxIcon]::Information))
                 Start-ResourcesDeepScan
@@ -47967,7 +48252,13 @@ if ($script:btnResScan) {
 
 if ($script:btnResClean) {
     $script:btnResClean.Add_Click({
-        if ($script:isWindowClosing -or $script:resIsScanning -or $script:resIsCleaning) { return }
+        if ($script:isWindowClosing -or $script:resIsScanning) { return }
+        if ($script:resIsCleaning) {
+            try { if ($script:resCleanCts) { $script:resCleanCts.Cancel() } } catch {}
+            if ($script:txtResSummary) { $script:txtResSummary.Text = "$([char]0x0110)ang d$([char]0x1EEB)ng d$([char]0x1ECD)n d$([char]0x1EB9)p..." }
+            if ($script:btnResClean) { $script:btnResClean.IsEnabled = $false }
+            return
+        }
         $selectedCats = @($script:resRows | Where-Object { $_.Category.Selected -and -not $_.Category.SkippedBecauseRebootPending -and ($_.Category.ItemCount -gt 0 -or $_.Category.FolderCount -gt 0 -or $_.Category.TotalBytes -gt 0) } | ForEach-Object { $_.Category })
         if ($selectedCats.Count -eq 0) { return }
 

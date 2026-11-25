@@ -1479,35 +1479,128 @@ namespace DuckUtil {
             });
         }
 
+        private const uint ERROR_ACCESS_DENIED = 5u;
+
+        private static int _deepUnlockLookupDone = 0;
+        private static System.Reflection.MethodInfo _deepUnlockMethod = null;
+
+        private static bool TryUnlockAclForCleaner(string cleanPath, bool isDir) {
+            if (string.IsNullOrWhiteSpace(cleanPath)) return false;
+            try {
+                if (Interlocked.CompareExchange(ref _deepUnlockLookupDone, 1, 0) == 0) {
+                    Type dt = Type.GetType("DuckUtil.DeepUninstallerEngine");
+                    if (dt == null) {
+                        var asms = AppDomain.CurrentDomain.GetAssemblies();
+                        for (int i = 0; i < asms.Length; i++) {
+                            try {
+                                dt = asms[i].GetType("DuckUtil.DeepUninstallerEngine", false);
+                                if (dt != null) break;
+                            } catch {}
+                        }
+                    }
+                    if (dt != null) {
+                        _deepUnlockMethod = dt.GetMethod("TryTakeOwnershipAndGrantAdminAccess", new Type[] { typeof(string) });
+                    }
+                }
+                if (_deepUnlockMethod != null) {
+                    object res = _deepUnlockMethod.Invoke(null, new object[] { cleanPath });
+                    if (res is bool && (bool)res) return true;
+                }
+            } catch {}
+
+            try {
+                var adminSid = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+                if (isDir) {
+                    var di = new DirectoryInfo(cleanPath);
+                    DirectorySecurity ds = di.GetAccessControl();
+                    ds.AddAccessRule(new FileSystemAccessRule(adminSid, FileSystemRights.FullControl,
+                        InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                        PropagationFlags.None, AccessControlType.Allow));
+                    di.SetAccessControl(ds);
+                    return true;
+                } else {
+                    var fi = new FileInfo(cleanPath);
+                    FileSecurity fs = fi.GetAccessControl();
+                    fs.AddAccessRule(new FileSystemAccessRule(adminSid, FileSystemRights.FullControl, AccessControlType.Allow));
+                    fi.SetAccessControl(fs);
+                    return true;
+                }
+            } catch {
+                return false;
+            }
+        }
+
+        private static void RunDeliveryOptimizationCleanupBounded(CancellationToken ct) {
+            Process p = null;
+            try {
+                var psi = new ProcessStartInfo("powershell.exe", "-NoProfile -NonInteractive -WindowStyle Hidden -Command \"if (Get-Command Delete-DeliveryOptimizationCache -ErrorAction SilentlyContinue) { Delete-DeliveryOptimizationCache -Force -ErrorAction SilentlyContinue | Out-Null }\"");
+                psi.CreateNoWindow = true;
+                psi.UseShellExecute = false;
+                p = Process.Start(psi);
+                if (p == null) return;
+                int waited = 0;
+                while (waited < 10000) {
+                    if (p.WaitForExit(200)) return;
+                    waited += 200;
+                    if (ct.IsCancellationRequested) break;
+                }
+                if (!p.HasExited) {
+                    try { p.Kill(); } catch {}
+                }
+            } catch {} finally {
+                if (p != null) { try { p.Dispose(); } catch {} }
+            }
+        }
+
         // Win32 long-path safe delete (works on .NET 4.8 / PS 5.1 for > 260 char paths)
         public static bool DeleteFileWin32(string path, out bool skippedCloud) {
             skippedCloud = false;
-            string ext = ToExtendedPath(path);
+            string clean = StripExtendedPath(path);
+            string ext = ToExtendedPath(clean);
             uint attr = GetFileAttributesW(ext);
             if (attr == INVALID_FILE_ATTRIBUTES) return false;
             if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
                 skippedCloud = true;
                 return false;
             }
-            if ((attr & FILE_ATTRIBUTE_READONLY) != 0) {
+            if ((attr & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) != 0) {
                 SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
             }
-            return DeleteFileW(ext);
+            if (DeleteFileW(ext)) return true;
+
+            int err = Marshal.GetLastWin32Error();
+            if (err == (int)ERROR_ACCESS_DENIED) {
+                if (TryUnlockAclForCleaner(clean, false)) {
+                    SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
+                    if (DeleteFileW(ext)) return true;
+                }
+            }
+            return GetFileAttributesW(ext) == INVALID_FILE_ATTRIBUTES;
         }
 
         public static bool RemoveDirectoryWin32(string path, out bool skippedCloud) {
             skippedCloud = false;
-            string ext = ToExtendedPath(path);
+            string clean = StripExtendedPath(path);
+            string ext = ToExtendedPath(clean);
             uint attr = GetFileAttributesW(ext);
             if (attr == INVALID_FILE_ATTRIBUTES) return false;
             if ((attr & CLOUD_OR_REPARSE_MASK) != 0) {
                 skippedCloud = true;
                 return false;
             }
-            if ((attr & FILE_ATTRIBUTE_READONLY) != 0) {
-                SetFileAttributesW(ext, attr & ~FILE_ATTRIBUTE_READONLY);
+            if ((attr & (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) != 0) {
+                SetFileAttributesW(ext, attr & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM));
             }
-            return RemoveDirectoryW(ext);
+            if (RemoveDirectoryW(ext)) return true;
+
+            int err = Marshal.GetLastWin32Error();
+            if (err == (int)ERROR_ACCESS_DENIED) {
+                if (TryUnlockAclForCleaner(clean, true)) {
+                    SetFileAttributesW(ext, FILE_ATTRIBUTE_NORMAL);
+                    if (RemoveDirectoryW(ext)) return true;
+                }
+            }
+            return GetFileAttributesW(ext) == INVALID_FILE_ATTRIBUTES;
         }
 
         private static void DeleteDirectoryContentsWin32(string rootDir, string[] patterns, bool topLevelOnly, bool deleteSelf, CancellationToken ct, ref long freedBytes, ref int delFiles, ref int delFolders, ref int skippedLocked, ref int skippedCloud, int depth) {
@@ -1523,8 +1616,14 @@ namespace DuckUtil {
             WIN32_FIND_DATAW fd;
             IntPtr h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
             if (h == IntPtr.Zero || h == new IntPtr(-1)) {
-                skippedLocked++;
-                return;
+                int findErr = Marshal.GetLastWin32Error();
+                if (findErr == (int)ERROR_ACCESS_DENIED && depth > 0 && TryUnlockAclForCleaner(norm, true)) {
+                    h = FindFirstFileExW(spec, FINDEX_INFO_BASIC, out fd, FINDEX_SEARCH_NAME_MATCH, IntPtr.Zero, FIND_FIRST_EX_LARGE_FETCH);
+                }
+                if (h == IntPtr.Zero || h == new IntPtr(-1)) {
+                    skippedLocked++;
+                    return;
+                }
             }
             var subDirs = new List<string>();
             var fileEntries = new List<KeyValuePair<string, long>>();
@@ -1581,7 +1680,15 @@ namespace DuckUtil {
 
         // Strict Recycle Bin via COM IFileOperation + FOFX_RECYCLEONDELETE (never silently permanently deletes!)
         public static bool TryRecycleItemStrict(string rawPath, out string failureReason) {
+            return TryRecycleItemStrict(rawPath, CancellationToken.None, 12000, out failureReason);
+        }
+
+        public static bool TryRecycleItemStrict(string rawPath, CancellationToken ct, int timeoutMs, out string failureReason) {
             failureReason = "";
+            if (ct.IsCancellationRequested) {
+                failureReason = "Cancelled";
+                return false;
+            }
             if (string.IsNullOrWhiteSpace(rawPath)) {
                 failureReason = "EmptyPath";
                 return false;
@@ -1650,7 +1757,18 @@ namespace DuckUtil {
                 sta.IsBackground = true;
                 sta.SetApartmentState(ApartmentState.STA);
                 sta.Start();
-                sta.Join();
+                int limit = timeoutMs > 0 ? timeoutMs : 12000;
+                int elapsed = 0;
+                bool finished = false;
+                while (elapsed < limit) {
+                    if (sta.Join(150)) { finished = true; break; }
+                    elapsed += 150;
+                    if (ct.IsCancellationRequested) break;
+                }
+                if (!finished) {
+                    failureReason = ct.IsCancellationRequested ? "Cancelled" : "RecycleTimeout";
+                    return false;
+                }
             }
 
             if (threadEx != null) {
@@ -1756,7 +1874,9 @@ namespace DuckUtil {
                     logs.Add(string.Format("[OK] {0}: gi\u1EA3i ph\u00F3ng {1}", cat.Title, FormatBytes(cf)));
                 } else if (cat.CleanMode == "ContentsOnly" || cat.CleanMode == "FilePattern") {
                     bool topOnly = (cat.CleanMode == "FilePattern");
-                    if (cat.IsDeliveryOptimization) report.NeedsDeliveryOptCmdlet = true;
+                    if (cat.IsDeliveryOptimization) {
+                        RunDeliveryOptimizationCleanupBounded(ct);
+                    }
                     if (cat.DetailItems != null && cat.DetailItems.Count > 0) {
                         for (int d = 0; d < cat.DetailItems.Count; d++) {
                             if (ct.IsCancellationRequested) break;
@@ -1779,7 +1899,7 @@ namespace DuckUtil {
                         if (it == null || !it.Selected) continue;
                         if (doRecycle) {
                             string failReason;
-                            if (TryRecycleItemStrict(it.Path, out failReason)) {
+                            if (TryRecycleItemStrict(it.Path, ct, 12000, out failReason)) {
                                 crec++;
                                 cf += it.SizeBytes;
                                 if (it.IsDirectory) cdd += Math.Max(1, it.NestedCount);
