@@ -878,6 +878,20 @@ namespace DuckUtil {
             return DeduplicateNormalizedPaths(results.ToArray());
         }
 
+        public static bool IsSafeAmdUnpackDirName(string dirName) {
+            if (string.IsNullOrWhiteSpace(dirName)) return false;
+            string n = dirName.Trim();
+            if (n.IndexOf("chipset", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+            string[] prefixes = {
+                "Win10", "Win11", "WHQL", "Non-WHQL", "Radeon",
+                "AMD-Software", "AMD_Software", "AMD-Catalyst", "AMD_Catalyst", "Adrenalin"
+            };
+            for (int i = 0; i < prefixes.Length; i++) {
+                if (n.StartsWith(prefixes[i], StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
         private static string[] CollectDriverInstallerDirs() {
             string sysDrive = Environment.GetEnvironmentVariable("SystemDrive");
             if (string.IsNullOrWhiteSpace(sysDrive)) sysDrive = "C:";
@@ -887,7 +901,18 @@ namespace DuckUtil {
                 results.Add(Path.Combine(progData, @"NVIDIA Corporation\Downloader"));
             }
             results.Add(sysDrive + @"\NVIDIA");
-            results.Add(sysDrive + @"\AMD");
+            string amdRoot = sysDrive + @"\AMD";
+            uint amdAttr;
+            if (DirExistsWin32(amdRoot, out amdAttr) && (amdAttr & CLOUD_OR_REPARSE_MASK) == 0) {
+                try {
+                    foreach (string sub in Directory.GetDirectories(amdRoot)) {
+                        string leaf = Path.GetFileName(sub) ?? "";
+                        if (IsSafeAmdUnpackDirName(leaf)) {
+                            results.Add(sub);
+                        }
+                    }
+                } catch {}
+            }
             return DeduplicateNormalizedPaths(results.ToArray());
         }
 
@@ -1238,9 +1263,10 @@ namespace DuckUtil {
             list.Add(catDo);
 
             var catDrvInst = new ResourceCleanCategory {
-                Id = "t1_driver_installers", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+                Id = "t1_driver_installers", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
                 Title = "B\u1ED9 c\u00E0i Driver c\u0169 (NVIDIA / AMD)",
-                Description = "T\u1EC7p gi\u1EA3i n\u00E9n c\u00E0i \u0111\u1EB7t c\u0169 trong NVIDIA Downloader, C:\\NVIDIA v\u00E0 C:\\AMD (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver \u0111ang ch\u1EA1y).",
+                Description = "Ch\u1EC9 t\u1EC7p gi\u1EA3i n\u00E9n b\u1ED9 c\u00E0i c\u0169 (NVIDIA Downloader, C:\\NVIDIA v\u00E0 g\u00F3i gi\u1EA3i n\u00E9n Radeon) \u2014 kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver \u0111ang ch\u1EA1y.",
+                WarningNote = "Ki\u1EC3m tra Chi ti\u1EBFt tr\u01B0\u1EDBc khi x\u00F3a; ch\u1EC9 d\u1ECDn b\u1ED9 gi\u1EA3i n\u00E9n c\u0169, kh\u00F4ng x\u00F3a driver trong DriverStore.",
                 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
             };
             PopulateDirectoryCategory(catDrvInst, CollectDriverInstallerDirs(), null, false, ct);

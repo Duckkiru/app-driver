@@ -1,4 +1,5 @@
 ﻿$ProgressPreference = 'SilentlyContinue'
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
 $isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion') -or ([Environment]::CommandLine -match '(^|\s)--companion(\s|$)')
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -180,8 +181,9 @@ if (-not $isCompanion -or -not $isAdmin) {
 
     $wtExe = Get-WindowsTerminalPath
     $elevationSuccess = $false
+    $hasNonAsciiPath = ($scriptTarget -and $scriptTarget -match '[^\x00-\x7F]') -or ($workDir -and $workDir -match '[^\x00-\x7F]')
 
-    if (-not $isCompanion -and ($isInsideWT -or $wtExe)) {
+    if (-not $isCompanion -and -not $hasNonAsciiPath -and ($isInsideWT -or $wtExe)) {
         $targetWt = if ($wtExe) { $wtExe } else { "wt.exe" }
 
         $safeWorkDir = $workDir.TrimEnd('\')
@@ -189,8 +191,9 @@ if (-not $isCompanion -or -not $isAdmin) {
             $safeWorkDir += '\\'
         }
 
+        $wtPsExe = if ($psExe -match '\s') { "`"$psExe`"" } else { $psExe }
         $wtPsArgs = if ($scriptTarget) { $psArgs } else { $psArgs -replace '(?<!\\);', '\;' }
-        $wtArgs = "-w -1 new-tab -d `"$safeWorkDir`" $psExe $wtPsArgs"
+        $wtArgs = "-w -1 new-tab -d `"$safeWorkDir`" $wtPsExe $wtPsArgs"
 
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop

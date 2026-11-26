@@ -5616,6 +5616,14 @@ function Invoke-WinGetWithMsiRetry {
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
     $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
+    if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978335230 -or ($code -ne 0 -and $script:lastCliRun -and ("$($script:lastCliRun.StdOut)`n$($script:lastCliRun.StdErr)") -match '(?i)Unrecognized argument|Đối số không được nhận dạng')) -and $Arguments -match '--disable-interactivity|--include-unknown') {
+        $compatArgs = ($Arguments -replace '\s*--disable-interactivity\b', '' -replace '\s*--include-unknown\b', '').Trim()
+        if ($compatArgs -ne $Arguments) {
+            Log-Text "[*] Phiên bản WinGet trên máy cũ hơn chuẩn mới — tự động chạy lại với tham số tương thích..."
+            $Arguments = $compatArgs
+            $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
+        }
+    }
     if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978334974 -or $code -eq 1618)) {
         Log-Text "[!] Windows Installer đang bận (1618), đang chờ giải phóng để thử lại..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
@@ -5939,9 +5947,12 @@ function Test-WinGetScopeSupported {
     if ([string]::IsNullOrWhiteSpace($Scope)) { return $true }
     $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
     $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --scope $Scope --disable-interactivity --accept-source-agreements") -TimeoutSeconds 12
+    if ($cap.Available -and $cap.ExitCode -eq -1978335230) {
+        $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --scope $Scope --accept-source-agreements") -TimeoutSeconds 12
+    }
     if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled) { return $true }
     $outTxt = "$($cap.StdOut)`n$($cap.StdErr)"
-    if ($cap.ExitCode -ne 0 -or $outTxt -match '(?i)No applicable installer found|No package found matching') {
+    if ($cap.ExitCode -in @(-1978335216, -1978335212) -or $cap.ExitCode -ne 0 -or $outTxt -match '(?i)No applicable installer found|No package found matching|Không tìm thấy trình cài đặt phù hợp|Không tìm thấy gói nào khớp') {
         return $false
     }
     return $true
@@ -5950,18 +5961,26 @@ function Test-WinGetScopeSupported {
 function Get-WinGetRunOutcomeFromOutput {
     param($CliResult)
     if ($null -eq $CliResult) { return "Unknown" }
+    # Layer 1: Locale-independent WinGet HRESULT exit codes (works on every Windows language)
+    if ($CliResult.PSObject.Properties['ExitCode'] -and $null -ne $CliResult.ExitCode) {
+        $ec = [int]$CliResult.ExitCode
+        if ($ec -eq -1978335189) { return "NoUpgradeAvailable" }
+        if ($ec -eq -1978335212) { return "NotInstalled" }
+        if ($ec -in @(-1978335216, -1978335192, -1978335190, -1978335188)) { return "Failed" }
+    }
+    # Layer 2: Multi-language output matching (English + Vietnamese)
     $txt = "$($CliResult.StdOut)`n$($CliResult.StdErr)"
     if ([string]::IsNullOrWhiteSpace($txt)) { return "Unknown" }
-    if ($txt -match '(?i)No applicable update found|No newer package versions are available|No available upgrade found') {
+    if ($txt -match '(?i)No applicable update found|No newer package versions are available|No available upgrade found|Không tìm thấy bản cập nhật|Không có phiên bản gói mới hơn|Không tìm thấy bản nâng cấp') {
         return "NoUpgradeAvailable"
     }
-    if ($txt -match '(?i)No installed package found matching input criteria') {
+    if ($txt -match '(?i)No installed package found matching input criteria|Không tìm thấy gói đã cài đặt') {
         return "NotInstalled"
     }
-    if ($txt -match '(?i)Successfully installed|Successfully updated') {
+    if ($txt -match '(?i)Successfully installed|Successfully updated|Đã cài đặt thành công|Đã cập nhật thành công') {
         return "Succeeded"
     }
-    if ($txt -match '(?i)Installation failed|Installer failed|Download failed|No applicable installer found|Another installation is already in progress|hash does not match|requires administrator|winget upgrade --all completed with failures') {
+    if ($txt -match '(?i)Installation failed|Installer failed|Download failed|No applicable installer found|Another installation is already in progress|hash does not match|requires administrator|winget upgrade --all completed with failures|Cài đặt không thành công|Tải xuống không thành công|Không tìm thấy trình cài đặt phù hợp|băm không khớp|yêu cầu quyền quản trị') {
         return "Failed"
     }
     return "Unknown"

@@ -1,4 +1,5 @@
 $ProgressPreference = 'SilentlyContinue'
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
 $isCompanion = ($env:APP_DRIVER_COMPANION -eq '1') -or ($args -and $args -contains '--companion') -or ([Environment]::CommandLine -match '(^|\s)--companion(\s|$)')
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -180,8 +181,9 @@ if (-not $isCompanion -or -not $isAdmin) {
 
     $wtExe = Get-WindowsTerminalPath
     $elevationSuccess = $false
+    $hasNonAsciiPath = ($scriptTarget -and $scriptTarget -match '[^\x00-\x7F]') -or ($workDir -and $workDir -match '[^\x00-\x7F]')
 
-    if (-not $isCompanion -and ($isInsideWT -or $wtExe)) {
+    if (-not $isCompanion -and -not $hasNonAsciiPath -and ($isInsideWT -or $wtExe)) {
         $targetWt = if ($wtExe) { $wtExe } else { "wt.exe" }
 
         $safeWorkDir = $workDir.TrimEnd('\')
@@ -189,8 +191,9 @@ if (-not $isCompanion -or -not $isAdmin) {
             $safeWorkDir += '\\'
         }
 
+        $wtPsExe = if ($psExe -match '\s') { "`"$psExe`"" } else { $psExe }
         $wtPsArgs = if ($scriptTarget) { $psArgs } else { $psArgs -replace '(?<!\\);', '\;' }
-        $wtArgs = "-w -1 new-tab -d `"$safeWorkDir`" $psExe $wtPsArgs"
+        $wtArgs = "-w -1 new-tab -d `"$safeWorkDir`" $wtPsExe $wtPsArgs"
 
         try {
             Start-Process -FilePath $targetWt -ArgumentList $wtArgs -Verb RunAs -ErrorAction Stop
@@ -20730,6 +20733,19 @@ results.Add(Path.Combine(localLow, @"Intel\ShaderCache"));
 }
 return DeduplicateNormalizedPaths(results.ToArray());
 }
+public static bool IsSafeAmdUnpackDirName(string dirName) {
+if (string.IsNullOrWhiteSpace(dirName)) return false;
+string n = dirName.Trim();
+if (n.IndexOf("chipset", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+string[] prefixes = {
+"Win10", "Win11", "WHQL", "Non-WHQL", "Radeon",
+"AMD-Software", "AMD_Software", "AMD-Catalyst", "AMD_Catalyst", "Adrenalin"
+};
+for (int i = 0; i < prefixes.Length; i++) {
+if (n.StartsWith(prefixes[i], StringComparison.OrdinalIgnoreCase)) return true;
+}
+return false;
+}
 private static string[] CollectDriverInstallerDirs() {
 string sysDrive = Environment.GetEnvironmentVariable("SystemDrive");
 if (string.IsNullOrWhiteSpace(sysDrive)) sysDrive = "C:";
@@ -20739,7 +20755,18 @@ if (!string.IsNullOrWhiteSpace(progData)) {
 results.Add(Path.Combine(progData, @"NVIDIA Corporation\Downloader"));
 }
 results.Add(sysDrive + @"\NVIDIA");
-results.Add(sysDrive + @"\AMD");
+string amdRoot = sysDrive + @"\AMD";
+uint amdAttr;
+if (DirExistsWin32(amdRoot, out amdAttr) && (amdAttr & CLOUD_OR_REPARSE_MASK) == 0) {
+try {
+foreach (string sub in Directory.GetDirectories(amdRoot)) {
+string leaf = Path.GetFileName(sub) ?? "";
+if (IsSafeAmdUnpackDirName(leaf)) {
+results.Add(sub);
+}
+}
+} catch {}
+}
 return DeduplicateNormalizedPaths(results.ToArray());
 }
 private static string[] CollectMediaEditorCacheDirs() {
@@ -21051,9 +21078,10 @@ IsDeliveryOptimization = true
 PopulateDirectoryCategory(catDo, new[] { Path.Combine(winDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache") }, null, false, ct);
 list.Add(catDo);
 var catDrvInst = new ResourceCleanCategory {
-Id = "t1_driver_installers", Tier = 1, FilterGroup = "Safe", RiskLevel = "Safe",
+Id = "t1_driver_installers", Tier = 1, FilterGroup = "Safe", RiskLevel = "Caution",
 Title = "B\u1ED9 c\u00E0i Driver c\u0169 (NVIDIA / AMD)",
-Description = "T\u1EC7p gi\u1EA3i n\u00E9n c\u00E0i \u0111\u1EB7t c\u0169 trong NVIDIA Downloader, C:\\NVIDIA v\u00E0 C:\\AMD (kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver \u0111ang ch\u1EA1y).",
+Description = "Ch\u1EC9 t\u1EC7p gi\u1EA3i n\u00E9n b\u1ED9 c\u00E0i c\u0169 (NVIDIA Downloader, C:\\NVIDIA v\u00E0 g\u00F3i gi\u1EA3i n\u00E9n Radeon) \u2014 kh\u00F4ng \u1EA3nh h\u01B0\u1EDFng driver \u0111ang ch\u1EA1y.",
+WarningNote = "Ki\u1EC3m tra Chi ti\u1EBFt tr\u01B0\u1EDBc khi x\u00F3a; ch\u1EC9 d\u1ECDn b\u1ED9 gi\u1EA3i n\u00E9n c\u0169, kh\u00F4ng x\u00F3a driver trong DriverStore.",
 CleanMode = "ContentsOnly", SupportsRecycleBin = false, DefaultSelected = false, Selected = false
 };
 PopulateDirectoryCategory(catDrvInst, CollectDriverInstallerDirs(), null, false, ct);
@@ -27566,7 +27594,7 @@ function Invoke-PnpDriverStoreCleanup {
                 if ($delP.ExitCode -eq 0 -or $combined -match "deleted successfully|$([char]0x0111)$([char]0x00E3) x$([char]0x00F3)a th$([char]0x00E0)nh c$([char]0x00F4)ng") {
                     $deletedCount++
                     Log-Text "   [OK - $([char]0x0110)$([char]0x00E3) d$([char]0x1ECD)n] $inf"
-                } elseif ($combined -match "installed using the specified INF|$([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c s$([char]0x1EED) d$([char]0x1EE5)ng|in use|b$([char]0x1ECB) t$([char]0x1EEB) ch$([char]0x1ED1)i") {
+                } elseif ($delP.ExitCode -in @(259, 5, -536870347, -536870325) -or $combined -match "installed using the specified INF|$([char]0x0111)ang $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c s$([char]0x1EED) d$([char]0x1EE5)ng|in use|b$([char]0x1ECB) t$([char]0x1EEB) ch$([char]0x1ED1)i|currently installed") {
                     $inUseCount++
                 } else {
                     $errorCount++
@@ -34828,6 +34856,14 @@ function Invoke-WinGetWithMsiRetry {
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
     $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
+    if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978335230 -or ($code -ne 0 -and $script:lastCliRun -and ("$($script:lastCliRun.StdOut)`n$($script:lastCliRun.StdErr)") -match "(?i)Unrecognized argument|$([char]0x0110)$([char]0x1ED1)i s$([char]0x1ED1) kh$([char]0x00F4)ng $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c nh$([char]0x1EAD)n d$([char]0x1EA1)ng")) -and $Arguments -match '--disable-interactivity|--include-unknown') {
+        $compatArgs = ($Arguments -replace '\s*--disable-interactivity\b', '' -replace '\s*--include-unknown\b', '').Trim()
+        if ($compatArgs -ne $Arguments) {
+            Log-Text "[*] Phi$([char]0x00EA)n b$([char]0x1EA3)n WinGet tr$([char]0x00EA)n m$([char]0x00E1)y c$([char]0x0169) h$([char]0x01A1)n chu$([char]0x1EA9)n m$([char]0x1EDB)i $([char]0x2014) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng ch$([char]0x1EA1)y l$([char]0x1EA1)i v$([char]0x1EDB)i tham s$([char]0x1ED1) t$([char]0x01B0)$([char]0x01A1)ng th$([char]0x00ED)ch..."
+            $Arguments = $compatArgs
+            $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
+        }
+    }
     if (-not $script:isWindowClosing -and -not $script:cancelRequested -and ($code -eq -1978334974 -or $code -eq 1618)) {
         Log-Text "[!] Windows Installer $([char]0x0111)ang b$([char]0x1EAD)n (1618), $([char]0x0111)ang ch$([char]0x1EDD) gi$([char]0x1EA3)i ph$([char]0x00F3)ng $([char]0x0111)$([char]0x1EC3) th$([char]0x1EED) l$([char]0x1EA1)i..."
         [void](Wait-WindowsInstallerReady -MaxWaitSeconds 25)
@@ -35151,9 +35187,12 @@ function Test-WinGetScopeSupported {
     if ([string]::IsNullOrWhiteSpace($Scope)) { return $true }
     $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
     $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --scope $Scope --disable-interactivity --accept-source-agreements") -TimeoutSeconds 12
+    if ($cap.Available -and $cap.ExitCode -eq -1978335230) {
+        $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --scope $Scope --accept-source-agreements") -TimeoutSeconds 12
+    }
     if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled) { return $true }
     $outTxt = "$($cap.StdOut)`n$($cap.StdErr)"
-    if ($cap.ExitCode -ne 0 -or $outTxt -match '(?i)No applicable installer found|No package found matching') {
+    if ($cap.ExitCode -in @(-1978335216, -1978335212) -or $cap.ExitCode -ne 0 -or $outTxt -match "(?i)No applicable installer found|No package found matching|Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y tr$([char]0x00EC)nh c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ph$([char]0x00F9) h$([char]0x1EE3)p|Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y g$([char]0x00F3)i n$([char]0x00E0)o kh$([char]0x1EDB)p") {
         return $false
     }
     return $true
@@ -35162,18 +35201,26 @@ function Test-WinGetScopeSupported {
 function Get-WinGetRunOutcomeFromOutput {
     param($CliResult)
     if ($null -eq $CliResult) { return "Unknown" }
+    # Layer 1: Locale-independent WinGet HRESULT exit codes (works on every Windows language)
+    if ($CliResult.PSObject.Properties['ExitCode'] -and $null -ne $CliResult.ExitCode) {
+        $ec = [int]$CliResult.ExitCode
+        if ($ec -eq -1978335189) { return "NoUpgradeAvailable" }
+        if ($ec -eq -1978335212) { return "NotInstalled" }
+        if ($ec -in @(-1978335216, -1978335192, -1978335190, -1978335188)) { return "Failed" }
+    }
+    # Layer 2: Multi-language output matching (English + Vietnamese)
     $txt = "$($CliResult.StdOut)`n$($CliResult.StdErr)"
     if ([string]::IsNullOrWhiteSpace($txt)) { return "Unknown" }
-    if ($txt -match '(?i)No applicable update found|No newer package versions are available|No available upgrade found') {
+    if ($txt -match "(?i)No applicable update found|No newer package versions are available|No available upgrade found|Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1EA3)n c$([char]0x1EAD)p nh$([char]0x1EAD)t|Kh$([char]0x00F4)ng c$([char]0x00F3) phi$([char]0x00EA)n b$([char]0x1EA3)n g$([char]0x00F3)i m$([char]0x1EDB)i h$([char]0x01A1)n|Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y b$([char]0x1EA3)n n$([char]0x00E2)ng c$([char]0x1EA5)p") {
         return "NoUpgradeAvailable"
     }
-    if ($txt -match '(?i)No installed package found matching input criteria') {
+    if ($txt -match "(?i)No installed package found matching input criteria|Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y g$([char]0x00F3)i $([char]0x0111)$([char]0x00E3) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t") {
         return "NotInstalled"
     }
-    if ($txt -match '(?i)Successfully installed|Successfully updated') {
+    if ($txt -match "(?i)Successfully installed|Successfully updated|$([char]0x0110)$([char]0x00E3) c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t th$([char]0x00E0)nh c$([char]0x00F4)ng|$([char]0x0110)$([char]0x00E3) c$([char]0x1EAD)p nh$([char]0x1EAD)t th$([char]0x00E0)nh c$([char]0x00F4)ng") {
         return "Succeeded"
     }
-    if ($txt -match '(?i)Installation failed|Installer failed|Download failed|No applicable installer found|Another installation is already in progress|hash does not match|requires administrator|winget upgrade --all completed with failures') {
+    if ($txt -match "(?i)Installation failed|Installer failed|Download failed|No applicable installer found|Another installation is already in progress|hash does not match|requires administrator|winget upgrade --all completed with failures|C$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t kh$([char]0x00F4)ng th$([char]0x00E0)nh c$([char]0x00F4)ng|T$([char]0x1EA3)i xu$([char]0x1ED1)ng kh$([char]0x00F4)ng th$([char]0x00E0)nh c$([char]0x00F4)ng|Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y tr$([char]0x00EC)nh c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t ph$([char]0x00F9) h$([char]0x1EE3)p|b$([char]0x0103)m kh$([char]0x00F4)ng kh$([char]0x1EDB)p|y$([char]0x00EA)u c$([char]0x1EA7)u quy$([char]0x1EC1)n qu$([char]0x1EA3)n tr$([char]0x1ECB)") {
         return "Failed"
     }
     return "Unknown"

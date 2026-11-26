@@ -106,7 +106,7 @@ function Invoke-PnpDriverStoreCleanup {
                 if ($delP.ExitCode -eq 0 -or $combined -match 'deleted successfully|đã xóa thành công') {
                     $deletedCount++
                     Log-Text "   [OK - Đã dọn] $inf"
-                } elseif ($combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối') {
+                } elseif ($delP.ExitCode -in @(259, 5, -536870347, -536870325) -or $combined -match 'installed using the specified INF|đang được sử dụng|in use|bị từ chối|currently installed') {
                     $inUseCount++
                 } else {
                     $errorCount++

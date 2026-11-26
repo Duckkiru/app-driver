@@ -280,7 +280,13 @@ try {
     $cancBlocked = (-not [DuckUtil.ResourceCleanerEngine]::TryRecycleItemStrict($resRoot, $ctsCanc.Token, 5000, [ref]$failCanc)) -and ($failCanc -eq "Cancelled")
     $ctsCanc.Dispose()
     $reasonOk = ((Format-WinGetExitCodeReason -Code -1978335190) -match 'đang chạy') -and ((Format-WinGetExitCodeReason -Code -1978335217) -match 'WinGet')
-    Assert-Check "ResourceAttrAndCancelAndWingetReason" ($delRhsOk -and -not $skCloudRhs -and $cancBlocked -and $reasonOk) "RhsDel=$delRhsOk CancBlocked=$cancBlocked ReasonOk=$reasonOk"
+    $amdSafeOk = ([DuckUtil.ResourceCleanerEngine]::IsSafeAmdUnpackDirName("Win10-Radeon-Software-Adrenalin-2024")) -and (-not [DuckUtil.ResourceCleanerEngine]::IsSafeAmdUnpackDirName("Chipset_Software")) -and (-not [DuckUtil.ResourceCleanerEngine]::IsSafeAmdUnpackDirName("MyCustomTools"))
+    $wgOutcomeOk = (
+        (Get-WinGetRunOutcomeFromOutput ([PSCustomObject]@{ ExitCode = -1978335189; StdOut = ""; StdErr = "" })) -eq "NoUpgradeAvailable" -and
+        (Get-WinGetRunOutcomeFromOutput ([PSCustomObject]@{ ExitCode = -1978335212; StdOut = ""; StdErr = "" })) -eq "NotInstalled" -and
+        (Get-WinGetRunOutcomeFromOutput ([PSCustomObject]@{ ExitCode = 0; StdOut = "Đã cài đặt thành công"; StdErr = "" })) -eq "Succeeded"
+    )
+    Assert-Check "ResourceAttrAndCancelAndWingetReason" ($delRhsOk -and -not $skCloudRhs -and $cancBlocked -and $reasonOk -and $amdSafeOk -and $wgOutcomeOk) "RhsDel=$delRhsOk CancBlocked=$cancBlocked ReasonOk=$reasonOk AmdSafe=$amdSafeOk WgOutcome=$wgOutcomeOk"
 } finally {
     try {
         # Clean up long paths and hidden attributes cleanly via cmd /c rd /s /q on extended path
