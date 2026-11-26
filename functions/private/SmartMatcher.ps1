@@ -121,11 +121,11 @@ function Test-AppUpdateGenuine {
     }
     if ([string]::IsNullOrWhiteSpace($AvailableVer)) { return $false }
     $av = $AvailableVer.Trim()
-    if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown") { return $false }
+    if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown" -or $av -match '(?i)^kh[o\u00F4]ng\s*x[a\u00E1]c\s*[d\u0111][i\u1ECB]nh$') { return $false }
     if ($av -notmatch '\d') { return $false }
     if ([string]::IsNullOrWhiteSpace($InstalledVer)) { return $false }
     $iv = $InstalledVer.Trim()
-    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $false }
+    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -match '(?i)^kh[o\u00F4]ng\s*x[a\u00E1]c\s*[d\u0111][i\u1ECB]nh$' -or $iv -notmatch '\d') { return $false }
     $cmp = Compare-AppVersions $av $iv
     if ($iv.StartsWith("<")) { return ($cmp -ge 0) }
     if ($cmp -gt 0) { return $true }
@@ -925,6 +925,13 @@ function Invoke-WingetListCapture {
         }
         if ($null -ne $p) {
             try { $p.Dispose() } catch {}
+        }
+    }
+
+    if (-not $wasCanceled -and -not $timedOut -and ($exitCode -eq -1978335230 -or ($exitCode -ne 0 -and ("$rawList`n$errList") -match '(?i)Unrecognized argument|Đối số không được nhận dạng')) -and $Arguments -match '--disable-interactivity') {
+        $compatCaptureArgs = ($Arguments -replace '\s*--disable-interactivity\b', '').Trim()
+        if ($compatCaptureArgs -ne $Arguments) {
+            return (Invoke-WingetListCapture -Arguments $compatCaptureArgs -TimeoutSeconds $TimeoutSeconds -CancelCheck $CancelCheck -TrackAsAuto:$TrackAsAuto)
         }
     }
 

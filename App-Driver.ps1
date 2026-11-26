@@ -22633,11 +22633,11 @@ function Test-AppUpdateGenuine {
     }
     if ([string]::IsNullOrWhiteSpace($AvailableVer)) { return $false }
     $av = $AvailableVer.Trim()
-    if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown") { return $false }
+    if ($av -eq "winget" -or $av -eq "msstore" -or $av -eq "Unknown" -or $av -match '(?i)^kh[o\u00F4]ng\s*x[a\u00E1]c\s*[d\u0111][i\u1ECB]nh$') { return $false }
     if ($av -notmatch '\d') { return $false }
     if ([string]::IsNullOrWhiteSpace($InstalledVer)) { return $false }
     $iv = $InstalledVer.Trim()
-    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -notmatch '\d') { return $false }
+    if ($iv -eq "Unknown" -or $iv -eq "Installed" -or $iv -match '(?i)^kh[o\u00F4]ng\s*x[a\u00E1]c\s*[d\u0111][i\u1ECB]nh$' -or $iv -notmatch '\d') { return $false }
     $cmp = Compare-AppVersions $av $iv
     if ($iv.StartsWith("<")) { return ($cmp -ge 0) }
     if ($cmp -gt 0) { return $true }
@@ -23437,6 +23437,13 @@ function Invoke-WingetListCapture {
         }
         if ($null -ne $p) {
             try { $p.Dispose() } catch {}
+        }
+    }
+
+    if (-not $wasCanceled -and -not $timedOut -and ($exitCode -eq -1978335230 -or ($exitCode -ne 0 -and ("$rawList`n$errList") -match "(?i)Unrecognized argument|$([char]0x0110)$([char]0x1ED1)i s$([char]0x1ED1) kh$([char]0x00F4)ng $([char]0x0111)$([char]0x01B0)$([char]0x1EE3)c nh$([char]0x1EAD)n d$([char]0x1EA1)ng")) -and $Arguments -match '--disable-interactivity') {
+        $compatCaptureArgs = ($Arguments -replace '\s*--disable-interactivity\b', '').Trim()
+        if ($compatCaptureArgs -ne $Arguments) {
+            return (Invoke-WingetListCapture -Arguments $compatCaptureArgs -TimeoutSeconds $TimeoutSeconds -CancelCheck $CancelCheck -TrackAsAuto:$TrackAsAuto)
         }
     }
 
@@ -35145,7 +35152,7 @@ function Get-WinGetExactPackageState {
             $anyOutdated = $true
             if ([string]::IsNullOrWhiteSpace($worstOutdatedVer)) { $worstOutdatedVer = [string]$it.Version }
         }
-        if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match '^(<|Unknown)') { $hasUnknown = $true }
+        if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match "(?i)^(<|Unknown|Kh$([char]0x00F4)ng\s*x$([char]0x00E1)c\s*$([char]0x0111)$([char]0x1ECB)nh)") { $hasUnknown = $true }
         if (-not [string]::IsNullOrWhiteSpace($it.Version)) {
             if ([string]::IsNullOrWhiteSpace($bestVer) -or (Compare-CatalogVersionsSafe $it.Version $bestVer) -gt 0) {
                 $bestVer = [string]$it.Version
@@ -35765,6 +35772,9 @@ function Get-WinGetInstallerManifestInfo {
 
     $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
     $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --disable-interactivity --accept-source-agreements") -TimeoutSeconds 15
+    if ($cap.Available -and -not $cap.TimedOut -and -not $cap.WasCanceled -and $cap.ExitCode -eq -1978335212 -and -not [string]::IsNullOrWhiteSpace($srcArg)) {
+        $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact --disable-interactivity --accept-source-agreements") -TimeoutSeconds 15
+    }
     if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled -or $cap.ExitCode -ne 0) {
         return $null
     }
@@ -36486,8 +36496,11 @@ function Invoke-CatalogUpgradeWithFallback {
     try {
         # Tier 1: WinGet CLI (strict scope & location)
         $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade -Context $ctx -SkipGuard
-        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2, -3))
-        if ($upCode -in @(0, 2, 3, -2, -3) -or $script:cancelRequested -or $script:isWindowClosing) {
+        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978335190, -1978334974, 1618, -2, -3))
+        if ($upCode -in @(0, 2, 3, -2, -3, -1978335190) -or $script:cancelRequested -or $script:isWindowClosing) {
+            if ($upCode -eq -1978335190) {
+                Log-Text "   [WARN] $($app.Name) $([char]0x0111)ang ch$([char]0x1EA1)y $([char]0x2014) h$([char]0x00E3)y $([char]0x0111)$([char]0x00F3)ng $([char]0x1EE9)ng d$([char]0x1EE5)ng r$([char]0x1ED3)i b$([char]0x1EA5)m c$([char]0x1EAD)p nh$([char]0x1EAD)t l$([char]0x1EA1)i."
+            }
             $finalCode = $upCode
             return $finalCode
         }
@@ -36824,12 +36837,15 @@ Register-Click "btnInstall" {
                     $usedWingetInstall = $true
                 }
 
-                $wgOutcome = if ($usedWingetInstall -and $code -in @(0, 3010, 1641)) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
-                if ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled") {
+                $wgOutcome = if ($usedWingetInstall) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
+                if ($usedWingetInstall -and ($code -eq -1978335189 -or $wgOutcome -eq "NoUpgradeAvailable")) {
+                    $code = 0
+                    $wgOutcome = "NoUpgradeAvailable"
+                } elseif ($code -in @(0, 3010, 1641) -and ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled")) {
                     $code = 1
                 }
 
-                if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                if ($code -notin @(0, 3010, 1641, 1602, -2, -1978335190) -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
                     $fbCode = Invoke-CatalogFreshInstallFallback -App $app -SkipGitHub:$triedGitHub
                     if ($fbCode -in @(0, 3010, 1641, -2)) {
                         $code = $fbCode
@@ -36855,9 +36871,10 @@ Register-Click "btnInstall" {
                 } elseif ($code -eq -2 -or $code -eq 1602 -or $script:cancelRequested) {
                     Log-Text "   [!] $([char]0x0110)$([char]0x00E3) h$([char]0x1EE7)y c$([char]0x00E0)i $([char]0x0111)$([char]0x1EB7)t $($app.Name)."
                 } else {
-                    Log-Text "   [ERR] $($app.Name) (Exit Code: $code)"
+                    $instErrHint = Format-WinGetExitCodeReason -Code $code
+                    Log-Text "   [ERR] $($app.Name) ($instErrHint)"
                     $failCount++
-                    if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                    if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl) -and $code -ne -1978335190) {
                         Log-Text "   [WEB] [T$([char]0x1EA7)ng 5] C$([char]0x00E1)c ngu$([char]0x1ED3)n t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng kh$([char]0x00F4)ng kh$([char]0x1EA3) d$([char]0x1EE5)ng. $([char]0x0110)ang m$([char]0x1EDF) trang t$([char]0x1EA3)i ch$([char]0x00ED)nh th$([char]0x1EE9)c: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
                     }

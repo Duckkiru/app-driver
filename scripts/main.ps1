@@ -5905,7 +5905,7 @@ function Get-WinGetExactPackageState {
             $anyOutdated = $true
             if ([string]::IsNullOrWhiteSpace($worstOutdatedVer)) { $worstOutdatedVer = [string]$it.Version }
         }
-        if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match '^(<|Unknown)') { $hasUnknown = $true }
+        if ([string]::IsNullOrWhiteSpace($it.Version) -or $it.Version -match '(?i)^(<|Unknown|Không\s*xác\s*định)') { $hasUnknown = $true }
         if (-not [string]::IsNullOrWhiteSpace($it.Version)) {
             if ([string]::IsNullOrWhiteSpace($bestVer) -or (Compare-CatalogVersionsSafe $it.Version $bestVer) -gt 0) {
                 $bestVer = [string]$it.Version
@@ -6525,6 +6525,9 @@ function Get-WinGetInstallerManifestInfo {
 
     $srcArg = Get-WinGetSourceArgument -App $App -Id $Id
     $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact$srcArg --disable-interactivity --accept-source-agreements") -TimeoutSeconds 15
+    if ($cap.Available -and -not $cap.TimedOut -and -not $cap.WasCanceled -and $cap.ExitCode -eq -1978335212 -and -not [string]::IsNullOrWhiteSpace($srcArg)) {
+        $cap = Invoke-WingetListCapture -Arguments ("show --id `"$Id`" --exact --disable-interactivity --accept-source-agreements") -TimeoutSeconds 15
+    }
     if (-not $cap.Available -or $cap.TimedOut -or $cap.WasCanceled -or $cap.ExitCode -ne 0) {
         return $null
     }
@@ -7246,8 +7249,11 @@ function Invoke-CatalogUpgradeWithFallback {
     try {
         # Tier 1: WinGet CLI (strict scope & location)
         $upCode = Invoke-SmartAppUpgrade -Tag $Tag -IsBulkUpgrade:$IsBulkUpgrade -Context $ctx -SkipGuard
-        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978334974, 1618, -2, -3))
-        if ($upCode -in @(0, 2, 3, -2, -3) -or $script:cancelRequested -or $script:isWindowClosing) {
+        $tier1RanInstaller = ($upCode -notin @(2, 3, -1978335189, -1978335212, -1978335216, -1978335191, -1978335190, -1978334974, 1618, -2, -3))
+        if ($upCode -in @(0, 2, 3, -2, -3, -1978335190) -or $script:cancelRequested -or $script:isWindowClosing) {
+            if ($upCode -eq -1978335190) {
+                Log-Text "   [WARN] $($app.Name) đang chạy — hãy đóng ứng dụng rồi bấm cập nhật lại."
+            }
             $finalCode = $upCode
             return $finalCode
         }
@@ -7584,12 +7590,15 @@ Register-Click "btnInstall" {
                     $usedWingetInstall = $true
                 }
 
-                $wgOutcome = if ($usedWingetInstall -and $code -in @(0, 3010, 1641)) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
-                if ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled") {
+                $wgOutcome = if ($usedWingetInstall) { Get-WinGetRunOutcomeFromOutput -CliResult $script:lastCliRun } else { "Unknown" }
+                if ($usedWingetInstall -and ($code -eq -1978335189 -or $wgOutcome -eq "NoUpgradeAvailable")) {
+                    $code = 0
+                    $wgOutcome = "NoUpgradeAvailable"
+                } elseif ($code -in @(0, 3010, 1641) -and ($wgOutcome -eq "Failed" -or $wgOutcome -eq "NotInstalled")) {
                     $code = 1
                 }
 
-                if ($code -notin @(0, 3010, 1641, 1602, -2) -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
+                if ($code -notin @(0, 3010, 1641, 1602, -2, -1978335190) -and -not $script:cancelRequested -and -not $script:isWindowClosing) {
                     $fbCode = Invoke-CatalogFreshInstallFallback -App $app -SkipGitHub:$triedGitHub
                     if ($fbCode -in @(0, 3010, 1641, -2)) {
                         $code = $fbCode
@@ -7615,9 +7624,10 @@ Register-Click "btnInstall" {
                 } elseif ($code -eq -2 -or $code -eq 1602 -or $script:cancelRequested) {
                     Log-Text "   [!] Đã hủy cài đặt $($app.Name)."
                 } else {
-                    Log-Text "   [ERR] $($app.Name) (Exit Code: $code)"
+                    $instErrHint = Format-WinGetExitCodeReason -Code $code
+                    Log-Text "   [ERR] $($app.Name) ($instErrHint)"
                     $failCount++
-                    if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl)) {
+                    if (-not [string]::IsNullOrWhiteSpace($app.FallbackUrl) -and $code -ne -1978335190) {
                         Log-Text "   [WEB] [Tầng 5] Các nguồn tự động không khả dụng. Đang mở trang tải chính thức: $($app.FallbackUrl)"
                         try { Start-Process $app.FallbackUrl } catch {}
                     }
