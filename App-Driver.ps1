@@ -3153,11 +3153,12 @@ if (el != null) rowsStack.Children.Add(el);
 }
 }
 private static readonly HttpClient _downloadClient = CreateDownloadClient();
+public static volatile string LastDownloadStatsText = "";
 private static HttpClient CreateDownloadClient() {
-if (Environment.Version.Major == 4) {
 try {
 Type spm = Type.GetType("System.Net.ServicePointManager, System");
 if (spm != null) {
+if (Environment.Version.Major == 4) {
 PropertyInfo prop = spm.GetProperty("SecurityProtocol", BindingFlags.Public | BindingFlags.Static);
 if (prop != null) {
 int cur = Convert.ToInt32(prop.GetValue(null, null));
@@ -3165,14 +3166,216 @@ object val = Enum.ToObject(prop.PropertyType, cur | 3072);
 prop.SetValue(null, val, null);
 }
 }
-} catch {}
+PropertyInfo connProp = spm.GetProperty("DefaultConnectionLimit", BindingFlags.Public | BindingFlags.Static);
+if (connProp != null) {
+int curLim = Convert.ToInt32(connProp.GetValue(null, null));
+if (curLim < 32) connProp.SetValue(null, 32, null);
 }
+PropertyInfo expProp = spm.GetProperty("Expect100Continue", BindingFlags.Public | BindingFlags.Static);
+if (expProp != null) expProp.SetValue(null, false, null);
+PropertyInfo nagProp = spm.GetProperty("UseNagleAlgorithm", BindingFlags.Public | BindingFlags.Static);
+if (nagProp != null) nagProp.SetValue(null, false, null);
+}
+} catch {}
 var handler = new HttpClientHandler();
 try { handler.AllowAutoRedirect = true; } catch {}
+try {
+PropertyInfo maxConn = handler.GetType().GetProperty("MaxConnectionsPerServer", BindingFlags.Public | BindingFlags.Instance);
+if (maxConn != null && maxConn.CanWrite) maxConn.SetValue(handler, 16, null);
+} catch {}
 var client = new HttpClient(handler);
-client.Timeout = TimeSpan.FromMinutes(3);
+client.Timeout = TimeSpan.FromMinutes(10);
 try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DuckUtil"); } catch {}
 return client;
+}
+private static string FormatDownloadStats(long bytes, double sec, int streams) {
+double mb = bytes / 1048576.0;
+double safeSec = sec > 0.05 ? sec : 0.05;
+double mbps = mb / safeSec;
+return string.Format(CultureInfo.InvariantCulture, "{0:0.0} MB / {1:0.1}s ({2:0.1} MB/s, {3} lu\u1ED3ng)", mb, safeSec, mbps, streams);
+}
+private static async Task<string> ProbeRangeSupportAsync(string url, long maxBytes, CancellationToken ct) {
+CancellationTokenSource probeCts = null;
+try {
+probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+probeCts.CancelAfter(10000);
+using (var req = new HttpRequestMessage(HttpMethod.Get, url)) {
+req.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 0);
+using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, probeCts.Token).ConfigureAwait(false)) {
+if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+!string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+return "ERR|insecure-redirect";
+}
+if (resp.Content != null && resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+return "ERR|html-response";
+}
+}
+if ((int)resp.StatusCode == 206 && resp.Content != null && resp.Content.Headers != null &&
+resp.Content.Headers.ContentRange != null && resp.Content.Headers.ContentRange.Length.HasValue) {
+long totalLen = resp.Content.Headers.ContentRange.Length.Value;
+if (totalLen > maxBytes) return "ERR|file-too-large";
+string finalUrl = (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null)
+? resp.RequestMessage.RequestUri.AbsoluteUri
+: url;
+return "RANGE|" + totalLen.ToString(CultureInfo.InvariantCulture) + "|" + finalUrl;
+}
+}
+}
+} catch {} finally {
+if (probeCts != null) { try { probeCts.Dispose(); } catch {} }
+}
+return "SINGLE";
+}
+private static async Task DownloadRangeChunkAsync(string url, string destFile, long start, long end, CancellationToken ct) {
+long expected = (end - start) + 1L;
+Exception lastEx = null;
+for (int attempt = 0; attempt < 2; attempt++) {
+bool shouldRetry = false;
+try {
+ct.ThrowIfCancellationRequested();
+using (var req = new HttpRequestMessage(HttpMethod.Get, url)) {
+req.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(start, end);
+using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+if ((int)resp.StatusCode != 206 || resp.Content == null) {
+throw new IOException("http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture));
+}
+using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+using (var dst = new FileStream(destFile, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, 262144, true)) {
+dst.Seek(start, SeekOrigin.Begin);
+byte[] buf = new byte[262144];
+long copied = 0L;
+int r;
+while (copied < expected && (r = await src.ReadAsync(buf, 0, (int)Math.Min((long)buf.Length, expected - copied), ct).ConfigureAwait(false)) > 0) {
+await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+copied += r;
+}
+if (copied != expected) {
+throw new IOException("short-chunk");
+}
+}
+}
+}
+return;
+} catch (OperationCanceledException) {
+throw;
+} catch (Exception ex) {
+lastEx = ex;
+if (attempt == 0) shouldRetry = true;
+}
+if (shouldRetry) {
+try { await Task.Delay(350, ct).ConfigureAwait(false); } catch {}
+}
+}
+throw (lastEx ?? new IOException("chunk-failed"));
+}
+private static async Task<string> DownloadFileAcceleratedCoreAsync(string url, string destFile, long maxBytes, bool rejectHtml, CancellationToken ct) {
+string cleanUrl = url.Trim();
+string dir = Path.GetDirectoryName(destFile);
+if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+var sw = Stopwatch.StartNew();
+string probe = await ProbeRangeSupportAsync(cleanUrl, maxBytes, ct).ConfigureAwait(false);
+if (probe.StartsWith("ERR|", StringComparison.Ordinal)) {
+return probe;
+}
+if (probe.StartsWith("RANGE|", StringComparison.Ordinal)) {
+string rest = probe.Substring(6);
+int sep = rest.IndexOf('|');
+long totalLen = 0L;
+string finalUrl = cleanUrl;
+if (sep > 0) {
+long.TryParse(rest.Substring(0, sep), NumberStyles.Integer, CultureInfo.InvariantCulture, out totalLen);
+string candUrl = rest.Substring(sep + 1);
+if (!string.IsNullOrWhiteSpace(candUrl) && candUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+finalUrl = candUrl;
+}
+}
+if (totalLen >= 4194304L && totalLen <= maxBytes) {
+int streams = totalLen >= 25165824L ? 6 : 4;
+try {
+using (var pre = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 4096, false)) {
+pre.SetLength(totalLen);
+}
+long chunkSize = totalLen / streams;
+var tasks = new Task[streams];
+for (int i = 0; i < streams; i++) {
+long s = i * chunkSize;
+long e = (i == streams - 1) ? (totalLen - 1L) : ((s + chunkSize) - 1L);
+tasks[i] = DownloadRangeChunkAsync(finalUrl, destFile, s, e, ct);
+}
+await Task.WhenAll(tasks).ConfigureAwait(false);
+sw.Stop();
+LastDownloadStatsText = FormatDownloadStats(totalLen, sw.Elapsed.TotalSeconds, streams);
+return "OK|" + destFile;
+} catch (OperationCanceledException) {
+try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+throw;
+} catch {
+try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+}
+}
+}
+long totalBytes = 0L;
+using (HttpResponseMessage resp = await _downloadClient.GetAsync(cleanUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+if (!resp.IsSuccessStatusCode || resp.Content == null) {
+return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+}
+if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+!string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+return "ERR|insecure-redirect";
+}
+if (rejectHtml && resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+return "ERR|html-response";
+}
+}
+if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
+resp.Content.Headers.ContentLength.Value > maxBytes) {
+return "ERR|file-too-large";
+}
+using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 262144, true)) {
+byte[] buf = new byte[262144];
+int r;
+while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+totalBytes += r;
+if (totalBytes > maxBytes) {
+try { dst.Close(); } catch {}
+try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+return "ERR|file-too-large";
+}
+await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+}
+}
+}
+if (totalBytes <= 0L) {
+try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+return "ERR|empty-file";
+}
+sw.Stop();
+LastDownloadStatsText = FormatDownloadStats(totalBytes, sw.Elapsed.TotalSeconds, 1);
+return "OK|" + destFile;
+}
+private static string ComputeFileSha256AndMagic(string filePath, out byte[] magicBuf, out int magicLen) {
+magicBuf = new byte[4];
+magicLen = 0;
+using (SHA256 sha = SHA256.Create())
+using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1048576, FileOptions.SequentialScan)) {
+byte[] buf = new byte[1048576];
+int r;
+while ((r = fs.Read(buf, 0, buf.Length)) > 0) {
+if (magicLen < 4) {
+int copy = Math.Min(4 - magicLen, r);
+Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+magicLen += copy;
+}
+sha.TransformBlock(buf, 0, r, null, 0);
+}
+sha.TransformFinalBlock(new byte[0], 0, 0);
+return BytesToLowerHex(sha.Hash);
+}
 }
 public static string NormalizeSearchFold(string input) {
 if (string.IsNullOrWhiteSpace(input)) return "";
@@ -3460,18 +3663,10 @@ if (!isInstaller || !matchedUrl.StartsWith("https://", StringComparison.OrdinalI
 ct.ThrowIfCancellationRequested();
 Directory.CreateDirectory(destDir);
 outFile = Path.Combine(destDir, safeName);
-using (HttpResponseMessage dlResp = await _downloadClient.GetAsync(matchedUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
-if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) {
-return "ERR|download-http-" + ((int)dlResp.StatusCode).ToString(CultureInfo.InvariantCulture);
-}
-using (Stream src = await dlResp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
-byte[] buf = new byte[81920];
-int r;
-while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
-await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
-}
-}
+string dlRes = await DownloadFileAcceleratedCoreAsync(matchedUrl, outFile, 2147483648L, true, ct).ConfigureAwait(false);
+if (!dlRes.StartsWith("OK|", StringComparison.Ordinal)) {
+try { if (File.Exists(outFile)) File.Delete(outFile); } catch {}
+return dlRes;
 }
 if (File.Exists(outFile)) {
 FileInfo fi = new FileInfo(outFile);
@@ -3578,45 +3773,12 @@ if (string.IsNullOrWhiteSpace(destFile)) {
 return "ERR|invalid-dest";
 }
 const long MaxInstallerBytes = 2147483648L;
-int limitMs = timeoutMs > 0 ? timeoutMs : 120000;
+int limitMs = timeoutMs > 0 ? timeoutMs : 300000;
 CancellationTokenSource linkedCts = null;
 try {
 linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 linkedCts.CancelAfter(limitMs);
-string dir = Path.GetDirectoryName(destFile);
-if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-long totalBytes = 0L;
-using (var req = new HttpRequestMessage(HttpMethod.Get, url.Trim())) {
-req.Headers.TryAddWithoutValidation("User-Agent", "DuckUtil");
-using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token).ConfigureAwait(false)) {
-if (!resp.IsSuccessStatusCode || resp.Content == null) {
-return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
-}
-if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
-!string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
-return "ERR|insecure-redirect";
-}
-using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
-byte[] buf = new byte[81920];
-int r;
-while ((r = await src.ReadAsync(buf, 0, buf.Length, linkedCts.Token).ConfigureAwait(false)) > 0) {
-totalBytes += r;
-if (totalBytes > MaxInstallerBytes) {
-try { dst.Close(); } catch {}
-try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-return "ERR|file-too-large";
-}
-await dst.WriteAsync(buf, 0, r, linkedCts.Token).ConfigureAwait(false);
-}
-}
-}
-}
-if (totalBytes <= 0L) {
-try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-return "ERR|empty-file";
-}
-return "OK|" + destFile;
+return await DownloadFileAcceleratedCoreAsync(url, destFile, MaxInstallerBytes, true, linkedCts.Token).ConfigureAwait(false);
 } catch (OperationCanceledException) {
 try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
 return ct.IsCancellationRequested ? "ERR|canceled" : "ERR|timeout";
@@ -3641,58 +3803,14 @@ return "ERR|invalid-dest";
 const long MaxInstallerBytes = 2147483648L;
 try {
 ct.ThrowIfCancellationRequested();
-string dir = Path.GetDirectoryName(destFile);
-if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-string actualHex = "";
-long totalBytes = 0L;
-byte[] magicBuf = new byte[4];
-int magicLen = 0;
-using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
-if (!resp.IsSuccessStatusCode || resp.Content == null) {
-return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
-}
-if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
-!string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
-return "ERR|insecure-redirect";
-}
-if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
-string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
-if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
-return "ERR|html-response";
-}
-}
-if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
-resp.Content.Headers.ContentLength.Value > MaxInstallerBytes) {
-return "ERR|file-too-large";
-}
-using (SHA256 sha = SHA256.Create())
-using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
-byte[] buf = new byte[81920];
-int r;
-while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
-totalBytes += r;
-if (totalBytes > MaxInstallerBytes) {
-try { dst.Close(); } catch {}
+string dlRes = await DownloadFileAcceleratedCoreAsync(url, destFile, MaxInstallerBytes, true, ct).ConfigureAwait(false);
+if (!dlRes.StartsWith("OK|", StringComparison.Ordinal)) {
 try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-return "ERR|file-too-large";
+return dlRes;
 }
-if (magicLen < 4) {
-int copy = Math.Min(4 - magicLen, r);
-Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
-magicLen += copy;
-}
-sha.TransformBlock(buf, 0, r, null, 0);
-await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
-}
-sha.TransformFinalBlock(new byte[0], 0, 0);
-actualHex = BytesToLowerHex(sha.Hash);
-}
-}
-if (totalBytes <= 0L) {
-try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-return "ERR|empty-file";
-}
+byte[] magicBuf;
+int magicLen;
+string actualHex = ComputeFileSha256AndMagic(destFile, out magicBuf, out magicLen);
 if (!HasValidInstallerMagic(magicBuf, magicLen)) {
 try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
 return "ERR|invalid-binary-header";
@@ -34669,12 +34787,15 @@ function Invoke-GitHubAssetInstall {
             $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
             [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
             $dlPath = Join-Path $tmpDir $safeName
-            Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $safeName..."
-            $dlOkGh = Invoke-AsyncHttpDownload -Url ([string]$asset.browser_download_url) -OutFile $dlPath -TimeoutSeconds 120
+            Log-Text "   -> $([char]0x0110)ang t$([char]0x1EA3)i $([char]0x0111)a lu$([char]0x1ED3)ng $safeName..."
+            $dlOkGh = Invoke-AsyncHttpDownload -Url ([string]$asset.browser_download_url) -OutFile $dlPath -TimeoutSeconds 300
             if ($script:cancelRequested) { return -2 }
             if (-not $dlOkGh) {
                 Log-Text "   [!] T$([char]0x1EA3)i t$([char]0x1EC7)p t$([char]0x1EEB) GitHub th$([char]0x1EA5)t b$([char]0x1EA1)i ho$([char]0x1EB7)c h$([char]0x1EBF)t th$([char]0x1EDD)i gian ch$([char]0x1EDD)."
                 return -1
+            }
+            if (("DuckUtil.UiAssetPipeline" -as [type]) -and -not [string]::IsNullOrWhiteSpace([DuckUtil.UiAssetPipeline]::LastDownloadStatsText)) {
+                Log-Text "   [OK] $([char]0x0110)$([char]0x00E3) t$([char]0x1EA3)i xong: $([DuckUtil.UiAssetPipeline]::LastDownloadStatsText)"
             }
         }
         if ($script:cancelRequested) { return -2 }
@@ -34849,6 +34970,50 @@ function Test-IsStandardInstallLocation {
     return $false
 }
 
+function Ensure-WinGetFastDownloader {
+    if ($script:wingetFastDlChecked -or $script:isWindowClosing) { return }
+    $script:wingetFastDlChecked = $true
+    if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) { return }
+    try {
+        $wgStateDir = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState"
+        if (-not [System.IO.Directory]::Exists($wgStateDir)) { return }
+        $wgSettingsPath = Join-Path $wgStateDir "settings.json"
+        if (-not [System.IO.File]::Exists($wgSettingsPath)) {
+            $freshJson = '{"$schema":"https://aka.ms/winget-settings.schema.json","network":{"downloader":"wininet"}}'
+            [System.IO.File]::WriteAllText($wgSettingsPath, $freshJson, [System.Text.UTF8Encoding]::new($false))
+            Log-Text "[*] $([char]0x0110)$([char]0x00E3) b$([char]0x1EAD)t tr$([char]0x00EC)nh t$([char]0x1EA3)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p WinGet (wininet) $([char]0x0111)$([char]0x1EC3) b$([char]0x1ECF) gi$([char]0x1EDB)i h$([char]0x1EA1)n b$([char]0x0103)ng th$([char]0x00F4)ng Delivery Optimization."
+            return
+        }
+        $raw = [System.IO.File]::ReadAllText($wgSettingsPath, [System.Text.Encoding]::UTF8)
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            $freshJson = '{"$schema":"https://aka.ms/winget-settings.schema.json","network":{"downloader":"wininet"}}'
+            [System.IO.File]::WriteAllText($wgSettingsPath, $freshJson, [System.Text.UTF8Encoding]::new($false))
+            return
+        }
+        if ($raw -match '"downloader"\s*:\s*"wininet"') { return }
+        $stripped = [regex]::Replace($raw, '(?m)^\s*//.*$', '')
+        $stripped = [regex]::Replace($stripped, '/\*[\s\S]*?\*/', '')
+        $obj = $stripped | ConvertFrom-Json -ErrorAction Stop
+        if ($null -eq $obj) { return }
+        $needSave = $false
+        if (-not $obj.PSObject.Properties['network'] -or $null -eq $obj.network) {
+            $obj | Add-Member -NotePropertyName 'network' -NotePropertyValue ([PSCustomObject]@{ downloader = 'wininet' }) -Force
+            $needSave = $true
+        } else {
+            $curDl = if ($obj.network.PSObject.Properties['downloader']) { [string]$obj.network.downloader } else { "" }
+            if ([string]::IsNullOrWhiteSpace($curDl) -or $curDl -ieq 'default' -or $curDl -ieq 'do') {
+                $obj.network | Add-Member -NotePropertyName 'downloader' -NotePropertyValue 'wininet' -Force
+                $needSave = $true
+            }
+        }
+        if ($needSave) {
+            $outJson = $obj | ConvertTo-Json -Depth 10
+            [System.IO.File]::WriteAllText($wgSettingsPath, $outJson, [System.Text.UTF8Encoding]::new($false))
+            Log-Text "[*] $([char]0x0110)$([char]0x00E3) t$([char]0x1EF1) $([char]0x0111)$([char]0x1ED9)ng chuy$([char]0x1EC3)n WinGet sang ch$([char]0x1EBF) $([char]0x0111)$([char]0x1ED9) t$([char]0x1EA3)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p (wininet) $([char]0x0111)$([char]0x1EC3) t$([char]0x0103)ng t$([char]0x1ED1)c t$([char]0x1EA3)i."
+        }
+    } catch {}
+}
+
 function Invoke-WinGetWithMsiRetry {
     param(
         [Parameter(Mandatory = $true)][string]$Arguments,
@@ -34860,6 +35025,7 @@ function Invoke-WinGetWithMsiRetry {
         Log-Text "[WARN] Kh$([char]0x00F4)ng t$([char]0x00EC)m th$([char]0x1EA5)y WinGet tr$([char]0x00EA)n h$([char]0x1EC7) th$([char]0x1ED1)ng (s$([char]0x1EBD) chuy$([char]0x1EC3)n sang ngu$([char]0x1ED3)n t$([char]0x1EA3)i tr$([char]0x1EF1)c ti$([char]0x1EBF)p d$([char]0x1EF1) ph$([char]0x00F2)ng)."
         return -1
     }
+    Ensure-WinGetFastDownloader
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
     $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
@@ -36180,7 +36346,8 @@ function Invoke-VerifiedDirectPackageInstall {
             return -1
         }
         $dlPath = $dlRes.Substring(3)
-        Log-Text "   [OK] [$srcLabel] X$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 h$([char]0x1EE3)p l$([char]0x1EC7)."
+        $dlSpeedHint = if (-not [string]::IsNullOrWhiteSpace([DuckUtil.UiAssetPipeline]::LastDownloadStatsText)) { " ($([DuckUtil.UiAssetPipeline]::LastDownloadStatsText))" } else { "" }
+        Log-Text "   [OK] [$srcLabel] X$([char]0x00E1)c th$([char]0x1EF1)c SHA-256 h$([char]0x1EE3)p l$([char]0x1EC7)$dlSpeedHint."
 
         $typeHint = [string]$Candidate.InstallerType
         if ($dlPath -match '\.msi$' -or $typeHint -eq 'msi') {

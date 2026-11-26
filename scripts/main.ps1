@@ -5422,12 +5422,15 @@ function Invoke-GitHubAssetInstall {
             $tmpDir = Join-Path $env:TEMP ("DuckUtil_GH_" + [Guid]::NewGuid().ToString("N"))
             [System.IO.Directory]::CreateDirectory($tmpDir) | Out-Null
             $dlPath = Join-Path $tmpDir $safeName
-            Log-Text "   -> Đang tải $safeName..."
-            $dlOkGh = Invoke-AsyncHttpDownload -Url ([string]$asset.browser_download_url) -OutFile $dlPath -TimeoutSeconds 120
+            Log-Text "   -> Đang tải đa luồng $safeName..."
+            $dlOkGh = Invoke-AsyncHttpDownload -Url ([string]$asset.browser_download_url) -OutFile $dlPath -TimeoutSeconds 300
             if ($script:cancelRequested) { return -2 }
             if (-not $dlOkGh) {
                 Log-Text "   [!] Tải tệp từ GitHub thất bại hoặc hết thời gian chờ."
                 return -1
+            }
+            if (("DuckUtil.UiAssetPipeline" -as [type]) -and -not [string]::IsNullOrWhiteSpace([DuckUtil.UiAssetPipeline]::LastDownloadStatsText)) {
+                Log-Text "   [OK] Đã tải xong: $([DuckUtil.UiAssetPipeline]::LastDownloadStatsText)"
             }
         }
         if ($script:cancelRequested) { return -2 }
@@ -5602,6 +5605,50 @@ function Test-IsStandardInstallLocation {
     return $false
 }
 
+function Ensure-WinGetFastDownloader {
+    if ($script:wingetFastDlChecked -or $script:isWindowClosing) { return }
+    $script:wingetFastDlChecked = $true
+    if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) { return }
+    try {
+        $wgStateDir = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState"
+        if (-not [System.IO.Directory]::Exists($wgStateDir)) { return }
+        $wgSettingsPath = Join-Path $wgStateDir "settings.json"
+        if (-not [System.IO.File]::Exists($wgSettingsPath)) {
+            $freshJson = '{"$schema":"https://aka.ms/winget-settings.schema.json","network":{"downloader":"wininet"}}'
+            [System.IO.File]::WriteAllText($wgSettingsPath, $freshJson, [System.Text.UTF8Encoding]::new($false))
+            Log-Text "[*] Đã bật trình tải trực tiếp WinGet (wininet) để bỏ giới hạn băng thông Delivery Optimization."
+            return
+        }
+        $raw = [System.IO.File]::ReadAllText($wgSettingsPath, [System.Text.Encoding]::UTF8)
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            $freshJson = '{"$schema":"https://aka.ms/winget-settings.schema.json","network":{"downloader":"wininet"}}'
+            [System.IO.File]::WriteAllText($wgSettingsPath, $freshJson, [System.Text.UTF8Encoding]::new($false))
+            return
+        }
+        if ($raw -match '"downloader"\s*:\s*"wininet"') { return }
+        $stripped = [regex]::Replace($raw, '(?m)^\s*//.*$', '')
+        $stripped = [regex]::Replace($stripped, '/\*[\s\S]*?\*/', '')
+        $obj = $stripped | ConvertFrom-Json -ErrorAction Stop
+        if ($null -eq $obj) { return }
+        $needSave = $false
+        if (-not $obj.PSObject.Properties['network'] -or $null -eq $obj.network) {
+            $obj | Add-Member -NotePropertyName 'network' -NotePropertyValue ([PSCustomObject]@{ downloader = 'wininet' }) -Force
+            $needSave = $true
+        } else {
+            $curDl = if ($obj.network.PSObject.Properties['downloader']) { [string]$obj.network.downloader } else { "" }
+            if ([string]::IsNullOrWhiteSpace($curDl) -or $curDl -ieq 'default' -or $curDl -ieq 'do') {
+                $obj.network | Add-Member -NotePropertyName 'downloader' -NotePropertyValue 'wininet' -Force
+                $needSave = $true
+            }
+        }
+        if ($needSave) {
+            $outJson = $obj | ConvertTo-Json -Depth 10
+            [System.IO.File]::WriteAllText($wgSettingsPath, $outJson, [System.Text.UTF8Encoding]::new($false))
+            Log-Text "[*] Đã tự động chuyển WinGet sang chế độ tải trực tiếp (wininet) để tăng tốc tải."
+        }
+    } catch {}
+}
+
 function Invoke-WinGetWithMsiRetry {
     param(
         [Parameter(Mandatory = $true)][string]$Arguments,
@@ -5613,6 +5660,7 @@ function Invoke-WinGetWithMsiRetry {
         Log-Text "[WARN] Không tìm thấy WinGet trên hệ thống (sẽ chuyển sang nguồn tải trực tiếp dự phòng)."
         return -1
     }
+    Ensure-WinGetFastDownloader
     [void](Wait-WindowsInstallerReady -MaxWaitSeconds 20)
     if ($script:isWindowClosing -or $script:cancelRequested) { return -1 }
     $code = Run-CliStream "winget" $Arguments -IsolateStdin -AllowCancel -CaptureOutput -TimeoutSeconds $TimeoutSeconds -IdleTimeoutSeconds $IdleTimeoutSeconds
@@ -6933,7 +6981,8 @@ function Invoke-VerifiedDirectPackageInstall {
             return -1
         }
         $dlPath = $dlRes.Substring(3)
-        Log-Text "   [OK] [$srcLabel] Xác thực SHA-256 hợp lệ."
+        $dlSpeedHint = if (-not [string]::IsNullOrWhiteSpace([DuckUtil.UiAssetPipeline]::LastDownloadStatsText)) { " ($([DuckUtil.UiAssetPipeline]::LastDownloadStatsText))" } else { "" }
+        Log-Text "   [OK] [$srcLabel] Xác thực SHA-256 hợp lệ$dlSpeedHint."
 
         $typeHint = [string]$Candidate.InstallerType
         if ($dlPath -match '\.msi$' -or $typeHint -eq 'msi') {

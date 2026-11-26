@@ -1455,12 +1455,13 @@ namespace DuckUtil {
         }
 
         private static readonly HttpClient _downloadClient = CreateDownloadClient();
+        public static volatile string LastDownloadStatsText = "";
 
         private static HttpClient CreateDownloadClient() {
-            if (Environment.Version.Major == 4) {
-                try {
-                    Type spm = Type.GetType("System.Net.ServicePointManager, System");
-                    if (spm != null) {
+            try {
+                Type spm = Type.GetType("System.Net.ServicePointManager, System");
+                if (spm != null) {
+                    if (Environment.Version.Major == 4) {
                         PropertyInfo prop = spm.GetProperty("SecurityProtocol", BindingFlags.Public | BindingFlags.Static);
                         if (prop != null) {
                             int cur = Convert.ToInt32(prop.GetValue(null, null));
@@ -1468,14 +1469,225 @@ namespace DuckUtil {
                             prop.SetValue(null, val, null);
                         }
                     }
-                } catch {}
-            }
+                    PropertyInfo connProp = spm.GetProperty("DefaultConnectionLimit", BindingFlags.Public | BindingFlags.Static);
+                    if (connProp != null) {
+                        int curLim = Convert.ToInt32(connProp.GetValue(null, null));
+                        if (curLim < 32) connProp.SetValue(null, 32, null);
+                    }
+                    PropertyInfo expProp = spm.GetProperty("Expect100Continue", BindingFlags.Public | BindingFlags.Static);
+                    if (expProp != null) expProp.SetValue(null, false, null);
+                    PropertyInfo nagProp = spm.GetProperty("UseNagleAlgorithm", BindingFlags.Public | BindingFlags.Static);
+                    if (nagProp != null) nagProp.SetValue(null, false, null);
+                }
+            } catch {}
             var handler = new HttpClientHandler();
             try { handler.AllowAutoRedirect = true; } catch {}
+            try {
+                PropertyInfo maxConn = handler.GetType().GetProperty("MaxConnectionsPerServer", BindingFlags.Public | BindingFlags.Instance);
+                if (maxConn != null && maxConn.CanWrite) maxConn.SetValue(handler, 16, null);
+            } catch {}
             var client = new HttpClient(handler);
-            client.Timeout = TimeSpan.FromMinutes(3);
+            client.Timeout = TimeSpan.FromMinutes(10);
             try { client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "DuckUtil"); } catch {}
             return client;
+        }
+
+        private static string FormatDownloadStats(long bytes, double sec, int streams) {
+            double mb = bytes / 1048576.0;
+            double safeSec = sec > 0.05 ? sec : 0.05;
+            double mbps = mb / safeSec;
+            return string.Format(CultureInfo.InvariantCulture, "{0:0.0} MB / {1:0.1}s ({2:0.1} MB/s, {3} lu\u1ED3ng)", mb, safeSec, mbps, streams);
+        }
+
+        private static async Task<string> ProbeRangeSupportAsync(string url, long maxBytes, CancellationToken ct) {
+            CancellationTokenSource probeCts = null;
+            try {
+                probeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                probeCts.CancelAfter(10000);
+                using (var req = new HttpRequestMessage(HttpMethod.Get, url)) {
+                    req.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 0);
+                    using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, probeCts.Token).ConfigureAwait(false)) {
+                        if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                            !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                            return "ERR|insecure-redirect";
+                        }
+                        if (resp.Content != null && resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                            string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                            if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                                return "ERR|html-response";
+                            }
+                        }
+                        if ((int)resp.StatusCode == 206 && resp.Content != null && resp.Content.Headers != null &&
+                            resp.Content.Headers.ContentRange != null && resp.Content.Headers.ContentRange.Length.HasValue) {
+                            long totalLen = resp.Content.Headers.ContentRange.Length.Value;
+                            if (totalLen > maxBytes) return "ERR|file-too-large";
+                            string finalUrl = (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null)
+                                ? resp.RequestMessage.RequestUri.AbsoluteUri
+                                : url;
+                            return "RANGE|" + totalLen.ToString(CultureInfo.InvariantCulture) + "|" + finalUrl;
+                        }
+                    }
+                }
+            } catch {} finally {
+                if (probeCts != null) { try { probeCts.Dispose(); } catch {} }
+            }
+            return "SINGLE";
+        }
+
+        private static async Task DownloadRangeChunkAsync(string url, string destFile, long start, long end, CancellationToken ct) {
+            long expected = (end - start) + 1L;
+            Exception lastEx = null;
+            for (int attempt = 0; attempt < 2; attempt++) {
+                bool shouldRetry = false;
+                try {
+                    ct.ThrowIfCancellationRequested();
+                    using (var req = new HttpRequestMessage(HttpMethod.Get, url)) {
+                        req.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(start, end);
+                        using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                            if ((int)resp.StatusCode != 206 || resp.Content == null) {
+                                throw new IOException("http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture));
+                            }
+                            using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                            using (var dst = new FileStream(destFile, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, 262144, true)) {
+                                dst.Seek(start, SeekOrigin.Begin);
+                                byte[] buf = new byte[262144];
+                                long copied = 0L;
+                                int r;
+                                while (copied < expected && (r = await src.ReadAsync(buf, 0, (int)Math.Min((long)buf.Length, expected - copied), ct).ConfigureAwait(false)) > 0) {
+                                    await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                                    copied += r;
+                                }
+                                if (copied != expected) {
+                                    throw new IOException("short-chunk");
+                                }
+                            }
+                        }
+                    }
+                    return;
+                } catch (OperationCanceledException) {
+                    throw;
+                } catch (Exception ex) {
+                    lastEx = ex;
+                    if (attempt == 0) shouldRetry = true;
+                }
+                if (shouldRetry) {
+                    try { await Task.Delay(350, ct).ConfigureAwait(false); } catch {}
+                }
+            }
+            throw (lastEx ?? new IOException("chunk-failed"));
+        }
+
+        private static async Task<string> DownloadFileAcceleratedCoreAsync(string url, string destFile, long maxBytes, bool rejectHtml, CancellationToken ct) {
+            string cleanUrl = url.Trim();
+            string dir = Path.GetDirectoryName(destFile);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+            var sw = Stopwatch.StartNew();
+            string probe = await ProbeRangeSupportAsync(cleanUrl, maxBytes, ct).ConfigureAwait(false);
+            if (probe.StartsWith("ERR|", StringComparison.Ordinal)) {
+                return probe;
+            }
+
+            if (probe.StartsWith("RANGE|", StringComparison.Ordinal)) {
+                string rest = probe.Substring(6);
+                int sep = rest.IndexOf('|');
+                long totalLen = 0L;
+                string finalUrl = cleanUrl;
+                if (sep > 0) {
+                    long.TryParse(rest.Substring(0, sep), NumberStyles.Integer, CultureInfo.InvariantCulture, out totalLen);
+                    string candUrl = rest.Substring(sep + 1);
+                    if (!string.IsNullOrWhiteSpace(candUrl) && candUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) {
+                        finalUrl = candUrl;
+                    }
+                }
+
+                if (totalLen >= 4194304L && totalLen <= maxBytes) {
+                    int streams = totalLen >= 25165824L ? 6 : 4;
+                    try {
+                        using (var pre = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 4096, false)) {
+                            pre.SetLength(totalLen);
+                        }
+                        long chunkSize = totalLen / streams;
+                        var tasks = new Task[streams];
+                        for (int i = 0; i < streams; i++) {
+                            long s = i * chunkSize;
+                            long e = (i == streams - 1) ? (totalLen - 1L) : ((s + chunkSize) - 1L);
+                            tasks[i] = DownloadRangeChunkAsync(finalUrl, destFile, s, e, ct);
+                        }
+                        await Task.WhenAll(tasks).ConfigureAwait(false);
+                        sw.Stop();
+                        LastDownloadStatsText = FormatDownloadStats(totalLen, sw.Elapsed.TotalSeconds, streams);
+                        return "OK|" + destFile;
+                    } catch (OperationCanceledException) {
+                        try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                        throw;
+                    } catch {
+                        try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                    }
+                }
+            }
+
+            long totalBytes = 0L;
+            using (HttpResponseMessage resp = await _downloadClient.GetAsync(cleanUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
+                if (!resp.IsSuccessStatusCode || resp.Content == null) {
+                    return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
+                }
+                if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
+                    !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
+                    return "ERR|insecure-redirect";
+                }
+                if (rejectHtml && resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
+                    string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
+                    if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
+                        return "ERR|html-response";
+                    }
+                }
+                if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
+                    resp.Content.Headers.ContentLength.Value > maxBytes) {
+                    return "ERR|file-too-large";
+                }
+                using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 262144, true)) {
+                    byte[] buf = new byte[262144];
+                    int r;
+                    while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
+                        totalBytes += r;
+                        if (totalBytes > maxBytes) {
+                            try { dst.Close(); } catch {}
+                            try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                            return "ERR|file-too-large";
+                        }
+                        await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
+                    }
+                }
+            }
+            if (totalBytes <= 0L) {
+                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
+                return "ERR|empty-file";
+            }
+            sw.Stop();
+            LastDownloadStatsText = FormatDownloadStats(totalBytes, sw.Elapsed.TotalSeconds, 1);
+            return "OK|" + destFile;
+        }
+
+        private static string ComputeFileSha256AndMagic(string filePath, out byte[] magicBuf, out int magicLen) {
+            magicBuf = new byte[4];
+            magicLen = 0;
+            using (SHA256 sha = SHA256.Create())
+            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1048576, FileOptions.SequentialScan)) {
+                byte[] buf = new byte[1048576];
+                int r;
+                while ((r = fs.Read(buf, 0, buf.Length)) > 0) {
+                    if (magicLen < 4) {
+                        int copy = Math.Min(4 - magicLen, r);
+                        Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
+                        magicLen += copy;
+                    }
+                    sha.TransformBlock(buf, 0, r, null, 0);
+                }
+                sha.TransformFinalBlock(new byte[0], 0, 0);
+                return BytesToLowerHex(sha.Hash);
+            }
         }
 
         public static string NormalizeSearchFold(string input) {
@@ -1775,18 +1987,10 @@ namespace DuckUtil {
                 ct.ThrowIfCancellationRequested();
                 Directory.CreateDirectory(destDir);
                 outFile = Path.Combine(destDir, safeName);
-                using (HttpResponseMessage dlResp = await _downloadClient.GetAsync(matchedUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
-                    if (!dlResp.IsSuccessStatusCode || dlResp.Content == null) {
-                        return "ERR|download-http-" + ((int)dlResp.StatusCode).ToString(CultureInfo.InvariantCulture);
-                    }
-                    using (Stream src = await dlResp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var dst = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
-                        byte[] buf = new byte[81920];
-                        int r;
-                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
-                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
-                        }
-                    }
+                string dlRes = await DownloadFileAcceleratedCoreAsync(matchedUrl, outFile, 2147483648L, true, ct).ConfigureAwait(false);
+                if (!dlRes.StartsWith("OK|", StringComparison.Ordinal)) {
+                    try { if (File.Exists(outFile)) File.Delete(outFile); } catch {}
+                    return dlRes;
                 }
                 if (File.Exists(outFile)) {
                     FileInfo fi = new FileInfo(outFile);
@@ -1902,45 +2106,12 @@ namespace DuckUtil {
                 return "ERR|invalid-dest";
             }
             const long MaxInstallerBytes = 2147483648L;
-            int limitMs = timeoutMs > 0 ? timeoutMs : 120000;
+            int limitMs = timeoutMs > 0 ? timeoutMs : 300000;
             CancellationTokenSource linkedCts = null;
             try {
                 linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 linkedCts.CancelAfter(limitMs);
-                string dir = Path.GetDirectoryName(destFile);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-                long totalBytes = 0L;
-                using (var req = new HttpRequestMessage(HttpMethod.Get, url.Trim())) {
-                    req.Headers.TryAddWithoutValidation("User-Agent", "DuckUtil");
-                    using (HttpResponseMessage resp = await _downloadClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token).ConfigureAwait(false)) {
-                        if (!resp.IsSuccessStatusCode || resp.Content == null) {
-                            return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
-                        }
-                        if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
-                            !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
-                            return "ERR|insecure-redirect";
-                        }
-                        using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                        using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
-                            byte[] buf = new byte[81920];
-                            int r;
-                            while ((r = await src.ReadAsync(buf, 0, buf.Length, linkedCts.Token).ConfigureAwait(false)) > 0) {
-                                totalBytes += r;
-                                if (totalBytes > MaxInstallerBytes) {
-                                    try { dst.Close(); } catch {}
-                                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-                                    return "ERR|file-too-large";
-                                }
-                                await dst.WriteAsync(buf, 0, r, linkedCts.Token).ConfigureAwait(false);
-                            }
-                        }
-                    }
-                }
-                if (totalBytes <= 0L) {
-                    try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-                    return "ERR|empty-file";
-                }
-                return "OK|" + destFile;
+                return await DownloadFileAcceleratedCoreAsync(url, destFile, MaxInstallerBytes, true, linkedCts.Token).ConfigureAwait(false);
             } catch (OperationCanceledException) {
                 try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
                 return ct.IsCancellationRequested ? "ERR|canceled" : "ERR|timeout";
@@ -1967,62 +2138,16 @@ namespace DuckUtil {
             const long MaxInstallerBytes = 2147483648L;
             try {
                 ct.ThrowIfCancellationRequested();
-                string dir = Path.GetDirectoryName(destFile);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-
-                string actualHex = "";
-                long totalBytes = 0L;
-                byte[] magicBuf = new byte[4];
-                int magicLen = 0;
-
-                using (HttpResponseMessage resp = await _downloadClient.GetAsync(url.Trim(), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false)) {
-                    if (!resp.IsSuccessStatusCode || resp.Content == null) {
-                        return "ERR|http-" + ((int)resp.StatusCode).ToString(CultureInfo.InvariantCulture);
-                    }
-                    if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null &&
-                        !string.Equals(resp.RequestMessage.RequestUri.Scheme, "https", StringComparison.OrdinalIgnoreCase)) {
-                        return "ERR|insecure-redirect";
-                    }
-                    if (resp.Content.Headers != null && resp.Content.Headers.ContentType != null) {
-                        string mediaType = resp.Content.Headers.ContentType.MediaType ?? "";
-                        if (mediaType.IndexOf("text/html", StringComparison.OrdinalIgnoreCase) >= 0) {
-                            return "ERR|html-response";
-                        }
-                    }
-                    if (resp.Content.Headers != null && resp.Content.Headers.ContentLength.HasValue &&
-                        resp.Content.Headers.ContentLength.Value > MaxInstallerBytes) {
-                        return "ERR|file-too-large";
-                    }
-
-                    using (SHA256 sha = SHA256.Create())
-                    using (Stream src = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var dst = new FileStream(destFile, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true)) {
-                        byte[] buf = new byte[81920];
-                        int r;
-                        while ((r = await src.ReadAsync(buf, 0, buf.Length, ct).ConfigureAwait(false)) > 0) {
-                            totalBytes += r;
-                            if (totalBytes > MaxInstallerBytes) {
-                                try { dst.Close(); } catch {}
-                                try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-                                return "ERR|file-too-large";
-                            }
-                            if (magicLen < 4) {
-                                int copy = Math.Min(4 - magicLen, r);
-                                Buffer.BlockCopy(buf, 0, magicBuf, magicLen, copy);
-                                magicLen += copy;
-                            }
-                            sha.TransformBlock(buf, 0, r, null, 0);
-                            await dst.WriteAsync(buf, 0, r, ct).ConfigureAwait(false);
-                        }
-                        sha.TransformFinalBlock(new byte[0], 0, 0);
-                        actualHex = BytesToLowerHex(sha.Hash);
-                    }
-                }
-
-                if (totalBytes <= 0L) {
+                string dlRes = await DownloadFileAcceleratedCoreAsync(url, destFile, MaxInstallerBytes, true, ct).ConfigureAwait(false);
+                if (!dlRes.StartsWith("OK|", StringComparison.Ordinal)) {
                     try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
-                    return "ERR|empty-file";
+                    return dlRes;
                 }
+
+                byte[] magicBuf;
+                int magicLen;
+                string actualHex = ComputeFileSha256AndMagic(destFile, out magicBuf, out magicLen);
+
                 if (!HasValidInstallerMagic(magicBuf, magicLen)) {
                     try { if (File.Exists(destFile)) File.Delete(destFile); } catch {}
                     return "ERR|invalid-binary-header";
